@@ -19,7 +19,6 @@ import {
   ToURLParamSortTypeMap,
   ToURLParamTDDChartMap,
   ToURLParamTimeDimensionMap,
-  ToURLParamTimeGrainMapMap,
   ToURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
@@ -27,6 +26,7 @@ import {
   ExploreStateURLParams,
 } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 import {
   TimeComparisonOption,
   type TimeRange,
@@ -186,7 +186,7 @@ function toTimeRangesUrl(
     "interval" in timeControlsState.selectedTimeRange
   ) {
     const mappedTimeGrain =
-      ToURLParamTimeGrainMapMap[
+      V1TimeGrainToDateTimeUnit[
         timeControlsState.selectedTimeRange?.interval ?? ""
       ] ?? "";
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);

@@ -42,6 +42,7 @@ type Helper struct {
 	*printer.Printer
 	Version            version.Version
 	DotRill            dotrill.DotRill
+	HomeDir            string
 	Interactive        bool
 	Org                string
 	AdminURLDefault    string
@@ -63,6 +64,7 @@ func NewHelper(ver version.Version, homeDir string) (*Helper, error) {
 	ch := &Helper{
 		Printer:     printer.NewPrinter(printer.FormatHuman),
 		DotRill:     dotrill.New(homeDir),
+		HomeDir:     homeDir,
 		Version:     ver,
 		Interactive: true,
 	}
@@ -612,8 +614,8 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 		}
 		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
 	case "2":
-		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history.
-		// This is not euivalent to a force push but is safer for users.
+		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't lose history.
+		// This is not equivalent to a force push but is safer for users.
 		if config.Subpath != "" {
 			// force pushing in a monorepo can overwrite other subpaths
 			// we can check for changes in other subpaths but it is tricky and error prone

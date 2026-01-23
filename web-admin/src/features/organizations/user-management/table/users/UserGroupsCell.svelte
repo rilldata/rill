@@ -39,7 +39,7 @@
         <CaretDownIcon size="12px" />
       {/if}
     </Dropdown.Trigger>
-    <Dropdown.Content>
+    <Dropdown.Content align="start">
       {#if isPending}
         Loading...
       {:else if error}

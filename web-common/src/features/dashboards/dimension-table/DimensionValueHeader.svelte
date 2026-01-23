@@ -1,6 +1,6 @@
 <script lang="ts">
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
   import type {
     VirtualizedTableColumns,
@@ -9,7 +9,6 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
-  import type { ResizeEvent } from "@rilldata/web-common/components/virtualized-table/drag-table-cell";
   import type { VirtualItem } from "@tanstack/svelte-virtual";
   import type { DimensionTableRow } from "./dimension-table-types";
 
@@ -27,6 +26,12 @@
   export let scrolling: boolean;
   export let activeIndex: number;
   export let excludeMode = false;
+  export let onSelectItem: (data: {
+    index: number;
+    meta: boolean;
+  }) => void = () => {};
+  export let onResizeColumn: (size: number) => void = () => {};
+  export let onInspect: (rowIndex: number) => void = () => {};
 
   const {
     actions: {
@@ -36,7 +41,6 @@
       sorting: { sortedByDimensionValue, sortedAscending },
     },
   } = getStateManagers();
-  const dispatch = createEventDispatcher();
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
@@ -54,12 +58,6 @@
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
     };
   };
-  const handleResize = (event: ResizeEvent) => {
-    dispatch("resize-column", {
-      size: event.detail.size,
-      name,
-    });
-  };
 </script>
 
 <div
@@ -74,8 +72,7 @@
     borderRight={true}
     bgClass="bg-surface"
     onClick={sortByDimensionValue}
-    on:keydown={sortByDimensionValue}
-    on:resize={handleResize}
+    onResize={onResizeColumn}
   >
     <div class="flex items-center">
       <span class:font-bold={"px-1 " + $sortedByDimensionValue}
@@ -106,6 +103,7 @@
       bgClass="bg-surface"
     >
       <Cell
+        label="Filter dimension value"
         positionStatic
         {row}
         column={{ start: 0, size: width }}
@@ -114,9 +112,8 @@
         {rowActive}
         {...getCellProps(row, selectedIndex)}
         colSelected={$sortedByDimensionValue}
-        on:inspect
-        on:select-item
-        label="Filter dimension value"
+        {onInspect}
+        {onSelectItem}
       />
     </StickyHeader>
   {/each}

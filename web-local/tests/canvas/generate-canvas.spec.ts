@@ -15,7 +15,7 @@ test.describe("canvas generation", () => {
     // Open the dropdown menu and click "Create Canvas dashboard"
     await page.getByLabel("Create resource menu").click();
     await page
-      .getByRole("menuitem", { name: "Create Canvas dashboard" })
+      .getByRole("menuitem", { name: "Generate Canvas Dashboard" })
       .click();
 
     // Wait for navigation to a canvas file

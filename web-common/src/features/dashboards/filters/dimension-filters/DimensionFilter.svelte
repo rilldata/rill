@@ -80,6 +80,10 @@
     pinned,
   } = filterData);
 
+  $: if (!open && filterData.mode !== curMode) {
+    resyncFilterData(filterData);
+  }
+
   // Sync proxy when selectedValues changes (for Select mode)
   $: if (!open && mode === DimensionFilterMode.Select) {
     selectedValuesProxy = structuredClone(filterData.selectedValues) ?? [];
@@ -385,6 +389,18 @@
     } else {
       await toggleDimensionValueSelections(name, [value], metricsViewNames);
     }
+  }
+
+  function resyncFilterData(filterData: DimensionFilterItem) {
+    curMode = filterData.mode;
+    curSearchText = filterData.inputText ?? "";
+    curExcludeMode = filterData.isInclude === false;
+    selectedValuesProxy = filterData.selectedValues ?? [];
+    searchedBulkValues =
+      filterData.mode === DimensionFilterMode.InList
+        ? (filterData.selectedValues ?? [])
+        : [];
+    curPinned = filterData.pinned;
   }
 </script>
 

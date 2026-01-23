@@ -1,5 +1,5 @@
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { includedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createAndExpression,
   createInExpression,
@@ -8,7 +8,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
 import { type Readable, derived } from "svelte/store";
-
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
@@ -99,20 +98,23 @@ export function getDimensionValuesForComparison(
       // Values to be compared
       let comparisonValues: (string | null)[] = [];
       if (surface === "chart") {
-        const dimensionValues = includedDimensionValues({
-          dashboard: dashboardStore,
-        })(dimensionName);
-
-        if (dimensionValues?.length) {
-          // For TDD view max 11 allowed, for Explore max 7 allowed
-          comparisonValues = dimensionValues.slice(
-            0,
-            showTimeDimensionDetail ? 11 : 7,
-          ) as (string | null)[];
-        }
-        return set({
-          values: comparisonValues,
-          filter: dashboardStore?.whereFilter,
+        return selectedDimensionValues(
+          runtime.instanceId,
+          [name],
+          dashboardStore?.whereFilter,
+          dimensionName,
+        ).subscribe((values) => {
+          if (values.data?.length) {
+            // For TDD view max 11 allowed, for Explore max 7 allowed
+            comparisonValues = values.data.slice(
+              0,
+              showTimeDimensionDetail ? 11 : 7,
+            ) as (string | null)[];
+          }
+          return set({
+            values: comparisonValues,
+            filter: dashboardStore?.whereFilter,
+          });
         });
       } else if (surface === "table") {
         let sortBy = showTimeDimensionDetail
