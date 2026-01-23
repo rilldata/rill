@@ -89,5 +89,5 @@ rill project status
 You can also view detailed status information on the Status page in Rill Cloud.
 
 :::tip Using GitLab?
-We've got you covered. See [Deploy from CLI](/developers/deploy/deploy-dashboard/deploy-from-cli) for GitLab instructions.
+We've got you covered. See [Deploy from CLI](/developers/guides/deploy-from-cli) for GitLab instructions.
 :::

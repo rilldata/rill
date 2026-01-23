@@ -24,7 +24,6 @@ Follow along, refer to the in-line linked documentation, and explore our product
 - [**GitHub Analytics:**](/developers/guides/github-analytics) Analyze your own GitHub repository by modifying the Python file, download_commits.py
 - [**Cost Monitoring Analytics:**](/developers/guides/cost-monitoring-analytics) Analyze your cost and usage data
 - [**OpenRTB Analytics:**](/developers/guides/openrtb-analytics) Analyze real-time bidding data to track impressions, bids, wins and more
-- [**Set Up MCP**](/developers/guides/setting-up-mcp) Configure Model Context Protocol (MCP) to enable natural language queries with Claude integration
 
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!
