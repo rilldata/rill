@@ -476,6 +476,7 @@ export async function submitAddSourceForm(
     blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
       secretKeys: schemaSecretKeys,
       stringKeys: schemaStringKeys,
+      connectorInstanceName,
     }),
     create: true,
     createOnly: false,

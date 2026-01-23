@@ -132,7 +132,13 @@ export async function updateDotEnvWithSecrets(
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
-  // Get the existing .env file
+  // Invalidate the cache to ensure we get fresh .env content
+  // This prevents overwriting credentials added by a previous step
+  await queryClient.invalidateQueries({
+    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+  });
+
+  // Get the existing .env file with fresh data
   let blob: string;
   try {
     const file = await queryClient.fetchQuery({

@@ -22,7 +22,11 @@ materialize: true`;
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
-  opts?: { secretKeys?: string[]; stringKeys?: string[] },
+  opts?: {
+    secretKeys?: string[];
+    stringKeys?: string[];
+    connectorInstanceName?: string;
+  },
 ) {
   const schema = getConnectorSchema(connector.name ?? "");
 
@@ -91,8 +95,11 @@ export function compileSourceYAML(
         )}`
       : "";
 
+  // Use connector instance name if provided, otherwise fall back to driver name
+  const connectorName = opts?.connectorInstanceName || connector.name;
+
   return (
-    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}\n\n` +
+    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connectorName}\n\n` +
     compiledKeyValues +
     devSection
   );
@@ -248,23 +255,24 @@ export function prepareSourceFormData(
   // Strip connector configuration keys from the source form values to prevent
   // leaking connector-level fields (e.g., credentials) into the model file.
   const schema = getConnectorSchema(connector.name ?? "");
+  const connectorPropertyKeys = new Set<string>();
   if (schema) {
-    const connectorPropertyKeys = new Set(
-      getSchemaFieldMetaList(schema, { step: "connector" })
-        .filter((field) => !field.internal)
-        .map((field) => field.key),
-    );
-    for (const key of Object.keys(processedValues)) {
-      if (connectorPropertyKeys.has(key)) {
-        delete processedValues[key];
-      }
+    const connectorFields = getSchemaFieldMetaList(schema, { step: "connector" })
+      .filter((field) => !field.internal)
+      .map((field) => field.key);
+    for (const key of connectorFields) {
+      connectorPropertyKeys.add(key);
+      delete processedValues[key];
     }
   }
 
   // Handle placeholder values for required source properties
+  // Skip connector fields - they're handled by the connector, not the model
   if (schema) {
     const sourceFields = getSchemaFieldMetaList(schema, { step: "source" });
     for (const field of sourceFields) {
+      // Don't fill placeholders for connector fields (even if they match source step)
+      if (connectorPropertyKeys.has(field.key)) continue;
       if (field.required && !(field.key in processedValues)) {
         if (field.placeholder) {
           processedValues[field.key] = field.placeholder;
