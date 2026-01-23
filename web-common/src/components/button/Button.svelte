@@ -145,6 +145,10 @@
     @apply bg-input border border-accent-primary-action text-accent-primary-action;
   }
 
+  .secondary.theme {
+    @apply border-theme-500;
+  }
+
   .secondary:hover:not(:disabled) {
     @apply bg-surface-container-hover;
   }
