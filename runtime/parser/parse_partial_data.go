@@ -22,10 +22,10 @@ type DataYAML struct {
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
 // The contextualConnector argument is optional; if provided and the resolver supports a connector, it becomes the default connector for the resolver.
 // It returns the resolver name, its properties, and refs found in the resolver props.
-func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (string, *structpb.Struct, []ResourceName, error) {
+func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (string, *structpb.Struct, string, []ResourceName, error) {
 	// Parse the resolver and its properties
 	var count int
-	var resolver string
+	var resolver, connector string
 	var refs []ResourceName
 	resolverProps := make(map[string]any)
 
@@ -35,10 +35,11 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 		resolver = "sql"
 		resolverProps["sql"] = raw.SQL
 		if raw.Connector != "" {
-			resolverProps["connector"] = raw.Connector
+			connector = raw.Connector
 		} else if contextualConnector != "" {
-			resolverProps["connector"] = contextualConnector
+			connector = contextualConnector
 		}
+		resolverProps["connector"] = connector
 	}
 
 	// Handle metrics SQL resolver
@@ -69,7 +70,7 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 			props = make(map[string]any)
 			err := raw.Glob.Decode(props)
 			if err != nil {
-				return "", nil, nil, fmt.Errorf("failed to parse glob properties: %w", err)
+				return "", nil, "", nil, fmt.Errorf("failed to parse glob properties: %w", err)
 			}
 		}
 
@@ -87,17 +88,17 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 
 	// Validate there was exactly one resolver
 	if count == 0 {
-		return "", nil, nil, fmt.Errorf(`the API definition does not specify a resolver (for example, "sql:", "metrics_sql:", ...)`)
+		return "", nil, "", nil, fmt.Errorf(`the API definition does not specify a resolver (for example, "sql:", "metrics_sql:", ...)`)
 	}
 	if count > 1 {
-		return "", nil, nil, fmt.Errorf(`the API definition specifies more than one resolver`)
+		return "", nil, "", nil, fmt.Errorf(`the API definition specifies more than one resolver`)
 	}
 
 	// Convert resolver properties to structpb.Struct
 	resolverPropsPB, err := structpb.NewStruct(resolverProps)
 	if err != nil {
-		return "", nil, nil, fmt.Errorf("encountered invalid property type: %w", err)
+		return "", nil, "", nil, fmt.Errorf("encountered invalid property type: %w", err)
 	}
 
-	return resolver, resolverPropsPB, refs, nil
+	return resolver, resolverPropsPB, connector, refs, nil
 }
