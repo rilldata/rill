@@ -466,7 +466,7 @@
   }
 
   .with-row-dimension tr:hover > td:first-of-type {
-    @apply bg-gray-100;
+    @apply bg-surface-container-hover;
   }
 
   .with-row-dimension.with-col-dimension tr > th:first-of-type {
@@ -497,7 +497,7 @@
 
   tr:hover,
   tr:hover .cell {
-    @apply bg-gray-100;
+    @apply bg-surface-container-hover;
   }
 
   tr:hover .active-cell {
