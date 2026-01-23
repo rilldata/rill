@@ -20,6 +20,9 @@
 
   $: ({ placeholder, additionalContextStoreGetter } = config);
   $: additionalContextStore = additionalContextStoreGetter();
+  // Since additionalContextStore is only used within sendMessage it will not be fetched unless used.
+  // So use it immediately to get the correct value during sendMesssage.
+  $: additionalContext = $additionalContextStore;
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
@@ -40,7 +43,7 @@
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage($additionalContextStore, {
+      await currentConversation.sendMessage(additionalContext, {
         onStreamStart: () => editor.commands.setContent(""),
       });
       onSend?.();

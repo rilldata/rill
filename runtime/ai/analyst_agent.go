@@ -102,29 +102,16 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
 	// TODO: This uses `first`, but that may not be safe if the user has navigated to another dashboard. We probably need some more sophisticated de-duplication here.
-	var metricsViewName string
+	var metricsViewNames []string
 	if first {
 		if args.Explore != "" {
 			_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
 			if err != nil {
 				return nil, err
 			}
-			metricsViewName = metricsView.Meta.Name.Name
-
-			_, err = s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
-				MetricsView: metricsViewName,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
-				MetricsView: metricsViewName,
-			})
-			if err != nil {
-				return nil, err
-			}
+			metricsViewNames = append(metricsViewNames, metricsView.Meta.Name.Name)
 		} else if args.Canvas != "" {
+			// Pre-invoke the get_canvas tool to get the canvas definition.
 			_, err := s.CallTool(ctx, RoleAssistant, GetCanvasName, nil, &GetCanvasArgs{
 				Canvas: args.Canvas,
 			})
@@ -132,12 +119,36 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 				return nil, err
 			}
 
-			// TODO: prefill metrics view if component is provided
+			_, _, metricsViews, err := t.getValidCanvasAndMetricsViews(ctx, args.Canvas)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, res := range metricsViews {
+				metricsViewNames = append(metricsViewNames, res.Meta.Name.Name)
+			}
+		}
+
+		// Pre-invoke the query_metrics_view tool for each metrics view tied to the explore/canvas.
+		for _, mvName := range metricsViewNames {
+			_, err := s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
+				MetricsView: mvName,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
+				MetricsView: mvName,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	if first && metricsViewName == "" {
+	if first && len(metricsViewNames) == 0 {
 		_, err := s.CallTool(ctx, RoleAssistant, ListMetricsViewsName, nil, &ListMetricsViewsArgs{})
 		if err != nil {
 			return nil, err
@@ -145,14 +156,14 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 
 	// Determine tools that can be used
-	tools := []string{}
+	var tools []string
 	if args.Explore == "" {
 		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
 	}
 	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, CreateChartName)
 
 	// Build completion messages
-	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args)
+	systemPrompt, err := t.systemPrompt(ctx, metricsViewNames, args)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +197,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	return &AnalystAgentResult{Response: response}, nil
 }
 
-func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string, args *AnalystAgentArgs) (string, error) {
+func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []string, args *AnalystAgentArgs) (string, error) {
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
@@ -194,9 +205,15 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 	if err != nil {
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
 	}
+
+	metricsViewsQuoted := make([]string, len(metricsViewNames))
+	for i, mv := range metricsViewNames {
+		metricsViewsQuoted[i] = fmt.Sprintf("`%s`", mv)
+	}
+
 	data := map[string]any{
 		"ai_instructions":  session.ProjectInstructions(),
-		"metrics_view":     metricsViewName,
+		"metrics_views":    strings.Join(metricsViewsQuoted, ", "),
 		"explore":          args.Explore,
 		"canvas":           args.Canvas,
 		"canvas_component": args.CanvasComponent,
@@ -248,7 +265,7 @@ Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "200
 <process>
 **Phase 1: discovery (setup)**
 {{ if .explore }}
-Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_view }}".
+Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_views }}".
 The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
 The metrics view's definition and time range of available data has been provided in your tool calls.
 
@@ -262,11 +279,11 @@ You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.
 {{ else if .canvas }}
-Your goal is to analyze the contents of the canvas "{{ .canvas }}". Different components are powered by different metrics views.
+Your goal is to analyze the contents of the canvas "{{ .canvas }}", which is powered by the metrics view "{{ .metrics_views }}".
 The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
 The canvas definition has been provided in your tool calls.
 
-Here is an overview of the settings the user has currently applied to the dashboard (Components can have local settings applied), use these while querying for data unless user asks for specifics:
+Here is an overview of the settings the user has currently applied to the dashboard (Components can have local settings applied):
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
 {{ if .where_per_metrics_view }}{{range $mv, $filter := .where_per_metrics_view}}Use where filters for metrics view "{{ $mv }}": "{{ $filter }}"
@@ -437,4 +454,37 @@ func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, explor
 	}
 
 	return explore, metricsView, nil
+}
+
+func (t *AnalystAgent) getValidCanvasAndMetricsViews(ctx context.Context, canvasName string) (*runtimev1.Resource, map[string]*runtimev1.Resource, map[string]*runtimev1.Resource, error) {
+	session := GetSession(ctx)
+
+	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), canvasName, session.Claims())
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if resolvedCanvas == nil || resolvedCanvas.Canvas == nil {
+		return nil, nil, nil, fmt.Errorf("canvas %q not found", canvasName)
+	}
+
+	components := map[string]*runtimev1.Resource{}
+	for name, res := range resolvedCanvas.ResolvedComponents {
+		component := res.GetComponent()
+		if component == nil || component.State.ValidSpec == nil {
+			continue
+		}
+		components[name] = res
+	}
+
+	metricsViews := map[string]*runtimev1.Resource{}
+	for mv, res := range resolvedCanvas.ReferencedMetricsViews {
+		metricsView := res.GetMetricsView()
+		if metricsView == nil || metricsView.State.ValidSpec == nil {
+			continue
+		}
+		metricsViews[mv] = res
+	}
+
+	return resolvedCanvas.Canvas, components, metricsViews, nil
 }
