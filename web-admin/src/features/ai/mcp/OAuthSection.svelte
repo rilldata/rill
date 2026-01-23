@@ -12,7 +12,7 @@
   <p class="text-xs text-gray-500">
     The OAuth flow will start automatically in your browser.
     <a
-      href="https://docs.rilldata.com/explore/mcp#connect-using-oauth-recommended"
+      href="https://docs.rilldata.com/guide/ai/mcp#connect-using-oauth-recommended"
       target="_blank"
       rel="noopener"
     >
