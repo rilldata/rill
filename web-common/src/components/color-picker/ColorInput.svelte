@@ -37,7 +37,7 @@
   class="color-wrapper bg-input"
   class:small
   class:pointer-events-none={disabled}
-  class:bg-surface-background={disabled}
+  class:opacity-50={disabled}
   class:text-fg-secondary={disabled}
 >
   {#if labelFirst}
@@ -241,7 +241,7 @@
   }
 
   .color-wrapper {
-    @apply py-[5px] px-[5px] pr-3;
+    @apply py-[5px] px-3;
     @apply h-8 w-full border rounded-[2px];
     @apply flex gap-x-3;
   }
