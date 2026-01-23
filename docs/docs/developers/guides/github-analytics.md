@@ -1,6 +1,6 @@
 ---
 title: "Analyze Your GitHub Repository"
-sidebar_label: "GitHub Analytics"
+sidebar_label: "GitHub Analytics Demo"
 sidebar_position: 20
 hide_table_of_contents: false
 tags:

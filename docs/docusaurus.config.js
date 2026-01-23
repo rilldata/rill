@@ -225,6 +225,10 @@ const config = {
           // Legacy paths and misc redirects
           // ============================================
           {
+            from: '/developers/guides/setting-up-mcp',
+            to: '/guide/ai/mcp',
+          },
+          {
             from: '/install',
             to: '/developers/get-started/install',
           },
