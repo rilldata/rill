@@ -2,6 +2,11 @@ import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { type Interval, type DateTimeUnit } from "luxon";
 
+
+const MAX_BUCKETS = 1500;
+
+
+
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
 
 export type TimeGrainAlias =
@@ -119,6 +124,10 @@ export const allowedAggregationGrains = [
   V1TimeGrain.TIME_GRAIN_QUARTER,
   V1TimeGrain.TIME_GRAIN_YEAR,
 ];
+
+const ALLOWABLE_AGGREGATION_UNITS: DateTimeUnit[] =
+  allowedAggregationGrains.map((grain) => V1TimeGrainToDateTimeUnit[grain]);
+
 
 export const GrainAliasToOrder: Record<TimeGrainAlias, Order> = {
   ms: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
@@ -364,11 +373,6 @@ export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
   );
 }
 
-const MAX_BUCKETS = 1500;
-
-const ALLOWABLE_AGGREGATION_GRAINS: DateTimeUnit[] =
-  allowedAggregationGrains.map((grain) => V1TimeGrainToDateTimeUnit[grain]);
-
 export function allowedGrainsForInterval(
   interval: Interval<true> | undefined,
   minTimeGrain?: V1TimeGrain,
@@ -376,7 +380,7 @@ export function allowedGrainsForInterval(
   minTimeGrain = minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
   if (!interval) return [];
 
-  const validGrains = ALLOWABLE_AGGREGATION_GRAINS.filter((unit) => {
+  const validGrains = ALLOWABLE_AGGREGATION_UNITS.filter((unit) => {
     return isGrainAllowed(unit, minTimeGrain);
   });
 

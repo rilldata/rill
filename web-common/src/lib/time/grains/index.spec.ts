@@ -212,7 +212,6 @@ describe("findValidTimeGrain", () => {
       const defaultTimeGrain = findValidTimeGrain(
         testCase.timeGrain,
         timeGrainOptions,
-
         testCase.minTimeGrain,
       );
       expect(defaultTimeGrain).toEqual(testCase.expected);

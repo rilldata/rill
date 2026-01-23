@@ -227,11 +227,6 @@ export function getNextSmallerGrain(
 /**
  * Validates and adjusts the time grain for a given interval based on allowed grains.
  * Returns the validated grain, or undefined if validation cannot be performed.
- *
- * @param interval - The time interval to validate against
- * @param minTimeGrain - The minimum allowed time grain
- * @param requestedPrecision - The requested grain (e.g., from URL or state)
- * @param rangeName - The range name string (e.g., "24h as of latest/h+1h", "inf") used to derive precision
  */
 export function getValidatedTimeGrain(
   interval: Interval | undefined,
