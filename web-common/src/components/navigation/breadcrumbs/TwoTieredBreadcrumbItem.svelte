@@ -3,9 +3,11 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import type { PathOptions } from "./types";
 
-  export let options: PathOptions;
+  export let pathOptions: PathOptions;
   export let current: string;
   export let isCurrentPage = false;
+
+  $: ({ options } = pathOptions);
 
   $: selected = options.get(current.toLowerCase());
 
