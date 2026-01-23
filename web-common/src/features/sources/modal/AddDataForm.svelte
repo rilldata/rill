@@ -15,6 +15,7 @@
   import { connectorStepStore } from "./connectorStepStore";
   import YamlPreview from "./YamlPreview.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
+  import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get } from "svelte/store";
   import { getConnectorSchema } from "./connector-schemas";
@@ -45,10 +46,26 @@
     cancel?: () => void;
   }) => Promise<void> = async (_event) => {};
 
+  // Create form directly from schema using factory function
+  const {
+    form: paramsForm,
+    errors: paramsErrors,
+    enhance: paramsEnhance,
+    tainted: paramsTainted,
+    submit: paramsSubmit,
+    submitting: paramsSubmitting,
+  } = createConnectorForm({
+    schemaName,
+    formType,
+    onUpdate: (e: any) => handleOnUpdate(e),
+  });
+
+  // Create manager with form stores (manager handles orchestration, not form creation)
   const formManager = new AddDataFormManager({
     connector,
     formType,
-    onParamsUpdate: (e: any) => handleOnUpdate(e),
+    formStore: paramsForm,
+    errorsStore: paramsErrors,
     getSelectedAuthMethod: () =>
       get(connectorStepStore).selectedAuthMethod ?? undefined,
     schemaName,
@@ -71,18 +88,10 @@
 
   $: stepState = $connectorStepStore;
 
-  // Form 1: Individual parameters
+  // Form IDs and properties
   const paramsFormId = formManager.paramsFormId;
   const filteredParamsProperties = formManager.filteredParamsProperties;
   let multiStepFormId = paramsFormId;
-  const {
-    form: paramsForm,
-    errors: paramsErrors,
-    enhance: paramsEnhance,
-    tainted: paramsTainted,
-    submit: paramsSubmit,
-    submitting: paramsSubmitting,
-  } = formManager.params;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
