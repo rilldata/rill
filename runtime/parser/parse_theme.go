@@ -26,7 +26,6 @@ type ThemeColors struct {
 
 // deprecatedCSSVariables maps deprecated variable names to their new semantic equivalents.
 // Old themes using these names will continue to work through automatic mapping.
-// Note: "background" and "foreground" have special handling in validate() for multi-variable mapping.
 var deprecatedCSSVariables = map[string][]string{
 	"surface":           {"surface-background", "surface-elevated"},
 	"background":        {"surface-container"},
