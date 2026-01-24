@@ -23,6 +23,10 @@ export function getValidationSchemaForConnector(
 /**
  * Creates a SuperForm instance for a connector form, initialized from schema.
  * This is the single source of truth for form initialization.
+ *
+ * For multi-step connectors (e.g., S3), we initialize ALL fields regardless
+ * of step so that source-step fields (like `path`) are tracked by superForm.
+ * The renderer shows/hides fields based on the current step.
  */
 export function createConnectorForm(args: {
   schemaName: string;
@@ -31,12 +35,27 @@ export function createConnectorForm(args: {
 }) {
   const { schemaName, formType, onUpdate } = args;
   const schema = getConnectorSchema(schemaName);
-  const schemaStep = formType === "source" ? "source" : "connector";
 
+  // Don't pass step filter - include defaults for ALL fields so multi-step
+  // forms can track source/explorer fields even when starting on connector step
   const adapter = getValidationSchemaForConnector(schemaName, formType);
-  const initialValues = schema
-    ? getSchemaInitialValues(schema, { step: schemaStep })
-    : {};
+
+  // Get schema defaults (radio/tabs enums, explicit defaults)
+  const schemaDefaults = schema ? getSchemaInitialValues(schema) : {};
+
+  // Initialize ALL string fields to empty string so superForm tracks them.
+  // Without this, fields like `path` (no default) won't be in form.data on submit.
+  const allFields: FormData = {};
+  if (schema?.properties) {
+    for (const [key, prop] of Object.entries(schema.properties)) {
+      if (prop.type === "string") {
+        allFields[key] = "";
+      }
+    }
+  }
+
+  // Merge: all fields as empty strings, then schema defaults on top
+  const initialValues = { ...allFields, ...schemaDefaults };
 
   const formDefaults = defaults<FormData, string, FormData>(
     initialValues as Partial<FormData>,

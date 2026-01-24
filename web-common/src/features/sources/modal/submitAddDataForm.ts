@@ -466,6 +466,15 @@ export async function submitAddSourceForm(
     ? getSchemaStringKeys(schema, { step: "source" })
     : [];
 
+  // When connector is rewritten to DuckDB (e.g., S3 -> DuckDB), don't use
+  // the original connectorInstanceName in YAML. The original connector is
+  // referenced via create_secrets_from_connectors for credential access.
+  const isRewrittenToDuckDb =
+    rewrittenConnector.name === "duckdb" && connector.name !== "duckdb";
+  const yamlConnectorInstanceName = isRewrittenToDuckDb
+    ? undefined
+    : connectorInstanceName;
+
   // Make a new <source>.yaml file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
     newSourceName,
@@ -476,7 +485,7 @@ export async function submitAddSourceForm(
     blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
       secretKeys: schemaSecretKeys,
       stringKeys: schemaStringKeys,
-      connectorInstanceName,
+      connectorInstanceName: yamlConnectorInstanceName,
     }),
     create: true,
     createOnly: false,
