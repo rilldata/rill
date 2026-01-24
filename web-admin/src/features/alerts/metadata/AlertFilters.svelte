@@ -96,7 +96,7 @@
     {:else}
       <div
         in:fly|local={{ duration: 200, x: 8 }}
-        class="text-fg-disabled grid items-center"
+        class="text-fg-muted grid items-center"
         style:min-height="26px"
       >
         No filters selected

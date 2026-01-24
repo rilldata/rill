@@ -12,8 +12,6 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
-  export let darkMode: boolean;
-
   $: user = createLocalServiceGetCurrentUser({
     query: {
       // refetch in case user does a login/logout from outside of rill developer UI
@@ -72,10 +70,8 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="p-1">
-      {#if darkMode}
-        <ThemeToggle />
-        <DropdownMenu.Separator />
-      {/if}
+      <ThemeToggle />
+      <DropdownMenu.Separator />
 
       <DropdownMenu.Item
         href="https://docs.rilldata.com"

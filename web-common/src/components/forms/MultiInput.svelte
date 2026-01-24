@@ -122,7 +122,7 @@
   {/if}
   <div class="flex flex-row gap-1.5 items-center">
     <div
-      class="flex flex-row items-center bg-surface-container rounded-sm px-1 py-[3px] w-full {contentClassName}"
+      class="flex flex-row items-center bg-input rounded-sm px-1 py-[3px] w-full {contentClassName}"
       class:border={!hasSomeErrors}
       class:border-gray-300={!hasSomeErrors}
       class:outline={focused || hasSomeErrors}
@@ -130,10 +130,10 @@
       class:outline-primary-500={focused && !hasSomeErrors}
     >
       <div class="flex flex-wrap gap-1 w-full min-h-[24px]">
-        {#each values.slice(0, lastIdx) as _, i}
+        {#each values.slice(0, lastIdx) as _, i (i)}
           {@const hasError = errors?.[i]?.length}
           <div
-            class="flex items-center text-fg-secondary text-sm rounded-2xl border bg-gray-100 pl-2 pr-1 max-w-full"
+            class="flex items-center text-fg-secondary text-sm rounded-2xl border bg-input pl-2 pr-1 max-w-full"
             class:border-gray-300={!hasError}
             class:border-red-300={hasError}
             class:bg-red-50={hasError}
@@ -159,7 +159,7 @@
           on:keydown={handleKeyDown}
           autocomplete="off"
           id="{id}.{lastIdx}"
-          class="focus:outline-white group-hover:text-red-500 text-sm grow px-1"
+          class="focus:outline-none group-hover:text-red-500 placeholder-fg-secondary text-sm grow px-1 bg-transparent"
           on:focusin={() => (focused = true)}
           on:focusout={() => (focused = false)}
           on:click|preventDefault|stopPropagation={() => preventFocus}

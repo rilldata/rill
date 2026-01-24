@@ -24,8 +24,8 @@
 <DropdownMenu bind:open typeahead={false}>
   <DropdownMenuTrigger
     class="{width} flex flex-row gap-1 items-center rounded-sm {open
-      ? 'bg-gray-200'
-      : 'hover:bg-gray-100'} px-2 py-1"
+      ? 'bg-surface-container-active'
+      : 'hover:bg-surface-container-hover'} px-2 py-1"
   >
     <div class="text-xs">{selected?.label ?? ""}</div>
     {#if open}
@@ -43,8 +43,9 @@
     {#each PROJECT_ROLES_OPTIONS as { value, label, description } (value)}
       <DropdownMenuItem
         on:click={() => onSelect(value)}
-        class="text-xs hover:bg-gray-100 {selected?.value === value
-          ? 'bg-surface-background'
+        class="text-xs hover:bg-surface-container-hover {selected?.value ===
+        value
+          ? 'bg-surface-container-active'
           : ''}"
       >
         <div class="flex flex-col">

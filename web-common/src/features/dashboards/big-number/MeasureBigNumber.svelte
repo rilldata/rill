@@ -163,7 +163,7 @@
             {#if comparisonValue != null}
               <div
                 role="complementary"
-                class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-disabled"
+                class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
                 class:font-semibold={isComparisonPositive}
                 on:mouseenter={() =>
                   (tooltipValue =

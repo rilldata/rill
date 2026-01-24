@@ -168,11 +168,7 @@
             />
           </button>
         </Tooltip.Trigger>
-        <Tooltip.Content
-          side="top"
-          sideOffset={10}
-          class="bg-gray-700 text-surface shadow-md"
-        >
+        <Tooltip.Content side="top" sideOffset={10} class="shadow-md">
           {#if errorType === ErrorType.OUT_OF_RANGE}
             Date is out of range. Click to reset.
           {:else}

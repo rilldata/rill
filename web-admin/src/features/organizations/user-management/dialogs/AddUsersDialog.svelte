@@ -221,8 +221,9 @@
               {#each ORG_ROLES_OPTIONS as { value, label, description } (value)}
                 <DropdownMenuItem
                   on:click={() => ($form.role = value)}
-                  class="text-xs hover:bg-gray-100 {$form.role === value
-                    ? 'bg-surface-background'
+                  class="text-xs hover:bg-surface-container-hover {$form.role ===
+                  value
+                    ? 'bg-surface-container-active'
                     : ''}"
                 >
                   <div class="flex flex-col">

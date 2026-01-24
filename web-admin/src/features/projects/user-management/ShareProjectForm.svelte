@@ -397,7 +397,7 @@
         <GeneralAccessSelectorDropdown {organization} {project} />
 
         {#if hasAutogroupMembers}
-          {#each projectMemberUserGroupsList as group}
+          {#each projectMemberUserGroupsList as group, i (i)}
             {#if group.groupName === "autogroup:members"}
               <UsergroupSetRole {organization} {project} {group} />
             {/if}
@@ -407,7 +407,7 @@
 
       <TooltipContent slot="tooltip-content">
         <ul>
-          {#each userGroupMemberUsers.slice(0, 6) as user}
+          {#each userGroupMemberUsers.slice(0, 6) as user, i (i)}
             <div class="flex items-center gap-1 py-1">
               <Avatar
                 src={user.userPhotoUrl}
@@ -427,11 +427,11 @@
     </Tooltip>
   </div>
 </div>
-<div class="flex flex-row items-center px-3.5 py-3 border-t border-gray-200">
+<div class="flex flex-row items-center px-3.5 py-3 border-t">
   <a
     href="https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions#project-level-permissions"
     target="_blank"
-    class="text-xs text-primary-600 hover::text-primary-700"
+    class="text-xs text-primary-600 hover:text-primary-700"
     >Learn more about sharing</a
   >
   <div class="grow"></div>

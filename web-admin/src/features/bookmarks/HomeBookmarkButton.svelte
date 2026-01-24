@@ -56,12 +56,7 @@
         label="Home bookmark dropdown"
         active={open || isHomeBookmarkActive}
       >
-        <HomeBookmark
-          size="16px"
-          className={isHomeBookmarkActive
-            ? "text-primary-600"
-            : "text-primary-800"}
-        />
+        <HomeBookmark size="16px" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent class="w-[330px]">
@@ -76,11 +71,11 @@
         <DropdownMenuItem class="py-2">
           <a
             href={fullHomeBookmarkUrl}
-            on:click={goToDashboardHome}
             class="flex flex-row gap-x-2 w-full min-h-7"
             aria-label="Home Bookmark Entry"
+            on:click={goToDashboardHome}
           >
-            <HomeBookmark size="16px" className="text-fg-primary" />
+            <HomeBookmark size="16px" />
             <div class="flex flex-col gap-y-0.5">
               <div
                 class="text-xs font-medium text-fg-primary h-4 text-ellipsis overflow-hidden"

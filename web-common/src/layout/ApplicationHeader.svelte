@@ -25,8 +25,7 @@
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
 
-  const { darkMode, deploy, developerChat, stickyDashboardState } =
-    featureFlags;
+  const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
   export let mode: string;
 
@@ -138,7 +137,7 @@
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
-    <LocalAvatarButton darkMode={$darkMode} />
+    <LocalAvatarButton />
   </div>
 </header>
 

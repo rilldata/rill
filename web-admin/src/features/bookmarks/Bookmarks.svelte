@@ -210,7 +210,7 @@
             {/key}
           {/each}
         {:else}
-          <div class="my-2 text-fg-disabled text-center">
+          <div class="my-2 text-fg-muted text-center">
             You have no bookmarks for this dashboard.
           </div>
         {/if}

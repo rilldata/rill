@@ -5,7 +5,6 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { featureFlags } from "../feature-flags";
   import {
     defaultPrimaryColors,
     defaultSecondaryColors,
@@ -17,8 +16,6 @@
   const DEFAULT_SECONDARY = `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`;
   const FALLBACK_PRIMARY = "hsl(180, 100%, 50%)";
   const FALLBACK_SECONDARY = "lightgreen";
-
-  const { darkMode } = featureFlags;
 
   export let themeNames: string[];
   export let theme: string | V1ThemeSpec | undefined;
@@ -150,7 +147,7 @@
       label="Primary"
       labelFirst
       disabled={isPresetMode}
-      allowLightnessControl={$darkMode}
+      allowLightnessControl
       onChange={(color) => {
         handleColorChange(color, true);
       }}
@@ -162,7 +159,7 @@
       label="Secondary"
       labelFirst
       disabled={isPresetMode}
-      allowLightnessControl={$darkMode}
+      allowLightnessControl
       onChange={(color) => {
         handleColorChange(color, false);
       }}

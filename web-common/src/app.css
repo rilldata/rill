@@ -123,7 +123,7 @@
     --component: oklch(0.6482 0.1754 131.68);
     --alert: oklch(0.7686 0.1647 70.08);
     --report: oklch(0.5876 0.1389 241.97);
-    --connector: oklch(0.551 0.0234 264.36);
+    --connector: oklch(45.147% 0.0181 260.735);
 
     --color-theme-50: var(
       --color-theme-light-50,
@@ -312,7 +312,7 @@
     --component: oklch(0.6482 0.1754 131.68);
     --alert: oklch(0.7686 0.1647 70.08);
     --report: oklch(0.5876 0.1389 241.97);
-    --connector: oklch(0.551 0.0234 264.36);
+    --connector: oklch(66.569% 0.02691 265.523);
 
     /* These don't match Figma directly, but are visually close */
     --input: color-mix(in oklab, var(--white) calc(0.07 * 100%), transparent);

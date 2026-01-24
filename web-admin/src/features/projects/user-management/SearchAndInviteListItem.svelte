@@ -57,7 +57,7 @@
           getRandomBgColor(result.identifier),
         )}
       >
-        <span class="text-sm text-white font-semibold"
+        <span class="text-sm text-fg-primary font-semibold"
           >{getInitials(result.identifier)}</span
         >
       </div>
@@ -113,19 +113,19 @@
   }
 
   .dropdown-item:hover {
-    @apply bg-gray-100;
+    @apply bg-surface-container-hover;
   }
 
   .dropdown-item.highlighted {
-    @apply bg-gray-200;
+    @apply bg-surface-container-hover;
     scroll-snap-align: start;
   }
 
   .dropdown-item.selected {
-    @apply bg-gray-100;
+    @apply bg-surface-container-active;
   }
 
   .dropdown-item.selected:hover {
-    @apply bg-gray-200;
+    @apply bg-surface-container-hover;
   }
 </style>

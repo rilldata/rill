@@ -33,7 +33,6 @@
     @apply relative select-none;
     @apply size-60 rounded-md;
     @apply flex flex-col items-center justify-center gap-y-2;
-    @apply transition duration-300 ease-out;
     @apply cursor-pointer overflow-hidden;
 
     box-shadow:
