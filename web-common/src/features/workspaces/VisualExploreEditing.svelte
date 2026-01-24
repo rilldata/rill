@@ -19,12 +19,17 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type { V1Explore } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceGetInstance,
+    type V1Explore,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
+  import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
+  import { useTimeControlStore } from "../dashboards/time-controls/time-control-store";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
     ResourceKind,
@@ -34,8 +39,6 @@
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
-  import { getStateManagers } from "../dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "../dashboards/time-controls/time-control-store";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -164,6 +167,18 @@
   $: themeNames = ($themesQuery?.data ?? [])
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
+
+  $: defaultThemeQuery = createRuntimeServiceGetInstance(
+    instanceId,
+    undefined,
+    {
+      query: {
+        select: (data) => data?.instance?.theme,
+      },
+    },
+  );
+
+  $: projectDefaultTheme = $defaultThemeQuery?.data;
 
   $: theme = !rawTheme
     ? undefined
@@ -495,6 +510,7 @@
     <ThemeInput
       {theme}
       {themeNames}
+      {projectDefaultTheme}
       onThemeChange={(value) => {
         if (!value) {
           updateProperties({}, ["theme"]);
