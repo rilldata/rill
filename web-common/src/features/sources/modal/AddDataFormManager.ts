@@ -119,7 +119,6 @@ export class AddDataFormManager {
     // IDs
     this.paramsFormId = `add-data-${effectiveSchemaName}-form`;
 
-    const isSourceForm = formType === "source";
     const schema = getConnectorSchema(effectiveSchemaName);
 
     // Layout height (derived from schema metadata)
@@ -493,8 +492,12 @@ export class AddDataFormManager {
     paramsFormValues: Record<string, unknown>;
   }): string {
     const connector = this.connector;
-    const { stepState, isMultiStepConnector, isConnectorForm, paramsFormValues } =
-      ctx;
+    const {
+      stepState,
+      isMultiStepConnector,
+      isConnectorForm,
+      paramsFormValues,
+    } = ctx;
 
     const schema = getConnectorSchema(this.schemaName);
     const schemaConnectorFields = schema
