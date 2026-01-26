@@ -222,9 +222,11 @@ light:
   secondary: "#8b5cf6"   # Purple for secondary elements
   
   # UI surface colors (optional - will use defaults if omitted)
-  background: "#f8fafc"  # Soft gray background
-  surface: "#ffffff"     # Clean white surfaces
-  card: "#f1f5f9"        # Subtle card backgrounds
+  surface-background: "#f8fafc" # Soft gray background
+  surface-subtle: "#ffffff"     # Clean white surfaces
+  surface-card: "#f1f5f9"       # Subtle card backgrounds
+
+  fg-primary: "#000000"          # Black text
   
   # Qualitative palette (for categorical data - all 24 colors)
   color-qualitative-1: "#6366f1"   # Indigo
@@ -283,9 +285,11 @@ dark:
   secondary: "#a78bfa"   # Lighter purple
   
   # UI surface colors (optional)
-  background: "#0f172a"  # Deep slate background
-  surface: "#1e293b"     # Elevated surfaces
-  card: "#334155"        # Card backgrounds
+  surface-background: "#0f172a"  # Deep slate background
+  surface-subtle: "#1e293b"     # Elevated surfaces
+  surface-card: "#334155"        # Card backgrounds
+
+  fg-primary: "#000000"   # White text
   
   # Qualitative palette (adjusted for dark mode visibility - all 24 colors)
   color-qualitative-1: "#818cf8"   # Indigo
