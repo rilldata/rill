@@ -150,11 +150,11 @@ export default function initEmbedPublicAPI(): () => void {
     AI_PANE_CHANGE_THROTTLE_TIMEOUT,
   );
   const aiPaneUnsubscribe = chatOpen.subscribe((isOpen) => {
-      aiPaneChangeThrottler.throttle(() => {
-        emitNotification("aiPaneChanged", {
-          open: isOpen,
-        });
+    aiPaneChangeThrottler.throttle(() => {
+      emitNotification("aiPaneChanged", {
+        open: isOpen,
       });
+    });
   });
 
   return () => {
