@@ -103,13 +103,14 @@
             </Button>
           {/if}
           <Tooltip.Root portal="body">
-            <Tooltip.Trigger>
+            <Tooltip.Trigger asChild let:builder>
               <Button
                 square
                 type="tertiary"
                 onClick={deleteBookmark}
                 disabled={disableDelete}
                 label="Delete bookmark"
+                builders={[builder]}
               >
                 <Trash size="16px" />
               </Button>
