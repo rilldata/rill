@@ -40,11 +40,11 @@
 
   .wrapper {
     @apply w-full h-fit min-h-screen bg-no-repeat bg-cover;
-    background-image: url("/img/welcome-bg-art.png");
+    background-image: url("/img/welcome-bg-art.jpg");
   }
 
   :global(.dark) .wrapper {
-    background-image: url("/img/welcome-bg-art-dark.png");
+    background-image: url("/img/welcome-bg-art-dark.jpg");
   }
 
   .column {
