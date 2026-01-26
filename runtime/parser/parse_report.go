@@ -18,10 +18,10 @@ import (
 // ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
 type ReportYAML struct {
 	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName string           `yaml:"display_name"`
-	Title       string           `yaml:"title"` // Deprecated: use display_name
-	Refresh     *ScheduleYAML    `yaml:"refresh"`
-	Watermark   string           `yaml:"watermark"` // options: "trigger_time", "inherit"
+	DisplayName string        `yaml:"display_name"`
+	Title       string        `yaml:"title"` // Deprecated: use display_name
+	Refresh     *ScheduleYAML `yaml:"refresh"`
+	Watermark   string        `yaml:"watermark"` // options: "trigger_time", "inherit"
 	Intervals   struct {
 		Duration      string `yaml:"duration"`
 		Limit         uint   `yaml:"limit"`
@@ -226,7 +226,7 @@ func (p *Parser) parseReport(node *Node) error {
 	}
 
 	if format == "ai_session" && (len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0) {
-		return errors.New(`ai reports only support email notifications as of now`)
+		return errors.New(`ai reports only support email notifications as of now`) // as we cannot reliably fetch user attributes for slack webhooks/channels for enforcing access control in recipient mode
 	}
 
 	// Track report
