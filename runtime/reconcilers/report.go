@@ -178,7 +178,7 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	conditionRes = append(conditionRes, res.Meta.Name)
 	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
 
-	if spec.QueryName != "" && spec.Format == "query" {
+	if spec.QueryName != "" {
 		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
 		if !ok {
 			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
@@ -258,12 +258,6 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 				}
 			}
 		}
-	}
-
-	// for ai_session allowing access to the referred explore without restricting it further for now
-	// TODO change ai resolver's infer security rules to return fields and where claude for field and row filter rules
-	if spec.Format == "ai_session" && spec.AiConfig.Explore != "" {
-		conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: spec.AiConfig.Explore})
 	}
 
 	if len(conditionKinds) > 0 || len(conditionRes) > 0 {
