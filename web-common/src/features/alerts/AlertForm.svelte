@@ -308,7 +308,7 @@
         </DialogTabs.Trigger>
       {/each}
     </DialogTabs.List>
-    <div class="p-3 bg-surface-container h-[600px] overflow-auto">
+    <div class="p-3 bg-surface-subtle h-[600px] overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
         <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>

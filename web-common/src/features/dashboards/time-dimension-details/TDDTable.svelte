@@ -86,13 +86,13 @@
     const classesToAdd = ["text-right"];
     const classesToRemove = [
       "border-b",
-      "bg-surface-background",
+      "bg-surface-base",
       "bg-gray-100",
       "bg-gray-200",
       "bg-primary-50",
       "bg-primary-100",
       "bg-primary-200",
-      "bg-surface-background",
+      "bg-surface-base",
       "bg-gray-100",
       "bg-gray-200",
     ];
@@ -400,7 +400,7 @@
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
-  class="w-full relative h-full select-none pl-4 bg-surface-background"
+  class="w-full relative h-full select-none pl-4 bg-surface-base"
 >
   <Pivot
     bind:this={pivot}

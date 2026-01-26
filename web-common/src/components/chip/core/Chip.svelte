@@ -197,18 +197,18 @@
 
   .time {
     @apply rounded-2xl;
-    @apply bg-surface-container border-gray-200 text-fg-primary;
+    @apply bg-transparent border-gray-200 text-fg-primary;
   }
 
   .time:hover,
   .time.active,
   .time:active {
-    @apply bg-surface-background;
+    @apply bg-surface-hover;
   }
 
   .time.active,
   .time:active {
-    @apply border-gray-400;
+    @apply border-surface-active;
   }
 
   .amber {

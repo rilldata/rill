@@ -4,12 +4,12 @@ export const levels = {
   info: {
     primary: `bg-gray-800 text-white border rounded-sm border-gray-800 hover:bg-gray-700 hover:border-gray-700 focus:ring-primary-300`,
     secondary:
-      "text-fg-primary border rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-fg-primary hover:border-gray-300 focus:ring-primary-300",
+      "text-fg-primary border rounded-sm border-gray-300 shadow-sm hover:bg-surface-hover hover:text-fg-primary hover:border-gray-300 focus:ring-primary-300",
     highlighted:
-      "text-fg-secondary border hover:bg-gray-200 hover:text-fg-secondary focus:ring-primary-300 shadow-lg rounded-sm h-8",
-    text: "text-fg-primary hover:bg-gray-300 focus:ring-primary-300",
+      "text-fg-secondary border hover:bg-surface-hover hover:text-fg-secondary focus:ring-primary-300 shadow-lg rounded-sm h-8",
+    text: "text-fg-primary hover:bg-surface-hover focus:ring-primary-300",
     dashed:
-      "text-fg-primary border border-dashed rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-fg-primary hover:border-gray-300 focus:ring-primary-300",
+      "text-fg-primary border border-dashed rounded-sm border-gray-300 shadow-sm hover:bg-surface-hover hover:text-fg-primary hover:border-gray-300 focus:ring-primary-300",
   },
   error: {
     primary:

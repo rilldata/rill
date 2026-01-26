@@ -451,7 +451,7 @@
                     showCalendarPicker = false;
                   }}
                   role="presentation"
-                  class="group h-7 overflow-hidden hover:bg-gray-300 flex-none rounded-sm w-full select-none flex items-center"
+                  class="group h-7 overflow-hidden hover:bg-surface-hover flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
                     class:font-bold={false}
@@ -552,7 +552,7 @@
   }
 
   .item:hover {
-    @apply bg-surface-container-hover text-fg-primary;
+    @apply bg-surface-hover text-fg-primary;
   }
 
   .separator {

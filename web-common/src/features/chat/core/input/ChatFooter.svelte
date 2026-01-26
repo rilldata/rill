@@ -3,7 +3,7 @@
     "AI can make mistakes. Consider your dashboard the source of truth.";
 </script>
 
-<div class="chat-footer">
+<div class="chat-footer bg-surface-subtle">
   <div class="chat-footer-text">
     {text}
   </div>
@@ -12,12 +12,11 @@
 <style lang="postcss">
   .chat-footer {
     padding: 0.5rem 1rem 1rem 1rem;
-    background: var(--surface-container);
     font-size: 0.75rem;
   }
 
   .chat-footer-text {
-    color: #6b7280;
+    @apply text-fg-muted;
     text-align: center;
   }
 </style>

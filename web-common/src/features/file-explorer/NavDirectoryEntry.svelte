@@ -82,7 +82,7 @@
   {isProtectedDirectory
     ? 'hover:text-fg-secondary text-fg-muted '
     : 'text-fg-primary hover:text-fg-primary'}
-  font-medium hover:bg-surface-container-hover"
+  font-medium hover:bg-surface-hover"
   {id}
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}

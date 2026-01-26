@@ -64,7 +64,7 @@
       <button
         {...builder}
         use:builder.action
-        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-container h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
+        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
       >
         <PlusCircle class="w-6 h-6 text-fg-secondary" />
         <span class="text-sm font-medium text-fg-secondary">Add widget</span>
@@ -94,7 +94,7 @@
         aria-label={getAriaLabel(rowIndex, columnIndex)}
         title="Insert widget"
         class:bg-surface-background={open}
-        class="pointer-events-auto bg-surface-container active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
+        class="pointer-events-auto bg-surface-subtle active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
         on:mouseenter={onMouseEnter}
       >
         <PlusCircle size="15px" />

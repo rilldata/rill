@@ -79,9 +79,9 @@
   let activityStatus;
   $: {
     if (cellActive) {
-      activityStatus = "bg-surface-container-hover";
+      activityStatus = "bg-surface-hover";
     } else if (rowActive && !cellActive) {
-      activityStatus = "bg-surface-container-hover ";
+      activityStatus = "bg-surface-hover ";
     } else if (colSelected) {
       activityStatus = "bg-transparent";
     } else {

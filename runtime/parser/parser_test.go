@@ -2595,7 +2595,7 @@ dark:
 					Primary:   "red",
 					Secondary: "green",
 					Variables: map[string]string{
-						"surface-container": "blue",
+						"surface-subtle": "blue",
 						"fg-primary":        "yellow",
 						"fg-secondary":      "yellow",
 					},
@@ -2604,7 +2604,7 @@ dark:
 					Primary:   "gray",
 					Secondary: "black",
 					Variables: map[string]string{
-						"surface-container": "black",
+						"surface-subtle": "black",
 						"fg-primary":        "white",
 						"fg-secondary":      "white",
 					},

@@ -44,7 +44,7 @@
   <div class="flex justify-between items-center px-2">
     <button
       type="button"
-      class="hover:bg-gray-200 text-fg-secondary rounded-full aspect-square size-5 flex items-center justify-center"
+      class="hover:bg-surface-hover text-fg-secondary rounded-full aspect-square size-5 flex items-center justify-center"
       class:opacity-50={!backwardPanEnabled}
       class:hide={visibleIndex !== 0}
       on:click={() => onPan(-1)}
@@ -60,7 +60,7 @@
 
     <button
       type="button"
-      class="hover:bg-gray-200 text-fg-secondary rounded-full aspect-square size-5 flex items-center justify-center"
+      class="hover:bg-surface-hover text-fg-secondary rounded-full aspect-square size-5 flex items-center justify-center"
       class:opacity-50={!forwardPanEnabled}
       class:hide={visibleIndex !== visibleMonths - 1}
       on:click={() => onPan(1)}

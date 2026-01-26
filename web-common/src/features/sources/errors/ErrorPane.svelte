@@ -20,7 +20,7 @@
 </script>
 
 <div
-  class="w-full h-full bg-surface-container flex-col justify-center inline-flex p-3"
+  class="w-full h-full bg-surface-subtle flex-col justify-center inline-flex p-3"
 >
   <div class="flex-col justify-start items-center gap-1 flex text-red-500">
     <CancelCircle size="24px" />

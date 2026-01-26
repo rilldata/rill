@@ -68,7 +68,7 @@
 <style lang="postcss">
   .header {
     @apply flex flex-col border-b select-none;
-    @apply bg-surface-container justify-center py-2 gap-y-2;
+    @apply bg-surface-background justify-center py-2 gap-y-2;
     @apply flex flex-col flex-none relative overflow-hidden;
     @apply z-0;
     transition-property: height;

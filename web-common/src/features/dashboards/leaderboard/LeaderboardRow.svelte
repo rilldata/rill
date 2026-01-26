@@ -93,7 +93,7 @@
   $: deltaColumn.update(deltaElementWidth);
 
   $: barColor = excluded
-    ? "var(--surface-container-active)"
+    ? "var(--surface-active)"
     : selected || hovered
       ? "var(--color-theme-200)"
       : "var(--color-theme-100)";

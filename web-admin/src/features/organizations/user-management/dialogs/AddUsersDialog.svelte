@@ -205,7 +205,7 @@
         <div slot="within-input" class="flex items-center h-full">
           <DropdownMenu typeahead={false}>
             <DropdownMenuTrigger
-              class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 hover:bg-gray-100"
+              class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 hover:bg-surface-hover"
             >
               <div class="text-xs">
                 {ORG_ROLES_OPTIONS.find((o) => o.value === $form.role)?.label}
@@ -221,9 +221,9 @@
               {#each ORG_ROLES_OPTIONS as { value, label, description } (value)}
                 <DropdownMenuItem
                   on:click={() => ($form.role = value)}
-                  class="text-xs hover:bg-surface-container-hover {$form.role ===
+                  class="text-xs hover:bg-surface-hover {$form.role ===
                   value
-                    ? 'bg-surface-container-active'
+                    ? 'bg-surface-active'
                     : ''}"
                 >
                   <div class="flex flex-col">

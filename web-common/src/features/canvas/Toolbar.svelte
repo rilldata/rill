@@ -49,7 +49,7 @@
       portal=".dashboard-theme-boundary"
     >
       <DropdownMenu.Trigger
-        class="size-7 grid place-content-center bg-surface-container hover:brightness-[85%] active:brightness-75"
+        class="size-7 grid place-content-center bg-surface-subtle hover:brightness-[85%] active:brightness-75"
       >
         <ThreeDot size="16px" />
       </DropdownMenu.Trigger>

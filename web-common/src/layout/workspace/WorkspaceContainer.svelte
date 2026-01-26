@@ -9,7 +9,7 @@
 </script>
 
 <main
-  class="flex flex-col size-full overflow-hidden bg-surface-container"
+  class="flex flex-col size-full overflow-hidden bg-surface-subtle"
   bind:contentRect
 >
   {#if $$slots.header}

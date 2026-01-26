@@ -53,7 +53,7 @@
   .inner {
     will-change: width;
     @apply h-full flex-none;
-    @apply border bg-surface-container;
+    @apply border bg-surface-subtle;
     @apply overflow-y-auto overflow-x-hidden rounded-[2px];
   }
 </style>

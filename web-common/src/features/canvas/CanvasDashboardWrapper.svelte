@@ -35,7 +35,7 @@
     {#if filtersEnabled}
       <header
         role="presentation"
-        class="bg-surface-container border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
+        class="bg-surface-subtle border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
         on:click|self={onClick}
       >
         <CanvasFilters {canvasName} {maxWidth} {builder} />
@@ -45,7 +45,7 @@
     <div
       role="presentation"
       id="canvas-scroll-container"
-      class="p-2 flex flex-col items-center bg-surface-container select-none overflow-y-auto overflow-x-hidden"
+      class="p-2 flex flex-col items-center bg-surface-subtle select-none overflow-y-auto overflow-x-hidden"
       class:!cursor-grabbing={showGrabCursor}
       class:w-full={$dynamicHeight}
       class:size-full={!$dynamicHeight}

@@ -59,14 +59,15 @@
     --radius: 0.5rem;
 
     /* SEMANTIC VARIABLES */
+    --surface-base: var(--white);
+    --surface-subtle: var(--color-neutral-50);
     --surface-background: var(--white);
-    --surface-container: var(--color-neutral-50);
-    --surface-container-hover: var(--color-primary-50);
-    --surface-container-active: var(--color-primary-100);
-    --surface-elevated: var(--white);
+    --surface-hover: var(--color-primary-50);
+    --surface-active: var(--color-primary-100);
     --surface-overlay: var(--white);
     --surface-muted: var(--color-neutral-100);
-    --surface-card: var(--surface-container);
+
+    --surface-card: var(--surface-background);
 
     --fg-primary: var(--color-neutral-950);
     --fg-secondary: var(--color-gray-700);
@@ -274,14 +275,15 @@
     color-scheme: dark;
     color: var(--fg-primary);
 
-    --surface-background: var(--color-rill-gray-dark-50);
-    --surface-container: var(--color-rill-gray-dark-200);
-    --surface-container-hover: var(--color-rill-gray-dark-800);
-    --surface-container-active: var(--color-rill-gray-dark-500);
-    --surface-elevated: var(--color-rill-gray-dark-300);
+    --surface-base: var(--color-rill-gray-dark-50);
+    --surface-subtle: var(--color-rill-gray-dark-200);
+    --surface-background: var(--color-rill-gray-dark-300);
+    --surface-hover: var(--color-rill-gray-dark-800);
+    --surface-active: var(--color-rill-gray-dark-500);
     --surface-overlay: var(--color-rill-gray-dark-400);
     --surface-muted: var(--color-neutral-light-800);
-    --surface-card: var(--surface-container);
+
+    --surface-card: var(--surface-background);
 
     --fg-primary: var(--color-neutral-light-50);
     --fg-secondary: var(--color-gray-light-300);

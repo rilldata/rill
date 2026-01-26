@@ -154,7 +154,7 @@
         <div class="flex flex-col text-left">
           <div class="flex">
             <div
-              class="inline-flex flex-row items-center gap-x-1 text-sm font-medium text-fg-primary hover:bg-gray-100 rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
+              class="inline-flex flex-row items-center gap-x-1 text-sm font-medium text-fg-primary hover:bg-surface-hover rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
             >
               {#if accessType === "everyone"}
                 Everyone at {organization}

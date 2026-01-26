@@ -165,7 +165,7 @@
 
   :global(.wrapper > button) {
     @apply border text-fg-primary;
-    @apply px-2 flex items-center justify-center bg-surface-container;
+    @apply px-2 flex items-center justify-center bg-surface-subtle;
   }
 
   :global(.dark > .wrapper > button) {
@@ -184,7 +184,7 @@
   }
 
   :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-surface-container-hover cursor-pointer;
+    @apply bg-surface-hover cursor-pointer;
   }
 
   /* Doest apply to all instances except alert/report. So this seems unintentional

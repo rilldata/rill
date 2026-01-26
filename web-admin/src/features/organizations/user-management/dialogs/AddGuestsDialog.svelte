@@ -259,7 +259,7 @@
             <Dropdown.Trigger
               class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
                 ? 'bg-gray-200'
-                : 'hover:bg-gray-100'}"
+                : 'hover:bg-surface-hover'}"
             >
               <span>
                 {selectedProjectsLabel}
@@ -292,7 +292,7 @@
           <Dropdown.Trigger
             class="min-w-[180px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
               ? 'bg-gray-200'
-              : 'hover:bg-gray-100'}"
+              : 'hover:bg-surface-hover'}"
           >
             <span>{selectedRoleLabel}</span>
             {#if roleDropdownOpen}

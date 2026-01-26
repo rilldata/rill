@@ -76,7 +76,7 @@
 >
   <PopoverTrigger asChild let:builder>
     <button
-      class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-gray-100 w-fit"
+      class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit"
       {...getAttrs([builder])}
       use:builderActions={{ builders: [builder] }}
       class:w-24={!imageUrl}
@@ -91,11 +91,11 @@
       </div>
       {#if !open}
         <div
-          class="absolute -bottom-2 -right-2 rounded-2xl bg-surface-container group-hover:bg-surface-elevated w-6 h-6 px-1.5 py-[5px]"
+          class="absolute -bottom-2 -right-2 rounded-2xl bg-surface-subtle group-hover:bg-surface-hover w-6 h-6 px-1.5 py-[5px]"
         >
           <EditIcon
             size="16px"
-            className="text-fg-secondary group-hover:text-gray-50"
+            className="text-fg-secondary group-hover:text-fg-secondary"
           />
         </div>
       {/if}

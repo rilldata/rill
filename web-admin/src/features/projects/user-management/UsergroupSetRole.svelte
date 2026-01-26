@@ -85,8 +85,8 @@
 <DropdownMenu.Root bind:open={isOpen}>
   <DropdownMenu.Trigger
     class="flex flex-row gap-1 items-center rounded-sm mr-[10px] w-[72px] text-right {isOpen
-      ? 'bg-surface-container-active'
-      : 'hover:bg-surface-container-hover'} px-2 py-1"
+      ? 'bg-surface-active'
+      : 'hover:bg-surface-hover'} px-2 py-1"
   >
     {capitalize(group.roleName)}
     {#if isOpen}
@@ -99,7 +99,7 @@
     <DropdownMenu.Item
       class="font-normal flex flex-col items-start py-2 {group.roleName ===
       'admin'
-        ? 'bg-surface-container-active'
+        ? 'bg-surface-active'
         : ''}"
       on:click={() => handleSetRole(group.groupName, ProjectUserRoles.Admin)}
     >
@@ -111,7 +111,7 @@
     <DropdownMenu.Item
       class="font-normal flex flex-col items-start py-2 {group.roleName ===
       'editor'
-        ? 'bg-surface-container-active'
+        ? 'bg-surface-active'
         : ''}"
       on:click={() => handleSetRole(group.groupName, ProjectUserRoles.Editor)}
     >
@@ -123,7 +123,7 @@
     <DropdownMenu.Item
       class="font-normal flex flex-col items-start py-2 {group.roleName ===
       'viewer'
-        ? 'bg-surface-container-active'
+        ? 'bg-surface-active'
         : ''}"
       on:click={() => handleSetRole(group.groupName, ProjectUserRoles.Viewer)}
     >
@@ -134,7 +134,7 @@
     </DropdownMenu.Item>
     <DropdownMenu.Separator />
     <DropdownMenu.Item
-      class="font-normal flex items-center hover:bg-surface-container-hover"
+      class="font-normal flex items-center hover:bg-surface-hover"
       on:click={() => handleRemove(group.groupName)}
     >
       <span class="text-red-600">Remove</span>

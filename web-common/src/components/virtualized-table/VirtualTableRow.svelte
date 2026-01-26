@@ -80,7 +80,7 @@
 
 <style lang="postcss">
   td {
-    @apply truncate p-0 bg-surface-container;
+    @apply truncate p-0 bg-surface-base;
     height: var(--row-height);
   }
 
@@ -127,7 +127,7 @@
   td:not(:first-of-type):hover {
     background-color: color-mix(
       in oklab,
-      var(--surface-container-hover) calc(var(--tw-bg-opacity, 1) * 100%),
+      var(--surface-hover) calc(var(--tw-bg-opacity, 1) * 100%),
       transparent
     ) !important;
   }

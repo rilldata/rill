@@ -128,7 +128,7 @@
 
   .resource-list-item,
   .resource-list-item-empty {
-    @apply block w-full border border-gray-200;
+    @apply block w-full border bg-surface-background;
   }
 
   .resource-list-item.fixed-height {
@@ -153,6 +153,6 @@
 
   /* Hover effect on list items */
   .resource-list-item:hover {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 </style>

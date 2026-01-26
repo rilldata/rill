@@ -334,7 +334,7 @@
 
 <div class="relative w-full h-full" style={cssVarStyles}>
   <regular-table
-    class="w-full h-full tdd-table text-fg-muted bg-surface-background"
+    class="w-full h-full tdd-table text-fg-muted bg-surface-base"
     bind:this={table}
   />
 </div>

@@ -49,14 +49,14 @@
   }
 
   .toggle {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .toggle:hover {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .radio {
-    @apply h-fit bg-surface-container border p-0.5 rounded-[6px] flex;
+    @apply h-fit bg-surface-subtle border p-0.5 rounded-[6px] flex;
   }
 </style>

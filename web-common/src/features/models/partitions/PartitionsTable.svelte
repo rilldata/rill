@@ -305,7 +305,7 @@
   thead tr th {
     @apply border-t;
     @apply text-left font-semibold text-fg-secondary;
-    @apply sticky top-0 z-10 bg-surface-container;
+    @apply sticky top-0 z-10 bg-surface-subtle;
   }
   thead tr th:first-child {
     @apply border-l rounded-tl-sm;

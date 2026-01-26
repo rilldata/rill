@@ -178,7 +178,7 @@
     {#if hasValidHoveredPoints && offsetPosition}
       <div
         use:portal
-        class=" w-fit label text-[10px] font-semibold flex flex-col z-[1000] shadow-sm bg-surface-container text-fg-secondary -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
+        class=" w-fit label text-[10px] font-semibold flex flex-col z-[1000] shadow-sm bg-surface-subtle text-fg-secondary -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
         style:top="{clientPosition.y}px"
         style:left="{clientPosition.x + 10}px"
       >

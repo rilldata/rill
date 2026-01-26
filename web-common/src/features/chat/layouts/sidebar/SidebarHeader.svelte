@@ -35,7 +35,7 @@
       bgGray
       on:click={handleNewConversation}
     >
-      <PlusIcon className="text-fg-secondary" />
+      <PlusIcon className="text-fg-muted" />
     </IconButton>
 
     <ConversationHistoryMenu
@@ -45,7 +45,7 @@
     />
 
     <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
-      <Close className="text-fg-secondary" />
+      <Close className="text-fg-muted" />
     </IconButton>
   </div>
 </div>
@@ -56,7 +56,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem;
-    background: var(--surface-container);
+    background: var(--surface-subtle);
     font-weight: 500;
     font-size: 0.875rem;
     min-height: 1.5rem;

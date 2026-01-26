@@ -49,7 +49,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    background: #ffffff;
+  
     min-height: 0;
   }
 </style>

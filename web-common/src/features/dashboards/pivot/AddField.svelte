@@ -123,7 +123,7 @@
   button {
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
-    @apply bg-surface-container;
+    @apply bg-input border;
   }
 
   button.addBorder {
@@ -131,11 +131,11 @@
   }
 
   button:hover {
-    @apply bg-gray-100;
+    @apply bg-surface-hover;
   }
 
   button:active,
   .active {
-    @apply bg-gray-200;
+    @apply bg-surface-active;
   }
 </style>

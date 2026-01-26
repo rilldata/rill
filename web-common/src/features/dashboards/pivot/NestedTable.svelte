@@ -394,13 +394,13 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface-container table-fixed;
+    @apply bg-surface-subtle table-fixed;
   }
 
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface-container;
+    @apply z-30 bg-surface-subtle;
   }
 
   .with-row-dimension thead tr th:first-of-type .header-cell {
@@ -457,16 +457,16 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    @apply bg-surface-container;
+    @apply bg-surface-subtle;
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    @apply bg-surface-container;
+    @apply bg-surface-subtle;
   }
 
   .with-row-dimension tr:hover > td:first-of-type {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .with-row-dimension.with-col-dimension tr > th:first-of-type {
@@ -475,7 +475,7 @@
 
   /* The totals row */
   .with-totals-row tbody > tr:nth-of-type(2) {
-    @apply bg-surface-container sticky z-20;
+    @apply bg-surface-subtle sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }
@@ -497,7 +497,7 @@
 
   tr:hover,
   tr:hover .cell {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   tr:hover .active-cell {

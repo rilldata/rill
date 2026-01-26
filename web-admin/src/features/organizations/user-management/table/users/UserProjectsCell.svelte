@@ -40,7 +40,7 @@
     <Dropdown.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
         ? 'bg-gray-200'
-        : 'hover:bg-gray-100'} px-2 py-1"
+        : 'hover:bg-surface-hover'} px-2 py-1"
     >
       <span class="capitalize">
         {projectCount} Project{projectCount !== 1 ? "s" : ""}

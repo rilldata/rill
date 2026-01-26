@@ -12,7 +12,7 @@
 
   .handle {
     @apply absolute;
-    @apply border-gray-400 border bg-surface-container;
+    @apply border-gray-400 border bg-surface-subtle;
     @apply rounded h-1 w-8;
   }
 

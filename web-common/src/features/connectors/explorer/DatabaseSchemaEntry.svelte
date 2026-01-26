@@ -171,7 +171,7 @@
   }
 
   button:hover {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .message {

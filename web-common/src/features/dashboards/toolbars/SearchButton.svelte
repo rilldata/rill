@@ -30,7 +30,7 @@
     <Search bind:value {onSubmit} />
     <button
       on:click={_onClose}
-      class="p-1.5 rounded hover:bg-gray-100 transition-colors"
+      class="p-1.5 rounded hover:bg-surface-hover transition-colors"
     >
       <Close className="text-fg-secondary" />
     </button>

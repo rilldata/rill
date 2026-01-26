@@ -9,7 +9,7 @@
 
 <div class="header-cell" class:sorted>
   {#if type}
-    <DataTypeIcon suppressTooltip color={"text-fg-secondary"} {type} />
+    <DataTypeIcon suppressTooltip color={"text-fg-muted"} {type} />
   {/if}
 
   <p class="truncate w-full grow text-left">
@@ -22,6 +22,6 @@
 <style lang="postcss">
   .header-cell {
     @apply flex gap-x-2 px-4 items-center relative size-full;
-    @apply bg-surface-elevated font-bold;
+    @apply bg-surface-base font-bold text-fg-muted;
   }
 </style>

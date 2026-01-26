@@ -113,19 +113,19 @@
   }
 
   .dropdown-item:hover {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .dropdown-item.highlighted {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
     scroll-snap-align: start;
   }
 
   .dropdown-item.selected {
-    @apply bg-surface-container-active;
+    @apply bg-surface-active;
   }
 
   .dropdown-item.selected:hover {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 </style>

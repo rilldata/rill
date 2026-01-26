@@ -245,7 +245,7 @@
   }
 
   .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-surface-container size-full;
+    @apply absolute border-[12.5px] pointer-events-none border-surface-card size-full;
     z-index: 20;
   }
 

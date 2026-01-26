@@ -193,7 +193,7 @@
   }
 
   .open {
-    @apply bg-surface-container-active rounded-[2px] text-fg-primary;
+    @apply bg-surface-active rounded-[2px] text-fg-primary;
   }
 
   .graph-trigger {

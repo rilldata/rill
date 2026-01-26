@@ -38,7 +38,7 @@
 {disableHover || disabled
       ? ''
       : bgGray
-        ? 'hover:bg-gray-200'
+        ? 'hover:bg-surface-hover'
         : 'hover:bg-surface-background'}"
     class:bg-gray-100={active}
     style:width="{size}px"

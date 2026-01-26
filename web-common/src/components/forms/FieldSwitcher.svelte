@@ -24,7 +24,7 @@
   }
 
   button:hover:not(.selected) {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .option-wrapper {

@@ -687,7 +687,7 @@
 
       {#if totalSelected}
         <div
-          class="bg-surface-container rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
+          class="bg-surface-subtle rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
             {totalSelected}
@@ -901,7 +901,7 @@
   }
 
   .main-area {
-    @apply flex flex-col gap-y-4 size-full p-4 bg-surface-container border;
+    @apply flex flex-col gap-y-4 size-full p-4 bg-surface-background border;
     @apply flex-shrink overflow-hidden rounded-[2px] relative;
   }
 

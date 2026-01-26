@@ -94,8 +94,8 @@
 
 <li
   aria-label="{filePath} Nav Entry"
-  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-surface-container-hover"
-  class:bg-surface-container-active={isCurrentFile}
+  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-surface-hover"
+  class:bg-surface-active={isCurrentFile}
   class:opacity-50={$hasUnsavedChanges || $saving}
 >
   <a

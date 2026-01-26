@@ -142,7 +142,7 @@
   /* SECONDARY STYLES */
 
   .secondary {
-    @apply bg-input border border-accent-primary-action text-accent-primary-action;
+    @apply bg-transparent border border-accent-primary-action text-accent-primary-action;
   }
 
   .secondary.theme {
@@ -150,7 +150,7 @@
   }
 
   .secondary:hover:not(:disabled) {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .secondary:disabled {
@@ -164,7 +164,7 @@
   }
 
   .ghost:hover {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .ghost:disabled {
@@ -178,7 +178,7 @@
   }
 
   .tertiary:hover:not(:disabled) {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .tertiary.disabled {
@@ -199,28 +199,7 @@
     @apply opacity-50;
   }
 
-  /* SUBTLE STYLES */
 
-  .subtle {
-    @apply bg-primary-50 text-primary-700;
-  }
-
-  .subtle:hover:not(:disabled) {
-    @apply bg-primary-100;
-  }
-
-  .subtle:active,
-  .subtle.selected {
-    @apply bg-primary-200 text-primary-900;
-  }
-
-  .subtle.loading {
-    @apply bg-surface-background text-fg-secondary;
-  }
-
-  .subtle:disabled {
-    @apply text-fg-secondary/30 bg-surface-background;
-  }
 
   /* LINK STYLES */
 

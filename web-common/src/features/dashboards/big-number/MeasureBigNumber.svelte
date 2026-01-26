@@ -247,10 +247,14 @@
   }
 
   .shadow-grad:hover {
-    @apply shadow-md bg-gradient-to-b from-white to-gray-50 outline-1 outline;
+    @apply shadow-md outline-1 outline;
+    outline-color: color-mix(in oklab, var(--color-theme-500) calc(0.15 * 100%), transparent);
+
+    background: linear-gradient(to bottom, color-mix(in oklab, var(--white) calc(0.15 * 100%), transparent), 50%, color-mix(in oklab, var(--color-theme-300) calc(.1 * 100%), transparent));
   }
 
-  :global(.dark) .shadow-grad:hover {
-    @apply shadow-md bg-gradient-to-b from-[#363636] to-[#1F1F1F] outline-1 outline;
+:global(.dark) .shadow-grad:hover {
+    @apply shadow-md  outline-1 outline outline-[#FFFFFF26];
+    background: linear-gradient(to bottom, color-mix(in oklab, var(--white) calc(0.1 * 100%), transparent), 50%, color-mix(in oklab, var(--white) calc(0.05 * 100%), transparent));
   }
 </style>

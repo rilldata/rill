@@ -130,14 +130,14 @@
 
 <ThemeProvider theme={$theme}>
   <article
-    class="flex flex-col overflow-y-hidden bg-surface-elevated"
+    class="flex flex-col overflow-y-hidden bg-surface-background"
     bind:clientWidth={exploreContainerWidth}
     class:w-full={$dynamicHeight}
     class:size-full={!$dynamicHeight}
   >
     <div
       id="header"
-      class="border-b w-fit min-w-full flex flex-col bg-surface-container slide"
+      class="border-b w-fit min-w-full flex flex-col bg-surface-subtle slide"
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}

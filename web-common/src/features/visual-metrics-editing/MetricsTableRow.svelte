@@ -166,7 +166,7 @@
   .editing-controls {
     height: 39px;
     width: 192px;
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
     @apply gap-x-2.5 px-4 py-2 flex items-center justify-center absolute top-0  z-50;
   }
 
@@ -175,7 +175,7 @@
   }
 
   tr {
-    @apply bg-surface-container;
+    @apply bg-surface-background;
   }
 
   .dragging {
@@ -183,7 +183,7 @@
   }
 
   tr:hover:not(.editing) {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   tr:hover.selected {
@@ -195,7 +195,7 @@
   }
 
   .editing {
-    @apply bg-surface-container-active;
+    @apply bg-surface-active;
   }
 
   .selected {

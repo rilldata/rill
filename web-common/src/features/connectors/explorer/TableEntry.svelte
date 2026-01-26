@@ -145,7 +145,7 @@
   }
 
   .table-entry-header:hover {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   .open {

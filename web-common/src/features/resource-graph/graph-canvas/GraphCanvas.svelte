@@ -377,7 +377,7 @@
   }
 
   .expand-btn {
-    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border bg-surface-container text-sm text-fg-secondary;
+    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border bg-surface-subtle text-sm text-fg-secondary;
     line-height: 1.25rem;
   }
 

@@ -95,13 +95,14 @@ export default {
         },
         surface: {
           DEFAULT: oklabString("surface"),
+          base: oklabString("surface-base"),
+          subtle: oklabString("surface-subtle"),
           background: oklabString("surface-background"),
-          container: oklabString("surface-container"),
-          "container-hover": oklabString("surface-container-hover"),
-          "container-active": oklabString("surface-container-active"),
-          elevated: oklabString("surface-elevated"),
+          hover: oklabString("surface-hover"),
+          active: oklabString("surface-active"),
           overlay: oklabString("surface-overlay"),
           muted: oklabString("surface-muted"),
+          card: oklabString("surface-card"),
         },
         fg: {
           DEFAULT: oklabString("fg-primary"),

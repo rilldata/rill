@@ -95,14 +95,14 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage} class="bg-surface-background">
+<header class:border-b={!onDeployPage} class="bg-surface-base">
   {#if !onDeployPage}
     <a href="/">
       <Rill />
     </a>
 
     <span
-      class="rounded-full px-2 border text-fg-primary bg-surface-background"
+      class="rounded-full px-2 border text-fg-primary bg-surface-base"
     >
       {mode}
     </span>

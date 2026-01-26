@@ -211,7 +211,7 @@
 
 <style lang="postcss">
   .node {
-    @apply relative border flex items-center gap-x-3 rounded-lg border bg-surface-container px-3 py-2 cursor-pointer shadow-sm;
+    @apply relative border flex items-center gap-x-3 rounded-lg border bg-surface-subtle px-3 py-2 cursor-pointer shadow-sm;
     border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
     transition:
       box-shadow 120ms ease,

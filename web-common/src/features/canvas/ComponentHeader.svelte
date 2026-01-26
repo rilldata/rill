@@ -39,7 +39,7 @@
 {#if title || description}
   <div
     bind:this={container}
-    class="component-header-container w-full h-fit flex flex-col bg-surface-container px-4 pt-2 pb-1 items-start {wide
+    class="component-header-container w-full h-fit flex flex-col bg-surface-subtle px-4 pt-2 pb-1 items-start {wide
       ? 'wide'
       : ''}"
   >

@@ -4,7 +4,7 @@
 
 <div
   style:font-size="9px"
-  class="inline-flex items-center justify-center rounded-[2px] text-fg-primary bg-surface-elevated"
+  class="inline-flex items-center justify-center rounded-[2px] text-fg-primary bg-surface-overlay"
   style="height: 15px; width: 15px;"
 >
   {organization.charAt(0).toUpperCase()}

@@ -134,7 +134,7 @@
         {/if}
       </div>
       <div
-        class="flex gap-x-1 items-center h-full bg-surface-container rounded-full"
+        class="flex gap-x-1 items-center h-full bg-surface-subtle rounded-full"
         class:hidden={disableAutoSave || forceDisableAutoSave}
       >
         <Switch
@@ -194,10 +194,10 @@
 
   footer {
     @apply justify-between items-center flex flex-none;
-    @apply h-10 p-2 w-full rounded-b-sm border-t bg-surface-container;
+    @apply h-10 p-2 w-full rounded-b-sm border-t bg-surface-subtle;
   }
 
   section {
-    @apply size-full flex-col bg-surface-container flex overflow-hidden relative;
+    @apply size-full flex-col bg-surface-subtle flex overflow-hidden relative;
   }
 </style>

@@ -359,7 +359,7 @@
             {identifier}
             <button
               on:click={() => removeSelected(identifier)}
-              class="ml-1 rounded hover:bg-surface-container-hover transition-colors"
+              class="ml-1 rounded hover:bg-surface-hover transition-colors"
             >
               <Close size="12px" />
             </button>

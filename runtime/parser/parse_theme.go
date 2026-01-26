@@ -24,11 +24,12 @@ type ThemeColors struct {
 	Variables map[string]string `yaml:",inline"`
 }
 
+
 // deprecatedCSSVariables maps deprecated variable names to their new semantic equivalents.
 // Old themes using these names will continue to work through automatic mapping.
 var deprecatedCSSVariables = map[string][]string{
-	"surface":           {"surface-background", "surface-elevated"},
-	"background":        {"surface-container"},
+	"surface":           {"surface-background", "surface-base"},
+	"background":        {"surface-subtle"},
 	"card":              {"surface-card"},
 	"card-foreground":   {"fg-secondary"},
 	"muted":             {"surface-muted"},
@@ -44,15 +45,16 @@ var allowedCSSVariables = map[string]bool{
 	"primary":   true,
 	"secondary": true,
 
+	
 	// Surface semantic variables
-	"surface-background":       true,
-	"surface-container":        true,
-	"surface-container-hover":  true,
-	"surface-container-active": true,
-	"surface-elevated":         true,
-	"surface-overlay":          true,
-	"surface-muted":            true,
-	"surface-card":             true,
+	"surface-base":       true,
+	"surface-subtle":     true,
+	"surface-background": true,
+	"surface-hover":      true,
+	"surface-active":     true,
+	"surface-overlay":    true,
+	"surface-muted":      true,
+	"surface-card":       true,
 
 	// Foreground semantic variables
 	"fg-primary":   true,

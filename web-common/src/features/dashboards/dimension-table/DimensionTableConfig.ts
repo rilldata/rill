@@ -17,5 +17,5 @@ export const DIMENSION_TABLE_CONFIG: DimensionTableConfig = {
   defaultFontWeightClass: "font-normal",
   table: "DimensionTable",
   headerBgColorClass: "bg-transparent",
-  headerBgColorHighlightClass: "bg-surface-container-hover",
+  headerBgColorHighlightClass: "bg-surface-hover",
 };

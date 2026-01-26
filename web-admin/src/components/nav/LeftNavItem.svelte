@@ -16,10 +16,10 @@
   }
 
   .selected {
-    @apply bg-surface-container-active;
+    @apply bg-surface-active;
   }
 
   a:hover {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 </style>

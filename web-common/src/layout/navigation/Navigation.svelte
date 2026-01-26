@@ -72,7 +72,7 @@
 />
 
 <nav
-  class="sidebar bg-surface-container"
+  class="sidebar bg-surface-subtle"
   class:hide={!$navigationOpen}
   class:resizing
   style:width="{width}px"

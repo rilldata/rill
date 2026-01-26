@@ -18,7 +18,7 @@
   {:else if message}
     <Tooltip distance={8}>
       <button
-        class="hover:bg-gray-100 rounded p-1 active:bg-gray-200 group"
+        class="hover:bg-surface-hover rounded p-1 active:bg-gray-200 group"
         on:click={() =>
           copyToClipboard(message, "Copied error message to clipboard")}
       >

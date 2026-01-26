@@ -109,7 +109,7 @@
       <h3>Recent</h3>
       {#if recentIANAs.length}
         <button
-          class="text-[11px] text-fg-secondary hover:bg-gray-100 p-1 rounded-sm h-fit"
+          class="text-[11px] text-fg-secondary hover:bg-surface-hover p-1 rounded-sm h-fit"
           on:click={() => {
             recents.set([]);
           }}

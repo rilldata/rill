@@ -72,7 +72,7 @@
 
   /** classes for the native select element */
   export const native_select =
-    "rounded border border-6 border-transparent hover:bg-gray-200";
+    "rounded border border-6 border-transparent hover:bg-surface-hover";
 </script>
 
 <!-- pl-16 -->

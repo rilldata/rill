@@ -203,7 +203,7 @@
 
 <style lang="postcss">
   button {
-    @apply border rounded-[2px] bg-surface-container pointer-events-auto;
+    @apply border rounded-[2px] bg-surface-subtle pointer-events-auto;
     @apply absolute left-1/2 -top-8 -translate-x-1/2 z-50;
   }
 

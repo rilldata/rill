@@ -1,5 +1,6 @@
 <script lang="ts">
   import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/utils.ts";
+    import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
   import BookmarkFilled from "@rilldata/web-common/components/icons/BookmarkFilled.svelte";
   import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";
@@ -10,7 +11,8 @@
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { builderActions, getAttrs } from "bits-ui";
-
+  import { Pencil} from "lucide-svelte"
+ 
   export let bookmark: BookmarkEntry;
   export let readOnly = false;
 
@@ -98,26 +100,28 @@
       <div class="flex flex-row justify-end gap-x-2 items-start w-20">
         {#if hovered}
           {#if onEdit}
-            <button
-              on:click={editBookmark}
-              class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-fg-secondary hover:text-fg-secondary"
+            <Button
+            square
+            type="tertiary"
+              onClick={editBookmark}
             >
-              <EditIcon size="16px" />
-            </button>
+            <Pencil size="16px"/>
+          
+            </Button>
           {/if}
           <Tooltip.Root portal="body">
-            <Tooltip.Trigger asChild let:builder>
-              <button
-                on:click={deleteBookmark}
-                class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-fg-secondary hover:text-fg-secondary"
+            <Tooltip.Trigger >
+              <Button
+                square
+                type="tertiary"
+                onClick={deleteBookmark}
                 disabled={disableDelete}
-                aria-disabled={disableDelete}
-                aria-label="Delete bookmark"
-                {...getAttrs([builder])}
-                use:builderActions={{ builders: [builder] }}
+                
+                label="Delete bookmark"
+          
               >
                 <Trash size="16px" />
-              </button>
+              </Button>
             </Tooltip.Trigger>
             {#if showDeleteTooltip}
               <Tooltip.Content side="bottom">

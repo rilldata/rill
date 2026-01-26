@@ -29,7 +29,7 @@
 </script>
 
 <div
-  class="flex flex-col pt-3 pb-3 gap-y-1 bg-surface-elevated border-t sticky bottom-0"
+  class="flex flex-col pt-3 pb-3 gap-y-1 bg-surface-overlay border-t sticky bottom-0"
 >
   {#each lineItems as lineItem, i (i)}
     <a href={lineItem.href} target="_blank" rel="noreferrer noopener"

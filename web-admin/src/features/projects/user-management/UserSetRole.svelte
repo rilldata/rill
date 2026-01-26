@@ -119,7 +119,7 @@
     <DropdownMenu.Trigger
       class="flex flex-row gap-1 items-center rounded-sm mr-[10px] w-[72px] text-right {isOpen
         ? 'bg-gray-200'
-        : 'hover:bg-gray-100'} px-2 py-1"
+        : 'hover:bg-surface-hover'} px-2 py-1"
     >
       {capitalize(getUserRole(user))}
       {#if !(!manageProjectAdmins && getUserRole(user) === ProjectUserRoles.Admin)}

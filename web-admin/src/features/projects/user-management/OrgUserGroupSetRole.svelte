@@ -116,7 +116,7 @@
   <DropdownMenu.Trigger
     class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] w-[72px] text-right {isOpen
       ? 'bg-gray-200'
-      : 'hover:bg-gray-100'} px-2 py-1"
+      : 'hover:bg-surface-hover'} px-2 py-1"
     disabled={!manageOrgAdmins && group.roleName === OrgUserRoles.Admin}
   >
     {group.roleName ? capitalize(group.roleName) : "-"}

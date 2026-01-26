@@ -124,7 +124,7 @@
           <DropdownMenu.Root>
             <DropdownMenu.Trigger
               class={`min-w-fit flex flex-row gap-1 items-center rounded-sm border border-gray-300 ${
-                isDropdownOpen ? "bg-gray-200" : "hover:bg-gray-100"
+                isDropdownOpen ? "bg-gray-200" : "hover:bg-surface-hover"
               } px-2 py-1 ${
                 projectVariables.length === 0
                   ? "opacity-50 cursor-not-allowed pointer-events-none"

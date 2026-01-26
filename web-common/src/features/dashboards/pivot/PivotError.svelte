@@ -66,7 +66,7 @@
         {truncateMessage(error.message ?? "")}
       </span>
       <button
-        class="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+        class="flex-shrink-0 p-1 hover:bg-surface-hover rounded transition-colors cursor-pointer"
         on:click={() => handleCopyError(error)}
         title="Copy full error message"
         aria-label="Copy error message to clipboard"

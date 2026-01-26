@@ -172,12 +172,12 @@ type Colors = {
   secondary?: Color;
 
   // Surface semantic variables
+  "surface-base"?: Color;
   "surface-background"?: Color;
-  "surface-container"?: Color;
-  "surface-container-hover"?: Color;
-  "surface-container-active"?: Color;
-  "surface-elevated"?: Color;
+  "surface-hover"?: Color;
+  "surface-active"?: Color;
   "surface-overlay"?: Color;
+  "surface-subtle"?: Color;
   "surface-muted"?: Color;
   "surface-card"?: Color;
 

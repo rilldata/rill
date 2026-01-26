@@ -140,7 +140,7 @@
 
   <!-- NOTE: 52px * 4 for 208px to show scroller -->
   <Combobox.Content
-    class="w-full rounded-sm border border-muted bg-surface-container p-[6px] shadow-md outline-none"
+    class="w-full rounded-sm border border-muted bg-surface-subtle p-[6px] shadow-md outline-none"
     sideOffset={8}
   >
     <div

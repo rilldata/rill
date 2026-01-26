@@ -30,7 +30,7 @@
       use:builder.action
       {...builder}
       aria-label="Show conversations"
-      class="grid place-items-center text-fg-secondary hover:bg-gray-200 w-6 h-6"
+      class="grid place-items-center text-fg-muted hover:bg-surface-hover w-6 h-6"
       style="font-size: 18px;"
     >
       <HistoryIcon size="1em" />

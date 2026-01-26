@@ -250,13 +250,13 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface-container table-fixed;
+    @apply bg-surface-subtle table-fixed;
   }
 
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface-container;
+    @apply z-30 bg-surface-subtle;
   }
 
   tbody .cell {
@@ -283,7 +283,7 @@
   }
 
   .header-cell {
-    @apply px-2 bg-surface-container size-full;
+    @apply px-2 bg-surface-subtle size-full;
     @apply flex items-center gap-x-1 w-full truncate;
     @apply text-fg-primary font-medium;
     height: var(--header-height);
@@ -299,7 +299,7 @@
 
   /* The totals row */
   .with-measure tbody > tr:nth-of-type(2) {
-    @apply bg-surface-container sticky z-20;
+    @apply bg-surface-subtle sticky z-20;
     top: var(--total-header-height);
   }
 
@@ -310,7 +310,7 @@
 
   tr:hover,
   tr:hover .cell {
-    @apply bg-surface-container-hover;
+    @apply bg-surface-hover;
   }
 
   tr:hover .active-cell {

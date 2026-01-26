@@ -165,7 +165,7 @@
         {#each virtualRows as virtualRow}
           {@const row = rows[virtualRow.index]}
           <div
-            class="row {rowPadding} absolute top-0 left-0 w-full"
+            class="row {rowPadding} absolute top-0 left-0 w-full "
             style="transform: translateY({virtualRow.start}px);"
           >
             {#each row.getVisibleCells() as cell (cell.id)}

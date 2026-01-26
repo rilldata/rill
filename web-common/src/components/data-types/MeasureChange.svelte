@@ -6,6 +6,7 @@
   export let inTable = false;
   export let customStyle = "";
   export let value: string | number | undefined | null | NumberParts;
+  export let color = "!text-fg-primary"
 
   let isNull = false;
   let isValueNegative = false;
@@ -30,6 +31,7 @@
 
 <Base
   {isNull}
+  {color}
   classes="ui-copy-number w-full font-normal {customStyle} {inTable
     ? 'text-right'
     : ''}"

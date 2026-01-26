@@ -51,7 +51,7 @@
 
 <style lang="postcss">
   pre {
-    @apply bg-surface-container;
+    @apply bg-surface-subtle;
     border-radius: 4px;
     padding: 1em;
     overflow: auto;

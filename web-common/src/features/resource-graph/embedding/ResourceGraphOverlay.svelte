@@ -165,7 +165,7 @@
   }
 
   .graph-overlay {
-    @apply bg-surface-container border border-gray-200 rounded-xl shadow-2xl overflow-hidden;
+    @apply bg-surface-subtle border border-gray-200 rounded-xl shadow-2xl overflow-hidden;
     @apply flex flex-col;
     width: min(1100px, 90vw);
     height: min(80vh, 760px);

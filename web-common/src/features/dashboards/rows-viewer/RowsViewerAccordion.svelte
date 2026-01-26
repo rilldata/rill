@@ -163,7 +163,7 @@
   <div class="bar">
     <button
       aria-label="Toggle rows viewer"
-      class="text-xs text-fg-muted rounded-sm hover:bg-surface-container h-6 px-1.5 py-px flex items-center gap-1"
+      class="text-xs text-fg-muted rounded-sm hover:bg-surface-subtle h-6 px-1.5 py-px flex items-center gap-1"
       on:click={toggle}
     >
       <span class:rotate-180={isOpen}>
@@ -192,6 +192,6 @@
 
 <style lang="postcss">
   .bar {
-    @apply flex items-center px-2 h-7 w-full bg-surface-background border-t;
+    @apply flex items-center px-2 h-7 w-full bg-surface-base border-t;
   }
 </style>
