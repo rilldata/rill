@@ -2,13 +2,14 @@ import { writable } from "svelte/store";
 
 interface CellInspectorState {
   isOpen: boolean;
-  value: string | null;
+  // undefined = no value set yet, null = cell contains null, string = cell value (including empty string)
+  value: string | null | undefined;
 }
 
 function createCellInspectorStore() {
   const { subscribe, update } = writable<CellInspectorState>({
     isOpen: false,
-    value: "",
+    value: undefined,
   });
 
   return {
@@ -36,10 +37,10 @@ function createCellInspectorStore() {
         isOpen: !state.isOpen,
         // When opening: prefer store's existing value (from hover) if set, fall back to passed value
         // When closing: keep the current value
-        // Note: check for empty string (initial state) rather than nullish, to preserve null values
+        // undefined means no value was set via hover, so fall back to passed value
         value: state.isOpen
           ? state.value
-          : state.value !== ""
+          : state.value !== undefined
             ? state.value
             : value,
       })),
