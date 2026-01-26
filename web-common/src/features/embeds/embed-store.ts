@@ -47,12 +47,7 @@ export class EmbedStore {
     this.navigationEnabled = url.searchParams.get("navigation") === "true";
     this.theme = url.searchParams.get("theme");
     this.themeMode = url.searchParams.get("theme_mode");
-    // Fallback for http only dev environments
-    this.embedId = `embed-${
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : guidGenerator()
-    }`;
+    this.embedId = `embed-${guidGenerator()}`;
 
     if (!this.instanceId) {
       this.missingRequireParams.push("instance_id");

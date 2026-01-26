@@ -149,17 +149,12 @@ export default function initEmbedPublicAPI(): () => void {
     AI_PANE_CHANGE_THROTTLE_TIMEOUT,
     AI_PANE_CHANGE_THROTTLE_TIMEOUT,
   );
-  let previousAiPaneState = get(chatOpen);
   const aiPaneUnsubscribe = chatOpen.subscribe((isOpen) => {
-    // Only emit if the state actually changed
-    if (isOpen !== previousAiPaneState) {
-      previousAiPaneState = isOpen;
       aiPaneChangeThrottler.throttle(() => {
         emitNotification("aiPaneChanged", {
           open: isOpen,
         });
       });
-    }
   });
 
   return () => {
