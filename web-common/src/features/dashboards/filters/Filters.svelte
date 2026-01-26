@@ -76,7 +76,7 @@
       filters: { clearAllFilters, setTemporaryFilterName },
     },
     selectors: {
-      dimensions: { allDimensions },
+      dimensions: { allDimensions, timeDimensions },
       dimensionFilters: {
         dimensionHasFilter,
         getDimensionFilterItems,
@@ -158,7 +158,9 @@
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
-  $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
+  $: ({ whereFilter, selectedTimeDimension } = $dashboardStore);
+
+  $: isComplexFilter = isExpressionUnsupported(whereFilter);
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
@@ -184,6 +186,15 @@
       end: selectedTimeRange.end,
     };
 
+  $: primaryTimeDimension = metricsViewSpec.timeDimension;
+
+  $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
+    return {
+      value: timeDim.name!,
+      label: timeDim.name!,
+    };
+  });
+
   $: maybeMinDate = allTimeRange?.start
     ? DateTime.fromJSDate(allTimeRange.start)
     : undefined;
@@ -204,6 +215,39 @@
       removeMeasureFilter(oldDimension, measureName);
     }
     setMeasureFilter(dimension, filter);
+  }
+
+  async function onTimeDimensionSelect(column: string) {
+    // Capture time range name before any state changes
+    const timeRangeName = selectedTimeRange?.name;
+
+    await queryClient.cancelQueries({
+      predicate: (query) =>
+        isMetricsViewQuery(query.queryHash, metricsViewName),
+    });
+
+    metricsExplorerStore.setTimeDimension($exploreName, column);
+
+    // Re-resolve the time range with the new time dimension
+    if (!timeRangeName) return;
+
+    const { interval, grain } = await deriveInterval(
+      timeRangeName,
+      metricsViewName,
+      activeTimeZone,
+      column,
+    );
+
+    if (interval.isValid) {
+      const validInterval = interval as Interval<true>;
+      const baseTimeRange: TimeRange = {
+        name: timeRangeName,
+        start: validInterval.start.toJSDate(),
+        end: validInterval.end.toJSDate(),
+      };
+
+      selectRange(baseTimeRange, grain);
+    }
   }
 
   function onPan(direction: "left" | "right") {
@@ -251,9 +295,9 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-
       metricsViewName,
       activeTimeZone,
+      selectedTimeDimension,
     );
 
     if (interval.isValid) {
@@ -396,9 +440,13 @@
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
+          {primaryTimeDimension}
+          {selectedTimeDimension}
           {showDefaultItem}
+          timeDimensions={timeDimensionOptions}
           watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
+          {onTimeDimensionSelect}
           {onSelectRange}
           {onTimeGrainSelect}
           {onSelectTimeZone}
@@ -445,7 +493,7 @@
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
       {#if isComplexFilter}
-        <AdvancedFilter advancedFilter={$dashboardStore.whereFilter} />
+        <AdvancedFilter advancedFilter={whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
@@ -465,6 +513,7 @@
               {readOnly}
               {timeStart}
               {timeEnd}
+              timeDimension={selectedTimeDimension}
               {timeControlsReady}
               removeDimensionFilter={async (name) =>
                 removeDimensionFilter(name)}

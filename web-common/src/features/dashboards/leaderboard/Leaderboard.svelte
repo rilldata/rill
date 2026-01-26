@@ -190,8 +190,7 @@
     {
       measures: leaderboardMeasureNames.map((name) => ({ name })),
       where,
-      timeStart: timeRange.start,
-      timeEnd: timeRange.end,
+      timeRange,
     },
     {
       query: {
