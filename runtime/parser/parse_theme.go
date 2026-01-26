@@ -24,7 +24,6 @@ type ThemeColors struct {
 	Variables map[string]string `yaml:",inline"`
 }
 
-
 // deprecatedCSSVariables maps deprecated variable names to their new semantic equivalents.
 // Old themes using these names will continue to work through automatic mapping.
 var deprecatedCSSVariables = map[string][]string{
@@ -45,7 +44,6 @@ var allowedCSSVariables = map[string]bool{
 	"primary":   true,
 	"secondary": true,
 
-	
 	// Surface semantic variables
 	"surface-base":       true,
 	"surface-subtle":     true,
