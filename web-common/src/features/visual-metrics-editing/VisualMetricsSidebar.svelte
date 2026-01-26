@@ -478,7 +478,7 @@
       </Alert.Description>
     </Alert.Header>
     <Alert.Footer>
-      <Button type="plain" onClick={cancelTypeChange}>Cancel</Button>
+      <Button type="tertiary" onClick={cancelTypeChange}>Cancel</Button>
       <Button type="primary" onClick={confirmTypeChange}>Confirm</Button>
     </Alert.Footer>
   </Alert.Content>
