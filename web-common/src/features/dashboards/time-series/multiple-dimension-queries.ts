@@ -142,8 +142,11 @@ export function getDimensionValuesForComparison(
                 ),
                 undefined,
               ),
-              timeStart: timeControls.timeStart,
-              timeEnd: timeControls.timeEnd,
+              timeRange: {
+                start: timeControls.timeStart,
+                end: timeControls.timeEnd,
+                timeDimension: dashboardStore.selectedTimeDimension,
+              },
               sort: [
                 {
                   desc:
@@ -244,7 +247,8 @@ function getAggregationQueryForTopList(
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
       const timeZone = dashboardStore?.selectedTimezone;
-      const timeDimension = timeStore?.timeDimension;
+      const timeDimension =
+        dashboardStore.selectedTimeDimension || timeStore?.timeDimension;
       const topListValues = dimensionValues?.values || [];
 
       if (!topListValues.length || !dimensionName) return;
@@ -256,6 +260,18 @@ function getAggregationQueryForTopList(
         createInExpression(dimensionName, topListValues),
       );
 
+      // Use timeRange with timeDimension instead of timeStart/timeEnd
+      // to ensure filtering uses the correct time dimension
+      const timeRange = {
+        start: isTimeComparison
+          ? timeStore?.comparisonAdjustedStart
+          : timeStore?.adjustedStart,
+        end: isTimeComparison
+          ? timeStore?.comparisonAdjustedEnd
+          : timeStore?.adjustedEnd,
+        timeDimension: dashboardStore.selectedTimeDimension,
+      };
+
       return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
@@ -266,12 +282,7 @@ function getAggregationQueryForTopList(
             { name: timeDimension, timeGrain, timeZone },
           ],
           where: sanitiseExpression(updatedFilter, undefined),
-          timeStart: isTimeComparison
-            ? timeStore?.comparisonAdjustedStart
-            : timeStore?.adjustedStart,
-          timeEnd: isTimeComparison
-            ? timeStore?.comparisonAdjustedEnd
-            : timeStore?.adjustedEnd,
+          timeRange,
           sort: [
             {
               desc: dashboardStore.sortDirection === SortDirection.DESCENDING,
@@ -326,7 +337,8 @@ export function getDimensionValueTimeSeries(
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
       const timeZone = dashboardStore?.selectedTimezone;
-      const timeDimension = timeStore?.timeDimension;
+      const timeDimension =
+        dashboardStore.selectedTimeDimension || timeStore?.timeDimension;
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
       const includeTimeComparisonForDimension = Boolean(
