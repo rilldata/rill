@@ -78,16 +78,16 @@
         shift: () => shiftClickHandler(value),
       })}
       on:pointerover={() => {
-        if (value?.toString) {
-          // Always update the value in the store, but don't change visibility
-          cellInspectorStore.updateValue(value.toString());
-        }
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(
+          value === null || value === undefined ? null : value.toString(),
+        );
       }}
       on:focus={() => {
-        if (value?.toString) {
-          // Always update the value in the store, but don't change visibility
-          cellInspectorStore.updateValue(value.toString());
-        }
+        // Always update the value in the store, but don't change visibility
+        cellInspectorStore.updateValue(
+          value === null || value === undefined ? null : value.toString(),
+        );
       }}
       on:mouseleave={() => (tooltipActive = false)}
       style:background

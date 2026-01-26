@@ -16,17 +16,17 @@
     | undefined;
 
   function handleMouseOver() {
-    if (value !== undefined && value !== null) {
-      // Always update the value in the store, but don't change visibility
-      cellInspectorStore.updateValue(value.toString());
-    }
+    // Always update the value in the store, but don't change visibility
+    cellInspectorStore.updateValue(
+      value === null || value === undefined ? null : value.toString(),
+    );
   }
 
   function handleFocus() {
-    if (value !== undefined && value !== null) {
-      // Always update the value in the store, but don't change visibility
-      cellInspectorStore.updateValue(value.toString());
-    }
+    // Always update the value in the store, but don't change visibility
+    cellInspectorStore.updateValue(
+      value === null || value === undefined ? null : value.toString(),
+    );
   }
 </script>
 

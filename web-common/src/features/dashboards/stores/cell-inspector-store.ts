@@ -2,7 +2,7 @@ import { writable } from "svelte/store";
 
 interface CellInspectorState {
   isOpen: boolean;
-  value: string;
+  value: string | null;
 }
 
 function createCellInspectorStore() {
@@ -13,7 +13,7 @@ function createCellInspectorStore() {
 
   return {
     subscribe,
-    open: (value: string) =>
+    open: (value: string | null) =>
       update((state) => ({
         ...state,
         isOpen: true,
@@ -25,18 +25,18 @@ function createCellInspectorStore() {
         isOpen: false,
       })),
     // Update the value without changing visibility
-    updateValue: (value: string) =>
+    updateValue: (value: string | null) =>
       update((state) => ({
         ...state,
         value,
       })),
-    toggle: (value: string) =>
+    toggle: (value: string | null) =>
       update((state) => ({
         ...state,
         isOpen: !state.isOpen,
         // When opening: prefer store's existing value (from hover) if set, fall back to passed value
         // When closing: keep the current value
-        value: state.isOpen ? state.value : state.value || value,
+        value: state.isOpen ? state.value : state.value ?? value,
       })),
   };
 }

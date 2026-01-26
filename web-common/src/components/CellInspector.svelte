@@ -21,7 +21,8 @@
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
     isOpen = state.isOpen;
-    if (state.value && state.isOpen && !isLocked) {
+    // Update value when open and not locked, including null values
+    if (state.isOpen && !isLocked && state.value !== "") {
       value = state.value;
     }
   });
@@ -175,7 +176,7 @@
         class:items-center={!isJson}
       >
         {#if value === null}
-          <span class="text-sm text-gray-500 italic">No value</span>
+          <span class="text-sm text-gray-500 italic">null</span>
         {:else}
           <span
             class="whitespace-pre-wrap break-words text-sm text-gray-800 w-full"

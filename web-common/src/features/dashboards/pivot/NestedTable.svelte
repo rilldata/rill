@@ -348,17 +348,17 @@
             class:totals-column={i > 0 && i <= measureCount}
             on:mouseover={() => {
               const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
+              // Always update the value in the store, but don't change visibility
+              cellInspectorStore.updateValue(
+                value === null || value === undefined ? null : String(value),
+              );
             }}
             on:focus={() => {
               const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
+              // Always update the value in the store, but don't change visibility
+              cellInspectorStore.updateValue(
+                value === null || value === undefined ? null : String(value),
+              );
             }}
           >
             {#if result?.component && result?.props}

@@ -89,29 +89,37 @@
   function handleBigNumberMouseOver() {
     const displayValue =
       hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
-    if (displayValue !== undefined && displayValue !== null) {
-      cellInspectorStore.updateValue(displayValue.toString());
-    }
+    cellInspectorStore.updateValue(
+      displayValue === null || displayValue === undefined
+        ? null
+        : displayValue.toString(),
+    );
   }
 
   function handleBigNumberFocus() {
     const displayValue =
       hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
-    if (displayValue !== undefined && displayValue !== null) {
-      cellInspectorStore.updateValue(displayValue.toString());
-    }
+    cellInspectorStore.updateValue(
+      displayValue === null || displayValue === undefined
+        ? null
+        : displayValue.toString(),
+    );
   }
 
   function handleComparisonMouseOver() {
-    if (comparisonVal !== undefined && comparisonVal !== null) {
-      cellInspectorStore.updateValue(comparisonVal.toString());
-    }
+    cellInspectorStore.updateValue(
+      comparisonVal === null || comparisonVal === undefined
+        ? null
+        : comparisonVal.toString(),
+    );
   }
 
   function handleComparisonFocus() {
-    if (comparisonVal !== undefined && comparisonVal !== null) {
-      cellInspectorStore.updateValue(comparisonVal.toString());
-    }
+    cellInspectorStore.updateValue(
+      comparisonVal === null || comparisonVal === undefined
+        ? null
+        : comparisonVal.toString(),
+    );
   }
 </script>
 
