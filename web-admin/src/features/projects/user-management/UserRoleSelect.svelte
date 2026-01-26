@@ -43,8 +43,7 @@
     {#each PROJECT_ROLES_OPTIONS as { value, label, description } (value)}
       <DropdownMenuItem
         on:click={() => onSelect(value)}
-        class="text-xs hover:bg-surface-hover {selected?.value ===
-        value
+        class="text-xs hover:bg-surface-hover {selected?.value === value
           ? 'bg-surface-active'
           : ''}"
       >

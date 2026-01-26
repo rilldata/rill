@@ -6,7 +6,7 @@
   export let inTable = false;
   export let customStyle = "";
   export let value: string | number | undefined | null | NumberParts;
-  export let color = "!text-fg-primary"
+  export let color = "!text-fg-primary";
 
   let isNull = false;
   let isValueNegative = false;

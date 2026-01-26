@@ -58,10 +58,7 @@
         <ol class="flex items-center pl-4">
           {#if !onProjectPage}
             <div class="flex gap-x-2">
-              <a
-                class="text-fg-muted hover:text-fg-secondary"
-                href="/-/embed"
-              >
+              <a class="text-fg-muted hover:text-fg-secondary" href="/-/embed">
                 Home
               </a>
               <span class="text-fg-muted">/</span>

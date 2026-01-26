@@ -49,7 +49,8 @@
             class="text-4xl font-semibold text-fg-secondary"
             aria-label="Project title"
           >
-            Welcome to <span class="text-accent-primary-action">{projectDisplayName}</span
+            Welcome to <span class="text-accent-primary-action"
+              >{projectDisplayName}</span
             >
           </h1>
         {/if}

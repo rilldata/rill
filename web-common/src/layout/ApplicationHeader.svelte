@@ -101,9 +101,7 @@
       <Rill />
     </a>
 
-    <span
-      class="rounded-full px-2 border text-fg-primary bg-surface-base"
-    >
+    <span class="rounded-full px-2 border text-fg-primary bg-surface-base">
       {mode}
     </span>
 
