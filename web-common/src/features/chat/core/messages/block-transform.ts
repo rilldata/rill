@@ -52,7 +52,7 @@ export function transformToBlocks(
   const blocks: Block[] = [];
 
   // Build result map for correlating tool calls with their results
-  const { resultsById, resultsByToolName } = buildResultMessageMap(messages);
+  const resultMap = buildResultMessageMap(messages);
   const groupedMessages = new Map<string, V1Message[]>();
 
   // Helper to flush the thinking block accumulator
@@ -66,7 +66,7 @@ export function transformToBlocks(
     blocks.push(
       createThinkingBlock(
         thinkingMessages,
-        resultsById,
+        resultMap,
         `thinking-${blocks.length}`,
         isComplete,
       ),
@@ -83,7 +83,7 @@ export function transformToBlocks(
     const block = createDevelopBlock(
       developMessages,
       `develop-${blocks.length}`,
-      resultsById,
+      resultMap,
     );
     if (block) blocks.push(block);
   }
@@ -117,10 +117,7 @@ export function transformToBlocks(
         // Block tools render their own header, so flush thinking first
         flushThinking(true);
 
-        const block = routing.config.createBlock?.(
-          msg,
-          resultsById.get(msg.id),
-        );
+        const block = routing.config.createBlock?.(msg, resultMap.get(msg.id));
         if (block) {
           blocks.push(block);
         }
@@ -208,19 +205,15 @@ function getBlockRoute(msg: V1Message): BlockRoute {
 /**
  * Build a map from tool call message IDs to their result messages.
  */
-function buildResultMessageMap(messages: V1Message[]) {
-  const resultsById = new Map<string | undefined, V1Message>();
-  const resultsByToolName = new Map<string | undefined, V1Message>();
-
-  messages.forEach((msg) => {
-    if (msg.type !== MessageType.RESULT || msg.tool === ToolName.ROUTER_AGENT)
-      return;
-    resultsById.set(msg.parentId, msg);
-    resultsByToolName.set(msg.tool, msg);
-  });
-
-  return {
-    resultsById,
-    resultsByToolName,
-  };
+function buildResultMessageMap(
+  messages: V1Message[],
+): Map<string | undefined, V1Message> {
+  return new Map(
+    messages
+      .filter(
+        (msg) =>
+          msg.type === MessageType.RESULT && msg.tool !== ToolName.ROUTER_AGENT,
+      )
+      .map((msg) => [msg.parentId, msg]),
+  );
 }
