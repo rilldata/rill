@@ -43,6 +43,8 @@ type aiProps struct {
 type aiArgs struct {
 	// ExecutionTime used to resolve time ranges
 	ExecutionTime time.Time `mapstructure:"execution_time"`
+	// CreateSharedSession indicates if a shared session should be created.
+	CreateSharedSession bool `mapstructure:"create_shared_session"`
 }
 
 // newAI creates a new AI resolver.
@@ -165,6 +167,7 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		ComparisonTimeStart: comparisonStart,
 		ComparisonTimeEnd:   comparisonEnd,
 		IsScheduledInsight:  r.props.IsScheduledInsight,
+		HideCharts:          r.args.CreateSharedSession, // Hide charts if creating shared session
 	}
 
 	routerArgs := &ai.RouterAgentArgs{
@@ -184,6 +187,17 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 	err = session.UpdateTitle(ctx, r.generateTitle())
 	if err != nil {
 		return nil, fmt.Errorf("failed to update session title: %w", err)
+	}
+
+	if r.args.CreateSharedSession {
+		msg, ok := session.LatestMessage([]ai.Predicate{ai.FilterByTool(ai.RouterAgentName), ai.FilterByType(ai.MessageTypeResult)}...)
+		if !ok {
+			return nil, fmt.Errorf("failed to create shared session: no result message found")
+		}
+		err = session.UpdateSharedUntilMessageID(ctx, msg.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create shared session: %w", err)
+		}
 	}
 
 	// Extract summary from the response (from <summary> tag or fallback to truncation)
@@ -274,10 +288,15 @@ func (r *aiResolver) resolveComparisonTimeRange(mainTimeStart time.Time) (start,
 
 // generateTitle generates a title for the AI session.
 func (r *aiResolver) generateTitle() string {
-	if r.props.Explore != "" {
-		return fmt.Sprintf("Scheduled Insight: %s", r.props.Explore)
+	title := "AI Session"
+	if r.props.IsScheduledInsight {
+		title = "Scheduled Insight"
 	}
-	return "Scheduled Insight Report"
+	title = fmt.Sprintf("%s - %s", title, r.args.ExecutionTime.Format(time.RFC822))
+	if r.props.Explore != "" {
+		return fmt.Sprintf("%s: %s", title, r.props.Explore)
+	}
+	return title
 }
 
 // extractSummary extracts the summary from the <summary> tag in the AI response.

@@ -35,6 +35,7 @@ type AnalystAgentArgs struct {
 	ComparisonTimeEnd   time.Time               `json:"comparison_time_end" yaml:"comparison_time_end" jsonschema:"Optional comparison period end time."`
 	// scheduled insight report mode args
 	IsScheduledInsight bool `json:"is_scheduled_insight" yaml:"is_scheduled_insight" jsonschema:"Flag indicating this is an automated scheduled insight report."`
+	HideCharts         bool `json:"hide_charts" yaml:"hide_charts" jsonschema:"Flag indicating whether to suppress chart creation in the analysis."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -137,7 +138,10 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if args.Explore == "" {
 		tools = append(tools, ListMetricsViewsName, GetMetricsViewName)
 	}
-	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, CreateChartName)
+	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName)
+	if !args.HideCharts {
+		tools = append(tools, CreateChartName)
+	}
 
 	// Build completion messages
 	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args)
@@ -181,6 +185,9 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 	ff, err := t.Runtime.FeatureFlags(ctx, session.InstanceID(), session.Claims())
 	if err != nil {
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
+	}
+	if args.HideCharts {
+		ff["chat_charts"] = false
 	}
 	data := map[string]any{
 		"ai_instructions": session.ProjectInstructions(),

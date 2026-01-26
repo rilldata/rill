@@ -526,21 +526,18 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		webOpenMode = "creator"
 	}
 
-	if format == "ai_session" {
-		webOpenMode = "recipient" // no magic token support for ai session reports for now
-	}
-
 	anonRecipients := false
 	var emailRecipients []string
 	for _, notifier := range rep.Spec.Notifiers {
 		if notifier.Connector == "email" {
 			emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 		} else {
-			if format == "ai_session" {
-				return false, fmt.Errorf("ai_session reports can only have email notifiers")
-			}
 			anonRecipients = true
 		}
+	}
+
+	if anonRecipients && format == "ai_session" {
+		return false, fmt.Errorf("ai_session reports can only have email notifiers") // as we cannot reliably fetch user attributes for slack webhooks/channels for enforcing access control in recipient mode
 	}
 
 	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, format, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
@@ -554,26 +551,32 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			if rep.Spec.Format == "ai_session" {
+				reports := make(map[string]*aiReport)
 				for _, recipient := range recipients {
 					urls, ok := meta.RecipientURLs[recipient]
 					if !ok {
 						return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
 					}
 
-					// Trigger AI report for this recipient using their user ID for enforcing security rules
-					sessionID, summary, err := r.triggerAIReport(ctx, self, rep, t, urls.UserID, urls.UserAttrs)
-					if err != nil {
-						return sent, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
+					// for creator mode, all recipient will get a shared session link, report metadata will have same userID for all recipients which is the ownerID, so triggerAIReport will also be called once
+					report, exists := reports[urls.UserID]
+					if !exists {
+						// Trigger AI report for this recipient using their user ID for enforcing security rules
+						report, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, urls.UserID, urls.UserAttrs)
+						if err != nil {
+							return sent, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
+						}
+						reports[urls.UserID] = report
 					}
 
-					openURL := buildAISessionURL(urls.OpenURL, sessionID)
+					openURL := buildAISessionURL(urls.OpenURL, report.sessionID)
 
 					opts := &email.AIInsightReport{
 						ToEmail:         recipient,
 						ToName:          "",
 						DisplayName:     rep.Spec.DisplayName,
 						ReportTime:      t,
-						Summary:         truncateSummary(summary, 500),
+						Summary:         truncateSummary(report.summary, 500),
 						OpenLink:        openURL,
 						EditLink:        urls.EditURL,
 						UnsubscribeLink: urls.UnsubscribeURL,
@@ -667,17 +670,22 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	return false, nil
 }
 
+type aiReport struct {
+	sessionID string
+	summary   string
+}
+
 // triggerAIReport executes an AI-powered report and returns session id with summary.
 // If userID is provided, the session will be created with that user's claims for row-level security.
-func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, userID string, userAttrs map[string]any) (string, string, error) {
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, error) {
 	if rep.Spec.AiConfig == nil {
-		return "", "", fmt.Errorf("AI report is missing ai_config")
+		return nil, fmt.Errorf("AI report is missing ai_config")
 	}
 
 	if userID == "" || len(userAttrs) == 0 {
-		return "", "", fmt.Errorf("no user attributes provided for AI report")
+		return nil, fmt.Errorf("no user attributes provided for AI report")
 	}
-	// TODO check project access for userID? as tool calls will just metrics view access and if there is no security rule then they will get access but report open will fail later
+	// TODO check project access for userID? as tool calls will just check metrics view access and if there are no security rules on mv then tool call will work but report open will fail later
 
 	// Create claims for executing the AI resolver
 	// The userID determines what data the AI can access (row-level security)
@@ -730,49 +738,39 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		Resolver:           "ai",
 		ResolverProperties: props,
 		Args: map[string]any{
-			"execution_time": t,
+			"execution_time":        t,
+			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
 		},
 		Claims: claims,
 	})
 	if err != nil {
-		return "", "", fmt.Errorf("failed to execute AI resolver: %w", err)
+		return nil, fmt.Errorf("failed to execute AI resolver: %w", err)
 	}
 	defer result.Close()
 
 	// Get the result row
 	row, err := result.Next()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get AI resolver result: %w", err)
+		return nil, fmt.Errorf("failed to get AI resolver result: %w", err)
 	}
 
 	sessionID, ok := row["ai_session_id"].(string)
 	if !ok || sessionID == "" {
-		return "", "", fmt.Errorf("AI resolver did not return a valid session ID")
+		return nil, fmt.Errorf("AI resolver did not return a valid session ID")
 	}
 	summary, _ := row["summary"].(string)
 
-	r.C.Logger.Info("AI session created", zap.String("report", self.Meta.Name.Name), zap.String("session_id", sessionID), observability.ZapCtx(ctx))
+	r.C.Logger.Info("AI session created", zap.String("report", self.Meta.Name.Name), zap.String("session_id", sessionID), zap.String("user_id", userID), observability.ZapCtx(ctx))
 
-	return sessionID, summary, nil
+	return &aiReport{
+		sessionID: sessionID,
+		summary:   summary,
+	}, nil
 }
 
 func buildAISessionURL(baseOpenURL, sessionID string) string {
-	// Replace the open URL path to point to the AI session
-	// Typical URL format: /{org}/{project}/-/reports/{report} -> /{org}/{project}/-/ai/{session_id}
-	u, err := url.Parse(baseOpenURL)
-	if err != nil {
-		panic(fmt.Errorf("failed to parse base open URL %q: %w", baseOpenURL, err))
-	}
-
-	// Find the /-/ marker in the path and replace everything after it
-	parts := strings.Split(u.Path, "/-/")
-	if len(parts) >= 2 {
-		u.Path = parts[0] + "/-/ai/" + sessionID
-	} else {
-		panic(fmt.Errorf("unexpected base open URL format %q", baseOpenURL))
-	}
-
-	return u.String()
+	// replace {session_id} in the baseOpenURL with the actual sessionID
+	return strings.ReplaceAll(baseOpenURL, "%7Bsession_id%7D", sessionID)
 }
 
 // truncateSummary truncates the summary to a maximum length, adding ellipsis if truncated.

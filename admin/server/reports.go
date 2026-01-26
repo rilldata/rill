@@ -78,8 +78,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	var tokens map[string]string
-	if webOpenMode == WebOpenModeRecipient {
-		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, req.OwnerId, ownerEmail, recipients)
+	if webOpenMode == WebOpenModeRecipient || req.Format == "ai_session" {
+		// in recipient mode tokens are used for unsubscribing and for ai reports, shared sessions are created so token is just used for authentication, so no access to resources is needed
+		tokens, err = s.createMagicTokensWithoutResources(ctx, proj.ID, req.Report, req.OwnerId, recipients)
 	} else {
 		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
 	}
@@ -89,35 +90,53 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	recipientUserIDs := make(map[string]string)
 	recipientUserAttrs := make(map[string]*structpb.Struct)
-	if webOpenMode == WebOpenModeRecipient && req.Format == "ai_session" {
-		// Build a map of email -> user ID for recipients
-		for _, recipient := range recipients {
-			if recipient == "" {
-				continue
-			}
-			userID := ""
-			if recipient == ownerEmail {
-				userID = req.OwnerId
-			} else {
-				// Look up user by email
-				user, err := s.admin.DB.FindUserByEmail(ctx, recipient)
-				if err != nil && !errors.Is(err, database.ErrNotFound) {
-					return nil, err
-				}
-				if user != nil {
-					userID = user.ID
-				}
-			}
-			// If user not found, leave empty - they may not be a Rill user
-			if userID != "" {
-				attr, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, userID, "")
+	if req.Format == "ai_session" {
+		if webOpenMode == WebOpenModeCreator {
+			// in creator mode, only look up owner and use their attributes for all recipients
+			if req.OwnerId != "" {
+				attr, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
 				if err != nil {
 					return nil, err
 				}
-				recipientUserAttrs[recipient], err = structpb.NewStruct(attr)
-				recipientUserIDs[recipient] = userID
+				pbAttrs, err := structpb.NewStruct(attr)
 				if err != nil {
 					return nil, err
+				}
+				for _, recipient := range recipients {
+					recipientUserAttrs[recipient] = pbAttrs
+					recipientUserIDs[recipient] = req.OwnerId
+				}
+			}
+		} else {
+			// Build a map of email -> user ID for recipients
+			for _, recipient := range recipients {
+				if recipient == "" {
+					continue
+				}
+				userID := ""
+				if recipient == ownerEmail {
+					userID = req.OwnerId
+				} else {
+					// Look up user by email
+					user, err := s.admin.DB.FindUserByEmail(ctx, recipient)
+					if err != nil && !errors.Is(err, database.ErrNotFound) {
+						return nil, err
+					}
+					if user != nil {
+						userID = user.ID
+					}
+				}
+				// If user not found, leave empty - they may not be a Rill user
+				if userID != "" {
+					attr, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, userID, "")
+					if err != nil {
+						return nil, err
+					}
+					recipientUserAttrs[recipient], err = structpb.NewStruct(attr)
+					recipientUserIDs[recipient] = userID
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 		}
@@ -134,7 +153,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			if webOpenMode == WebOpenModeRecipient {
 				// owner in recipient mode gets plain open and export url without token as token does not have any access
 				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
+					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Format, "", req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 					UserId:    recipientUserIDs[recipient],
@@ -142,7 +161,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 				}
 			} else {
 				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
+					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Format, tokens[recipient], req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 					UserId:    recipientUserIDs[recipient],
@@ -153,7 +172,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		}
 		if webOpenMode == WebOpenModeCreator {
 			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Format, tokens[recipient], req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
 				UserId:         recipientUserIDs[recipient],
@@ -161,7 +180,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			}
 		} else if webOpenMode == WebOpenModeRecipient {
 			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Format, "", req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
 				UserId:         recipientUserIDs[recipient],
@@ -791,7 +810,7 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 	return emailTokens, nil
 }
 
-func (s *Server) createUnsubMagicTokens(ctx context.Context, projectID, reportName, ownerID, ownerEmail string, emails []string) (map[string]string, error) {
+func (s *Server) createMagicTokensWithoutResources(ctx context.Context, projectID, reportName, ownerID string, emails []string) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -813,10 +832,6 @@ func (s *Server) createUnsubMagicTokens(ctx context.Context, projectID, reportNa
 
 	emailTokens := make(map[string]string)
 	for _, email := range emails {
-		if ownerEmail != "" && strings.EqualFold(ownerEmail, email) {
-			// skip creating unsubscribe token for owner email
-			continue
-		}
 		// set user attrs as per the email
 		mgcOpts.Attributes = map[string]interface{}{
 			"name":   "",
