@@ -34,7 +34,9 @@ function createCellInspectorStore() {
       update((state) => ({
         ...state,
         isOpen: !state.isOpen,
-        value: state.isOpen ? state.value : value,
+        // When opening: prefer store's existing value (from hover) if set, fall back to passed value
+        // When closing: keep the current value
+        value: state.isOpen ? state.value : state.value || value,
       })),
   };
 }
