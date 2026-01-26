@@ -14,23 +14,15 @@ import {
   getExploreValidSpecQueryOptions,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
-import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getComparionRangeForScrub,
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-import {
-  checkValidTimeGrain,
-  findValidTimeGrain,
-  getAllowedTimeGrains,
-  getDefaultTimeGrain,
-  getValidatedTimeGrain,
-} from "@rilldata/web-common/lib/time/grains";
+import { getValidatedTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import {
   allowedGrainsForInterval,
-  GrainAliasToV1TimeGrain,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 import {
@@ -57,7 +49,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
-import { derived, get } from "svelte/store";
+import { derived } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { parseRillTime } from "../url-state/time-ranges/parser";
 import type { RillTime } from "../url-state/time-ranges/RillTime";
@@ -73,6 +65,8 @@ export type TimeRangeState = {
   timeEnd?: string;
   adjustedStart?: string;
   adjustedEnd?: string;
+  aggregationOptions?: V1TimeGrain[];
+  interval?: Interval<true>;
 };
 
 export type ComparisonTimeRangeState = {
@@ -216,39 +210,6 @@ export function getTimeControlState(
     return undefined;
   }
 
-  const maybeInterval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start, {
-          zone: selectedTimezone,
-        }),
-        DateTime.fromJSDate(selectedTimeRange.end, { zone: selectedTimezone }),
-      )
-    : undefined;
-
-  const interval = maybeInterval?.isValid ? maybeInterval : undefined;
-
-  const aggregationOptions = allowedGrainsForInterval(interval, minTimeGrain);
-
-  let parsed: RillTime | undefined;
-
-  if (selectedTimeRange?.name) {
-    try {
-      parsed = parseRillTime(selectedTimeRange?.name);
-    } catch {
-      // Parsing fails for non-rill-time names like "CUSTOM" - use undefined
-    }
-  }
-
-  const validatedGrain = getValidatedTimeGrain(
-    interval,
-    minTimeGrain,
-    selectedTimeRange?.interval,
-    parsed,
-  );
-  if (selectedTimeRange && validatedGrain) {
-    selectedTimeRange.interval = validatedGrain;
-  }
-
   const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
     exploreSpec.timeRanges,
     allTimeRange,
@@ -264,8 +225,7 @@ export function getTimeControlState(
     allTimeRange,
     defaultTimeRange,
     timeDimension,
-    interval,
-    aggregationOptions,
+
     ...timeRangeState,
     ...comparisonTimeRangeState,
   } as TimeControlState;
@@ -382,20 +342,28 @@ export function calculateTimeRangePartial(
     }
   }
 
-  const rillTimeGrain: V1TimeGrain | undefined = parsed?.asOfLabel?.snap
-    ? GrainAliasToV1TimeGrain[parsed?.asOfLabel.snap]
-    : parsed?.interval.getGrain();
+  const maybeInterval = selectedTimeRange
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedTimeRange.start, {
+          zone: selectedTimezone,
+        }),
+        DateTime.fromJSDate(selectedTimeRange.end, { zone: selectedTimezone }),
+      )
+    : undefined;
 
-  // Temporary for the new rill-time UX to work.
-  // We can select grains that are outside allowed grains in controls behind the "rillTime" flag.
-  const skipGrainValidation = get(featureFlags.rillTime);
-  selectedTimeRange.interval =
-    !skipGrainValidation ||
-    !currentSelectedTimeRange.interval ||
-    currentSelectedTimeRange.interval === V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-      ? rillTimeGrain ||
-        getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
-      : currentSelectedTimeRange.interval;
+  const interval = maybeInterval?.isValid ? maybeInterval : undefined;
+
+  const aggregationOptions = allowedGrainsForInterval(interval, minTimeGrain);
+
+  const validatedGrain = getValidatedTimeGrain(
+    interval,
+    minTimeGrain,
+    currentSelectedTimeRange?.interval,
+    parsed,
+  );
+  if (selectedTimeRange && validatedGrain) {
+    selectedTimeRange.interval = validatedGrain;
+  }
 
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
     selectedTimeRange.start,
@@ -421,6 +389,8 @@ export function calculateTimeRangePartial(
     adjustedStart: adjustedStart || undefined,
     timeEnd: timeEnd.toISOString(),
     adjustedEnd: adjustedEnd || undefined,
+    aggregationOptions,
+    interval,
   };
 }
 
@@ -555,36 +525,6 @@ export function getTimeRange(
   }
 
   return timeRange;
-}
-
-export function getTimeGrain(
-  selectedTimeRange: DashboardTimeControls | undefined,
-  timeRange: DashboardTimeControls,
-  minTimeGrain: V1TimeGrain,
-) {
-  const timeGrainOptions = getAllowedTimeGrains(timeRange.start, timeRange.end);
-  const isValidTimeGrain = checkValidTimeGrain(
-    selectedTimeRange?.interval,
-    timeGrainOptions,
-    minTimeGrain,
-  );
-
-  let timeGrain: V1TimeGrain | undefined;
-  if (isValidTimeGrain) {
-    timeGrain = selectedTimeRange?.interval;
-  } else {
-    const defaultTimeGrain = getDefaultTimeGrain(
-      timeRange.start,
-      timeRange.end,
-    ).grain;
-    timeGrain = findValidTimeGrain(
-      defaultTimeGrain,
-      timeGrainOptions,
-      minTimeGrain,
-    );
-  }
-
-  return timeGrain;
 }
 
 export function getComparisonTimeRange(

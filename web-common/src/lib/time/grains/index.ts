@@ -96,53 +96,6 @@ export function getMinGrain(...grains: V1TimeGrain[]) {
   return minGrain;
 }
 
-export function checkValidTimeGrain(
-  timeGrain: V1TimeGrain | undefined,
-  timeGrainOptions: TimeGrain[],
-  minTimeGrain: V1TimeGrain,
-): boolean {
-  if (!timeGrain) return false;
-  if (!timeGrainOptions.find((t) => t.grain === timeGrain)) return false;
-
-  // If minTimeGrain is not specified, then all available timeGrains are valid
-  if (minTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) return true;
-
-  const isGrainPossible = !isGrainBigger(minTimeGrain, timeGrain);
-  return isGrainPossible;
-}
-
-export function findValidTimeGrain(
-  timeGrain: V1TimeGrain,
-  timeGrainOptions: TimeGrain[],
-  minTimeGrain: V1TimeGrain,
-): V1TimeGrain {
-  const timeGrains = Object.values(TIME_GRAIN).map(
-    (timeGrain) => timeGrain.grain,
-  );
-
-  const defaultIndex = timeGrains.indexOf(timeGrain);
-
-  // Loop through the timeGrains starting from the default value
-  for (let i = defaultIndex; i < timeGrains.length; i++) {
-    const currentGrain = timeGrains[i];
-
-    if (checkValidTimeGrain(currentGrain, timeGrainOptions, minTimeGrain)) {
-      return currentGrain;
-    }
-  }
-  // If no valid timeGrain is found, loop from the beginning of the array
-  for (let i = 0; i < defaultIndex; i++) {
-    const currentGrain = timeGrains[i];
-
-    if (checkValidTimeGrain(currentGrain, timeGrainOptions, minTimeGrain)) {
-      return currentGrain;
-    }
-  }
-
-  // If no valid timeGrain is found, return the default timeGrain as fallback
-  return timeGrain;
-}
-
 export function mapDurationToGrain(duration: string): V1TimeGrain {
   for (const g in TIME_GRAIN) {
     if (TIME_GRAIN[g].duration === duration) {
