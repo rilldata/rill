@@ -4,13 +4,11 @@
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
   import BookmarkFilled from "@rilldata/web-common/components/icons/BookmarkFilled.svelte";
   import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import FilterFilled from "@rilldata/web-common/components/icons/FilterFilled.svelte";
   import FilterOutline from "@rilldata/web-common/components/icons/FilterOutline.svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import { builderActions, getAttrs } from "bits-ui";
   import { Pencil } from "lucide-svelte";
 
   export let bookmark: BookmarkEntry;
