@@ -60,6 +60,7 @@
     : {
         start: $timeControlsStore.timeStart,
         end: $timeControlsStore.timeEnd,
+        timeDimension: $exploreState?.selectedTimeDimension,
       };
 
   $: filters = isPivotCellSelected
@@ -74,8 +75,7 @@
     metricsViewName,
     {
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
-      timeStart: timeRange.start,
-      timeEnd: timeRange.end,
+      timeRange,
       where: filters,
     },
     {
@@ -84,8 +84,7 @@
           "dashboardFilteredRowsCt",
           metricsViewName,
           {
-            timeStart: timeRange.start,
-            timeEnd: timeRange.end,
+            timeRange,
             where: filters,
           },
         ],
@@ -136,6 +135,7 @@
         metricsViewName,
         timeStart: timeRange.start,
         timeEnd: timeRange.end,
+        timeDimension: $exploreState?.selectedTimeDimension,
         where: sanitiseExpression(
           mergeDimensionAndMeasureFilters(
             $exploreState.whereFilter,
