@@ -9,4 +9,7 @@ export type PathOption = {
   pill?: string;
 };
 
-export type PathOptions = Map<Param, PathOption>;
+export type PathOptions = {
+  options: Map<Param, PathOption>;
+  carryOverSearchParams?: boolean;
+};
