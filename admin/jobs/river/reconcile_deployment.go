@@ -24,6 +24,13 @@ type ReconcileDeploymentWorker struct {
 	admin *admin.Service
 }
 
+// NewReconcileDeploymentWorker creates a new ReconcileDeploymentWorker. Only to be used in tests to trigger the worker directly.
+func NewReconcileDeploymentWorker(admin *admin.Service) *ReconcileDeploymentWorker {
+	return &ReconcileDeploymentWorker{
+		admin: admin,
+	}
+}
+
 // ReconcileDeploymentWorker is a state machine, it reconciles the state of a deployment based on its desired and current status.
 // This job is responsible for transitioning deployments through their lifecycle states,
 // such as starting, updating, stopping, and deleting deployments.
