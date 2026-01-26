@@ -2,7 +2,7 @@ import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains.ts"
 import {
   V1TimeGrain,
   type V1TimeRange,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime, type DateTimeFormatOptions, Interval } from "luxon";
 
 // Formats a Luxon interval for human readable display throughout the application.

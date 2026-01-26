@@ -4,7 +4,7 @@
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import AlertsTableCompositeCell from "./AlertsTableCompositeCell.svelte";
 

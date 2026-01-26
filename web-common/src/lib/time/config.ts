@@ -4,7 +4,7 @@
  * manually define these in the dashboard configuration.
  */
 
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { Duration, DurationUnit } from "luxon";
 import {
   Period,

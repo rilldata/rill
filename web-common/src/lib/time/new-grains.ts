@@ -4,7 +4,7 @@ import {
   type RillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { DateTimeUnit } from "luxon";
 
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;

@@ -2,7 +2,7 @@ import {
   formatDateTimeByGrain,
   prettyFormatTimeRange,
 } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime, Interval } from "luxon";
 import { describe, expect, it } from "vitest";
 

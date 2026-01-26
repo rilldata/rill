@@ -1,4 +1,4 @@
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { DateTimeUnit } from "luxon";
 
 // Note: The majority of types below are redundant with Luxon and should be removed - bgh

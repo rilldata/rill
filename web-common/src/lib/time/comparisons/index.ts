@@ -4,7 +4,7 @@ import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ra
 import {
   V1TimeGrain,
   type V1TimeRange,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime, Duration, Interval } from "luxon";
 import { getTimeWidth } from "../transforms";
 import {
