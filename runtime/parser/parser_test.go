@@ -2596,8 +2596,8 @@ dark:
 					Secondary: "green",
 					Variables: map[string]string{
 						"surface-subtle": "blue",
-						"fg-primary":        "yellow",
-						"fg-secondary":      "yellow",
+						"fg-primary":     "yellow",
+						"fg-secondary":   "yellow",
 					},
 				},
 				Dark: &runtimev1.ThemeColors{
@@ -2605,8 +2605,8 @@ dark:
 					Secondary: "black",
 					Variables: map[string]string{
 						"surface-subtle": "black",
-						"fg-primary":        "white",
-						"fg-secondary":      "white",
+						"fg-primary":     "white",
+						"fg-secondary":   "white",
 					},
 				},
 			},
