@@ -225,6 +225,10 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
+	if format == "ai_session" && (len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0) {
+		return errors.New(`ai reports only support email notifications as of now`)
+	}
+
 	// Track report
 	r, err := p.insertResource(ResourceKindReport, node.Name, node.Paths, node.Refs...)
 	if err != nil {

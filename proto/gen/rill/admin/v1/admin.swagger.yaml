@@ -3645,6 +3645,8 @@ paths:
             properties:
               report:
                 type: string
+              format:
+                type: string
               ownerId:
                 type: string
               executionTime:
@@ -5336,6 +5338,11 @@ definitions:
         type: string
       unsubscribeUrl:
         type: string
+      userId:
+        type: string
+      userAttrs:
+        type: object
+        title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
   v1GetServiceResponse:
     type: object
     properties:

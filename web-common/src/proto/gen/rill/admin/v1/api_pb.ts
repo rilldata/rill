@@ -12488,6 +12488,11 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   report = "";
 
   /**
+   * @generated from field: string format = 13;
+   */
+  format = "";
+
+  /**
    * @generated from field: string owner_id = 5;
    */
   ownerId = "";
@@ -12539,6 +12544,7 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "format", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "execution_time", kind: "message", T: Timestamp },
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -12627,6 +12633,18 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
    */
   unsubscribeUrl = "";
 
+  /**
+   * @generated from field: string user_id = 5;
+   */
+  userId = "";
+
+  /**
+   * user attributes of intended recipient, will be empty for creator mode and for non Rill users
+   *
+   * @generated from field: google.protobuf.Struct user_attrs = 6;
+   */
+  userAttrs?: Struct;
+
   constructor(data?: PartialMessage<GetReportMetaResponse_URLs>) {
     super();
     proto3.util.initPartial(data, this);
@@ -12639,6 +12657,8 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
     { no: 2, name: "export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "user_attrs", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_URLs {

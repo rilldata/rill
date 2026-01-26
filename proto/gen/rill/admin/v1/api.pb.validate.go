@@ -34625,6 +34625,8 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	// no validation rules for Report
 
+	// no validation rules for Format
+
 	// no validation rules for OwnerId
 
 	if all {
@@ -49015,6 +49017,37 @@ func (m *GetReportMetaResponse_URLs) validate(all bool) error {
 	// no validation rules for EditUrl
 
 	// no validation rules for UnsubscribeUrl
+
+	// no validation rules for UserId
+
+	if all {
+		switch v := interface{}(m.GetUserAttrs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetReportMetaResponse_URLsValidationError{
+					field:  "UserAttrs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetReportMetaResponse_URLsValidationError{
+					field:  "UserAttrs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUserAttrs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetReportMetaResponse_URLsValidationError{
+				field:  "UserAttrs",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return GetReportMetaResponse_URLsMultiError(errors)

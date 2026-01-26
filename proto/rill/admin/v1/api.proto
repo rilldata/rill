@@ -2699,6 +2699,7 @@ message DeleteVirtualFileResponse {}
 message GetReportMetaRequest {
   string project_id = 1;
   string report = 3;
+  string format = 13;
   string owner_id = 5;
   google.protobuf.Timestamp execution_time = 6;
   repeated string email_recipients = 7;
@@ -2716,6 +2717,8 @@ message GetReportMetaResponse {
     string export_url = 2;
     string edit_url = 3;
     string unsubscribe_url = 4;
+    string user_id = 5;
+    google.protobuf.Struct user_attrs = 6; // user attributes of intended recipient, will be empty for creator mode and for non Rill users
   }
   map<string, URLs> recipient_urls = 2;
   reserved 1;

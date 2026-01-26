@@ -11,10 +11,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, reportFormat, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
 		ProjectId:       h.config.ProjectID,
 		Report:          reportName,
+		Format:          reportFormat,
 		OwnerId:         ownerID,
 		EmailRecipients: emailRecipients,
 		AnonRecipients:  anonRecipients,
@@ -38,6 +39,8 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, web
 			ExportURL:      v.ExportUrl,
 			EditURL:        v.EditUrl,
 			UnsubscribeURL: v.UnsubscribeUrl,
+			UserID:         v.UserId,
+			UserAttrs:      v.UserAttrs.AsMap(),
 		}
 	}
 

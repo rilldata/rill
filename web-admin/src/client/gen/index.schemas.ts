@@ -697,11 +697,15 @@ export interface V1GetReportMetaResponse {
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
+export type V1GetReportMetaResponseURLsUserAttrs = { [key: string]: unknown };
+
 export interface V1GetReportMetaResponseURLs {
   openUrl?: string;
   exportUrl?: string;
   editUrl?: string;
   unsubscribeUrl?: string;
+  userId?: string;
+  userAttrs?: V1GetReportMetaResponseURLsUserAttrs;
 }
 
 export interface V1GetServiceResponse {
@@ -2200,6 +2204,7 @@ It is optional. If the call is made with a deployment access token, it defaults 
 
 export type AdminServiceGetReportMetaBody = {
   report?: string;
+  format?: string;
   ownerId?: string;
   executionTime?: string;
   emailRecipients?: string[];

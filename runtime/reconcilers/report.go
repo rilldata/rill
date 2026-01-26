@@ -506,16 +506,6 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
 	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t), observability.ZapCtx(ctx))
 
-	// Check if this is an AI-powered report
-	var sessionID, summary string
-	var err error
-	if rep.Spec.Format == "ai_session" {
-		sessionID, summary, err = r.triggerAIReport(ctx, self, rep, t)
-		if err != nil {
-			return false, fmt.Errorf("failed to trigger AI report: %w", err)
-		}
-	}
-
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
 		if errors.Is(err, runtime.ErrAdminNotConfigured) {
@@ -525,6 +515,11 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, fmt.Errorf("failed to get admin client: %w", err)
 	}
 	defer release()
+
+	format := rep.Spec.Format
+	if format == "" {
+		format = "query" // default format
+	}
 
 	var ownerID, webOpenMode string
 	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
@@ -537,7 +532,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		webOpenMode = "creator"
 	}
 
-	if rep.Spec.Format == "ai_session" {
+	if format == "ai_session" {
 		webOpenMode = "recipient" // no magic token support for ai session reports for now
 	}
 
@@ -547,11 +542,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		if notifier.Connector == "email" {
 			emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 		} else {
+			if format == "ai_session" {
+				return false, fmt.Errorf("ai_session reports can only have email notifiers")
+			}
 			anonRecipients = true
 		}
 	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, format, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
@@ -568,7 +566,12 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 						return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
 					}
 
-					// TODO fix this - hacking an AI session open URL from the report URL for now until we know where to show scheduled ai reports in UI
+					// Trigger AI report for this recipient using their user ID for enforcing security rules
+					sessionID, summary, err := r.triggerAIReport(ctx, self, rep, t, urls.UserID, urls.UserAttrs)
+					if err != nil {
+						return sent, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
+					}
+
 					openURL := buildAISessionURL(urls.OpenURL, sessionID)
 
 					opts := &email.AIInsightReport{
@@ -630,6 +633,18 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				if !ok {
 					return fmt.Errorf("failed to get recipient URLs for anon user")
 				}
+				u, err := createExportURL(urls.ExportURL, t)
+				if err != nil {
+					return err
+				}
+				msg := &drivers.ScheduledReport{
+					DisplayName:     rep.Spec.DisplayName,
+					ReportTime:      t,
+					DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+					OpenLink:        urls.OpenURL,
+					DownloadLink:    u.String(),
+					UnsubscribeLink: urls.UnsubscribeURL,
+				}
 				start := time.Now()
 				defer func() {
 					totalLatency := time.Since(start).Milliseconds()
@@ -638,38 +653,11 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 						r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
 							attribute.Bool("failed", outErr != nil),
 							attribute.String("connector", notifier.Connector),
-							attribute.String("notification_type", "ai_insight_report"),
+							attribute.String("notification_type", "scheduled_report"),
 						)
 					}
 				}()
-				if rep.Spec.Format == "ai_session" {
-					// TODO fix this - hacking an AI session open URL from the report URL for now until we know where to show scheduled ai reports in UI
-					openURL := buildAISessionURL(urls.OpenURL, sessionID)
-
-					msg := &drivers.AIInsightReport{
-						DisplayName:     rep.Spec.DisplayName,
-						ReportTime:      t,
-						Summary:         truncateSummary(summary, 500),
-						OpenLink:        openURL,
-						UnsubscribeLink: urls.UnsubscribeURL,
-					}
-					err = n.SendAIInsightReport(msg)
-				} else {
-					var u *url.URL
-					u, err = createExportURL(urls.ExportURL, t)
-					if err != nil {
-						return err
-					}
-					msg := &drivers.ScheduledReport{
-						DisplayName:     rep.Spec.DisplayName,
-						ReportTime:      t,
-						DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
-						OpenLink:        urls.OpenURL,
-						DownloadLink:    u.String(),
-						UnsubscribeLink: urls.UnsubscribeURL,
-					}
-					err = n.SendScheduledReport(msg)
-				}
+				err = n.SendScheduledReport(msg)
 				sent = true
 				if err != nil {
 					return fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
@@ -686,23 +674,24 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 }
 
 // triggerAIReport executes an AI-powered report and returns session id with summary.
-func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (string, string, error) {
+// If userID is provided, the session will be created with that user's claims for row-level security.
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, userID string, userAttrs map[string]any) (string, string, error) {
 	if rep.Spec.AiConfig == nil {
 		return "", "", fmt.Errorf("AI report is missing ai_config")
 	}
 
-	// Get owner ID for claims
-	var ownerID string
-	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
-		ownerID = id
+	if userID == "" || len(userAttrs) == 0 {
+		return "", "", fmt.Errorf("no user attributes provided for AI report")
 	}
+	// TODO check project access for userID? as tool calls will just metrics view access and if there is no security rule then they will get access but report open will fail later
 
 	// Create claims for executing the AI resolver
-	// We use SkipChecks since this is a system-level operation running as the report owner
+	// The userID determines what data the AI can access (row-level security)
 	claims := &runtime.SecurityClaims{
-		UserID:      ownerID,
-		SkipChecks:  false,
-		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+		UserID:         userID,
+		UserAttributes: userAttrs,
+		SkipChecks:     false,
+		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
 	}
 
 	// Build resolver properties from AI config
