@@ -36,7 +36,12 @@ function createCellInspectorStore() {
         isOpen: !state.isOpen,
         // When opening: prefer store's existing value (from hover) if set, fall back to passed value
         // When closing: keep the current value
-        value: state.isOpen ? state.value : (state.value ?? value),
+        // Note: check for empty string (initial state) rather than nullish, to preserve null values
+        value: state.isOpen
+          ? state.value
+          : state.value !== ""
+            ? state.value
+            : value,
       })),
   };
 }
