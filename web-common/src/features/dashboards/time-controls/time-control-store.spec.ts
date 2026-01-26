@@ -137,13 +137,14 @@ describe("time-control-store", () => {
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
     });
     state = get(timeControlsStore);
-    // start and end from selected time range is ignored.
+    // Start and end from selected time range honored.
+    // This happens when start and end are resolved in backend.
     assertStartAndEnd(
       state,
-      "2022-03-25T00:00:00.000Z",
-      "2022-04-01T00:00:00.000Z",
-      "2022-03-24T23:00:00.000Z",
-      "2022-04-01T01:00:00.000Z",
+      "2021-01-01T00:00:00.000Z",
+      "2021-03-31T00:00:00.000Z",
+      "2020-12-31T23:00:00.000Z",
+      "2021-03-31T01:00:00.000Z",
     );
     // valid time grain of hour is retained
     expect(state.selectedTimeRange!.interval).toEqual(

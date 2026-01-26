@@ -911,6 +911,7 @@ If not found in `time_ranges`, it should be added to the list. */
   timezone?: string;
   timeGrain?: string;
   selectTimeRange?: string;
+  timeDimension?: string;
   comparisonMode?: V1ExploreComparisonMode;
   compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */

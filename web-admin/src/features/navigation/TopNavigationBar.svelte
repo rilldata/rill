@@ -47,7 +47,12 @@
   export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
-  const { alerts: alertsFlag, dimensionSearch, dashboardChat } = featureFlags;
+  const {
+    alerts: alertsFlag,
+    dimensionSearch,
+    dashboardChat,
+    stickyDashboardState,
+  } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -103,11 +108,9 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  $: organizationPaths = createOrgPaths(
-    organizations,
-    organization,
-    planDisplayName,
-  );
+  $: organizationPaths = {
+    options: createOrgPaths(organizations, organization, planDisplayName),
+  };
 
   function createOrgPaths(
     organizations: V1Organization[],
@@ -135,39 +138,48 @@
     return pathMap;
   }
 
-  $: projectPaths = projects.reduce(
-    (map, { name }) =>
-      map.set(name.toLowerCase(), { label: name, preloadData: false }),
-    new Map<string, PathOption>(),
-  );
+  $: projectPaths = {
+    options: projects.reduce(
+      (map, { name }) =>
+        map.set(name.toLowerCase(), { label: name, preloadData: false }),
+      new Map<string, PathOption>(),
+    ),
+  };
 
-  $: visualizationPaths = visualizations.reduce((map, resource) => {
-    const name = resource.meta.name.name;
-    const isMetricsExplorer = !!resource?.explore;
-    return map.set(name.toLowerCase(), {
-      label:
-        (isMetricsExplorer
-          ? resource?.explore?.spec?.displayName
-          : resource?.canvas?.spec?.displayName) || name,
-      section: isMetricsExplorer ? "explore" : "canvas",
-    });
-  }, new Map<string, PathOption>());
+  $: visualizationPaths = {
+    options: visualizations.reduce((map, resource) => {
+      const name = resource.meta.name.name;
+      const isMetricsExplorer = !!resource?.explore;
+      return map.set(name.toLowerCase(), {
+        label:
+          (isMetricsExplorer
+            ? resource?.explore?.spec?.displayName
+            : resource?.canvas?.spec?.displayName) || name,
+        section: isMetricsExplorer ? "explore" : "canvas",
+      });
+    }, new Map<string, PathOption>()),
+    carryOverSearchParams: $stickyDashboardState,
+  };
 
-  $: alertPaths = alerts.reduce((map, alert) => {
-    const name = alert.meta.name.name;
-    return map.set(name.toLowerCase(), {
-      label: alert.alert.spec.displayName || name,
-      section: "-/alerts",
-    });
-  }, new Map<string, PathOption>());
+  $: alertPaths = {
+    options: alerts.reduce((map, alert) => {
+      const name = alert.meta.name.name;
+      return map.set(name.toLowerCase(), {
+        label: alert.alert.spec.displayName || name,
+        section: "-/alerts",
+      });
+    }, new Map<string, PathOption>()),
+  };
 
-  $: reportPaths = reports.reduce((map, report) => {
-    const name = report.meta.name.name;
-    return map.set(name.toLowerCase(), {
-      label: report.report.spec.displayName || name,
-      section: "-/reports",
-    });
-  }, new Map<string, PathOption>());
+  $: reportPaths = {
+    options: reports.reduce((map, report) => {
+      const name = report.meta.name.name;
+      return map.set(name.toLowerCase(), {
+        label: report.report.spec.displayName || name,
+        section: "-/reports",
+      });
+    }, new Map<string, PathOption>()),
+  };
 
   $: pathParts = [
     organizationPaths,
@@ -219,7 +231,7 @@
       <ViewAsUserChip />
     {/if}
     <!-- NOTE: only project admin and editor can manage project members -->
-    <!-- https://docs.rilldata.com/manage/roles-permissions#project-level-permissions -->
+    <!-- https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions -->
     {#if onProjectPage && manageProjectMembers}
       <ShareProjectPopover
         {organization}
@@ -240,7 +252,7 @@
             {#if $dimensionSearch}
               <GlobalDimensionSearch />
             {/if}
-            {#if $dashboardChat}
+            {#if $dashboardChat && !onPublicURLPage}
               <ChatToggle />
             {/if}
             {#if hasUserAccess}
