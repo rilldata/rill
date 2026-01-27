@@ -18,7 +18,10 @@ test.describe("Projects", () => {
     // Check Local Development header is visible
     await expect(adminPage.getByText("Local Development")).toBeVisible();
 
-    // Check Learn more link is visible
+    // Click the Download project button to open popover
+    await adminPage.getByRole("button", { name: "Download project" }).click();
+
+    // Check Learn more link is visible in popover
     await expect(
       adminPage.getByRole("link", { name: "Learn more ->" }),
     ).toBeVisible();
