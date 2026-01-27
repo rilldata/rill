@@ -115,18 +115,22 @@
 
     // Add mouseover event to update the value in the store without changing visibility
     th.onmouseover = () => {
-      if (value?.value !== undefined && value?.value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value.value));
-      }
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(
+        value?.value === null || value?.value === undefined
+          ? null
+          : String(value.value),
+      );
     };
 
     // Add focus event to update the value in the store without changing visibility
     th.onfocus = () => {
-      if (value?.value !== undefined && value?.value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value.value));
-      }
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(
+        value?.value === null || value?.value === undefined
+          ? null
+          : String(value.value),
+      );
     };
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
@@ -163,17 +167,17 @@
 
     // Add mouseover event to update the value in the store without changing visibility
     td.onmouseover = () => {
-      if (value !== undefined && value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value));
-      }
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(
+        value === null || value === undefined ? null : String(value),
+      );
     };
 
     td.onfocus = () => {
-      if (value !== undefined && value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value));
-      }
+      // Always update the value in the store, but don't change visibility
+      cellInspectorStore.updateValue(
+        value === null || value === undefined ? null : String(value),
+      );
     };
 
     const maybeWidth = getColumnWidth(x);

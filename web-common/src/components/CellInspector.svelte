@@ -21,7 +21,9 @@
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
     isOpen = state.isOpen;
-    if (state.value && state.isOpen && !isLocked) {
+    // Update value when open and not locked, including null and empty string values
+    // Only skip if value is undefined (meaning no value was set via hover)
+    if (state.isOpen && !isLocked && state.value !== undefined) {
       value = state.value;
     }
   });
@@ -175,7 +177,9 @@
         class:items-center={!isJson}
       >
         {#if value === null}
-          <span class="text-sm text-gray-500 italic">No value</span>
+          <span class="text-sm text-gray-500 italic">null</span>
+        {:else if value === ""}
+          <span class="text-sm text-gray-500 italic">(empty string)</span>
         {:else}
           <span
             class="whitespace-pre-wrap break-words text-sm text-gray-800 w-full"
