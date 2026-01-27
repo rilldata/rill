@@ -21,9 +21,12 @@ test.describe("Projects", () => {
     // Click the Download project button to open popover
     await adminPage.getByRole("button", { name: "Download project" }).click();
 
-    // Check Learn more link is visible in popover
+    // Check Learn more link is visible in popover (filter by surrounding text to avoid ambiguity)
     await expect(
-      adminPage.getByRole("link", { name: "Learn more ->" }),
+      adminPage
+        .locator("span")
+        .filter({ hasText: "Clone this project to develop locally" })
+        .getByRole("link", { name: "Learn more ->" }),
     ).toBeVisible();
 
     // Check clone command is visible (for non-GitHub connected project)
