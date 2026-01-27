@@ -34,14 +34,17 @@ export async function fetchAllProjectsHibernating(organization: string) {
   return projectsResp.projects?.every((p) => !p.primaryDeploymentId) ?? false;
 }
 
-
 function normalizeOrganization(
   organization: string | V1Organization | undefined,
 ): string {
   if (typeof organization === "string") {
     return organization;
   }
-  if (organization && typeof organization === "object" && "name" in organization) {
+  if (
+    organization &&
+    typeof organization === "object" &&
+    "name" in organization
+  ) {
     return organization.name;
   }
   throw new Error(
