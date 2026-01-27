@@ -46,7 +46,7 @@
             <Github className="w-4 h-4" />
             <a
               href={getGitUrlFromRemote(gitRemote)}
-              class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
+              class="text-fg-primary text-[12px] font-semibold font-mono leading-5 truncate"
               target="_blank"
               rel="noreferrer noopener"
             >
@@ -56,7 +56,7 @@
           {#if subpath}
             <div class="flex items-center">
               <span class="font-mono">subpath</span>
-              <span class="text-gray-800">
+              <span class="text-fg-primary">
                 : /{subpath}
               </span>
             </div>

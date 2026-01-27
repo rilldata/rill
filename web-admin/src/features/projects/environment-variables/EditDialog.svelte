@@ -295,7 +295,7 @@
     >
       <div class="flex flex-col gap-y-5">
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-gray-800">Environment</div>
+          <div class="text-sm font-medium text-fg-primary">Environment</div>
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
               bind:checked={isDevelopment}
@@ -319,7 +319,7 @@
           {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-gray-800">Variable</div>
+          <div class="text-sm font-medium text-fg-primary">Variable</div>
           <div class="flex flex-col w-full">
             <div class="flex flex-row items-center gap-2">
               <Input
@@ -361,7 +361,7 @@
 
     <DialogFooter>
       <Button
-        type="plain"
+        type="tertiary"
         onClick={() => {
           open = false;
           handleReset();

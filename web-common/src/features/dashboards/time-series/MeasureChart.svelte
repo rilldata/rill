@@ -357,7 +357,7 @@
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
             <g transition:fly={{ duration: 100, x: -4 }}>
               <text
-                class="fill-gray-700 stroke-surface"
+                class="fill-fg-secondary stroke-surface-background"
                 style:paint-order="stroke"
                 stroke-width="3px"
                 x={config.plotLeft + config.bodyBuffer + 6}
@@ -369,7 +369,7 @@
                 <text
                   style:paint-order="stroke"
                   stroke-width="3px"
-                  class="fill-gray-500 stroke-surface"
+                  class="fill-fg-secondary stroke-surface-background"
                   x={config.plotLeft + config.bodyBuffer + 6}
                   y={config.plotTop + 24 + config.bodyBuffer}
                 >
@@ -398,7 +398,7 @@
                   {showComparison}
                   {mouseoverFormat}
                   {numberKind}
-                  colorClass="stroke-slate-300"
+                  colorClass="stroke-fg-muted"
                 />
               {/if}
             </g>

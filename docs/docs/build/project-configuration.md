@@ -326,7 +326,6 @@ features:
 - `exportHeader`: Enables export header functionality (default: `false`)
 - `alerts`: Enables alerting features (default: `true`)
 - `reports`: Enables reporting functionality (default: `true`)
-- `darkMode`: Enables dark mode interface (default: `true`)
 - `chat`: Enables chat functionality (default: `true`)
 - `dashboardChat`: Enables chat features within dashboards (default: `false`)
 

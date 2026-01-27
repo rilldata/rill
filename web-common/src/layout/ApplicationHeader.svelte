@@ -25,8 +25,7 @@
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
 
-  const { darkMode, deploy, developerChat, stickyDashboardState } =
-    featureFlags;
+  const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
   export let mode: string;
 
@@ -96,13 +95,13 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage}>
+<header class:border-b={!onDeployPage} class="bg-surface-base">
   {#if !onDeployPage}
     <a href="/">
       <Rill />
     </a>
 
-    <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
+    <span class="rounded-full px-2 border text-fg-primary bg-surface-base">
       {mode}
     </span>
 
@@ -136,13 +135,13 @@
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
-    <LocalAvatarButton darkMode={$darkMode} />
+    <LocalAvatarButton />
   </div>
 </header>
 
 <style lang="postcss">
   header {
-    @apply w-full bg-surface box-border;
+    @apply w-full box-border;
     @apply flex gap-x-2 items-center px-4 flex-none;
     @apply h-11;
   }
