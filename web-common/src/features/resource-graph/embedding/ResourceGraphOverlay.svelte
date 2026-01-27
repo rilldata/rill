@@ -16,14 +16,12 @@
 
   // Type for resource kinds that support graph visualization
   type GraphableKind =
-    | ResourceKind.Source
     | ResourceKind.Model
     | ResourceKind.MetricsView
     | ResourceKind.Explore
     | ResourceKind.Canvas;
 
   const NAME_SEED_ALIAS: Record<GraphableKind, string> = {
-    [ResourceKind.Source]: "model", // Sources are treated as models (deprecated)
     [ResourceKind.Model]: "model",
     [ResourceKind.MetricsView]: "metrics",
     [ResourceKind.Explore]: "dashboard",
@@ -31,7 +29,6 @@
   };
 
   const KIND_TOKEN_BY_KIND: Record<GraphableKind, string> = {
-    [ResourceKind.Source]: "models", // Sources are treated as models (deprecated)
     [ResourceKind.Model]: "models",
     [ResourceKind.MetricsView]: "metrics",
     [ResourceKind.Explore]: "dashboards",
@@ -39,9 +36,11 @@
   };
 
   $: anchorName = anchorResource?.meta?.name?.name ?? null;
-  $: anchorKind = anchorResource?.meta?.name?.kind as ResourceKind | undefined;
+  // Normalize Source to Model immediately (Source is deprecated)
+  $: rawAnchorKind = anchorResource?.meta?.name?.kind as ResourceKind | undefined;
+  $: anchorKind = rawAnchorKind === ResourceKind.Source ? ResourceKind.Model : rawAnchorKind;
+  
   // Check if kind is allowed (handles both enum and string values)
-  // Convert to string for comparison since ResourceKind enum values are strings
   $: supportsGraph = anchorKind ? ALLOWED_FOR_GRAPH.has(String(anchorKind) as ResourceKind) : false;
 
   // Type-safe access to graphable kind properties
@@ -50,26 +49,20 @@
 
   // Use the same seed format as the project graph page
   // This ensures consistent behavior between overlay and project graph
+  // Note: anchorKind is already normalized (Source -> Model) above
   $: overlaySeeds = (function (): string[] | undefined {
     if (!anchorName || !anchorKind) return undefined;
     
-    // Normalize kind to string for comparison (handles both enum and string values)
-    const kindStr = String(anchorKind);
-    
     // Use the same format that would come from URL parameters
-    // For Canvas/Explore, use "dashboard:" prefix (same as project graph)
-    // For other resources, use their kind prefix
-    if (kindStr === ResourceKind.Canvas || kindStr === ResourceKind.Explore) {
+    if (anchorKind === ResourceKind.Canvas || anchorKind === ResourceKind.Explore) {
       return [`dashboard:${anchorName}`];
-    } else if (kindStr === ResourceKind.Source || kindStr === ResourceKind.Model) {
+    } else if (anchorKind === ResourceKind.Model) {
       return [`model:${anchorName}`];
-    } else if (kindStr === ResourceKind.MetricsView) {
+    } else if (anchorKind === ResourceKind.MetricsView) {
       return [`metrics:${anchorName}`];
     }
     
-    // Fallback to kind:name format using the resource's actual kind
-    const kindPart = kindStr.toLowerCase().replace("rill.runtime.v1.", "").replace("metricsview", "metrics");
-    return [`${kindPart}:${anchorName}`];
+    return undefined;
   })();
   
   // Keep the old anchorSeed for graphHref calculation
