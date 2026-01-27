@@ -43,7 +43,7 @@
     </span>
     <Popover.Root bind:open>
       <Popover.Trigger>
-        <Button type="secondary">Develop locally</Button>
+        <Button type="secondary">Download project</Button>
       </Popover.Trigger>
 
       <Popover.Content class="w-[380px]" align="end" sideOffset={8}>
