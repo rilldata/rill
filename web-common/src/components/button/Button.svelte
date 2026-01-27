@@ -110,10 +110,17 @@
     @apply px-3 gap-x-2;
     @apply h-7 min-h-[28px] min-w-fit;
     @apply font-medium pointer-events-auto;
+    --focus-color: var(--fg-inverse);
   }
 
   button:disabled {
     @apply cursor-not-allowed;
+  }
+
+  button:focus {
+    @apply outline-none;
+    box-shadow: 0px 0px 4px 1px
+      color-mix(in oklab, var(--focus-color) 50%, transparent);
   }
 
   /* PRIMARY STYLES */
@@ -142,10 +149,12 @@
   /* SECONDARY STYLES */
 
   .secondary {
+    --focus-color: var(--color-primary-600);
     @apply bg-transparent border border-accent-primary-action text-accent-primary-action;
   }
 
   .secondary.theme {
+    --focus-color: var(--color-theme-600);
     @apply border-theme-500;
   }
 
@@ -174,7 +183,12 @@
   /* TERTIARY STYLES */
 
   .tertiary {
+    --focus-color: var(--color-primary-600);
     @apply bg-input text-fg-primary border;
+  }
+
+  .tertiary.theme {
+    --focus-color: var(--color-theme-600);
   }
 
   .tertiary:hover:not(:disabled) {
@@ -301,6 +315,7 @@
 
   .destructive {
     @apply bg-destructive text-destructive-foreground;
+    --focus-color: var(--color-destructive-600);
   }
 
   :global(.dark) .destructive {
