@@ -18,7 +18,6 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
 /**
  * Metadata used to map a value to a label.
- * Currently only metrics view metadata exists but it is meant for any type.
  */
 export type InlineContextMetadata = {
   metricsViewSpecs: Record<string, MetricsViewMetadata>;

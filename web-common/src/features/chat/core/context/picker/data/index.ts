@@ -5,11 +5,13 @@ import { getModelsPickerOptions } from "@rilldata/web-common/features/chat/core/
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
 import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
 import { getCanvasesPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/canvases.ts";
+import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
 
 /**
- * Creates a store that contains a list of options for each valid metrics view and sources/models.
+ * Creates a store that contains a list of options for each valid metrics view, canvases and sources/models.
  * 1. Chooses top level options based on where this is run in rill developer or not.
- *    If rill dev, then sources/models are also included in the top level list along with metrics views.
+ *    If rill dev, then sources/models are also included in the top level list along with metrics views and canvases.
  * 2. Bubbles up recently used and active top level options to the top of the list.
  *
  * The list contains parents immediately followed by their children.
@@ -21,12 +23,13 @@ export function getPickerOptions(
 
   return derived(
     [
+      getInlineChatContextMetadata(),
       getMetricsViewPickerOptions(),
       getCanvasesPickerOptions(uiState),
       isRillDev ? getModelsPickerOptions(uiState) : readable(null),
       uiState.expandedParentsStore,
     ],
-    ([metricsViewOptions, canvasOptions, filesOption]) => {
+    ([metadata, metricsViewOptions, canvasOptions, filesOption]) => {
       const recentlyUsed: PickerItem[] = [];
       const recentlyUsedIds = new Set<string>();
       const currentlyActive: PickerItem[] = [];
@@ -38,6 +41,13 @@ export function getPickerOptions(
 
       // Mark items and all its children as recently used or currently active
       allOptions.forEach((o) => {
+        // Updated label based on metadata. It is simpler here to ensure metadata is loaded.
+        // Setting it on context instead of deriving it during display time supports filtering on label.
+        o.context.label = InlineContextConfig[o.context.type].getLabel(
+          o.context,
+          metadata,
+        );
+
         const parentIsRecentlyUsed =
           o.parentId && recentlyUsedIds.has(o.parentId);
         if (o.recentlyUsed || parentIsRecentlyUsed) {

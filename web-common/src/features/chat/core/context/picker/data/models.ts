@@ -53,7 +53,6 @@ export function getModelsPickerOptions(
           type: InlineContextType.Model,
           model: modelName,
           value: modelName,
-          label: modelName,
         } satisfies InlineContext;
         const modelPickerItem = {
           id: getIdForContext(modelContext),
@@ -114,7 +113,6 @@ function getModelColumnsQueryOptions(
               data.profileColumns?.map((col) => {
                 const context = {
                   type: InlineContextType.Column,
-                  label: col.name,
                   value: col.name!,
                   column: col.name,
                   columnType: col.type,

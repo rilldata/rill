@@ -14,6 +14,7 @@ export enum InlineContextType {
 
 export type InlineContext = {
   type: InlineContextType;
+  // While label is display only, we set it to context so that filter can be applied on it.
   label?: string;
   // Main value for this context, used to run search and forms a unique identifier with type
   value: string;

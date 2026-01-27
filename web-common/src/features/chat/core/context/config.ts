@@ -13,10 +13,9 @@ import {
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import type { InlineContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
-import type { V1ComponentSpec } from "@rilldata/web-common/runtime-client";
 import {
-  getHeaderForComponent,
   getIconForComponent,
+  getLabelForComponent,
 } from "@rilldata/web-common/features/canvas/components/util.ts";
 
 type ContextConfigPerType = {
@@ -61,11 +60,18 @@ export const InlineContextConfig: Record<
   [InlineContextType.CanvasComponent]: {
     editable: true,
     typeLabel: "Canvas Component",
-    getLabel: (ctx, meta) =>
-      getCanvasComponentLabel(
+    getLabel: (ctx, meta) => {
+      const componentSpec = meta.componentSpecs[ctx.canvasComponent!];
+      return getLabelForComponent(
         ctx.canvasComponent!,
-        meta.componentSpecs[ctx.canvasComponent!],
-      ),
+        componentSpec,
+        meta.metricsViewSpecs[
+          (componentSpec.rendererProperties?.metrics_view as
+            | string
+            | undefined) ?? ""
+        ]?.metricsViewSpec,
+      );
+    },
     getIcon: (ctx, meta) => {
       const componentSpec = meta.componentSpecs[ctx.canvasComponent!];
       return getIconForComponent(componentSpec?.renderer as any);
@@ -137,21 +143,3 @@ export const InlineContextConfig: Record<
     getIcon: (ctx) => fieldTypeToSymbol(ctx.columnType ?? ""),
   },
 };
-
-const rowColMatcher = /-(\d+)-(\d+)$/;
-export function getCanvasComponentLabel(
-  componentName: string,
-  componentSpec: V1ComponentSpec | undefined,
-) {
-  const userDefinedTitle =
-    (componentSpec?.rendererProperties?.title as string | undefined) ||
-    componentSpec?.displayName;
-  if (userDefinedTitle) return userDefinedTitle;
-  const header = getHeaderForComponent(componentSpec?.renderer as any);
-
-  const rowColMatch = rowColMatcher.exec(componentName);
-  if (!rowColMatch) return header;
-  const rowColPart = ` at Row: ${rowColMatch[1]}, Col: ${rowColMatch[2]}`;
-
-  return header + rowColPart;
-}

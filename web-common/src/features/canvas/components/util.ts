@@ -10,6 +10,7 @@ import type {
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
+  V1ComponentSpec,
   V1MetricsViewSpec,
   V1ResolveCanvasResponseResolvedComponents,
   V1Resource,
@@ -30,6 +31,11 @@ import TableIcon from "@rilldata/web-common/features/canvas/icons/TableIcon.svel
 import TextIcon from "@rilldata/web-common/features/canvas/icons/TextIcon.svelte";
 import BigNumberIcon from "@rilldata/web-common/features/canvas/icons/BigNumberIcon.svelte";
 import LeaderboardIcon from "@rilldata/web-common/features/canvas/icons/LeaderboardIcon.svelte";
+import {
+  CHART_CONFIG,
+  type ChartMetadataConfig,
+} from "@rilldata/web-common/features/components/charts/config.ts";
+import { readable } from "svelte/store";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
@@ -202,6 +208,45 @@ export function getHeaderForComponent(
 ) {
   if (!componentType) return "Component";
   return DISPLAY_MAP[componentType] || "Component";
+}
+
+const rowColMatcher = /-(\d+)-(\d+)$/;
+export function getLabelForComponent(
+  componentName: string,
+  componentSpec: V1ComponentSpec | undefined,
+  metricsViewSpec: V1MetricsViewSpec | undefined,
+) {
+  const renderer = componentSpec?.renderer as CanvasComponentType | undefined;
+  if (!renderer) return componentName;
+
+  if (CHART_CONFIG[renderer]?.provider) {
+    const providerClass: ChartMetadataConfig["provider"] =
+      CHART_CONFIG[renderer].provider;
+    const provider = new providerClass(
+      readable(componentSpec?.rendererProperties as any),
+    );
+
+    const fields = Object.fromEntries([
+      ...(metricsViewSpec?.measures?.map((m) => [m.name!, m]) ?? []),
+      ...(metricsViewSpec?.dimensions?.map((d) => [d.name!, d]) ?? []),
+    ]);
+
+    return provider.chartTitle(fields);
+  }
+
+  const userDefinedTitle =
+    (componentSpec?.rendererProperties?.title as string | undefined) ||
+    componentSpec?.displayName;
+  if (userDefinedTitle) return userDefinedTitle;
+  const header = getHeaderForComponent(renderer);
+
+  const rowColMatch = rowColMatcher.exec(componentName);
+  if (!rowColMatch) return header;
+  const rowCount = Number(rowColMatch[1]) + 1;
+  const colCount = Number(rowColMatch[2]) + 1;
+  const rowColPart = ` at Row: ${rowCount}, Col: ${colCount}`;
+
+  return header + rowColPart;
 }
 
 export function getIconForComponent(componentType: CanvasComponentType | null) {

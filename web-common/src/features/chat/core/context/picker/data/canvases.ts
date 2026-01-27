@@ -15,7 +15,6 @@ import {
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
-import { getCanvasComponentLabel } from "@rilldata/web-common/features/chat/core/context/config.ts";
 
 export function getCanvasesPickerOptions(
   uiState: ContextPickerUIState,
@@ -40,13 +39,11 @@ export function getCanvasesPickerOptions(
 
       canvases.forEach((res) => {
         const canvasName = res.meta?.name?.name ?? "";
-        const canvasSpec = res.canvas?.state?.validSpec ?? {};
 
         const currentlyActive = activeCanvasName === canvasName;
         const canvasContext = {
           type: InlineContextType.Canvas,
           value: canvasName,
-          label: canvasSpec.displayName || canvasName,
           canvas: canvasName,
         } satisfies InlineContext;
         const canvasPickerItem = {
@@ -105,7 +102,6 @@ function getCanvasComponentsQueryOptions(
 
                 const componentContext = {
                   type: InlineContextType.CanvasComponent,
-                  label: getCanvasComponentLabel(name, componentSpec),
                   value: name,
                   canvas,
                   canvasComponent: name,
