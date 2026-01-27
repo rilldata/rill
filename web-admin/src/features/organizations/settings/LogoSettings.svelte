@@ -52,7 +52,7 @@
     <UploadImagePopover
       imageUrl={organizationLogoUrl}
       accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-      label="favicon"
+      label="logo"
       {organization}
       loading={isLoading}
       error={getRpcErrorMessage(error)}
