@@ -81,7 +81,7 @@ export const load = async ({ params, url, route, depends }) => {
       organizationPermissions: <V1OrganizationPermissions>{},
       projectPermissions: <V1ProjectPermissions>{},
       token,
-      organization,
+      organization: undefined,
     };
   }
 
@@ -108,7 +108,9 @@ export const load = async ({ params, url, route, depends }) => {
   }
 
   const organizationPermissions = organizationResp?.permissions ?? {};
+  const organizationData = organizationResp?.organization;
   const organizationLogoUrl = organizationResp?.organization?.logoUrl;
+  const organizationLogoDarkUrl = organizationResp?.organization?.logoDarkUrl;
   const organizationFaviconUrl = organizationResp?.organization?.faviconUrl;
   const organizationThumbnailUrl = organizationResp?.organization?.thumbnailUrl;
   const planDisplayName =
@@ -118,13 +120,14 @@ export const load = async ({ params, url, route, depends }) => {
     return {
       user,
       organizationPermissions,
+      organization: organizationData,
       organizationLogoUrl,
+      organizationLogoDarkUrl,
       organizationFaviconUrl,
       organizationThumbnailUrl,
       planDisplayName,
       projectPermissions: <V1ProjectPermissions>{},
       token,
-      organization,
     };
   }
 
@@ -138,7 +141,9 @@ export const load = async ({ params, url, route, depends }) => {
     return {
       user,
       organizationPermissions,
+      organization: organizationData,
       organizationLogoUrl,
+      organizationLogoDarkUrl,
       organizationFaviconUrl,
       organizationThumbnailUrl,
       planDisplayName,
@@ -146,7 +151,6 @@ export const load = async ({ params, url, route, depends }) => {
       token,
       project: proj,
       runtime: runtimeData,
-      organization,
     };
   } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {
