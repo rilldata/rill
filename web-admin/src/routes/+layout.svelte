@@ -48,9 +48,11 @@
   );
 
   $: ({
-    params: { organization },
+    params: { organization: organizationName },
     url: { pathname },
   } = $page);
+
+  $: organization = organizationName;
 
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
