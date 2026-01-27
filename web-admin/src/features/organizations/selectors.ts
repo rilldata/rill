@@ -43,12 +43,13 @@ function normalizeOrganization(
   if (
     organization &&
     typeof organization === "object" &&
-    "name" in organization
+    "name" in organization &&
+    typeof organization.name === "string"
   ) {
     return organization.name;
   }
   throw new Error(
-    `Invalid organization parameter: expected string or V1Organization object, got ${typeof organization}`,
+    `Invalid organization parameter: expected string or V1Organization object with name property, got ${typeof organization}`,
   );
 }
 
