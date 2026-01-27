@@ -305,7 +305,7 @@
   .toolbar-open-btn {
     @apply h-7 px-3 rounded-[2px] border flex items-center justify-center gap-x-1.5 shadow-sm transition-colors;
     @apply text-xs font-medium;
-    @apply bg-primary-600 text-white border-primary-600;
+    @apply bg-primary-600 text-fg-primary border-primary-600;
   }
 
   .toolbar-open-btn:focus {

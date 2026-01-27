@@ -8,7 +8,7 @@
 </script>
 
 <div class="flex flex-col justify-center items-center h-3/5 space-y-6 m-auto">
-  <CancelCircleInverse size="7em" className="text-gray-200" />
+  <CancelCircleInverse size="7em" className="text-icon-muted" />
   <div class="flex flex-col items-center space-y-2">
     <h1 class="text-lg font-semibold">
       Sorry, your dashboard isn't working right now!

@@ -78,7 +78,7 @@
     <DropdownMenu.Separator />
     <DropdownMenu.Item
       href={`/files/rill.yaml?addMockUser=true`}
-      class="flex gap-x-2 items-center text-black font-normal"
+      class="flex gap-x-2 items-center text-fg-primary font-normal"
     >
       <Add color={iconColor} size="16px" />
       Add mock user

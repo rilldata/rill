@@ -19,11 +19,11 @@
       </svelte:fragment>
     </TooltipTitle>
     <div class="pb-1 leading-4">
-      <p class="text-gray-200">
+      <p class="text-fg-inverse/90">
         <slot name="tooltip-description" />
       </p>
       {#if modelHasError}
-        <p class="italic pt-2 text-gray-100">
+        <p class="italic pt-2 text-fg-inverse/60">
           <span
             class="inline-grid place-items-center"
             style:transform="translateY(1px)"

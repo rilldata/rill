@@ -72,6 +72,26 @@ echo "== NPM Install =="
 # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
 HUSKY=0 npm install
 
+echo ""
+echo "== Check for disallowed Tailwind text color classes =="
+# Always check all web directories - this is fast and enforces consistent color usage
+disallowed_matches=$(grep -rn --include='*.svelte' --include='*.ts' --include='*.js' \
+  --exclude-dir='.svelte-kit' --exclude-dir='node_modules' --exclude-dir='build' \
+  -E 'text-(gray|neutral|slate|stone|zone)-[0-9]+' \
+  web-admin web-common web-local 2>/dev/null || true)
+
+if [[ -n "$disallowed_matches" ]]; then
+  echo "ERROR: Found disallowed Tailwind text color classes."
+  echo "Use semantic color classes instead of: text-gray-*, text-neutral-*, text-slate-*, text-stone-*, text-zone-*"
+  echo ""
+  echo "$disallowed_matches"
+  if [[ "$FAIL_FAST" == "true" ]]; then
+    exit 1
+  else
+    exit_code=1
+  fi
+fi
+
 if [[ "$COMMON" == "true" ]]; then
   echo ""
   echo "== lint and type checks for web common =="

@@ -255,6 +255,10 @@
     @apply text-fg-muted p-0;
   }
 
+  .text:focus {
+    @apply shadow-none;
+  }
+
   .text:hover {
     @apply text-primary-700;
   }
@@ -287,6 +291,10 @@
     @apply font-normal text-fg-muted;
     @apply h-6 px-1.5 rounded-sm;
     @apply gap-x-1.5;
+  }
+
+  .toolbar:focus {
+    @apply shadow-none;
   }
 
   .toolbar:hover:not(:disabled) {

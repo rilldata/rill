@@ -27,10 +27,10 @@
         >
           <AlertCircleIcon class="text-yellow-700 -mt-0.5" size={28} />
           <div class="flex flex-col gap-y-1">
-            <h3 class="text-base font-medium text-black">
+            <h3 class="text-base font-medium text-fg-secondary">
               What are merge conflicts?
             </h3>
-            <div class="text-sm text-fg-secondary">
+            <div class="text-sm text-fg-tertiary">
               Conflicts occur when same part of the file has been changed in
               different ways. You need to choose which version to keep.
             </div>

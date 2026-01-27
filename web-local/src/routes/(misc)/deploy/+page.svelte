@@ -116,7 +116,7 @@
   </CTAHeader>
   <CTANeedHelp />
 {:else if error}
-  <CancelCircleInverse size="7rem" className="text-gray-200" />
+  <CancelCircleInverse size="7rem" className="text-icon-muted" />
   <CTAHeader variant="bold">Oops! An error occurred</CTAHeader>
   <CTAMessage>{error.message}</CTAMessage>
 {/if}

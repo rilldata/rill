@@ -74,7 +74,7 @@
     role="presentation"
   >
     <div
-      class="grid place-content-center grid-gap-2 text-white m-auto p-6 break-all text-3xl"
+      class="grid place-content-center grid-gap-2 text-fg-primary m-auto p-6 break-all text-3xl"
     >
       <span class="place-content-center">
         drop your files to add new source

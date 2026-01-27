@@ -50,7 +50,9 @@
         getRandomBgColor(email ?? name),
       )}
     >
-      <span class="text-sm text-white font-semibold">{getInitials(name)}</span>
+      <span class="text-sm text-fg-primary font-semibold"
+        >{getInitials(name)}</span
+      >
     </div>
   {/if}
   <div class="flex flex-col text-left">

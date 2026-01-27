@@ -7,7 +7,7 @@
 >
   <div class="flex flex-col justify-center items-center">
     <div class="relative">
-      <ReportIcon className="text-gray-300 w-12 h-12" />
+      <ReportIcon className="text-icon-muted w-12 h-12" />
     </div>
   </div>
   <div
