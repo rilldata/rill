@@ -102,7 +102,7 @@
       <div class="flex flex-col gap-6 w-full overflow-hidden">
         <div class="flex flex-col">
           <RadixLarge>Environment variables</RadixLarge>
-          <p class="text-sm text-slate-700 font-medium">
+          <p class="text-sm text-fg-tertiary font-medium">
             Manage your environment variables here. <a
               href="https://docs.rilldata.com/guide/administration/project-settings/variables-and-credentials"
               target="_blank"
@@ -123,15 +123,17 @@
           />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger
-              class={`min-w-fit flex flex-row gap-1 items-center rounded-sm border border-slate-300 ${
-                isDropdownOpen ? "bg-slate-200" : "hover:bg-slate-100"
+              class={`min-w-fit flex flex-row gap-1 items-center rounded-sm border border-gray-300 ${
+                isDropdownOpen ? "bg-gray-200" : "hover:bg-surface-hover"
               } px-2 py-1 ${
                 projectVariables.length === 0
                   ? "opacity-50 cursor-not-allowed pointer-events-none"
                   : ""
               }`}
             >
-              <span class="text-slate-600 font-medium">{environmentLabel}</span>
+              <span class="text-fg-secondary font-medium"
+                >{environmentLabel}</span
+              >
               {#if isDropdownOpen}
                 <CaretUpIcon size="12px" />
               {:else}

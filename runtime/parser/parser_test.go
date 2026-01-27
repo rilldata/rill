@@ -2532,6 +2532,7 @@ light:
 				Light: &runtimev1.ThemeColors{
 					Primary:   "red",
 					Secondary: "green",
+					Variables: map[string]string{},
 				},
 			},
 		},
@@ -2594,18 +2595,18 @@ dark:
 					Primary:   "red",
 					Secondary: "green",
 					Variables: map[string]string{
-						"background":      "blue",
-						"foreground":      "yellow",
-						"card-foreground": "yellow",
+						"surface-subtle": "blue",
+						"fg-primary":     "yellow",
+						"fg-secondary":   "yellow",
 					},
 				},
 				Dark: &runtimev1.ThemeColors{
 					Primary:   "gray",
 					Secondary: "black",
 					Variables: map[string]string{
-						"background":      "black",
-						"foreground":      "white",
-						"card-foreground": "white",
+						"surface-subtle": "black",
+						"fg-primary":     "white",
+						"fg-secondary":   "white",
 					},
 				},
 			},
