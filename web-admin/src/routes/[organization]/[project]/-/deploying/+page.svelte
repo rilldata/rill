@@ -1,16 +1,19 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import { useDeployingDashboards } from "@rilldata/web-admin/features/dashboards/listing/deploying-dashboards.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  const { organization, project, runtime, deployingDashboard } = data;
+  const { project, runtime, deployingDashboard } = data;
+
+  $: organizationName = $page.params.organization;
 
   const deployingDashboardResp = useDeployingDashboards(
     runtime.instanceId,
-    organization,
+    organizationName,
     project.name,
     deployingDashboard,
   );
