@@ -119,10 +119,26 @@ test.describe("Deploy journey", () => {
 
       await assertAndSkipInvite(deployPage);
 
-      // Explore is opened after deploying.
-      await expect(
-        deployPage.getByLabel("Breadcrumb navigation, level 2"),
-      ).toHaveText("Adbids dashboard", { timeout: 60_000 });
+      // Explore is opened after deploying. This can be delayed, so poll with periodic reloads.
+      await expect
+        .poll(
+          async () => {
+            try {
+              // Reload to pick up the latest deployment status.
+              await deployPage.reload();
+              return await deployPage
+                .getByLabel("Breadcrumb navigation, level 2")
+                .innerText();
+            } catch {
+              return "";
+            }
+          },
+          {
+            intervals: Array(6).fill(10_000),
+            timeout: 120_000,
+          },
+        )
+        .toBe("Adbids dashboard");
 
       // Org title is correct
       await expect(
