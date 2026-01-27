@@ -13,15 +13,14 @@
 
 <ContentContainer maxWidth={1100} showTitle={false}>
   <div class="flex flex-col gap-y-4 size-full">
-    <div class="flex gap-x-12 items-center">
-      <div class="flex flex-col gap-y-4 flex-1">
-        <h1 class="text-2xl font-semibold" aria-label="Container title">
-          Project status
-        </h1>
-        <div class="flex gap-x-20 items-start">
-          <ProjectGithubConnection {organization} {project} />
-          <ProjectDeploymentStatus {organization} {project} />
-        </div>
+    <h1 class="text-2xl font-semibold" aria-label="Container title">
+      Project status
+    </h1>
+
+    <div class="flex justify-between items-start">
+      <div class="flex gap-x-20 items-start">
+        <ProjectGithubConnection {organization} {project} />
+        <ProjectDeploymentStatus {organization} {project} />
       </div>
       <ProjectClone {organization} {project} />
     </div>
