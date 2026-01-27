@@ -47,7 +47,7 @@
     <p class="text-sm text-gray-600">
       Add this to your MCP client's configuration file.
       <a
-        href="https://docs.rilldata.com/explore/mcp#manual-configuration-alternative-method"
+        href="https://docs.rilldata.com/guide/ai/mcp#manual-configuration-alternative-method"
         target="_blank"
         rel="noopener"
       >

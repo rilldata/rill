@@ -121,6 +121,15 @@ func (q *ColumnTimeRange) resolveDuckDBAndClickhouse(ctx context.Context, olap d
 }
 
 func (q *ColumnTimeRange) resolveStarRocks(ctx context.Context, olap drivers.OLAPStore, priority int) error {
+	// If schema is not provided, look up the table to get the correct schema
+	if q.DatabaseSchema == "" {
+		table, err := olap.InformationSchema().Lookup(ctx, q.Database, "", q.TableName)
+		if err != nil {
+			return fmt.Errorf("failed to lookup table %q: %w", q.TableName, err)
+		}
+		q.DatabaseSchema = table.DatabaseSchema
+	}
+
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
 		olap.Dialect().EscapeIdentifier(q.ColumnName),

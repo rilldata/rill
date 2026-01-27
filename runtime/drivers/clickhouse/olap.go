@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -42,11 +41,9 @@ func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 }
 
 func (c *Connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
-	if conn := connFromContext(ctx); conn != nil {
-		// nested calls, ctx is already wrapped with a connection and a session ID
-		sessionID := sessionIDFromContext(ctx)
-		ensuredCtx := c.sessionAwareContext(contextWithConn(context.Background(), conn), sessionID)
-		return fn(ctx, ensuredCtx)
+	// Check not nested
+	if connFromContext(ctx) != nil {
+		panic("nested WithConnection")
 	}
 
 	// Acquire a connection from write pool, since this is meant to be used for operations that may write (e.g. creating temp tables).
@@ -59,10 +56,8 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 	defer func() { _ = release() }()
 
 	// Call fn with connection embedded in context
-	// embed session ID in context so that nested calls can fetch session ID
-	sessionID := uuid.New().String()
-	wrappedCtx := c.sessionAwareContext(contextWithConn(contextWithSessionID(ctx, sessionID), conn), sessionID)
-	ensuredCtx := c.sessionAwareContext(contextWithConn(contextWithSessionID(context.Background(), sessionID), conn), sessionID)
+	wrappedCtx := c.sessionAwareContext(contextWithConn(ctx, conn))
+	ensuredCtx := c.sessionAwareContext(contextWithConn(context.Background(), conn))
 	return fn(wrappedCtx, ensuredCtx)
 }
 

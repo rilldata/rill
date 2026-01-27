@@ -206,6 +206,10 @@ function fromTimeRangesParams(
     partialExploreState.showTimeComparison = false;
   }
 
+  // Set or reset time dimension based on preset
+  // If preset has a time dimension, use it; otherwise reset to undefined (primary time dimension)
+  partialExploreState.selectedTimeDimension = preset.timeDimension;
+
   return { partialExploreState, errors };
 }
 

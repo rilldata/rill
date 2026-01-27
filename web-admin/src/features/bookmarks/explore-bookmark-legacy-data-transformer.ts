@@ -60,6 +60,7 @@ export function exploreBookmarkDataTransformer({
   // To avoid calculating it everytime we directly convert it to final url.
   const searchParams = convertPartialExploreStateToUrlParams(
     exploreSpec,
+    metricsViewSpec,
     exploreStateFromBookmark,
     getTimeControlState(
       metricsViewSpec,
