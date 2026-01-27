@@ -59,7 +59,6 @@
             </a>
           </span>
 
-          >
           <div class="flex flex-col gap-y-2">
             {#if isGithubConnected}
               <button
