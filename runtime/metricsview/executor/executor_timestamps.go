@@ -331,6 +331,59 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (metricsvi
 	return ts, nil
 }
 
+func (e *Executor) resolveStarRocks(ctx context.Context, timeExpr string) (metricsview.TimestampsResult, error) {
+	filter := e.security.RowFilter()
+	if filter != "" {
+		filter = fmt.Sprintf(" WHERE %s", filter)
+	}
+	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
+
+	var watermarkExpr string
+	if e.metricsView.WatermarkExpression != "" {
+		watermarkExpr = e.metricsView.WatermarkExpression
+	} else {
+		watermarkExpr = fmt.Sprintf("max(%s)", timeExpr)
+	}
+
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as `min`, max(%[1]s) as `max`, %[2]s as `watermark` FROM %[3]s %[4]s",
+		timeExpr,
+		watermarkExpr,
+		escapedTableName,
+		filter,
+	)
+
+	rows, err := e.olap.Query(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var minTime, maxTime, watermark *time.Time
+		err = rows.Scan(&minTime, &maxTime, &watermark)
+		if err != nil {
+			return metricsview.TimestampsResult{}, err
+		}
+		return metricsview.TimestampsResult{
+			Min:       safeTime(minTime),
+			Max:       safeTime(maxTime),
+			Watermark: safeTime(watermark),
+		}, nil
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+
+	return metricsview.TimestampsResult{}, errors.New("no rows returned")
+}
+
 func safeTime(tm *time.Time) time.Time {
 	if tm == nil {
 		return time.Time{}

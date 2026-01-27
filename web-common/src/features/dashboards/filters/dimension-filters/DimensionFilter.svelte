@@ -39,6 +39,7 @@
   export let readOnly: boolean = false;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
+  export let timeDimension: string | undefined = undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
@@ -79,6 +80,10 @@
     pinned,
   } = filterData);
 
+  $: if (!open && filterData.mode !== curMode) {
+    resyncFilterData(filterData);
+  }
+
   // Sync proxy when selectedValues changes (for Select mode)
   $: if (!open && mode === DimensionFilterMode.Select) {
     selectedValuesProxy = structuredClone(filterData.selectedValues) ?? [];
@@ -112,6 +117,7 @@
       searchText: curSearchText,
       timeStart,
       timeEnd,
+      timeDimension,
       enabled: enableSearchQuery,
       metricsViewWheres: expressionMap,
     },
@@ -139,6 +145,7 @@
       searchText: curSearchText,
       timeStart,
       timeEnd,
+      timeDimension,
       enabled: enableSearchCountQuery,
 
       metricsViewWheres: expressionMap,
@@ -382,6 +389,18 @@
     } else {
       await toggleDimensionValueSelections(name, [value], metricsViewNames);
     }
+  }
+
+  function resyncFilterData(filterData: DimensionFilterItem) {
+    curMode = filterData.mode;
+    curSearchText = filterData.inputText ?? "";
+    curExcludeMode = filterData.isInclude === false;
+    selectedValuesProxy = filterData.selectedValues ?? [];
+    searchedBulkValues =
+      filterData.mode === DimensionFilterMode.InList
+        ? (filterData.selectedValues ?? [])
+        : [];
+    curPinned = filterData.pinned;
   }
 </script>
 

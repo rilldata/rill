@@ -169,10 +169,8 @@ func TestMetricsViewsTimeseries_quarter_grain_IST(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 6)
+	require.Len(t, rows, 5)
 	i := 0
-	require.Equal(t, parseTime(t, "2022-10-31T18:30:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
 	require.Equal(t, parseTime(t, "2022-12-31T18:30:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-03-31T18:30:00Z").AsTime(), rows[i].Ts.AsTime())
@@ -348,7 +346,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *tes
 	rows := q.Result.Data
 	require.Len(t, rows, 1)
 	i := 0
-	require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 
 	q = &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
@@ -388,7 +386,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *tes
 	rows := q.Result.Data
 	require.Len(t, rows, 1)
 	i := 0
-	require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 
 	q = &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
@@ -426,14 +424,13 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *tes
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 5)
+	require.Len(t, rows, 4)
 	i := 0
 	require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
-	require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
+	// no 05:00 hour since 04:00 to 05:00 UTC are same because of DST fall back
 	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-11-05T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
@@ -460,7 +457,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 5)
+	require.Len(t, rows, 4)
 	i := 0
 	require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
@@ -468,9 +465,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 	require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
 	i++
-	require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
+	// no 05:00 hour since 04:00 to 05:00 UTC are same because of DST fall back
 	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
 	i++
@@ -587,13 +582,15 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t *test
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 5)
+	require.Len(t, rows, 6)
 	i := 0
 	require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	i++
+	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
@@ -621,7 +618,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 5)
+	require.Len(t, rows, 6)
 	i := 0
 	require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
@@ -631,6 +628,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+	i++
+	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
@@ -674,22 +674,10 @@ func TestMetricsViewTimeSeries_having_clause(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 6)
+	require.Len(t, rows, 2)
 	i := 0
 	require.Equal(t, parseTime(t, "2019-01-01T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.NotNil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
-	i++
-	require.Equal(t, parseTime(t, "2019-01-02T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
-	i++
-	require.Equal(t, parseTime(t, "2019-01-03T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
-	i++
-	require.Equal(t, parseTime(t, "2019-01-04T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
-	i++
-	require.Equal(t, parseTime(t, "2019-01-05T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
 	i++
 	require.Equal(t, parseTime(t, "2019-01-06T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.NotNil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
@@ -738,33 +726,51 @@ func TestMetricsTimeseries_measure_filters_same_name(t *testing.T) {
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
-	outputResult(q.Result.Meta, q.Result.Data)
+	rows := q.Result.Data
+	require.Len(t, rows, 13)
 	i := 0
-	require.Equal(t, "null", fieldsToString(q.Result.Data[i].Records, "bid_price"))
+	require.Equal(t, parseTime(t, "2022-01-03T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
 	i++
-	require.Equal(t, "null", fieldsToString(q.Result.Data[i].Records, "bid_price"))
+	require.Equal(t, parseTime(t, "2022-01-04T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
 	i++
-	require.Equal(t, "3", fieldsToString(q.Result.Data[i].Records, "bid_price"))
+	require.Equal(t, parseTime(t, "2022-01-06T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
 	i++
-	require.Equal(t, "3", fieldsToString(q.Result.Data[i].Records, "bid_price"))
-
+	require.Equal(t, parseTime(t, "2022-01-07T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
+	i++
+	require.Equal(t, parseTime(t, "2022-01-08T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
+	i++
+	require.Equal(t, parseTime(t, "2022-01-09T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
+	i++
+	require.Equal(t, parseTime(t, "2022-01-11T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
+	i++
+	require.Equal(t, parseTime(t, "2022-01-12T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
+	i++
+	require.Equal(t, parseTime(t, "2022-01-13T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
+	i++
+	require.Equal(t, parseTime(t, "2022-01-15T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
+	i++
+	require.Equal(t, parseTime(t, "2022-01-18T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
+	i++
+	require.Equal(t, parseTime(t, "2022-01-21T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
+	i++
+	require.Equal(t, parseTime(t, "2022-01-23T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["bid_price"])
 }
 
 func toStructpbValue(t *testing.T, v any) *structpb.Value {
 	sv, err := structpb.NewValue(v)
 	require.NoError(t, err)
 	return sv
-}
-
-func outputResult(schema []*runtimev1.MetricsViewColumn, data []*runtimev1.TimeSeriesValue) {
-	for _, s := range schema {
-		fmt.Printf("%v,", s.Name)
-	}
-	fmt.Println()
-	for i, row := range data {
-		for _, s := range schema {
-			fmt.Printf("%s %v,", row.Ts.AsTime().Format(time.RFC3339), row.Records.Fields[s.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-	}
 }

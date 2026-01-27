@@ -22,7 +22,6 @@ import {
   FromActivePageMap,
   FromURLParamTimeDimensionMap,
   ToURLParamTimeDimensionMap,
-  ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
   getMapFromArray,
@@ -45,6 +44,7 @@ import {
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
 export function convertLegacyStateToExplorePreset(
   legacyState: DashboardState,
@@ -147,7 +147,7 @@ function fromLegacyTimeRangeFields(
   }
   if (legacyState.timeGrain) {
     preset.timeGrain =
-      ToURLParamTimeGrainMapMap[FromProtoTimeGrainMap[legacyState.timeGrain]];
+      V1TimeGrainToDateTimeUnit[FromProtoTimeGrainMap[legacyState.timeGrain]];
   }
 
   if (legacyState.compareTimeRange?.name) {

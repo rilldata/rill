@@ -104,7 +104,7 @@
           <RadixLarge>Environment variables</RadixLarge>
           <p class="text-sm text-slate-700 font-medium">
             Manage your environment variables here. <a
-              href="https://docs.rilldata.com/manage/project-management/variables-and-credentials"
+              href="https://docs.rilldata.com/guide/administration/project-settings/variables-and-credentials"
               target="_blank"
               class="text-primary-600 hover:text-primary-700 active:text-primary-800"
             >

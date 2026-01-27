@@ -43,28 +43,34 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			explore := args[len(args)-1]
 
-			var filterExpr *runtimev1.Expression
-			if filter != "" {
-				filterExpr = &runtimev1.Expression{}
-				err := protojson.Unmarshal([]byte(filter), filterExpr)
-				if err != nil {
-					return fmt.Errorf("failed to parse filter expression: %w", err)
-				}
-			}
-
-			err = validateExplore(cmd.Context(), ch, project, explore, fields)
+			mv, err := validateExplore(cmd.Context(), ch, project, explore, fields)
 			if err != nil {
 				return err
 			}
 
+			var mvFilterExpr map[string]*runtimev1.Expression
+			if filter != "" {
+				mvFilterExpr = make(map[string]*runtimev1.Expression)
+				filterExpr := &runtimev1.Expression{}
+				err := protojson.Unmarshal([]byte(filter), filterExpr)
+				if err != nil {
+					return fmt.Errorf("failed to parse filter expression: %w", err)
+				}
+				mvFilterExpr[mv] = filterExpr
+			}
+
 			res, err := client.IssueMagicAuthToken(cmd.Context(), &adminv1.IssueMagicAuthTokenRequest{
-				Org:          ch.Org,
-				Project:      project,
-				TtlMinutes:   int64(ttlMinutes),
-				ResourceType: runtime.ResourceKindExplore,
-				ResourceName: explore,
-				Filter:       filterExpr,
-				Fields:       fields,
+				Org:                ch.Org,
+				Project:            project,
+				TtlMinutes:         int64(ttlMinutes),
+				MetricsViewFilters: mvFilterExpr,
+				Fields:             fields,
+				Resources: []*adminv1.ResourceName{
+					{
+						Type: runtime.ResourceKindExplore,
+						Name: explore,
+					},
+				},
 			})
 			if err != nil {
 				return err
@@ -85,10 +91,10 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	return createCmd
 }
 
-func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore string, fields []string) error {
+func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore string, fields []string) (string, error) {
 	client, err := ch.Client()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	proj, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
@@ -96,18 +102,18 @@ func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore s
 		Project: project,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	if proj.ProdDeployment == nil {
+	if proj.Deployment == nil {
 		ch.PrintfWarn("Could not validate metrics view: project has no production deployment")
-		return nil
+		return "", nil
 	}
-	depl := proj.ProdDeployment
+	depl := proj.Deployment
 
 	rt, err := runtimeclient.New(depl.RuntimeHost, proj.Jwt)
 	if err != nil {
-		return fmt.Errorf("failed to connect to runtime: %w", err)
+		return "", fmt.Errorf("failed to connect to runtime: %w", err)
 	}
 
 	expl, err := rt.GetResource(ctx, &runtimev1.GetResourceRequest{
@@ -118,12 +124,12 @@ func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore s
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to get explore %q: %w", explore, err)
+		return "", fmt.Errorf("failed to get explore %q: %w", explore, err)
 	}
 
 	spec := expl.Resource.GetExplore().State.ValidSpec
 	if spec == nil {
-		return fmt.Errorf("explore %q is invalid", explore)
+		return "", fmt.Errorf("explore %q is invalid", explore)
 	}
 
 	mv, err := rt.GetResource(ctx, &runtimev1.GetResourceRequest{
@@ -134,7 +140,7 @@ func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore s
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to get metrics view %q: %w", spec.MetricsView, err)
+		return "", fmt.Errorf("failed to get metrics view %q: %w", spec.MetricsView, err)
 	}
 
 	for _, f := range fields {
@@ -163,8 +169,8 @@ func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore s
 			continue
 		}
 
-		return fmt.Errorf("field %q not found in explore %q", f, explore)
+		return "", fmt.Errorf("field %q not found in explore %q", f, explore)
 	}
 
-	return nil
+	return spec.MetricsView, nil
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -449,18 +450,25 @@ func toMagicAuthTokensTable(tkns []*adminv1.MagicAuthToken) []*magicAuthToken {
 }
 
 func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
-	expr := metricsview.NewExpressionFromProto(t.Filter)
-	filter, err := metricsview.ExpressionToSQL(expr)
-	if err != nil {
-		panic(err)
+	filters := ""
+	for mv, filter := range t.MetricsViewFilters {
+		expr := metricsview.NewExpressionFromProto(filter)
+		sqlFilter, err := metricsview.ExpressionToSQL(expr)
+		if err != nil {
+			panic(err)
+		}
+		if filters != "" {
+			filters += ", "
+		}
+		filters += fmt.Sprintf("%s(%s)", mv, sqlFilter)
 	}
 
 	row := &magicAuthToken{
-		ID:        t.Id,
-		Filter:    filter,
-		CreatedBy: t.CreatedByUserEmail,
-		CreatedOn: t.CreatedOn.AsTime().Local().Format(time.DateTime),
-		UsedOn:    t.UsedOn.AsTime().Local().Format(time.DateTime),
+		ID:                 t.Id,
+		MetricsViewFilters: filters,
+		CreatedBy:          t.CreatedByUserEmail,
+		CreatedOn:          t.CreatedOn.AsTime().Local().Format(time.DateTime),
+		UsedOn:             t.UsedOn.AsTime().Local().Format(time.DateTime),
 	}
 	if t.ExpiresOn != nil {
 		row.ExpiresOn = t.ExpiresOn.AsTime().Local().Format(time.DateTime)
@@ -469,13 +477,13 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 }
 
 type magicAuthToken struct {
-	ID        string `header:"id" json:"id"`
-	Resource  string `header:"resource" json:"resource"`
-	Filter    string `header:"filter" json:"filter"`
-	CreatedBy string `header:"created by" json:"created_by"`
-	CreatedOn string `header:"created on" json:"created_on"`
-	UsedOn    string `header:"last used on" json:"used_on"`
-	ExpiresOn string `header:"expires on" json:"expires_on"`
+	ID                 string `header:"id" json:"id"`
+	Resource           string `header:"resource" json:"resource"`
+	MetricsViewFilters string `header:"metrics view filters" json:"metrics_view_filters"`
+	CreatedBy          string `header:"created by" json:"created_by"`
+	CreatedOn          string `header:"created on" json:"created_on"`
+	UsedOn             string `header:"last used on" json:"used_on"`
+	ExpiresOn          string `header:"expires on" json:"expires_on"`
 }
 
 func (p *Printer) PrintSubscriptions(subs []*adminv1.Subscription) {
@@ -705,6 +713,99 @@ type billingIssue struct {
 	Level        string `header:"level" json:"level"`
 	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
+}
+
+func (p *Printer) PrintDeployments(deployments []*adminv1.Deployment) {
+	if len(deployments) == 0 {
+		p.PrintfWarn("No deployments found\n")
+		return
+	}
+
+	p.PrintData(toDeploymentsTable(deployments))
+}
+
+func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
+	status := formatDeploymentStatus(d.Status)
+	if d.StatusMessage != "" {
+		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
+	}
+
+	p.Printf("Deployment ID: %s\n", d.Id)
+	p.Printf("Environment: %s\n", d.Environment)
+	p.Printf("Branch: %s\n", d.Branch)
+	p.Printf("Status: %s\n", status)
+	if d.RuntimeHost != "" {
+		p.Printf("Runtime Host: %s\n", d.RuntimeHost)
+	}
+	if d.Editable {
+		p.Printf("Editable: true\n")
+	}
+	p.Printf("Created: %s\n", d.CreatedOn.AsTime().Local().Format(time.RFC1123))
+	p.Printf("Updated: %s\n", d.UpdatedOn.AsTime().Local().Format(time.RFC1123))
+}
+
+func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
+	res := make([]*deployment, 0, len(deployments))
+	for _, d := range deployments {
+		res = append(res, toDeploymentRow(d))
+	}
+	slices.SortFunc(res, func(a, b *deployment) int {
+		// group by environment
+		if a.Environment < b.Environment {
+			return -1
+		} else if a.Environment > b.Environment {
+			return 1
+		}
+		// sort by branch if environment is same
+		if a.Branch < b.Branch {
+			return -1
+		} else if a.Branch > b.Branch {
+			return 1
+		}
+		return 0
+	})
+	return res
+}
+
+func toDeploymentRow(d *adminv1.Deployment) *deployment {
+	status := formatDeploymentStatus(d.Status)
+	if d.StatusMessage != "" {
+		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
+	}
+	return &deployment{
+		Branch:      d.Branch,
+		Environment: d.Environment,
+		Status:      status,
+	}
+}
+
+func formatDeploymentStatus(status adminv1.DeploymentStatus) string {
+	switch status {
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING:
+		return "Pending"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING:
+		return "Running"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED:
+		return "Errored"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED:
+		return "Stopped"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING:
+		return "Updating"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING:
+		return "Stopping"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING:
+		return "Deleting"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETED:
+		return "Deleted"
+	default:
+		return "Unknown"
+	}
+}
+
+type deployment struct {
+	Branch      string `header:"branch" json:"branch"`
+	Environment string `header:"environment" json:"environment"`
+	Status      string `header:"status" json:"status"`
 }
 
 // PrintQueryResponse prints the query response in the desired format (human, json, csv)

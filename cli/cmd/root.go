@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/devtool"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/env"
+	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/cmd/publicurl"
@@ -117,6 +118,7 @@ func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmdutil.AddGroup(rootCmd, "Project", false,
 		start.StartCmd(ch),
 		validate.ValidateCmd(ch),
+		initialize.InitCmd(ch),
 		deploy.DeployCmd(ch),
 		project.ProjectCmd(ch),
 		chat.ChatCmd(ch),

@@ -1561,12 +1561,18 @@ export enum MetricsViewSpec_DimensionType {
    * @generated from enum value: DIMENSION_TYPE_TIME = 2;
    */
   TIME = 2,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_GEOSPATIAL = 3;
+   */
+  GEOSPATIAL = 3,
 }
 // Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_DimensionType)
 proto3.util.setEnumType(MetricsViewSpec_DimensionType, "rill.runtime.v1.MetricsViewSpec.DimensionType", [
   { no: 0, name: "DIMENSION_TYPE_UNSPECIFIED" },
   { no: 1, name: "DIMENSION_TYPE_CATEGORICAL" },
   { no: 2, name: "DIMENSION_TYPE_TIME" },
+  { no: 3, name: "DIMENSION_TYPE_GEOSPATIAL" },
 ]);
 
 /**
@@ -2913,6 +2919,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
   selectTimeRange?: string;
 
   /**
+   * @generated from field: optional string time_dimension = 34;
+   */
+  timeDimension?: string;
+
+  /**
    * Comparison mode.
    *
    * @generated from field: rill.runtime.v1.ExploreComparisonMode comparison_mode = 7;
@@ -3036,6 +3047,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 14, name: "select_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 34, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 15, name: "compare_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
