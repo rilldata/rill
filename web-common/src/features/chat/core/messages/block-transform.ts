@@ -8,6 +8,7 @@ import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageType, ToolName } from "../types";
 import { type ChartBlock } from "./chart/chart-block";
 import { type FileDiffBlock } from "./file-diff/file-diff-block";
+import { shouldHideMessage } from "./message-visibility";
 import { createTextBlock, type TextBlock } from "./text/text-block";
 import {
   createThinkingBlock,
@@ -17,7 +18,7 @@ import { getToolConfig, type ToolConfig } from "./tools/tool-registry";
 import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
 
 // =============================================================================
-// TYPES & TRANSFORMATION
+// TYPES
 // =============================================================================
 
 export type Block =
@@ -27,7 +28,6 @@ export type Block =
   | FileDiffBlock
   | WorkingBlock;
 
-// Re-export individual block types for convenience
 export type {
   ChartBlock,
   FileDiffBlock,
@@ -35,6 +35,10 @@ export type {
   ThinkingBlock,
   WorkingBlock,
 };
+
+// =============================================================================
+// TRANSFORMATION
+// =============================================================================
 
 /**
  * Transforms raw chat messages into a list of UI blocks.
@@ -49,10 +53,14 @@ export function transformToBlocks(
   // Build result map for correlating tool calls with their results
   const resultMap = buildResultMessageMap(messages);
 
+  // Build message map for parent lookups (used by visibility checks)
+  const messageMap = new Map(
+    messages.filter((m) => m.id).map((m) => [m.id!, m]),
+  );
+
   // Accumulator for messages going into the current thinking block
   let thinkingMessages: V1Message[] = [];
 
-  // Helper to flush the thinking block accumulator
   function flushThinking(isComplete: boolean): void {
     if (thinkingMessages.length > 0) {
       blocks.push(
@@ -69,24 +77,20 @@ export function transformToBlocks(
 
   // Process each message
   for (const msg of messages) {
-    const routing = getBlockRoute(msg);
+    const routing = getBlockRoute(msg, messageMap);
 
     switch (routing.route) {
       case "text":
-        // Text blocks close any open thinking block
         flushThinking(true);
         blocks.push(createTextBlock(msg));
         break;
 
       case "thinking":
-        // Accumulate in current thinking block
         thinkingMessages.push(msg);
         break;
 
       case "block": {
-        // Block tools render their own header, so flush thinking first
         flushThinking(true);
-
         const block = routing.config.createBlock?.(msg, resultMap.get(msg.id));
         if (block) {
           blocks.push(block);
@@ -95,33 +99,25 @@ export function transformToBlocks(
       }
 
       case "skip":
-        // Not rendered directly
         break;
     }
   }
 
-  // Flush any remaining thinking messages
-  const isRemainingComplete = !isStreaming && !isConversationLoading;
-  flushThinking(isRemainingComplete);
+  // Flush remaining thinking messages
+  flushThinking(!isStreaming && !isConversationLoading);
 
   // Add working indicator if AI is still processing
   if (shouldShowWorking(blocks, isStreaming, isConversationLoading)) {
-    blocks.push({
-      type: "working",
-      id: "working-indicator",
-    });
+    blocks.push({ type: "working", id: "working-indicator" });
   }
 
   return blocks;
 }
 
 // =============================================================================
-// ROUTING & HELPERS
+// ROUTING
 // =============================================================================
 
-/**
- * Where a message should be routed for rendering.
- */
 type BlockRoute =
   | { route: "text" }
   | { route: "thinking" }
@@ -129,46 +125,35 @@ type BlockRoute =
   | { route: "skip" };
 
 /**
- * Determines where a message should be routed.
- *
- * Routing rules:
- * - router_agent → text (main conversation)
- * - result messages → skip (attached to parent calls via map)
- * - progress messages → thinking
- * - tool calls → consult registry (inline/block/hidden)
+ * Determines where a message should be routed for rendering.
  */
-function getBlockRoute(msg: V1Message): BlockRoute {
-  // Router agent produces the main conversation text
+function getBlockRoute(
+  msg: V1Message,
+  messageMap: Map<string, V1Message>,
+): BlockRoute {
+  // Visibility check (handles hidden tools, results, feedback messages)
+  if (shouldHideMessage(msg, messageMap)) {
+    return { route: "skip" };
+  }
+
+  // Router agent → text (main conversation)
   if (msg.tool === ToolName.ROUTER_AGENT) {
     return { route: "text" };
   }
 
-  // Result messages are attached to their parent calls, not rendered directly
-  if (msg.type === MessageType.RESULT) {
-    return { route: "skip" };
-  }
-
-  // Progress messages always go to thinking block
+  // Progress → thinking
   if (msg.type === MessageType.PROGRESS) {
     return { route: "thinking" };
   }
 
-  // Tool calls: consult the registry
+  // Tool calls → consult registry for block vs inline
   if (msg.type === MessageType.CALL) {
     const config = getToolConfig(msg.tool);
-
-    switch (config.renderMode) {
-      case "block":
-        return { route: "block", config };
-      case "hidden":
-        return { route: "skip" };
-      case "inline":
-      default:
-        return { route: "thinking" };
-    }
+    return config.renderMode === "block"
+      ? { route: "block", config }
+      : { route: "thinking" };
   }
 
-  // Unknown message types are skipped
   return { route: "skip" };
 }
 
