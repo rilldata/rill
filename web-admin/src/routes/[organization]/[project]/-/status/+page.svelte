@@ -17,8 +17,8 @@
       Project status
     </h1>
 
-    <div class="flex justify-between items-start">
-      <div class="flex gap-x-20 items-start">
+    <div class="flex flex-wrap justify-between items-start gap-4">
+      <div class="flex flex-wrap gap-x-20 gap-y-4 items-start">
         <ProjectGithubConnection {organization} {project} />
         <ProjectDeploymentStatus {organization} {project} />
       </div>
