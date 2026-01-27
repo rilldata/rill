@@ -38,6 +38,7 @@ const ALLOWED_KINDS = new Set<ResourceKind>([
   ResourceKind.Model,
   ResourceKind.MetricsView,
   ResourceKind.Explore,
+  ResourceKind.Canvas,
 ]);
 
 function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
@@ -75,12 +76,13 @@ type BuildGraphOptions = {
  * Uses Dagre for automatic layout and maintains cached node positions for stability.
  *
  * This function:
- * - Filters resources to only allowed kinds (Source, Model, MetricsView, Explore)
+ * - Filters resources to only allowed kinds (Source, Model, MetricsView, Explore, Canvas)
+ *   Note: Sources and Models are merged in the UI (Source is deprecated)
  * - Creates nodes with dynamic widths based on label length
  * - Generates edges based on resource references
  * - Applies Dagre layout with configurable spacing
  * - Caches node positions per namespace for consistent placement
- * - Enforces rank constraints (Sources at top, Explores/Canvas at bottom)
+ * - Enforces rank constraints (Explores/Canvas at bottom, Sources/Models flow naturally)
  *
  * @param resources - Array of V1Resource objects to visualize
  * @param opts - Optional configuration for layout and caching
@@ -127,8 +129,11 @@ export function buildResourceGraph(
     const nodeWidth = estimateNodeWidth(label);
     let rankConstraint: "min" | "max" | undefined;
     switch (kind) {
+      // Sources and Models are merged (Source is deprecated), both treated the same
       case ResourceKind.Source:
-        rankConstraint = "min";
+      case ResourceKind.Model:
+        // No special rank constraint - let them flow naturally in the graph
+        rankConstraint = undefined;
         break;
       case ResourceKind.Explore:
       case ResourceKind.Canvas:
@@ -177,6 +182,7 @@ export function buildResourceGraph(
       dependentsMap.get(sourceId)!.add(dependentId);
     }
   }
+
 
   const edgeIds = new Set<string>();
   const edges: Edge[] = [];
@@ -509,7 +515,7 @@ function updateGroupingCaches(groups: ResourceGraphGrouping[]): void {
 export function partitionResourcesBySeeds(
   resources: V1Resource[],
   seeds: (string | V1ResourceName)[],
-  filterKind?: ResourceKind,
+  filterKind?: ResourceKind | "dashboards",
 ): ResourceGraphGrouping[] {
   const resourceMap = buildVisibleResourceMap(resources);
   const { incoming, outgoing } = buildDirectedAdjacency(resourceMap);
@@ -533,10 +539,19 @@ export function partitionResourcesBySeeds(
 
   // If filtering by a specific kind, remove groups that don't contain any resource of that kind
   // Use coerceResourceKind to handle "defined-as-source" models correctly
+  // Special case: "dashboards" includes both Explore and Canvas
+  // Special case: "models" includes both Source and Model (merged, Source is deprecated)
   if (filterKind) {
     return groups.filter((group) =>
       group.resources.some((r) => {
         const kind = coerceResourceKind(r);
+        if (filterKind === "dashboards") {
+          return kind === ResourceKind.Explore || kind === ResourceKind.Canvas;
+        }
+        if (filterKind === ResourceKind.Model) {
+          // Include both Source and Model when filtering by models
+          return kind === ResourceKind.Source || kind === ResourceKind.Model;
+        }
         return kind === filterKind;
       }),
     );

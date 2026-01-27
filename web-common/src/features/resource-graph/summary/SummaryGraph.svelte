@@ -15,15 +15,13 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { goto } from "$app/navigation";
 
-  export let sources = 0;
   export let metrics = 0;
   export let models = 0;
   export let dashboards = 0;
   // Full list of resources (for selection panel)
   export let resources: V1Resource[] = [];
-  // Active token to highlight: 'sources' | 'metrics' | 'models' | 'dashboards'
+  // Active token to highlight: 'metrics' | 'models' | 'dashboards'
   export let activeToken:
-    | "sources"
     | "metrics"
     | "models"
     | "dashboards"
@@ -62,13 +60,10 @@
   const edgesStore = writable<Edge[]>([]);
 
   function navigateTokenForNode(id: string) {
-    let token: "sources" | "metrics" | "models" | "dashboards" | null = null;
+    let token: "metrics" | "models" | "dashboards" | null = null;
     let count = 0;
 
-    if (id === "sources") {
-      token = "sources";
-      count = sources;
-    } else if (id === "metrics") {
+    if (id === "metrics") {
       token = "metrics";
       count = metrics;
     } else if (id === "models") {
@@ -86,39 +81,27 @@
   }
 
   // Build nodes spaced across the available width
+  // Sources and Models are merged (Source is deprecated)
   function buildNodes(
     width: number,
     counts: {
-      sources: number;
       metrics: number;
       models: number;
       dashboards: number;
     },
-    token: "sources" | "metrics" | "models" | "dashboards" | null,
+    token: "metrics" | "models" | "dashboards" | null,
   ) {
     const pad = 40;
     const eff = Math.max(120, width - pad * 2);
-    const step = Math.floor(eff / 3);
+    const step = Math.floor(eff / 2);
     const y = 60; // center larger nodes vertically in taller canvas
-    const { sources, metrics, models, dashboards } = counts;
-    const isActive = (key: "sources" | "metrics" | "models" | "dashboards") =>
+    const { metrics, models, dashboards } = counts;
+    const isActive = (key: "metrics" | "models" | "dashboards") =>
       token === key;
     return [
       {
-        id: "sources",
-        position: { x: pad + step * 0, y },
-        type: "summary-count",
-        selected: isActive("sources"),
-        data: {
-          label: "Sources",
-          count: sources,
-          kind: ResourceKind.Source,
-          active: isActive("sources"),
-        },
-      },
-      {
         id: "models",
-        position: { x: pad + step * 1, y },
+        position: { x: pad + step * 0, y },
         type: "summary-count",
         selected: isActive("models"),
         data: {
@@ -130,7 +113,7 @@
       },
       {
         id: "metrics",
-        position: { x: pad + step * 2, y },
+        position: { x: pad + step * 1, y },
         type: "summary-count",
         selected: isActive("metrics"),
         data: {
@@ -142,7 +125,7 @@
       },
       {
         id: "dashboards",
-        position: { x: pad + step * 3, y },
+        position: { x: pad + step * 2, y },
         type: "summary-count",
         selected: isActive("dashboards"),
         data: {
@@ -162,9 +145,8 @@
       targetHandle: "in",
     } as const;
     return [
-      { id: "e1", source: "sources", target: "models", ...shared },
-      { id: "e2", source: "models", target: "metrics", ...shared },
-      { id: "e3", source: "metrics", target: "dashboards", ...shared },
+      { id: "e1", source: "models", target: "metrics", ...shared },
+      { id: "e2", source: "metrics", target: "dashboards", ...shared },
     ] satisfies Edge[];
   }
 
@@ -172,7 +154,7 @@
   $: {
     const width = containerEl?.clientWidth ?? 800;
     nodesStore.set(
-      buildNodes(width, { sources, metrics, models, dashboards }, activeToken),
+      buildNodes(width, { metrics, models, dashboards }, activeToken),
     );
     edgesStore.set(buildEdges());
   }
@@ -183,7 +165,7 @@
   $: flowColorMode = ($themeControl === "dark" ? "dark" : "light") as
     | "dark"
     | "light";
-  $: flowKey = `overview|${sources}|${metrics}|${models}|${dashboards}|${containerKey}|${flowColorMode}`;
+  $: flowKey = `overview|${models}|${metrics}|${dashboards}|${containerKey}|${flowColorMode}`;
 
   const edgeOptions = {
     type: "straight",

@@ -54,13 +54,15 @@
   const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
 
   $: kind = data?.kind;
+  // Normalize Source to Model (Source is deprecated, merged with Model)
+  $: normalizedKind = kind === ResourceKind.Source ? ResourceKind.Model : kind;
   $: icon =
-    kind && resourceIconMapping[kind]
-      ? resourceIconMapping[kind]
+    normalizedKind && resourceIconMapping[normalizedKind]
+      ? resourceIconMapping[normalizedKind]
       : DEFAULT_ICON;
   $: color =
-    kind && resourceColorMapping[kind]
-      ? resourceColorMapping[kind]
+    normalizedKind && resourceColorMapping[normalizedKind]
+      ? resourceColorMapping[normalizedKind]
       : DEFAULT_COLOR;
   $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
   $: hasError = !!data?.resource?.meta?.reconcileError;
@@ -145,8 +147,8 @@
   <div class="details">
     <p class="title" title={data?.label}>{data?.label}</p>
     <p class="meta">
-      {#if kind}
-        {displayResourceKind(kind)}
+      {#if normalizedKind}
+        {displayResourceKind(normalizedKind)}
       {:else}
         Unknown
       {/if}

@@ -255,7 +255,55 @@ func (p *Parser) parseCanvas(node *Node) error {
 		}
 	}
 
-	// Track canvas
+	// Collect metrics view refs from components for direct Canvas -> MetricsView links in the DAG
+	// This must be done BEFORE calling insertResource so the refs are included
+	metricsViewRefs := make(map[ResourceName]bool)
+	// Extract from inline components
+	for _, def := range inlineComponentDefs {
+		for _, ref := range def.refs {
+			if ref.Kind == ResourceKindMetricsView {
+				metricsViewRefs[ref] = true
+			}
+		}
+	}
+	// Extract from external components
+	for _, row := range tmp.Rows {
+		for _, item := range row.Items {
+			if item.Component != "" {
+				// Check if this is an external component (not inline)
+				isInline := false
+				for _, def := range inlineComponentDefs {
+					if def.name == item.Component {
+						isInline = true
+						break
+					}
+				}
+				if !isInline {
+					// Look up the external component
+					componentName := ResourceName{Kind: ResourceKindComponent, Name: item.Component}
+					if component, ok := p.Resources[componentName.Normalized()]; ok {
+						// Extract metrics view refs from the component
+						// Check Refs first (processed refs), fall back to rawRefs if Refs is empty
+						refsToCheck := component.Refs
+						if len(refsToCheck) == 0 {
+							refsToCheck = component.rawRefs
+						}
+						for _, ref := range refsToCheck {
+							if ref.Kind == ResourceKindMetricsView {
+								metricsViewRefs[ref] = true
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	// Add metrics view refs directly to canvas node refs BEFORE insertResource
+	for ref := range metricsViewRefs {
+		node.Refs = append(node.Refs, ref)
+	}
+
+	// Track canvas (now with MetricsView refs included)
 	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err

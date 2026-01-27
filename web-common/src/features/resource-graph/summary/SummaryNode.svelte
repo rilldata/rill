@@ -53,8 +53,10 @@
     positionAbsoluteY,
   );
 
-  $: color = resourceColorMapping[data?.kind] || "#6B7280";
-  $: Icon = resourceIconMapping[data?.kind] || null;
+  // Normalize Source to Model (Source is deprecated, merged with Model)
+  $: normalizedKind = data?.kind === ResourceKind.Source ? ResourceKind.Model : data?.kind;
+  $: color = normalizedKind && resourceColorMapping[normalizedKind] || "#6B7280";
+  $: Icon = normalizedKind && resourceIconMapping[normalizedKind] || null;
   $: label = data?.label ?? "";
   $: count = data?.count ?? 0;
   $: isActive = data?.active ?? selected;
@@ -66,10 +68,10 @@
 
     const kind = data?.kind;
     let token: string | null = null;
-    if (kind === ResourceKind.Source) token = "sources";
+    // Sources and Models are merged (Source is deprecated)
+    if (kind === ResourceKind.Source || kind === ResourceKind.Model) token = "models";
     else if (kind === ResourceKind.MetricsView) token = "metrics";
-    else if (kind === ResourceKind.Model) token = "models";
-    else if (kind === ResourceKind.Explore) token = "dashboards";
+    else if (kind === ResourceKind.Explore || kind === ResourceKind.Canvas) token = "dashboards";
     if (token) goto(`/graph?kind=${token}`);
   }
 </script>

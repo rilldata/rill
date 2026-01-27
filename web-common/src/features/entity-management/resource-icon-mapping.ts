@@ -12,7 +12,8 @@ import ConnectorIcon from "../../components/icons/ConnectorIcon.svelte";
 import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
 
 export const resourceIconMapping = {
-  [ResourceKind.Source]: TableIcon,
+  // Source is deprecated and merged with Model - use Model icon
+  [ResourceKind.Source]: Code2Icon, // Same as Model
   [ResourceKind.Connector]: ConnectorIcon,
   [ResourceKind.Model]: Code2Icon,
   [ResourceKind.MetricsView]: MetricsViewIcon,
@@ -26,7 +27,8 @@ export const resourceIconMapping = {
 };
 
 export const resourceColorMapping = {
-  [ResourceKind.Source]: "#059669",
+  // Source is deprecated and merged with Model - use Model color
+  [ResourceKind.Source]: "#0891B2", // Same as Model (turquoise)
   [ResourceKind.Connector]: "#6B7280",
   [ResourceKind.Model]: "#0891B2",
   [ResourceKind.MetricsView]: "#7C3AED",
