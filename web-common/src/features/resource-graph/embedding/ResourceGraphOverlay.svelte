@@ -87,7 +87,7 @@
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div
-      class="graph-overlay__backdrop"
+      class="graph-overlay__backdrop bg-neutral-800/60 dark:bg-neutral-100/60"
       on:click={handleBackdropClick}
       role="presentation"
     >
