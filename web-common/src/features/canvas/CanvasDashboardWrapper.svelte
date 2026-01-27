@@ -45,7 +45,7 @@
     <div
       role="presentation"
       id="canvas-scroll-container"
-      class="p-2 flex flex-col items-center bg-surface-subtle select-none overflow-y-auto overflow-x-hidden"
+      class="p-2 flex flex-col items-center bg-surface-background select-none overflow-y-auto overflow-x-hidden"
       class:!cursor-grabbing={showGrabCursor}
       class:w-full={$dynamicHeight}
       class:size-full={!$dynamicHeight}

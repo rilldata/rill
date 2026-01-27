@@ -92,7 +92,7 @@
 </script>
 
 <div
-  class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface-subtle"
+  class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface-card"
 >
   <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
     {#if needsTemplating && $resolveQuery?.isError}
