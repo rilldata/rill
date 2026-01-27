@@ -3,7 +3,11 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { V1OlapTableInfo } from "@rilldata/web-common/runtime-client";
   import ProjectTablesTable from "./ProjectTablesTable.svelte";
-  import { useTablesList, useTableMetadata } from "./selectors";
+  import {
+    useTablesList,
+    useTableMetadata,
+    useTableCardinality,
+  } from "./selectors";
 
   $: ({ instanceId } = $runtime);
 
@@ -17,11 +21,12 @@
     ) ?? [];
 
   $: tableMetadata = useTableMetadata(instanceId, "", filteredTables);
+  $: tableCardinality = useTableCardinality(instanceId, filteredTables);
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
   <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Tables</h2>
+    <h2 class="text-lg font-medium">Model Details</h2>
   </div>
 
   {#if $tablesList.isLoading}
@@ -37,8 +42,10 @@
     <ProjectTablesTable
       tables={filteredTables}
       isView={$tableMetadata?.data?.isView ?? new Map()}
+      columnCount={$tableMetadata?.data?.columnCount ?? new Map()}
+      rowCount={$tableCardinality?.data?.rowCount ?? new Map()}
     />
-    {#if $tableMetadata?.isLoading}
+    {#if $tableMetadata?.isLoading || $tableCardinality?.isLoading}
       <div class="mt-2 text-xs text-gray-500">Loading table metadata...</div>
     {/if}
   {:else}

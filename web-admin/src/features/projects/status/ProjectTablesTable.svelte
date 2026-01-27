@@ -2,14 +2,17 @@
   import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import type { V1OlapTableInfo } from "@rilldata/web-common/runtime-client";
+  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import ModelSizeCell from "./ModelSizeCell.svelte";
   import NameCell from "./NameCell.svelte";
   import MaterializationCell from "./MaterializationCell.svelte";
 
   export let tables: V1OlapTableInfo[] = [];
   export let isView: Map<string, boolean> = new Map();
+  export let columnCount: Map<string, number> = new Map();
+  export let rowCount: Map<string, number> = new Map();
 
-  const columns: ColumnDef<V1OlapTableInfo, any>[] = [
+  $: columns = [
     {
       id: "materialization",
       accessorFn: (row) => isView.get(row.name ?? ""),
@@ -27,6 +30,26 @@
         flexRender(NameCell, {
           name: getValue() as string,
         }),
+    },
+    {
+      id: "rows",
+      accessorFn: (row) => rowCount.get(row.name ?? ""),
+      header: "Rows",
+      sortDescFirst: true,
+      cell: ({ getValue }) => {
+        const value = getValue() as number | undefined;
+        return value !== undefined ? formatCompactInteger(value) : "-";
+      },
+    },
+    {
+      id: "columns",
+      accessorFn: (row) => columnCount.get(row.name ?? ""),
+      header: "Columns",
+      sortDescFirst: true,
+      cell: ({ getValue }) => {
+        const value = getValue() as number | undefined;
+        return value !== undefined ? String(value) : "-";
+      },
     },
     {
       id: "size",
@@ -54,16 +77,16 @@
           sizeBytes: getValue() as string | number | undefined,
         }),
     },
-  ];
+  ] as ColumnDef<V1OlapTableInfo, unknown>[];
 
   $: tableData = tables;
 </script>
 
-{#key isView}
+{#key [isView, columnCount, rowCount]}
   <VirtualizedTable
     tableId="project-tables-table"
     data={tableData}
     {columns}
-    columnLayout="minmax(60px, 0.5fr) minmax(150px, 3fr) minmax(100px, 1fr)"
+    columnLayout="minmax(60px, 0.5fr) minmax(150px, 2fr) minmax(80px, 0.8fr) minmax(80px, 0.8fr) minmax(100px, 1fr)"
   />
 {/key}

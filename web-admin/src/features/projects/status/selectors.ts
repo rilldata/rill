@@ -6,6 +6,7 @@ import {
   createRuntimeServiceListResources,
   createConnectorServiceOLAPListTables,
   createConnectorServiceOLAPGetTable,
+  createQueryServiceTableCardinality,
   type V1ListResourcesResponse,
   type V1OlapTableInfo,
 } from "@rilldata/web-common/runtime-client";
@@ -17,6 +18,7 @@ import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interv
 export type TableMetadataResult = {
   data: {
     isView: Map<string, boolean>;
+    columnCount: Map<string, number>;
   };
   isLoading: boolean;
   isError: boolean;
@@ -96,6 +98,7 @@ export function useTableMetadata(
       {
         data: {
           isView: new Map<string, boolean>(),
+          columnCount: new Map<string, number>(),
         },
         isLoading: false,
         isError: false,
@@ -108,12 +111,14 @@ export function useTableMetadata(
     {
       data: {
         isView: new Map<string, boolean>(),
+        columnCount: new Map<string, number>(),
       },
       isLoading: true,
       isError: false,
     },
     (set) => {
       const isView = new Map<string, boolean>();
+      const columnCount = new Map<string, number>();
       const tableNames = (tables ?? [])
         .map((t) => t.name)
         .filter((n) => !!n) as string[];
@@ -126,7 +131,7 @@ export function useTableMetadata(
       const updateAndNotify = () => {
         const isLoading = completedCount < totalOperations;
         set({
-          data: { isView },
+          data: { isView, columnCount },
           isLoading,
           isError: false,
         });
@@ -151,6 +156,100 @@ export function useTableMetadata(
           // Capture the view field from the response
           if (result.data?.view !== undefined) {
             isView.set(tableName, result.data.view);
+          }
+          // Capture the column count from the schema
+          if (result.data?.schema?.fields !== undefined) {
+            columnCount.set(tableName, result.data.schema.fields.length);
+          }
+          completedCount++;
+          updateAndNotify();
+        });
+
+        subscriptions.push(unsubscribe);
+      }
+
+      // Return cleanup function
+      return () => {
+        subscriptions.forEach((unsub) => unsub());
+      };
+    },
+  );
+}
+
+/** Type for the table cardinality store result */
+export type TableCardinalityResult = {
+  data: {
+    rowCount: Map<string, number>;
+  };
+  isLoading: boolean;
+  isError: boolean;
+};
+
+/**
+ * Fetches row count (cardinality) for each table.
+ */
+export function useTableCardinality(
+  instanceId: string,
+  tables: V1OlapTableInfo[] | undefined,
+): Readable<TableCardinalityResult> {
+  // If no tables, return empty store immediately
+  if (!tables || tables.length === 0) {
+    return readable(
+      {
+        data: {
+          rowCount: new Map<string, number>(),
+        },
+        isLoading: false,
+        isError: false,
+      },
+      () => {},
+    );
+  }
+
+  return readable<TableCardinalityResult>(
+    {
+      data: {
+        rowCount: new Map<string, number>(),
+      },
+      isLoading: true,
+      isError: false,
+    },
+    (set) => {
+      const rowCount = new Map<string, number>();
+      const tableNames = (tables ?? [])
+        .map((t) => t.name)
+        .filter((n) => !!n) as string[];
+      const subscriptions: Array<() => void> = [];
+
+      let completedCount = 0;
+      const totalOperations = tableNames.length;
+
+      // Helper to update and notify
+      const updateAndNotify = () => {
+        const isLoading = completedCount < totalOperations;
+        set({
+          data: { rowCount },
+          isLoading,
+          isError: false,
+        });
+      };
+
+      // Fetch cardinality for each table in parallel
+      for (const tableName of tableNames) {
+        const cardinalityQuery = createQueryServiceTableCardinality(
+          instanceId,
+          tableName,
+          {},
+          {
+            query: {
+              enabled: !!instanceId && !!tableName,
+            },
+          },
+        );
+
+        const unsubscribe = cardinalityQuery.subscribe((result) => {
+          if (result.data?.cardinality !== undefined) {
+            rowCount.set(tableName, parseInt(result.data.cardinality, 10) || 0);
           }
           completedCount++;
           updateAndNotify();

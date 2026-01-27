@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "./setup/base";
 
-test.describe("Project Status - Tables", () => {
+test.describe("Project Status - Model Details", () => {
   test("should display tables with their metadata values", async ({
     adminPage,
   }) => {
@@ -13,9 +13,11 @@ test.describe("Project Status - Tables", () => {
     await expect(statusLink).toBeVisible();
     await statusLink.click();
 
-    // Wait for the Tables heading to be visible
-    const tablesHeading = adminPage.getByRole("heading", { name: "Tables" });
-    await expect(tablesHeading).toBeVisible();
+    // Wait for the Model Details heading to be visible
+    const modelDetailsHeading = adminPage.getByRole("heading", {
+      name: "Model Details",
+    });
+    await expect(modelDetailsHeading).toBeVisible();
 
     // Verify the table structure with column headers (VirtualizedTable uses role="columnheader")
     // Use the #project-tables-table id to scope to the correct table
@@ -66,14 +68,14 @@ test.describe("Project Status - Tables", () => {
 
     // Wait for the page to load
     await expect(
-      adminPage.getByRole("heading", { name: "Tables" }),
+      adminPage.getByRole("heading", { name: "Model Details" }),
     ).toBeVisible();
 
     // If no tables, it should show the table container (possibly with no data message)
     // or with the table headers visible
     const tableSection = adminPage
       .locator("section")
-      .filter({ hasText: "Tables" })
+      .filter({ hasText: "Model Details" })
       .first();
     await expect(tableSection).toBeVisible();
   });
