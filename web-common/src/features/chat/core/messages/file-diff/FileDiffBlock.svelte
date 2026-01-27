@@ -50,7 +50,7 @@
     </div>
   </Collapsible.Trigger>
 
-  <Collapsible.Content class="ml-8">
+  <Collapsible.Content class="ml-4">
     {#if diffHtml}
       <div class="diff-view">
         {@html diffHtml}
@@ -63,7 +63,7 @@
 
 <style lang="postcss">
   .diff-header {
-    @apply flex flex-row items-center gap-2 ml-8 px-3 py-1.5 overflow-auto;
+    @apply flex flex-row items-center gap-2 ml-4 px-3 py-1.5 overflow-auto;
     @apply text-xs border-b border-gray-200 bg-gray-100;
   }
 

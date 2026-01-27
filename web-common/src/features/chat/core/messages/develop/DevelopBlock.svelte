@@ -1,20 +1,26 @@
 <script lang="ts">
   import { builderActions, getAttrs } from "bits-ui";
   import * as Collapsible from "../../../../../components/collapsible";
-  import type { DevelopBlock } from "@rilldata/web-common/features/chat/core/messages/develop/develop-block.ts";
+  import {
+    type DevelopBlock,
+    getGenerateCTAs,
+  } from "@rilldata/web-common/features/chat/core/messages/develop/develop-block.ts";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { IconButton } from "@rilldata/web-common/components/button";
+  import { Button, IconButton } from "@rilldata/web-common/components/button";
   import { UndoIcon, PenIcon } from "lucide-svelte";
   import { createRuntimeServiceRestoreGitCommit } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import FileDiffBlock from "@rilldata/web-common/features/chat/core/messages/file-diff/FileDiffBlock.svelte";
+  import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 
   export let block: DevelopBlock;
 
   let isExpanded = true; // Make this expanded by default
 
-  $: console.log(block);
   $: ({ instanceId } = $runtime);
+  $: ctas = getGenerateCTAs(instanceId, block);
+  $: console.log($ctas);
+  $: hasSomeCTA = $ctas.models.length > 0 || $ctas.metricsViews.length > 0;
 
   const restoreCommit = createRuntimeServiceRestoreGitCommit();
   async function undoChanges() {
@@ -24,6 +30,14 @@
       commitSha: block.checkpointCommitHash,
       data: {},
     });
+  }
+
+  function promptGenerateMetricsView(model: string) {
+    sidebarActions.startChat(`Generate a metrics view for ${model}`);
+  }
+
+  function promptGenerateExplore(metricsView: string) {
+    sidebarActions.startChat(`Generate an explore for ${metricsView}`);
   }
 </script>
 
@@ -47,9 +61,7 @@
         </div>
       </button>
       {#if block.checkpointCommitHash}
-        <IconButton on:click={undoChanges}>
-          <UndoIcon size="14px" />
-        </IconButton>
+        <Button onClick={undoChanges} noStroke>Undo</Button>
       {/if}
     </div>
   </Collapsible.Trigger>
@@ -62,6 +74,32 @@
     </div>
   </Collapsible.Content>
 </Collapsible.Root>
+
+{#if hasSomeCTA}
+  {@const hasOnlyOneModel = $ctas.models.length === 1}
+  {@const hasOnlyOneMetricsView = $ctas.metricsViews.length === 1}
+  <div class="develop-cta">
+    {#each $ctas.models as model (model)}
+      <Button onClick={() => promptGenerateMetricsView(model)}>
+        {#if hasOnlyOneModel}
+          Generate a metrics view
+        {:else}
+          Generate metrics view for {model}
+        {/if}
+      </Button>
+    {/each}
+
+    {#each $ctas.metricsViews as metricsView (metricsView)}
+      <Button onClick={() => promptGenerateExplore(metricsView)}>
+        {#if hasOnlyOneMetricsView}
+          Generate an explore dashboard
+        {:else}
+          Generate explore dashboard for {metricsView}
+        {/if}
+      </Button>
+    {/each}
+  </div>
+{/if}
 
 <style lang="postcss">
   .develop-header {
@@ -97,5 +135,9 @@
 
   .develop-content :global(a) {
     @apply text-gray-600 underline;
+  }
+
+  .develop-cta {
+    @apply flex flex-row items-center gap-y-1;
   }
 </style>
