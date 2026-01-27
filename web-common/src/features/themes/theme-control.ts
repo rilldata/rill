@@ -46,7 +46,7 @@ class ThemeControl {
         this.removeDark();
       }
     });
-  }
+  };
 
   public set = {
     light: () => {
