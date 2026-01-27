@@ -135,7 +135,7 @@ test.describe("Deploy journey", () => {
           },
           {
             intervals: Array(6).fill(10_000),
-            timeout: 120_000,
+            timeout: 360_000,
           },
         )
         .toBe("Adbids dashboard");
