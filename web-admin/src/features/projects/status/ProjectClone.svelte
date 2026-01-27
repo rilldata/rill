@@ -42,8 +42,8 @@
       Local Development
     </span>
     <Popover.Root bind:open>
-      <Popover.Trigger>
-        <Button type="secondary">Download project</Button>
+      <Popover.Trigger asChild let:builder>
+        <Button type="secondary" builders={[builder]}>Download project</Button>
       </Popover.Trigger>
 
       <Popover.Content class="w-[380px]" align="end" sideOffset={8}>
