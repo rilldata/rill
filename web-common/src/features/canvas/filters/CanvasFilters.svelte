@@ -233,7 +233,7 @@
           {timeStart}
           {timeEnd}
           openOnMount={!!temporaryFilterKeys.get(id)}
-          timeControlsReady={!!interval}
+          timeControlsReady={!hasTimeSeries || !!interval}
           expressionMap={$filterMapStore}
           {removeDimensionFilter}
           {toggleDimensionFilterMode}
