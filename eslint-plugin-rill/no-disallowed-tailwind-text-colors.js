@@ -32,14 +32,6 @@ export default {
     const sourceCode = context.sourceCode ?? context.getSourceCode();
 
     return {
-      // Check string literals in JS/TS
-      Literal(node) {
-        reportAllMatches(node.value, context, node);
-      },
-      // Check template literals
-      TemplateElement(node) {
-        reportAllMatches(node.value.raw, context, node);
-      },
       // Check Svelte HTML attributes (class="...")
       SvelteAttribute(node) {
         if (node.key?.name === "class") {
