@@ -59,8 +59,7 @@
     onChange("sort", reorderedItems);
   }
 
-  function handleSortChange(e: CustomEvent<string>) {
-    const newSortValue = e.detail;
+  function handleSortChange(newSortValue: string) {
     if (newSortValue === "custom") {
       onChange("sort", sortConfig?.customSortItems);
     } else {
@@ -79,7 +78,7 @@
         width={190}
         options={sortOptionsForChart}
         value={sortValue}
-        on:change={handleSortChange}
+        onChange={handleSortChange}
       />
       {#if sortValue === "custom"}
         <Popover.Root bind:open={isCustomSortDropdownOpen}>

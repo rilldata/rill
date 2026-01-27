@@ -7,7 +7,6 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { Duration, DurationUnit } from "luxon";
 import {
-  type AvailableTimeGrain,
   Period,
   RangePresetType,
   ReferencePoint,
@@ -558,9 +557,45 @@ export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
  * A time grain is a unit of time that is used to group data points,
  * e.g. "hour" or "day". The time grain is used to aggregate records
  * for the purposes of time series visualization and analysis.
+ *
+ * TODO: This record duplicates functionality available in Luxon (DateTimeUnit,
+ * Duration, toLocaleString). The application has multiple overlapping types
+ * (TIME_GRAIN, V1TimeGrain, AvailableTimeGrain, Period, TimeUnit) that should
+ * be consolidated. Consider replacing this with Luxon-based utilities and
+ * removing the redundant type definitions. See V1TimeGrainToDateTimeUnit in
+ * new-grains.ts for the mapping approach.
  */
 
-export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
+export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
+  TIME_GRAIN_MILLISECOND: {
+    grain: V1TimeGrain.TIME_GRAIN_MILLISECOND,
+    label: "millisecond",
+    duration: Period.MILLISECOND,
+    d3format: "%H:%M:%S.%L",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      fractionalSecondDigits: 3,
+    },
+  },
+  TIME_GRAIN_SECOND: {
+    grain: V1TimeGrain.TIME_GRAIN_SECOND,
+    label: "second",
+    duration: Period.SECOND,
+    d3format: "%H:%M:%S",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+    },
+  },
   TIME_GRAIN_MINUTE: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
     label: "minute",
@@ -637,6 +672,23 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
       year: "numeric",
     },
   },
+  // TIME_GRAIN_UNSPECIFIED falls back to MINUTE-level settings as a safe default.
+  // This can occur when viewing infinite time ranges without a valid smallest_time_grain.
+  // The grain value should not be used in queries (filtered out by isGrainAllowed),
+  // but this entry prevents lookup failures in UI formatting code.
+  TIME_GRAIN_UNSPECIFIED: {
+    grain: V1TimeGrain.TIME_GRAIN_MINUTE,
+    label: "minute",
+    duration: Period.MINUTE,
+    d3format: "%M:%S",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    },
+  },
 };
 
 /** The default configurations for time comparisons. */
@@ -680,7 +732,8 @@ export const TIME_COMPARISON = {
     description:
       "Compare the current time range to the same time range the month before",
     comparisonType: TimeComparisonOption.MONTH,
-    offsetIso: "P1M",
+    // Setting this to P1M prevents month over month comparisons for 31-day months
+    offsetIso: "P31D",
     rillTimeOffset: "-1M",
   },
   [TimeComparisonOption.QUARTER]: {

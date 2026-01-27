@@ -63,7 +63,13 @@ const (
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
+	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
 	RuntimeService_GitStatus_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitStatus"
+	RuntimeService_ListGitBranches_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListGitBranches"
+	RuntimeService_GitCommit_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitCommit"
+	RuntimeService_RestoreGitCommit_FullMethodName        = "/rill.runtime.v1.RuntimeService/RestoreGitCommit"
+	RuntimeService_GitMergeToBranch_FullMethodName        = "/rill.runtime.v1.RuntimeService/GitMergeToBranch"
+	RuntimeService_GitSwitchBranch_FullMethodName         = "/rill.runtime.v1.RuntimeService/GitSwitchBranch"
 	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
 	RuntimeService_GitPush_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPush"
 )
@@ -170,8 +176,20 @@ type RuntimeServiceClient interface {
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(ctx context.Context, in *AnalyzeVariablesRequest, opts ...grpc.CallOption) (*AnalyzeVariablesResponse, error)
+	ListGitCommits(ctx context.Context, in *ListGitCommitsRequest, opts ...grpc.CallOption) (*ListGitCommitsResponse, error)
 	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
+	ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error)
+	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+	GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error)
+	// RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+	// This effectively discards all the changes made after the specified commit.
+	RestoreGitCommit(ctx context.Context, in *RestoreGitCommitRequest, opts ...grpc.CallOption) (*RestoreGitCommitResponse, error)
+	// GitMergeToBranch merges current branch to the specified branch.
+	// Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+	// It restores back to the original branch after the merge.
+	GitMergeToBranch(ctx context.Context, in *GitMergeToBranchRequest, opts ...grpc.CallOption) (*GitMergeToBranchResponse, error)
+	GitSwitchBranch(ctx context.Context, in *GitSwitchBranchRequest, opts ...grpc.CallOption) (*GitSwitchBranchResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
@@ -665,10 +683,70 @@ func (c *runtimeServiceClient) AnalyzeVariables(ctx context.Context, in *Analyze
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListGitCommits(ctx context.Context, in *ListGitCommitsRequest, opts ...grpc.CallOption) (*ListGitCommitsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGitCommitsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListGitCommits_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GitStatusResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GitStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGitBranchesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListGitBranches_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitCommitResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitCommit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) RestoreGitCommit(ctx context.Context, in *RestoreGitCommitRequest, opts ...grpc.CallOption) (*RestoreGitCommitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestoreGitCommitResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_RestoreGitCommit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GitMergeToBranch(ctx context.Context, in *GitMergeToBranchRequest, opts ...grpc.CallOption) (*GitMergeToBranchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitMergeToBranchResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitMergeToBranch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GitSwitchBranch(ctx context.Context, in *GitSwitchBranchRequest, opts ...grpc.CallOption) (*GitSwitchBranchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitSwitchBranchResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitSwitchBranch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -797,8 +875,20 @@ type RuntimeServiceServer interface {
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error)
+	ListGitCommits(context.Context, *ListGitCommitsRequest) (*ListGitCommitsResponse, error)
 	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
+	ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error)
+	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+	GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error)
+	// RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+	// This effectively discards all the changes made after the specified commit.
+	RestoreGitCommit(context.Context, *RestoreGitCommitRequest) (*RestoreGitCommitResponse, error)
+	// GitMergeToBranch merges current branch to the specified branch.
+	// Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+	// It restores back to the original branch after the merge.
+	GitMergeToBranch(context.Context, *GitMergeToBranchRequest) (*GitMergeToBranchResponse, error)
+	GitSwitchBranch(context.Context, *GitSwitchBranchRequest) (*GitSwitchBranchResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
 	// Force can be set to true to force the pull and overwrite any local changes.
@@ -948,8 +1038,26 @@ func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJ
 func (UnimplementedRuntimeServiceServer) AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeVariables not implemented")
 }
+func (UnimplementedRuntimeServiceServer) ListGitCommits(context.Context, *ListGitCommitsRequest) (*ListGitCommitsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGitCommits not implemented")
+}
 func (UnimplementedRuntimeServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGitBranches not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitCommit not implemented")
+}
+func (UnimplementedRuntimeServiceServer) RestoreGitCommit(context.Context, *RestoreGitCommitRequest) (*RestoreGitCommitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreGitCommit not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitMergeToBranch(context.Context, *GitMergeToBranchRequest) (*GitMergeToBranchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitMergeToBranch not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitSwitchBranch(context.Context, *GitSwitchBranchRequest) (*GitSwitchBranchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitSwitchBranch not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitPull not implemented")
@@ -1742,6 +1850,24 @@ func _RuntimeService_AnalyzeVariables_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListGitCommits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGitCommitsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListGitCommits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListGitCommits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListGitCommits(ctx, req.(*ListGitCommitsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_GitStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GitStatusRequest)
 	if err := dec(in); err != nil {
@@ -1756,6 +1882,96 @@ func _RuntimeService_GitStatus_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GitStatus(ctx, req.(*GitStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListGitBranches_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGitBranchesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListGitBranches(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListGitBranches_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListGitBranches(ctx, req.(*ListGitBranchesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GitCommit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitCommitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitCommit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitCommit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitCommit(ctx, req.(*GitCommitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_RestoreGitCommit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreGitCommitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).RestoreGitCommit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_RestoreGitCommit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).RestoreGitCommit(ctx, req.(*RestoreGitCommitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GitMergeToBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitMergeToBranchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitMergeToBranch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitMergeToBranch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitMergeToBranch(ctx, req.(*GitMergeToBranchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GitSwitchBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitSwitchBranchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitSwitchBranch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitSwitchBranch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitSwitchBranch(ctx, req.(*GitSwitchBranchRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1964,8 +2180,32 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_AnalyzeVariables_Handler,
 		},
 		{
+			MethodName: "ListGitCommits",
+			Handler:    _RuntimeService_ListGitCommits_Handler,
+		},
+		{
 			MethodName: "GitStatus",
 			Handler:    _RuntimeService_GitStatus_Handler,
+		},
+		{
+			MethodName: "ListGitBranches",
+			Handler:    _RuntimeService_ListGitBranches_Handler,
+		},
+		{
+			MethodName: "GitCommit",
+			Handler:    _RuntimeService_GitCommit_Handler,
+		},
+		{
+			MethodName: "RestoreGitCommit",
+			Handler:    _RuntimeService_RestoreGitCommit_Handler,
+		},
+		{
+			MethodName: "GitMergeToBranch",
+			Handler:    _RuntimeService_GitMergeToBranch_Handler,
+		},
+		{
+			MethodName: "GitSwitchBranch",
+			Handler:    _RuntimeService_GitSwitchBranch_Handler,
 		},
 		{
 			MethodName: "GitPull",

@@ -190,8 +190,7 @@
     {
       measures: leaderboardMeasureNames.map((name) => ({ name })),
       where,
-      timeStart: timeRange.start,
-      timeEnd: timeRange.end,
+      timeRange,
     },
     {
       query: {
@@ -378,6 +377,7 @@
             {filterExcludeMode}
             {atLeastOneActive}
             {dimensionName}
+            dataType={dimension.dataType?.code ?? ""}
             {itemData}
             {isValidPercentOfTotal}
             {leaderboardShowContextForAllMeasures}
@@ -396,6 +396,7 @@
         <LeaderboardRow
           {itemData}
           {dimensionName}
+          dataType={dimension.dataType?.code ?? ""}
           {isBeingCompared}
           {filterExcludeMode}
           {atLeastOneActive}
