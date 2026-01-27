@@ -157,7 +157,7 @@
       {loading}
       onClick={() =>
         hasRemoteChanges ? (remoteChangeDialog = true) : onDeploy()}
-      type={hasValidDashboard ? "primary" : "secondary"}
+      type="primary"
     >
       <Rocket size="16px" />
 

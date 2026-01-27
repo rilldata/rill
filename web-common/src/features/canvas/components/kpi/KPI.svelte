@@ -179,7 +179,7 @@
               class:text-red-500={primaryTotal !== null &&
                 comparisonVal !== null &&
                 primaryTotal - comparisonVal < 0}
-              class:ui-copy-disabled-faint={comparisonVal === null}
+              class:text-fg-muted={comparisonVal === null}
               class:italic={comparisonVal === null}
               class:text-sm={comparisonVal === null}
             >
@@ -193,11 +193,11 @@
 
           {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
             <span
-              class="w-fit font-semibold ui-copy-inactive"
+              class="w-fit font-semibold text-fg-disabled"
               class:text-red-500={primaryTotal && primaryTotal < 0}
             >
               <PercentageChange
-                color="text-gray-500"
+                color="text-fg-secondary"
                 showPosSign
                 tabularNumber={false}
                 value={formatMeasurePercentageDifference(comparisonPercChange)}
@@ -208,14 +208,14 @@
       </div>
 
       {#if comparisonLabel}
-        <p class="text-sm text-gray-400 break-words">
+        <p class="text-sm text-fg-secondary break-words">
           vs {comparisonLabel?.toLowerCase()}
         </p>
       {/if}
     {/if}
 
     {#if !showSparkline && timeGrain && interval.isValid && !hideTimeRange}
-      <span class="text-gray-500">
+      <span class="text-fg-secondary">
         <RangeDisplay {interval} {timeGrain} />
       </span>
     {/if}
@@ -271,11 +271,11 @@
 
   .measure-name {
     @apply w-full truncate flex-none;
-    @apply text-center font-medium text-sm text-gray-800;
+    @apply text-center font-medium text-sm text-fg-primary;
   }
 
   :global(.dark) .measure-name {
-    @apply text-gray-900;
+    @apply text-fg-primary;
   }
 
   .spark-right .measure-name {
@@ -283,11 +283,11 @@
   }
 
   .big-number {
-    @apply text-3xl font-medium text-gray-800;
+    @apply text-3xl font-medium text-fg-primary;
   }
 
   :global(.dark) .big-number {
-    @apply text-gray-900;
+    @apply text-fg-primary;
   }
 
   .hovered-value {
@@ -309,7 +309,7 @@
 
   .comparison-value {
     @apply w-fit max-w-full overflow-hidden;
-    @apply font-medium text-ellipsis text-gray-500;
+    @apply font-medium text-ellipsis text-fg-secondary;
   }
 
   @container component-container (inline-size < 300px) {
@@ -329,6 +329,6 @@
   }
 
   .loading {
-    @apply bg-slate-200 animate-pulse rounded-full;
+    @apply bg-gray-200 animate-pulse rounded-full;
   }
 </style>

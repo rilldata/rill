@@ -5,7 +5,6 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { featureFlags } from "../feature-flags";
   import {
     defaultPrimaryColors,
     defaultSecondaryColors,
@@ -18,8 +17,6 @@
   const FALLBACK_PRIMARY = "hsl(180, 100%, 50%)";
   const FALLBACK_SECONDARY = "lightgreen";
 
-  const { darkMode } = featureFlags;
-
   export let themeNames: string[];
   export let theme: string | V1ThemeSpec | undefined;
   export let small = false;
@@ -30,8 +27,6 @@
     isDarkMode: boolean,
   ) => void;
 
-  let customPrimary = "";
-  let customSecondary = "";
   let lastPresetTheme: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
@@ -65,11 +60,11 @@
 
   $: effectivePrimary = isPresetMode
     ? themePrimary || DEFAULT_PRIMARY
-    : customPrimary || themePrimary || FALLBACK_PRIMARY;
+    : themePrimary || FALLBACK_PRIMARY;
 
   $: effectiveSecondary = isPresetMode
     ? themeSecondary || DEFAULT_SECONDARY
-    : customSecondary || themeSecondary || FALLBACK_SECONDARY;
+    : themeSecondary || FALLBACK_SECONDARY;
 
   $: currentSelectValue = isPresetMode
     ? typeof theme === "string"
@@ -79,14 +74,12 @@
 
   function handleModeSwitch(mode: string) {
     if (mode === "Custom") {
-      if (!customPrimary) {
-        customPrimary = themePrimary || FALLBACK_PRIMARY;
-      }
-      if (!customSecondary) {
-        customSecondary = themeSecondary || FALLBACK_SECONDARY;
-      }
       // Pass the current theme mode (light/dark)
-      onColorChange(customPrimary, customSecondary, isDarkMode);
+      onColorChange(
+        themePrimary || FALLBACK_PRIMARY,
+        themeSecondary || FALLBACK_SECONDARY,
+        isDarkMode,
+      );
     } else {
       onThemeChange(lastPresetTheme);
     }
@@ -104,13 +97,11 @@
 
   function handleColorChange(color: string, isPrimary: boolean) {
     if (isPrimary) {
-      customPrimary = color;
       // Pass the current theme mode (light/dark)
-      onColorChange(customPrimary, effectiveSecondary, isDarkMode);
+      onColorChange(color, effectiveSecondary, isDarkMode);
     } else {
-      customSecondary = color;
       // Pass the current theme mode (light/dark)
-      onColorChange(effectivePrimary, customSecondary, isDarkMode);
+      onColorChange(effectivePrimary, color, isDarkMode);
     }
   }
 </script>
@@ -156,9 +147,8 @@
       label="Primary"
       labelFirst
       disabled={isPresetMode}
-      allowLightnessControl={$darkMode}
+      allowLightnessControl
       onChange={(color) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         handleColorChange(color, true);
       }}
     />
@@ -169,9 +159,8 @@
       label="Secondary"
       labelFirst
       disabled={isPresetMode}
-      allowLightnessControl={$darkMode}
+      allowLightnessControl
       onChange={(color) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         handleColorChange(color, false);
       }}
     />

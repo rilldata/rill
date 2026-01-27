@@ -86,6 +86,7 @@ export function createMetricsViewTimeSeries(
             : timeControls.adjustedEnd,
           timeGranularity: timeGrain,
           timeZone: dashboardStore.selectedTimezone,
+          timeDimension: dashboardStore.selectedTimeDimension,
         },
         {
           query: {

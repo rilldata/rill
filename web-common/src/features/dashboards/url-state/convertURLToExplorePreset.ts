@@ -413,6 +413,17 @@ export function fromTimeRangesParams(
       errors.push(getSingleFieldError("highlighted time range", selectTr));
     }
   }
+
+  if (searchParams.has(ExploreStateURLParams.TimeDimension)) {
+    const timeDimension = searchParams.get(
+      ExploreStateURLParams.TimeDimension,
+    ) as string;
+
+    // Simply remove from the URL for now
+    if (dimensions.has(timeDimension)) {
+      preset.timeDimension = timeDimension;
+    }
+  }
   return { preset, errors };
 }
 

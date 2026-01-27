@@ -67,16 +67,16 @@
       for={id}
       class="{size === 'sm' ? 'text-xs' : 'text-sm'} flex items-center gap-x-1"
     >
-      <span class="text-gray-800 font-medium">
+      <span class="text-fg-primary dark:text-fg-primary font-medium">
         {label}
       </span>
       {#if optional}
-        <span class="text-gray-500">(optional)</span>
+        <span class="text-fg-secondary">(optional)</span>
       {/if}
       {#if tooltip}
         <Tooltip.Root portal="body">
           <Tooltip.Trigger>
-            <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+            <InfoIcon class="text-fg-secondary" size="14px" strokeWidth={2} />
           </Tooltip.Trigger>
           <Tooltip.Content side="right">
             {#each tooltip.split(/\n/gm) as line (line)}
@@ -110,8 +110,10 @@
       {lockable}
       {lockTooltip}
       bind:el={selectElement}
-      class="flex px-3 gap-x-2 max-w-full {HeightBySize[size]} {width &&
-        `w-[${width}px]`} {minWidth && `min-w-[${minWidth}px]`} {ringFocus &&
+      class="bg-input flex px-3 gap-x-2 max-w-full {HeightBySize[
+        size
+      ]} {width && `w-[${width}px]`} {minWidth &&
+        `min-w-[${minWidth}px]`} {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
         : ''} {forcedTriggerStyle}"
@@ -120,8 +122,8 @@
       <Select.Value
         {placeholder}
         class="text-[{fontSize}px] {!selected
-          ? 'text-gray-400'
-          : ''} w-full  text-left"
+          ? 'text-fg-secondary'
+          : 'text-fg-primary'} w-full  text-left"
       />
     </Select.Trigger>
 
@@ -171,7 +173,7 @@
             {/if}
           </Select.Item>
         {:else}
-          <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
+          <div class="px-2.5 py-1.5 text-fg-secondary">No results found</div>
         {/each}
         {#if onAddNew}
           <SelectSeparator />

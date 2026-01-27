@@ -44,6 +44,7 @@ export type StateManagers = {
   exploreName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
   dashboardStore: Readable<ExploreState>;
+  timeDimension: Writable<string | undefined>;
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
@@ -87,6 +88,7 @@ export function createStateManagers({
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
   const exploreNameStore = writable(exploreName);
+  const timeDimension = writable<string | undefined>(undefined);
 
   const dashboardStore: Readable<ExploreState> = derived(
     [exploreNameStore],
@@ -110,12 +112,14 @@ export function createStateManagers({
   const timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   > = derived(
-    [runtime, metricsViewNameStore, validSpecStore],
-    ([runtime, mvName, validSpec], set) =>
+    [runtime, metricsViewNameStore, validSpecStore, dashboardStore],
+    ([runtime, mvName, validSpec, $dashboardStore], set) =>
       createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
         mvName,
-        {},
+        {
+          timeDimension: $dashboardStore?.selectedTimeDimension,
+        },
         {
           query: {
             enabled: !!validSpec?.data?.metricsView?.timeDimension,
@@ -161,7 +165,7 @@ export function createStateManagers({
     validSpecStore,
     queryClient,
     dashboardStore,
-
+    timeDimension,
     updateDashboard,
     /**
      * A collection of Readables that can be used to select data from the dashboard.

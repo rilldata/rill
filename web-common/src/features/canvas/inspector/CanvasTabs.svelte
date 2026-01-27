@@ -15,7 +15,7 @@
   ];
 </script>
 
-<div class="mr-4">
+<div class="mr-4 bg-surac">
   <div class="flex gap-x-2">
     {#each tabs as { tab, label } (tab)}
       {@const selected = tab === currentTab}

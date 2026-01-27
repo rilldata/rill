@@ -77,7 +77,7 @@
       filters: { clearAllFilters, setTemporaryFilterName },
     },
     selectors: {
-      dimensions: { allDimensions },
+      dimensions: { allDimensions, timeDimensions },
       dimensionFilters: {
         dimensionHasFilter,
         getDimensionFilterItems,
@@ -159,7 +159,9 @@
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
-  $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
+  $: ({ whereFilter, selectedTimeDimension } = $dashboardStore);
+
+  $: isComplexFilter = isExpressionUnsupported(whereFilter);
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
@@ -185,6 +187,15 @@
       end: selectedTimeRange.end,
     };
 
+  $: primaryTimeDimension = metricsViewSpec.timeDimension;
+
+  $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
+    return {
+      value: timeDim.name!,
+      label: timeDim.name!,
+    };
+  });
+
   $: maybeMinDate = allTimeRange?.start
     ? DateTime.fromJSDate(allTimeRange.start)
     : undefined;
@@ -205,6 +216,39 @@
       removeMeasureFilter(oldDimension, measureName);
     }
     setMeasureFilter(dimension, filter);
+  }
+
+  async function onTimeDimensionSelect(column: string) {
+    // Capture time range name before any state changes
+    const timeRangeName = selectedTimeRange?.name;
+
+    await queryClient.cancelQueries({
+      predicate: (query) =>
+        isMetricsViewQuery(query.queryHash, metricsViewName),
+    });
+
+    metricsExplorerStore.setTimeDimension($exploreName, column);
+
+    // Re-resolve the time range with the new time dimension
+    if (!timeRangeName) return;
+
+    const { interval, grain } = await deriveInterval(
+      timeRangeName,
+      metricsViewName,
+      activeTimeZone,
+      column,
+    );
+
+    if (interval.isValid) {
+      const validInterval = interval as Interval<true>;
+      const baseTimeRange: TimeRange = {
+        name: timeRangeName,
+        start: validInterval.start.toJSDate(),
+        end: validInterval.end.toJSDate(),
+      };
+
+      selectRange(baseTimeRange, grain);
+    }
   }
 
   function onPan(direction: "left" | "right") {
@@ -254,6 +298,7 @@
       alias,
       metricsViewName,
       activeTimeZone,
+      selectedTimeDimension,
     );
 
     const allowedGrains = allowedGrainsForInterval(
@@ -376,7 +421,7 @@
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
       <Tooltip.Root openDelay={0}>
-        <Tooltip.Trigger class="cursor-default">
+        <Tooltip.Trigger class="cursor-default text-fg-secondary">
           <Calendar size="16px" />
         </Tooltip.Trigger>
         <Tooltip.Content side="bottom" sideOffset={10}>
@@ -408,9 +453,13 @@
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
+          {primaryTimeDimension}
+          {selectedTimeDimension}
           {showDefaultItem}
+          timeDimensions={timeDimensionOptions}
           watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
+          {onTimeDimensionSelect}
           {onSelectRange}
           {onTimeGrainSelect}
           {onSelectTimeZone}
@@ -428,7 +477,7 @@
       {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
-            <span class="text-gray-600 italic">
+            <span class="text-fg-secondary italic">
               as of <Timestamp
                 id="filter-bar-as-of"
                 italic
@@ -453,15 +502,15 @@
 
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
     {#if !readOnly}
-      <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
+      <Filter size="16px" className="text-fg-secondary flex-none mt-[5px]" />
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
       {#if isComplexFilter}
-        <AdvancedFilter advancedFilter={$dashboardStore.whereFilter} />
+        <AdvancedFilter advancedFilter={whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
-          class="ui-copy-disabled grid ml-1 items-center"
+          class="text-fg-muted grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
           No filters selected
@@ -477,6 +526,7 @@
               {readOnly}
               {timeStart}
               {timeEnd}
+              timeDimension={selectedTimeDimension}
               {timeControlsReady}
               removeDimensionFilter={async (name) =>
                 removeDimensionFilter(name)}

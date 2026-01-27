@@ -195,6 +195,7 @@ export async function getExplorePageUrlSearchParams(
   // So no need to use getCleanedUrlParamsForGoto
   const searchParams = convertPartialExploreStateToUrlParams(
     exploreSpec,
+    metricsViewSpec,
     exploreState,
     getTimeControlState(
       metricsViewSpec,
@@ -240,6 +241,7 @@ export function maybeGetExplorePageUrlSearchParams(
   // So no need to use getCleanedUrlParamsForGoto
   const searchParams = convertPartialExploreStateToUrlParams(
     exploreSpec,
+    metricsViewSpec,
     exploreState,
     getTimeControlState(
       metricsViewSpec,

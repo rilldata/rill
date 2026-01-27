@@ -362,7 +362,7 @@
               {...builder}
               use:builder.action
               aria-label="Select aggregation grain"
-              class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
+              class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
             >
               by <b>
                 {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
@@ -477,7 +477,7 @@
 
             {#if hasTimeseriesError}
               <div
-                class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
+                class="flex flex-col p-5 items-center justify-center text-xs text-fg-muted"
               >
                 {#if $timeSeriesDataStore.error?.timeseries}
                   <span>
