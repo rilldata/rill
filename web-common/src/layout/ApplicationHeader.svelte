@@ -131,7 +131,7 @@
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
     {:else if showDeveloperChat}
-      <ChatToggle />
+      <ChatToggle beta />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
