@@ -14,6 +14,8 @@
     TabsList,
     TabsTrigger,
   } from "@rilldata/web-common/components/tabs";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let createMagicAuthTokens: boolean;
@@ -34,9 +36,12 @@
 
 <Popover bind:open={isOpen}>
   <PopoverTrigger asChild let:builder>
-    <Button type="secondary" builders={[builder]} selected={isOpen}
-      >Share</Button
-    >
+    <Tooltip distance={8} suppress={isOpen}>
+      <Button type="secondary" builders={[builder]} selected={isOpen}
+        >Share</Button
+      >
+      <TooltipContent slot="tooltip-content">Share dashboard</TooltipContent>
+    </Tooltip>
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[402px] p-0">
     <Tabs>
