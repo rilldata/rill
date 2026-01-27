@@ -36,6 +36,7 @@
 
 // Keep default color on hover (don't change text color)
 .navbar__link.navbar-docs-link:hover,
+.navbar__link.navbar-user-guide-link:hover,
 .navbar__link.navbar-reference-link:hover,
 .navbar__link.navbar-contact-link:hover,
 .navbar__link.navbar-api-link:hover {
@@ -44,6 +45,7 @@
 
 // But if it's active, keep the primary color even when hovering
 .navbar__link--active.navbar-docs-link:hover,
+.navbar__link--active.navbar-user-guide-link:hover,
 .navbar__link--active.navbar-reference-link:hover,
 .navbar__link--active.navbar-contact-link:hover,
 .navbar__link--active.navbar-api-link:hover {
@@ -63,6 +65,7 @@
 
 /* Active state styling for navbar links */
 .navbar__link--active.navbar-docs-link,
+.navbar__link--active.navbar-user-guide-link,
 .navbar__link--active.navbar-reference-link,
 .navbar__link--active.navbar-contact-link,
 .navbar__link--active.navbar-api-link,
@@ -72,6 +75,7 @@
 
 /* Underline that only spans text width */
 .navbar__link--active.navbar-docs-link::after,
+.navbar__link--active.navbar-user-guide-link::after,
 .navbar__link--active.navbar-reference-link::after,
 .navbar__link--active.navbar-contact-link::after,
 .navbar__link--active.navbar-api-link::after {

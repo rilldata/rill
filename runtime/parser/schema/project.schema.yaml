@@ -17,7 +17,7 @@ description: |
 
   :::tip
 
-  For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/deploy-dashboard/github-101).
+  For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/developers/deploy/deploy-dashboard/github-101).
 
   :::
 oneOf:
@@ -50,6 +50,7 @@ definitions:
       - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
       - [**MotherDuck**](#motherduck) - MotherDuck cloud database
       - [**Pinot**](#pinot) - Apache Pinot
+      - [**StarRocks**](#starrocks) - StarRocks analytical database
 
       ### _Data Warehouses_
       - [**Athena**](#athena) - Amazon Athena
@@ -75,7 +76,7 @@ definitions:
       - [**Slack**](#slack) - Slack data
 
       :::warning Security Recommendation
-      For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
+      For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
       :::
     allOf:
       - title: Properties
@@ -709,6 +710,54 @@ definitions:
             - broker_host
             - controller_host
         - type: object
+          title: StarRocks
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `starrocks`
+              const: starrocks
+            dsn:
+              type: string
+              description: DSN (Data Source Name) for the StarRocks connection. Follows MySQL protocol format.
+            host:
+              type: string
+              description: StarRocks FE (Frontend) server hostname
+            port:
+              type: integer
+              description: MySQL protocol port of StarRocks FE
+              default: 9030
+            username:
+              type: string
+              description: Username for authentication
+            password:
+              type: string
+              description: Password for authentication
+            catalog:
+              type: string
+              description: StarRocks catalog name (for external catalogs like Iceberg, Hive)
+              default: default_catalog
+            database:
+              type: string
+              description: StarRocks database name
+            ssl:
+              type: boolean
+              description: Enable SSL/TLS encryption
+              default: false
+          examples:
+            - # Example: StarRocks connector configuration
+              type: connector                                  # Must be `connector` (required)
+              driver: starrocks                                # Must be `starrocks` _(required)_
+
+              host: "starrocks-fe.example.com"                # Hostname of the StarRocks FE server  
+              port: 9030                                      # MySQL protocol port of StarRocks FE  
+              username: "analyst"                             # Username for authentication  
+              password: "{{ .env.connector.starrocks.password }}"  # Password for authentication  
+              catalog: "default_catalog"                      # StarRocks catalog name  
+              database: "my_database"                         # StarRocks database name  
+              ssl: false                                      # Enable SSL/TLS encryption
+          required:
+            - driver
+        - type: object
           title: Postgres
           properties:
             driver:
@@ -965,7 +1014,7 @@ definitions:
                 # Convert URL safe format for Snowflake
                 cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
                 ```
-                See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+                See: https://docs.snowflake.com/en/guide/key-pair-auth
                 :::
             authenticator:
               type: string
@@ -1149,10 +1198,10 @@ definitions:
     type: object
     description: |
 
-      This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/build/models/) documentation.
+      This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/developers/build/models/) documentation.
       :::tip
 
-      Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+      Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/developers/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
 
       **When to use Model YAML:**
       - **Partitions** - Optimize performance with data partitioning strategies
@@ -1493,7 +1542,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/gcs'
           - if:
-              title: Additional properties when `connector` is `local_file` or [named connector](/build/connectors/data-source/local-file) of local_file
+              title: Additional properties when `connector` is `local_file` or [named connector](/developers/build/connectors/data-source/local-file) of local_file
               properties:
                 connector:
                   const: local_file
@@ -1818,7 +1867,7 @@ definitions:
             description: Refers to the resource type and must be `metrics_view`
           connector:
             type: string
-            description: Refers to the connector type for the metrics view, see [OLAP engines](/build/connectors/olap) for more information
+            description: Refers to the connector type for the metrics view, see [OLAP engines](/developers/build/connectors/olap) for more information
           display_name:
             type: string
             description: Refers to the display name for the metrics view
@@ -1827,7 +1876,7 @@ definitions:
             description: Refers to the description for the metrics view
           ai_instructions:
             type: string
-            description: Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing.
+            description: Extra instructions for [AI agents](/guide/ai/mcp). Used to guide natural language question answering and routing.
           parent:
             type: string
             description: Refers to the parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view
@@ -1930,7 +1979,7 @@ definitions:
                   type: string
                   description: a combination of operators and functions for aggregations
                 window:
-                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/measures/windows) documentation.
+                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation.
                   anyOf:
                     - type: string
                       enum:
@@ -1957,7 +2006,7 @@ definitions:
                   description: for per dimensions
                 requires:
                   $ref: '#/definitions/field_selectors_properties'
-                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/measures/referencing) for more information.
+                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/developers/build/metrics-view/measures/referencing) for more information.
                 valid_percent_of_total:
                   type: boolean
                   description: a boolean indicating whether percent-of-total values should be rendered for this measure
@@ -2677,19 +2726,19 @@ definitions:
         light:
           primary: "#14B8A6"  # Teal
           secondary: "#10B981"  # Emerald
-          variables:
-            color-sequential-1: "hsl(180deg 80% 95%)"
-            color-sequential-5: "hsl(180deg 80% 50%)"
-            color-sequential-9: "hsl(180deg 80% 25%)"
-            color-qualitative-1: "hsl(156deg 56% 52%)"
-            color-qualitative-2: "hsl(27deg 100% 65%)"
+          
+          color-sequential-1: "hsl(180deg 80% 95%)"
+          color-sequential-5: "hsl(180deg 80% 50%)"
+          color-sequential-9: "hsl(180deg 80% 25%)"
+          color-qualitative-1: "hsl(156deg 56% 52%)"
+          color-qualitative-2: "hsl(27deg 100% 65%)"
         dark:
           primary: "2DD4BF"
           secondary: "34D399"
-          variables:
-            color-sequential-1: "hsl(180deg 40% 30%)"
-            color-sequential-5: "hsl(180deg 50% 50%)"
-            color-sequential-9: "hsl(180deg 60% 70%)"
+          
+          color-sequential-1: "hsl(180deg 40% 30%)"
+          color-sequential-5: "hsl(180deg 50% 50%)"
+          color-sequential-9: "hsl(180deg 60% 70%)"
     allOf:
       - title: Properties
         type: object
@@ -3237,13 +3286,13 @@ definitions:
   explore_time_range_properties:
     oneOf:
       - type: string
-        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/developers/build/metrics-view/time-series/time-syntax#extensions) extensions for the selection
       - type: object
         description: Object containing time range and comparison configuration
         properties:
           range:
             type: string
-            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/developers/build/metrics-view/time-series/time-syntax#extensions) extensions for the selection
           comparison_offsets:
             type: array
             description: list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
@@ -3333,7 +3382,7 @@ definitions:
         description: 'If true, allows the schedule to run in development mode.'
   security_policy_properties:
     type: object
-    description: Defines [security rules and access control policies](/build/metrics-view/security) for resources
+    description: Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources
     properties:
       access:
         oneOf:
@@ -3429,7 +3478,7 @@ definitions:
             - type
   dashboard_security_policy_properties:
     type: object
-    description: Defines [security rules and access control policies](/build/metrics-view/security) for dashboards (without row filtering)
+    description: Defines [security rules and access control policies](/developers/build/metrics-view/security) for dashboards (without row filtering)
     properties:
       access:
         oneOf:
