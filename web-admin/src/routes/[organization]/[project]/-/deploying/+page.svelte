@@ -9,16 +9,28 @@
   export let data: PageData;
   const { project, runtime, deployingDashboard } = data;
 
-  $: organizationName = $page.params.organization;
+  // Get organization name from params (string), not from data (object)
+  // Ensure it's a string to prevent [Object object] in URLs
+  // In tests, $page.params might not be immediately available, so we guard against undefined
+  $: organizationName =
+    typeof $page.params.organization === "string"
+      ? $page.params.organization
+      : undefined;
 
-  const deployingDashboardResp = useDeployingDashboards(
-    runtime.instanceId,
-    organizationName,
-    project.name,
-    deployingDashboard,
-  );
+  // Make this reactive so it only runs when organizationName is available
+  // This prevents race conditions where the query might be created before params are ready
+  $: deployingDashboardResp = organizationName
+    ? useDeployingDashboards(
+        runtime.instanceId,
+        organizationName,
+        project.name,
+        deployingDashboard,
+      )
+    : null;
 
-  $: ({ data: deployingDashboardsData } = $deployingDashboardResp);
+  $: ({ data: deployingDashboardsData } = $deployingDashboardResp ?? {
+    data: null,
+  });
   $: ({ redirectPath, dashboardsErrored } = deployingDashboardsData ?? {
     redirectPath: null,
     dashboardsErrored: false,
