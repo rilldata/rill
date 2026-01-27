@@ -16,7 +16,7 @@
 
 <Tabs {value} onValueChange={handleValueChange} class="w-full">
   <TabsList
-    class="bg-muted h-9 rounded-[10px] w-full border border-gray-200 flex my-4 {disableMarginTop
+    class="bg-surface-muted h-9 rounded-[10px] w-full border border-gray-200 flex my-4 {disableMarginTop
       ? 'mt-0'
       : ''}"
   >

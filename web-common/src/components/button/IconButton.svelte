@@ -32,15 +32,14 @@
     aria-label={ariaLabel}
     class:cursor-auto={disabled}
     class:rounded
-    class="{marginClasses} grid place-items-center {disabled
-      ? 'text-fg-disabled'
-      : 'text-fg-secondary'}
+    class:text-fg-disabled={disabled}
+    class="{marginClasses} grid place-items-center text-fg-muted hover:text-fg-secondary
 {disableHover || disabled
       ? ''
       : bgGray
         ? 'hover:bg-surface-hover'
         : 'hover:bg-surface-background'}"
-    class:bg-gray-100={active}
+    class:bg-surface-active={active}
     style:width="{size}px"
     style:height="{size}px"
     style:font-size="18px"

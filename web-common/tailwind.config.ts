@@ -22,6 +22,7 @@ function genColorObject(color: string) {
   );
 }
 
+// Enables Tailwind opacity control via bg-red-400/50
 function oklabString(variableName: string) {
   return `color-mix(in oklab, var(--${variableName}) calc(<alpha-value> * 100%), transparent)`;
 }
@@ -40,10 +41,6 @@ export default {
       colors: {
         background: oklabString("background"),
         foreground: oklabString("foreground"),
-        card: {
-          DEFAULT: oklabString("card"),
-          foreground: oklabString("card-foreground"),
-        },
         popover: {
           DEFAULT: oklabString("popover"),
           foreground: oklabString("popover-foreground"),
@@ -52,12 +49,12 @@ export default {
         },
         primary: {
           DEFAULT: oklabString("color-primary-500"),
-          foreground: oklabString("color-gray-50"),
+          foreground: oklabString("fg-secondary"),
           ...genColorObject("primary"),
         },
         secondary: {
           DEFAULT: oklabString("color-secondary-500"),
-          foreground: oklabString("color-gray-50"),
+          foreground: oklabString("fg-secondary"),
           ...genColorObject("secondary"),
         },
         muted: {
@@ -141,7 +138,6 @@ export default {
           border: oklabString("measure-border"),
         },
         tooltip: oklabString("tooltip"),
-
         "theme-secondary": {
           DEFAULT: oklabString("color-theme-secondary-500"),
           foreground: oklabString("color-gray-50"),

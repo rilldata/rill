@@ -172,7 +172,7 @@
   }
 
   .conversation-item:hover {
-    @apply bg-muted;
+    @apply bg-surface-muted;
   }
 
   .conversation-item.active {

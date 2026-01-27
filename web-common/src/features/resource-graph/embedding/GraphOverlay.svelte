@@ -66,11 +66,7 @@
       <GraphCanvas
         flowId={group.id}
         resources={group.resources}
-        title={null}
         titleLabel={group.label}
-        titleErrorCount={null}
-        anchorError={false}
-        rootNodeIds={undefined}
         fillParent
         {showControls}
         showLock={false}
@@ -144,7 +140,7 @@
   }
 
   .close-btn:hover {
-    @apply bg-muted text-fg-primary;
+    @apply bg-surface-muted text-fg-primary;
   }
 
   /* Ensure inline mode content fills available space */

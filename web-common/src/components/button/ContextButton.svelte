@@ -44,6 +44,6 @@
 
   button:hover,
   button:focus {
-    @apply outline-none bg-gray-300;
+    @apply outline-none bg-surface-active;
   }
 </style>
