@@ -2,14 +2,26 @@ import { writable } from "svelte/store";
 
 interface CellInspectorState {
   isOpen: boolean;
-  // undefined = no value set yet, null = cell contains null, string = cell value (including empty string)
-  value: string | null | undefined;
+  hasValue: boolean;
+  value: string | null;
+}
+
+/**
+ * Converts a raw cell value to the format expected by the store.
+ * Returns null for null/undefined values, string for everything else.
+ */
+function normalizeValue(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  return String(value);
 }
 
 function createCellInspectorStore() {
   const { subscribe, update } = writable<CellInspectorState>({
     isOpen: false,
-    value: undefined,
+    hasValue: false,
+    value: null,
   });
 
   return {
@@ -18,6 +30,7 @@ function createCellInspectorStore() {
       update((state) => ({
         ...state,
         isOpen: true,
+        hasValue: true,
         value,
       })),
     close: () =>
@@ -25,11 +38,15 @@ function createCellInspectorStore() {
         ...state,
         isOpen: false,
       })),
-    // Update the value without changing visibility
-    updateValue: (value: string | null) =>
+    /**
+     * Update the value without changing visibility.
+     * Accepts any value type and normalizes it internally.
+     */
+    updateValue: (value: unknown) =>
       update((state) => ({
         ...state,
-        value,
+        hasValue: true,
+        value: normalizeValue(value),
       })),
     toggle: (value: string | null) =>
       update((state) => ({
@@ -37,12 +54,12 @@ function createCellInspectorStore() {
         isOpen: !state.isOpen,
         // When opening: prefer store's existing value (from hover) if set, fall back to passed value
         // When closing: keep the current value
-        // undefined means no value was set via hover, so fall back to passed value
-        value: state.isOpen
-          ? state.value
-          : state.value !== undefined
-            ? state.value
-            : value,
+        ...(state.isOpen
+          ? {}
+          : {
+              hasValue: true,
+              value: state.hasValue ? state.value : value,
+            }),
       })),
   };
 }

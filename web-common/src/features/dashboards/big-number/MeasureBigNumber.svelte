@@ -94,17 +94,11 @@
   $: useDiv = isMeasureExpanded || !withTimeseries;
 
   function handleMouseOver() {
-    // Always update the value in the store, but don't change visibility
-    cellInspectorStore.updateValue(
-      value === null || value === undefined ? null : value.toString(),
-    );
+    cellInspectorStore.updateValue(value);
   }
 
   function handleFocus() {
-    // Always update the value in the store, but don't change visibility
-    cellInspectorStore.updateValue(
-      value === null || value === undefined ? null : value.toString(),
-    );
+    cellInspectorStore.updateValue(value);
   }
 </script>
 

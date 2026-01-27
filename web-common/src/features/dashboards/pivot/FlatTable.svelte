@@ -202,20 +202,8 @@
             data-value={cell.getValue()}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
-            on:mouseover={() => {
-              const value = cell.getValue();
-              // Always update the value in the store, but don't change visibility
-              cellInspectorStore.updateValue(
-                value === null || value === undefined ? null : String(value),
-              );
-            }}
-            on:focus={() => {
-              const value = cell.getValue();
-              // Always update the value in the store, but don't change visibility
-              cellInspectorStore.updateValue(
-                value === null || value === undefined ? null : String(value),
-              );
-            }}
+            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component

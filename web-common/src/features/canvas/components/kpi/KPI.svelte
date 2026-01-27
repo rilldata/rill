@@ -89,37 +89,21 @@
   function handleBigNumberMouseOver() {
     const displayValue =
       hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
-    cellInspectorStore.updateValue(
-      displayValue === null || displayValue === undefined
-        ? null
-        : displayValue.toString(),
-    );
+    cellInspectorStore.updateValue(displayValue);
   }
 
   function handleBigNumberFocus() {
     const displayValue =
       hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
-    cellInspectorStore.updateValue(
-      displayValue === null || displayValue === undefined
-        ? null
-        : displayValue.toString(),
-    );
+    cellInspectorStore.updateValue(displayValue);
   }
 
   function handleComparisonMouseOver() {
-    cellInspectorStore.updateValue(
-      comparisonVal === null || comparisonVal === undefined
-        ? null
-        : comparisonVal.toString(),
-    );
+    cellInspectorStore.updateValue(comparisonVal);
   }
 
   function handleComparisonFocus() {
-    cellInspectorStore.updateValue(
-      comparisonVal === null || comparisonVal === undefined
-        ? null
-        : comparisonVal.toString(),
-    );
+    cellInspectorStore.updateValue(comparisonVal);
   }
 </script>
 

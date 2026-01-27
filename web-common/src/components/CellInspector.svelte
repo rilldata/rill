@@ -21,9 +21,8 @@
   // Subscribe to the cellInspectorStore to keep the component in sync
   const unsubscribe = cellInspectorStore.subscribe((state) => {
     isOpen = state.isOpen;
-    // Update value when open and not locked, including null and empty string values
-    // Only skip if value is undefined (meaning no value was set via hover)
-    if (state.isOpen && !isLocked && state.value !== undefined) {
+    // Update value when open and not locked, and a value has been set via hover
+    if (state.isOpen && !isLocked && state.hasValue) {
       value = state.value;
     }
   });
