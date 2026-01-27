@@ -552,7 +552,7 @@
   }
 
   .state {
-    @apply flex h-full w-full items-center justify-center text-sm text-gray-500;
+    @apply flex h-full w-full items-center justify-center text-sm text-fg-secondary;
   }
 
   .state.error {
@@ -567,6 +567,6 @@
     @apply mb-2;
   }
   .graph-section-title {
-    @apply text-sm font-semibold text-foreground mt-4 mb-2;
+    @apply text-sm font-semibold text-fg-primary mt-4 mb-2;
   }
 </style>

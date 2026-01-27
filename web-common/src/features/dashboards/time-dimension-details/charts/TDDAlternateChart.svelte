@@ -28,6 +28,7 @@
     updateChartOnTableCellHover,
   } from "./utils";
   import { VegaSignalManager } from "./vega-signal-manager";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
@@ -55,6 +56,10 @@
       dimensions: { comparisonDimension },
     },
   } = getStateManagers();
+
+  $: ({ current } = themeControl);
+
+  $: themeMode = $current;
 
   $: hasDimensionData = !!dimensionData?.length;
   $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
@@ -221,6 +226,7 @@
     {tooltipFormatter}
     {isScrubbing}
     renderer="svg"
+    theme={themeMode}
   />
 {:else}
   <!-- JIC we add a new chart type without brush param -->

@@ -14,7 +14,7 @@ function isEmbedEnvironment(): boolean {
 }
 
 class ThemeControl {
-  private current = writable<Theme>("light");
+  public current = writable<"light" | "dark">("light");
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
   private preferenceStore = isEmbedEnvironment()
     ? sessionStorageStore<Theme>("rill:embed:theme-mode", "light")
@@ -24,9 +24,16 @@ class ThemeControl {
   public preference = { subscribe: this.preferenceStore.subscribe };
 
   constructor() {
-    const pref = get(this.preferenceStore);
+    this.init();
+  }
 
-    if (pref === "dark" || (pref === "system" && this.darkQuery.matches)) {
+  init = () => {
+    const currentPreference = get(this.preferenceStore);
+
+    if (
+      currentPreference === "dark" ||
+      (currentPreference === "system" && this.darkQuery.matches)
+    ) {
       this.setDark();
     }
 
