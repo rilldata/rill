@@ -9,6 +9,7 @@ import {
   createQueryServiceTableCardinality,
   type V1ListResourcesResponse,
   type V1OlapTableInfo,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { readable, type Readable } from "svelte/store";
@@ -262,6 +263,38 @@ export function useTableCardinality(
       return () => {
         subscriptions.forEach((unsub) => unsub());
       };
+    },
+  );
+}
+
+/**
+ * Fetches model resources and maps them by their result table name.
+ * This allows looking up model resource data by the OLAP table name.
+ */
+export function useModelResources(instanceId: string) {
+  return createRuntimeServiceListResources(
+    instanceId,
+    { kind: ResourceKind.Model },
+    {
+      query: {
+        select: (data: V1ListResourcesResponse) => {
+          const map = new Map<string, V1Resource>();
+          data.resources?.forEach((resource) => {
+            // Index by resultTable (the actual output table name)
+            const tableName = resource.model?.state?.resultTable;
+            if (tableName) {
+              map.set(tableName.toLowerCase(), resource);
+            }
+            // Also index by model name as fallback
+            const modelName = resource.meta?.name?.name;
+            if (modelName) {
+              map.set(modelName.toLowerCase(), resource);
+            }
+          });
+          return map;
+        },
+        enabled: !!instanceId,
+      },
     },
   );
 }

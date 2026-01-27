@@ -40,7 +40,7 @@
 
 <div class="flex flex-col gap-y-6 size-full">
   <section class="flex flex-col gap-y-4">
-    <h2 class="text-lg font-medium">Model Details</h2>
+    <h2 class="text-lg font-medium">Model Overview</h2>
     <div class="grid grid-cols-3 gap-4">
       <div class="flex flex-col gap-y-1 p-4 border rounded-md">
         <div class="flex items-center gap-x-1">

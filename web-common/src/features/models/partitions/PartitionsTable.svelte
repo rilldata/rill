@@ -135,6 +135,7 @@
               flexRender(TriggerPartition, {
                 partitionKey: (row as Row<V1ModelPartition>).original
                   .key as string,
+                resource,
               }),
           },
         ]
