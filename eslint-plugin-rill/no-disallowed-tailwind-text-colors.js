@@ -32,9 +32,9 @@ export default {
     const sourceCode = context.sourceCode ?? context.getSourceCode();
 
     return {
-      // Check Svelte HTML attributes (class="...")
+      // Check Svelte HTML attributes (class="..." and className="...")
       SvelteAttribute(node) {
-        if (node.key?.name === "class") {
+        if (node.key?.name === "class" || node.key?.name === "className") {
           for (const valueNode of node.value) {
             if (valueNode.type === "SvelteLiteral") {
               reportAllMatches(valueNode.value, context, valueNode);

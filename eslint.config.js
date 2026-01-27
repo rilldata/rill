@@ -67,9 +67,9 @@ export default [
   {
     ignores: [
       "**/.storybook/*",
-      "**/.svelte-kit/",
+      "**/.svelte-kit/**",
       "**/gen/*",
-      "**/node_modules",
+      "**/node_modules/**",
       "**/playwright.config.js",
       "**/postcss.config.cjs",
       "**/svelte.config.js",
