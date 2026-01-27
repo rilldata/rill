@@ -135,7 +135,6 @@
     class:w-full={$dynamicHeight}
     class:size-full={!$dynamicHeight}
   >
-    <div class="whatever" class:text-slate-100={true}>"text-slate-100"</div>
     <div
       id="header"
       class="border-b w-fit min-w-full flex flex-col bg-surface-subtle slide"
