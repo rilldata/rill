@@ -122,18 +122,24 @@ export function normalizeSeed(s: string): string | V1ResourceName {
  *
  * Uses the normalization function to handle plural forms, then looks up
  * in the canonical ResourceShortNameToResourceKind mapping.
+ * Sources are normalized to Models (Source is deprecated).
  *
  * @param s - String to check
  * @returns The ResourceKind if it's a kind token, undefined otherwise
  *
  * @example
  * isKindToken("metrics") // ResourceKind.MetricsView
- * isKindToken("sources") // ResourceKind.Source
+ * isKindToken("sources") // ResourceKind.Model (Source normalized to Model)
  * isKindToken("orders") // undefined (not a kind token)
  */
 export function isKindToken(s: string): ResourceKind | undefined {
   // Use the same normalization and resolution logic
-  return resolveKindAlias(s);
+  const kind = resolveKindAlias(s);
+  // Normalize Source to Model (Source is deprecated)
+  if (kind === ResourceKind.Source) {
+    return ResourceKind.Model;
+  }
+  return kind;
 }
 
 /**

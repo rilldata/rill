@@ -37,9 +37,8 @@
   import { ResourceKind } from "../entity-management/resource-selectors";
   import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
-  import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
-  import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
-  import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
+import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
+import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -67,8 +66,10 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: resourceKind = ($resourceName?.kind ??
+  // Normalize Source to Model (Source is deprecated)
+  $: rawResourceKind = ($resourceName?.kind ??
     $inferredResourceKind) as ResourceKind;
+  $: resourceKind = rawResourceKind === ResourceKind.Source ? ResourceKind.Model : rawResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
@@ -169,9 +170,7 @@
           Duplicate
         </NavigationMenuItem>
         {#if resourceKind}
-          {#if resourceKind === ResourceKind.Source}
-            <SourceMenuItems {filePath} />
-          {:else if resourceKind === ResourceKind.Model}
+          {#if resourceKind === ResourceKind.Model}
             <ModelMenuItems {filePath} />
           {:else if resourceKind === ResourceKind.MetricsView}
             <MetricsViewMenuItems {filePath} />

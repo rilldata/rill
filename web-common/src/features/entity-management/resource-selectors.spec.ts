@@ -24,7 +24,7 @@ describe("resource-selectors", () => {
       expect(coerceResourceKind(resource)).toBe(ResourceKind.Model);
     });
 
-    it("should return Source kind for models defined-as-source with matching table name", () => {
+    it("should return Model kind for models defined-as-source (Source is deprecated)", () => {
       const resource: V1Resource = {
         meta: {
           name: {
@@ -41,30 +41,11 @@ describe("resource-selectors", () => {
           },
         },
       };
-      expect(coerceResourceKind(resource)).toBe(ResourceKind.Source);
-    });
-
-    it("should return Model kind for models defined-as-source with non-matching table name", () => {
-      const resource: V1Resource = {
-        meta: {
-          name: {
-            kind: ResourceKind.Model,
-            name: "raw_orders",
-          },
-        },
-        model: {
-          spec: {
-            definedAsSource: true,
-          },
-          state: {
-            resultTable: "different_table",
-          },
-        },
-      };
+      // Models defined-as-source are now treated as Models (Source is deprecated)
       expect(coerceResourceKind(resource)).toBe(ResourceKind.Model);
     });
 
-    it("should pass through Source kind unchanged", () => {
+    it("should normalize Source to Model (Source is deprecated)", () => {
       const resource: V1Resource = {
         meta: {
           name: {
@@ -78,7 +59,8 @@ describe("resource-selectors", () => {
           },
         },
       };
-      expect(coerceResourceKind(resource)).toBe(ResourceKind.Source);
+      // Source is normalized to Model (Source is deprecated)
+      expect(coerceResourceKind(resource)).toBe(ResourceKind.Model);
     });
 
     it("should pass through MetricsView kind unchanged", () => {
