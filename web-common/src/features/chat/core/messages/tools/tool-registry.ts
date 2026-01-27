@@ -15,7 +15,11 @@ import {
   type FileDiffBlock,
 } from "../file-diff/file-diff-block";
 import { goto } from "$app/navigation";
-import { maybePrependSlash } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+import {
+  createGenericBlock,
+  type GenericBlock,
+} from "@rilldata/web-common/features/chat/core/messages/generic/generic-block.ts";
 
 // =============================================================================
 // RENDER MODES
@@ -34,7 +38,7 @@ export type ToolRenderMode = "inline" | "block" | "hidden";
 // =============================================================================
 
 /** Block types that can be created by tools */
-export type ToolBlockType = ChartBlock | FileDiffBlock;
+export type ToolBlockType = ChartBlock | FileDiffBlock | GenericBlock;
 
 /**
  * Configuration for a tool's rendering behavior.
@@ -89,7 +93,8 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
   },
 
   [ToolName.NAVIGATE]: {
-    renderMode: "hidden",
+    renderMode: "block",
+    createBlock: createGenericBlock,
     onResult: handleNavigateToolCall,
   },
 
@@ -123,7 +128,7 @@ function handleNavigateToolCall(callMessage: V1Message) {
     if (!content.kind || !content.name) return;
     switch (content.kind) {
       case "file":
-        void goto(`/files${maybePrependSlash(content.name)}`);
+        void goto(`/files${addLeadingSlash(content.name)}`);
     }
   } catch (err) {
     console.error(err);

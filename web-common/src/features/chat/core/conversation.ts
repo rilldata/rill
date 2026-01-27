@@ -319,10 +319,7 @@ export class Conversation {
       }
 
       this.addMessageToCache(response.message);
-      if (
-        response.message.tool === ToolName.NAVIGATE &&
-        response.message.type === MessageType.CALL
-      ) {
+      if (response.message.type === MessageType.CALL) {
         const config = getToolConfig(response.message.tool);
         config?.onResult?.(response.message);
       }

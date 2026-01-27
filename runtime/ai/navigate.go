@@ -11,8 +11,7 @@ import (
 
 const NavigateName = "navigate"
 
-type Navigate struct {
-}
+type Navigate struct{}
 
 var _ Tool[*NavigateArgs, *NavigateResult] = (*Navigate)(nil)
 
@@ -21,8 +20,7 @@ type NavigateArgs struct {
 	Name string `json:"name" jsonschema:"The name of the item to navigate to."`
 }
 
-type NavigateResult struct {
-}
+type NavigateResult struct{}
 
 func (t *Navigate) Spec() *mcp.Tool {
 	return &mcp.Tool{

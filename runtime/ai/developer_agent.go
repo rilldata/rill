@@ -161,7 +161,7 @@ This may not relate to the user's task, but for context, the project's default O
 {{ if .default_olap_readwrite }} The default OLAP is in readwrite mode, so you can use it in models if you want.
 {{ else }} The default OLAP is in read-only mode, so you cannot create models in it. {{ end }}
 
-Call "navigate" tool for the main file created/edited in the conversation. Use type "file" and pass the written file path.
+Call "navigate" tool for the main file created/edited in the conversation. Use kind "file" and pass the written file path.
 Prefer dashboard or metrics view files over other files.
 
 Task: {{ .prompt }}

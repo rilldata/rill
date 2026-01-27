@@ -20,8 +20,7 @@ import {
   getConversationManager,
 } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
-import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
-import { maybePrependSlash } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+import { goto } from "$app/navigation";
 
 export const generatingSampleData = writable(false);
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
@@ -31,7 +30,7 @@ export async function generateSampleData(
   instanceId: string,
   userPrompt: string,
 ) {
-  const agentPrompt = `Generate a NEW model with fresh data for the following user prompt: ${userPrompt}`;
+  const agentPrompt = `Generate a new model with fresh data for the following user prompt: ${userPrompt}`;
 
   try {
     if (initializeProject) {
@@ -67,30 +66,10 @@ export async function generateSampleData(
       agent: ToolName.DEVELOPER_AGENT,
     });
 
-    let created: boolean;
-    let lastReadFile: string | null;
-    let cancelled: boolean;
-
     if (developerChatEnabled) {
-      ({ created, lastReadFile, cancelled } =
-        await generateSampleDataWithDevChat(agentPrompt, conversationManager));
+      await generateSampleDataWithDevChat(agentPrompt, conversationManager);
     } else {
-      ({ created, lastReadFile, cancelled } =
-        await generateSampleDataWithOverlay(agentPrompt, conversationManager));
-    }
-
-    if (cancelled) return;
-    if (!created) {
-      if (lastReadFile) {
-        eventBus.emit("notification", {
-          message: `Data already present at ${lastReadFile}`,
-        });
-      } else {
-        eventBus.emit("notification", {
-          message: "Failed to generate sample data",
-        });
-      }
-      return;
+      await generateSampleDataWithOverlay(agentPrompt, conversationManager);
     }
   } catch (err) {
     console.error(err);
@@ -104,6 +83,9 @@ export async function generateSampleData(
   }
 }
 
+/**
+ * New path that starts a chat with the prompt. User feedback will be through the chat window.
+ */
 async function generateSampleDataWithDevChat(
   agentPrompt: string,
   conversationManager: ConversationManager,
@@ -113,20 +95,6 @@ async function generateSampleDataWithDevChat(
   const conversation = get(conversationManager.getCurrentConversation());
   conversation.cancelStream();
 
-  let created = false;
-  let lastReadFile: string | null = null;
-
-  const listener = new FileWriteListener(conversation, {
-    onReadFile: (path) => {
-      // Keep a copy of the file that was read.
-      // LLM can some time read a file and decide not to generate data.
-      lastReadFile = path;
-    },
-    onWriteFile: () => {
-      created = true;
-    },
-  });
-
   overlay.set(null);
   sidebarActions.startChat(agentPrompt);
   // Wait for the stream to start async through the sidebar action.
@@ -134,16 +102,12 @@ async function generateSampleDataWithDevChat(
 
   // Then wait for the stream to end.
   await waitUntil(() => !get(conversation.isStreaming), -1);
-
-  listener.cleanup();
-
-  return {
-    created,
-    lastReadFile,
-    cancelled: false,
-  };
 }
 
+/**
+ * Goes through the legacy path without developer chat enabled.
+ * User feedback is through overlay and notifications.
+ */
 async function generateSampleDataWithOverlay(
   agentPrompt: string,
   conversationManager: ConversationManager,
@@ -155,17 +119,50 @@ async function generateSampleDataWithOverlay(
   let created = false;
   let lastReadFile: string | null = null;
 
-  const listener = new FileWriteListener(conversation, {
-    onReadFile: (path) => {
-      // Keep a copy of the file that was read.
-      // LLM can some time read a file and decide not to generate data.
-      lastReadFile = path;
-    },
-    onWriteFile: (path) => {
-      created = true;
-      overlay.set(null);
-      sourceImportedPath.set(path);
-    },
+  const messages = new Map<string, V1Message>();
+  const messageUnsub = conversation.on("message", (msg) => {
+    messages.set(msg.id!, msg);
+
+    if (
+      msg.type !== MessageType.RESULT ||
+      msg.contentType === MessageContentType.ERROR
+    ) {
+      return;
+    }
+
+    switch (msg.tool) {
+      // Sometimes AI detects that model is already present.
+      case ToolName.READ_FILE: {
+        if (!msg.parentId) break;
+
+        const callMsg = messages.get(msg.parentId);
+        if (!callMsg) break;
+
+        const path = parseFile(callMsg, msg);
+        if (path) {
+          // Keep a copy of the file that was read.
+          // LLM can some time read a file and decide not to generate data.
+          lastReadFile = path;
+        }
+
+        break;
+      }
+
+      case ToolName.WRITE_FILE: {
+        const callMsg = messages.get(msg.parentId ?? "");
+        if (!callMsg) break;
+
+        const path = parseFile(callMsg, msg);
+        if (!path) break;
+
+        created = true;
+        void goto(`/files${path}`);
+        overlay.set(null);
+        sourceImportedPath.set(path);
+
+        break;
+      }
+    }
   });
 
   overlay.set({
@@ -186,86 +183,36 @@ async function generateSampleDataWithOverlay(
   // Wait for the stream to end.
   await waitUntil(() => !get(conversation.isStreaming), -1);
 
-  listener.cleanup();
+  messageUnsub();
 
-  return {
-    created,
-    lastReadFile,
-    cancelled,
-  };
+  if (created || cancelled) return;
+
+  if (lastReadFile) {
+    eventBus.emit("notification", {
+      message: `Data already present at ${lastReadFile}`,
+    });
+  } else {
+    eventBus.emit("notification", {
+      message: "Failed to generate sample data",
+    });
+  }
+  overlay.set(null);
 }
 
-class FileWriteListener {
-  private readonly messages = new Map<string, V1Message>();
-  private readonly messageUnsub: () => void;
+function parseFile(call: V1Message, result: V1Message) {
+  if (!result.contentData || !call.contentData) return null;
 
-  constructor(
-    conversation: Conversation,
-    private readonly callbacks: {
-      onReadFile?: (filePath: string) => void;
-      onWriteFile?: (filePath: string) => void;
-    },
-  ) {
-    this.messageUnsub = conversation.on("message", (m) =>
-      this.handleMessage(m),
-    );
+  try {
+    const resultContent = JSON.parse(result.contentData);
+    const hasErroredOut =
+      !!resultContent.parse_error ||
+      resultContent.resources?.some((r) => !!r.reconcile_error);
+    if (hasErroredOut) return null;
+
+    const callContent = JSON.parse(call.contentData);
+    return callContent.path as string;
+  } catch {
+    // json parse errors shouldn't happen. ignore if it ever does.
   }
-
-  public cleanup() {
-    this.messageUnsub();
-  }
-
-  private handleMessage(msg: V1Message) {
-    this.messages.set(msg.id!, msg);
-
-    if (
-      msg.type !== MessageType.RESULT ||
-      msg.contentType === MessageContentType.ERROR
-    ) {
-      return;
-    }
-
-    switch (msg.tool) {
-      // Sometimes AI detects that model is already present.
-      case ToolName.READ_FILE: {
-        if (!msg.parentId) break;
-
-        const callMsg = this.messages.get(msg.parentId);
-        if (!callMsg) break;
-
-        const path = this.parseFile(callMsg, msg);
-        if (path) this.callbacks.onReadFile?.(maybePrependSlash(path));
-
-        break;
-      }
-
-      case ToolName.WRITE_FILE: {
-        const callMsg = this.messages.get(msg.parentId ?? "");
-        if (!callMsg) break;
-
-        const path = this.parseFile(callMsg, msg);
-        if (path) this.callbacks.onWriteFile?.(maybePrependSlash(path));
-
-        break;
-      }
-    }
-  }
-
-  private parseFile(call: V1Message, result: V1Message) {
-    if (!result.contentData || !call.contentData) return null;
-
-    try {
-      const resultContent = JSON.parse(result.contentData);
-      const hasErroredOut =
-        !!resultContent.parse_error ||
-        resultContent.resources?.some((r) => !!r.reconcile_error);
-      if (hasErroredOut) return null;
-
-      const callContent = JSON.parse(call.contentData);
-      return callContent.path as string;
-    } catch {
-      // json parse errors shouldn't happen. ignore if it ever does.
-    }
-    return null;
-  }
+  return null;
 }
