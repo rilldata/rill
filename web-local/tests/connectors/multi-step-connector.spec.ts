@@ -222,4 +222,126 @@ test.describe("Multi-step connector wrapper", () => {
     const saveAnywayButton = page.getByRole("button", { name: "Save Anyway" });
     await expect(saveAnywayButton).toBeHidden();
   });
+
+  test("GCS connector - model form resets after first submission (HMAC)", async ({
+    page,
+  }) => {
+    const hmacKey = process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY;
+    const hmacSecret = process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET;
+    if (!hmacKey || !hmacSecret) {
+      test.skip(
+        true,
+        "RILL_RUNTIME_GCS_TEST_HMAC_KEY or RILL_RUNTIME_GCS_TEST_HMAC_SECRET is not set",
+      );
+    }
+    test.slow();
+
+    const openGcsFlowWithHmac = async () => {
+      await page.getByRole("button", { name: "Add Asset" }).click();
+      await page.getByRole("menuitem", { name: "Add Data" }).click();
+      await page.locator("#gcs").click();
+      await page.waitForSelector('form[id*="gcs"]');
+      await page.getByRole("radio", { name: "HMAC keys" }).click();
+      await page.getByRole("textbox", { name: "Access Key ID" }).fill(hmacKey!);
+      await page
+        .getByRole("textbox", { name: "Secret Access Key" })
+        .fill(hmacSecret!);
+      const connectorCta = page.getByRole("button", {
+        name: "Test and Connect",
+      });
+      await connectorCta.click();
+      await expect(page.getByText("Model preview")).toBeVisible();
+    };
+
+    // First submission attempt
+    await openGcsFlowWithHmac();
+    const firstPath =
+      "gs://rilldata-public/github-analytics/Clickhouse/2025/06/commits_2025_06.parquet";
+    const firstModelName = "gcs_model_one";
+    await page.getByRole("textbox", { name: "GCS URI" }).fill(firstPath);
+    await page
+      .getByRole("textbox", { name: "Model name" })
+      .fill(firstModelName);
+
+    const submitCta = page.getByRole("button", {
+      name: "Import Data",
+    });
+    await submitCta.click();
+
+    const dialog = page.getByRole("dialog");
+    await dialog
+      .waitFor({ state: "detached", timeout: 10000 })
+      .catch(async () => {
+        // If the modal is still open (e.g., reconciliation failed), close it and continue.
+        await page.keyboard.press("Escape");
+        await dialog.waitFor({ state: "detached", timeout: 5000 });
+      });
+
+    // Re-open and ensure model form is reset
+    await openGcsFlowWithHmac();
+    await expect(
+      page.getByRole("textbox", { name: "GCS URI" }),
+    ).not.toHaveValue(firstPath);
+    await expect(
+      page.getByRole("textbox", { name: "Model name" }),
+    ).not.toHaveValue(firstModelName);
+  });
+
+  test("GCS connector - model YAML includes create_secrets_from_connectors", async ({
+    page,
+  }) => {
+    const hmacKey = process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY;
+    const hmacSecret = process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET;
+    if (!hmacKey || !hmacSecret) {
+      test.skip(
+        true,
+        "RILL_RUNTIME_GCS_TEST_HMAC_KEY or RILL_RUNTIME_GCS_TEST_HMAC_SECRET is not set",
+      );
+    }
+
+    const startGcsConnector = async () => {
+      await page.getByRole("button", { name: "Add Asset" }).click();
+      await page.getByRole("menuitem", { name: "Add Data" }).click();
+      await page.locator("#gcs").click();
+      await page.waitForSelector('form[id*="gcs"]');
+      await page.getByRole("radio", { name: "HMAC keys" }).click();
+      await page.getByRole("textbox", { name: "Access Key ID" }).fill(hmacKey!);
+      await page
+        .getByRole("textbox", { name: "Secret Access Key" })
+        .fill(hmacSecret!);
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Test and Connect" })
+        .click();
+      await expect(page.getByText("Model preview")).toBeVisible();
+    };
+
+    // Create first connector instance, then close modal
+    await startGcsConnector();
+    await page.keyboard.press("Escape");
+    await page.getByRole("dialog").waitFor({ state: "detached" });
+
+    // Create second connector instance and proceed to model import
+    await startGcsConnector();
+    const modelName = "gcs_create_secrets_test";
+    await page
+      .getByRole("textbox", { name: "GCS URI" })
+      .fill(
+        "gs://rilldata-public/github-analytics/Clickhouse/2025/06/commits_2025_06.parquet",
+      );
+    await page.getByRole("textbox", { name: "Model name" }).fill(modelName);
+    await page.getByRole("button", { name: "Import Data" }).click();
+
+    // Wait for navigation to the new model file
+    await page.waitForURL(`**/files/models/${modelName}.yaml`);
+
+    // Verify YAML contains the connector reference and create_secrets_from_connectors with the second instance (gcs_1)
+    const codeEditor = page
+      .getByLabel("codemirror editor")
+      .getByRole("textbox");
+    await expect(codeEditor).toContainText("connector: duckdb");
+    await expect(codeEditor).toContainText(
+      /create_secrets_from_connectors:\s*\[gcs_1\]/,
+    );
+  });
 });
