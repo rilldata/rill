@@ -528,12 +528,12 @@
   }
 
   .resource-graph-grid {
-    @apply grid gap-4 flex-1 min-h-0;
+    @apply grid gap-4 flex-1 min-h-0 w-full;
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
   @media (min-width: 1024px) {
-    .resource-graph-grid {
+    .resource-graph-grid:not(.has-expanded) {
       grid-template-columns: repeat(var(--grid-columns, 3), minmax(0, 1fr));
     }
   }
@@ -547,7 +547,8 @@
   }
 
   .grid-item.expanded {
-    @apply col-span-full h-full;
+    @apply h-full;
+    min-height: 600px;
   }
 
   .resource-graph-grid.has-expanded {
