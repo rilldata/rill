@@ -43,6 +43,7 @@
   export let gridColumns: number = UI_CONFIG.DEFAULT_GRID_COLUMNS;
   export let expandedHeightMobile: string = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
   export let expandedHeightDesktop: string = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
+  export let isOverlay = false;
 
   type SummaryMemo = {
     models: number;
@@ -493,6 +494,7 @@
               showLock={false}
               fillParent={true}
               enableExpand={enableExpansion}
+              {isOverlay}
               {fitViewPadding}
               {fitViewMinZoom}
               {fitViewMaxZoom}
@@ -519,6 +521,7 @@
                 showLock={true}
                 fillParent={false}
                 enableExpand={enableExpansion}
+                {isOverlay}
                 {fitViewPadding}
                 {fitViewMinZoom}
                 {fitViewMaxZoom}

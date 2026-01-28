@@ -43,6 +43,7 @@
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
   export let overlay = false;
+  export let isOverlay = false;
   export let onExpand: () => void = () => {};
 
   let hasNodes = false;
@@ -241,7 +242,7 @@
     const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map(
       (node) => ({
         ...node,
-        data: { ...node.data, isRoot: rootSet.has(node.id) },
+        data: { ...node.data, isRoot: rootSet.has(node.id), isOverlay },
       }),
     );
     nodesStore.set(nodesWithRoots);
@@ -386,5 +387,10 @@
 
   .expand-btn:hover {
     @apply bg-surface-muted text-fg-primary;
+  }
+
+  /* Override xyflow pane background to match app theme */
+  :global(.svelte-flow .svelte-flow__pane) {
+    background-color: var(--surface-background, #ffffff);
   }
 </style>

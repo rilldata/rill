@@ -166,6 +166,7 @@
                 maxGroups={null}
                 showControls={false}
                 enableExpansion={false}
+                isOverlay={true}
                 fitViewPadding={0.08}
                 fitViewMinZoom={0.01}
                 fitViewMaxZoom={1.35}
