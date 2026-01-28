@@ -289,7 +289,7 @@ dark:
   surface-subtle: "#1e293b"     # Elevated surfaces
   surface-card: "#334155"        # Card backgrounds
 
-  fg-primary: "#FFFFFF"   # White text
+  fg-primary: "#ffffff"   # White text
   
   # Qualitative palette (adjusted for dark mode visibility - all 24 colors)
   color-qualitative-1: "#818cf8"   # Indigo

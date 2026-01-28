@@ -485,7 +485,7 @@
     --color-qualitative-24: hsl(110deg 55% 60%);
 
     --editor-selection: #304e75;
-    --line-highlight: var(--color-rill-gray-dark-400);
+    --line-highlight: #afafaf33;
   }
 
   h1,

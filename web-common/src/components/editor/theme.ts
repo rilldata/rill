@@ -11,7 +11,7 @@ const gray = "var(--fg-muted)";
 const amber = "var(--color-amber-600)";
 const highlightBackground = "var(--line-highlight)";
 const background = "var(--surface-subtle)";
-const tooltipBackground = "var(--popover)";
+const tooltipBackground = "var(--tooltip)";
 const selection = "var(--editor-selection)";
 const cursor = "var(--color-gray-800)";
 const orange = "var(--color-orange-700)";
@@ -47,8 +47,8 @@ export const editorTheme = EditorView.theme(
     ".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
 
     ".cm-searchMatch": {
-      backgroundColor: "#72a1ff59",
-      outline: "1px solid #457dff",
+      backgroundColor: "var(--color-blue-500)",
+      outline: "1px solid var(--color-blue-600)",
     },
     ".cm-searchMatch.cm-searchMatch-selected": {
       backgroundColor: selection,

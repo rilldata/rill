@@ -52,7 +52,7 @@
         <span class="flex-none">
           {#if connector.driver?.name}
             <svelte:component
-              this={connectorIconMapping[getConnectorIconKey(connector)]}
+              this={connectorIconMapping["clickhousecloud"]}
               size="16px"
             />
           {/if}
@@ -66,7 +66,7 @@
       </button>
 
       {#if expanded}
-        <DatabaseExplorer {instanceId} {connector} {store} />
+        <!-- <DatabaseExplorer {instanceId} {connector} {store} /> -->
       {/if}
     </li>
   {/if}
