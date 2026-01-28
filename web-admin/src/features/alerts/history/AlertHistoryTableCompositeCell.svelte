@@ -14,7 +14,7 @@
 </script>
 
 <div class="flex gap-x-2 items-center px-4 py-[10px]">
-  <div class="text-gray-700 text-sm flex-shrink-0">
+  <div class="text-fg-primary text-sm flex-shrink-0">
     {currentExecution ? "Checking" : "Checked"}
     {formatRunDate(alertTime, timeZone)}
   </div>

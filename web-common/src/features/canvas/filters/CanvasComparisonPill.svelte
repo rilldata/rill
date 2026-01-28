@@ -48,6 +48,7 @@
   $: comparisonOptions = getComparisonOptionsForCanvas(
     selectedTimeRange,
     allowCustomTimeRange,
+    activeTimeZone,
   );
 
   function onSelectComparisonRange(
@@ -101,6 +102,7 @@
       {minTimeGrain}
       maxDate={minDate}
       minDate={maxDate}
+      timeGrain={activeTimeGrain}
       timeComparisonOptionsState={comparisonOptions}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
@@ -121,7 +123,7 @@
     @apply h-[26px] rounded-full;
     @apply overflow-hidden select-none;
   }
-
+  /* 
   :global(.wrapper > button) {
     @apply border;
   }
@@ -132,7 +134,7 @@
 
   :global(.wrapper > button) {
     @apply border;
-    @apply px-2 flex items-center justify-center bg-surface;
+    @apply px-2 flex items-center justify-center bg-surface-subtle;
   }
 
   :global(.wrapper > button:first-child) {
@@ -143,12 +145,6 @@
   }
 
   :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-gray-50 cursor-pointer;
-  }
-
-  /* Doest apply to all instances except alert/report. So this seems unintentional
-  :global(.wrapper > [data-state="open"]) {
-    @apply bg-gray-50 border-gray-400 z-50;
-  }
-  */
+    @apply bg-surface-background cursor-pointer;
+  } */
 </style>

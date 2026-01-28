@@ -551,19 +551,18 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.InputHandle.Driver() == "s3" || opts.InputHandle.Driver() == "gcs" {
 		return &objectStoreToSelfExecutor{opts.InputHandle, c}, nil
 	}
-	if opts.InputHandle.Driver() == "local_file" {
-		return &localFileToSelfExecutor{opts.InputHandle, c}, nil
+	if opts.InputHandle.Driver() == "local_file" || opts.InputHandle.Driver() == "https" {
+		return &fileStoreToSelfExecutor{opts.InputHandle, c}, nil
 	}
 	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	if c.config.Mode != modeReadWrite {
-		c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
-		return nil, false
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
 	}
-	return c, true
+	return c, nil
 }
 
 // AsFileStore implements drivers.Handle.

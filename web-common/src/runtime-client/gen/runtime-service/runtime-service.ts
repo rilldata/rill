@@ -34,6 +34,7 @@ import type {
   RuntimeServiceDeleteFileParams,
   RuntimeServiceDeleteInstanceBody,
   RuntimeServiceEditInstanceBody,
+  RuntimeServiceForkConversationBody,
   RuntimeServiceGenerateCanvasFileBody,
   RuntimeServiceGenerateMetricsViewFileBody,
   RuntimeServiceGenerateRendererBody,
@@ -44,13 +45,22 @@ import type {
   RuntimeServiceGetLogsParams,
   RuntimeServiceGetModelPartitionsParams,
   RuntimeServiceGetResourceParams,
+  RuntimeServiceGitCommitBody,
+  RuntimeServiceGitMergeToBranchBody,
+  RuntimeServiceGitPullBody,
+  RuntimeServiceGitPushBody,
+  RuntimeServiceGitSwitchBranchBody,
   RuntimeServiceListConversationsParams,
   RuntimeServiceListFilesParams,
+  RuntimeServiceListGitCommitsParams,
   RuntimeServiceListInstancesParams,
   RuntimeServiceListResourcesParams,
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
+  RuntimeServiceReloadConfigBody,
   RuntimeServiceRenameFileBody,
+  RuntimeServiceRestoreGitCommitBody,
+  RuntimeServiceShareConversationBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
@@ -69,6 +79,7 @@ import type {
   V1DeleteFileResponse,
   V1DeleteInstanceResponse,
   V1EditInstanceResponse,
+  V1ForkConversationResponse,
   V1GenerateCanvasFileResponse,
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
@@ -80,6 +91,12 @@ import type {
   V1GetLogsResponse,
   V1GetModelPartitionsResponse,
   V1GetResourceResponse,
+  V1GitCommitResponse,
+  V1GitMergeToBranchResponse,
+  V1GitPullResponse,
+  V1GitPushResponse,
+  V1GitStatusResponse,
+  V1GitSwitchBranchResponse,
   V1HealthResponse,
   V1InstanceHealthResponse,
   V1IssueDevJWTRequest,
@@ -88,6 +105,8 @@ import type {
   V1ListConversationsResponse,
   V1ListExamplesResponse,
   V1ListFilesResponse,
+  V1ListGitBranchesResponse,
+  V1ListGitCommitsResponse,
   V1ListInstancesResponse,
   V1ListNotifierConnectorsResponse,
   V1ListResourcesResponse,
@@ -95,7 +114,10 @@ import type {
   V1PingResponse,
   V1PutFileResponse,
   V1QueryResolverResponse,
+  V1ReloadConfigResponse,
   V1RenameFileResponse,
+  V1RestoreGitCommitResponse,
+  V1ShareConversationResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
 } from "../index.schemas";
@@ -1393,6 +1415,226 @@ export function createRuntimeServiceGetConversation<
   return query;
 }
 
+/**
+ * @summary ForkConversation creates a new conversation by copying messages from an existing one.
+If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+ */
+export const runtimeServiceForkConversation = (
+  instanceId: string,
+  conversationId: string,
+  runtimeServiceForkConversationBody: RuntimeServiceForkConversationBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ForkConversationResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/fork`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceForkConversationBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceForkConversationMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+    TError,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceForkConversationBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceForkConversationBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceForkConversation"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceForkConversationBody;
+    }
+  > = (props) => {
+    const { instanceId, conversationId, data } = props ?? {};
+
+    return runtimeServiceForkConversation(instanceId, conversationId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceForkConversationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceForkConversation>>
+>;
+export type RuntimeServiceForkConversationMutationBody =
+  RuntimeServiceForkConversationBody;
+export type RuntimeServiceForkConversationMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ForkConversation creates a new conversation by copying messages from an existing one.
+If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+ */
+export const createRuntimeServiceForkConversation = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+      TError,
+      {
+        instanceId: string;
+        conversationId: string;
+        data: RuntimeServiceForkConversationBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceForkConversationBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceForkConversationMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary ShareConversation enables sharing of the conversation by adding metadata.
+ */
+export const runtimeServiceShareConversation = (
+  instanceId: string,
+  conversationId: string,
+  runtimeServiceShareConversationBody: RuntimeServiceShareConversationBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ShareConversationResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/share`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceShareConversationBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceShareConversationMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+    TError,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceShareConversationBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceShareConversationBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceShareConversation"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceShareConversationBody;
+    }
+  > = (props) => {
+    const { instanceId, conversationId, data } = props ?? {};
+
+    return runtimeServiceShareConversation(instanceId, conversationId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceShareConversationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceShareConversation>>
+>;
+export type RuntimeServiceShareConversationMutationBody =
+  RuntimeServiceShareConversationBody;
+export type RuntimeServiceShareConversationMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ShareConversation enables sharing of the conversation by adding metadata.
+ */
+export const createRuntimeServiceShareConversation = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+      TError,
+      {
+        instanceId: string;
+        conversationId: string;
+        data: RuntimeServiceShareConversationBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceShareConversationBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceShareConversationMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 Note that it covers all registered tools, but the current user may not have access to all of them.
@@ -2890,6 +3132,844 @@ export const createRuntimeServiceGenerateResolver = <
 
   return createMutation(mutationOptions, queryClient);
 };
+export const runtimeServiceListGitBranches = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListGitBranchesResponse>({
+    url: `/v1/instances/${instanceId}/git/branches`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getRuntimeServiceListGitBranchesQueryKey = (
+  instanceId: string,
+) => {
+  return [`/v1/instances/${instanceId}/git/branches`] as const;
+};
+
+export const getRuntimeServiceListGitBranchesQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListGitBranchesQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListGitBranches>>
+  > = ({ signal }) => runtimeServiceListGitBranches(instanceId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListGitBranchesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListGitBranches>>
+>;
+export type RuntimeServiceListGitBranchesQueryError = ErrorType<RpcStatus>;
+
+export function createRuntimeServiceListGitBranches<
+  TData = Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListGitBranchesQueryOptions(
+    instanceId,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const runtimeServiceGitSwitchBranch = (
+  instanceId: string,
+  runtimeServiceGitSwitchBranchBody: RuntimeServiceGitSwitchBranchBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GitSwitchBranchResponse>({
+    url: `/v1/instances/${instanceId}/git/branches/switch`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGitSwitchBranchBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGitSwitchBranchMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGitSwitchBranchBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitSwitchBranchBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceGitSwitchBranch"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
+    { instanceId: string; data: RuntimeServiceGitSwitchBranchBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGitSwitchBranch(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceGitSwitchBranchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>
+>;
+export type RuntimeServiceGitSwitchBranchMutationBody =
+  RuntimeServiceGitSwitchBranchBody;
+export type RuntimeServiceGitSwitchBranchMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGitSwitchBranch = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGitSwitchBranchBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitSwitchBranchBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceGitSwitchBranchMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+ */
+export const runtimeServiceGitCommit = (
+  instanceId: string,
+  runtimeServiceGitCommitBody: RuntimeServiceGitCommitBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GitCommitResponse>({
+    url: `/v1/instances/${instanceId}/git/commit`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGitCommitBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGitCommitMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGitCommit>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGitCommitBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceGitCommit>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitCommitBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceGitCommit"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGitCommit>>,
+    { instanceId: string; data: RuntimeServiceGitCommitBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGitCommit(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceGitCommitMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGitCommit>>
+>;
+export type RuntimeServiceGitCommitMutationBody = RuntimeServiceGitCommitBody;
+export type RuntimeServiceGitCommitMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+ */
+export const createRuntimeServiceGitCommit = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGitCommit>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGitCommitBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceGitCommit>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitCommitBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServiceGitCommitMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+export const runtimeServiceListGitCommits = (
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListGitCommitsResponse>({
+    url: `/v1/instances/${instanceId}/git/commits`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceListGitCommitsQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+) => {
+  return [
+    `/v1/instances/${instanceId}/git/commits`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getRuntimeServiceListGitCommitsQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListGitCommitsQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>
+  > = ({ signal }) => runtimeServiceListGitCommits(instanceId, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListGitCommitsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListGitCommits>>
+>;
+export type RuntimeServiceListGitCommitsQueryError = ErrorType<RpcStatus>;
+
+export function createRuntimeServiceListGitCommits<
+  TData = Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListGitCommitsQueryOptions(
+    instanceId,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary GitMergeToBranch merges current branch to the specified branch.
+Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+It restores back to the original branch after the merge.
+ */
+export const runtimeServiceGitMergeToBranch = (
+  instanceId: string,
+  runtimeServiceGitMergeToBranchBody: RuntimeServiceGitMergeToBranchBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GitMergeToBranchResponse>({
+    url: `/v1/instances/${instanceId}/git/merge`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGitMergeToBranchBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGitMergeToBranchMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGitMergeToBranchBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitMergeToBranchBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceGitMergeToBranch"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+    { instanceId: string; data: RuntimeServiceGitMergeToBranchBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGitMergeToBranch(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceGitMergeToBranchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>
+>;
+export type RuntimeServiceGitMergeToBranchMutationBody =
+  RuntimeServiceGitMergeToBranchBody;
+export type RuntimeServiceGitMergeToBranchMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GitMergeToBranch merges current branch to the specified branch.
+Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+It restores back to the original branch after the merge.
+ */
+export const createRuntimeServiceGitMergeToBranch = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGitMergeToBranchBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitMergeToBranchBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceGitMergeToBranchMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+If there are any merge conflicts the pull is aborted.
+Force can be set to true to force the pull and overwrite any local changes.
+ */
+export const runtimeServiceGitPull = (
+  instanceId: string,
+  runtimeServiceGitPullBody: RuntimeServiceGitPullBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GitPullResponse>({
+    url: `/v1/instances/${instanceId}/git/pull`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGitPullBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGitPullMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGitPull>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGitPullBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceGitPull>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitPullBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceGitPull"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGitPull>>,
+    { instanceId: string; data: RuntimeServiceGitPullBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGitPull(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceGitPullMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGitPull>>
+>;
+export type RuntimeServiceGitPullMutationBody = RuntimeServiceGitPullBody;
+export type RuntimeServiceGitPullMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+If there are any merge conflicts the pull is aborted.
+Force can be set to true to force the pull and overwrite any local changes.
+ */
+export const createRuntimeServiceGitPull = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGitPull>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGitPullBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceGitPull>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitPullBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServiceGitPullMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+It only pushes the changes to the existing remote repo.
+ */
+export const runtimeServiceGitPush = (
+  instanceId: string,
+  runtimeServiceGitPushBody: RuntimeServiceGitPushBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GitPushResponse>({
+    url: `/v1/instances/${instanceId}/git/push`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGitPushBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGitPushMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGitPush>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGitPushBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceGitPush>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitPushBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceGitPush"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGitPush>>,
+    { instanceId: string; data: RuntimeServiceGitPushBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGitPush(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceGitPushMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGitPush>>
+>;
+export type RuntimeServiceGitPushMutationBody = RuntimeServiceGitPushBody;
+export type RuntimeServiceGitPushMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+It only pushes the changes to the existing remote repo.
+ */
+export const createRuntimeServiceGitPush = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGitPush>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGitPushBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceGitPush>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitPushBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServiceGitPushMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+This effectively discards all the changes made after the specified commit.
+ */
+export const runtimeServiceRestoreGitCommit = (
+  instanceId: string,
+  commitSha: string,
+  runtimeServiceRestoreGitCommitBody: RuntimeServiceRestoreGitCommitBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1RestoreGitCommitResponse>({
+    url: `/v1/instances/${instanceId}/git/restore/${commitSha}`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceRestoreGitCommitBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceRestoreGitCommitMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRestoreGitCommit>>,
+    TError,
+    {
+      instanceId: string;
+      commitSha: string;
+      data: RuntimeServiceRestoreGitCommitBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceRestoreGitCommit>>,
+  TError,
+  {
+    instanceId: string;
+    commitSha: string;
+    data: RuntimeServiceRestoreGitCommitBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceRestoreGitCommit"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRestoreGitCommit>>,
+    {
+      instanceId: string;
+      commitSha: string;
+      data: RuntimeServiceRestoreGitCommitBody;
+    }
+  > = (props) => {
+    const { instanceId, commitSha, data } = props ?? {};
+
+    return runtimeServiceRestoreGitCommit(instanceId, commitSha, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceRestoreGitCommitMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRestoreGitCommit>>
+>;
+export type RuntimeServiceRestoreGitCommitMutationBody =
+  RuntimeServiceRestoreGitCommitBody;
+export type RuntimeServiceRestoreGitCommitMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+This effectively discards all the changes made after the specified commit.
+ */
+export const createRuntimeServiceRestoreGitCommit = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceRestoreGitCommit>>,
+      TError,
+      {
+        instanceId: string;
+        commitSha: string;
+        data: RuntimeServiceRestoreGitCommitBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceRestoreGitCommit>>,
+  TError,
+  {
+    instanceId: string;
+    commitSha: string;
+    data: RuntimeServiceRestoreGitCommitBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceRestoreGitCommitMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+ */
+export const runtimeServiceGitStatus = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GitStatusResponse>({
+    url: `/v1/instances/${instanceId}/git/status`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getRuntimeServiceGitStatusQueryKey = (instanceId: string) => {
+  return [`/v1/instances/${instanceId}/git/status`] as const;
+};
+
+export const getRuntimeServiceGitStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGitStatus>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGitStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getRuntimeServiceGitStatusQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGitStatus>>
+  > = ({ signal }) => runtimeServiceGitStatus(instanceId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceGitStatus>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceGitStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGitStatus>>
+>;
+export type RuntimeServiceGitStatusQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+ */
+
+export function createRuntimeServiceGitStatus<
+  TData = Awaited<ReturnType<typeof runtimeServiceGitStatus>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGitStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceGitStatusQueryOptions(
+    instanceId,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary GetLogs returns recent logs from a controller
  */
@@ -3416,6 +4496,95 @@ export const createRuntimeServiceQueryResolver = <
 > => {
   const mutationOptions =
     getRuntimeServiceQueryResolverMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+If the instance doesn't have an admin connector, this RPC does nothing.
+ */
+export const runtimeServiceReloadConfig = (
+  instanceId: string,
+  runtimeServiceReloadConfigBody: RuntimeServiceReloadConfigBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ReloadConfigResponse>({
+    url: `/v1/instances/${instanceId}/reload-config`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceReloadConfigBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceReloadConfigMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceReloadConfigBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceReloadConfigBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceReloadConfig"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+    { instanceId: string; data: RuntimeServiceReloadConfigBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceReloadConfig(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceReloadConfigMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceReloadConfig>>
+>;
+export type RuntimeServiceReloadConfigMutationBody =
+  RuntimeServiceReloadConfigBody;
+export type RuntimeServiceReloadConfigMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+If the instance doesn't have an admin connector, this RPC does nothing.
+ */
+export const createRuntimeServiceReloadConfig = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceReloadConfigBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceReloadConfigBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServiceReloadConfigMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

@@ -1,6 +1,6 @@
 <!-- Renders user prompt messages. -->
 <script lang="ts">
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
   import { Editor } from "@tiptap/core";
   import { onMount } from "svelte";
   import type { V1Message } from "../../../../../runtime-client";
@@ -21,15 +21,10 @@
       element,
       editable: false,
       extensions: getEditorPlugins({
-        enableMention: true,
         placeholder: "",
         onSubmit: () => {},
       }),
       content,
-      onTransaction: () => {
-        // force re-render so `editor.isActive` works as expected
-        editor = editor;
-      },
     });
 
     return () => {
@@ -50,7 +45,7 @@
   .chat-message-content {
     @apply px-4 py-2 rounded-2xl;
     @apply text-sm leading-relaxed break-words;
-    @apply bg-muted text-foreground rounded-br-lg;
+    @apply bg-surface-muted text-fg-primary rounded-br-lg;
   }
 
   :global(.chat-message-content .tiptap) {

@@ -105,9 +105,8 @@
     timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
   ) as (d: Date) => string;
 
-  function highlightCell(e) {
-    const { x, y } = e.detail;
-
+  function highlightCell(x: number | undefined, y: number | undefined) {
+    if (x === undefined || y === undefined) return;
     const dimensionValue = formattedData?.rowHeaderData[y]?.[0]?.value;
     let time: Date | undefined = undefined;
 
@@ -124,8 +123,8 @@
 
   const debounceHighlightCell = debounce(highlightCell, 50);
 
-  function toggleFilter(e) {
-    toggleDimensionValueSelection(dimensionName, e.detail);
+  function toggleFilter(label: string | null) {
+    toggleDimensionValueSelection(dimensionName, label);
   }
 
   function toggleAllSearchItems() {
@@ -190,9 +189,11 @@
   });
 </script>
 
+<svelte:window on:keydown={handleKeyDown} />
+
 <div
-  class="h-full w-full flex flex-col"
-  aria-label={`${expandedMeasureName} Time Dimension Display`}
+  class="h-full w-full flex flex-col border-t bg-surface-background"
+  aria-label="{expandedMeasureName} Time Dimension Display"
 >
   <TDDHeader
     {areAllTableRowsSelected}
@@ -216,7 +217,7 @@
           We encountered an error while loading the data. Please try refreshing
           the page.
         </div>
-        <div class="text-gray-600">
+        <div class="text-fg-secondary">
           If the issue persists, please contact us on <a
             target="_blank"
             rel="noopener noreferrer"
@@ -243,14 +244,12 @@
         start: $chartInteractionColumn?.scrubStart,
         end: $chartInteractionColumn?.scrubEnd,
       }}
-      on:toggle-pin={togglePin}
-      on:toggle-filter={toggleFilter}
-      on:toggle-sort={(e) => {
-        toggleSort(
-          e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,
-        );
+      onTogglePin={togglePin}
+      onToggleFilter={toggleFilter}
+      onToggleSort={(type) => {
+        toggleSort(type === "dimension" ? SortType.DIMENSION : SortType.VALUE);
       }}
-      on:highlight={debounceHighlightCell}
+      onHighlight={debounceHighlightCell}
     />
   {/if}
 
@@ -259,10 +258,10 @@
     <div class="w-full" style:height="calc(100% - 200px)">
       <div class="flex flex-col items-center justify-center h-full text-sm">
         <Compare size="32px" />
-        <div class="font-semibold text-gray-600 mt-1">
+        <div class="font-semibold text-fg-secondary mt-1">
           No comparison dimension selected
         </div>
-        <div class="text-gray-600">
+        <div class="text-fg-secondary">
           To see more values, select a comparison dimension above.
         </div>
       </div>
@@ -270,10 +269,8 @@
   {:else if comparing === "dimension" && formattedData?.rowCount === 1}
     <div class="w-full h-full">
       <div class="flex flex-col items-center h-full text-sm">
-        <div class="text-gray-600">No search results to show</div>
+        <div class="text-fg-secondary">No search results to show</div>
       </div>
     </div>
   {/if}
 </div>
-
-<svelte:window on:keydown={handleKeyDown} />

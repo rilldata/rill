@@ -54,14 +54,14 @@
       <div class="hidden"></div>
     {/if}
   </Dialog.Trigger>
-  <Dialog.Content>
-    <Dialog.Header>
-      <Dialog.Title>Generate sample data</Dialog.Title>
-      <Dialog.Description>
-        <div>What is the business context or domain of your data?</div>
-      </Dialog.Description>
-    </Dialog.Header>
+  <Dialog.Content noClose>
     <form id={FORM_ID} on:submit|preventDefault={submit} use:enhance>
+      <Dialog.Header>
+        <Dialog.Title>Generate sample data</Dialog.Title>
+        <Dialog.Description>
+          <div>What is the business context or domain of your data?</div>
+        </Dialog.Description>
+      </Dialog.Header>
       <textarea
         class="prompt-input"
         bind:value={$form.prompt}
@@ -73,23 +73,28 @@
         <div class="error">{$errors.prompt?.[0]}</div>
       {/if}
 
-      <Button type="primary" large form={FORM_ID} onClick={submit}>
-        Generate
-      </Button>
+      <Dialog.Footer>
+        <Button type="secondary" large onClick={() => (open = false)}>
+          Cancel
+        </Button>
+        <Button type="primary" large form={FORM_ID} onClick={submit}>
+          Generate
+        </Button>
+      </Dialog.Footer>
     </form>
   </Dialog.Content>
 </Dialog.Root>
 
 <style lang="postcss">
   .prompt-input {
-    @apply w-full p-2 min-h-[2.5rem];
+    @apply w-full my-4 p-2 min-h-[2.5rem];
     @apply border border-gray-300 rounded-[2px];
     @apply text-sm leading-relaxed;
   }
 
   .prompt-input.empty::before {
     content: attr(data-placeholder);
-    @apply text-gray-400 pointer-events-none absolute;
+    @apply text-fg-secondary pointer-events-none absolute;
   }
 
   .error {

@@ -4,7 +4,9 @@
 
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
+  import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -24,11 +26,33 @@
     rows: PivotChipData[],
     columns: PivotChipData[],
   ) => void;
+  export let setRowLimit: (limit: number | undefined) => void;
   export let collapseAll: () => void;
 
-  $: ({ rows, columns, tableMode, expanded } = pivotState);
+  $: ({ rows, columns, tableMode, expanded, rowLimit } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: isFlat = tableMode === "flat";
+
+  // Row limit options - uses shared constants to ensure sync with URL validation
+  const rowLimitOptions: { value: string; label: string }[] = [
+    ...PIVOT_ROW_LIMIT_OPTIONS.map((limit) => ({
+      value: limit.toString(),
+      label: limit.toString(),
+    })),
+    { value: "all", label: "All" },
+  ];
+
+  // Convert rowLimit to string for Select component binding
+  $: rowLimitValue = rowLimit === undefined ? "all" : rowLimit.toString();
+
+  function handleRowLimitChange(value: string) {
+    if (value === "all") {
+      setRowLimit(undefined);
+    } else {
+      const limit = parseInt(value, 10);
+      setRowLimit(limit);
+    }
+  }
 
   /**
    * This method stores the previous nest state and passes it to
@@ -108,6 +132,25 @@
       Collapse All
     </Button>
 
+    {#if !isFlat}
+      <div class="flex items-center gap-x-2 pointer-events-auto">
+        <Tooltip location="bottom" alignment="start" distance={8}>
+          <span class="text-fg-muted pl-2">Row limit</span>
+          <TooltipContent slot="tooltip-content">
+            Only up to top N child rows are shown under each dimension
+          </TooltipContent>
+        </Tooltip>
+        <Select
+          id="pivot-row-limit"
+          value={rowLimitValue}
+          options={rowLimitOptions}
+          onChange={handleRowLimitChange}
+          size="sm"
+          width={80}
+          placeholder="Row limit"
+        />
+      </div>
+    {/if}
     <slot name="export-menu" />
 
     {#if isFetching}

@@ -73,7 +73,10 @@ export function getPivotConfig(
         timeStart: timeControl.timeStart,
         timeEnd: timeControl.timeEnd,
         timeZone: dashboardStore?.selectedTimezone || "UTC",
-        timeDimension: metricsView.timeDimension || "",
+        timeDimension:
+          dashboardStore.selectedTimeDimension ||
+          metricsView.timeDimension ||
+          "",
       };
 
       const enableComparison =

@@ -343,28 +343,33 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 	}
 
 	// Iterate over all projects and trigger reconcile
+	var allErr error
 	for _, project := range projects {
-		if branch != project.ProdBranch {
-			// Ignore if push was not to production branch
-			continue
+		// pull all deployments for the project
+		depls, err := s.DB.FindDeploymentsForProject(ctx, project.ID, "", branch)
+		if err != nil {
+			return err
 		}
-
-		// Trigger reconcile (runs in the background)
-		if project.ProdDeploymentID != nil {
-			depl, err := s.DB.FindDeployment(ctx, *project.ProdDeploymentID)
-			if err != nil {
-				s.Logger.Error("process github event: could not find deployment", zap.String("project_id", project.ID), zap.Error(err), observability.ZapCtx(ctx))
+		for _, depl := range depls {
+			if depl.Editable {
+				// Don't trigger runtime reconcile for dev deployments, let the user manually pull changes to avoid any conflicts
+				continue
+			}
+			// Only trigger a reconcile for running/updating deployments.
+			// NOTE: Including "updating" here to avoid race conditions when there's a push and env config update happening simultaneously.
+			if depl.Status != database.DeploymentStatusRunning && depl.Status != database.DeploymentStatusUpdating {
+				s.Logger.Info("process github event: runtime reconcile not triggered, deployment is not ready", zap.String("project_id", project.ID), zap.String("deployment_id", depl.ID), zap.String("deployment_status", depl.Status.String()), observability.ZapCtx(ctx))
 				continue
 			}
 
 			err = s.TriggerParser(ctx, depl)
 			if err != nil {
-				return err
+				allErr = errors.Join(allErr, fmt.Errorf("triggering parser for deployment %q: %w", depl.ID, err))
 			}
 		}
 	}
 
-	return nil
+	return allErr
 }
 
 func (s *Service) processGithubInstallationEvent(_ context.Context, event *github.InstallationEvent) error {

@@ -107,13 +107,15 @@ type InstanceHealth struct {
 
 // AISession represents a session of AI interaction, such as a chat or MCP connection.
 type AISession struct {
-	ID         string    `db:"id"`
-	InstanceID string    `db:"instance_id"`
-	OwnerID    string    `db:"owner_id"`
-	Title      string    `db:"title"`
-	UserAgent  string    `db:"user_agent"`
-	CreatedOn  time.Time `db:"created_on"`
-	UpdatedOn  time.Time `db:"updated_on"`
+	ID                   string    `db:"id"`
+	InstanceID           string    `db:"instance_id"`
+	OwnerID              string    `db:"owner_id"`
+	Title                string    `db:"title"`
+	UserAgent            string    `db:"user_agent"`
+	SharedUntilMessageID string    `db:"shared_until_message_id"`
+	ForkedFromSessionID  string    `db:"forked_from_session_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
 }
 
 // AIMessage represents a message in an AISession.

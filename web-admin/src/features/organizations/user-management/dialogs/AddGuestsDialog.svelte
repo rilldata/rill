@@ -26,6 +26,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { ORG_ROLES_OPTIONS } from "@rilldata/web-admin/features/organizations/constants";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -41,8 +42,18 @@
   let failedInvites: string[] = [];
   let selectedProjects: string[] = [];
   let projectDropdownOpen = false;
-  let selectedRole: "admin" | "editor" | "viewer" = "viewer";
+  let selectedRole: OrgUserRoles = OrgUserRoles.Viewer;
   let roleDropdownOpen = false;
+  let hasAutoSelectedProject = false;
+
+  function resetDialogState() {
+    failedInvites = [];
+    selectedProjects = [];
+    selectedRole = OrgUserRoles.Viewer;
+    hasAutoSelectedProject = false;
+    projectDropdownOpen = false;
+    roleDropdownOpen = false;
+  }
 
   // Projects list
   $: projectsQuery = createAdminServiceListProjectsForOrganization(
@@ -63,6 +74,20 @@
   $: selectedRoleLabel =
     ORG_ROLES_OPTIONS.find((o) => o.value === selectedRole)?.label ?? "";
 
+  $: selectedProjectsLabel = (() => {
+    if (selectedProjects.length === 0) return "Select projects";
+    if (selectedProjects.length === 1) return selectedProjects[0];
+    return `${selectedProjects.length} Project${selectedProjects.length > 1 ? "s" : ""}`;
+  })();
+
+  $: if (open && !hasAutoSelectedProject && projects.length > 0) {
+    const firstProjectName = projects[0]?.name;
+    if (firstProjectName) {
+      selectedProjects = [firstProjectName];
+      hasAutoSelectedProject = true;
+    }
+  }
+
   function toggleProjectSelection(projectName: string) {
     const idx = selectedProjects.indexOf(projectName);
     if (idx >= 0) {
@@ -72,6 +97,7 @@
     } else {
       selectedProjects = [...selectedProjects, projectName];
     }
+    projectDropdownOpen = true;
   }
 
   async function handleCreate(email: string) {
@@ -153,8 +179,7 @@
 
         if (failedInvites.length === 0) {
           open = false;
-          selectedProjects = [];
-          selectedRole = "viewer";
+          resetDialogState();
         }
       },
       validationMethod: "oninput",
@@ -173,15 +198,11 @@
   onOutsideClick={(e) => {
     e.preventDefault();
     open = false;
-    failedInvites = [];
-    selectedProjects = [];
-    selectedRole = "viewer";
+    resetDialogState();
   }}
-  onOpenChange={(open) => {
-    if (!open) {
-      failedInvites = [];
-      selectedProjects = [];
-      selectedRole = "viewer";
+  onOpenChange={(dialogOpen) => {
+    if (!dialogOpen) {
+      resetDialogState();
     }
   }}
 >
@@ -224,23 +245,24 @@
                 ? `: ${projectsErrorMessage}`
                 : ""}
             </div>
-            <Button type="plain" onClick={() => $projectsQuery?.refetch()}
+            <Button type="tertiary" onClick={() => $projectsQuery?.refetch()}
               >Retry</Button
             >
           </div>
         {:else if projects.length === 0}
-          <div class="text-xs text-slate-500">No projects</div>
+          <div class="text-xs text-fg-secondary">No projects</div>
         {:else}
-          <Dropdown.Root bind:open={projectDropdownOpen}>
+          <Dropdown.Root
+            bind:open={projectDropdownOpen}
+            closeOnItemClick={false}
+          >
             <Dropdown.Trigger
-              class="min-w-[260px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {projectDropdownOpen
-                ? 'bg-slate-200'
-                : 'hover:bg-slate-100'} px-2 py-1"
+              class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
+                ? 'bg-gray-200'
+                : 'hover:bg-surface-hover'}"
             >
               <span>
-                {selectedProjects.length > 0
-                  ? `${selectedProjects.length} Project${selectedProjects.length > 1 ? "s" : ""}`
-                  : "Select projects"}
+                {selectedProjectsLabel}
               </span>
               {#if projectDropdownOpen}
                 <CaretUpIcon size="12px" />
@@ -253,7 +275,7 @@
                 <Dropdown.CheckboxItem
                   class="font-normal flex items-center overflow-hidden"
                   checked={selectedProjects.includes(p.name)}
-                  on:click={() => toggleProjectSelection(p.name)}
+                  onCheckedChange={() => toggleProjectSelection(p.name)}
                 >
                   <span class="truncate w-full" title={p.name}>{p.name}</span>
                 </Dropdown.CheckboxItem>
@@ -268,9 +290,9 @@
         <div class="text-xs font-medium mb-1">Access level</div>
         <Dropdown.Root bind:open={roleDropdownOpen}>
           <Dropdown.Trigger
-            class="min-w-[180px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {roleDropdownOpen
-              ? 'bg-slate-200'
-              : 'hover:bg-slate-100'} px-2 py-1"
+            class="min-w-[180px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
+              ? 'bg-gray-200'
+              : 'hover:bg-surface-hover'}"
           >
             <span>{selectedRoleLabel}</span>
             {#if roleDropdownOpen}
@@ -280,15 +302,16 @@
             {/if}
           </Dropdown.Trigger>
           <Dropdown.Content align="start" class="w-[180px]">
-            <Dropdown.Item on:click={() => (selectedRole = "admin")}
-              >Admin</Dropdown.Item
-            >
-            <Dropdown.Item on:click={() => (selectedRole = "editor")}
-              >Editor</Dropdown.Item
-            >
-            <Dropdown.Item on:click={() => (selectedRole = "viewer")}
-              >Viewer</Dropdown.Item
-            >
+            {#each ORG_ROLES_OPTIONS as option}
+              <Dropdown.CheckboxItem
+                checked={selectedRole === option.value}
+                onCheckedChange={(checked) => {
+                  if (checked) selectedRole = option.value;
+                }}
+              >
+                {option.label}
+              </Dropdown.CheckboxItem>
+            {/each}
           </Dropdown.Content>
         </Dropdown.Root>
       </div>
@@ -302,7 +325,7 @@
       {/if}
     </form>
     <DialogFooter>
-      <Button type="plain" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="tertiary" onClick={() => (open = false)}>Cancel</Button>
       <Button
         type="primary"
         submitForm

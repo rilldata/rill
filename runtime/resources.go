@@ -65,6 +65,28 @@ func ResourceKindFromShorthand(kind string) string {
 	}
 }
 
+func IsKnownResourceKind(kind string) bool {
+	switch kind {
+	case ResourceKindProjectParser,
+		ResourceKindSource,
+		ResourceKindModel,
+		ResourceKindMetricsView,
+		ResourceKindExplore,
+		ResourceKindMigration,
+		ResourceKindReport,
+		ResourceKindAlert,
+		ResourceKindRefreshTrigger,
+		ResourceKindTheme,
+		ResourceKindComponent,
+		ResourceKindCanvas,
+		ResourceKindAPI,
+		ResourceKindConnector:
+		return true
+	default:
+		return false
+	}
+}
+
 // ResourceKindFromParser converts a parser resource kind to a runtime resource kind.
 func ResourceKindFromParser(kind parser.ResourceKind) string {
 	switch kind {

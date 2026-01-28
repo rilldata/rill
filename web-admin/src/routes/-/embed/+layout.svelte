@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { onNavigate } from "$app/navigation";
+  import { beforeNavigate, onNavigate } from "$app/navigation";
   import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import {
@@ -19,13 +19,15 @@
   } from "@rilldata/web-common/lib/rpc";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import type { PageData } from "./$types";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
 
   export let data: PageData;
   const {
     instanceId,
-
     missingRequireParams,
     navigationEnabled,
+    runtimeHost,
+    accessToken,
   } = data;
 
   const { dashboardChat } = featureFlags;
@@ -50,6 +52,15 @@
       (activeResource?.kind === ResourceKind.Explore.toString() ||
         activeResource?.kind === ResourceKind.MetricsView.toString()));
   $: onProjectPage = !activeResource;
+
+  // Suppress browser back/forward
+  beforeNavigate((nav) => {
+    if (!navigationEnabled) {
+      if (nav.type === "popstate") {
+        nav.cancel();
+      }
+    }
+  });
 
   onNavigate(({ from, to }) => {
     if (!navigationEnabled) return;
@@ -109,25 +120,32 @@
     fatal
   />
 {:else}
-  {#if showTopBar}
-    <div
-      class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
-      class:border-b={!onProjectPage}
-    >
-      <TopNavigationBarEmbed
-        {instanceId}
-        {activeResource}
-        {navigationEnabled}
-      />
-    </div>
-  {/if}
-
-  <div class="flex h-full overflow-hidden">
-    <div class="flex-1 overflow-hidden">
-      <slot />
-    </div>
-    {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
-      <ExploreChat />
+  <RuntimeProvider
+    {instanceId}
+    host={runtimeHost}
+    jwt={accessToken}
+    authContext="embed"
+  >
+    {#if showTopBar}
+      <div
+        class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
+        class:border-b={!onProjectPage}
+      >
+        <TopNavigationBarEmbed
+          {instanceId}
+          {activeResource}
+          {navigationEnabled}
+        />
+      </div>
     {/if}
-  </div>
+
+    <div class="flex h-full overflow-hidden">
+      <div class="flex-1 overflow-hidden">
+        <slot />
+      </div>
+      {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
+        <ExploreChat />
+      {/if}
+    </div>
+  </RuntimeProvider>
 {/if}

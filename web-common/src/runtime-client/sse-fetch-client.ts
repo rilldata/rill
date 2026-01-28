@@ -1,5 +1,6 @@
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 /**
  * Represents a Server-Sent Event message
@@ -78,6 +79,13 @@ function isValidEvent(event: Partial<SSEMessage>): event is SSEMessage {
   return event.data !== undefined && event.data !== "";
 }
 
+type SSEFetchClientEvents = {
+  message: SSEMessage;
+  error: Error;
+  close: void;
+  open: void;
+};
+
 // ===== SSE FETCH CLIENT =====
 
 /**
@@ -89,43 +97,14 @@ function isValidEvent(event: Partial<SSEMessage>): event is SSEMessage {
  */
 export class SSEFetchClient {
   private abortController: AbortController | undefined;
-  private listeners: {
-    message: ((message: SSEMessage) => void)[];
-    error: ((error: Error) => void)[];
-    close: (() => void)[];
-  } = {
-    message: [],
-    error: [],
-    close: [],
-  };
 
-  /**
-   * Add event listener for SSE events
-   */
-  public on(event: "message", listener: (message: SSEMessage) => void): void;
-  public on(event: "error", listener: (error: Error) => void): void;
-  public on(event: "close", listener: () => void): void;
-  public on(event: string, listener: any): void {
-    if (this.listeners[event as keyof typeof this.listeners]) {
-      this.listeners[event as keyof typeof this.listeners].push(listener);
-    }
-  }
-
-  /**
-   * Remove event listener
-   */
-  public off(event: "message", listener: (message: SSEMessage) => void): void;
-  public off(event: "error", listener: (error: Error) => void): void;
-  public off(event: "close", listener: () => void): void;
-  public off(event: string, listener: any): void {
-    const eventListeners = this.listeners[event as keyof typeof this.listeners];
-    if (eventListeners) {
-      const index = eventListeners.indexOf(listener);
-      if (index > -1) {
-        eventListeners.splice(index, 1);
-      }
-    }
-  }
+  private readonly events = new EventEmitter<SSEFetchClientEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+  public readonly once = this.events.once.bind(
+    this.events,
+  ) as typeof this.events.once;
 
   /**
    * Start streaming from the given URL
@@ -177,16 +156,19 @@ export class SSEFetchClient {
         throw new Error("No response body");
       }
 
+      this.events.emit("open");
+
       // Process the SSE stream
       await this.processSSEStream(response.body);
     } catch (error) {
       if (error.name !== "AbortError") {
-        this.listeners.error.forEach((listener) =>
-          listener(error instanceof Error ? error : new Error(String(error))),
-        );
+        const errorArg =
+          error instanceof Error ? error : new Error(String(error));
+        this.events.emit("error", errorArg);
       }
     } finally {
-      this.listeners.close.forEach((listener) => listener());
+      this.stop();
+      this.events.emit("close");
     }
   }
 
@@ -208,9 +190,7 @@ export class SSEFetchClient {
     this.stop();
 
     // Clear all event listeners
-    this.listeners.message = [];
-    this.listeners.error = [];
-    this.listeners.close = [];
+    this.events.clearListeners();
   }
 
   /**
@@ -248,7 +228,7 @@ export class SSEFetchClient {
           if (isEventComplete(line)) {
             // Empty line signals end of event - emit if valid
             if (isValidEvent(currentEvent)) {
-              this.emitMessage(currentEvent);
+              this.events.emit("message", currentEvent);
             }
             currentEvent = {};
           } else {
@@ -260,17 +240,10 @@ export class SSEFetchClient {
 
       // Emit any remaining event in the buffer
       if (isValidEvent(currentEvent)) {
-        this.emitMessage(currentEvent);
+        this.events.emit("message", currentEvent);
       }
     } finally {
       reader.releaseLock();
     }
-  }
-
-  /**
-   * Emit a message to all registered listeners
-   */
-  private emitMessage(message: SSEMessage): void {
-    this.listeners.message.forEach((listener) => listener(message));
   }
 }

@@ -3,17 +3,22 @@ import {
   createRuntimeServiceListResources,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
+  getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
   runtimeServiceGetResource,
   runtimeServiceListResources,
+  type V1ExploreSpec,
   type V1GetResourceResponse,
   type V1ListResourcesResponse,
+  type V1MetricsViewSpec,
   V1ReconcileStatus,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
 import type { ErrorType } from "../../runtime-client/http-client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { derived } from "svelte/store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -59,6 +64,35 @@ export function displayResourceKind(kind: ResourceKind | undefined) {
       return "API";
     case ResourceKind.RefreshTrigger:
       return "refresh trigger";
+    default:
+      return undefined;
+  }
+}
+
+export function resourceKindStyleName(kind: ResourceKind | undefined) {
+  switch (kind) {
+    case ResourceKind.Alert:
+      return "bg-Alert/15 text-Alert";
+    case ResourceKind.Report:
+      return "bg-Report/15 text-Report";
+    case ResourceKind.Source:
+      return "bg-Model/15 text-Model";
+    case ResourceKind.Connector:
+      return "bg-Connector/15 text-Connector";
+    case ResourceKind.Model:
+      return "bg-Model/15 text-Model";
+    case ResourceKind.MetricsView:
+      return "bg-Metrics/15 text-Metrics";
+    case ResourceKind.Explore:
+      return "bg-Explore/15 text-Explore";
+    case ResourceKind.Theme:
+      return "bg-Theme/15 text-Theme";
+    case ResourceKind.Component:
+      return "bg-Component/15 text-Component";
+    case ResourceKind.Canvas:
+      return "bg-Canvas/15 text-Canvas";
+    case ResourceKind.API:
+      return "bg-API/15 text-API";
     default:
       return undefined;
   }
@@ -225,6 +259,25 @@ export function useClientFilteredResources(
   });
 }
 
+/**
+ * Query options version of {@link useClientFilteredResources}.
+ */
+export function getClientFilteredResourcesQueryOptions(
+  kind: ResourceKind,
+  filter: (res: V1Resource) => boolean = () => true,
+) {
+  return derived(runtime, ({ instanceId }) =>
+    getRuntimeServiceListResourcesQueryOptions(instanceId, undefined, {
+      query: {
+        select: (data) =>
+          data.resources?.filter(
+            (res) => res.meta?.name?.kind === kind && filter(res),
+          ) ?? [],
+      },
+    }),
+  );
+}
+
 export function resourceIsLoading(resource?: V1Resource) {
   return (
     !!resource &&
@@ -261,4 +314,39 @@ export async function fetchResources(
     queryFn: () => runtimeServiceListResources(instanceId, {}),
   });
   return resp.resources ?? [];
+}
+
+export function getMetricsViewAndExploreSpecsQueryOptions() {
+  return derived(runtime, ({ instanceId }) =>
+    getRuntimeServiceListResourcesQueryOptions(instanceId, undefined, {
+      query: {
+        select: (data) => {
+          const metricsViewSpecsMap = new Map<string, V1MetricsViewSpec>();
+          const exploreSpecsMap = new Map<string, V1ExploreSpec>();
+          const exploreForMetricViewsMap = new Map<string, string>();
+
+          data.resources?.forEach((res) => {
+            if (res.metricsView?.state?.validSpec) {
+              metricsViewSpecsMap.set(
+                res.meta?.name?.name ?? "",
+                res.metricsView.state.validSpec,
+              );
+            } else if (res.explore?.state?.validSpec) {
+              const metricsViewName =
+                res.explore.state.validSpec.metricsView ?? "";
+              const exploreName = res.meta?.name?.name ?? "";
+              exploreForMetricViewsMap.set(metricsViewName, exploreName);
+              exploreSpecsMap.set(exploreName, res.explore.state.validSpec);
+            }
+          });
+
+          return {
+            metricsViewSpecsMap,
+            exploreSpecsMap,
+            exploreForMetricViewsMap,
+          };
+        },
+      },
+    }),
+  );
 }

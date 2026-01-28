@@ -60,6 +60,7 @@
     : {
         start: $timeControlsStore.timeStart,
         end: $timeControlsStore.timeEnd,
+        timeDimension: $exploreState?.selectedTimeDimension,
       };
 
   $: filters = isPivotCellSelected
@@ -74,8 +75,7 @@
     metricsViewName,
     {
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
-      timeStart: timeRange.start,
-      timeEnd: timeRange.end,
+      timeRange,
       where: filters,
     },
     {
@@ -84,8 +84,7 @@
           "dashboardFilteredRowsCt",
           metricsViewName,
           {
-            timeStart: timeRange.start,
-            timeEnd: timeRange.end,
+            timeRange,
             where: filters,
           },
         ],
@@ -136,6 +135,7 @@
         metricsViewName,
         timeStart: timeRange.start,
         timeEnd: timeRange.end,
+        timeDimension: $exploreState?.selectedTimeDimension,
         where: sanitiseExpression(
           mergeDimensionAndMeasureFilters(
             $exploreState.whereFilter,
@@ -149,7 +149,7 @@
 </script>
 
 <div
-  class="relative w-full flex-none overflow-hidden flex flex-col bg-gray-100"
+  class="relative w-full flex-none overflow-hidden flex flex-col bg-surface-background"
 >
   <Resizer
     disabled={!isOpen}
@@ -163,7 +163,7 @@
   <div class="bar">
     <button
       aria-label="Toggle rows viewer"
-      class="text-xs text-gray-800 rounded-sm hover:bg-gray-200 h-6 px-1.5 py-px flex items-center gap-1"
+      class="text-xs text-fg-muted rounded-sm hover:bg-surface-subtle h-6 px-1.5 py-px flex items-center gap-1"
       on:click={toggle}
     >
       <span class:rotate-180={isOpen}>
@@ -192,6 +192,6 @@
 
 <style lang="postcss">
   .bar {
-    @apply flex items-center px-2 h-7 w-full bg-gray-100 border-t;
+    @apply flex items-center px-2 h-7 w-full bg-surface-base border-t;
   }
 </style>

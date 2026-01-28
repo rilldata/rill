@@ -55,7 +55,6 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import ExplainButton from "@rilldata/web-common/features/dashboards/time-series/measure-selection/ExplainButton.svelte";
 
   export let measure: MetricsViewSpecMeasure;
@@ -87,10 +86,10 @@
   export let scrubEnd;
 
   const { validSpecStore, metricsViewName } = getStateManagers();
-  const { dashboardChat } = featureFlags;
+  const measureSelectionEnabledStore = measureSelection.getEnabledStore();
+  $: measureSelectionEnabled = $measureSelectionEnabledStore;
 
-  export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
-    v.toString();
+  export let mouseoverTimeFormat: (d: Date) => string = (v) => v.toString();
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: axisFormat = createMeasureValueFormatter<null | undefined>(
@@ -217,7 +216,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    const shouldUpdateSelectedRange = $dashboardChat && !isScrubbing;
+    const shouldUpdateSelectedRange = measureSelectionEnabled && !isScrubbing;
     if (shouldUpdateSelectedRange) {
       measureSelection.setRange(measure.name!, start, end);
     }
@@ -274,13 +273,13 @@
     if (mouseOutsideOfScrubRange) {
       resetScrub();
       measureSelection.clear();
-    } else if (measure.name && $dashboardChat) {
+    } else if (measure.name && measureSelectionEnabled) {
       measureSelection.setRange(measure.name, scrubStart, scrubEnd);
     }
   }
 
   function maybeSelectMeasureHoverTime() {
-    if (!$dashboardChat) return;
+    if (!measureSelectionEnabled) return;
     const hasValidMeasureSelectionTarget =
       hoveredTime && measure.name && TIME_GRAIN[timeGrain];
     if (!hasValidMeasureSelectionTarget) return;
@@ -358,7 +357,7 @@
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
             <g transition:fly={{ duration: 100, x: -4 }}>
               <text
-                class="fill-gray-700 stroke-surface"
+                class="fill-fg-secondary stroke-surface-background"
                 style:paint-order="stroke"
                 stroke-width="3px"
                 x={config.plotLeft + config.bodyBuffer + 6}
@@ -370,7 +369,7 @@
                 <text
                   style:paint-order="stroke"
                   stroke-width="3px"
-                  class="fill-gray-500 stroke-surface"
+                  class="fill-fg-secondary stroke-surface-background"
                   x={config.plotLeft + config.bodyBuffer + 6}
                   y={config.plotTop + 24 + config.bodyBuffer}
                 >
@@ -399,7 +398,7 @@
                   {showComparison}
                   {mouseoverFormat}
                   {numberKind}
-                  colorClass="stroke-slate-300"
+                  colorClass="stroke-fg-muted"
                 />
               {/if}
             </g>
@@ -431,7 +430,7 @@
       <Annotations {annotationsStore} {mouseoverValue} {mouseOverThisChart} />
     {/if}
 
-    {#if $dashboardChat}
+    {#if measureSelectionEnabled}
       <MeasureSelection
         {data}
         measureName={measure.name ?? ""}
@@ -449,7 +448,7 @@
   <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->
   <AnnotationGroupPopover {annotationsStore} />
 
-  {#if $dashboardChat}
+  {#if measureSelectionEnabled}
     <ExplainButton
       measureName={measure.name ?? ""}
       metricsViewName={$metricsViewName}

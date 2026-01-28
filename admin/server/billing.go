@@ -800,11 +800,11 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if metricsProj.ProdDeploymentID == nil {
+	if metricsProj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
 	}
 
-	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.ProdDeploymentID)
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

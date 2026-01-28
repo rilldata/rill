@@ -111,9 +111,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 		defer release()
 
-		m, ok := conn.AsModelManager(r.C.InstanceID)
-		if !ok {
-			return runtime.ReconcileResult{Err: fmt.Errorf("connector %q does not support model management", model.State.ResultConnector)}
+		m, err := conn.AsModelManager(r.C.InstanceID)
+		if err != nil {
+			if errors.Is(err, drivers.ErrNotImplemented) {
+				return runtime.ReconcileResult{Err: fmt.Errorf("connector %q does not support model management", model.State.ResultConnector)}
+			}
+			return runtime.ReconcileResult{Err: fmt.Errorf("connector %q: %w", model.State.ResultConnector, err)}
 		}
 		prevManager = m
 
@@ -124,10 +127,27 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access instance: %w", err)}
+	}
+
+	cfg, err := inst.Config()
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access instance config: %w", err)}
+	}
+
 	// Fetch contextual config
-	modelEnv, err := r.newModelEnv(ctx)
+	modelEnv, err := r.newModelEnv(ctx, inst, cfg)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
+	}
+
+	// Apply per-model timeout override if configured
+	if cfg.ModelTimeoutOverride > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(cfg.ModelTimeoutOverride)*time.Second)
+		defer cancel()
 	}
 
 	// Handle deletion
@@ -1498,10 +1518,10 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 			return nil, nil, err
 		}
 
-		finalResultManager, ok := opts.OutputHandle.AsModelManager(r.C.InstanceID)
-		if !ok {
+		finalResultManager, err := opts.OutputHandle.AsModelManager(r.C.InstanceID)
+		if err != nil {
 			release()
-			return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
+			return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results: %w", mdl.Spec.OutputConnector, err)
 		}
 
 		return &wrappedModelExecutor{
@@ -1529,10 +1549,10 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 	}
 
 	// Acquire the stage result manager
-	stageResultManager, ok := stageOpts.OutputHandle.AsModelManager(r.C.InstanceID)
-	if !ok {
+	stageResultManager, err := stageOpts.OutputHandle.AsModelManager(r.C.InstanceID)
+	if err != nil {
 		stageRelease()
-		return nil, nil, fmt.Errorf("staging connector %q is not capable of managing model results", mdl.Spec.StageConnector)
+		return nil, nil, fmt.Errorf("staging connector %q is not capable of managing model results: %w", mdl.Spec.StageConnector, err)
 	}
 
 	// Acquire the final executor
@@ -1553,11 +1573,11 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.R
 	}
 
 	// Acquire the final result manager
-	finalResultManager, ok := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
-	if !ok {
+	finalResultManager, err := finalOpts.OutputHandle.AsModelManager(r.C.InstanceID)
+	if err != nil {
 		stageRelease()
 		finalRelease()
-		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
+		return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results: %w", mdl.Spec.OutputConnector, err)
 	}
 
 	// Wrap the executors
@@ -1643,17 +1663,7 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 }
 
 // newModelEnv makes a ModelEnv configured using the current instance.
-func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, error) {
-	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to access instance: %w", err)
-	}
-
-	cfg, err := inst.Config()
-	if err != nil {
-		return nil, fmt.Errorf("failed to access instance config: %w", err)
-	}
-
+func (r *ModelReconciler) newModelEnv(ctx context.Context, inst *drivers.Instance, instCfg drivers.InstanceConfig) (*drivers.ModelEnv, error) {
 	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to access repo: %w", err)
@@ -1668,8 +1678,8 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 	return &drivers.ModelEnv{
 		AllowHostAccess:    r.C.Runtime.AllowHostAccess(),
 		RepoRoot:           repoRoot,
-		StageChanges:       cfg.StageChanges,
-		DefaultMaterialize: cfg.ModelDefaultMaterialize,
+		StageChanges:       instCfg.StageChanges,
+		DefaultMaterialize: instCfg.ModelDefaultMaterialize,
 		Connectors:         inst.ResolveConnectors(),
 		AcquireConnector:   r.C.AcquireConn,
 	}, nil

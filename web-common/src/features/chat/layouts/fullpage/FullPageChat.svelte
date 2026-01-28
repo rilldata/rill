@@ -9,8 +9,11 @@
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
-
-  import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
+  import {
+    conversationSidebarCollapsed,
+    toggleConversationSidebar,
+  } from "./fullpage-store";
+  import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
 
   $: ({ instanceId } = $runtime);
 
@@ -20,6 +23,10 @@
 
   let chatInputComponent: ChatInput;
 
+  function onMessageSend() {
+    chatInputComponent?.focusInput();
+  }
+
   // Focus on mount with a small delay for component initialization
   onMount(() => {
     // Give the component tree time to fully initialize
@@ -27,10 +34,6 @@
       chatInputComponent?.focusInput();
     }, 100);
   });
-
-  function onMessageSend() {
-    chatInputComponent?.focusInput();
-  }
 
   // Clean up conversation manager resources when leaving the chat context entirely
   beforeNavigate(({ to }) => {
@@ -45,6 +48,8 @@
   <!-- Conversation List Sidebar -->
   <ConversationSidebar
     {conversationManager}
+    collapsed={$conversationSidebarCollapsed}
+    onToggle={toggleConversationSidebar}
     onConversationClick={() => {
       chatInputComponent?.focusInput();
     }}
@@ -64,7 +69,7 @@
         <Messages
           {conversationManager}
           layout="fullpage"
-          config={dashboardChatConfig}
+          config={projectChat}
         />
       </div>
     </div>
@@ -75,7 +80,7 @@
           {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}
-          config={dashboardChatConfig}
+          config={projectChat}
         />
       </div>
     </div>
@@ -87,7 +92,7 @@
     display: flex;
     height: 100%;
     width: 100%;
-    background: var(--surface);
+    @apply bg-surface-subtle;
   }
 
   /* Main Chat Area */
@@ -96,13 +101,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--surface);
+    background: var(--surface-subtle);
   }
 
   .chat-content {
     flex: 1;
     overflow: hidden;
-    background: var(--surface);
+    background: var(--surface-subtle);
     display: flex;
     flex-direction: column;
   }
@@ -117,7 +122,7 @@
 
   .chat-input-section {
     flex-shrink: 0;
-    background: var(--surface);
+    background: var(--surface-subtle);
     padding: 1rem;
     display: flex;
     justify-content: center;

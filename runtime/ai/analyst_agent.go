@@ -199,6 +199,7 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 			return "", err
 		}
 	}
+	data["forked"] = session.Forked()
 
 	// Generate the system prompt
 	return executeTemplate(`<role>
@@ -235,6 +236,13 @@ Follow these steps in order:
 1. **Discover**: Use "list_metrics_views" to identify available datasets
 2. **Understand**: Use "get_metrics_view" to understand measures and dimensions for the selected view  
 3. **Scope**: Use "query_metrics_view_summary" to determine the span of available data
+{{ end }}
+
+{{ if .forked }}
+Important instructions regarding access permissions:
+This conversation has been transferred and the new owner may have different access permissions.
+If you start seeing access errors like "action not allowed"", "resource not found" (for resources earlier available) etc., consider repeating metadata listings and lookups.
+If you run into such issues, explicitly mention to the user that this may be due to conversation forking and that they may not have access to the data that the previous user had.
 {{ end }}
 
 **Phase 2: analysis (loop)**

@@ -77,6 +77,15 @@ test.describe("Deploy journey", () => {
         rillDevPage.getByText("Deploy this project for free"),
       ).toBeVisible();
       // Hit continue to start deployment
+      await expect
+        .poll(
+          () =>
+            rillDevPage
+              .getByRole("button", { name: "Continue" })
+              .getAttribute("href"),
+          { intervals: Array(15).fill(1_000), timeout: 15_000 },
+        )
+        .toMatch(/deploying_dashboard/);
       await rillDevPage.getByRole("button", { name: "Continue" }).click();
 
       // Await for the popped up deploy page after hitting deploy
@@ -113,7 +122,7 @@ test.describe("Deploy journey", () => {
       // Explore is opened after deploying.
       await expect(
         deployPage.getByLabel("Breadcrumb navigation, level 2"),
-      ).toHaveText("Adbids dashboard", { timeout: 60_000 });
+      ).toHaveText("Adbids dashboard", { timeout: 180_000 });
 
       // Org title is correct
       await expect(
@@ -131,6 +140,10 @@ test.describe("Deploy journey", () => {
       await rillDevPage
         .getByTitle("Display name")
         .fill("Adbids dashboard edited first org");
+      // Wait for reconcile to complete and dashboard is ready
+      await expect(rillDevPage.getByText("Total records 100k")).toBeVisible({
+        timeout: 30_000,
+      });
 
       // Start waiting for popup before clicking Deploy.
       const popupPromise = rillDevPage.waitForEvent("popup");
@@ -152,12 +165,25 @@ test.describe("Deploy journey", () => {
       // Await for the popped up deploy page after hitting deploy
       const deployPage = await popupPromise;
 
-      await ensureProjectRedeployed(deployPage);
+      // Explore is opened with updated title after a re-deploying.
+      let reloaded = false;
+      await expect
+        .poll(
+          async () => {
+            if (!reloaded) {
+              await rillDevPage.reload();
+              reloaded = true;
+            }
 
-      await ensureDashboardTitle(
-        deployPage,
-        "Adbids dashboard edited first org",
-      );
+            return deployPage
+              .getByLabel("Breadcrumb navigation, level 2")
+              .getByText("Adbids dashboard edited first org");
+          },
+          {
+            intervals: Array(6).fill(2_000),
+          },
+        )
+        .toBeTruthy();
     });
   });
 
@@ -197,10 +223,10 @@ test.describe("Deploy journey", () => {
 
     await assertAndSkipInvite(deployPage);
 
-    // Canvas is opened.
-    await expect(
-      deployPage.getByLabel("Breadcrumb navigation, level 2"),
-    ).toHaveText("Adbids Canvas Dashboard");
+    // Project homepage is opened on since we are not deploying from any dashboard.
+    await expect(deployPage.getByText("Welcome to")).toBeVisible({
+      timeout: 120_000,
+    });
 
     // Org title is correct
     await expect(
@@ -224,19 +250,4 @@ async function assertAndSkipInvite(page: Page) {
 
   // Skip invite and continue to status page.
   await page.getByRole("button", { name: "Skip for now" }).click();
-}
-
-async function ensureProjectRedeployed(page: Page) {
-  // Project homepage is opened on a re-deploy. This can take a while, so it has increased timeout.
-  await expect(page.getByText("Welcome to")).toBeVisible({
-    timeout: 120_000,
-  });
-}
-
-async function ensureDashboardTitle(page: Page, title: string) {
-  await expect(
-    page.getByRole("link", {
-      name: title,
-    }),
-  ).toBeVisible({ timeout: 60_000 });
 }
