@@ -186,9 +186,7 @@
     class="preview-card leaderboard-card"
     style="background-color: {cardColor};"
   >
-    <div class="chart-title" style="color: {fgPrimary};">
-      Top Categories
-    </div>
+    <div class="chart-title" style="color: {fgPrimary};">Top Categories</div>
     <table class="leaderboard-table">
       <tbody>
         {#each leaderboardData as item}
@@ -207,9 +205,7 @@
                 barLength - 90,
               )}px, transparent {Math.max(0, barLength - 90)}px);"
             >
-              <span style="color: {fgPrimary};"
-                >{formatValue(item.value)}</span
-              >
+              <span style="color: {fgPrimary};">{formatValue(item.value)}</span>
             </td>
           </tr>
         {/each}
@@ -222,9 +218,7 @@
     class="preview-card bar-chart-card"
     style="background-color: {cardColor};"
   >
-    <div class="chart-title" style="color: {fgPrimary};">
-      Sales by Region
-    </div>
+    <div class="chart-title" style="color: {fgPrimary};">Sales by Region</div>
     <svg
       class="bar-chart-svg"
       viewBox="0 0 {barChartWidth} {barChartHeight}"
@@ -279,7 +273,9 @@
   <!-- Sequential Heatmap -->
   <div class="preview-card heatmap-card" style="background-color: {cardColor};">
     <div class="chart-title" style="color: {fgPrimary};">
-      Activity <span class="font-normal" style="opacity: 0.6;">(Sequential)</span>
+      Activity <span class="font-normal" style="opacity: 0.6;"
+        >(Sequential)</span
+      >
     </div>
     <svg
       class="heatmap-svg"
@@ -325,7 +321,9 @@
   <!-- Diverging Heatmap -->
   <div class="preview-card heatmap-card" style="background-color: {cardColor};">
     <div class="chart-title" style="color: {fgPrimary};">
-      YoY Change <span class="font-normal" style="opacity: 0.6;">(Diverging)</span>
+      YoY Change <span class="font-normal" style="opacity: 0.6;"
+        >(Diverging)</span
+      >
     </div>
     <svg
       class="heatmap-svg"
