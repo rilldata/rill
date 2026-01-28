@@ -324,7 +324,7 @@ function getFlatColumnDef(
         if (m.type === "comparison_percent") {
           return cellComponent(PercentageChange, {
             isNull: measureValue == null,
-            color: "text-gray-500",
+            color: "text-fg-secondary",
             value:
               measureValue !== null && measureValue !== undefined
                 ? formatMeasurePercentageDifference(measureValue)
@@ -503,7 +503,7 @@ function getNestedColumnDef(
           if (m.type === "comparison_percent") {
             return cellComponent(PercentageChange, {
               isNull: measureValue == null,
-              color: "text-gray-500",
+              color: "text-fg-secondary",
               value:
                 measureValue !== null && measureValue !== undefined
                   ? formatMeasurePercentageDifference(measureValue)

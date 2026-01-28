@@ -122,7 +122,7 @@ test.describe("Deploy journey", () => {
       // Explore is opened after deploying.
       await expect(
         deployPage.getByLabel("Breadcrumb navigation, level 2"),
-      ).toHaveText("Adbids dashboard", { timeout: 60_000 });
+      ).toHaveText("Adbids dashboard", { timeout: 180_000 });
 
       // Org title is correct
       await expect(

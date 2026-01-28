@@ -1,19 +1,13 @@
 <script lang="ts">
   import type { ResourceKind } from "../entity-management/resource-selectors";
-  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
-  import { Settings } from "lucide-svelte";
-  import File from "@rilldata/web-common/components/icons/File.svelte";
+  import { getIconComponent } from "../entity-management/resource-icon-mapping";
 
   export let kind: ResourceKind | undefined;
   export let label: string | undefined;
   export let size = 12;
   export let filePath: string;
 
-  $: icon = kind
-    ? resourceIconMapping[kind]
-    : filePath === "/.env" || filePath === "/rill.yaml"
-      ? Settings
-      : File;
+  $: icon = getIconComponent(kind, filePath);
 </script>
 
 <span class="gap-x-1.5 items-center font-medium flex" title={label}>

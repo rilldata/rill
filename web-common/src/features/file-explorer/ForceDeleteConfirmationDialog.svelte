@@ -36,15 +36,19 @@
             handleClose();
             onDelete();
           }}
-          type="primary"
-          status="error"
+          type="destructive"
         >
           Delete
         </Button>
       </AlertDialog.Action>
 
       <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} onClick={handleClose} type="plain">
+        <Button
+          large
+          builders={[builder]}
+          onClick={handleClose}
+          type="tertiary"
+        >
           Cancel
         </Button>
       </AlertDialog.Cancel>

@@ -17,7 +17,7 @@
   aria-label={label}
   class:bg-gray-200={active}
   class="px-3 py-2 rounded grid gap-x-2 {!disabled
-    ? 'hover:bg-gray-200'
+    ? 'hover:bg-surface-hover'
     : ''}  items-center"
   style:grid-template-columns="{$$slots['icon'] ? 'max-content' : ''}
   max-content
@@ -26,7 +26,7 @@
   on:click
 >
   {#if $$slots["icon"]}
-    <span class="ui-copy-icon"><slot name="icon" /></span>
+    <span class="text-fg-secondary"><slot name="icon" /></span>
   {/if}
   <span class="font-bold" style:transform="translateY(1px)">
     <slot />

@@ -52,6 +52,8 @@ import {
   AD_BIDS_SORT_BY_VALUE,
   AD_BIDS_SORT_DESC_BY_BID_PRICE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
+  AD_BIDS_SET_TIME_DIMENSION_OFFSET,
+  AD_BIDS_SET_TIME_DIMENSION_PRIMARY,
   AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC,
   AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
@@ -491,6 +493,23 @@ const TestCases: {
       "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&row_limit=50",
     legacyNotSupported: true,
   },
+
+  // Time dimension selection tests
+  {
+    title: "Time dimension selection - set offset time dimension",
+    mutations: [AD_BIDS_SET_TIME_DIMENSION_OFFSET],
+    expectedSearch: "td=offset_timestamp",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Time dimension selection - set and then reset to primary",
+    mutations: [
+      AD_BIDS_SET_TIME_DIMENSION_OFFSET,
+      AD_BIDS_SET_TIME_DIMENSION_PRIMARY,
+    ],
+    expectedSearch: "",
+    legacyNotSupported: true,
+  },
 ];
 
 describe("Human readable URL state variations", () => {
@@ -533,6 +552,7 @@ describe("Human readable URL state variations", () => {
         // load url params with updated metrics state
         const updateUrlParams = getCleanedUrlParamsForGoto(
           explore,
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           getTimeControlState(
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
@@ -657,6 +677,7 @@ describe("Human readable URL state variations", () => {
     const url = new URL("http://localhost");
     url.search = getCleanedUrlParamsForGoto(
       AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       getTimeControlState(
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,

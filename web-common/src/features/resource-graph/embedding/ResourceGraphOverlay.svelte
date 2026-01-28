@@ -87,7 +87,7 @@
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div
-      class="graph-overlay__backdrop"
+      class="graph-overlay__backdrop bg-neutral-800/60 dark:bg-neutral-100/60"
       on:click={handleBackdropClick}
       role="presentation"
     >
@@ -165,7 +165,7 @@
   }
 
   .graph-overlay {
-    @apply bg-surface border border-gray-200 rounded-xl shadow-2xl overflow-hidden;
+    @apply bg-surface-subtle border border-gray-200 rounded-xl shadow-2xl overflow-hidden;
     @apply flex flex-col;
     width: min(1100px, 90vw);
     height: min(80vh, 760px);
@@ -180,11 +180,11 @@
   }
 
   .graph-overlay__eyebrow {
-    @apply text-xs uppercase text-gray-500 tracking-wide;
+    @apply text-xs uppercase text-fg-secondary tracking-wide;
   }
 
   .graph-overlay__title h2 {
-    @apply text-lg font-semibold text-gray-900 leading-snug;
+    @apply text-lg font-semibold text-fg-primary leading-snug;
   }
 
   .graph-overlay__actions {
@@ -200,15 +200,15 @@
   }
 
   .graph-overlay__close {
-    @apply rounded-full border border-gray-200 text-gray-500 p-1;
+    @apply rounded-full border border-gray-200 text-fg-secondary p-1;
   }
 
   .graph-overlay__close:hover {
-    @apply text-gray-700 border-gray-300;
+    @apply text-fg-primary border-gray-300;
   }
 
   .graph-overlay__body {
-    @apply flex-1 flex flex-col w-full bg-gray-50 min-h-0;
+    @apply flex-1 flex flex-col w-full bg-surface-background min-h-0;
   }
 
   .graph-overlay__graph {
@@ -216,7 +216,7 @@
   }
 
   .graph-overlay__state {
-    @apply text-sm text-gray-600 m-auto text-center max-w-sm;
+    @apply text-sm text-fg-secondary m-auto text-center max-w-sm;
   }
 
   .graph-overlay__error {
