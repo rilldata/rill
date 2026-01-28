@@ -109,8 +109,7 @@
   $: isInOverlay = (data as any)?.isOverlay === true;
   $: isRefreshing = $triggerMutation.isPending;
 
-  function openFile(e?: MouseEvent) {
-    e?.stopPropagation();
+  function openFile() {
     if (!artifact?.path) return;
 
     // Set code view preference for this file
@@ -125,8 +124,7 @@
     goto(`/files${artifact.path}`);
   }
 
-  function handleRefresh(e?: MouseEvent) {
-    e?.stopPropagation();
+  function handleRefresh() {
     if (!isModelOrSource || !data?.resource?.meta?.name?.name || isRefreshing)
       return;
 
@@ -138,8 +136,7 @@
     });
   }
 
-  function handleViewGraph(e?: MouseEvent) {
-    e?.stopPropagation();
+  function handleViewGraph() {
     if (!data?.resource?.meta?.name) return;
 
     const resourceKindName = data.resource.meta.name.kind;
