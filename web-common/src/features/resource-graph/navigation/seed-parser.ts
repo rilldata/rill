@@ -156,7 +156,12 @@ export function tokenForKind(
   if (key.includes("source")) return "sources";
   if (key.includes("model")) return "models";
   if (key.includes("metricsview") || key.includes("metric")) return "metrics";
-  if (key.includes("explore") || key.includes("dashboard") || key.includes("canvas")) return "dashboards";
+  if (
+    key.includes("explore") ||
+    key.includes("dashboard") ||
+    key.includes("canvas")
+  )
+    return "dashboards";
   return null;
 }
 
@@ -190,7 +195,11 @@ export function tokenForSeedString(
   if (idx !== -1) {
     const kindPart = normalized.slice(0, idx);
     // Handle "dashboard:" or "canvas:" prefix - treat as "dashboards"
-    if (kindPart === "dashboard" || kindPart === "dashboards" || kindPart === "canvas") {
+    if (
+      kindPart === "dashboard" ||
+      kindPart === "dashboards" ||
+      kindPart === "canvas"
+    ) {
       return "dashboards";
     }
     const mapped = resolveKindAlias(kindPart);
@@ -267,12 +276,17 @@ export function expandSeedsByKind(
 
     // Expand: one seed per visible resource of this kind
     // Special case: "dashboards" includes both Explore and Canvas
-    const isDashboardsToken = raw.toLowerCase() === "dashboards" || raw.toLowerCase() === "dashboard";
+    const isDashboardsToken =
+      raw.toLowerCase() === "dashboards" || raw.toLowerCase() === "dashboard";
     for (const r of visible) {
       const resourceKind = coerceKindFn(r);
       if (isDashboardsToken) {
         // Include both Explore and Canvas for dashboards token
-        if (resourceKind !== ResourceKind.Explore && resourceKind !== ResourceKind.Canvas) continue;
+        if (
+          resourceKind !== ResourceKind.Explore &&
+          resourceKind !== ResourceKind.Canvas
+        )
+          continue;
       } else {
         // Normal kind matching
         if (resourceKind !== kindToken) continue;

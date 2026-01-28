@@ -389,8 +389,8 @@
     @apply bg-surface-muted text-fg-primary;
   }
 
-  /* Override xyflow pane background to match app theme */
-  :global(.svelte-flow .svelte-flow__pane) {
+  /* Override xyflow pane background to match app theme - scoped to this component */
+  .graph-container :global(.svelte-flow .svelte-flow__pane) {
     background-color: var(--surface-background, #ffffff);
   }
 </style>

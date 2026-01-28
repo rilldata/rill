@@ -183,7 +183,6 @@ export function buildResourceGraph(
     }
   }
 
-
   const edgeIds = new Set<string>();
   const edges: Edge[] = [];
 

@@ -11,9 +11,7 @@ describe("resource-selectors", () => {
             kind: ResourceKind.Model,
             name: "orders",
           },
-          refs: [
-            { kind: ResourceKind.Model, name: "raw_orders" },
-          ],
+          refs: [{ kind: ResourceKind.Model, name: "raw_orders" }],
         },
         model: {
           spec: {
@@ -55,9 +53,7 @@ describe("resource-selectors", () => {
             kind: ResourceKind.Model,
             name: "raw_data",
           },
-          refs: [
-            { kind: ResourceKind.Connector, name: "duckdb" },
-          ],
+          refs: [{ kind: ResourceKind.Connector, name: "duckdb" }],
         },
         model: {
           spec: {
@@ -78,9 +74,7 @@ describe("resource-selectors", () => {
             kind: ResourceKind.Model,
             name: "raw_orders",
           },
-          refs: [
-            { kind: ResourceKind.Model, name: "other_model" },
-          ],
+          refs: [{ kind: ResourceKind.Model, name: "other_model" }],
         },
         model: {
           spec: {
@@ -102,9 +96,7 @@ describe("resource-selectors", () => {
             kind: ResourceKind.Model,
             name: "raw_orders",
           },
-          refs: [
-            { kind: ResourceKind.Model, name: "other_model" },
-          ],
+          refs: [{ kind: ResourceKind.Model, name: "other_model" }],
         },
         model: {
           spec: {

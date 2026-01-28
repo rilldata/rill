@@ -21,7 +21,7 @@
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-import { GitFork } from "lucide-svelte";
+  import { GitFork } from "lucide-svelte";
   import { builderActions, getAttrs } from "bits-ui";
 
   export let id: string;
@@ -107,6 +107,7 @@ import { GitFork } from "lucide-svelte";
   $: isModelOrSource =
     kind === ResourceKind.Model || kind === ResourceKind.Source;
   $: isInOverlay = (data as any)?.isOverlay === true;
+  $: isRefreshing = $triggerMutation.isPending;
 
   function openFile(e?: MouseEvent) {
     e?.stopPropagation();
@@ -126,7 +127,8 @@ import { GitFork } from "lucide-svelte";
 
   function handleRefresh(e?: MouseEvent) {
     e?.stopPropagation();
-    if (!isModelOrSource || !data?.resource?.meta?.name?.name) return;
+    if (!isModelOrSource || !data?.resource?.meta?.name?.name || isRefreshing)
+      return;
 
     void $triggerMutation.mutateAsync({
       instanceId,
@@ -216,9 +218,12 @@ import { GitFork } from "lucide-svelte";
                 </NavigationMenuItem>
               {/if}
               {#if isModelOrSource}
-                <NavigationMenuItem on:click={handleRefresh}>
+                <NavigationMenuItem
+                  on:click={handleRefresh}
+                  disabled={isRefreshing}
+                >
                   <RefreshIcon slot="icon" size="14px" />
-                  Refresh
+                  {isRefreshing ? "Refreshing..." : "Refresh"}
                 </NavigationMenuItem>
               {/if}
               <NavigationMenuItem on:click={handleViewGraph}>
@@ -248,9 +253,8 @@ import { GitFork } from "lucide-svelte";
     <TooltipContent slot="tooltip-content" maxWidth="420px">
       <div class="error-tooltip-content">
         <span class="error-tooltip-title">Error</span>
-        <pre class="error-tooltip-message"
-          >{data?.resource?.meta?.reconcileError}</pre
-        >
+        <pre class="error-tooltip-message">{data?.resource?.meta
+            ?.reconcileError}</pre>
       </div>
     </TooltipContent>
   </Tooltip>
@@ -305,9 +309,12 @@ import { GitFork } from "lucide-svelte";
               </NavigationMenuItem>
             {/if}
             {#if isModelOrSource}
-              <NavigationMenuItem on:click={handleRefresh}>
+              <NavigationMenuItem
+                on:click={handleRefresh}
+                disabled={isRefreshing}
+              >
                 <RefreshIcon slot="icon" size="14px" />
-                Refresh
+                {isRefreshing ? "Refreshing..." : "Refresh"}
               </NavigationMenuItem>
             {/if}
             <NavigationMenuItem on:click={handleViewGraph}>

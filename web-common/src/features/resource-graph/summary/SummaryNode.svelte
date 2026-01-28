@@ -74,7 +74,8 @@
     if (kind === ResourceKind.Source) token = "sources";
     else if (kind === ResourceKind.MetricsView) token = "metrics";
     else if (kind === ResourceKind.Model) token = "models";
-    else if (kind === ResourceKind.Explore || kind === ResourceKind.Canvas) token = "dashboards";
+    else if (kind === ResourceKind.Explore || kind === ResourceKind.Canvas)
+      token = "dashboards";
     if (token) goto(`/graph?kind=${token}`);
   }
 </script>
