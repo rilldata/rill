@@ -38,6 +38,8 @@
   );
   $: rangeYStart = 0;
   $: rangeYEnd = ($hoveredAnnotationGroup?.bottom ?? 0) - AnnotationHeight / 2;
+
+  $: console.log({ group: $annotationGroups });
 </script>
 
 {#each $annotationGroups as annotationGroup, i (i)}

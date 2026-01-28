@@ -288,6 +288,8 @@
     }),
   );
 
+  $: console.log({ annotationsForMeasures });
+
   let grainDropdownOpen = false;
 
   $: effectiveGrain = grainAllowed ? activeTimeGrain : minTimeGrain;

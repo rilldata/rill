@@ -38,7 +38,7 @@
 
 <style lang="postcss">
   .settings-container {
-    @apply w-full border text-fg-secondary rounded-sm;
+    @apply w-full border text-fg-secondary rounded-sm bg-surface-background;
   }
 
   .settings-header {

@@ -138,6 +138,7 @@ export class AnnotationsStore {
     scaler: GraphicScale,
     config: SimpleDataGraphicConfiguration,
   ): AnnotationGroup[] {
+    console.log({ annotations });
     if (annotations.length === 0 || !scaler || !config) return [];
 
     let currentGroup: AnnotationGroup = this.getSingletonAnnotationGroup(

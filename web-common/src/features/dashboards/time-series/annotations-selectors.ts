@@ -54,7 +54,18 @@ export function getAnnotationsForMeasure({
         },
         {
           query: {
+            initialData: {
+              rows: [
+                {
+                  time: "2024-12-25T00:00:00Z",
+                  description: "test",
+                  forMeasures: [measureName],
+                  additionalFields: {},
+                },
+              ],
+            },
             enabled:
+              false &&
               !!metricsViewSpec?.annotations?.length &&
               !!metricsViewName &&
               !!selectedTimeRange,
