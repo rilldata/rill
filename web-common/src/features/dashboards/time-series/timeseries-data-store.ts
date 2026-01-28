@@ -27,7 +27,6 @@ import {
   type DimensionDataItem,
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
-import { isGrainAllowed } from "@rilldata/web-common/lib/time/new-grains";
 
 export interface TimeSeriesDatum {
   ts?: Date;
@@ -65,12 +64,7 @@ export function createMetricsViewTimeSeries(
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
-      const timeGrain = isGrainAllowed(
-        timeControls.selectedTimeRange?.interval,
-        timeControls.minTimeGrain,
-      )
-        ? timeControls.selectedTimeRange?.interval
-        : timeControls.minTimeGrain;
+      const timeGrain = timeControls.selectedTimeRange?.interval;
 
       return createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
@@ -129,12 +123,7 @@ export function createTimeSeriesDataStore(
 
       const showComparison = timeControls.showTimeComparison;
 
-      const timeGrain = isGrainAllowed(
-        timeControls.selectedTimeRange?.interval,
-        timeControls.minTimeGrain,
-      )
-        ? timeControls.selectedTimeRange?.interval
-        : timeControls.minTimeGrain;
+      const timeGrain = timeControls.selectedTimeRange?.interval;
 
       const { metricsView, explore } = validSpec.data;
 
