@@ -47,7 +47,7 @@
 
   .settings-title {
     @apply flex flex-row gap-x-2 items-center mb-2;
-    @apply text-lg font-semibold;
+    @apply text-lg font-semibold text-fg-primary;
   }
 
   .settings-body {
@@ -56,6 +56,6 @@
 
   .settings-footer {
     @apply flex flex-row items-center px-5 py-2;
-    @apply bg-transparent text-fg-tertiary text-sm border-t;
+    @apply bg-surface-subtle text-fg-tertiary text-sm border-t;
   }
 </style>
