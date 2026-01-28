@@ -299,8 +299,15 @@ func (p *Parser) parseCanvas(node *Node) error {
 		}
 	}
 	// Add metrics view refs directly to canvas node refs BEFORE insertResource
+	// Check for duplicates to avoid adding refs that already exist
+	existingRefs := make(map[ResourceName]bool)
+	for _, ref := range node.Refs {
+		existingRefs[ref] = true
+	}
 	for ref := range metricsViewRefs {
-		node.Refs = append(node.Refs, ref)
+		if !existingRefs[ref] {
+			node.Refs = append(node.Refs, ref)
+		}
 	}
 
 	// Track canvas (now with MetricsView refs included)
