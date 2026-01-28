@@ -12,6 +12,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import FileDiffBlock from "@rilldata/web-common/features/chat/core/messages/file-diff/FileDiffBlock.svelte";
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
+  import { getCommitExists } from "@rilldata/web-common/features/project/commit-utils.ts";
 
   export let block: DevelopBlock;
 
@@ -21,6 +22,10 @@
   $: ctas = getGenerateCTAs(instanceId, block);
   $: console.log($ctas);
   $: hasSomeCTA = $ctas.models.length > 0 || $ctas.metricsViews.length > 0;
+
+  // Check if the checkpoint commit exists. The tree might have changed since this chat.
+  $: checkpointCommitExistsQuery = getCommitExists(block.checkpointCommitHash);
+  $: checkpointCommitExists = !!$checkpointCommitExistsQuery.data;
 
   const restoreCommit = createRuntimeServiceRestoreGitCommit();
   async function undoChanges() {
@@ -51,7 +56,7 @@
       >
         <div class="develop-icon">
           {#if isExpanded}
-            <CaretDownIcon size="14" color="currentColor" />
+            <CaretDownIcon size="14" />
           {:else}
             <PenIcon size="14px" />
           {/if}
@@ -60,7 +65,7 @@
           Made {block.diffs.length} change(s)
         </div>
       </button>
-      {#if block.checkpointCommitHash}
+      {#if checkpointCommitExists}
         <Button onClick={undoChanges} noStroke>Undo</Button>
       {/if}
     </div>

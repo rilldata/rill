@@ -3415,6 +3415,109 @@ export const getRuntimeServiceListGitCommitsQueryKey = (
   ] as const;
 };
 
+export const getRuntimeServiceListGitCommitsInfiniteQueryOptions = <
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    RuntimeServiceListGitCommitsParams["pageToken"]
+  >,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        QueryKey,
+        RuntimeServiceListGitCommitsParams["pageToken"]
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListGitCommitsQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    QueryKey,
+    RuntimeServiceListGitCommitsParams["pageToken"]
+  > = ({ signal, pageParam }) =>
+    runtimeServiceListGitCommits(
+      instanceId,
+      { ...params, pageToken: pageParam || params?.["pageToken"] },
+      signal,
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateInfiniteQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    TError,
+    TData,
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    QueryKey,
+    RuntimeServiceListGitCommitsParams["pageToken"]
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListGitCommitsInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListGitCommits>>
+>;
+export type RuntimeServiceListGitCommitsInfiniteQueryError =
+  ErrorType<RpcStatus>;
+
+export function createRuntimeServiceListGitCommitsInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    RuntimeServiceListGitCommitsParams["pageToken"]
+  >,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        QueryKey,
+        RuntimeServiceListGitCommitsParams["pageToken"]
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListGitCommitsInfiniteQueryOptions(
+    instanceId,
+    params,
+    options,
+  );
+
+  const query = createInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as CreateInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export const getRuntimeServiceListGitCommitsQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
   TError = ErrorType<RpcStatus>,
