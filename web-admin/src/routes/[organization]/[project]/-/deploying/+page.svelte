@@ -8,9 +8,9 @@
   export let data: PageData;
   const { organization, project, runtime, deployingDashboard } = data;
 
-  // Make this reactive so it only runs when organizationName is available
-  // This prevents race conditions where the query might be created before params are ready
-  const deployingDashboardResp = useDeployingDashboards(
+  // Make this reactive so that it fires once params are ready.
+  // During a first deploy, runtime might not be available when deployment is still being created in the backend.
+  $: deployingDashboardResp = useDeployingDashboards(
     runtime.instanceId,
     organization.name,
     project.name,
@@ -25,7 +25,7 @@
     dashboardsErrored: false,
   });
 
-  $: console.log("deployingDashboardsData", redirectPath, dashboardsErrored);
+  $: console.log("deployingDashboardsData", $deployingDashboardResp);
 
   let redirected = false;
   $: if (redirectPath && !redirected) {

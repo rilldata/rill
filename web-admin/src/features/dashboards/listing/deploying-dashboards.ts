@@ -32,6 +32,7 @@ export function useDeployingDashboards(
         const resources = data.resources ?? [];
         const dashboards = resources.filter(isDashboard);
         console.log(
+          "useDeployingDashboards select",
           dashboards.map(
             (d) => `${d.meta?.name?.name}:${d.meta?.reconcileStatus}`,
           ),
@@ -83,6 +84,7 @@ export function useDeployingDashboards(
         };
       },
       refetchInterval: smartRefetchIntervalFunc,
+      enabled: Boolean(instanceId && orgName && projName),
     },
   });
 }
