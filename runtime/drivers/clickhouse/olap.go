@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -445,6 +446,14 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 type SQLConn struct {
 	*sqlx.Conn
 	supportSettings bool
+}
+
+func (sc *SQLConn) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	if sc.supportSettings {
+		return sc.Conn.ExecContext(ctx, query, args...)
+	}
+	ctx2 := contextWithoutDeadline(ctx)
+	return sc.Conn.ExecContext(ctx2, query, args...)
 }
 
 func (sc *SQLConn) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
