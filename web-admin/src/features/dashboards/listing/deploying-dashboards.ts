@@ -24,6 +24,11 @@ export function useDeployingDashboards(
       select: (data) => {
         const resources = data.resources ?? [];
         const dashboards = resources.filter(isDashboard);
+        console.log(
+          dashboards.map(
+            (d) => `${d.meta?.name?.name}:${d.meta?.reconcileStatus}`,
+          ),
+        );
 
         const reconciling = getDashboardsReconciling(
           dashboards,

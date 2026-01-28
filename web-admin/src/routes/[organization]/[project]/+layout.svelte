@@ -55,6 +55,8 @@
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -120,13 +122,30 @@
   $: ({ data: mockedUserDeploymentCredentials } =
     $mockedUserDeploymentCredentialsQuery);
 
-  $: ({ data: projectData, error: projectError } = $projectQuery);
+  $: ({
+    data: projectData,
+    error: projectError,
+    isFetching: projectFetching,
+  } = $projectQuery);
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
   $: isProjectAvailable =
     projectData?.deployment?.status ===
       V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
     projectData?.deployment?.status ===
       V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
+
+  let prevProjectFetching = false;
+  $: if (prevProjectFetching !== projectFetching) {
+    prevProjectFetching = projectFetching;
+    if (!projectFetching) {
+      void queryClient.refetchQueries(
+        createRuntimeServiceListResources(
+          projectData.deployment.runtimeInstanceId,
+          undefined,
+        ),
+      );
+    }
+  }
 
   $: error = projectError as HTTPError;
 
