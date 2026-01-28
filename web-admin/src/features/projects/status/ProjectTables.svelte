@@ -129,7 +129,7 @@
   </div>
 
   {#if $tablesList.isLoading}
-    <div class="flex items-center gap-x-2 text-gray-500">
+    <div class="flex items-center gap-x-2 text-fg-secondary">
       <DelayedSpinner isLoading={true} size="16px" />
       <span class="text-sm">Loading tables...</span>
     </div>
@@ -151,10 +151,10 @@
       onFullRefreshClick={handleFullRefreshClick}
     />
     {#if $tableMetadata?.isLoading || $tableCardinality?.isLoading}
-      <div class="mt-2 text-xs text-gray-500">Loading table metadata...</div>
+      <div class="mt-2 text-xs text-fg-secondary">Loading table metadata...</div>
     {/if}
   {:else}
-    <div class="text-gray-500 text-sm">No tables found</div>
+    <div class="text-fg-secondary text-sm">No tables found</div>
   {/if}
 </section>
 

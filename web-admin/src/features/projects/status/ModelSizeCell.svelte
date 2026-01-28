@@ -21,7 +21,7 @@
 </script>
 
 <div class="truncate text-right tabular-nums">
-  <span class:text-gray-500={formattedSize === "-"}>
+  <span class:text-fg-muted={formattedSize === "-"}>
     {formattedSize}
   </span>
 </div>

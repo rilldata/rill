@@ -77,7 +77,7 @@
       case "LOG_LEVEL_WARN":
         return "text-yellow-600";
       default:
-        return "text-gray-500";
+        return "text-fg-muted";
     }
   }
 
@@ -110,7 +110,7 @@
   <div
     bind:this={logsContainer}
     on:scroll={handleScroll}
-    class="bg-gray-50 border border-gray-200 rounded-md p-3 font-mono text-xs h-64 overflow-y-auto"
+    class="bg-surface border rounded-md p-3 font-mono text-xs h-64 overflow-y-auto"
   >
     {#if $logsQuery.isError}
       <div class="text-red-600">
@@ -119,15 +119,15 @@
           "Unknown error"}
       </div>
     {:else if modelLogs.length === 0}
-      <div class="text-gray-500">No model logs found</div>
+      <div class="text-fg-secondary">No model logs found</div>
     {:else}
       {#each modelLogs as log}
-        <div class="py-0.5 flex gap-x-2 hover:bg-gray-100">
-          <span class="text-gray-500 flex-none">{formatTime(log.time)}</span>
+        <div class="py-0.5 flex gap-x-2 hover:bg-surface-hover">
+          <span class="text-fg-muted flex-none">{formatTime(log.time)}</span>
           <span class="{getLevelClass(log.level)} flex-none w-12"
             >{getLevelLabel(log.level)}</span
           >
-          <span class="text-gray-700 break-all"
+          <span class="text-fg-secondary break-all"
             >{log.message}{log.jsonPayload ? ` ${log.jsonPayload}` : ""}</span
           >
         </div>

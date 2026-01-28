@@ -42,15 +42,15 @@
   <section class="flex flex-col gap-y-4">
     <h2 class="text-lg font-medium">Model Overview</h2>
     <div class="grid grid-cols-3 gap-4">
-      <div class="flex flex-col gap-y-1 p-4 border rounded-md">
+      <div class="flex flex-col gap-y-1 p-4 border rounded-md bg-surface">
         <div class="flex items-center gap-x-1">
-          <span class="text-sm text-gray-500">Tables (Materialized Models)</span
+          <span class="text-sm text-fg-secondary">Tables (Materialized Models)</span
           >
           <a
             href="https://docs.rilldata.com/build/models/performance#consider-which-models-to-materialize"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-gray-400 hover:text-gray-600"
+            class="text-fg-muted hover:text-fg-secondary"
             title="Learn about materialized models"
           >
             <svg
@@ -71,20 +71,20 @@
           {$tableMetadata?.isLoading ? "-" : tableCount}
         </span>
       </div>
-      <div class="flex flex-col gap-y-1 p-4 border rounded-md">
-        <span class="text-sm text-gray-500">Views</span>
+      <div class="flex flex-col gap-y-1 p-4 border rounded-md bg-surface">
+        <span class="text-sm text-fg-secondary">Views</span>
         <span class="text-2xl font-semibold tabular-nums">
           {$tableMetadata?.isLoading ? "-" : viewCount}
         </span>
       </div>
-      <div class="flex flex-col gap-y-1 p-4 border rounded-md">
+      <div class="flex flex-col gap-y-1 p-4 border rounded-md bg-surface">
         <div class="flex items-center gap-x-1">
-          <span class="text-sm text-gray-500">OLAP Engine</span>
+          <span class="text-sm text-fg-secondary">OLAP Engine</span>
           <a
             href="https://docs.rilldata.com/reference/olap-engines"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-gray-400 hover:text-gray-600"
+            class="text-fg-muted hover:text-fg-secondary"
             title="Learn about OLAP engines"
           >
             <svg

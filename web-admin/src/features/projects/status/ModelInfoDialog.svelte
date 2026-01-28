@@ -47,7 +47,7 @@
     {#if yamlContent}
       <YamlPreview title="Model Information" yaml={yamlContent} />
     {:else}
-      <div class="text-gray-500 py-4">No model information available</div>
+      <div class="text-fg-secondary py-4">No model information available</div>
     {/if}
   </Dialog.Content>
 </Dialog.Root>
