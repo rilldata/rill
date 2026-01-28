@@ -42,9 +42,15 @@ cd <project-name>
 
 <img src = '/img/tutorials/rill-advanced/status.png' class='rounded-gif' />
 <br />
+
+If your project is not synced to a GitHub repository, use:
 ```bash
-# Clone from Rill
 rill project clone <project-name>
+```
+If your project is synced to a GitHub repository, use:
+
+```bash
+rill start https://github.com/username/rill-project.git
 ```
 
 ## Step 2: Explore the Project Structure
