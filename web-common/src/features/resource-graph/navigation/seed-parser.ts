@@ -27,7 +27,7 @@ export const URL_PARAMS = {
 /**
  * Valid kind tokens that can be used in the `kind` URL parameter.
  */
-export type KindToken = "metrics" | "models" | "dashboards";
+export type KindToken = "metrics" | "sources" | "models" | "dashboards";
 
 /**
  * Normalize plural forms to singular forms for graph seed parsing.
@@ -122,46 +122,39 @@ export function normalizeSeed(s: string): string | V1ResourceName {
  *
  * Uses the normalization function to handle plural forms, then looks up
  * in the canonical ResourceShortNameToResourceKind mapping.
- * Sources are normalized to Models (Source is deprecated).
  *
  * @param s - String to check
  * @returns The ResourceKind if it's a kind token, undefined otherwise
  *
  * @example
  * isKindToken("metrics") // ResourceKind.MetricsView
- * isKindToken("sources") // ResourceKind.Model (Source normalized to Model)
+ * isKindToken("sources") // ResourceKind.Source
  * isKindToken("orders") // undefined (not a kind token)
  */
 export function isKindToken(s: string): ResourceKind | undefined {
   // Use the same normalization and resolution logic
-  const kind = resolveKindAlias(s);
-  // Normalize Source to Model (Source is deprecated)
-  if (kind === ResourceKind.Source) {
-    return ResourceKind.Model;
-  }
-  return kind;
+  return resolveKindAlias(s);
 }
 
 /**
  * Convert a ResourceKind to its display token (plural form).
  * Used for highlighting overview nodes in the summary graph.
- * Sources and Models are merged (Source is deprecated).
  *
  * @param kind - ResourceKind or string kind
- * @returns Token string ("models", "metrics", "dashboards") or null
+ * @returns Token string ("sources", "models", "metrics", "dashboards") or null
  *
  * @example
  * tokenForKind(ResourceKind.Model) // "models"
- * tokenForKind(ResourceKind.Source) // "models" (merged with models)
- * tokenForKind("rill.runtime.v1.Source") // "models"
+ * tokenForKind(ResourceKind.Source) // "sources"
+ * tokenForKind("rill.runtime.v1.Source") // "sources"
  */
 export function tokenForKind(
   kind?: ResourceKind | string | null,
-): "metrics" | "models" | "dashboards" | null {
+): "metrics" | "sources" | "models" | "dashboards" | null {
   if (!kind) return null;
   const key = `${kind}`.toLowerCase();
-  // Sources and Models are merged (Source is deprecated)
-  if (key.includes("source") || key.includes("model")) return "models";
+  if (key.includes("source")) return "sources";
+  if (key.includes("model")) return "models";
   if (key.includes("metricsview") || key.includes("metric")) return "metrics";
   if (key.includes("explore") || key.includes("dashboard") || key.includes("canvas")) return "dashboards";
   return null;
@@ -170,29 +163,23 @@ export function tokenForKind(
 /**
  * Convert a seed string to its display token.
  * Parses the kind from the seed and converts it to a token.
- * Sources and Models are merged (Source is deprecated).
  *
  * @param seed - Seed string (e.g., "model:orders", "source:raw_data", "metrics", "orders")
  * @returns Token string or null
  *
  * @example
  * tokenForSeedString("model:orders") // "models"
- * tokenForSeedString("source:raw_data") // "models" (merged with models)
- * tokenForSeedString("sources") // "models"
+ * tokenForSeedString("source:raw_data") // "sources"
+ * tokenForSeedString("sources") // "sources"
  * tokenForSeedString("metrics") // "metrics"
  * tokenForSeedString("orders") // "metrics" (defaults to metrics)
  */
 export function tokenForSeedString(
   seed?: string | null,
-): "metrics" | "models" | "dashboards" | null {
+): "metrics" | "sources" | "models" | "dashboards" | null {
   if (!seed) return null;
   const normalized = seed.trim().toLowerCase();
   if (!normalized) return null;
-
-  // Handle "sources" token - treat as "models" since they're merged
-  if (normalized === "sources" || normalized === "source") {
-    return "models";
-  }
 
   // Check if it's a kind token first
   const kindToken = isKindToken(normalized);
@@ -202,10 +189,6 @@ export function tokenForSeedString(
   const idx = normalized.indexOf(":");
   if (idx !== -1) {
     const kindPart = normalized.slice(0, idx);
-    // Handle "source:" prefix - treat as "models"
-    if (kindPart === "source" || kindPart === "sources") {
-      return "models";
-    }
     // Handle "dashboard:" or "canvas:" prefix - treat as "dashboards"
     if (kindPart === "dashboard" || kindPart === "dashboards" || kindPart === "canvas") {
       return "dashboards";
@@ -224,8 +207,7 @@ export function tokenForSeedString(
  * Handles three input formats:
  * 1. Explicit seeds ("kind:name") - kept as-is
  * 2. Name-only seeds ("name") - defaults to MetricsView
- * 3. Kind tokens ("metrics", "models", "sources") - expands to all visible resources of that kind
- *    Note: "sources" token is treated as "models" (includes both Source and Model resources)
+ * 3. Kind tokens ("metrics", "models", "sources", "dashboards") - expands to all visible resources of that kind
  *
  * @param seedStrings - Array of seed strings to expand
  * @param resources - All resources to consider for expansion
@@ -237,10 +219,10 @@ export function tokenForSeedString(
  * // Returns one seed per MetricsView resource
  *
  * expandSeedsByKind(["models"], resources, coerceKind)
- * // Returns one seed per Model and Source resource (merged)
+ * // Returns one seed per Model resource
  *
  * expandSeedsByKind(["sources"], resources, coerceKind)
- * // Returns one seed per Model and Source resource (same as "models")
+ * // Returns one seed per Source resource
  */
 export function expandSeedsByKind(
   seedStrings: string[] | undefined,
@@ -275,13 +257,9 @@ export function expandSeedsByKind(
       continue;
     }
 
-    // Handle "sources" token - treat as "models" (includes both Source and Model)
-    const isSourcesToken = raw.toLowerCase() === "sources" || raw.toLowerCase() === "source";
-    const isModelsToken = raw.toLowerCase() === "models" || raw.toLowerCase() === "model";
-    
     // Check if it's a kind token
     const kindToken = isKindToken(raw);
-    if (!kindToken && !isSourcesToken) {
+    if (!kindToken) {
       // Name-only, defaults to metrics view name
       pushSeed(normalizeSeed(raw));
       continue;
@@ -289,17 +267,12 @@ export function expandSeedsByKind(
 
     // Expand: one seed per visible resource of this kind
     // Special case: "dashboards" includes both Explore and Canvas
-    // Special case: "sources" and "models" both include Source and Model (merged)
     const isDashboardsToken = raw.toLowerCase() === "dashboards" || raw.toLowerCase() === "dashboard";
-    const isModelsOrSourcesToken = isModelsToken || isSourcesToken;
     for (const r of visible) {
       const resourceKind = coerceKindFn(r);
       if (isDashboardsToken) {
         // Include both Explore and Canvas for dashboards token
         if (resourceKind !== ResourceKind.Explore && resourceKind !== ResourceKind.Canvas) continue;
-      } else if (isModelsOrSourcesToken) {
-        // Include both Source and Model for models/sources token (merged)
-        if (resourceKind !== ResourceKind.Source && resourceKind !== ResourceKind.Model) continue;
       } else {
         // Normal kind matching
         if (resourceKind !== kindToken) continue;
@@ -319,9 +292,8 @@ export function expandSeedsByKind(
  */
 export interface GraphUrlParams {
   /**
-   * Kind filter (e.g., "metrics", "models", "dashboards").
+   * Kind filter (e.g., "metrics", "sources", "models", "dashboards").
    * When set, shows all graphs of this resource kind.
-   * Note: "sources" is treated as "models" (merged).
    */
   kind: KindToken | null;
 
@@ -363,16 +335,13 @@ export function parseGraphUrlParams(
 
   // Parse kind parameter
   const kindParam = params.get(URL_PARAMS.KIND)?.trim().toLowerCase() || null;
-  // Normalize "sources" to "models" since they're merged
-  let normalizedKindParam = kindParam;
-  if (kindParam === "sources" || kindParam === "source") {
-    normalizedKindParam = "models";
-  }
-  
+  // Normalize singular "source" to plural "sources"
+  const normalizedKindParam = kindParam === "source" ? "sources" : kindParam;
+
   const validKind = normalizedKindParam as KindToken | null;
   const kind =
     validKind &&
-    ["metrics", "models", "dashboards"].includes(validKind)
+    ["metrics", "sources", "models", "dashboards"].includes(validKind)
       ? validKind
       : null;
 

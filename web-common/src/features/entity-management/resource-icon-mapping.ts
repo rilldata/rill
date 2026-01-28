@@ -14,8 +14,7 @@ import File from "@rilldata/web-common/components/icons/File.svelte";
 import SettingsIcon from "@rilldata/web-common/components/icons/SettingsIcon.svelte";
 
 export const resourceIconMapping = {
-  // Source is deprecated and merged with Model - use Model icon
-  [ResourceKind.Source]: ModelIcon,
+  [ResourceKind.Source]: TableIcon,
   [ResourceKind.Connector]: ConnectorIcon,
   [ResourceKind.Model]: ModelIcon,
   [ResourceKind.MetricsView]: MetricsViewIcon,

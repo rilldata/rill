@@ -66,15 +66,13 @@ import { GitFork } from "lucide-svelte";
   const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
 
   $: kind = data?.kind;
-  // Normalize Source to Model (Source is deprecated, merged with Model)
-  $: normalizedKind = kind === ResourceKind.Source ? ResourceKind.Model : kind;
   $: icon =
-    normalizedKind && resourceIconMapping[normalizedKind]
-      ? resourceIconMapping[normalizedKind]
+    kind && resourceIconMapping[kind]
+      ? resourceIconMapping[kind]
       : DEFAULT_ICON;
   $: color =
-    normalizedKind && resourceShorthandMapping[normalizedKind]
-      ? `var(--${resourceShorthandMapping[normalizedKind]})`
+    kind && resourceShorthandMapping[kind]
+      ? `var(--${resourceShorthandMapping[kind]})`
       : DEFAULT_COLOR;
   $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
   $: hasError = !!data?.resource?.meta?.reconcileError;
@@ -91,9 +89,12 @@ import { GitFork } from "lucide-svelte";
 
   $: resourceName = data?.resource?.meta?.name?.name ?? "";
   $: resourceKind = kind;
+  // Use original kind from resource meta for artifact lookup (not coerced kind)
+  // because file artifacts are stored by the resource's actual kind
+  $: originalKind = (data?.resource?.meta?.name?.kind ?? kind) as ResourceKind;
   $: artifact =
-    resourceName && resourceKind
-      ? fileArtifacts.findFileArtifact(resourceKind, resourceName)
+    resourceName && originalKind
+      ? fileArtifacts.findFileArtifact(originalKind, resourceName)
       : undefined;
 
   // Dropdown menu state
@@ -102,7 +103,9 @@ import { GitFork } from "lucide-svelte";
   // Refresh functionality
   const triggerMutation = createRuntimeServiceCreateTrigger();
   $: ({ instanceId } = $runtime);
-  $: isModel = normalizedKind === ResourceKind.Model;
+  // Source Models and Models can both be refreshed
+  $: isModelOrSource =
+    kind === ResourceKind.Model || kind === ResourceKind.Source;
   $: isInOverlay = (data as any)?.isOverlay === true;
 
   function openFile(e?: MouseEvent) {
@@ -123,7 +126,7 @@ import { GitFork } from "lucide-svelte";
 
   function handleRefresh(e?: MouseEvent) {
     e?.stopPropagation();
-    if (!isModel || !data?.resource?.meta?.name?.name) return;
+    if (!isModelOrSource || !data?.resource?.meta?.name?.name) return;
 
     void $triggerMutation.mutateAsync({
       instanceId,
@@ -209,10 +212,10 @@ import { GitFork } from "lucide-svelte";
               {#if artifact?.path}
                 <NavigationMenuItem on:click={openFile}>
                   <EditIcon slot="icon" />
-                  Edit file
+                  Edit YAML
                 </NavigationMenuItem>
               {/if}
-              {#if isModel}
+              {#if isModelOrSource}
                 <NavigationMenuItem on:click={handleRefresh}>
                   <RefreshIcon slot="icon" size="14px" />
                   Refresh
@@ -233,8 +236,8 @@ import { GitFork } from "lucide-svelte";
       <div class="details">
         <p class="title" title={data?.label}>{data?.label}</p>
         <p class="meta">
-          {#if normalizedKind}
-            {displayResourceKind(normalizedKind)}
+          {#if kind}
+            {displayResourceKind(kind)}
           {:else}
             Unknown
           {/if}
@@ -298,10 +301,10 @@ import { GitFork } from "lucide-svelte";
             {#if artifact?.path}
               <NavigationMenuItem on:click={openFile}>
                 <EditIcon slot="icon" />
-                Edit file
+                Edit YAML
               </NavigationMenuItem>
             {/if}
-            {#if isModel}
+            {#if isModelOrSource}
               <NavigationMenuItem on:click={handleRefresh}>
                 <RefreshIcon slot="icon" size="14px" />
                 Refresh
@@ -322,8 +325,8 @@ import { GitFork } from "lucide-svelte";
     <div class="details">
       <p class="title" title={data?.label}>{data?.label}</p>
       <p class="meta">
-        {#if normalizedKind}
-          {displayResourceKind(normalizedKind)}
+        {#if kind}
+          {displayResourceKind(kind)}
         {:else}
           Unknown
         {/if}

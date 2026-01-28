@@ -143,8 +143,8 @@ describe("seed-utils", () => {
       expect(isKindToken("models")).toBe(ResourceKind.Model);
     });
 
-    it("should recognize 'sources' as Model token (Source normalized to Model)", () => {
-      expect(isKindToken("sources")).toBe(ResourceKind.Model);
+    it("should recognize 'sources' as Source token", () => {
+      expect(isKindToken("sources")).toBe(ResourceKind.Source);
     });
 
     it("should recognize 'dashboards' as Explore token", () => {
@@ -155,8 +155,8 @@ describe("seed-utils", () => {
       expect(isKindToken("model")).toBe(ResourceKind.Model);
     });
 
-    it("should recognize singular 'source' as Model token (Source normalized to Model)", () => {
-      expect(isKindToken("source")).toBe(ResourceKind.Model);
+    it("should recognize singular 'source' as Source token", () => {
+      expect(isKindToken("source")).toBe(ResourceKind.Source);
     });
 
     it("should recognize singular 'metric' as MetricsView token", () => {
@@ -190,8 +190,8 @@ describe("seed-utils", () => {
   });
 
   describe("tokenForKind", () => {
-    it("should return 'models' for Source kind (Source normalized to Model)", () => {
-      expect(tokenForKind(ResourceKind.Source)).toBe("models");
+    it("should return 'sources' for Source kind", () => {
+      expect(tokenForKind(ResourceKind.Source)).toBe("sources");
     });
 
     it("should return 'models' for Model kind", () => {
@@ -322,7 +322,7 @@ describe("seed-utils", () => {
       });
     });
 
-    it("should expand 'models' kind token to all Model and Source resources (merged)", () => {
+    it("should expand 'models' kind token to all Model resources", () => {
       const resources: V1Resource[] = [
         {
           meta: {
@@ -346,8 +346,7 @@ describe("seed-utils", () => {
 
       const result = expandSeedsByKind(["models"], resources, mockCoerceKind);
 
-      // Should include both Model and Source resources (merged)
-      expect(result).toHaveLength(3);
+      expect(result).toHaveLength(2);
       expect(result).toContainEqual({
         kind: ResourceKind.Model,
         name: "orders",
@@ -356,13 +355,9 @@ describe("seed-utils", () => {
         kind: ResourceKind.Model,
         name: "customers",
       });
-      expect(result).toContainEqual({
-        kind: ResourceKind.Source,
-        name: "raw_data",
-      });
     });
 
-    it("should expand 'sources' kind token to all Source and Model resources (merged)", () => {
+    it("should expand 'sources' kind token to all Source resources", () => {
       const resources: V1Resource[] = [
         {
           meta: {
@@ -386,8 +381,7 @@ describe("seed-utils", () => {
 
       const result = expandSeedsByKind(["sources"], resources, mockCoerceKind);
 
-      // Should include both Source and Model resources (merged)
-      expect(result).toHaveLength(3);
+      expect(result).toHaveLength(2);
       expect(result).toContainEqual({
         kind: ResourceKind.Source,
         name: "raw_orders",
@@ -395,10 +389,6 @@ describe("seed-utils", () => {
       expect(result).toContainEqual({
         kind: ResourceKind.Source,
         name: "raw_users",
-      });
-      expect(result).toContainEqual({
-        kind: ResourceKind.Model,
-        name: "orders",
       });
     });
 
@@ -685,10 +675,10 @@ describe("seed-utils", () => {
 
     it("should use coerceKind function for kind determination", () => {
       const customCoerceKind = (res: V1Resource) => {
-        // Normalize Source to Model (Source is deprecated)
+        // Simulate coercing models to sources (e.g., for defined-as-source models)
         const kind = res.meta?.name?.kind as ResourceKind;
-        if (kind === ResourceKind.Source) {
-          return ResourceKind.Model;
+        if (kind === ResourceKind.Model && res.meta?.name?.name === "special") {
+          return ResourceKind.Source;
         }
         return kind;
       };
@@ -696,7 +686,7 @@ describe("seed-utils", () => {
       const resources: V1Resource[] = [
         {
           meta: {
-            name: { kind: ResourceKind.Source, name: "raw_data" },
+            name: { kind: ResourceKind.Model, name: "special" },
             hidden: false,
           },
         },
@@ -709,20 +699,16 @@ describe("seed-utils", () => {
       ];
 
       const result = expandSeedsByKind(
-        ["models"],
+        ["sources"],
         resources,
         customCoerceKind,
       );
 
-      // Should find both Source (normalized to Model) and Model resources
-      expect(result).toHaveLength(2);
-      expect(result).toContainEqual({
-        kind: ResourceKind.Source,
-        name: "raw_data",
-      });
-      expect(result).toContainEqual({
+      // Should find the "special" model that's coerced to Source
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
         kind: ResourceKind.Model,
-        name: "normal",
+        name: "special",
       });
     });
 
