@@ -20,7 +20,6 @@
   import { LightbulbIcon, PresentationIcon } from "lucide-svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
-  import { builderActions, getAttrs } from "bits-ui";
 
   $: ({ instanceId } = $runtime);
 

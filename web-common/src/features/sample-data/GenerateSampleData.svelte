@@ -9,7 +9,6 @@
   import { object, string } from "yup";
   import IconButton from "../../components/button/IconButton.svelte";
   import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
-  import { builderActions, getAttrs } from "bits-ui";
 
   export let type: "init" | "home" | "modal";
   export let open = false;
@@ -111,11 +110,6 @@
   .prompt-input.empty::before {
     content: attr(data-placeholder);
     @apply text-fg-secondary pointer-events-none absolute;
-  }
-
-  .button-home {
-    @apply flex flex-row text-center items-center justify-center gap-x-2 h-12;
-    @apply text-sm border rounded-md shadow-sm;
   }
 
   .error {
