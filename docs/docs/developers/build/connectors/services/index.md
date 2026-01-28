@@ -1,13 +1,12 @@
 ---
-title: "Set Up External Integrations"
+title: "Set Up Service Integrations"
 description: Connect Rill to external services like OpenAI and Slack
-sidebar_label: "Integrations"
 sidebar_position: 7
 ---
 
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
 
-External integrations extend Rill's capabilities by connecting to third-party services. Unlike data connectors that import data into Rill, these integrations enable features like AI-powered analytics and notifications.
+Service Integrations extend Rill's capabilities by connecting to third-party services. Unlike data connectors that import data into Rill, these integrations enable features like AI-powered analytics and notifications.
 
 ## Available Integrations
 
@@ -19,8 +18,8 @@ External integrations extend Rill's capabilities by connecting to third-party se
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
     header="AI"
-    content="Create and define a OpenAI Connector with your own API key."
-    link="/developers/build/connectors/integration/openai"
+    content="Create and define an OpenAI Connector with your own API key."
+    link="/developers/build/connectors/services/openai"
     linkLabel="Learn more"
     referenceLink="openai"
   />
@@ -28,7 +27,7 @@ External integrations extend Rill's capabilities by connecting to third-party se
     icon={<img src="/img/build/connectors/icons/Logo-Slack.svg" alt="Slack" className="slack-icon" />}
     header="Slack"
     content="Connect to Slack to send alerts and messages from Rill."
-    link="/developers/build/connectors/integration/slack"
+    link="/developers/build/connectors/services/slack"
     linkLabel="Learn more"
     referenceLink="slack"
   />
