@@ -67,7 +67,7 @@
   }
 
   .detail-toggle {
-    @apply text-sm text-slate-600 font-medium;
+    @apply text-sm text-fg-secondary font-medium;
     @apply flex items-center;
     @apply duration-300 ease-in-out;
   }
@@ -79,7 +79,7 @@
   .detail-text-wrapper {
     @apply mt-4;
     @apply w-[700px] px-[26px] py-2;
-    @apply border border-slate-200 rounded-sm;
-    @apply bg-slate-50;
+    @apply border border-gray-200 rounded-sm;
+    @apply bg-surface-background;
   }
 </style>

@@ -6,7 +6,7 @@
 
 <p
   class={cn(
-    "text-slate-500 font-normal text-xs text-center absolute top-[208px]",
+    "text-fg-secondary font-normal text-xs text-center absolute top-[208px]",
     className,
   )}
 >

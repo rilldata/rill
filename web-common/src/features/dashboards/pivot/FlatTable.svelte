@@ -240,7 +240,7 @@
 
 <style lang="postcss">
   * {
-    @apply border-slate-200;
+    @apply border-gray-200;
   }
 
   .resize-bar {
@@ -250,13 +250,13 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface table-fixed;
+    @apply bg-surface-subtle table-fixed;
   }
 
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface;
+    @apply z-30 bg-surface-subtle;
   }
 
   tbody .cell {
@@ -283,14 +283,14 @@
   }
 
   .header-cell {
-    @apply px-2 bg-surface size-full;
+    @apply px-2 bg-surface-subtle size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply text-gray-800 font-medium;
+    @apply text-fg-primary font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2 text-gray-800;
+    @apply size-full p-1 px-2 text-fg-primary;
   }
 
   tr > td {
@@ -299,7 +299,7 @@
 
   /* The totals row */
   .with-measure tbody > tr:nth-of-type(2) {
-    @apply bg-surface sticky z-20;
+    @apply bg-surface-subtle sticky z-20;
     top: var(--total-header-height);
   }
 
@@ -310,7 +310,7 @@
 
   tr:hover,
   tr:hover .cell {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   tr:hover .active-cell {

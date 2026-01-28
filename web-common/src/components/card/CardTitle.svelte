@@ -7,7 +7,7 @@
 
 <h3
   class={cn(
-    "text-slate-600 font-medium text-sm",
+    "text-fg-secondary font-medium text-sm",
     position === "bottom" ? "absolute top-[180px]" : "",
     className,
   )}

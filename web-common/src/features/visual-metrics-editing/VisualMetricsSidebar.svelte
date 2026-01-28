@@ -354,7 +354,7 @@
 />
 
 <div
-  class="h-full w-[320px] bg-surface flex-none flex flex-col border select-none rounded-[2px]"
+  class="h-full w-[320px] bg-surface-background flex-none flex flex-col border select-none rounded-[2px]"
 >
   <h1 class="pt-6 px-5">{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
 
@@ -367,10 +367,12 @@
       {#if boolean}
         <div class="flex gap-x-2 items-center h-full rounded-full">
           <Switch bind:checked={editingClone[key]} id="auto-save" medium />
-          <Label class="font-medium text-sm" for="auto-save">{label}</Label>
+          <Label class="font-medium text-fg-secondary text-sm" for="auto-save"
+            >{label}</Label
+          >
           {#if hint}
             <Tooltip location="left">
-              <div class="text-gray-500">
+              <div class="text-fg-muted">
                 <InfoCircle size="13px" />
               </div>
               <TooltipContent slot="tooltip-content">
@@ -423,7 +425,7 @@
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
-    <p>
+    <p class="text-fg-muted">
       For more options,
       <button on:click={switchView} class="text-primary-600 font-medium">
         edit in YAML
@@ -435,7 +437,7 @@
       {/if}
       <div class="flex gap-x-2 self-end">
         <Button
-          type="secondary"
+          type="tertiary"
           onClick={() => {
             onCancel(unsavedChanges);
           }}
@@ -476,7 +478,7 @@
       </Alert.Description>
     </Alert.Header>
     <Alert.Footer>
-      <Button type="plain" onClick={cancelTypeChange}>Cancel</Button>
+      <Button type="tertiary" onClick={cancelTypeChange}>Cancel</Button>
       <Button type="primary" onClick={confirmTypeChange}>Confirm</Button>
     </Alert.Footer>
   </Alert.Content>

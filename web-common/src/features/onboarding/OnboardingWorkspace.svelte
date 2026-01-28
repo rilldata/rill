@@ -125,7 +125,7 @@
     <div class="h-px grow border border-muted"></div>
   </div>
 
-  <div class="flex flex-col mx-auto w-fit gap-y-2 text-xs text-slate-500">
+  <div class="flex flex-col mx-auto w-fit gap-y-2 text-xs bg-surface-base">
     <div class="font-semibold text-center">Tips for data workflow in rill</div>
     <ul class="list-decimal">
       <li>Import data – Add or drag files (Parquet, NDJSON, CSV).</li>

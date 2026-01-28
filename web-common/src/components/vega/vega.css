@@ -7,11 +7,10 @@
 #rill-vg-tooltip {
   @apply absolute border p-3 rounded-lg pointer-events-none;
   @apply ui-copy-number;
-  background: light-dark(rgba(255, 255, 255, 0.95), rgba(30, 30, 30, 0.95));
-  border-color: light-dark(rgb(203 213 225), rgb(71 85 105));
-  /* slate-300 / slate-600 */
-  color: light-dark(rgb(15 23 42), rgb(226 232 240));
-  /* slate-900 / slate-200 */
+  background: var(--tooltip) !important;
+  border-color: var(--border) !important;
+  color: var(--fg-inverse) !important;
+
   font-family: "Inter";
   border-radius: 5px;
 

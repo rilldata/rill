@@ -66,11 +66,7 @@
       <GraphCanvas
         flowId={group.id}
         resources={group.resources}
-        title={null}
         titleLabel={group.label}
-        titleErrorCount={null}
-        anchorError={false}
-        rootNodeIds={undefined}
         fillParent
         {showControls}
         showLock={false}
@@ -111,7 +107,7 @@
 
   /* Fullscreen mode: covers entire viewport */
   .graph-overlay-fullscreen {
-    @apply fixed inset-0 z-50 bg-background;
+    @apply fixed inset-0 z-50 bg-surface-background;
   }
 
   .graph-overlay-fullscreen .overlay-content {
@@ -129,7 +125,7 @@
   }
 
   .graph-overlay-modal .overlay-content {
-    @apply relative h-full w-full max-w-7xl rounded-lg border border-gray-200 bg-background p-4 shadow-xl;
+    @apply relative h-full w-full max-w-7xl rounded-lg border border-gray-200 bg-surface-background p-4 shadow-xl;
     z-index: 51;
   }
 
@@ -139,12 +135,12 @@
   }
 
   .close-btn {
-    @apply absolute right-4 top-4 z-[52] flex h-8 w-8 items-center justify-center rounded-md border bg-background text-2xl font-light text-muted-foreground;
+    @apply absolute right-4 top-4 z-[52] flex h-8 w-8 items-center justify-center rounded-md border bg-surface-background text-2xl font-light text-fg-secondary;
     line-height: 1;
   }
 
   .close-btn:hover {
-    @apply bg-muted text-foreground;
+    @apply bg-surface-muted text-fg-primary;
   }
 
   /* Ensure inline mode content fills available space */

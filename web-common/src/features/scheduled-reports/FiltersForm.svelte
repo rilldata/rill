@@ -312,7 +312,7 @@
 
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
-      <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
+      <Filter size="16px" className="text-fg-secondary flex-none mt-[5px]" />
     {/if}
     <div
       class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 pointer-events-auto"
@@ -322,7 +322,7 @@
       {:else if !$allDimensionFilterItems.length && !$allMeasureFilterItems.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
-          class="ui-copy-disabled grid ml-1 items-center"
+          class="text-fg-muted grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
           No filters selected

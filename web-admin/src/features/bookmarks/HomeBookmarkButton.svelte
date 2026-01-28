@@ -56,12 +56,7 @@
         label="Home bookmark dropdown"
         active={open || isHomeBookmarkActive}
       >
-        <HomeBookmark
-          size="16px"
-          className={isHomeBookmarkActive
-            ? "text-primary-600"
-            : "text-primary-800"}
-        />
+        <HomeBookmark size="16px" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent class="w-[330px]">
@@ -76,14 +71,14 @@
         <DropdownMenuItem class="py-2">
           <a
             href={fullHomeBookmarkUrl}
-            on:click={goToDashboardHome}
             class="flex flex-row gap-x-2 w-full min-h-7"
             aria-label="Home Bookmark Entry"
+            on:click={goToDashboardHome}
           >
-            <HomeBookmark size="16px" className="text-gray-700" />
+            <HomeBookmark size="16px" />
             <div class="flex flex-col gap-y-0.5">
               <div
-                class="text-xs font-medium text-gray-700 h-4 text-ellipsis overflow-hidden"
+                class="text-xs font-medium text-fg-primary h-4 text-ellipsis overflow-hidden"
               >
                 Go to Home
               </div>
@@ -96,10 +91,10 @@
         <div class="flex flex-row gap-x-2">
           <HomeBookmarkPlus size="16px" />
           <div>
-            <div class="text-xs font-medium text-gray-700 h-4">
+            <div class="text-xs font-medium text-fg-primary h-4">
               Bookmark current view as Home.
             </div>
-            <div class="text-[11px] font-normal text-gray-500 h-4">
+            <div class="text-[11px] font-normal text-fg-secondary h-4">
               This will be everyone’s main view for this dashboard.
             </div>
           </div>

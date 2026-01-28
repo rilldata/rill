@@ -114,7 +114,7 @@
 
   .prompt-input.empty::before {
     content: attr(data-placeholder);
-    @apply text-gray-400 pointer-events-none absolute;
+    @apply text-fg-secondary pointer-events-none absolute;
   }
 
   .button-home {

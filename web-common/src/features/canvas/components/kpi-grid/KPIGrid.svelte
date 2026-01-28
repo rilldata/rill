@@ -81,11 +81,11 @@
   }
 
   .kpi-wrapper {
-    @apply relative p-4 grid outline outline-1 outline-gray-200;
+    @apply relative p-4 grid outline outline-1 outline-border;
   }
 
   .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-card size-full;
+    @apply absolute border-[12.5px] pointer-events-none border-surface-card size-full;
     z-index: 50;
   }
 
