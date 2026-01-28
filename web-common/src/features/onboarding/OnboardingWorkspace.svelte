@@ -7,10 +7,7 @@
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import ImportData from "@rilldata/web-common/components/icons/ImportData.svelte";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { createResourceAndNavigate } from "@rilldata/web-common/features/file-explorer/new-files.ts";
   import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants.ts";
@@ -75,38 +72,32 @@
 
     <div class="flex flex-col w-64 gap-y-4">
       <GenerateSampleData type="home" />
-      <button
-        class="cta-button cta-item"
-        on:click={() => createResourceAndNavigate(ResourceKind.Model)}
+      <Button
+        onClick={() => createResourceAndNavigate(ResourceKind.Model)}
+        large
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
-          color={resourceColorMapping[ResourceKind.Model]}
           size="16px"
         />
         Create blank model
-      </button>
-      <button
-        class="cta-button cta-item"
-        on:click={() => createResourceAndNavigate(ResourceKind.MetricsView)}
+      </Button>
+      <Button
+        onClick={() => createResourceAndNavigate(ResourceKind.MetricsView)}
+        large
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.MetricsView]}
-          color={resourceColorMapping[ResourceKind.MetricsView]}
           size="16px"
         />
         Create a metrics view
-      </button>
+      </Button>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
-          <button
-            class="cta-button cta-item"
-            {...getAttrs([builder])}
-            use:builderActions={{ builders: [builder] }}
-          >
+          <Button builders={[builder]} large>
             <PresentationIcon size="16px" />
             Try demo projects
-          </button>
+          </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content side="right" align="start">
           {#each EXAMPLES as example (example.name)}
@@ -120,12 +111,12 @@
   </div>
 
   <div class="flex flex-row gap-x-8 items-center w-full">
-    <div class="h-px grow border border-muted"></div>
+    <div class="h-px grow border"></div>
     <LightbulbIcon class="text-border" size="16px" />
-    <div class="h-px grow border border-muted"></div>
+    <div class="h-px grow border"></div>
   </div>
 
-  <div class="flex flex-col mx-auto w-fit gap-y-2 text-xs bg-surface-base">
+  <div class="flex flex-col mx-auto w-fit gap-y-2 text-xs text-slate-500">
     <div class="font-semibold text-center">Tips for data workflow in rill</div>
     <ul class="list-decimal">
       <li>Import data – Add or drag files (Parquet, NDJSON, CSV).</li>
@@ -150,11 +141,6 @@
   }
 
   .cta-item {
-    @apply bg-card border rounded-md shadow-sm;
-  }
-
-  .cta-button {
-    @apply flex flex-row text-center items-center justify-center;
-    @apply text-sm gap-x-2 h-12;
+    @apply bg-surface border rounded-md shadow-sm;
   }
 </style>

@@ -58,14 +58,10 @@
         <span>Generate sample data</span>
       </Button>
     {:else if type === "home"}
-      <button
-        class="button-home"
-        {...getAttrs([builder])}
-        use:builderActions={{ builders: [builder] }}
-      >
+      <Button class="button-home" builders={[builder]} large>
         <SparklesIcon size="14px" class="text-blue-500 rotate-90" />
         <span>Generate sample data</span>
-      </button>
+      </Button>
     {:else}
       <div class="hidden"></div>
     {/if}
@@ -119,7 +115,7 @@
 
   .button-home {
     @apply flex flex-row text-center items-center justify-center gap-x-2 h-12;
-    @apply text-sm bg-card border rounded-md shadow-sm;
+    @apply text-sm border rounded-md shadow-sm;
   }
 
   .error {

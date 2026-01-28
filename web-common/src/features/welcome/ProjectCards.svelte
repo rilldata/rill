@@ -69,18 +69,6 @@
 <section class="flex flex-col items-center gap-y-5">
   <Subheading>Or jump right into an example project.</Subheading>
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-<<<<<<< HEAD
-=======
-    <Card
-      disabled={!!selectedProjectName}
-      isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
-      on:click={() => unpackProject()}
-    >
-      <AddCircleOutline size="2em" className="text-fg-secondary" />
-      <CardTitle position="middle">Start with an empty project</CardTitle>
-    </Card>
-
->>>>>>> main
     {#each EXAMPLES as example (example.name)}
       {@const icon = connectorIconMapping[example.connector]}
       {@const label =
@@ -114,7 +102,7 @@
       isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
       on:click={() => unpackProject()}
     >
-      <AddCircleOutline size="2em" className="text-slate-600" />
+      <AddCircleOutline size="2em" className="text-fg-secondary" />
       <CardTitle position="middle">Start with an empty project</CardTitle>
     </Card>
   </div>

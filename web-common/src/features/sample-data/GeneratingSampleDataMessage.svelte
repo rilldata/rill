@@ -34,12 +34,12 @@
   }
 
   .loading-grid {
-    @apply grid grid-cols-10 gap-3 p-8 h-52 w-96 bg-surface;
+    @apply grid grid-cols-10 gap-3 p-8 h-52 w-96 bg-surface-subtle;
     @apply border-2 border-primary-200 rounded-lg border-dotted;
   }
 
   .loading-grid-cell {
-    @apply animate-pulse bg-indigo-100 rounded-lg;
+    @apply animate-pulse bg-surface-hover rounded-lg;
   }
 
   .title {
