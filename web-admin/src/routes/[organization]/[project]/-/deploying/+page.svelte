@@ -21,6 +21,16 @@
     dashboardsErrored: false,
   });
 
+  $: console.log(
+    "deployingDashboardsData",
+    organization,
+    project,
+    runtime,
+    deployingDashboard,
+    redirectPath,
+    dashboardsErrored,
+  );
+
   let redirected = false;
   $: if (redirectPath && !redirected) {
     if (dashboardsErrored) {

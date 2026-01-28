@@ -19,6 +19,13 @@ export function useDeployingDashboards(
   redirectPath: string | null;
   dashboardsErrored: boolean;
 }> {
+  console.log(
+    "useDeployingDashboards",
+    instanceId,
+    orgName,
+    projName,
+    deployingDashboard,
+  );
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
