@@ -6,8 +6,8 @@
     getGenerateCTAs,
   } from "@rilldata/web-common/features/chat/core/messages/develop/develop-block.ts";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { Button, IconButton } from "@rilldata/web-common/components/button";
-  import { UndoIcon, PenIcon } from "lucide-svelte";
+  import { Button } from "@rilldata/web-common/components/button";
+  import { PenIcon } from "lucide-svelte";
   import { createRuntimeServiceRestoreGitCommit } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import FileDiffBlock from "@rilldata/web-common/features/chat/core/messages/file-diff/FileDiffBlock.svelte";

@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -52,7 +53,7 @@ func (t *WriteFile) CheckAccess(ctx context.Context) (bool, error) {
 func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFileResult, error) {
 	s := GetSession(ctx)
 
-	checkpointCommitHash, err := t.maybeCreateCheckpoint(ctx, s)
+	checkpointCommitHash, err := t.maybeCreateCheckpoint(ctx, s, args.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +166,7 @@ func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (res
 }
 
 // maybeCreateCheckpoint creates a checkpoint if this is the 1st write file message in the current message chain.
-func (t *WriteFile) maybeCreateCheckpoint(ctx context.Context, s *Session) (string, error) {
+func (t *WriteFile) maybeCreateCheckpoint(ctx context.Context, s *Session, path string) (string, error) {
 	// Find a write file message in the current message chain.
 	var msg *Message
 	for i := len(s.messages) - 1; i >= 0; i-- {
@@ -198,7 +199,7 @@ func (t *WriteFile) maybeCreateCheckpoint(ctx context.Context, s *Session) (stri
 	// If there are local changes, commit them. Otherwise, just return the current commit hash.
 	var hash string
 	if gitStatus.LocalChanges {
-		hash, err = repo.Commit(ctx, "Checkpoint") // TODO: message
+		hash, err = repo.Commit(ctx, fmt.Sprintf("Checkpoint before updating %q", path))
 	} else {
 		hash, err = repo.CommitHash(ctx)
 	}

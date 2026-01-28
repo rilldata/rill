@@ -1,11 +1,9 @@
 import {
   type V1Message,
   V1ReconcileStatus,
-  type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
 import { MessageContentType } from "../../types";
-import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
 // =============================================================================
 // BACKEND TYPES (mirror runtime/ai tool definitions)

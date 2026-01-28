@@ -10,10 +10,7 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { ToolName } from "../../types";
 import { createChartBlock, type ChartBlock } from "../chart/chart-block";
-import {
-  createFileDiffBlock,
-  type FileDiffBlock,
-} from "../file-diff/file-diff-block";
+import { type FileDiffBlock } from "../file-diff/file-diff-block";
 
 // =============================================================================
 // RENDER MODES
