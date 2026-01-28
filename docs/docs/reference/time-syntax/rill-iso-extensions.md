@@ -1,7 +1,7 @@
 ---
-title: Time Syntax
+title: Rill ISO Extensions
 description: Rill extensions to ISO 8601 time syntax
-sidebar_label: Time Syntax
+sidebar_label: Rill ISO Extensions
 sidebar_position: 10
 ---
 
