@@ -163,7 +163,12 @@ export function tokenForKind(
   // Sources and Models are merged (Source is deprecated)
   if (key.includes("source") || key.includes("model")) return "models";
   if (key.includes("metricsview") || key.includes("metric")) return "metrics";
-  if (key.includes("explore") || key.includes("dashboard") || key.includes("canvas")) return "dashboards";
+  if (
+    key.includes("explore") ||
+    key.includes("dashboard") ||
+    key.includes("canvas")
+  )
+    return "dashboards";
   return null;
 }
 
@@ -207,7 +212,11 @@ export function tokenForSeedString(
       return "models";
     }
     // Handle "dashboard:" or "canvas:" prefix - treat as "dashboards"
-    if (kindPart === "dashboard" || kindPart === "dashboards" || kindPart === "canvas") {
+    if (
+      kindPart === "dashboard" ||
+      kindPart === "dashboards" ||
+      kindPart === "canvas"
+    ) {
       return "dashboards";
     }
     const mapped = resolveKindAlias(kindPart);
@@ -276,9 +285,11 @@ export function expandSeedsByKind(
     }
 
     // Handle "sources" token - treat as "models" (includes both Source and Model)
-    const isSourcesToken = raw.toLowerCase() === "sources" || raw.toLowerCase() === "source";
-    const isModelsToken = raw.toLowerCase() === "models" || raw.toLowerCase() === "model";
-    
+    const isSourcesToken =
+      raw.toLowerCase() === "sources" || raw.toLowerCase() === "source";
+    const isModelsToken =
+      raw.toLowerCase() === "models" || raw.toLowerCase() === "model";
+
     // Check if it's a kind token
     const kindToken = isKindToken(raw);
     if (!kindToken && !isSourcesToken) {
@@ -290,16 +301,25 @@ export function expandSeedsByKind(
     // Expand: one seed per visible resource of this kind
     // Special case: "dashboards" includes both Explore and Canvas
     // Special case: "sources" and "models" both include Source and Model (merged)
-    const isDashboardsToken = raw.toLowerCase() === "dashboards" || raw.toLowerCase() === "dashboard";
+    const isDashboardsToken =
+      raw.toLowerCase() === "dashboards" || raw.toLowerCase() === "dashboard";
     const isModelsOrSourcesToken = isModelsToken || isSourcesToken;
     for (const r of visible) {
       const resourceKind = coerceKindFn(r);
       if (isDashboardsToken) {
         // Include both Explore and Canvas for dashboards token
-        if (resourceKind !== ResourceKind.Explore && resourceKind !== ResourceKind.Canvas) continue;
+        if (
+          resourceKind !== ResourceKind.Explore &&
+          resourceKind !== ResourceKind.Canvas
+        )
+          continue;
       } else if (isModelsOrSourcesToken) {
         // Include both Source and Model for models/sources token (merged)
-        if (resourceKind !== ResourceKind.Source && resourceKind !== ResourceKind.Model) continue;
+        if (
+          resourceKind !== ResourceKind.Source &&
+          resourceKind !== ResourceKind.Model
+        )
+          continue;
       } else {
         // Normal kind matching
         if (resourceKind !== kindToken) continue;
@@ -368,11 +388,10 @@ export function parseGraphUrlParams(
   if (kindParam === "sources" || kindParam === "source") {
     normalizedKindParam = "models";
   }
-  
+
   const validKind = normalizedKindParam as KindToken | null;
   const kind =
-    validKind &&
-    ["metrics", "models", "dashboards"].includes(validKind)
+    validKind && ["metrics", "models", "dashboards"].includes(validKind)
       ? validKind
       : null;
 

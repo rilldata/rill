@@ -708,11 +708,7 @@ describe("seed-utils", () => {
         },
       ];
 
-      const result = expandSeedsByKind(
-        ["models"],
-        resources,
-        customCoerceKind,
-      );
+      const result = expandSeedsByKind(["models"], resources, customCoerceKind);
 
       // Should find both Source (normalized to Model) and Model resources
       expect(result).toHaveLength(2);

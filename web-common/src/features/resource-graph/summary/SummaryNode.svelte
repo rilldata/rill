@@ -61,8 +61,7 @@
     normalizedKind && resourceShorthandMapping[normalizedKind]
       ? `var(--${resourceShorthandMapping[normalizedKind]})`
       : DEFAULT_COLOR;
-  $: Icon =
-    (normalizedKind && resourceIconMapping[normalizedKind]) || null;
+  $: Icon = (normalizedKind && resourceIconMapping[normalizedKind]) || null;
   $: label = data?.label ?? "";
   $: count = data?.count ?? 0;
   $: isActive = data?.active ?? selected;
@@ -75,9 +74,11 @@
     const kind = data?.kind;
     let token: string | null = null;
     // Sources and Models are merged (Source is deprecated)
-    if (kind === ResourceKind.Source || kind === ResourceKind.Model) token = "models";
+    if (kind === ResourceKind.Source || kind === ResourceKind.Model)
+      token = "models";
     else if (kind === ResourceKind.MetricsView) token = "metrics";
-    else if (kind === ResourceKind.Explore || kind === ResourceKind.Canvas) token = "dashboards";
+    else if (kind === ResourceKind.Explore || kind === ResourceKind.Canvas)
+      token = "dashboards";
     if (token) goto(`/graph?kind=${token}`);
   }
 </script>

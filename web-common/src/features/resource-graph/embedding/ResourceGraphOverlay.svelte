@@ -21,13 +21,6 @@
     | ResourceKind.Explore
     | ResourceKind.Canvas;
 
-  const NAME_SEED_ALIAS: Record<GraphableKind, string> = {
-    [ResourceKind.Model]: "model",
-    [ResourceKind.MetricsView]: "metrics",
-    [ResourceKind.Explore]: "dashboard",
-    [ResourceKind.Canvas]: "dashboard",
-  };
-
   const KIND_TOKEN_BY_KIND: Record<GraphableKind, string> = {
     [ResourceKind.Model]: "models",
     [ResourceKind.MetricsView]: "metrics",
@@ -37,11 +30,16 @@
 
   $: anchorName = anchorResource?.meta?.name?.name ?? null;
   // Normalize Source to Model immediately (Source is deprecated)
-  $: rawAnchorKind = anchorResource?.meta?.name?.kind as ResourceKind | undefined;
-  $: anchorKind = rawAnchorKind === ResourceKind.Source ? ResourceKind.Model : rawAnchorKind;
-  
+  $: rawAnchorKind = anchorResource?.meta?.name?.kind as
+    | ResourceKind
+    | undefined;
+  $: anchorKind =
+    rawAnchorKind === ResourceKind.Source ? ResourceKind.Model : rawAnchorKind;
+
   // Check if kind is allowed (handles both enum and string values)
-  $: supportsGraph = anchorKind ? ALLOWED_FOR_GRAPH.has(String(anchorKind) as ResourceKind) : false;
+  $: supportsGraph = anchorKind
+    ? ALLOWED_FOR_GRAPH.has(String(anchorKind) as ResourceKind)
+    : false;
 
   // Type-safe access to graphable kind properties
   $: graphableKind =
@@ -52,29 +50,28 @@
   // Note: anchorKind is already normalized (Source -> Model) above
   $: overlaySeeds = (function (): string[] | undefined {
     if (!anchorName || !anchorKind) return undefined;
-    
+
     // Use the same format that would come from URL parameters
-    if (anchorKind === ResourceKind.Canvas || anchorKind === ResourceKind.Explore) {
+    if (
+      anchorKind === ResourceKind.Canvas ||
+      anchorKind === ResourceKind.Explore
+    ) {
       return [`dashboard:${anchorName}`];
     } else if (anchorKind === ResourceKind.Model) {
       return [`model:${anchorName}`];
     } else if (anchorKind === ResourceKind.MetricsView) {
       return [`metrics:${anchorName}`];
     }
-    
+
     return undefined;
   })();
-  
-  // Keep the old anchorSeed for graphHref calculation
-  $: anchorSeed =
-    graphableKind && anchorName
-      ? `${NAME_SEED_ALIAS[graphableKind]}:${anchorName}`
-      : null;
+
   $: graphHref = graphableKind
     ? `/graph?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
     : "/graph";
 
-  $: emptyReason = !overlaySeeds || overlaySeeds.length === 0 ? "unsupported" : null;
+  $: emptyReason =
+    !overlaySeeds || overlaySeeds.length === 0 ? "unsupported" : null;
 
   function closeOverlay() {
     if (onClose) {

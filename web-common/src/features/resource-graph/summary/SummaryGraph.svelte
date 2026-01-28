@@ -21,11 +21,7 @@
   // Full list of resources (for selection panel)
   export let resources: V1Resource[] = [];
   // Active token to highlight: 'metrics' | 'models' | 'dashboards'
-  export let activeToken:
-    | "metrics"
-    | "models"
-    | "dashboards"
-    | null = null;
+  export let activeToken: "metrics" | "models" | "dashboards" | null = null;
 
   let containerEl: HTMLDivElement | null = null;
   let containerKey = "";

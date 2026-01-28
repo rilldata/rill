@@ -108,14 +108,14 @@
     | "dashboards"
     | null {
     const rawSeeds = seeds ?? [];
-    
+
     // Check the first seed first - this should be the anchor resource (e.g., Canvas)
     // This ensures Canvas/Explore tokens are prioritized over MetricsView tokens
     if (rawSeeds.length > 0) {
       const firstToken = tokenForSeedString(rawSeeds[0]);
       if (firstToken) return firstToken;
     }
-    
+
     // Fall back to checking all seeds if first seed didn't yield a token
     for (const raw of rawSeeds) {
       const token = tokenForSeedString(raw);
@@ -175,7 +175,8 @@
         if (!k) continue;
         if (k === ResourceKind.Source || k === ResourceKind.Model) models++;
         else if (k === ResourceKind.MetricsView) metrics++;
-        else if (k === ResourceKind.Explore || k === ResourceKind.Canvas) dashboards++;
+        else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
+          dashboards++;
       }
       return {
         modelsCount: models,
