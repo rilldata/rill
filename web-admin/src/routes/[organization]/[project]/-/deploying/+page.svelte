@@ -4,14 +4,17 @@
   import { useDeployingDashboards } from "@rilldata/web-admin/features/dashboards/listing/deploying-dashboards.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import type { PageData } from "./$types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
   export let data: PageData;
-  const { organization, project, runtime, deployingDashboard } = data;
+  const { organization, project, deployingDashboard } = data;
+
+  $: ({ instanceId } = $runtime);
 
   // Make this reactive so that it fires once params are ready.
   // During a first deploy, runtime might not be available when deployment is still being created in the backend.
   $: deployingDashboardResp = useDeployingDashboards(
-    runtime.instanceId,
+    instanceId,
     organization.name,
     project.name,
     deployingDashboard,
