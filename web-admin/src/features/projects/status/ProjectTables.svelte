@@ -151,7 +151,9 @@
       onFullRefreshClick={handleFullRefreshClick}
     />
     {#if $tableMetadata?.isLoading || $tableCardinality?.isLoading}
-      <div class="mt-2 text-xs text-fg-secondary">Loading table metadata...</div>
+      <div class="mt-2 text-xs text-fg-secondary">
+        Loading table metadata...
+      </div>
     {/if}
   {:else}
     <div class="text-fg-secondary text-sm">No tables found</div>

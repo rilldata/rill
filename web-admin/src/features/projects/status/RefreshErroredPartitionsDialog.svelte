@@ -38,7 +38,7 @@
     </AlertDialogHeader>
     <AlertDialogFooter>
       <Button
-        type="plain"
+        type="secondary"
         onClick={() => {
           open = false;
         }}>Cancel</Button
