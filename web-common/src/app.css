@@ -90,7 +90,7 @@
     --input: color-mix(in oklab, var(--white) calc(0.07 * 100%), transparent);
     --border: var(--color-neutral-200);
 
-    --ring-focus: var(--color-theme-primary-300);
+    --ring-focus: var(--color-theme-300);
     --ring-offset: var(--white);
 
     --dimension: var(--color-primary-100);

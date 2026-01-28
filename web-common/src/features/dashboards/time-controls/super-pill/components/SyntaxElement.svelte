@@ -1,11 +1,13 @@
 <script lang="ts">
   export let range: string | undefined;
+  export let dark = false;
   export let onClick: ((range: string | undefined) => void) | undefined =
     undefined;
 </script>
 
 <svelte:element
   this={onClick ? "button" : "span"}
+  class:dark
   role={onClick ? "button" : undefined}
   class="element"
   on:click={() => onClick?.(range)}
@@ -18,6 +20,10 @@
     @apply bg-surface-overlay text-fg-secondary rounded-[2px] px-1 line-clamp-1 truncate flex-none h-5 flex items-center select-none cursor-default;
     font-family: "Source Code Variable", monospace;
     @apply font-medium w-fit;
+  }
+
+  .element.dark {
+    @apply bg-gray-700 text-fg-inverse;
   }
 
   .element:hover {
