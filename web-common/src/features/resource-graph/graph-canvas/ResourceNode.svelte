@@ -88,7 +88,6 @@
   $: routeHighlighted = (data as any)?.routeHighlighted === true;
 
   $: resourceName = data?.resource?.meta?.name?.name ?? "";
-  $: resourceKind = kind;
   // Use original kind from resource meta for artifact lookup (not coerced kind)
   // because file artifacts are stored by the resource's actual kind
   $: originalKind = (data?.resource?.meta?.name?.kind ?? kind) as ResourceKind;

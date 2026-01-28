@@ -21,13 +21,6 @@
     | ResourceKind.Explore
     | ResourceKind.Canvas;
 
-  const NAME_SEED_ALIAS: Record<GraphableKind, string> = {
-    [ResourceKind.Model]: "model",
-    [ResourceKind.MetricsView]: "metrics",
-    [ResourceKind.Explore]: "dashboard",
-    [ResourceKind.Canvas]: "dashboard",
-  };
-
   const KIND_TOKEN_BY_KIND: Record<GraphableKind, string> = {
     [ResourceKind.Model]: "models",
     [ResourceKind.MetricsView]: "metrics",
@@ -73,11 +66,6 @@
     return undefined;
   })();
 
-  // Keep the old anchorSeed for graphHref calculation
-  $: anchorSeed =
-    graphableKind && anchorName
-      ? `${NAME_SEED_ALIAS[graphableKind]}:${anchorName}`
-      : null;
   $: graphHref = graphableKind
     ? `/graph?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
     : "/graph";
