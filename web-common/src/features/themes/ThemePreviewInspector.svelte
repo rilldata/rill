@@ -25,6 +25,7 @@
     primaryColor,
     backgroundColor,
     cardColor,
+    fgPrimary,
   } = extractThemeColors(themeData, $themePreviewMode));
 
   function handleModeChange(_: number, value: string) {
@@ -56,6 +57,7 @@
           {divergingColors}
           {primaryColor}
           {cardColor}
+          {fgPrimary}
         />
       </ThemeProvider>
     </div>

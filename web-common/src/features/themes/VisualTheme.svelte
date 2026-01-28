@@ -40,26 +40,43 @@
 
     // Get or create the mode section (light/dark)
     const mode = $themePreviewMode;
-    let modeSection = parsedDocument.get(mode) as any;
+    let modeSection = parsedDocument.get(mode, true) as any;
     if (!modeSection) {
       parsedDocument.set(mode, {});
-      modeSection = parsedDocument.get(mode) as any;
+      modeSection = parsedDocument.get(mode, true) as any;
     }
 
     // Set the color value
     modeSection.set(colorKey, value);
+
+    // Remove inline comment from the edited line
+    const valueNode = modeSection.get(colorKey, true);
+    if (valueNode && "comment" in valueNode) {
+      valueNode.comment = undefined;
+    }
 
     // Update the editor content
     updateEditorContent(parsedDocument.toString(), false, true);
   }
 
   // Core colors to edit
-  const editableColors = [
+  const coreColors = [
     { key: "primary", label: "Primary" },
     { key: "secondary", label: "Secondary" },
-    { key: "background", label: "Background" },
-    { key: "surface", label: "Surface" },
-    { key: "card", label: "Card" },
+    { key: "surface-background", label: "Surface Background" },
+    { key: "surface-subtle", label: "Surface Header" },
+    { key: "surface-card", label: "Component Background" },
+  ];
+
+  // Text/Foreground colors
+  const textColors = [
+    { key: "fg-primary", label: "Primary (Titles)" },
+    { key: "fg-secondary", label: "Secondary (Body)" },
+    { key: "fg-tertiary", label: "Tertiary (Captions)" },
+    { key: "fg-muted", label: "Muted (Hints)" },
+    { key: "fg-disabled", label: "Disabled" },
+    { key: "fg-inverse", label: "Inverse (On Dark)" },
+    { key: "fg-accent", label: "Accent (Links)" },
   ];
 
   const paletteInfo = [
@@ -106,11 +123,30 @@
     </div>
 
     <div class="content-scroll">
-      <!-- Theme Colors Section -->
+      <!-- Core Colors Section -->
       <section class="section">
-        <h3 class="section-title">Theme Colors</h3>
+        <h3 class="section-title">Core Colors</h3>
         <div class="palette-colors">
-          {#each editableColors as { key, label }}
+          {#each coreColors as { key, label }}
+            <div class="theme-color-item">
+              <span class="theme-color-label">{label}</span>
+              <ColorInput
+                label=""
+                stringColor={currentColors[key] || ""}
+                onChange={(color) => updateColor(key, color)}
+                allowLightnessControl={true}
+                small={true}
+              />
+            </div>
+          {/each}
+        </div>
+      </section>
+
+      <!-- Text Colors Section -->
+      <section class="section">
+        <h3 class="section-title">Text Colors</h3>
+        <div class="palette-colors">
+          {#each textColors as { key, label }}
             <div class="theme-color-item">
               <span class="theme-color-label">{label}</span>
               <ColorInput

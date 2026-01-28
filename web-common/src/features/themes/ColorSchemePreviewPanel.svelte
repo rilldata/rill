@@ -34,6 +34,7 @@
     primaryColor,
     backgroundColor,
     cardColor,
+    fgPrimary,
   } = extractThemeColors(themeData, previewMode));
 
   async function toggle() {
@@ -94,6 +95,7 @@
           {divergingColors}
           {primaryColor}
           {cardColor}
+          {fgPrimary}
         />
       </ThemeProvider>
     </div>

@@ -16,12 +16,14 @@ export const DIVERGING_COLOR_COUNT = 11;
 export const QUALITATIVE_COLOR_COUNT = 24;
 
 /**
- * CSS variable fallback for theme background colors
+ * CSS variable fallbacks for theme colors
  */
 export const BACKGROUND_FALLBACK_LIGHT = "var(--color-gray-50, #f9fafb)";
 export const BACKGROUND_FALLBACK_DARK = "var(--color-gray-900, #111827)";
 export const CARD_FALLBACK_LIGHT = "var(--color-white, #ffffff)";
 export const CARD_FALLBACK_DARK = "var(--color-gray-700, #374151)";
+export const FG_PRIMARY_FALLBACK_LIGHT = "var(--fg-primary, #111827)";
+export const FG_PRIMARY_FALLBACK_DARK = "var(--fg-primary, #f9fafb)";
 
 export type PreviewMode = "light" | "dark";
 
@@ -32,6 +34,7 @@ export interface ThemeColors {
   primaryColor: string;
   backgroundColor: string;
   cardColor: string;
+  fgPrimary: string;
 }
 
 /**
@@ -85,15 +88,23 @@ export function extractThemeColors(
   );
 
   // Extract theme colors with CSS variable fallbacks
+  // Support both new semantic names and legacy names for backwards compatibility
   const primaryColor = currentModeYaml["primary"] || "var(--color-theme-500)";
   const backgroundColor =
+    currentModeYaml["surface-background"] ||
     currentModeYaml["background"] ||
     (previewMode === "light"
       ? BACKGROUND_FALLBACK_LIGHT
       : BACKGROUND_FALLBACK_DARK);
   const cardColor =
+    currentModeYaml["surface-card"] ||
     currentModeYaml["card"] ||
     (previewMode === "light" ? CARD_FALLBACK_LIGHT : CARD_FALLBACK_DARK);
+  const fgPrimary =
+    currentModeYaml["fg-primary"] ||
+    (previewMode === "light"
+      ? FG_PRIMARY_FALLBACK_LIGHT
+      : FG_PRIMARY_FALLBACK_DARK);
 
   return {
     sequentialColors,
@@ -102,5 +113,6 @@ export function extractThemeColors(
     primaryColor,
     backgroundColor,
     cardColor,
+    fgPrimary,
   };
 }

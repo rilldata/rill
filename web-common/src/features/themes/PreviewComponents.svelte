@@ -4,6 +4,7 @@
   export let divergingColors: string[];
   export let primaryColor: string;
   export let cardColor: string;
+  export let fgPrimary: string;
 
   // Mock time series data for KPI sparkline
   const timeSeriesData = [
@@ -144,7 +145,7 @@
   <div class="preview-card kpi-card" style="background-color: {cardColor};">
     <div class="kpi-data-wrapper">
       <div class="kpi-header text-gray-600 dark:text-gray-400">Revenue</div>
-      <div class="kpi-value text-gray-800 dark:text-gray-100">$2.4M</div>
+      <div class="kpi-value" style="color: {fgPrimary};">$2.4M</div>
       <div class="kpi-comparison">
         <span class="kpi-prev text-gray-500">$2.1M</span>
         <span class="kpi-delta" style="color: {primaryColor};">+$285K</span>
@@ -185,7 +186,7 @@
     class="preview-card leaderboard-card"
     style="background-color: {cardColor};"
   >
-    <div class="chart-title text-gray-800 dark:text-gray-100">
+    <div class="chart-title" style="color: {fgPrimary};">
       Top Categories
     </div>
     <table class="leaderboard-table">
@@ -197,7 +198,7 @@
               class="leaderboard-name"
               style="background: linear-gradient(to right, var(--color-theme-100) {barLength}px, transparent {barLength}px);"
             >
-              <span class="text-gray-700 dark:text-gray-300">{item.name}</span>
+              <span style="color: {fgPrimary};">{item.name}</span>
             </td>
             <td
               class="leaderboard-value"
@@ -206,7 +207,7 @@
                 barLength - 90,
               )}px, transparent {Math.max(0, barLength - 90)}px);"
             >
-              <span class="text-gray-800 dark:text-gray-200"
+              <span style="color: {fgPrimary};"
                 >{formatValue(item.value)}</span
               >
             </td>
@@ -221,7 +222,7 @@
     class="preview-card bar-chart-card"
     style="background-color: {cardColor};"
   >
-    <div class="chart-title text-gray-800 dark:text-gray-100">
+    <div class="chart-title" style="color: {fgPrimary};">
       Sales by Region
     </div>
     <svg
@@ -277,8 +278,8 @@
 
   <!-- Sequential Heatmap -->
   <div class="preview-card heatmap-card" style="background-color: {cardColor};">
-    <div class="chart-title text-gray-800 dark:text-gray-100">
-      Activity <span class="text-gray-400 font-normal">(Sequential)</span>
+    <div class="chart-title" style="color: {fgPrimary};">
+      Activity <span class="font-normal" style="opacity: 0.6;">(Sequential)</span>
     </div>
     <svg
       class="heatmap-svg"
@@ -323,8 +324,8 @@
 
   <!-- Diverging Heatmap -->
   <div class="preview-card heatmap-card" style="background-color: {cardColor};">
-    <div class="chart-title text-gray-800 dark:text-gray-100">
-      YoY Change <span class="text-gray-400 font-normal">(Diverging)</span>
+    <div class="chart-title" style="color: {fgPrimary};">
+      YoY Change <span class="font-normal" style="opacity: 0.6;">(Diverging)</span>
     </div>
     <svg
       class="heatmap-svg"
