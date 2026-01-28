@@ -233,11 +233,12 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 	}
 
+	cfgMap := map[string]any{"pool_size": "4"}
+	if opts.Debug {
+		cfgMap["log_queries"] = strconv.FormatBool(opts.Debug)
+	}
 	// Add default OLAP connector
-	olapConfig, err := structpb.NewStruct(map[string]any{
-		"pool_size":   "4",
-		"log_queries": strconv.FormatBool(opts.Debug),
-	})
+	olapConfig, err := structpb.NewStruct(cfgMap)
 	if err != nil {
 		return nil, err
 	}
