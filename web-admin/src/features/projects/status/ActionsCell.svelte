@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { RefreshCcwIcon } from "lucide-svelte";
+  import { GitBranch, RefreshCcwIcon } from "lucide-svelte";
 
   export let resourceKind: string;
   export let resourceName: string;
@@ -17,16 +19,30 @@
   ) => void;
   export let isDropdownOpen: boolean;
   export let onDropdownOpenChange: (isOpen: boolean) => void;
+
+  // Convert full ResourceKind to short name for URL (e.g., "rill.runtime.v1.Model" -> "model")
+  function kindToShortName(kind: string): string {
+    const parts = kind.split(".");
+    return parts[parts.length - 1].toLowerCase();
+  }
+
+  function handleViewInDAG() {
+    const org = $page.params.organization;
+    const proj = $page.params.project;
+    const shortKind = kindToShortName(resourceKind);
+    // resource param creates the graph, expanded param opens it in expanded view
+    goto(`/${org}/${proj}/-/status/dag-viewer?resource=${shortKind}:${resourceName}&expanded=${resourceKind}:${resourceName}`);
+  }
 </script>
 
-{#if canRefresh}
-  <DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
-    <DropdownMenu.Trigger class="flex-none">
-      <IconButton rounded active={isDropdownOpen} size={20}>
-        <ThreeDot size="16px" />
-      </IconButton>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
+<DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
+  <DropdownMenu.Trigger class="flex-none">
+    <IconButton rounded active={isDropdownOpen} size={20}>
+      <ThreeDot size="16px" />
+    </IconButton>
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start">
+    {#if canRefresh}
       {#if resourceKind === ResourceKind.Model}
         <DropdownMenu.Item
           class="font-normal flex items-center"
@@ -82,6 +98,16 @@
           </div>
         </DropdownMenu.Item>
       {/if}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-{/if}
+      <DropdownMenu.Separator />
+    {/if}
+    <DropdownMenu.Item
+      class="font-normal flex items-center"
+      on:click={handleViewInDAG}
+    >
+      <div class="flex items-center">
+        <GitBranch size="12px" />
+        <span class="ml-2">View in DAG</span>
+      </div>
+    </DropdownMenu.Item>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>

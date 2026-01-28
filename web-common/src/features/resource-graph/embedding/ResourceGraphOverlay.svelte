@@ -13,6 +13,8 @@
   export let resources: V1Resource[] = [];
   export let isLoading = false;
   export let error: string | null = null;
+  // Base path for navigation (defaults to /graph for Rill Developer)
+  export let basePath: string = "/graph";
 
   // Type for resource kinds that support graph visualization
   type GraphableKind =
@@ -50,8 +52,8 @@
 
   $: overlaySeeds = anchorSeed ? [anchorSeed] : undefined;
   $: graphHref = graphableKind
-    ? `/graph?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
-    : "/graph";
+    ? `${basePath}?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
+    : basePath;
 
   $: emptyReason = !anchorSeed ? "unsupported" : null;
 

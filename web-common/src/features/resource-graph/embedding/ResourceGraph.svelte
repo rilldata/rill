@@ -43,6 +43,8 @@
   export let gridColumns: number = UI_CONFIG.DEFAULT_GRID_COLUMNS;
   export let expandedHeightMobile: string = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
   export let expandedHeightDesktop: string = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
+  // Base path for summary graph navigation (defaults to /graph for Rill Developer)
+  export let summaryBasePath: string = "/graph";
 
   type SummaryMemo = {
     sources: number;
@@ -410,6 +412,7 @@
           dashboards={summaryMemo.dashboards}
           resources={summaryMemo.resources}
           activeToken={summaryMemo.activeToken}
+          basePath={summaryBasePath}
         />
       </div>
       {#if hasGraphs}

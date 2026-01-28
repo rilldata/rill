@@ -1,12 +1,16 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     RefreshCcwIcon,
     FileTextIcon,
     LayoutGridIcon,
     AlertCircleIcon,
+    GitBranch,
   } from "lucide-svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
@@ -24,6 +28,14 @@
   $: hasErroredPartitions =
     !!resource?.model?.state?.partitionsModelId &&
     !!resource?.model?.state?.partitionsHaveErrors;
+
+  function handleViewInDAG() {
+    const org = $page.params.organization;
+    const proj = $page.params.project;
+    const resourceName = resource?.meta?.name?.name;
+    // resource param creates the graph, expanded param opens it in expanded view
+    goto(`/${org}/${proj}/-/status/dag-viewer?resource=model:${resourceName}&expanded=${ResourceKind.Model}:${resourceName}`);
+  }
 </script>
 
 {#if resource}
@@ -91,6 +103,18 @@
           </div>
         </DropdownMenu.Item>
       {/if}
+
+      <DropdownMenu.Separator />
+
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={handleViewInDAG}
+      >
+        <div class="flex items-center">
+          <GitBranch size="12px" />
+          <span class="ml-2">View in DAG</span>
+        </div>
+      </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}

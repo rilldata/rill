@@ -20,6 +20,11 @@
       route: "/model-overview",
       hasPermission: true,
     },
+    {
+      label: "DAG Viewer",
+      route: "/dag-viewer",
+      hasPermission: true,
+    },
   ];
 </script>
 

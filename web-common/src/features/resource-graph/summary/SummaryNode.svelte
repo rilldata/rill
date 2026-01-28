@@ -14,6 +14,7 @@
     count: number;
     kind: ResourceKind;
     active?: boolean;
+    basePath?: string;
   };
   export let selected: boolean = false;
   export let width: number | undefined = undefined;
@@ -70,12 +71,13 @@
     if (isEmpty) return;
 
     const kind = data?.kind;
+    const basePath = data?.basePath ?? "/graph";
     let token: string | null = null;
     if (kind === ResourceKind.Source) token = "sources";
     else if (kind === ResourceKind.MetricsView) token = "metrics";
     else if (kind === ResourceKind.Model) token = "models";
     else if (kind === ResourceKind.Explore) token = "dashboards";
-    if (token) goto(`/graph?kind=${token}`);
+    if (token) goto(`${basePath}?kind=${token}`);
   }
 </script>
 

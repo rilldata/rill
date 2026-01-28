@@ -28,6 +28,8 @@
     | "models"
     | "dashboards"
     | null = null;
+  // Base path for navigation (defaults to /graph for Rill Developer)
+  export let basePath: string = "/graph";
 
   let containerEl: HTMLDivElement | null = null;
   let containerKey = "";
@@ -81,7 +83,7 @@
 
     // Only navigate if there are resources of this kind
     if (token && count > 0) {
-      goto(`/graph?kind=${token}`);
+      goto(`${basePath}?kind=${token}`);
     }
   }
 
@@ -95,6 +97,7 @@
       dashboards: number;
     },
     token: "sources" | "metrics" | "models" | "dashboards" | null,
+    nodeBasePath: string,
   ) {
     const pad = 40;
     const eff = Math.max(120, width - pad * 2);
@@ -114,6 +117,7 @@
           count: sources,
           kind: ResourceKind.Source,
           active: isActive("sources"),
+          basePath: nodeBasePath,
         },
       },
       {
@@ -126,6 +130,7 @@
           count: models,
           kind: ResourceKind.Model,
           active: isActive("models"),
+          basePath: nodeBasePath,
         },
       },
       {
@@ -138,6 +143,7 @@
           count: metrics,
           kind: ResourceKind.MetricsView,
           active: isActive("metrics"),
+          basePath: nodeBasePath,
         },
       },
       {
@@ -150,6 +156,7 @@
           count: dashboards,
           kind: ResourceKind.Explore,
           active: isActive("dashboards"),
+          basePath: nodeBasePath,
         },
       },
     ] satisfies Node[];
@@ -172,7 +179,7 @@
   $: {
     const width = containerEl?.clientWidth ?? 800;
     nodesStore.set(
-      buildNodes(width, { sources, metrics, models, dashboards }, activeToken),
+      buildNodes(width, { sources, metrics, models, dashboards }, activeToken, basePath),
     );
     edgesStore.set(buildEdges());
   }
