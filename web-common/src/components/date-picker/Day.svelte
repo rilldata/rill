@@ -92,7 +92,7 @@
 >
   <div
     class="day {overlapClass}"
-    class:text-fg-secondary={outOfMonth}
+    class:text-fg-disabled={outOfMonth}
     class:potential={!!potentialInterval}
     class:anchor={areSameDay(anchorDay, date)}
   >
@@ -108,11 +108,11 @@
   }
 
   .day:disabled {
-    @apply pointer-events-none text-gray-300;
+    @apply pointer-events-none text-fg-disabled;
   }
 
   button:hover .day:not(.potential) {
-    @apply bg-primary-300 text-white;
+    @apply bg-primary-300 text-fg-primary;
   }
 
   button:hover .day:not(.in-range, .start, .end) {
@@ -123,7 +123,7 @@
   .start.potential,
   .end.potential,
   .full-interval.potential {
-    @apply bg-gray-200 text-fg-primary;
+    @apply bg-surface-hover text-fg-primary;
   }
 
   .in-range,
@@ -131,7 +131,7 @@
   .end,
   .full-interval,
   .anchor.potential {
-    @apply bg-primary-400 text-white;
+    @apply bg-primary-400 text-fg-primary;
   }
 
   .end,

@@ -5,7 +5,7 @@
 </script>
 
 <div class="flex flex-col items-center pt-5 pb-10 gap-y-1">
-  <Filter size="32px" className="text-gray-300" />
+  <Filter size="32px" className="text-icon-muted" />
   <div class="flex flex-col items-center">
     <h3 class="text-sm font-semibold text-fg-secondary">No filters selected</h3>
     <span class="text-sm text-fg-secondary">

@@ -41,12 +41,12 @@
       <Avatar.Image {src} {alt} />
       {#if alt}
         <!-- Show a fallback if the image fails to load -->
-        <Avatar.Fallback class={cn(fontSize, "text-white")}>
+        <Avatar.Fallback class={cn(fontSize, "text-fg-primary")}>
           {getInitials(alt ?? "")}
         </Avatar.Fallback>
       {/if}
     {:else if alt}
-      <Avatar.Fallback class={cn(fontSize, "text-white")}>
+      <Avatar.Fallback class={cn(fontSize, "text-fg-primary")}>
         {getInitials(alt)}
       </Avatar.Fallback>
     {:else}

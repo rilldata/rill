@@ -7,7 +7,7 @@
 
 <div class="flex flex-col justify-center items-center gap-y-6 my-20">
   <div class="flex flex-col gap-y-2">
-    <MoonCircleOutline size="104px" className="text-gray-300" />
+    <MoonCircleOutline size="104px" className="text-icon-muted" />
     <CTAHeader variant="bold">This org’s projects are hibernating</CTAHeader>
     <CTAMessage>
       Please reach out to your administrator to regain access.

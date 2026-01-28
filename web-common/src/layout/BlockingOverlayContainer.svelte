@@ -23,12 +23,12 @@
 <Overlay {bg}>
   <div
     transition:fly|global={{ duration: 200, y: 16 }}
-    class="text-white text-center flex flex-col gap-y-4"
+    class="text-fg-primary text-center flex flex-col gap-y-4"
     style:width="540px"
   >
     <div class="flex flex-col gap-y-3">
       <div
-        class="grid place-content-center grid-gap-2 text-white m-auto p-6 break-all"
+        class="grid place-content-center grid-gap-2 text-fg-primary m-auto p-6 break-all"
         style:font-size="48px"
       >
         <div class="on" style="--length: {2000 + Math.random() * 5000}ms;">

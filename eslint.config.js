@@ -7,6 +7,7 @@ import eslintPluginSvelte from "eslint-plugin-svelte";
 import globals from "globals";
 import tsEslint from "typescript-eslint";
 import { globalIgnores } from "eslint/config";
+import rillPlugin from "./eslint-plugin-rill/index.js";
 
 export default [
   js.configs.recommended,
@@ -20,6 +21,9 @@ export default [
   },
   ...eslintPluginSvelte.configs["flat/prettier"],
   {
+    plugins: {
+      rill: rillPlugin,
+    },
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -32,6 +36,7 @@ export default [
       },
     },
     rules: {
+      "rill/no-disallowed-tailwind-text-colors": "error",
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",
@@ -62,12 +67,13 @@ export default [
   {
     ignores: [
       "**/.storybook/*",
-      "**/.svelte-kit/",
+      "**/.svelte-kit/**",
       "**/gen/*",
-      "**/node_modules",
+      "**/node_modules/**",
       "**/playwright.config.js",
       "**/postcss.config.cjs",
       "**/svelte.config.js",
+      "eslint-plugin-rill/*",
       "web-admin/build/*",
       "web-admin/playwright-report/*",
       "web-admin/playwright/*",

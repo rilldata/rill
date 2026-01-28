@@ -38,7 +38,7 @@
     {/if}
   </div>
   {#if icon}
-    <div class="text-gray-500">
+    <div class="text-fg-muted">
       <svelte:component this={icon} size="16px" />
     </div>
   {:else}

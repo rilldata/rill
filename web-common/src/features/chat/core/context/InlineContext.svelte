@@ -95,7 +95,7 @@
           </span>
         </Tooltip.Trigger>
         <!-- TODO: we do not have the correct styles for tooltip. Update app wise in a future PR. -->
-        <Tooltip.Content class="bg-black text-white">
+        <Tooltip.Content class="bg-black text-fg-primary">
           {tooltip}
         </Tooltip.Content>
       </Tooltip.Root>

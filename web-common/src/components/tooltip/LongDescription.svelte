@@ -9,7 +9,7 @@
   /** we are setting the tooltip content code block styling here, since this is sometimes 
 programmatically returned by the runtime **/
   :global(.long-tooltip-description code) {
-    @apply px-2 py-1 bg-gray-900 text-gray-100 rounded break-words w-max;
+    @apply px-2 py-1 bg-gray-900 text-fg-primary rounded break-words w-max;
     transform: translateX(-0.5rem);
     display: block;
   }

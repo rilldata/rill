@@ -49,7 +49,7 @@
               {error.message}
             </span>
             {#if error.filePath}
-              <span class="text-stone-500 font-semibold shrink-0">
+              <span class="text-fg-muted font-semibold shrink-0">
                 {error.filePath}
               </span>
             {/if}

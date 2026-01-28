@@ -1,4 +1,4 @@
-<p class="text-fg-muted dark:text-fg-secondary my-1 w-full line-clamp-15">
+<p class="text-fg-inverse/90 my-1 w-full line-clamp-15">
   <slot />
 </p>
 

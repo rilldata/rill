@@ -19,7 +19,7 @@
       <TimeAgo datetime={updatedOn} />
     </div>
     <TooltipContent slot="tooltip-content">
-      <span class="text-xs text-gray-50 font-medium">
+      <span class="text-xs font-medium">
         {fullDate}
       </span>
     </TooltipContent>

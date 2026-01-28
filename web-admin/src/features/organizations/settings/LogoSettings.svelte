@@ -132,7 +132,7 @@
           {#if organizationLogoDarkUrl}
             Dark Logo
           {:else}
-            <span class="text-slate-500">Dark Logo</span>
+            <span class="text-icon-default">Dark Logo</span>
           {/if}
         </div>
         <UploadImagePopover

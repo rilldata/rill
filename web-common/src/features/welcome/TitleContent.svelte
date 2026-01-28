@@ -40,9 +40,9 @@
     on:click={openShowAddSourceModal}
   >
     <div
-      class="flex flex-row gap-x-1 items-center text-sm font-medium text-white"
+      class="flex flex-row gap-x-1 items-center text-sm font-medium text-fg-primary"
     >
-      <Add className="text-white" />
+      <Add className="text-fg-primary" />
       Connect your data
     </div>
   </button>

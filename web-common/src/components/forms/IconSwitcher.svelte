@@ -29,7 +29,7 @@
       </Tooltip.Trigger>
 
       <Tooltip.Content class="z-[1000]" sideOffset={8}>
-        <div class="bg-gray-700 text-white rounded p-2 pt-1 pb-1">
+        <div class="bg-gray-700 text-fg-primary rounded p-2 pt-1 pb-1">
           {tooltip}
         </div>
       </Tooltip.Content>

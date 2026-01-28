@@ -4,6 +4,14 @@ import {
   TailwindColors,
 } from "./src/features/themes/color-config";
 
+const blockedTextColors = ["gray", "neutral", "slate", "stone", "zinc"];
+
+const TEXT_BLOCKLIST = blockedTextColors
+  .map((color) => {
+    return TailwindColorSpacing.map((spacing) => `text-${color}-${spacing}`);
+  })
+  .flat();
+
 function generateTailwindVariables() {
   const colors: Record<string, Record<string, string>> = {};
 
@@ -155,4 +163,5 @@ export default {
       },
     },
   },
+  blocklist: TEXT_BLOCKLIST,
 } satisfies Config;

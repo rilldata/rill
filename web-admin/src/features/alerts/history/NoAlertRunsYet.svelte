@@ -7,7 +7,7 @@
 >
   <div class="flex flex-col justify-center items-center">
     <div class="relative">
-      <AlertCircleOutline className="text-gray-300 w-12 h-12" />
+      <AlertCircleOutline className="text-icon-muted w-12 h-12" />
     </div>
   </div>
   <div

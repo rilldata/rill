@@ -75,7 +75,7 @@
         use:builder.action
         class:pr-3.5={open}
         aria-label="Add widget"
-        class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-white hover:bg-primary-500"
+        class="shadow-lg flex group hover:rounded-3xl w-fit gap-x-1 p-2 hover:pr-3.5 absolute bottom-3 right-3 items-center justify-center z-50 rounded-full bg-primary-600 text-fg-primary hover:bg-primary-500"
       >
         <Plus size="20px" />
 

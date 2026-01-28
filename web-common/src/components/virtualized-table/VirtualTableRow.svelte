@@ -136,7 +136,7 @@
     box-shadow: 2px 0 0 0px var(--color-gray-200);
   }
 
-  .selected {
-    @apply text-black font-bold;
+  .selected td:not(:first-of-type) {
+    @apply bg-surface-active font-bold;
   }
 </style>

@@ -47,7 +47,7 @@
           {#if zooming}<span>Zoomed</span>{:else}<span>Zooming</span>{/if}
           to {formatInteger(zoomedRows)} row{#if zoomedRows !== 1}s{/if}
         </div>
-        <div class="text-right text-gray-300 font-normal not-italic">
+        <div class="text-right text-fg-inverse font-normal not-italic">
           {formatBigNumberPercentage(zoomedRows / totalRows)}
         </div>
       </div>
