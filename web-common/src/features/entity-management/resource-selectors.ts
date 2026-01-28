@@ -69,6 +69,35 @@ export function displayResourceKind(kind: ResourceKind | undefined) {
   }
 }
 
+export function resourceKindStyleName(kind: ResourceKind | undefined) {
+  switch (kind) {
+    case ResourceKind.Alert:
+      return "bg-Alert/15 text-Alert";
+    case ResourceKind.Report:
+      return "bg-Report/15 text-Report";
+    case ResourceKind.Source:
+      return "bg-Model/15 text-Model";
+    case ResourceKind.Connector:
+      return "bg-Connector/15 text-Connector";
+    case ResourceKind.Model:
+      return "bg-Model/15 text-Model";
+    case ResourceKind.MetricsView:
+      return "bg-Metrics/15 text-Metrics";
+    case ResourceKind.Explore:
+      return "bg-Explore/15 text-Explore";
+    case ResourceKind.Theme:
+      return "bg-Theme/15 text-Theme";
+    case ResourceKind.Component:
+      return "bg-Component/15 text-Component";
+    case ResourceKind.Canvas:
+      return "bg-Canvas/15 text-Canvas";
+    case ResourceKind.API:
+      return "bg-API/15 text-API";
+    default:
+      return undefined;
+  }
+}
+
 export type UserFacingResourceKinds = Exclude<
   ResourceKind,
   ResourceKind.ProjectParser | ResourceKind.RefreshTrigger

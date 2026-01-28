@@ -8,7 +8,7 @@
 
 <style lang="postcss">
   span {
-    @apply bg-gray-100 size-full flex;
+    @apply bg-surface-base size-full flex text-fg-muted;
     @apply items-center justify-center font-bold p-0;
   }
 </style>

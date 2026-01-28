@@ -171,7 +171,7 @@
         {/if}
       </div>
       {#if showSelector}
-        <div class="bg-slate-50 flex flex-col w-60 p-3">
+        <div class="bg-surface-background flex flex-col w-60 p-3">
           {#if !interval || interval?.isValid}
             <CalendarPlusDateInput
               minTimeGrain={V1TimeGrainToDateTimeUnit[

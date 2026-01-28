@@ -23,17 +23,13 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { Save, Settings } from "lucide-svelte";
+  import { Save } from "lucide-svelte";
   import type { Readable } from "svelte/store";
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
-  import File from "../../components/icons/File.svelte";
   import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "../entity-management/resource-icon-mapping";
+  import { getIconComponent } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
@@ -98,16 +94,16 @@
 
 <li
   aria-label="{filePath} Nav Entry"
-  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-slate-100"
-  class:bg-slate-100={isCurrentFile}
+  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-surface-hover"
+  class:bg-surface-active={isCurrentFile}
   class:opacity-50={$hasUnsavedChanges || $saving}
 >
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
     isDotFile
-      ? 'text-gray-500 hover:text-gray-500'
-      : 'text-gray-900 hover:text-gray-900'}"
-    href={`/files${filePath}`}
+      ? 'hover:text-fg-secondary text-fg-muted '
+      : 'text-fg-primary hover:text-fg-primary'}"
+    href="/files{filePath}"
     {id}
     class:italic={$hasUnsavedChanges || $saving}
     on:click={fireTelemetry}
@@ -121,13 +117,8 @@
         <Alert size="14px" color="red" />
       {:else}
         <svelte:component
-          this={resourceKind
-            ? resourceIconMapping[resourceKind]
-            : filePath === "/.env" || filePath === "/rill.yaml"
-              ? Settings
-              : File}
+          this={getIconComponent(resourceKind, filePath)}
           size="14px"
-          color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
         />
       {/if}
     </div>

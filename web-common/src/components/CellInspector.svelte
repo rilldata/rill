@@ -135,7 +135,7 @@
 {#if isOpen}
   <div
     bind:this={container}
-    class="cell-inspector fixed top-12 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 bg-surface"
+    class="cell-inspector fixed top-12 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 bg-surface-subtle"
     class:invisible={!isOpen && !hovered}
     class:opacity-0={!isOpen && !hovered}
     class:opacity-100={isOpen || hovered}
@@ -152,18 +152,19 @@
     >
       <!-- Header with lock icon -->
       <div
-        class="flex justify-between items-center p-2 border-b border-gray-200 bg-surface rounded-t-lg"
+        class="flex justify-between items-center p-2 border-b border-gray-200 bg-surface-subtle rounded-t-lg"
       >
-        <span class="text-xs text-gray-500 font-medium">Cell Inspector</span>
+        <span class="text-xs text-fg-secondary font-medium">Cell Inspector</span
+        >
         <button
-          class="p-1 hover:bg-gray-100 rounded transition-colors"
+          class="p-1 hover:bg-surface-hover rounded transition-colors"
           on:click={toggleLock}
           title={isLocked ? "Unlock value (L)" : "Lock value (L)"}
         >
           {#if isLocked}
-            <Lock size="16" class="ui-copy-icon" />
+            <Lock size="16" class="text-fg-secondary" />
           {:else}
-            <Unlock size="16" class="ui-copy-icon" />
+            <Unlock size="16" class="text-fg-secondary" />
           {/if}
         </button>
       </div>
@@ -175,17 +176,17 @@
         class:items-center={!isJson}
       >
         {#if value === null}
-          <span class="text-sm text-gray-500 italic">No value</span>
+          <span class="text-sm text-fg-secondary italic">No value</span>
         {:else}
           <span
-            class="whitespace-pre-wrap break-words text-sm text-gray-800 w-full"
+            class="whitespace-pre-wrap break-words text-sm text-fg-primary w-full"
             class:font-mono={isJson}>{formatValue(value)}</span
           >
         {/if}
       </div>
       <!-- Fixed footer -->
       <div
-        class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-gray-500 bg-surface rounded-b-lg"
+        class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-fg-secondary bg-surface-subtle rounded-b-lg"
       >
         <div class="flex gap-2">
           <span>

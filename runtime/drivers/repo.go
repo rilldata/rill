@@ -154,6 +154,7 @@ type Commit struct {
 var ignoredPaths = []string{
 	"/tmp",
 	"/.git",
+	"/.github",
 	"/node_modules",
 	"/.DS_Store",
 	"/.vscode",
