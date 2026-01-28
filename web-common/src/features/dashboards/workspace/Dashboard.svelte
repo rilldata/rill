@@ -130,14 +130,14 @@
 
 <ThemeProvider theme={$theme}>
   <article
-    class="flex flex-col overflow-y-hidden"
+    class="flex flex-col overflow-y-hidden bg-surface-background"
     bind:clientWidth={exploreContainerWidth}
     class:w-full={$dynamicHeight}
     class:size-full={!$dynamicHeight}
   >
     <div
       id="header"
-      class="border-b w-fit min-w-full flex flex-col bg-background slide"
+      class="border-b w-fit min-w-full flex flex-col bg-surface-subtle slide"
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}
@@ -165,7 +165,8 @@
       <PivotDisplay {isEmbedded} />
     {:else}
       <div
-        class="flex gap-x-1 gap-y-2 overflow-hidden pl-4 slide bg-surface"
+        class="flex gap-x-1 overflow-hidden slide pb-0"
+        class:gap-y-2={showTimeDimensionDetail}
         class:flex-col={showTimeDimensionDetail}
         class:flex-row={!showTimeDimensionDetail}
         class:left-shift={extraLeftPadding}
@@ -173,7 +174,8 @@
         class:size-full={!$dynamicHeight}
       >
         <div
-          class="pt-2 flex-none"
+          class="flex-none pl-4"
+          class:pt-2={!showTimeDimensionDetail}
           style:width={showTimeDimensionDetail ? "auto" : `${metricsWidth}px`}
         >
           {#key exploreName}
@@ -191,14 +193,13 @@
         </div>
 
         {#if showTimeDimensionDetail && expandedMeasureName}
-          <hr class="border-t -ml-4" />
           <TimeDimensionDisplay
             {exploreName}
             {expandedMeasureName}
             hideStartPivotButton={hidePivot}
           />
         {:else}
-          <div class="relative flex-none bg-gray-200 w-[1px]">
+          <div class="relative flex-none bg-border w-[1px]">
             <Resizer
               dimension={metricsWidth}
               min={MIN_TIMESERIES_WIDTH}

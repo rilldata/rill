@@ -217,12 +217,12 @@
     @apply mb-4 w-full;
   }
   .title {
-    @apply text-sm font-semibold text-foreground mb-2;
+    @apply text-sm font-semibold text-fg-primary mb-2;
   }
   .canvas {
     @apply relative w-full overflow-hidden rounded-lg border;
     border-color: var(--border, #e5e7eb);
-    background-color: var(--surface, #ffffff);
+    background-color: var(--surface-background, #ffffff);
     height: 260px;
   }
 </style>

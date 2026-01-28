@@ -139,7 +139,7 @@
               })}
             >
               {formatInteger(item.count)}
-              <span class="ui-copy-inactive pl-2">
+              <span class="text-fg-disabled pl-2">
                 {@html ensureSpaces(percentage)}</span
               >
             </button>

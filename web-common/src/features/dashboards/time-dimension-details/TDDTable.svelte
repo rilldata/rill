@@ -86,15 +86,15 @@
     const classesToAdd = ["text-right"];
     const classesToRemove = [
       "border-b",
-      "bg-surface",
+      "bg-surface-base",
       "bg-gray-100",
       "bg-gray-200",
       "bg-primary-50",
       "bg-primary-100",
       "bg-primary-200",
-      "bg-slate-50",
-      "bg-slate-100",
-      "bg-slate-200",
+      "bg-surface-base",
+      "bg-gray-100",
+      "bg-gray-200",
     ];
 
     if (pinIndex > -1 && comparing === "dimension" && data.y === pinIndex + 1) {
@@ -214,7 +214,11 @@
       x - tableData?.fixedColCount,
     );
     if (x > 0) {
-      element.classList.remove("bg-slate-50", "bg-slate-100", "bg-slate-200");
+      element.classList.remove(
+        "bg-surface-background",
+        "bg-gray-100",
+        "bg-gray-200",
+      );
       element.classList.add(cellBgColor);
     }
     if (x === 0) {
@@ -223,15 +227,15 @@
 
       // Gray out rows which are not included
       if (marker.muted) {
-        element?.parentElement?.classList.add("ui-copy-disabled-faint");
+        element?.parentElement?.classList.add("text-fg-muted");
       } else {
-        element?.parentElement?.classList.remove("ui-copy-disabled-faint");
+        element?.parentElement?.classList.remove("text-fg-muted");
       }
 
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center pointer-events-none  w-full h-full overflow-hidden pr-2 gap-1">
         <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
-        <div class="truncate text-xs ${value.value === null ? "italic text-gray-500" : ""} ${fontWeight}">${total}</div></div>`;
+        <div class="truncate text-xs ${value.value === null ? "italic text-fg-muted" : ""} ${fontWeight}">${total}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs pointer-events-none font-semibold text-right flex items-center justify-end gap-2" >
         ${total}
@@ -242,7 +246,7 @@
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
-    data.element.classList.add("bg-surface", "z-10");
+    data.element.classList.add("bg-surface-background", "z-10");
     if (data.x === 0) {
       const pinIcon = getPinIcon();
       return `
@@ -396,7 +400,7 @@
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
-  class="w-full relative h-full select-none"
+  class="w-full relative h-full select-none pl-4 bg-surface-base"
 >
   <Pivot
     bind:this={pivot}
