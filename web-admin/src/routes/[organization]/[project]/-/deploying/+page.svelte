@@ -28,8 +28,6 @@
     dashboardsErrored: false,
   });
 
-  $: console.log("deployingDashboardsData", $deployingDashboardResp);
-
   let redirected = false;
   $: if (redirectPath && !redirected) {
     if (dashboardsErrored) {

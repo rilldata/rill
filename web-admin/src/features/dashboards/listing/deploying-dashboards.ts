@@ -19,24 +19,11 @@ export function useDeployingDashboards(
   redirectPath: string | null;
   dashboardsErrored: boolean;
 }> {
-  console.log(
-    "useDeployingDashboards",
-    instanceId,
-    orgName,
-    projName,
-    deployingDashboard,
-  );
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
         const resources = data.resources ?? [];
         const dashboards = resources.filter(isDashboard);
-        console.log(
-          "useDeployingDashboards select",
-          dashboards.map(
-            (d) => `${d.meta?.name?.name}:${d.meta?.reconcileStatus}`,
-          ),
-        );
 
         const reconciling = getDashboardsReconciling(
           dashboards,

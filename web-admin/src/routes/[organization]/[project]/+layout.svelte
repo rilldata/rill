@@ -134,6 +134,8 @@
     projectData?.deployment?.status ===
       V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
 
+  // Refetch list resource query when project query stops fetching.
+  // This needs to happen when deployment status changes from updating to running after a redeploy.
   let prevProjectFetching = false;
   $: if (prevProjectFetching !== projectFetching) {
     prevProjectFetching = projectFetching;
