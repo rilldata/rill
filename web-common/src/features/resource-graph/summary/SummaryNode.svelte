@@ -54,14 +54,12 @@
 
   const DEFAULT_COLOR = "#6B7280";
 
-  // Normalize Source to Model (Source is deprecated, merged with Model)
-  $: normalizedKind =
-    data?.kind === ResourceKind.Source ? ResourceKind.Model : data?.kind;
+  $: kind = data.kind;
   $: color =
-    normalizedKind && resourceShorthandMapping[normalizedKind]
-      ? `var(--${resourceShorthandMapping[normalizedKind]})`
+    kind && resourceShorthandMapping[kind]
+      ? `var(--${resourceShorthandMapping[kind]})`
       : DEFAULT_COLOR;
-  $: Icon = (normalizedKind && resourceIconMapping[normalizedKind]) || null;
+  $: Icon = resourceIconMapping[data?.kind] || null;
   $: label = data?.label ?? "";
   $: count = data?.count ?? 0;
   $: isActive = data?.active ?? selected;
@@ -73,10 +71,9 @@
 
     const kind = data?.kind;
     let token: string | null = null;
-    // Sources and Models are merged (Source is deprecated)
-    if (kind === ResourceKind.Source || kind === ResourceKind.Model)
-      token = "models";
+    if (kind === ResourceKind.Source) token = "sources";
     else if (kind === ResourceKind.MetricsView) token = "metrics";
+    else if (kind === ResourceKind.Model) token = "models";
     else if (kind === ResourceKind.Explore || kind === ResourceKind.Canvas)
       token = "dashboards";
     if (token) goto(`/graph?kind=${token}`);

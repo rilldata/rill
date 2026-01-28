@@ -539,17 +539,12 @@ export function partitionResourcesBySeeds(
   // If filtering by a specific kind, remove groups that don't contain any resource of that kind
   // Use coerceResourceKind to handle "defined-as-source" models correctly
   // Special case: "dashboards" includes both Explore and Canvas
-  // Special case: "models" includes both Source and Model (merged, Source is deprecated)
   if (filterKind) {
     return groups.filter((group) =>
       group.resources.some((r) => {
         const kind = coerceResourceKind(r);
         if (filterKind === "dashboards") {
           return kind === ResourceKind.Explore || kind === ResourceKind.Canvas;
-        }
-        if (filterKind === ResourceKind.Model) {
-          // Include both Source and Model when filtering by models
-          return kind === ResourceKind.Source || kind === ResourceKind.Model;
         }
         return kind === filterKind;
       }),

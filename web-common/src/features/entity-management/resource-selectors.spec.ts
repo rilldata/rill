@@ -4,13 +4,14 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
 describe("resource-selectors", () => {
   describe("coerceResourceKind", () => {
-    it("should return Model kind for normal models", () => {
+    it("should return Model kind for models with model dependencies", () => {
       const resource: V1Resource = {
         meta: {
           name: {
             kind: ResourceKind.Model,
             name: "orders",
           },
+          refs: [{ kind: ResourceKind.Model, name: "raw_orders" }],
         },
         model: {
           spec: {
@@ -24,13 +25,56 @@ describe("resource-selectors", () => {
       expect(coerceResourceKind(resource)).toBe(ResourceKind.Model);
     });
 
-    it("should return Model kind for models defined-as-source (Source is deprecated)", () => {
+    it("should return Source kind for root models with no model dependencies", () => {
       const resource: V1Resource = {
         meta: {
           name: {
             kind: ResourceKind.Model,
             name: "raw_orders",
           },
+          refs: [], // No model refs - this is a root model
+        },
+        model: {
+          spec: {
+            definedAsSource: false,
+          },
+          state: {
+            resultTable: "raw_orders",
+          },
+        },
+      };
+      expect(coerceResourceKind(resource)).toBe(ResourceKind.Source);
+    });
+
+    it("should return Source kind for models with only connector refs (no model refs)", () => {
+      const resource: V1Resource = {
+        meta: {
+          name: {
+            kind: ResourceKind.Model,
+            name: "raw_data",
+          },
+          refs: [{ kind: ResourceKind.Connector, name: "duckdb" }],
+        },
+        model: {
+          spec: {
+            definedAsSource: false,
+          },
+          state: {
+            resultTable: "raw_data",
+          },
+        },
+      };
+      expect(coerceResourceKind(resource)).toBe(ResourceKind.Source);
+    });
+
+    it("should return Source kind for models defined-as-source with matching table name", () => {
+      const resource: V1Resource = {
+        meta: {
+          name: {
+            kind: ResourceKind.Model,
+            name: "raw_orders",
+          },
+          refs: [{ kind: ResourceKind.Model, name: "other_model" }],
         },
         model: {
           spec: {
@@ -41,11 +85,33 @@ describe("resource-selectors", () => {
           },
         },
       };
-      // Models defined-as-source are now treated as Models (Source is deprecated)
+      // definedAsSource takes precedence even with model refs
+      expect(coerceResourceKind(resource)).toBe(ResourceKind.Source);
+    });
+
+    it("should return Model kind for models defined-as-source with non-matching table name", () => {
+      const resource: V1Resource = {
+        meta: {
+          name: {
+            kind: ResourceKind.Model,
+            name: "raw_orders",
+          },
+          refs: [{ kind: ResourceKind.Model, name: "other_model" }],
+        },
+        model: {
+          spec: {
+            definedAsSource: true,
+          },
+          state: {
+            resultTable: "different_table",
+          },
+        },
+      };
+      // Has model deps and definedAsSource doesn't match table name
       expect(coerceResourceKind(resource)).toBe(ResourceKind.Model);
     });
 
-    it("should normalize Source to Model (Source is deprecated)", () => {
+    it("should pass through Source kind unchanged", () => {
       const resource: V1Resource = {
         meta: {
           name: {
@@ -59,8 +125,7 @@ describe("resource-selectors", () => {
           },
         },
       };
-      // Source is normalized to Model (Source is deprecated)
-      expect(coerceResourceKind(resource)).toBe(ResourceKind.Model);
+      expect(coerceResourceKind(resource)).toBe(ResourceKind.Source);
     });
 
     it("should pass through MetricsView kind unchanged", () => {
@@ -93,13 +158,14 @@ describe("resource-selectors", () => {
       expect(coerceResourceKind(resource)).toBe(ResourceKind.Explore);
     });
 
-    it("should handle case where definedAsSource is false explicitly", () => {
+    it("should return Source for models with undefined refs (treated as no model deps)", () => {
       const resource: V1Resource = {
         meta: {
           name: {
             kind: ResourceKind.Model,
             name: "orders",
           },
+          // No refs property - should be treated as no model dependencies
         },
         model: {
           spec: {
@@ -110,8 +176,7 @@ describe("resource-selectors", () => {
           },
         },
       };
-      // Even though table name matches, definedAsSource is false
-      expect(coerceResourceKind(resource)).toBe(ResourceKind.Model);
+      expect(coerceResourceKind(resource)).toBe(ResourceKind.Source);
     });
   });
 });

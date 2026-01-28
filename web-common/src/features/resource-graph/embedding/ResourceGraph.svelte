@@ -43,16 +43,19 @@
   export let gridColumns: number = UI_CONFIG.DEFAULT_GRID_COLUMNS;
   export let expandedHeightMobile: string = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
   export let expandedHeightDesktop: string = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
+  export let isOverlay = false;
 
   type SummaryMemo = {
+    sources: number;
     models: number;
     metrics: number;
     dashboards: number;
     resources: V1Resource[];
-    activeToken: "metrics" | "models" | "dashboards" | null;
+    activeToken: "sources" | "metrics" | "models" | "dashboards" | null;
   };
   function summaryEquals(a: SummaryMemo, b: SummaryMemo) {
     return (
+      a.sources === b.sources &&
       a.models === b.models &&
       a.metrics === b.metrics &&
       a.dashboards === b.dashboards &&
@@ -76,7 +79,6 @@
   // Determine if we're filtering by a specific kind (e.g., ?kind=metrics)
   // This is used to filter out groups that don't contain any resource of the filtered kind
   // Special case: "dashboards" includes both Explore and Canvas
-  // Special case: Source is normalized to Model (Source is deprecated)
   $: filterKind = (function (): ResourceKind | "dashboards" | undefined {
     const rawSeeds = seeds ?? [];
     // Only apply kind filter if all seeds are kind tokens (e.g., ["metrics"] or ["sources"])
@@ -91,18 +93,13 @@
       return "dashboards"; // Special token to indicate both Explore and Canvas
     }
     // All seeds are kind tokens - return the first one's kind
-    // Normalize Source to Model (Source is deprecated, merged with Model)
-    const kind = isKindToken(firstSeed);
-    if (kind === ResourceKind.Source) {
-      return ResourceKind.Model;
-    }
-    return kind;
+    return isKindToken(firstSeed);
   })();
 
   // Determine which overview node should be highlighted based on current seeds
-  // Sources are normalized to models (Source is deprecated)
   // For Canvas with MetricsView seeds, prioritize the Canvas token (dashboards) over MetricsView tokens
   $: overviewActiveToken = (function ():
+    | "sources"
     | "metrics"
     | "models"
     | "dashboards"
@@ -163,22 +160,24 @@
   // Compute resource counts for the summary graph header.
   // We compute directly in a single pass rather than using filter().length for performance.
   // This is more efficient (O(n) instead of O(4n)) and clearer in intent.
-  // Sources and Models are merged since Source is deprecated.
-  $: ({ modelsCount, metricsCount, dashboardsCount } =
+  $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } =
     (function computeCounts() {
-      let models = 0,
+      let sources = 0,
+        models = 0,
         metrics = 0,
         dashboards = 0;
       for (const r of normalizedResources) {
         if (r?.meta?.hidden) continue;
         const k = coerceResourceKind(r);
         if (!k) continue;
-        if (k === ResourceKind.Source || k === ResourceKind.Model) models++;
+        if (k === ResourceKind.Source) sources++;
+        else if (k === ResourceKind.Model) models++;
         else if (k === ResourceKind.MetricsView) metrics++;
         else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
           dashboards++;
       }
       return {
+        sourcesCount: sources,
         modelsCount: models,
         metricsCount: metrics,
         dashboardsCount: dashboards,
@@ -190,6 +189,7 @@
   // even if counts haven't actually changed. The summaryEquals function does shallow comparison
   // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
+    sources: 0,
     models: 0,
     metrics: 0,
     dashboards: 0,
@@ -198,6 +198,7 @@
   };
   $: {
     const nextSummary: SummaryMemo = {
+      sources: sourcesCount,
       models: modelsCount,
       metrics: metricsCount,
       dashboards: dashboardsCount,
@@ -414,12 +415,14 @@
   {#if showSummary && currentExpandedId === null}
     <slot
       name="summary"
+      {sourcesCount}
       {metricsCount}
       {modelsCount}
       dashboards={dashboardsCount}
     >
       <div class="top-summary">
         <SummaryGraph
+          sources={summaryMemo.sources}
           metrics={summaryMemo.metrics}
           models={summaryMemo.models}
           dashboards={summaryMemo.dashboards}
@@ -494,6 +497,7 @@
               showLock={false}
               fillParent={true}
               enableExpand={enableExpansion}
+              {isOverlay}
               {fitViewPadding}
               {fitViewMinZoom}
               {fitViewMaxZoom}
@@ -520,6 +524,7 @@
                 showLock={true}
                 fillParent={false}
                 enableExpand={enableExpansion}
+                {isOverlay}
                 {fitViewPadding}
                 {fitViewMinZoom}
                 {fitViewMaxZoom}

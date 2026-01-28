@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Handle, Position, NodeToolbar } from "@xyflow/svelte";
+  import { Handle, Position } from "@xyflow/svelte";
   import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     resourceIconMapping,
@@ -7,10 +7,22 @@
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { ResourceNodeData } from "../shared/types";
-  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
+  import {
+    V1ReconcileStatus,
+    createRuntimeServiceCreateTrigger,
+  } from "@rilldata/web-common/runtime-client";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { goto } from "$app/navigation";
-  import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
+  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { GitFork } from "lucide-svelte";
+  import { builderActions, getAttrs } from "bits-ui";
 
   export let id: string;
   export let type: string;
@@ -54,15 +66,13 @@
   const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
 
   $: kind = data?.kind;
-  // Normalize Source to Model (Source is deprecated, merged with Model)
-  $: normalizedKind = kind === ResourceKind.Source ? ResourceKind.Model : kind;
   $: icon =
-    normalizedKind && resourceIconMapping[normalizedKind]
-      ? resourceIconMapping[normalizedKind]
+    kind && resourceIconMapping[kind]
+      ? resourceIconMapping[kind]
       : DEFAULT_ICON;
   $: color =
-    normalizedKind && resourceShorthandMapping[normalizedKind]
-      ? `var(--${resourceShorthandMapping[normalizedKind]})`
+    kind && resourceShorthandMapping[kind]
+      ? `var(--${resourceShorthandMapping[kind]})`
       : DEFAULT_COLOR;
   $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
   $: hasError = !!data?.resource?.meta?.reconcileError;
@@ -77,22 +87,29 @@
   $: effectiveStatusLabel = hasError ? "error" : statusLabel;
   $: routeHighlighted = (data as any)?.routeHighlighted === true;
 
-  let showError = false;
-  function handleClick() {
-    if (hasError && data?.resource?.meta?.reconcileError) {
-      showError = !showError;
-    }
-  }
-
   $: resourceName = data?.resource?.meta?.name?.name ?? "";
-  $: resourceKind = kind; // already normalized ResourceKind
+  $: resourceKind = kind;
+  // Use original kind from resource meta for artifact lookup (not coerced kind)
+  // because file artifacts are stored by the resource's actual kind
+  $: originalKind = (data?.resource?.meta?.name?.kind ?? kind) as ResourceKind;
   $: artifact =
-    resourceName && resourceKind
-      ? fileArtifacts.findFileArtifact(resourceKind, resourceName)
+    resourceName && originalKind
+      ? fileArtifacts.findFileArtifact(originalKind, resourceName)
       : undefined;
 
-  function openFile(e?: MouseEvent) {
-    e?.stopPropagation();
+  // Dropdown menu state
+  let menuOpen = false;
+
+  // Refresh functionality
+  const triggerMutation = createRuntimeServiceCreateTrigger();
+  $: ({ instanceId } = $runtime);
+  // Source Models and Models can both be refreshed
+  $: isModelOrSource =
+    kind === ResourceKind.Model || kind === ResourceKind.Source;
+  $: isInOverlay = (data as any)?.isOverlay === true;
+  $: isRefreshing = $triggerMutation.isPending;
+
+  function openFile() {
     if (!artifact?.path) return;
 
     // Set code view preference for this file
@@ -106,114 +123,228 @@
 
     goto(`/files${artifact.path}`);
   }
+
+  function handleRefresh() {
+    if (!isModelOrSource || !data?.resource?.meta?.name?.name || isRefreshing)
+      return;
+
+    void $triggerMutation.mutateAsync({
+      instanceId,
+      data: {
+        models: [{ model: data.resource.meta.name.name, full: true }],
+      },
+    });
+  }
+
+  function handleViewGraph() {
+    if (!data?.resource?.meta?.name) return;
+
+    const resourceKindName = data.resource.meta.name.kind;
+    const resourceNameValue = data.resource.meta.name.name;
+
+    // Determine kind token for URL
+    let kindToken = "models";
+    if (resourceKindName === "rill.runtime.v1.MetricsView") {
+      kindToken = "metrics";
+    } else if (
+      resourceKindName === "rill.runtime.v1.Explore" ||
+      resourceKindName === "rill.runtime.v1.Canvas"
+    ) {
+      kindToken = "dashboards";
+    }
+
+    // Build expanded ID (ResourceKind:Name format)
+    const expandedId = encodeURIComponent(
+      `${resourceKindName}:${resourceNameValue}`,
+    );
+
+    goto(`/graph?kind=${kindToken}&expanded=${expandedId}`);
+  }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div
-  class="node"
-  class:selected
-  class:route-highlighted={routeHighlighted}
-  class:error={hasError}
-  class:root={data?.isRoot}
-  style:--node-accent={color}
-  style:width={width ? `${width}px` : undefined}
-  data-kind={kind}
-  on:click={handleClick}
-  role="button"
-  tabindex="0"
-  on:keydown={(e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleClick();
-    }
-  }}
->
-  <Handle
-    id="target"
-    type="target"
-    position={Position.Top}
-    isConnectable={isConnectable ?? true}
-  />
-  <Handle
-    id="source"
-    type="source"
-    position={Position.Bottom}
-    isConnectable={isConnectable ?? true}
-  />
-  <div class="icon-wrapper" style={`background:${color}20`}>
-    <svelte:component this={icon} size="20px" {color} />
-  </div>
-  <div class="details">
-    <p class="title" title={data?.label}>{data?.label}</p>
-    <p class="meta">
-      {#if normalizedKind}
-        {displayResourceKind(normalizedKind)}
-      {:else}
-        Unknown
-      {/if}
-    </p>
-    {#if effectiveStatusLabel}
-      <p
-        class="status"
-        class:error={hasError}
-        title={hasError ? data?.resource?.meta?.reconcileError : undefined}
-      >
-        {effectiveStatusLabel}
-      </p>
-    {/if}
-  </div>
-
-  <NodeToolbar
-    isVisible={selected && !hasError && !!artifact?.path}
-    position={Position.Top}
-    align="center"
-    offset={4}
-  >
-    <button
-      class="toolbar-open-btn"
-      aria-label="Open in code"
-      title={`Open ${artifact?.path}`}
-      on:click|stopPropagation={openFile}
+{#if hasError}
+  <Tooltip location="top" distance={8} activeDelay={150}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div
+      class="node"
+      class:selected
+      class:route-highlighted={routeHighlighted}
+      class:error={hasError}
+      class:root={data?.isRoot}
+      style:--node-accent={color}
+      style:width={width ? `${width}px` : undefined}
+      data-kind={kind}
+      role="button"
+      tabindex="0"
     >
-      <ExternalLink size="12px" />
-      <span>Open</span>
-    </button>
-  </NodeToolbar>
+      <Handle
+        id="target"
+        type="target"
+        position={Position.Top}
+        isConnectable={isConnectable ?? true}
+      />
+      <Handle
+        id="source"
+        type="source"
+        position={Position.Bottom}
+        isConnectable={isConnectable ?? true}
+      />
 
-  {#if showError && hasError}
-    <div class="error-popover" role="alert">
-      <div class="error-popover-header">
-        <span class="error-title">Error</span>
-        <div class="error-actions">
-          {#if artifact?.path}
-            <a
-              href={`/files${artifact.path}`}
-              class="error-open"
-              on:click|stopPropagation={openFile}
-              title={`Open ${artifact.path}`}>Open YAML</a
-            >
-          {/if}
-          <button
-            class="error-close"
-            aria-label="Close error"
-            on:click|stopPropagation={() => (showError = false)}
-          >
-            ✕
-          </button>
+      <!-- Dropdown menu in top-right -->
+      {#if !isInOverlay}
+        <div class="node-menu">
+          <DropdownMenu.Root bind:open={menuOpen}>
+            <DropdownMenu.Trigger asChild let:builder>
+              <button
+                class="menu-trigger"
+                class:visible={menuOpen}
+                aria-label="Node actions"
+                use:builderActions={{ builders: [builder] }}
+                {...getAttrs([builder])}
+                on:click|stopPropagation
+              >
+                <MoreHorizontal size="14px" />
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start" side="right" sideOffset={4}>
+              {#if artifact?.path}
+                <NavigationMenuItem on:click={openFile}>
+                  <EditIcon slot="icon" />
+                  Edit YAML
+                </NavigationMenuItem>
+              {/if}
+              {#if isModelOrSource}
+                <NavigationMenuItem
+                  on:click={handleRefresh}
+                  disabled={isRefreshing}
+                >
+                  <RefreshIcon slot="icon" size="14px" />
+                  {isRefreshing ? "Refreshing..." : "Refresh"}
+                </NavigationMenuItem>
+              {/if}
+              <NavigationMenuItem on:click={handleViewGraph}>
+                <GitFork slot="icon" size="14px" />
+                View lineage
+              </NavigationMenuItem>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </div>
+      {/if}
+
+      <div class="icon-wrapper" style={`background:${color}20`}>
+        <svelte:component this={icon} size="16px" {color} />
       </div>
-      <pre
-        class="error-message"
-        title={data?.resource?.meta?.reconcileError}>{data?.resource?.meta
-          ?.reconcileError}</pre>
+      <div class="details">
+        <p class="title" title={data?.label}>{data?.label}</p>
+        <p class="meta">
+          {#if kind}
+            {displayResourceKind(kind)}
+          {:else}
+            Unknown
+          {/if}
+        </p>
+        <p class="status error">{effectiveStatusLabel}</p>
+      </div>
     </div>
-  {/if}
-</div>
+    <TooltipContent slot="tooltip-content" maxWidth="420px">
+      <div class="error-tooltip-content">
+        <span class="error-tooltip-title">Error</span>
+        <pre class="error-tooltip-message">{data?.resource?.meta
+            ?.reconcileError}</pre>
+      </div>
+    </TooltipContent>
+  </Tooltip>
+{:else}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+    class="node"
+    class:selected
+    class:route-highlighted={routeHighlighted}
+    class:root={data?.isRoot}
+    style:--node-accent={color}
+    style:width={width ? `${width}px` : undefined}
+    data-kind={kind}
+    role="button"
+    tabindex="0"
+  >
+    <Handle
+      id="target"
+      type="target"
+      position={Position.Top}
+      isConnectable={isConnectable ?? true}
+    />
+    <Handle
+      id="source"
+      type="source"
+      position={Position.Bottom}
+      isConnectable={isConnectable ?? true}
+    />
+
+    <!-- Dropdown menu in top-right -->
+    {#if !isInOverlay}
+      <div class="node-menu">
+        <DropdownMenu.Root bind:open={menuOpen}>
+          <DropdownMenu.Trigger asChild let:builder>
+            <button
+              class="menu-trigger"
+              class:visible={menuOpen}
+              aria-label="Node actions"
+              use:builderActions={{ builders: [builder] }}
+              {...getAttrs([builder])}
+              on:click|stopPropagation
+            >
+              <MoreHorizontal size="14px" />
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="start" side="right" sideOffset={4}>
+            {#if artifact?.path}
+              <NavigationMenuItem on:click={openFile}>
+                <EditIcon slot="icon" />
+                Edit YAML
+              </NavigationMenuItem>
+            {/if}
+            {#if isModelOrSource}
+              <NavigationMenuItem
+                on:click={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshIcon slot="icon" size="14px" />
+                {isRefreshing ? "Refreshing..." : "Refresh"}
+              </NavigationMenuItem>
+            {/if}
+            <NavigationMenuItem on:click={handleViewGraph}>
+              <GitFork slot="icon" size="14px" />
+              View lineage
+            </NavigationMenuItem>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </div>
+    {/if}
+
+    <div class="icon-wrapper" style={`background:${color}20`}>
+      <svelte:component this={icon} size="16px" {color} />
+    </div>
+    <div class="details">
+      <p class="title" title={data?.label}>{data?.label}</p>
+      <p class="meta">
+        {#if kind}
+          {displayResourceKind(kind)}
+        {:else}
+          Unknown
+        {/if}
+      </p>
+      {#if effectiveStatusLabel}
+        <p class="status">{effectiveStatusLabel}</p>
+      {/if}
+    </div>
+  </div>
+{/if}
 
 <style lang="postcss">
   .node {
-    @apply relative border flex items-center gap-x-3 rounded-lg border bg-surface-subtle px-3 py-2 cursor-pointer shadow-sm;
+    @apply relative border flex items-center gap-x-2 rounded-lg border bg-surface-subtle px-2.5 py-1.5 cursor-pointer shadow-sm;
     border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
     transition:
       box-shadow 120ms ease,
@@ -243,45 +374,8 @@
     @apply border-red-300;
   }
 
-  .error-popover {
-    @apply absolute -top-2 left-1/2 z-20 w-[420px] max-w-[70vw] -translate-y-full -translate-x-1/2 rounded-md border border-red-300 bg-red-50 shadow-lg;
-  }
-
-  .error-popover-header {
-    @apply flex items-center justify-between px-3 py-2 border-b border-red-200 gap-2;
-  }
-
-  .error-title {
-    @apply text-xs font-semibold text-red-700 uppercase tracking-wide;
-  }
-
-  .error-close {
-    @apply h-6 w-6 rounded border border-red-300 bg-surface-background text-xs text-red-600;
-    line-height: 1rem;
-  }
-
-  .error-close:hover {
-    @apply bg-red-50 text-red-700;
-  }
-
-  .error-actions {
-    @apply flex items-center gap-2;
-  }
-
-  .error-open {
-    @apply text-xs text-red-700 underline;
-  }
-
-  .error-open:hover {
-    @apply text-red-800;
-  }
-
-  .error-message {
-    @apply m-3 max-h-[40vh] overflow-auto whitespace-pre-wrap text-xs text-red-700;
-  }
-
   .icon-wrapper {
-    @apply flex h-10 w-10 items-center justify-center rounded-md;
+    @apply flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md;
   }
 
   .details {
@@ -304,37 +398,46 @@
     @apply not-italic text-red-600;
   }
 
-  .toolbar-open-btn {
-    @apply h-7 px-3 rounded-[2px] border flex items-center justify-center gap-x-1.5 shadow-sm transition-colors;
-    @apply text-xs font-medium;
-    @apply bg-primary-600 text-white border-primary-600;
+  /* Node menu (... dropdown) */
+  .node-menu {
+    @apply absolute top-1 right-1 z-10;
   }
 
-  .toolbar-open-btn:focus {
+  .menu-trigger {
+    @apply h-6 w-6 rounded flex items-center justify-center;
+    @apply text-fg-secondary bg-transparent;
+    @apply opacity-0 transition-opacity duration-150;
+  }
+
+  /* Show on hover or when menu is open */
+  .node:hover .menu-trigger,
+  .menu-trigger.visible {
+    @apply opacity-100;
+  }
+
+  .menu-trigger:hover {
+    @apply bg-surface-muted text-fg-primary;
+  }
+
+  .menu-trigger:focus {
     @apply outline-none;
   }
 
-  .toolbar-open-btn:focus-visible {
-    @apply ring-2 ring-primary-400/60 ring-offset-1;
+  .menu-trigger:focus-visible {
+    @apply ring-2 ring-primary-400/60;
   }
 
-  .toolbar-open-btn:hover {
-    @apply bg-primary-700 border-primary-700;
+  /* Error tooltip styling */
+  .error-tooltip-content {
+    @apply flex flex-col gap-y-1;
   }
 
-  .toolbar-open-btn:active {
-    @apply bg-primary-800 border-primary-800;
+  .error-tooltip-title {
+    @apply text-xs font-semibold text-red-400 uppercase tracking-wide;
   }
 
-  .toolbar-open-btn :global(svg) {
-    width: 12px;
-    height: 12px;
-    display: block;
-    flex-shrink: 0;
-  }
-
-  .toolbar-open-btn :global(svg path) {
-    fill: currentColor;
+  .error-tooltip-message {
+    @apply max-h-[200px] overflow-auto whitespace-pre-wrap text-xs;
   }
 
   /* Make handles small circular dots, tinted by the node accent */
