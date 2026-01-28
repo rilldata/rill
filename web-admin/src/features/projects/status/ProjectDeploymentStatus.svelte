@@ -3,7 +3,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { deploymentChipDisplays } from "./display-utils";
-  import { useProjectDeployment } from "./selectors";
+  import { useProjectDeployment, useRuntimeVersion } from "./selectors";
 
   export let organization: string;
   export let project: string;
@@ -16,10 +16,19 @@
     deploymentChipDisplays[
       deployment?.status || V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED
     ];
+
+  // Version info
+  $: runtimeVersionQuery = useRuntimeVersion();
+  $: version = $runtimeVersionQuery.data?.version || "unknown";
 </script>
 
 <section class="deployment-status">
-  <h3 class="deployment-label">Deployment</h3>
+  <!-- Version Info -->
+  <h3 class="section-label">Version</h3>
+  <span class="version-value">{version}</span>
+
+  <!-- Deployment Status -->
+  <h3 class="section-label mt-3">Deployment</h3>
   {#if isLoading}
     <div class="py-1">
       <Spinner status={EntityStatus.Running} size="16px" />
@@ -51,7 +60,7 @@
     @apply flex flex-col gap-y-1;
   }
 
-  .deployment-label {
+  .section-label {
     @apply text-[10px] leading-none font-semibold uppercase;
     @apply text-fg-secondary;
   }
@@ -59,5 +68,9 @@
   .deployment-status-tag-wrapper {
     @apply px-2 border rounded w-fit;
     @apply flex space-x-1 items-center;
+  }
+
+  .version-value {
+    @apply text-fg-primary text-[11px];
   }
 </style>

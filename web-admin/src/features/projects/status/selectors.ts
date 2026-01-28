@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-admin/client";
 import {
   createRuntimeServiceListResources,
+  createRuntimeServicePing,
   type V1ListResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -46,4 +47,12 @@ export function useResources(instanceId: string) {
       },
     },
   );
+}
+
+export function useRuntimeVersion() {
+  return createRuntimeServicePing({
+    query: {
+      staleTime: 60000, // Cache for 1 minute
+    },
+  });
 }

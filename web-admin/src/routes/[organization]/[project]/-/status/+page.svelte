@@ -5,6 +5,7 @@
   import ProjectGithubConnection from "@rilldata/web-admin/features/projects/github/ProjectGithubConnection.svelte";
   import ProjectParseErrors from "@rilldata/web-admin/features/projects/status/ProjectParseErrors.svelte";
   import ProjectResources from "@rilldata/web-admin/features/projects/status/ProjectResources.svelte";
+  import ProjectLogs from "@rilldata/web-admin/features/projects/status/ProjectLogs.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -19,5 +20,6 @@
 
     <ProjectResources />
     <ProjectParseErrors />
+    <ProjectLogs />
   </div>
 </ContentContainer>
