@@ -45,8 +45,6 @@ When you add an Azure Blob Storage data model through the Rill UI, you'll see fo
 Azure CLI authentication is only available through manual configuration. See [Method 5: Azure CLI Authentication](#method-5-azure-cli-authentication-local-development-only) for setup instructions.
 :::
 
----
-
 ## Method 1: Storage Account Key (Recommended)
 
 Storage Account Key credentials provide reliable authentication for Azure Blob Storage. This method works for both local development and Rill Cloud deployments.
@@ -89,13 +87,13 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
+
 create_secrets_from_connectors: my_azure
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
 ```
 
 **Step 3: Add credentials to `.env`**
@@ -105,8 +103,6 @@ connector.azure.azure_storage_key=your_storage_account_key
 ```
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your storage account keys.
-
----
 
 ## Method 2: Connection String
 
@@ -144,13 +140,13 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
+
 create_secrets_from_connectors: my_azure_conn
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
 ```
 
 **Step 3: Add credentials to `.env`**
@@ -160,8 +156,6 @@ connector.azure.azure_storage_connection_string=your_connection_string
 ```
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your connection string.
-
----
 
 ## Method 3: Shared Access Signature (SAS) Token
 
@@ -201,13 +195,13 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
+
 create_secrets_from_connectors: my_azure_sas
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
 ```
 
 **Step 3: Add credentials to `.env`**
@@ -217,8 +211,6 @@ connector.azure.azure_storage_sas_token=your_sas_token
 ```
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers) to create your Azure SAS token.
-
----
 
 ## Method 4: Public Containers
 
@@ -246,15 +238,13 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('azure://publicaccount.blob.core.windows.net/my-public-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://publicaccount.blob.core.windows.net/my-public-container/path/to/data/*.parquet')
 ```
-
----
 
 ## Method 5: Azure CLI Authentication (Local Development Only)
 
@@ -279,12 +269,12 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
 ```
 
 Rill will automatically detect and use your local Azure CLI credentials when no connector is specified.
@@ -293,34 +283,19 @@ Rill will automatically detect and use your local Azure CLI credentials when no 
 This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Storage Account Key, Connection String, or SAS tokens for production deployments.
 :::
 
-## Using Azure Blob Storage Data in Models
+## Reading Different File Types
 
-Once your connector is configured (or for public containers, no connector needed), you can reference Azure Blob Storage paths in your model SQL queries using DuckDB's Azure functions.
+DuckDB supports reading various file formats directly from Azure Blob Storage:
 
-### Basic Example
+```sql
+-- Read Parquet files
+select * from read_parquet('azure://account.blob.core.windows.net/container/data/*.parquet')
 
-**With a connector (authenticated):**
+-- Read CSV files
+select * from read_csv('azure://account.blob.core.windows.net/container/data/*.csv', auto_detect=true, ignore_errors=1, header=true)
 
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Public container (no connector needed):**
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('azure://publicaccount.blob.core.windows.net/my-public-container/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+-- Read JSON files
+select * from read_json('azure://account.blob.core.windows.net/container/data/*.json', auto_detect=true, ignore_errors=1)
 ```
 
 ### Path Patterns
@@ -341,7 +316,6 @@ SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data
 SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data/2024-*.parquet')
 ```
 
----
 
 ## Deploy to Rill Cloud
 
