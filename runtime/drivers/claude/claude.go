@@ -49,7 +49,15 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Max Tokens",
 			Description: "Maximum number of tokens in the response.",
-			Default:     "4096",
+			Default:     "8192",
+		},
+		{
+			Key:         "temperature",
+			Type:        drivers.NumberPropertyType,
+			Required:    false,
+			DisplayName: "Temperature",
+			Description: "Sampling temperature to use.",
+			Default:     "0.0",
 		},
 		{
 			Key:         "base_url",
@@ -67,9 +75,9 @@ type driver struct{}
 
 var _ drivers.Driver = driver{}
 
-// HasAnonymousSourceAccess implements drivers.Driver.
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
-	return false, drivers.ErrNotImplemented
+// Spec implements drivers.Driver.
+func (d driver) Spec() drivers.Spec {
+	return spec
 }
 
 // Open implements drivers.Driver.
@@ -80,20 +88,28 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	client, err := newClaudeClient(conf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Claude client: %w", err)
+	if conf.APIKey == "" {
+		return nil, errors.New("API key is required")
 	}
 
-	return &claude{
+	opts := []option.RequestOption{
+		option.WithAPIKey(conf.APIKey),
+	}
+	if conf.BaseURL != "" {
+		opts = append(opts, option.WithBaseURL(conf.BaseURL))
+	}
+
+	client := anthropic.NewClient(opts...)
+
+	return &handle{
 		client: client,
 		config: conf,
 	}, nil
 }
 
-// Spec implements drivers.Driver.
-func (d driver) Spec() drivers.Spec {
-	return spec
+// HasAnonymousSourceAccess implements drivers.Driver.
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
+	return false, drivers.ErrNotImplemented
 }
 
 // TertiarySourceConnectors implements drivers.Driver.
@@ -102,160 +118,134 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 }
 
 type configProperties struct {
-	APIKey string `mapstructure:"api_key"`
-
+	APIKey      string  `mapstructure:"api_key"`
 	Model       string  `mapstructure:"model"`
 	MaxTokens   int     `mapstructure:"max_tokens"`
 	Temperature float64 `mapstructure:"temperature"`
-
-	BaseURL string `mapstructure:"base_url"`
+	BaseURL     string  `mapstructure:"base_url"`
 }
 
 func (c *configProperties) getModel() string {
 	if c.Model != "" {
 		return c.Model
 	}
-	return "claude-opus-4-5-20251101"
+	return string(anthropic.ModelClaudeOpus4_5_20251101)
 }
 
 func (c *configProperties) getMaxTokens() int {
 	if c.MaxTokens > 0 {
 		return c.MaxTokens
 	}
-	return 4096 // Default max tokens
+	return 8192 // Default max tokens
 }
 
-func (c *configProperties) getTemperature() float64 {
-	if c.Temperature > 0 {
-		return c.Temperature
-	}
-	return 1.0 // Default temperature
-}
-
-type claude struct {
+type handle struct {
 	client anthropic.Client
 	config *configProperties
 }
 
-var _ drivers.AIService = (*claude)(nil)
-
-// newClaudeClient creates a new Anthropic Claude client based on configuration.
-func newClaudeClient(conf *configProperties) (anthropic.Client, error) {
-	if conf.APIKey == "" {
-		return anthropic.Client{}, errors.New("API key is required")
-	}
-
-	opts := []option.RequestOption{
-		option.WithAPIKey(conf.APIKey),
-	}
-
-	if conf.BaseURL != "" {
-		opts = append(opts, option.WithBaseURL(conf.BaseURL))
-	}
-
-	return anthropic.NewClient(opts...), nil
-}
+var _ drivers.AIService = (*handle)(nil)
 
 // AsAI implements drivers.Handle.
-func (c *claude) AsAI(instanceID string) (drivers.AIService, bool) {
-	return c, true
+func (h *handle) AsAI(instanceID string) (drivers.AIService, bool) {
+	return h, true
 }
 
 // AsAdmin implements drivers.Handle.
-func (c *claude) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (h *handle) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
 // AsCatalogStore implements drivers.Handle.
-func (c *claude) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (h *handle) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // AsFileStore implements drivers.Handle.
-func (c *claude) AsFileStore() (drivers.FileStore, bool) {
+func (h *handle) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
 // AsInformationSchema implements drivers.Handle.
-func (c *claude) AsInformationSchema() (drivers.InformationSchema, bool) {
+func (h *handle) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *claude) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *claude) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	return nil, drivers.ErrNotImplemented
 }
 
 // AsNotifier implements drivers.Handle.
-func (c *claude) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 
 // AsOLAP implements drivers.Handle.
-func (c *claude) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
 // AsObjectStore implements drivers.Handle.
-func (c *claude) AsObjectStore() (drivers.ObjectStore, bool) {
+func (h *handle) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsRegistry implements drivers.Handle.
-func (c *claude) AsRegistry() (drivers.RegistryStore, bool) {
+func (h *handle) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // AsRepoStore implements drivers.Handle.
-func (c *claude) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (h *handle) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *claude) AsWarehouse() (drivers.Warehouse, bool) {
+func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // Close implements drivers.Handle.
-func (c *claude) Close() error {
+func (h *handle) Close() error {
 	return nil
 }
 
 // Config implements drivers.Handle.
-func (c *claude) Config() map[string]any {
+func (h *handle) Config() map[string]any {
 	var configMap map[string]any
-	_ = mapstructure.Decode(c.config, &configMap)
+	_ = mapstructure.Decode(h.config, &configMap)
 	return configMap
 }
 
 // Driver implements drivers.Handle.
-func (c *claude) Driver() string {
+func (h *handle) Driver() string {
 	return "claude"
 }
 
 // Migrate implements drivers.Handle.
-func (c *claude) Migrate(ctx context.Context) error {
+func (h *handle) Migrate(ctx context.Context) error {
 	return nil
 }
 
 // MigrationStatus implements drivers.Handle.
-func (c *claude) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (h *handle) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // Ping implements drivers.Handle.
-func (c *claude) Ping(ctx context.Context) error {
+func (h *handle) Ping(ctx context.Context) error {
 	return nil
 }
 
 // Complete implements drivers.AIService.
 // It sends a chat completion request to Claude and returns the response.
-func (c *claude) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
+func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
 	// Extract system messages and convert remaining messages to Claude format
 	systemPrompt, nonSystemMsgs := extractSystemMessages(opts.Messages)
 	claudeMsgs, err := convertRillMessagesToClaudeMessages(nonSystemMsgs)
@@ -286,25 +276,21 @@ func (c *claude) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 
 	// Handle structured outputs (beta feature) vs regular messages
 	if opts.OutputSchema != nil {
-		return c.completeWithStructuredOutput(ctx, claudeMsgs, claudeTools, systemBlocks, opts.OutputSchema)
+		return h.completeWithStructuredOutput(ctx, claudeMsgs, claudeTools, systemBlocks, opts.OutputSchema)
 	}
 
-	return c.completeRegular(ctx, claudeMsgs, claudeTools, systemBlocks)
+	return h.completeRegular(ctx, claudeMsgs, claudeTools, systemBlocks)
 }
 
 // completeRegular handles regular message completions without structured output.
-func (c *claude) completeRegular(ctx context.Context, messages []anthropic.MessageParam, tools []anthropic.ToolUnionParam, systemBlocks []anthropic.TextBlockParam) (*drivers.CompleteResult, error) {
+func (h *handle) completeRegular(ctx context.Context, messages []anthropic.MessageParam, tools []anthropic.ToolUnionParam, systemBlocks []anthropic.TextBlockParam) (*drivers.CompleteResult, error) {
 	params := anthropic.MessageNewParams{
-		Model:       anthropic.Model(c.config.getModel()),
-		MaxTokens:   int64(c.config.getMaxTokens()),
+		MaxTokens:   int64(h.config.getMaxTokens()),
 		Messages:    messages,
-		Temperature: anthropic.Float(c.config.getTemperature()),
+		Model:       anthropic.Model(h.config.getModel()),
+		Temperature: anthropic.Float(h.config.Temperature),
+		System:      systemBlocks,
 	}
-
-	if len(systemBlocks) > 0 {
-		params.System = systemBlocks
-	}
-
 	if len(tools) > 0 {
 		params.Tools = tools
 		params.ToolChoice = anthropic.ToolChoiceUnionParam{
@@ -312,7 +298,7 @@ func (c *claude) completeRegular(ctx context.Context, messages []anthropic.Messa
 		}
 	}
 
-	res, err := c.client.Messages.New(ctx, params)
+	res, err := h.client.Messages.New(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +311,7 @@ func (c *claude) completeRegular(ctx context.Context, messages []anthropic.Messa
 }
 
 // completeWithStructuredOutput handles completions with structured JSON output using the beta API.
-func (c *claude) completeWithStructuredOutput(ctx context.Context, messages []anthropic.MessageParam, tools []anthropic.ToolUnionParam, systemBlocks []anthropic.TextBlockParam, outputSchema any) (*drivers.CompleteResult, error) {
+func (h *handle) completeWithStructuredOutput(ctx context.Context, messages []anthropic.MessageParam, tools []anthropic.ToolUnionParam, systemBlocks []anthropic.TextBlockParam, outputSchema any) (*drivers.CompleteResult, error) {
 	// Convert messages to beta format
 	betaMessages := convertToBetaMessages(messages)
 
@@ -361,8 +347,8 @@ func (c *claude) completeWithStructuredOutput(ctx context.Context, messages []an
 	}
 
 	params := anthropic.BetaMessageNewParams{
-		Model:        anthropic.Model(c.config.getModel()),
-		MaxTokens:    int64(c.config.getMaxTokens()),
+		Model:        anthropic.Model(h.config.getModel()),
+		MaxTokens:    int64(h.config.getMaxTokens()),
 		Messages:     betaMessages,
 		Betas:        []anthropic.AnthropicBeta{"structured-outputs-2025-11-13"},
 		OutputFormat: anthropic.BetaJSONSchemaOutputFormat(schemaMap),
@@ -379,7 +365,7 @@ func (c *claude) completeWithStructuredOutput(ctx context.Context, messages []an
 		}
 	}
 
-	res, err := c.client.Beta.Messages.New(ctx, params)
+	res, err := h.client.Beta.Messages.New(ctx, params)
 	if err != nil {
 		return nil, err
 	}

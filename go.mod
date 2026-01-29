@@ -20,6 +20,7 @@ require (
 	github.com/XSAM/otelsql v0.27.0
 	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/alicebob/miniredis v2.5.0+incompatible
+	github.com/anthropics/anthropic-sdk-go v1.19.0
 	github.com/apache/arrow-go/v18 v18.4.1
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.28.7
@@ -137,8 +138,6 @@ require (
 	k8s.io/client-go v0.32.3
 	modernc.org/sqlite v1.29.6
 )
-
-require github.com/anthropics/anthropic-sdk-go v1.19.0
 
 require (
 	cel.dev/expr v0.24.0 // indirect

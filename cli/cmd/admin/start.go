@@ -93,9 +93,9 @@ type Config struct {
 	EmailSenderEmail                  string `split_words:"true"`
 	EmailSenderName                   string `split_words:"true"`
 	EmailBCC                          string `split_words:"true"`
+	AIDriver                          string `default:"" split_words:"true"`
 	OpenAIAPIKey                      string `envconfig:"openai_api_key"`
 	ClaudeAPIKey                      string `envconfig:"claude_api_key"`
-	AIDriver                          string `default:"" split_words:"true"`
 	ActivitySinkType                  string `default:"" split_words:"true"`
 	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic          string `default:"" split_words:"true"`
