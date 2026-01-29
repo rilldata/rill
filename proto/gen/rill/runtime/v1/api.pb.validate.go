@@ -10995,6 +10995,8 @@ func (m *DeveloperAgentContext) validate(all bool) error {
 
 	// no validation rules for CurrentFilePath
 
+	// no validation rules for EnableCheckpointCommits
+
 	if len(errors) > 0 {
 		return DeveloperAgentContextMultiError(errors)
 	}

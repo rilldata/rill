@@ -10,6 +10,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
 const WriteFileName = "write_file"
@@ -167,22 +168,45 @@ func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (res
 
 // maybeCreateCheckpoint creates a checkpoint if this is the 1st write file message in the current message chain.
 func (t *WriteFile) maybeCreateCheckpoint(ctx context.Context, s *Session, path string) (string, error) {
+	// Find the nearest developer agent call and make sure checkpointing is enabled.
+	nearestDevAgentCall, ok := s.LatestMessage(FilterByTool(DeveloperAgentName), FilterByType(MessageTypeCall))
+	if ok {
+		rawReq, err := s.UnmarshalMessageContent(nearestDevAgentCall)
+		if err != nil {
+			return "", err
+		}
+		var req DeveloperAgentArgs
+		err = mapstructureutil.WeakDecode(rawReq, &req)
+		if err != nil {
+			return "", err
+		}
+		if !req.EnableCheckpointCommits {
+			return "", nil
+		}
+	}
+
 	// Find a write file message in the current message chain.
-	var msg *Message
-	for i := len(s.messages) - 1; i >= 0; i-- {
-		if s.messages[i].Tool == WriteFileName && s.messages[i].Type == MessageTypeResult {
-			msg = s.messages[i]
-		}
-
-		if s.messages[i].Role == RoleUser {
-			break
+	previousWriteResult, ok := s.LatestMessage(FilterByTool(WriteFileName), FilterByType(MessageTypeResult))
+	// If there is already a write file message then make sure it has a checkpoint commit.
+	if ok {
+		nearestRoot, ok := s.LatestMessage(FilterByRoot())
+		// If the nearest root message is before the previous write file message, then there hasn't been a commit yet for this loop.
+		if !ok || nearestRoot.Time.Before(previousWriteResult.Time) {
+			rawRes, err := s.UnmarshalMessageContent(previousWriteResult)
+			if err != nil {
+				return "", err
+			}
+			var res WriteFileResult
+			err = mapstructureutil.WeakDecode(rawRes, &res)
+			if err != nil {
+				return "", err
+			}
+			if res.CheckpointCommitHash != "" {
+				return res.CheckpointCommitHash, nil
+			}
 		}
 	}
-
-	// If there is already a write file message then we dont need to create a checkpoint.
-	if msg != nil {
-		return "", nil
-	}
+	// Else, create a checkpoint commit.
 
 	repo, release, err := t.Runtime.Repo(ctx, s.InstanceID())
 	if err != nil {
