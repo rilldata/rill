@@ -119,7 +119,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 				return nil, err
 			}
 
-			_, _, metricsViews, err := t.getValidCanvasAndMetricsViews(ctx, args.Canvas)
+			_, metricsViews, err := t.getValidCanvasAndMetricsViews(ctx, args.Canvas)
 			if err != nil {
 				return nil, err
 			}
@@ -156,7 +156,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 
 	// Determine tools that can be used
-	var tools []string
+	tools := []string{}
 	if args.Explore == "" {
 		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
 	}
@@ -281,13 +281,13 @@ You should:
 {{ else if .canvas }}
 Your goal is to analyze the contents of the canvas "{{ .canvas }}", which is powered by the metrics view "{{ .metrics_views }}".
 The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
-The canvas definition has been provided in your tool calls.
+The metrics views and canvas definitions have been provided in your tool calls.
 
-Here is an overview of the settings the user has currently applied to the dashboard (Components can have local settings applied):
+Here is an overview of the settings the user has currently applied to the dashboard:
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
-{{ if .where }}Use where filters: "{{ .where }}"{{ end }}
 {{ if .where_per_metrics_view }}{{range $mv, $filter := .where_per_metrics_view}}Use where filters for metrics view "{{ $mv }}": "{{ $filter }}"
 {{end}}{{ end }}
+{{ if .canvas_component }}Merge component's dimension_filters with "and".{{ end }}
 
 You should:
 1. Carefully study the canvas and metrics view definition to understand the measures and dimensions available for analysis.
@@ -456,25 +456,16 @@ func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, explor
 	return explore, metricsView, nil
 }
 
-func (t *AnalystAgent) getValidCanvasAndMetricsViews(ctx context.Context, canvasName string) (*runtimev1.Resource, map[string]*runtimev1.Resource, map[string]*runtimev1.Resource, error) {
+func (t *AnalystAgent) getValidCanvasAndMetricsViews(ctx context.Context, canvasName string) (*runtimev1.Resource, map[string]*runtimev1.Resource, error) {
 	session := GetSession(ctx)
 
 	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), canvasName, session.Claims())
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	if resolvedCanvas == nil || resolvedCanvas.Canvas == nil {
-		return nil, nil, nil, fmt.Errorf("canvas %q not found", canvasName)
-	}
-
-	components := map[string]*runtimev1.Resource{}
-	for name, res := range resolvedCanvas.ResolvedComponents {
-		component := res.GetComponent()
-		if component == nil || component.State.ValidSpec == nil {
-			continue
-		}
-		components[name] = res
+		return nil, nil, fmt.Errorf("canvas %q not found", canvasName)
 	}
 
 	metricsViews := map[string]*runtimev1.Resource{}
@@ -486,5 +477,5 @@ func (t *AnalystAgent) getValidCanvasAndMetricsViews(ctx context.Context, canvas
 		metricsViews[mv] = res
 	}
 
-	return resolvedCanvas.Canvas, components, metricsViews, nil
+	return resolvedCanvas.Canvas, metricsViews, nil
 }

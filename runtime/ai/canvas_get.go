@@ -90,13 +90,13 @@ func (t *GetCanvas) Handler(ctx context.Context, args *GetCanvasArgs) (*GetCanva
 }
 
 func protoToJSON(spec proto.Message) map[string]any {
-	specJson, err := protojson.Marshal(spec)
+	specJSON, err := protojson.Marshal(spec)
 	if err != nil {
 		return nil
 	}
 
 	var specMap map[string]any
-	err = json.Unmarshal(specJson, &specMap)
+	err = json.Unmarshal(specJSON, &specMap)
 	if err != nil {
 		return nil
 	}
