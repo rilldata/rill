@@ -61,6 +61,55 @@ components:
                 - OPERATION_NLIKE
                 - OPERATION_CAST
             type: string
+        v1AIReportContext:
+            properties:
+                dimensions:
+                    items:
+                        type: string
+                    title: Dimensions to focus on
+                    type: array
+                explore:
+                    title: Dashboard/explore name
+                    type: string
+                measures:
+                    items:
+                        type: string
+                    title: Measures to focus on
+                    type: array
+                where:
+                    title: Filter expression
+                    type: object
+            title: AIReportContext provides optional dashboard context for AI analysis
+            type: object
+        v1AIReportData:
+            properties:
+                agent:
+                    title: Agent to use (defaults to "analyst_agent")
+                    type: string
+                comparisonTimeRange:
+                    $ref: '#/components/schemas/v1AIReportTimeRange'
+                context:
+                    $ref: '#/components/schemas/v1AIReportContext'
+                prompt:
+                    title: Optional user prompt for the agent
+                    type: string
+                timeRange:
+                    $ref: '#/components/schemas/v1AIReportTimeRange'
+            title: AIReportData contains configuration for AI-powered reports
+            type: object
+        v1AIReportTimeRange:
+            properties:
+                isoDuration:
+                    title: ISO 8601 duration (e.g., "P7D", "P1M")
+                    type: string
+                isoOffset:
+                    title: Optional offset for comparison ranges
+                    type: string
+                timeZone:
+                    title: IANA timezone (e.g., "America/New_York")
+                    type: string
+            title: AIReportTimeRange specifies a time range using ISO 8601 duration
+            type: object
         v1AddOrganizationMemberUserResponse:
             properties:
                 pendingSignup:
@@ -873,6 +922,11 @@ components:
                 openUrl:
                     type: string
                 unsubscribeUrl:
+                    type: string
+                userAttrs:
+                    title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
+                    type: object
+                userId:
                     type: string
             type: object
         v1GetServiceResponse:
@@ -1720,6 +1774,8 @@ components:
             type: object
         v1ReportOptions:
             properties:
+                aiData:
+                    $ref: '#/components/schemas/v1AIReportData'
                 canvas:
                     type: string
                 displayName:
@@ -1738,8 +1794,10 @@ components:
                 exportLimit:
                     format: uint64
                     type: string
-                filter:
-                    $ref: '#/components/schemas/v1Expression'
+                format:
+                    description: '"query" (default) or "ai_session"'
+                    title: AI-powered report configuration (used when format is "ai_session")
+                    type: string
                 intervalDuration:
                     type: string
                 queryArgsJson:
@@ -1765,10 +1823,9 @@ components:
                 webOpenMode:
                     title: |-
                         web_open_mode is used to determine how to create or disable open link for the report
-                        - send "recipient" for older reports (old behaviour)
-                        - send "creator" for reports that should be opened with creators permissions
+                        - send "recipient" for reports that should be opened with recipient's permissions - requires login
+                        - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
                         - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-                        - send "filtered" for reports that should be opened with creators permissions but with locked filters
                     type: string
                 webOpenPath:
                     description: Annotation for the subpath of <UI host>/org/project to open for the report.
@@ -6748,6 +6805,8 @@ paths:
                                     type: array
                                 executionTime:
                                     format: date-time
+                                    type: string
+                                format:
                                     type: string
                                 ownerId:
                                     type: string

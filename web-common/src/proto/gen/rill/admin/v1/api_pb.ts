@@ -12488,6 +12488,11 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   report = "";
 
   /**
+   * @generated from field: string format = 13;
+   */
+  format = "";
+
+  /**
    * @generated from field: string owner_id = 5;
    */
   ownerId = "";
@@ -12539,6 +12544,7 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "format", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "execution_time", kind: "message", T: Timestamp },
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -12627,6 +12633,18 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
    */
   unsubscribeUrl = "";
 
+  /**
+   * @generated from field: string user_id = 5;
+   */
+  userId = "";
+
+  /**
+   * user attributes of intended recipient, will be empty for creator mode and for non Rill users
+   *
+   * @generated from field: google.protobuf.Struct user_attrs = 6;
+   */
+  userAttrs?: Struct;
+
   constructor(data?: PartialMessage<GetReportMetaResponse_URLs>) {
     super();
     proto3.util.initPartial(data, this);
@@ -12639,6 +12657,8 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
     { no: 2, name: "export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "user_attrs", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_URLs {
@@ -17227,21 +17247,27 @@ export class ReportOptions extends Message<ReportOptions> {
 
   /**
    * web_open_mode is used to determine how to create or disable open link for the report
-   * - send "recipient" for older reports (old behaviour)
-   * - send "creator" for reports that should be opened with creators permissions
+   * - send "recipient" for reports that should be opened with recipient's permissions - requires login
+   * - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
    * - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-   * - send "filtered" for reports that should be opened with creators permissions but with locked filters
    *
    * @generated from field: string web_open_mode = 18;
    */
   webOpenMode = "";
 
   /**
-   * use with OPEN_MODE_FILTERED
+   * AI-powered report configuration (used when format is "ai_session")
    *
-   * @generated from field: rill.runtime.v1.Expression filter = 19;
+   * "query" (default) or "ai_session"
+   *
+   * @generated from field: string format = 21;
    */
-  filter?: Expression;
+  format = "";
+
+  /**
+   * @generated from field: rill.admin.v1.AIReportData ai_data = 22;
+   */
+  aiData?: AIReportData;
 
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
@@ -17269,7 +17295,8 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 19, name: "filter", kind: "message", T: Expression },
+    { no: 21, name: "format", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 22, name: "ai_data", kind: "message", T: AIReportData },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {
@@ -17286,6 +17313,201 @@ export class ReportOptions extends Message<ReportOptions> {
 
   static equals(a: ReportOptions | PlainMessage<ReportOptions> | undefined, b: ReportOptions | PlainMessage<ReportOptions> | undefined): boolean {
     return proto3.util.equals(ReportOptions, a, b);
+  }
+}
+
+/**
+ * AIReportData contains configuration for AI-powered reports
+ *
+ * @generated from message rill.admin.v1.AIReportData
+ */
+export class AIReportData extends Message<AIReportData> {
+  /**
+   * Agent to use (defaults to "analyst_agent")
+   *
+   * @generated from field: string agent = 1;
+   */
+  agent = "";
+
+  /**
+   * Optional user prompt for the agent
+   *
+   * @generated from field: string prompt = 2;
+   */
+  prompt = "";
+
+  /**
+   * optional time range
+   *
+   * @generated from field: rill.admin.v1.AIReportTimeRange time_range = 3;
+   */
+  timeRange?: AIReportTimeRange;
+
+  /**
+   * Optional comparison time range
+   *
+   * @generated from field: rill.admin.v1.AIReportTimeRange comparison_time_range = 4;
+   */
+  comparisonTimeRange?: AIReportTimeRange;
+
+  /**
+   * Optional dashboard context
+   *
+   * @generated from field: rill.admin.v1.AIReportContext context = 5;
+   */
+  context?: AIReportContext;
+
+  constructor(data?: PartialMessage<AIReportData>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.AIReportData";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "time_range", kind: "message", T: AIReportTimeRange },
+    { no: 4, name: "comparison_time_range", kind: "message", T: AIReportTimeRange },
+    { no: 5, name: "context", kind: "message", T: AIReportContext },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIReportData {
+    return new AIReportData().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIReportData {
+    return new AIReportData().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIReportData {
+    return new AIReportData().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIReportData | PlainMessage<AIReportData> | undefined, b: AIReportData | PlainMessage<AIReportData> | undefined): boolean {
+    return proto3.util.equals(AIReportData, a, b);
+  }
+}
+
+/**
+ * AIReportTimeRange specifies a time range using ISO 8601 duration
+ *
+ * @generated from message rill.admin.v1.AIReportTimeRange
+ */
+export class AIReportTimeRange extends Message<AIReportTimeRange> {
+  /**
+   * ISO 8601 duration (e.g., "P7D", "P1M")
+   *
+   * @generated from field: string iso_duration = 1;
+   */
+  isoDuration = "";
+
+  /**
+   * Optional offset for comparison ranges
+   *
+   * @generated from field: string iso_offset = 2;
+   */
+  isoOffset = "";
+
+  /**
+   * IANA timezone (e.g., "America/New_York")
+   *
+   * @generated from field: string time_zone = 3;
+   */
+  timeZone = "";
+
+  constructor(data?: PartialMessage<AIReportTimeRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.AIReportTimeRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "iso_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIReportTimeRange {
+    return new AIReportTimeRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIReportTimeRange {
+    return new AIReportTimeRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIReportTimeRange {
+    return new AIReportTimeRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIReportTimeRange | PlainMessage<AIReportTimeRange> | undefined, b: AIReportTimeRange | PlainMessage<AIReportTimeRange> | undefined): boolean {
+    return proto3.util.equals(AIReportTimeRange, a, b);
+  }
+}
+
+/**
+ * AIReportContext provides optional dashboard context for AI analysis
+ *
+ * @generated from message rill.admin.v1.AIReportContext
+ */
+export class AIReportContext extends Message<AIReportContext> {
+  /**
+   * Dashboard/explore name
+   *
+   * @generated from field: string explore = 1;
+   */
+  explore = "";
+
+  /**
+   * Dimensions to focus on
+   *
+   * @generated from field: repeated string dimensions = 2;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * Measures to focus on
+   *
+   * @generated from field: repeated string measures = 3;
+   */
+  measures: string[] = [];
+
+  /**
+   * Filter expression
+   *
+   * @generated from field: google.protobuf.Struct where = 4;
+   */
+  where?: Struct;
+
+  constructor(data?: PartialMessage<AIReportContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.AIReportContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "where", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIReportContext {
+    return new AIReportContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIReportContext {
+    return new AIReportContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIReportContext {
+    return new AIReportContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIReportContext | PlainMessage<AIReportContext> | undefined, b: AIReportContext | PlainMessage<AIReportContext> | undefined): boolean {
+    return proto3.util.equals(AIReportContext, a, b);
   }
 }
 

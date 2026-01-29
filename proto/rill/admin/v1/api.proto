@@ -2699,6 +2699,7 @@ message DeleteVirtualFileResponse {}
 message GetReportMetaRequest {
   string project_id = 1;
   string report = 3;
+  string format = 13;
   string owner_id = 5;
   google.protobuf.Timestamp execution_time = 6;
   repeated string email_recipients = 7;
@@ -2716,6 +2717,8 @@ message GetReportMetaResponse {
     string export_url = 2;
     string edit_url = 3;
     string unsubscribe_url = 4;
+    string user_id = 5;
+    google.protobuf.Struct user_attrs = 6; // user attributes of intended recipient, will be empty for creator mode and for non Rill users
   }
   map<string, URLs> recipient_urls = 2;
   reserved 1;
@@ -3323,13 +3326,39 @@ message ReportOptions {
   string explore = 16; // either canvas or explore should be set
   string canvas = 17;
   /* web_open_mode is used to determine how to create or disable open link for the report
-    - send "recipient" for older reports (old behaviour)
-    - send "creator" for reports that should be opened with creators permissions
+    - send "recipient" for reports that should be opened with recipient's permissions - requires login
+    - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
     - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-    - send "filtered" for reports that should be opened with creators permissions but with locked filters
    */
   string web_open_mode = 18;
-  rill.runtime.v1.Expression filter = 19; // use with OPEN_MODE_FILTERED
+  reserved 19;
+  // AI-powered report configuration (used when format is "ai_session")
+  string format = 21; // "query" (default) or "ai_session"
+  AIReportData ai_data = 22;
+}
+
+// AIReportData contains configuration for AI-powered reports
+message AIReportData {
+  string agent = 1; // Agent to use (defaults to "analyst_agent")
+  string prompt = 2; // Optional user prompt for the agent
+  AIReportTimeRange time_range = 3; // optional time range
+  AIReportTimeRange comparison_time_range = 4; // Optional comparison time range
+  AIReportContext context = 5; // Optional dashboard context
+}
+
+// AIReportTimeRange specifies a time range using ISO 8601 duration
+message AIReportTimeRange {
+  string iso_duration = 1; // ISO 8601 duration (e.g., "P7D", "P1M")
+  string iso_offset = 2; // Optional offset for comparison ranges
+  string time_zone = 3; // IANA timezone (e.g., "America/New_York")
+}
+
+// AIReportContext provides optional dashboard context for AI analysis
+message AIReportContext {
+  string explore = 1; // Dashboard/explore name
+  repeated string dimensions = 2; // Dimensions to focus on
+  repeated string measures = 3; // Measures to focus on
+  google.protobuf.Struct where = 4; // Filter expression
 }
 
 message AlertOptions {

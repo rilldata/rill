@@ -334,7 +334,13 @@ func (u *URLs) DenyProjectAccess(org, project, id string) string {
 }
 
 // ReportOpen returns the URL for opening a report in the frontend.
-func (u *URLs) ReportOpen(org, project, report, token string, executionTime time.Time) string {
+func (u *URLs) ReportOpen(org, project, report, format, token string, executionTime time.Time) string {
+	if format == "ai_session" {
+		if token == "" {
+			return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "ai", "{session_id}")
+		}
+		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "ai", "{session_id}"), map[string]string{"token": token})
+	}
 	if token == "" {
 		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "open"), map[string]string{"execution_time": executionTime.UTC().Format(time.RFC3339)})
 	}

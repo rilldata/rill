@@ -97,6 +97,10 @@ func (r *Runtime) Version() version.Version {
 	return r.opts.Version
 }
 
+func (r *Runtime) Activity() *activity.Client {
+	return r.activity
+}
+
 func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()

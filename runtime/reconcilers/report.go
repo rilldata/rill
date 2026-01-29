@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -509,6 +510,11 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
+	format := rep.Spec.Format
+	if format == "" {
+		format = "query" // default format
+	}
+
 	var ownerID, webOpenMode string
 	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
 		ownerID = id
@@ -530,7 +536,11 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
+	if anonRecipients && format == "ai_session" {
+		return false, fmt.Errorf("ai_session reports can only have email notifiers") // as we cannot reliably fetch user attributes for slack webhooks/channels for enforcing access control in recipient mode
+	}
+
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, format, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
@@ -540,30 +550,69 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		switch notifier.Connector {
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				opts := &email.ScheduledReport{
-					ToEmail:        recipient,
-					ToName:         "",
-					DisplayName:    rep.Spec.DisplayName,
-					ReportTime:     t,
-					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
+			if rep.Spec.Format == "ai_session" {
+				reports := make(map[string]*aiReport)
+				for _, recipient := range recipients {
+					urls, ok := meta.RecipientURLs[recipient]
+					if !ok {
+						return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
+					}
+
+					// for creator mode, all recipient will get a shared session link, report metadata will have same userID for all recipients which is the ownerID, so triggerAIReport will also be called once
+					report, exists := reports[urls.UserID]
+					if !exists {
+						// Trigger AI report for this recipient using their user ID for enforcing security rules
+						report, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, urls.UserID, urls.UserAttrs)
+						if err != nil {
+							return sent, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
+						}
+						reports[urls.UserID] = report
+					}
+
+					openURL := buildAISessionURL(urls.OpenURL, report.sessionID)
+
+					opts := &email.AIInsightReport{
+						ToEmail:         recipient,
+						ToName:          "",
+						DisplayName:     rep.Spec.DisplayName,
+						ReportTime:      t,
+						Summary:         truncateSummary(report.summary, 500),
+						OpenLink:        openURL,
+						EditLink:        urls.EditURL,
+						UnsubscribeLink: urls.UnsubscribeURL,
+					}
+					err = r.C.Runtime.Email.SendAIInsightReport(opts)
+					sent = true
+					if err != nil {
+						return true, fmt.Errorf("failed to send AI insight report to %q: %w", recipient, err)
+					}
 				}
-				urls, ok := meta.RecipientURLs[recipient]
-				if !ok {
-					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
-				}
-				opts.OpenLink = urls.OpenURL
-				u, err := createExportURL(urls.ExportURL, t)
-				if err != nil {
-					return false, err
-				}
-				opts.DownloadLink = u.String()
-				opts.EditLink = urls.EditURL
-				opts.UnsubscribeLink = urls.UnsubscribeURL
-				err = r.C.Runtime.Email.SendScheduledReport(opts)
-				sent = true
-				if err != nil {
-					return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
+			} else {
+				for _, recipient := range recipients {
+					opts := &email.ScheduledReport{
+						ToEmail:        recipient,
+						ToName:         "",
+						DisplayName:    rep.Spec.DisplayName,
+						ReportTime:     t,
+						DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
+					}
+					urls, ok := meta.RecipientURLs[recipient]
+					if !ok {
+						return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
+					}
+					opts.OpenLink = urls.OpenURL
+					u, err := createExportURL(urls.ExportURL, t)
+					if err != nil {
+						return false, err
+					}
+					opts.DownloadLink = u.String()
+					opts.EditLink = urls.EditURL
+					opts.UnsubscribeLink = urls.UnsubscribeURL
+					err = r.C.Runtime.Email.SendScheduledReport(opts)
+					sent = true
+					if err != nil {
+						return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
+					}
 				}
 			}
 		default:
@@ -619,6 +668,117 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return false, nil
+}
+
+type aiReport struct {
+	sessionID string
+	summary   string
+}
+
+// triggerAIReport executes an AI-powered report and returns session id with summary.
+// If userID is provided, the session will be created with that user's claims for row-level security.
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, error) {
+	if rep.Spec.AiConfig == nil {
+		return nil, fmt.Errorf("AI report is missing ai_config")
+	}
+
+	if userID == "" || len(userAttrs) == 0 {
+		return nil, fmt.Errorf("no user attributes provided for AI report")
+	}
+	// TODO check project access for userID? as tool calls will just check metrics view access and if there are no security rules on mv then tool call will work but report open will fail later
+
+	// Create claims for executing the AI resolver
+	// The userID determines what data the AI can access (row-level security)
+	claims := &runtime.SecurityClaims{
+		UserID:         userID,
+		UserAttributes: userAttrs,
+		SkipChecks:     false,
+		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+	}
+
+	// Build resolver properties from AI config
+	aiConfig := rep.Spec.AiConfig
+	agent := aiConfig.Agent
+	if agent == "" {
+		agent = ai.AnalystAgentName
+	}
+	prompt := aiConfig.Prompt
+	if prompt == "" {
+		prompt = "Generate the scheduled insight report."
+	}
+	props := map[string]any{
+		"agent":  agent,
+		"prompt": prompt,
+	}
+	if aiConfig.TimeRange != nil {
+		props["time_range_iso_duration"] = aiConfig.TimeRange.IsoDuration
+		props["time_range_time_zone"] = aiConfig.TimeRange.TimeZone
+	}
+	if aiConfig.ComparisonTimeRange != nil {
+		props["comparison_time_range_iso_duration"] = aiConfig.ComparisonTimeRange.IsoDuration
+		props["comparison_time_range_iso_offset"] = aiConfig.ComparisonTimeRange.IsoOffset
+	}
+	if aiConfig.Explore != "" {
+		props["explore"] = aiConfig.Explore
+	}
+	if len(aiConfig.Dimensions) > 0 {
+		props["dimensions"] = aiConfig.Dimensions
+	}
+	if len(aiConfig.Measures) > 0 {
+		props["measures"] = aiConfig.Measures
+	}
+	if aiConfig.Where != nil {
+		props["where"] = aiConfig.Where.AsMap()
+	}
+	props["is_scheduled_insight"] = true
+
+	// Execute AI resolver
+	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           "ai",
+		ResolverProperties: props,
+		Args: map[string]any{
+			"execution_time":        t,
+			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
+		},
+		Claims: claims,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute AI resolver: %w", err)
+	}
+	defer result.Close()
+
+	// Get the result row
+	row, err := result.Next()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AI resolver result: %w", err)
+	}
+
+	sessionID, ok := row["ai_session_id"].(string)
+	if !ok || sessionID == "" {
+		return nil, fmt.Errorf("AI resolver did not return a valid session ID")
+	}
+	summary, _ := row["summary"].(string)
+
+	r.C.Logger.Info("AI session created", zap.String("report", self.Meta.Name.Name), zap.String("session_id", sessionID), zap.String("user_id", userID), observability.ZapCtx(ctx))
+
+	return &aiReport{
+		sessionID: sessionID,
+		summary:   summary,
+	}, nil
+}
+
+func buildAISessionURL(baseOpenURL, sessionID string) string {
+	// replace {session_id} in the baseOpenURL with the actual sessionID
+	return strings.ReplaceAll(baseOpenURL, "%7Bsession_id%7D", sessionID)
+}
+
+// truncateSummary truncates the summary to a maximum length, adding ellipsis if truncated.
+func truncateSummary(summary string, maxLen int) string {
+	if len(summary) <= maxLen {
+		return summary
+	}
+	return summary[:maxLen-3] + "..."
 }
 
 func createExportURL(inURL string, executionTime time.Time) (*url.URL, error) {
