@@ -20,14 +20,15 @@ import (
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
+	rillstorage "github.com/rilldata/rill/runtime/storage"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -39,6 +40,9 @@ import (
 	_ "github.com/rilldata/rill/admin/provisioner/clickhousestatic"
 	_ "github.com/rilldata/rill/admin/provisioner/kubernetes"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
+	// Register AI drivers
+	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
+	_ "github.com/rilldata/rill/runtime/drivers/openai"
 )
 
 // Config describes admin server config derived from environment variables.
@@ -231,16 +235,25 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				logger.Fatal("error creating github client", zap.Error(err))
 			}
 
-			// Init AI client
-			var aiClient ai.Client
+			// Init AI service
+			var aiService drivers.AIService
+			var aiHandle drivers.Handle
 			if conf.OpenAIAPIKey != "" {
-				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey, nil)
+				aiHandle, err = drivers.Open("openai", "admin", map[string]any{
+					"api_key": conf.OpenAIAPIKey,
+				}, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 				if err != nil {
 					logger.Fatal("error creating OpenAI client", zap.Error(err))
 				}
+				aiService, _ = aiHandle.AsAI("admin")
 			} else {
-				aiClient = ai.NewNoop()
+				aiHandle, err = drivers.Open("mock_ai", "admin", map[string]any{}, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+				if err != nil {
+					logger.Fatal("error creating mock AI client", zap.Error(err))
+				}
+				aiService, _ = aiHandle.AsAI("admin")
 			}
+			defer aiHandle.Close()
 
 			// Init AssetsBucket handle
 			var clientOpts []option.ClientOption
@@ -294,7 +307,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AutoscalerCron:            conf.AutoscalerCron,
 				ScaleDownConstraint:       conf.ScaleDownConstraint,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
