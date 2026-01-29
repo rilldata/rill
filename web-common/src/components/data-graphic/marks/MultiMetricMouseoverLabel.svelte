@@ -274,7 +274,7 @@ It is probably not the most up to date code; but it works very well in practice.
                 r={3}
                 paint-order="stroke"
                 fill={location.pointColor}
-                class="stroke-surface"
+                class="stroke-surface-background"
                 stroke-width="3"
                 opacity={location?.yOverride
                   ? 0.7
@@ -298,7 +298,7 @@ It is probably not the most up to date code; but it works very well in practice.
 
   text {
     paint-order: stroke;
-    @apply stroke-surface;
+    @apply stroke-surface-background;
     stroke-width: 3px;
 
     /* Make all characters and numbers of equal width for easy scanibility */

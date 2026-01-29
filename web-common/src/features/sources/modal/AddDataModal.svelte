@@ -197,7 +197,7 @@
           </div>
         </section>
 
-        <div class="text-slate-500">
+        <div class="text-fg-secondary">
           Don't see what you're looking for?
           <button
             class="text-primary-500 hover:text-primary-600 font-medium"

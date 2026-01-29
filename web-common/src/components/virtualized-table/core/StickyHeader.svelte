@@ -75,7 +75,7 @@
 >
   <div
     class="
-    ui-copy
+    text-fg-primary
     text-ellipsis overflow-hidden
     {isDimensionTable ? '' : 'px-4'}
     {borderClassesInnerDiv}

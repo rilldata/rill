@@ -17,7 +17,7 @@
       <AlertCircleIcon size={22} class="text-red-600" />
     </div>
     <div class="flex-1 min-w-0">
-      <div class="message text-gray-700 font-normal text-sm">
+      <div class="message text-fg-primary font-normal text-sm">
         {message}
       </div>
       {#if details}
@@ -25,7 +25,7 @@
           class="flex items-center mt-2 cursor-pointer select-none"
           on:click={toggleDetails}
         >
-          <span class="text-xs font-semibold text-gray-500 capitalize"
+          <span class="text-xs font-semibold text-fg-secondary capitalize"
             >Connection error</span
           >
           <div class="icon-wrapper ml-1">
@@ -81,6 +81,6 @@
   }
 
   .details {
-    @apply text-gray-600 whitespace-pre-wrap break-words;
+    @apply text-fg-secondary whitespace-pre-wrap break-words;
   }
 </style>

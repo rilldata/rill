@@ -90,7 +90,8 @@ export function getTDDAggregationRequest({
 
   // CAST SAFETY: exports are only available in TDD when a comparison dimension is selected
   const dimensionName = exploreState.selectedComparisonDimension as string;
-  const timeDimension = metricsViewSpec.timeDimension ?? "";
+  const timeDimension =
+    exploreState.selectedTimeDimension || metricsViewSpec.timeDimension || "";
 
   return {
     instanceId: get(runtime).instanceId,
@@ -98,7 +99,7 @@ export function getTDDAggregationRequest({
     dimensions: [
       { name: dimensionName },
       {
-        name: metricsViewSpec.timeDimension ?? "",
+        name: timeDimension,
         timeGrain: exploreState.selectedTimeRange?.interval,
         timeZone: exploreState.selectedTimezone,
       },
