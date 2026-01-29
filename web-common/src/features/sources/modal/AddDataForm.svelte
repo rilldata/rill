@@ -310,43 +310,41 @@
   </div>
 
   <!-- RIGHT SIDE PANEL -->
-  {#if stepState.step !== "explorer"}
-    <div
-      class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
-    >
-      <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
-        {#if paramsError}
-          <SubmissionError
-            message={paramsError ?? ""}
-            details={paramsErrorDetails ?? ""}
-          />
-        {/if}
-
-        <YamlPreview
-          title={isStepFlowConnector
-            ? stepState.step === "connector"
-              ? "Connector preview"
-              : "Model preview"
-            : isSourceForm
-              ? "Model preview"
-              : "Connector preview"}
-          yaml={yamlPreview}
+  <div
+    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
+  >
+    <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
+      {#if paramsError}
+        <SubmissionError
+          message={paramsError ?? ""}
+          details={paramsErrorDetails ?? ""}
         />
+      {/if}
 
-        {#if shouldShowSkipLink}
-          <div class="text-sm leading-normal font-medium text-muted-foreground">
-            Already connected? <button
-              type="button"
-              class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
-              on:click={() => formManager.handleSkip()}
-            >
-              Import your data
-            </button>
-          </div>
-        {/if}
-      </div>
+      <YamlPreview
+        title={isStepFlowConnector
+          ? stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"
+          : isSourceForm
+            ? "Model preview"
+            : "Connector preview"}
+        yaml={yamlPreview}
+      />
 
-      <NeedHelpText {connector} />
+      {#if shouldShowSkipLink}
+        <div class="text-sm leading-normal font-medium text-muted-foreground">
+          Already connected? <button
+            type="button"
+            class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
+            on:click={() => formManager.handleSkip()}
+          >
+            Import your data
+          </button>
+        </div>
+      {/if}
     </div>
-  {/if}
+
+    <NeedHelpText {connector} />
+  </div>
 </div>
