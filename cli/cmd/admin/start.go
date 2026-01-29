@@ -40,6 +40,7 @@ import (
 	_ "github.com/rilldata/rill/admin/provisioner/clickhousestatic"
 	_ "github.com/rilldata/rill/admin/provisioner/kubernetes"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
+	_ "github.com/rilldata/rill/runtime/drivers/claude"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
 )
@@ -93,6 +94,8 @@ type Config struct {
 	EmailSenderName                   string `split_words:"true"`
 	EmailBCC                          string `split_words:"true"`
 	OpenAIAPIKey                      string `envconfig:"openai_api_key"`
+	ClaudeAPIKey                      string `envconfig:"claude_api_key"`
+	AIDriver                          string `default:"" split_words:"true"`
 	ActivitySinkType                  string `default:"" split_words:"true"`
 	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic          string `default:"" split_words:"true"`
@@ -235,11 +238,23 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Init AI service
-			aiDriver := "mock_ai"
+			aiDriver := conf.AIDriver
 			aiConfig := map[string]any{}
-			if conf.OpenAIAPIKey != "" {
-				aiDriver = "openai"
+			switch aiDriver {
+			case "openai":
+				if conf.OpenAIAPIKey == "" {
+					logger.Fatal("RILL_ADMIN_OPENAI_API_KEY is required when AI driver is 'openai'")
+				}
 				aiConfig["api_key"] = conf.OpenAIAPIKey
+			case "claude":
+				if conf.ClaudeAPIKey == "" {
+					logger.Fatal("RILL_ADMIN_CLAUDE_API_KEY is required when AI driver is 'claude'")
+				}
+				aiConfig["api_key"] = conf.ClaudeAPIKey
+			case "", "mock_ai":
+				aiDriver = "mock_ai"
+			default:
+				logger.Fatal("unknown AI driver", zap.String("driver", aiDriver))
 			}
 			aiHandle, err := drivers.Open(aiDriver, "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 			if err != nil {

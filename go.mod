@@ -138,6 +138,8 @@ require (
 	modernc.org/sqlite v1.29.6
 )
 
+require github.com/anthropics/anthropic-sdk-go v1.19.0
+
 require (
 	cel.dev/expr v0.24.0 // indirect
 	cloud.google.com/go/auth v0.16.0 // indirect
