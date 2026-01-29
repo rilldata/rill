@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -244,118 +243,23 @@ func (h *handle) Ping(ctx context.Context) error {
 }
 
 // Complete implements drivers.AIService.
-// It sends a chat completion request to Claude and returns the response.
 func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
-	// Extract system messages and convert remaining messages to Claude format
-	systemPrompt, nonSystemMsgs := extractSystemMessages(opts.Messages)
-	claudeMsgs, err := convertRillMessagesToClaudeMessages(nonSystemMsgs)
+	system, msgs, err := convertMessages(opts.Messages)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert messages: %w", err)
 	}
 
-	// Convert Rill tools to Claude's tool format
-	var claudeTools []anthropic.ToolUnionParam
-	if len(opts.Tools) > 0 {
-		claudeTools = make([]anthropic.ToolUnionParam, len(opts.Tools))
-		for i, tool := range opts.Tools {
-			claudeTool, err := convertRillToolToClaudeTool(tool)
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert tool: %w", err)
-			}
-			claudeTools[i] = claudeTool
-		}
-	}
-
-	// Build system prompt blocks if present
-	var systemBlocks []anthropic.TextBlockParam
-	if systemPrompt != "" {
-		systemBlocks = []anthropic.TextBlockParam{
-			{Text: systemPrompt},
-		}
-	}
-
-	// Handle structured outputs (beta feature) vs regular messages
-	if opts.OutputSchema != nil {
-		return h.completeWithStructuredOutput(ctx, claudeMsgs, claudeTools, systemBlocks, opts.OutputSchema)
-	}
-
-	return h.completeRegular(ctx, claudeMsgs, claudeTools, systemBlocks)
-}
-
-// completeRegular handles regular message completions without structured output.
-func (h *handle) completeRegular(ctx context.Context, messages []anthropic.MessageParam, tools []anthropic.ToolUnionParam, systemBlocks []anthropic.TextBlockParam) (*drivers.CompleteResult, error) {
-	params := anthropic.MessageNewParams{
-		MaxTokens:   int64(h.config.getMaxTokens()),
-		Messages:    messages,
-		Model:       anthropic.Model(h.config.getModel()),
-		Temperature: anthropic.Float(h.config.Temperature),
-		System:      systemBlocks,
-	}
-	if len(tools) > 0 {
-		params.Tools = tools
-		params.ToolChoice = anthropic.ToolChoiceUnionParam{
-			OfAuto: &anthropic.ToolChoiceAutoParam{},
-		}
-	}
-
-	res, err := h.client.Messages.New(ctx, params)
+	betaTools, err := convertTools(opts.Tools)
 	if err != nil {
-		return nil, err
-	}
-
-	return &drivers.CompleteResult{
-		Message:      convertClaudeMessageToRillMessage(res),
-		InputTokens:  int(res.Usage.InputTokens),
-		OutputTokens: int(res.Usage.OutputTokens),
-	}, nil
-}
-
-// completeWithStructuredOutput handles completions with structured JSON output using the beta API.
-func (h *handle) completeWithStructuredOutput(ctx context.Context, messages []anthropic.MessageParam, tools []anthropic.ToolUnionParam, systemBlocks []anthropic.TextBlockParam, outputSchema any) (*drivers.CompleteResult, error) {
-	// Convert messages to beta format
-	betaMessages := convertToBetaMessages(messages)
-
-	// Convert system blocks to beta format
-	var betaSystemBlocks []anthropic.BetaTextBlockParam
-	for _, block := range systemBlocks {
-		betaSystemBlocks = append(betaSystemBlocks, anthropic.BetaTextBlockParam{
-			Text: block.Text,
-		})
-	}
-
-	// Convert tools to beta format
-	var betaTools []anthropic.BetaToolUnionParam
-	for _, tool := range tools {
-		if tool.OfTool != nil {
-			// Convert the input schema
-			inputSchema := anthropic.BetaToolInputSchemaParam{
-				Properties: tool.OfTool.InputSchema.Properties,
-				Required:   tool.OfTool.InputSchema.Required,
-			}
-			betaTool := anthropic.BetaToolUnionParamOfTool(inputSchema, tool.OfTool.Name)
-			if tool.OfTool.Description.Value != "" {
-				betaTool.OfTool.Description = anthropic.String(tool.OfTool.Description.Value)
-			}
-			betaTools = append(betaTools, betaTool)
-		}
-	}
-
-	// Convert outputSchema to the format expected by the beta API
-	schemaMap, ok := outputSchema.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("output schema must be a map[string]any, got %T", outputSchema)
+		return nil, fmt.Errorf("failed to convert tools: %w", err)
 	}
 
 	params := anthropic.BetaMessageNewParams{
-		Model:        anthropic.Model(h.config.getModel()),
-		MaxTokens:    int64(h.config.getMaxTokens()),
-		Messages:     betaMessages,
-		Betas:        []anthropic.AnthropicBeta{"structured-outputs-2025-11-13"},
-		OutputFormat: anthropic.BetaJSONSchemaOutputFormat(schemaMap),
-	}
-
-	if len(betaSystemBlocks) > 0 {
-		params.System = betaSystemBlocks
+		Model:       anthropic.Model(h.config.getModel()),
+		MaxTokens:   int64(h.config.getMaxTokens()),
+		Temperature: anthropic.Float(h.config.Temperature),
+		Messages:    msgs,
+		System:      system,
 	}
 
 	if len(betaTools) > 0 {
@@ -365,321 +269,208 @@ func (h *handle) completeWithStructuredOutput(ctx context.Context, messages []an
 		}
 	}
 
+	if opts.OutputSchema != nil {
+		schemaBytes, err := json.Marshal(opts.OutputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal output schema: %w", err)
+		}
+		var schemaMap map[string]any
+		if err := json.Unmarshal(schemaBytes, &schemaMap); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal output schema: %w", err)
+		}
+		params.Betas = []anthropic.AnthropicBeta{"structured-outputs-2025-11-13"}
+		params.OutputFormat = anthropic.BetaJSONSchemaOutputFormat(schemaMap)
+	}
+
 	res, err := h.client.Beta.Messages.New(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
+	resMsgs, err := convertResponseMessage(res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert response message: %w", err)
+	}
+
 	return &drivers.CompleteResult{
-		Message:      convertBetaClaudeMessageToRillMessage(res),
+		Message:      resMsgs,
 		InputTokens:  int(res.Usage.InputTokens),
 		OutputTokens: int(res.Usage.OutputTokens),
 	}, nil
 }
 
-// extractSystemMessages extracts all system messages and concatenates their text content.
-// Returns the concatenated system prompt and the remaining non-system messages.
-func extractSystemMessages(msgs []*aiv1.CompletionMessage) (string, []*aiv1.CompletionMessage) {
-	var systemTexts []string
-	var nonSystemMessages []*aiv1.CompletionMessage
+// convertMessages converts Rill messages to Claude beta message format.
+// It returns system blocks separately because Claude's API treats them differently.
+func convertMessages(msgs []*aiv1.CompletionMessage) ([]anthropic.BetaTextBlockParam, []anthropic.BetaMessageParam, error) {
+	var system []anthropic.BetaTextBlockParam
+	var other []anthropic.BetaMessageParam
 
 	for _, msg := range msgs {
-		if msg.Role == "system" {
-			// Extract text from content blocks
-			for _, block := range msg.Content {
-				if text := block.GetText(); text != "" {
-					systemTexts = append(systemTexts, text)
-				}
+		if msg.Role != "system" {
+			converted, err := convertMessage(msg)
+			if err != nil {
+				return nil, nil, err
 			}
-		} else {
-			nonSystemMessages = append(nonSystemMessages, msg)
+			other = append(other, converted...)
+			continue
+		}
+
+		for _, block := range msg.Content {
+			switch block := block.BlockType.(type) {
+			case *aiv1.ContentBlock_Text:
+				system = append(system, anthropic.BetaTextBlockParam{Text: block.Text})
+			default:
+				return nil, nil, fmt.Errorf("unsupported system message block type: %T", block)
+			}
 		}
 	}
 
-	return strings.Join(systemTexts, "\n"), nonSystemMessages
+	return system, other, nil
 }
 
-// convertRillMessagesToClaudeMessages converts Rill messages to Claude message format.
-func convertRillMessagesToClaudeMessages(msgs []*aiv1.CompletionMessage) ([]anthropic.MessageParam, error) {
-	var result []anthropic.MessageParam
+// convertMessage converts a single Rill message to Claude beta messages.
+// Tool results become separate user messages per Claude's API requirements.
+func convertMessage(msg *aiv1.CompletionMessage) ([]anthropic.BetaMessageParam, error) {
+	var result []anthropic.BetaMessageParam
 
-	for _, msg := range msgs {
-		claudeMsgs, err := convertRillMessageToClaudeMessages(msg)
+	role := anthropic.BetaMessageParamRoleUser
+	if msg.Role == "assistant" {
+		role = anthropic.BetaMessageParamRoleAssistant
+	}
+
+	for _, block := range msg.Content {
+		switch b := block.BlockType.(type) {
+		case *aiv1.ContentBlock_Text:
+			result = append(result, anthropic.BetaMessageParam{
+				Role: role,
+				Content: []anthropic.BetaContentBlockParamUnion{
+					anthropic.NewBetaTextBlock(b.Text),
+				},
+			})
+		case *aiv1.ContentBlock_ToolCall:
+			result = append(result, anthropic.BetaMessageParam{
+				Role: anthropic.BetaMessageParamRoleAssistant, // NOTE: Hard-coded as assistant
+				Content: []anthropic.BetaContentBlockParamUnion{
+					convertToolCall(b.ToolCall),
+				},
+			})
+		case *aiv1.ContentBlock_ToolResult:
+			result = append(result, anthropic.BetaMessageParam{
+				Role: anthropic.BetaMessageParamRoleUser, // NOTE: Hard-coded as user
+				Content: []anthropic.BetaContentBlockParamUnion{
+					convertToolResult(b.ToolResult),
+				},
+			})
+		default:
+			return nil, fmt.Errorf("unsupported message block type: %T", block)
+		}
+	}
+
+	return result, nil
+}
+
+// convertToolCall converts a Rill tool call to a Claude beta tool use block.
+func convertToolCall(tc *aiv1.ToolCall) anthropic.BetaContentBlockParamUnion {
+	input := make(map[string]any)
+	if tc.Input != nil {
+		input = tc.Input.AsMap()
+	}
+	return anthropic.NewBetaToolUseBlock(tc.Id, input, tc.Name)
+}
+
+// convertToolResult converts a Rill tool result to a Claude beta tool result block.
+func convertToolResult(tr *aiv1.ToolResult) anthropic.BetaContentBlockParamUnion {
+	block := anthropic.NewBetaToolResultBlock(tr.Id)
+	block.OfToolResult.Content = []anthropic.BetaToolResultBlockParamContentUnion{
+		{OfText: &anthropic.BetaTextBlockParam{Text: tr.Content}},
+	}
+	block.OfToolResult.IsError = anthropic.Bool(tr.IsError)
+	return block
+}
+
+// convertTools converts Rill tools to Claude beta tool union params.
+func convertTools(tools []*aiv1.Tool) ([]anthropic.BetaToolUnionParam, error) {
+	if len(tools) == 0 {
+		return nil, nil
+	}
+
+	result := make([]anthropic.BetaToolUnionParam, 0, len(tools))
+	for _, tool := range tools {
+		converted, err := convertTool(tool)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, claudeMsgs...)
+		result = append(result, converted)
 	}
-
 	return result, nil
 }
 
-// convertRillMessageToClaudeMessages converts a single Rill CompletionMessage to one or more Claude MessageParams.
-//
-// This handles the asymmetric nature of Claude's tool calling pattern:
-// - Tool calls: Multiple calls are grouped in ONE assistant message
-// - Tool results: Each result becomes content in a user message with role="user"
-func convertRillMessageToClaudeMessages(msg *aiv1.CompletionMessage) ([]anthropic.MessageParam, error) {
-	var result []anthropic.MessageParam
+// convertTool converts a single Rill tool to a Claude beta tool union param.
+func convertTool(tool *aiv1.Tool) (anthropic.BetaToolUnionParam, error) {
+	inputSchema := anthropic.BetaToolInputSchemaParam{}
+	if err := json.Unmarshal([]byte(tool.InputSchema), &inputSchema); err != nil {
+		return anthropic.BetaToolUnionParam{}, fmt.Errorf("failed to parse schema for tool %q: %w", tool.Name, err)
+	}
 
-	// Separate content into regular content vs tool results
-	var contentBlocks []anthropic.ContentBlockParamUnion
-	var toolResults []anthropic.ToolResultBlockParam
+	result := anthropic.BetaToolUnionParamOfTool(inputSchema, tool.Name)
+	if tool.Description != "" {
+		result.OfTool.Description = anthropic.String(tool.Description)
+	}
+	return result, nil
+}
+
+// convertResponseMessage converts a Claude beta message to a Rill completion message.
+func convertResponseMessage(msg *anthropic.BetaMessage) (*aiv1.CompletionMessage, error) {
+	var blocks []*aiv1.ContentBlock
 
 	for _, block := range msg.Content {
-		switch blockType := block.BlockType.(type) {
-		case *aiv1.ContentBlock_Text:
-			if blockType.Text != "" {
-				contentBlocks = append(contentBlocks, anthropic.NewTextBlock(blockType.Text))
-			}
-
-		case *aiv1.ContentBlock_ToolCall:
-			toolUseBlock := convertRillToolCallToClaudeToolUse(blockType.ToolCall)
-			contentBlocks = append(contentBlocks, toolUseBlock)
-
-		case *aiv1.ContentBlock_ToolResult:
-			toolResults = append(toolResults, anthropic.ToolResultBlockParam{
-				ToolUseID: blockType.ToolResult.Id,
-				Content: []anthropic.ToolResultBlockParamContentUnion{
-					{OfText: &anthropic.TextBlockParam{Text: blockType.ToolResult.Content}},
-				},
-				IsError: anthropic.Bool(blockType.ToolResult.IsError),
+		switch block.Type {
+		case "text":
+			blocks = append(blocks, &aiv1.ContentBlock{
+				BlockType: &aiv1.ContentBlock_Text{Text: block.Text},
 			})
-		}
-	}
-
-	// Create main message for text content and tool calls
-	if len(contentBlocks) > 0 {
-		switch msg.Role {
-		case "user":
-			result = append(result, anthropic.NewUserMessage(contentBlocks...))
-		case "assistant":
-			result = append(result, anthropic.NewAssistantMessage(contentBlocks...))
+		case "thinking":
+			blocks = append(blocks, &aiv1.ContentBlock{
+				BlockType: &aiv1.ContentBlock_Text{Text: block.Thinking},
+			})
+		case "tool_use":
+			cb, err := convertResponseToolUse(block)
+			if err != nil {
+				return nil, err
+			}
+			blocks = append(blocks, cb)
 		default:
-			// For unknown roles, default to user
-			result = append(result, anthropic.NewUserMessage(contentBlocks...))
-		}
-	}
-
-	// Tool results are sent as user messages in Claude's API
-	if len(toolResults) > 0 {
-		toolResultBlocks := make([]anthropic.ContentBlockParamUnion, len(toolResults))
-		for i, tr := range toolResults {
-			trCopy := tr // Create a copy to avoid pointer issues
-			toolResultBlocks[i] = anthropic.ContentBlockParamUnion{
-				OfToolResult: &trCopy,
-			}
-		}
-		result = append(result, anthropic.NewUserMessage(toolResultBlocks...))
-	}
-
-	return result, nil
-}
-
-// convertRillToolCallToClaudeToolUse converts a Rill ToolCall to Claude ToolUseBlock format.
-func convertRillToolCallToClaudeToolUse(toolCall *aiv1.ToolCall) anthropic.ContentBlockParamUnion {
-	var input map[string]any
-	if toolCall.Input != nil {
-		input = toolCall.Input.AsMap()
-	} else {
-		input = make(map[string]any)
-	}
-
-	return anthropic.ContentBlockParamUnion{
-		OfToolUse: &anthropic.ToolUseBlockParam{
-			ID:    toolCall.Id,
-			Name:  toolCall.Name,
-			Input: input,
-		},
-	}
-}
-
-// convertClaudeMessageToRillMessage converts Claude Message to Rill CompletionMessage format.
-func convertClaudeMessageToRillMessage(message *anthropic.Message) *aiv1.CompletionMessage {
-	var contentBlocks []*aiv1.ContentBlock
-
-	for _, block := range message.Content {
-		switch block.Type {
-		case "text":
-			contentBlocks = append(contentBlocks, &aiv1.ContentBlock{
-				BlockType: &aiv1.ContentBlock_Text{Text: block.Text},
-			})
-
-		case "tool_use":
-			// Unmarshal input from json.RawMessage to map[string]any
-			var inputMap map[string]any
-			if len(block.Input) > 0 {
-				if err := json.Unmarshal(block.Input, &inputMap); err != nil {
-					// If unmarshal fails, skip this tool call
-					continue
-				}
-			} else {
-				inputMap = make(map[string]any)
-			}
-
-			inputStruct, err := structpb.NewStruct(inputMap)
-			if err != nil {
-				// If conversion fails, skip this tool call
-				continue
-			}
-
-			contentBlocks = append(contentBlocks, &aiv1.ContentBlock{
-				BlockType: &aiv1.ContentBlock_ToolCall{
-					ToolCall: &aiv1.ToolCall{
-						Id:    block.ID,
-						Name:  block.Name,
-						Input: inputStruct,
-					},
-				},
-			})
+			// We ignore other blocks for now
 		}
 	}
 
 	return &aiv1.CompletionMessage{
 		Role:    "assistant",
-		Content: contentBlocks,
-	}
+		Content: blocks,
+	}, nil
 }
 
-// convertBetaClaudeMessageToRillMessage converts Beta Claude Message to Rill CompletionMessage format.
-func convertBetaClaudeMessageToRillMessage(message *anthropic.BetaMessage) *aiv1.CompletionMessage {
-	var contentBlocks []*aiv1.ContentBlock
-
-	for _, block := range message.Content {
-		switch block.Type {
-		case "text":
-			contentBlocks = append(contentBlocks, &aiv1.ContentBlock{
-				BlockType: &aiv1.ContentBlock_Text{Text: block.Text},
-			})
-
-		case "tool_use":
-			// Unmarshal input from json.RawMessage to map[string]any
-			var inputMap map[string]any
-			if len(block.Input) > 0 {
-				if err := json.Unmarshal(block.Input, &inputMap); err != nil {
-					// If unmarshal fails, skip this tool call
-					continue
-				}
-			} else {
-				inputMap = make(map[string]any)
-			}
-
-			inputStruct, err := structpb.NewStruct(inputMap)
-			if err != nil {
-				// If conversion fails, skip this tool call
-				continue
-			}
-
-			contentBlocks = append(contentBlocks, &aiv1.ContentBlock{
-				BlockType: &aiv1.ContentBlock_ToolCall{
-					ToolCall: &aiv1.ToolCall{
-						Id:    block.ID,
-						Name:  block.Name,
-						Input: inputStruct,
-					},
-				},
-			})
+// convertResponseToolUse converts a Claude beta tool use block to a Rill content block.
+func convertResponseToolUse(block anthropic.BetaContentBlockUnion) (*aiv1.ContentBlock, error) {
+	inputMap := make(map[string]any)
+	if len(block.Input) > 0 {
+		if err := json.Unmarshal(block.Input, &inputMap); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal input for tool call %q: %w", block.Name, err)
 		}
 	}
 
-	return &aiv1.CompletionMessage{
-		Role:    "assistant",
-		Content: contentBlocks,
-	}
-}
-
-// convertRillToolToClaudeTool converts a Rill Tool to Claude Tool format.
-func convertRillToolToClaudeTool(tool *aiv1.Tool) (anthropic.ToolUnionParam, error) {
-	schemaMap, err := parseToolSchema(tool.InputSchema)
+	inputStruct, err := structpb.NewStruct(inputMap)
 	if err != nil {
-		return anthropic.ToolUnionParam{}, fmt.Errorf("failed to convert tool %s: %w", tool.Name, err)
+		return nil, fmt.Errorf("failed to convert input map to struct for tool call %q: %w", block.Name, err)
 	}
 
-	// Build the input schema from the parsed map
-	inputSchema := anthropic.ToolInputSchemaParam{}
-	if props, ok := schemaMap["properties"]; ok {
-		inputSchema.Properties = props
-	}
-	if req, ok := schemaMap["required"].([]any); ok {
-		required := make([]string, len(req))
-		for i, r := range req {
-			if s, ok := r.(string); ok {
-				required[i] = s
-			}
-		}
-		inputSchema.Required = required
-	}
-
-	toolParam := anthropic.ToolUnionParamOfTool(inputSchema, tool.Name)
-	if tool.Description != "" {
-		toolParam.OfTool.Description = anthropic.String(tool.Description)
-	}
-
-	return toolParam, nil
-}
-
-// parseToolSchema parses a JSON schema string and returns a map, with fallback to default schema.
-func parseToolSchema(schemaJSON string) (map[string]any, error) {
-	if schemaJSON == "" {
-		// Default schema when none is provided
-		return map[string]any{
-			"type":       "object",
-			"properties": map[string]any{},
-		}, nil
-	}
-
-	var schemaMap map[string]any
-	if err := json.Unmarshal([]byte(schemaJSON), &schemaMap); err != nil {
-		return nil, fmt.Errorf("failed to parse tool schema JSON: %w", err)
-	}
-
-	return schemaMap, nil
-}
-
-// convertToBetaMessages converts regular messages to beta message format.
-func convertToBetaMessages(messages []anthropic.MessageParam) []anthropic.BetaMessageParam {
-	betaMessages := make([]anthropic.BetaMessageParam, len(messages))
-	for i, msg := range messages {
-		betaMessages[i] = anthropic.BetaMessageParam{
-			Role:    anthropic.BetaMessageParamRole(msg.Role),
-			Content: convertToBetaContent(msg.Content),
-		}
-	}
-	return betaMessages
-}
-
-// convertToBetaContent converts content blocks to beta content format.
-func convertToBetaContent(content []anthropic.ContentBlockParamUnion) []anthropic.BetaContentBlockParamUnion {
-	betaContent := make([]anthropic.BetaContentBlockParamUnion, len(content))
-	for i, block := range content {
-		switch {
-		case block.OfText != nil:
-			betaContent[i] = anthropic.NewBetaTextBlock(block.OfText.Text)
-		case block.OfToolUse != nil:
-			betaContent[i] = anthropic.NewBetaToolUseBlock(block.OfToolUse.ID, block.OfToolUse.Input, block.OfToolUse.Name)
-		case block.OfToolResult != nil:
-			betaContent[i] = anthropic.NewBetaToolResultBlock(block.OfToolResult.ToolUseID)
-			// Note: NewBetaToolResultBlock creates a basic block; for content we need to set it
-			if betaContent[i].OfToolResult != nil {
-				betaContent[i].OfToolResult.Content = convertToBetaToolResultContent(block.OfToolResult.Content)
-				betaContent[i].OfToolResult.IsError = block.OfToolResult.IsError
-			}
-		}
-	}
-	return betaContent
-}
-
-// convertToBetaToolResultContent converts tool result content to beta format.
-func convertToBetaToolResultContent(content []anthropic.ToolResultBlockParamContentUnion) []anthropic.BetaToolResultBlockParamContentUnion {
-	betaContent := make([]anthropic.BetaToolResultBlockParamContentUnion, len(content))
-	for i, c := range content {
-		if c.OfText != nil {
-			betaContent[i] = anthropic.BetaToolResultBlockParamContentUnion{
-				OfText: &anthropic.BetaTextBlockParam{
-					Text: c.OfText.Text,
-				},
-			}
-		}
-	}
-	return betaContent
+	return &aiv1.ContentBlock{
+		BlockType: &aiv1.ContentBlock_ToolCall{
+			ToolCall: &aiv1.ToolCall{
+				Id:    block.ID,
+				Name:  block.Name,
+				Input: inputStruct,
+			},
+		},
+	}, nil
 }
