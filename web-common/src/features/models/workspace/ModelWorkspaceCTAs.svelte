@@ -12,8 +12,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
-  import { resourceColorMapping } from "../../entity-management/resource-icon-mapping";
-  import { ResourceKind } from "../../entity-management/resource-selectors";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import NavigateOrDropdown from "../../metrics-views/NavigateOrDropdown.svelte";
@@ -84,10 +82,7 @@
               }
             }}
           >
-            <MetricsViewIcon
-              size="16"
-              color={resourceColorMapping[ResourceKind.MetricsView]}
-            />
+            <MetricsViewIcon size="16" />
             {resource?.meta?.name?.name ?? "Loading..."}
           </DropdownMenu.Item>
         {/each}

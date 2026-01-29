@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { onNavigate } from "$app/navigation";
+  import { beforeNavigate, onNavigate } from "$app/navigation";
   import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import {
@@ -52,6 +52,15 @@
       (activeResource?.kind === ResourceKind.Explore.toString() ||
         activeResource?.kind === ResourceKind.MetricsView.toString()));
   $: onProjectPage = !activeResource;
+
+  // Suppress browser back/forward
+  beforeNavigate((nav) => {
+    if (!navigationEnabled) {
+      if (nav.type === "popstate") {
+        nav.cancel();
+      }
+    }
+  });
 
   onNavigate(({ from, to }) => {
     if (!navigationEnabled) return;

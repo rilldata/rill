@@ -1,4 +1,5 @@
 import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
+import { guidGenerator } from "@rilldata/web-common/lib/guid.ts";
 
 /**
  * Stores embed params in-memory so that the components that manipulate url need not be aware of these.
@@ -46,7 +47,7 @@ export class EmbedStore {
     this.navigationEnabled = url.searchParams.get("navigation") === "true";
     this.theme = url.searchParams.get("theme");
     this.themeMode = url.searchParams.get("theme_mode");
-    this.embedId = `embed-${crypto.randomUUID()}`;
+    this.embedId = `embed-${guidGenerator()}`;
 
     if (!this.instanceId) {
       this.missingRequireParams.push("instance_id");

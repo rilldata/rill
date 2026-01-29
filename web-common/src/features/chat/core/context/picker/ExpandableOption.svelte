@@ -152,7 +152,7 @@
     @apply cursor-pointer;
   }
   .context-item.focused {
-    @apply bg-accent text-accent-foreground;
+    @apply bg-surface-subtle text-fg-primary;
   }
 
   .context-item-type-label {

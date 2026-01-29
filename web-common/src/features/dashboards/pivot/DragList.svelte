@@ -431,11 +431,11 @@
   .dnd-zone {
     @apply w-full max-w-full rounded-sm;
     @apply flex flex-col;
-    @apply gap-y-2 py-0  text-gray-500;
+    @apply gap-y-2 py-0  text-fg-secondary;
   }
 
   .horizontal {
-    @apply flex flex-row flex-wrap bg-gray-50 w-full p-1 px-2 gap-x-2 h-fit;
+    @apply flex flex-row flex-wrap bg-input w-full p-1 px-2 gap-x-2 h-fit;
     @apply items-center;
     @apply border;
   }
@@ -445,7 +445,7 @@
   }
 
   .valid:hover {
-    @apply bg-surface;
+    @apply bg-surface-subtle;
   }
 
   .rounded {

@@ -87,7 +87,7 @@
     <AlertDialog.Title>Source imported successfully</AlertDialog.Title>
 
     <AlertDialog.Description>
-      <span class="font-mono text-slate-800 break-all">{sourceName}</span> has been
+      <span class="font-mono text-fg-primary break-all">{sourceName}</span> has been
       ingested. What would you like to do next?
     </AlertDialog.Description>
 
