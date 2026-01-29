@@ -73,13 +73,7 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		Summary:          opts.Summary,
 	}
 
-	// Build subject
-	var subject string
-	if opts.IsAIReport {
-		subject = fmt.Sprintf("AI Insight: %s (%s)", opts.DisplayName, data.ReportTimeString)
-	} else {
-		subject = fmt.Sprintf("%s (%s)", opts.DisplayName, data.ReportTimeString)
-	}
+	subject := fmt.Sprintf("%s (%s)", opts.DisplayName, data.ReportTimeString)
 
 	// Resolve template
 	buf := new(bytes.Buffer)
