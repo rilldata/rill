@@ -238,6 +238,10 @@ const config = {
           // Legacy paths and misc redirects
           // ============================================
           {
+            from: '/developers/guides/setting-up-mcp',
+            to: '/guide/ai/mcp',
+          },
+          {
             from: '/install',
             to: '/developers/get-started/install',
           },
@@ -1042,11 +1046,11 @@ const config = {
           },
           {
             from: '/deploy/deploy-dashboard/deploy-from-cli',
-            to: '/developers/deploy/deploy-dashboard/deploy-from-cli',
+            to: '/developers/guides/deploy-from-cli',
           },
           {
             from: '/deploy/deploy-dashboard/github-101',
-            to: '/developers/deploy/deploy-dashboard/github-101',
+            to: '/developers/guides/github-101',
           },
           {
             from: '/deploy/project-errors',
@@ -1168,7 +1172,7 @@ const config = {
           },
           {
             from: '/guides/setting-up-mcp',
-            to: '/developers/guides/setting-up-mcp',
+            to: '/guide/ai/mcp',
           },
           {
             from: '/guides/rill-basics',
