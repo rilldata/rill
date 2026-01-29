@@ -85,7 +85,7 @@
   }
 
   .component-card:has(.component-error) {
-    @apply outline-red-200;
+    @apply outline-destructive;
   }
 
   .selected {

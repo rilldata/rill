@@ -11,11 +11,11 @@
 </script>
 
 <div
-  class="bg-surface-subtle size-fit p-2 flex flex-col gap-y-1.5 border rounded-md shadow-md"
+  class="bg-tooltip text-fg-inverse size-fit p-2 flex flex-col gap-y-1.5 rounded-md shadow-md"
 >
   {#if timeStart}
     <div class="flex justify-between gap-x-3">
-      <SyntaxElement range="earliest" />
+      <SyntaxElement dark range="earliest" />
       <Timestamp
         date={DateTime.fromJSDate(timeStart)}
         zone={timeZone}
@@ -25,7 +25,7 @@
   {/if}
   {#if timeEnd}
     <div class="flex justify-between gap-x-3">
-      <SyntaxElement range="latest" />
+      <SyntaxElement dark range="latest" />
       <Timestamp
         date={DateTime.fromJSDate(timeEnd)}
         zone={timeZone}
@@ -34,7 +34,7 @@
     </div>
   {/if}
   <div class="flex justify-between gap-x-3">
-    <SyntaxElement range="now" />
+    <SyntaxElement dark range="now" />
     <Timestamp date={now} zone={timeZone} id="now" />
   </div>
 </div>

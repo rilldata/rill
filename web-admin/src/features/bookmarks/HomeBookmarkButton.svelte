@@ -52,11 +52,12 @@
       <Button
         builders={[builder]}
         compact
+        square
         type="secondary"
         label="Home bookmark dropdown"
         active={open || isHomeBookmarkActive}
       >
-        <HomeBookmark size="16px" />
+        <HomeBookmark size="16px" className="flex-none" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent class="w-[330px]">

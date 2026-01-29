@@ -4,4 +4,4 @@
   export let size: string = "1em";
 </script>
 
-<Settings class="stroke-[#9CA3AF]" {size} />
+<Settings class="stroke-icon-muted" {size} />

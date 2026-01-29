@@ -149,7 +149,7 @@
 </script>
 
 <div
-  class="relative w-full flex-none overflow-hidden flex flex-col bg-surface-background"
+  class="relative w-full flex-none overflow-hidden flex flex-col bg-surface-base"
 >
   <Resizer
     disabled={!isOpen}
@@ -192,6 +192,6 @@
 
 <style lang="postcss">
   .bar {
-    @apply flex items-center px-2 h-7 w-full bg-surface-base border-t;
+    @apply flex items-center px-2 h-7 w-full bg-surface-subtle border-t;
   }
 </style>

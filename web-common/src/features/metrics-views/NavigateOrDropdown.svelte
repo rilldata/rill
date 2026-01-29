@@ -20,11 +20,11 @@
 
 {#if resources?.length === 1 && firstResource.meta?.filePaths?.[0]}
   <div
-    class="border-primary-300 flex items-center border h-7 rounded-[2px] bg-transparent text-primary-600"
+    class="border-accent-primary-action flex items-center border h-7 rounded-[2px] bg-transparent text-accent-primary-action"
   >
     <a
       href={`/files/${removeLeadingSlash(firstResource.meta?.filePaths?.[0])}`}
-      class="text-inherit font-medium flex items-center border-r px-3 size-full hover:bg-primary-50 border-primary-300"
+      class="text-inherit font-medium flex items-center border-r px-3 size-full hover:bg-surface-hover border-accent-primary-action hover:text-fg-accent"
     >
       Go to {firstResourceType}
     </a>
@@ -32,7 +32,7 @@
       aria-label="Create resource menu"
       use:builder.action
       {...builder}
-      class="text-inherit h-full aspect-square grid place-content-center hover:bg-primary-50"
+      class="text-inherit h-full aspect-square grid place-content-center hover:bg-surface-hover hover:text-fg-accent"
     >
       <CaretDownIcon />
     </button>

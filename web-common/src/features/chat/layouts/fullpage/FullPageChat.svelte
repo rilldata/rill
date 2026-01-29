@@ -92,7 +92,7 @@
     display: flex;
     height: 100%;
     width: 100%;
-    @apply bg-surface-subtle;
+    /* @apply bg-surface-subtle; */
   }
 
   /* Main Chat Area */
@@ -101,13 +101,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--surface-subtle);
+    /* background: var(--surface-subtle); */
   }
 
   .chat-content {
     flex: 1;
     overflow: hidden;
-    background: var(--surface-subtle);
+    /* background: var(--surface-subtle); */
     display: flex;
     flex-direction: column;
   }
@@ -122,7 +122,7 @@
 
   .chat-input-section {
     flex-shrink: 0;
-    background: var(--surface-subtle);
+    /* background: var(--surface-subtle); */
     padding: 1rem;
     display: flex;
     justify-content: center;

@@ -134,7 +134,7 @@
 <style lang="postcss">
   .chat-messages {
     @apply flex-1;
-    @apply flex flex-col gap-2 bg-transparent;
+    @apply flex flex-col gap-2 py-3 pb-12;
   }
 
   .chat-messages.sidebar {

@@ -117,11 +117,11 @@
     @apply cursor-not-allowed;
   }
 
-  button:focus {
+  /* button:focus {
     @apply outline-none;
     box-shadow: 0px 0px 4px 1px
       color-mix(in oklab, var(--focus-color) 50%, transparent);
-  }
+  } */
 
   /* PRIMARY STYLES */
 
@@ -153,13 +153,17 @@
     @apply bg-transparent border border-accent-primary-action text-accent-primary-action;
   }
 
+  :global(.dark) .secondary {
+    @apply bg-transparent;
+  }
+
   .secondary.theme {
     --focus-color: var(--color-theme-600);
     @apply border-theme-500;
   }
 
   .secondary:hover:not(:disabled) {
-    @apply bg-surface-hover;
+    @apply bg-surface-hover text-fg-accent;
   }
 
   .secondary:disabled {
@@ -216,16 +220,11 @@
   /* LINK STYLES */
 
   .link {
-    @apply text-primary-600 p-0;
+    @apply text-accent-primary-action p-0;
   }
 
   .link:hover:not(:disabled) {
-    @apply text-primary-700;
-  }
-
-  .link:active,
-  .link.selected {
-    @apply text-primary-800;
+    @apply underline;
   }
 
   .link.loading {
@@ -233,7 +232,7 @@
   }
 
   .link:disabled {
-    @apply text-fg-secondary;
+    @apply opacity-50;
   }
 
   .link.theme {

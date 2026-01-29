@@ -26,7 +26,7 @@
         onClick={() => (mcpDialogOpen = true)}
         class="w-full"
       >
-        <APIIcon size="14px" className="!fill-inherit" />
+        <APIIcon size="14px" className="!fill-current" />
         Connect your own client
       </Button>
     </svelte:fragment>
@@ -45,6 +45,7 @@
 
 <style lang="postcss">
   .chat-page-wrapper {
+    @apply bg-surface-background;
     flex: 1;
     overflow: hidden;
     display: flex;

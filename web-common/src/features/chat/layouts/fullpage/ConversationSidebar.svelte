@@ -124,7 +124,7 @@
 <style lang="postcss">
   .conversation-sidebar {
     @apply flex flex-col shrink-0 min-h-0 overflow-hidden;
-    @apply bg-surface-subtle border-r border-border;
+    @apply bg-surface-base border-r border-border;
     @apply transition-[width] duration-200 ease-in-out;
     width: 280px;
   }

@@ -248,12 +248,12 @@
                 >
                   <TooltipContent class="w-60">
                     <div class="flex items-center justify-between">
-                      <span class="font-bold truncate text-fg-primary">
+                      <span class="font-bold truncate text-fg-inverse">
                         {timestamp.toLocaleString(
                           DateTime.DATETIME_MED_WITH_SECONDS,
                         )}
                       </span>
-                      <SyntaxElement range={id} />
+                      <SyntaxElement dark range={id} />
                     </div>
 
                     {#if id !== RillTimeLabel.Now}
