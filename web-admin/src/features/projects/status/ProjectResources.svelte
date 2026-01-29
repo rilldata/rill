@@ -3,6 +3,7 @@
   import {
     createRuntimeServiceCreateTrigger,
     getRuntimeServiceListResourcesQueryKey,
+    getConnectorServiceOLAPListTablesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -39,6 +40,19 @@
             instanceId,
             undefined,
           ),
+        });
+
+        // Invalidate table queries
+        void queryClient.invalidateQueries({
+          queryKey: getConnectorServiceOLAPListTablesQueryKey({
+            instanceId,
+            connector: "",
+          }),
+        });
+
+        // Invalidate table metadata
+        void queryClient.invalidateQueries({
+          queryKey: ["tableMetadata", instanceId],
         });
       });
   }
