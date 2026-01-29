@@ -55,7 +55,8 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			annotations,
 			public_paths,
 			ai_instructions,
-			frontend_url
+			frontend_url,
+			theme
 		FROM instances %s ORDER BY id
 	`, whereClause)
 
@@ -92,6 +93,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&publicPaths,
 			&i.AIInstructions,
 			&i.FrontendURL,
+			&i.Theme,
 		)
 		if err != nil {
 			return nil, err
@@ -225,9 +227,10 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			annotations,
 			public_paths,
 			ai_instructions,
-			frontend_url
+			frontend_url,
+			theme
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
 		`,
 		inst.ID,
 		inst.Environment,
@@ -250,6 +253,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		publicPaths,
 		inst.AIInstructions,
 		inst.FrontendURL,
+		inst.Theme,
 	)
 	if err != nil {
 		return err
@@ -325,7 +329,8 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			annotations = $17,
 			public_paths = $18,
 			ai_instructions = $19,
-			frontend_url = $20
+			frontend_url = $20,
+			theme = $21
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -348,6 +353,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		publicPaths,
 		inst.AIInstructions,
 		inst.FrontendURL,
+		inst.Theme,
 	)
 	if err != nil {
 		return err

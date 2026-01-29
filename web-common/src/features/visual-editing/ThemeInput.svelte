@@ -19,6 +19,7 @@
 
   export let themeNames: string[];
   export let theme: string | V1ThemeSpec | undefined;
+  export let projectDefaultTheme: string | undefined = undefined;
   export let small = false;
   export let onThemeChange: (themeName: string | undefined) => void;
   export let onColorChange: (
@@ -40,7 +41,9 @@
   $: themeQuery =
     theme && typeof theme === "string"
       ? useTheme(instanceId, theme)
-      : undefined;
+      : !theme && projectDefaultTheme
+        ? useTheme(instanceId, projectDefaultTheme)
+        : undefined;
 
   $: fetchedTheme = $themeQuery?.data?.theme?.spec;
 
@@ -133,8 +136,11 @@
         sameWidth
         onChange={handleThemeSelection}
         value={currentSelectValue}
-        options={["Default", ...themeNames].map((value) => ({
-          value,
+        options={[
+          projectDefaultTheme ? `Default (${projectDefaultTheme})` : "Default",
+          ...themeNames,
+        ].map((value) => ({
+          value: value.startsWith("Default") ? "Default" : value,
           label: value,
         }))}
         id="theme"
