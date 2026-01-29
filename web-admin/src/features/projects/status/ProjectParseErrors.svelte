@@ -30,7 +30,7 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <h2 class="text-lg text-fg-tertiary font-medium">Parse errors</h2>
+  <h2 class="text-lg font-medium">Parse errors</h2>
 
   {#if isLoading}
     <Spinner status={EntityStatus.Running} size={"16px"} />
@@ -40,10 +40,10 @@
     </div>
   {:else if isSuccess}
     {#if parseErrors && parseErrors.length > 0}
-      <ul class="border rounded-sm">
+      <ul class="border border-gray-200 rounded-md overflow-hidden">
         {#each parseErrors as error, i (i)}
           <li
-            class="flex gap-x-5 justify-between py-1 px-9 border-b bg-red-50 font-mono last:border-b-0"
+            class="flex gap-x-5 justify-between py-2 px-3 border-b border-gray-200 bg-red-50 font-mono text-xs last:border-b-0"
           >
             <span class="text-red-600 break-all">
               {error.message}
@@ -61,7 +61,7 @@
         {parserReconcileError}
       </div>
     {:else}
-      <div class="text-fg-secondary">None!</div>
+      <div class="text-fg-secondary text-sm">None!</div>
     {/if}
   {/if}
 </section>
