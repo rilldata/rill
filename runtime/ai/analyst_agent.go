@@ -283,11 +283,10 @@ Your goal is to analyze the contents of the canvas "{{ .canvas }}", which is pow
 The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
 The metrics views and canvas definitions have been provided in your tool calls.
 
-Here is an overview of the settings the user has currently applied to the dashboard:
+Here is an overview of the settings the user has currently applied to the dashboard (Merge component's dimension_filters with "and"):
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
 {{ if .where_per_metrics_view }}{{range $mv, $filter := .where_per_metrics_view}}Use where filters for metrics view "{{ $mv }}": "{{ $filter }}"
 {{end}}{{ end }}
-{{ if .canvas_component }}Merge component's dimension_filters with "and".{{ end }}
 
 You should:
 1. Carefully study the canvas and metrics view definition to understand the measures and dimensions available for analysis.

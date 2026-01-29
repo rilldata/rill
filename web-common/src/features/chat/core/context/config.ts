@@ -66,7 +66,7 @@ export const InlineContextConfig: Record<
         ctx.canvasComponent!,
         componentSpec,
         meta.metricsViewSpecs[
-          (componentSpec.rendererProperties?.metrics_view as
+          (componentSpec?.rendererProperties?.metrics_view as
             | string
             | undefined) ?? ""
         ]?.metricsViewSpec,

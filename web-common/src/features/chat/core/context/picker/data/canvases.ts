@@ -15,6 +15,8 @@ import {
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
+import { getLatestConversationQueryOptions } from "@rilldata/web-common/features/chat/core/utils.ts";
+import { MessageType } from "@rilldata/web-common/features/chat/core/types.ts";
 
 export function getCanvasesPickerOptions(
   uiState: ContextPickerUIState,
@@ -25,12 +27,13 @@ export function getCanvasesPickerOptions(
     ),
     queryClient,
   );
+  const lastUsedCanvasNameStore = getLastUsedCanvasNameStore();
   const activeCanvasNameStore = getCanvasNameStore();
   const instanceId = get(runtime).instanceId;
 
   return derived(
-    [canvasResourcesQuery, activeCanvasNameStore],
-    ([canvasResourcesQueryResp, activeCanvasName], set) => {
+    [canvasResourcesQuery, lastUsedCanvasNameStore, activeCanvasNameStore],
+    ([canvasResourcesQueryResp, lastUsedCanvasName, activeCanvasName], set) => {
       const canvases = canvasResourcesQueryResp.data ?? [];
       const canvasPickerItems: PickerItem[] = [];
       const canvasQueryOptions: ReturnType<
@@ -40,7 +43,6 @@ export function getCanvasesPickerOptions(
       canvases.forEach((res) => {
         const canvasName = res.meta?.name?.name ?? "";
 
-        const currentlyActive = activeCanvasName === canvasName;
         const canvasContext = {
           type: InlineContextType.Canvas,
           value: canvasName,
@@ -49,7 +51,8 @@ export function getCanvasesPickerOptions(
         const canvasPickerItem = {
           id: getIdForContext(canvasContext),
           context: canvasContext,
-          currentlyActive,
+          currentlyActive: activeCanvasName === canvasName,
+          recentlyUsed: lastUsedCanvasName === canvasName,
           hasChildren: true,
         } satisfies PickerItem;
 
@@ -125,4 +128,28 @@ function getCanvasComponentsQueryOptions(
       },
     ),
   );
+}
+
+/**
+ * Looks at the last conversation and returns the canvas used in the last message or tool call.
+ */
+function getLastUsedCanvasNameStore() {
+  const lastConversationQuery = createQuery(
+    getLatestConversationQueryOptions(),
+    queryClient,
+  );
+
+  return derived(lastConversationQuery, (latestConversation) => {
+    if (!latestConversation.data?.messages) return null;
+
+    for (const message of latestConversation.data.messages) {
+      if (message.type === MessageType.CALL) continue;
+      const content = message.content?.[0];
+      if (content?.toolCall?.input?.canvas) {
+        return content.toolCall.input.canvas as string;
+      }
+    }
+
+    return null;
+  });
 }
