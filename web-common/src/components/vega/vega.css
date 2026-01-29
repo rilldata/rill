@@ -5,10 +5,10 @@
 
 #vg-tooltip-element,
 #rill-vg-tooltip {
-  @apply absolute border p-3 rounded-lg pointer-events-none;
+  @apply absolute p-3 rounded-lg pointer-events-none;
   @apply ui-copy-number;
+  border: 0 !important;
   background: var(--tooltip) !important;
-  border-color: var(--border) !important;
   color: var(--fg-inverse) !important;
 
   font-family: "Inter";
@@ -16,8 +16,11 @@
 
   & h2 {
     @apply text-sm font-semibold mb-2;
-    color: light-dark(rgb(100 116 139), rgb(148 163 184));
-    /* slate-500 / slate-400 */
+    color: color-mix(
+      in oklab,
+      var(--fg-inverse) 90%,
+      transparent 30%
+    ) !important;
   }
 
   & table {
@@ -45,8 +48,11 @@
   & table tr td.key {
     @apply text-left font-normal text-xs;
     padding-right: 12px;
-    color: light-dark(rgb(71 85 105), rgb(148 163 184));
-    /* slate-600 / slate-400 */
+    color: color-mix(
+      in oklab,
+      var(--fg-inverse) 70%,
+      transparent 30%
+    ) !important;
   }
 
   & table tr td.value {
