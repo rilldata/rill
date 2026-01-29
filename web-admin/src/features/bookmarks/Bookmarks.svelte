@@ -170,11 +170,12 @@
     <Button
       builders={[builder]}
       compact
+      square
       type="secondary"
       label="Other bookmark dropdown"
       active={open}
     >
-      <BookmarkIcon class="inline-flex" size="16px" />
+      <BookmarkIcon class="flex-none" size="16px" />
     </Button>
   </DropdownMenuTrigger>
   <DropdownMenuContent class="w-[450px]">

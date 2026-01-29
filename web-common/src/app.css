@@ -60,14 +60,14 @@
 
     /* SEMANTIC VARIABLES */
     --surface-base: var(--white);
-    --surface-subtle: var(--color-neutral-50);
+    --surface-subtle: var(--color-gray-50);
     --surface-background: var(--white);
     --surface-hover: var(--color-primary-50);
     --surface-active: var(--color-primary-100);
     --surface-overlay: var(--white);
     --surface-muted: var(--color-neutral-100);
 
-    --surface-card: var(--surface-background);
+    --surface-card: var(--white);
 
     --fg-primary: var(--color-neutral-950);
     --fg-secondary: var(--color-gray-700);
@@ -94,7 +94,7 @@
     );
     --border: var(--color-neutral-200);
 
-    --ring-focus: var(--color-theme-primary-300);
+    --ring-focus: var(--color-theme-300);
     --ring-offset: var(--white);
 
     --dimension: var(--color-primary-100);
@@ -105,13 +105,13 @@
     --measure-foreground: var(--color-secondary-800);
     --measure-border: var(--color-secondary-800);
 
-    --tooltip: var(--color-neutral-900);
+    --tooltip: var(--color-rill-gray-dark-500);
 
-    --destructive: oklch(0.7106 0.1661 22.22);
+    --destructive: var(--color-red-600);
     --destructive-foreground: var(--color-red-50);
 
     --popover: var(--white);
-    --popover-accent: var(--color-gray-200);
+    --popover-accent: var(--surface-hover);
     --popover-foreground: var(--color-neutral-950);
     --popover-footer: var(--color-neutral-50);
 
@@ -279,17 +279,17 @@
     color-scheme: dark;
     color: var(--fg-primary);
 
+    --surface-background: var(--color-rill-gray-dark-300);
     --surface-base: var(--color-rill-gray-dark-50);
     --surface-subtle: var(--color-rill-gray-dark-200);
-    --surface-background: var(--color-rill-gray-dark-300);
     --surface-hover: var(--color-rill-gray-dark-800);
     --surface-active: var(--color-rill-gray-dark-500);
     --surface-overlay: var(--color-rill-gray-dark-400);
-    --surface-muted: var(--color-neutral-light-800);
+    --surface-muted: var(--color-rill-gray-dark-500);
 
-    --surface-card: var(--surface-background);
+    --surface-card: var(--color-rill-gray-dark-300);
 
-    --fg-primary: var(--color-neutral-light-50);
+    --fg-primary: var(--color-neutral-light-200);
     --fg-secondary: var(--color-gray-light-300);
     --fg-tertiary: var(--color-gray-light-400);
     --fg-inverse: var(--color-neutral-light-50);
@@ -321,7 +321,11 @@
     --connector: oklch(66.569% 0.02691 265.523);
 
     /* These don't match Figma directly, but are visually close */
-    --input: color-mix(in oklab, var(--white) calc(0.07 * 100%), transparent);
+    --input: color-mix(
+      in oklab,
+      var(--color-rill-gray-dark-600) calc(0.5 * 100%),
+      transparent
+    );
     --border: color-mix(in oklab, var(--white) calc(0.08 * 100%), transparent);
 
     --ring-focus: var(--color-primary-light-500);
@@ -340,13 +344,13 @@
     /* This is not exactly as designed */
     --destructive: color-mix(
       in oklab,
-      oklch(0.7106 0.1661 22.22) calc(0.9 * 100%),
+      var(--color-red-light-400) calc(0.9 * 100%),
       transparent
     );
     --destructive-foreground: var(--color-red-light-50);
 
-    --popover: var(--color-rill-gray-dark-500);
-    --popover-accent: var(--color-rill-gray-dark-700);
+    --popover: var(--color-rill-gray-dark-400);
+    --popover-accent: var(--surface-hover);
     --popover-foreground: var(--color-neutral-light-50);
     --popover-footer: var(--color-rill-gray-dark-400);
 
@@ -489,7 +493,7 @@
     --color-qualitative-24: hsl(110deg 55% 60%);
 
     --editor-selection: #304e75;
-    --line-highlight: var(--color-rill-gray-dark-400);
+    --line-highlight: #afafaf33;
   }
 
   h1,
@@ -504,13 +508,8 @@ html {
   @apply text-fg-primary;
 }
 
-a,
-button {
-  @apply text-fg-primary;
-}
-
 body {
-  @apply bg-surface-background;
+  @apply bg-surface-base;
   font-family: "Inter";
   font-size: 12px;
 
@@ -543,7 +542,7 @@ body {
 }
 
 a {
-  @apply text-primary-500 hover:text-primary-600 font-medium;
+  @apply text-accent-primary-action font-medium;
 }
 
 .slide {

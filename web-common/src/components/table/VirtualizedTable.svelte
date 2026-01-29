@@ -112,7 +112,7 @@
   style:--grid-template-columns={columnLayout}
 >
   {#each headers as headerGroup (headerGroup.id)}
-    <div class="row sticky top-0 z-30 bg-transparent">
+    <div class="row sticky top-0 z-30 bg-surface-subtle">
       {#each headerGroup.headers as header (header.id)}
         <svelte:element
           this={header.column.getCanSort() ? "button" : "div"}
@@ -162,7 +162,7 @@
         class="relative w-full"
         style="height: {$virtualizer.getTotalSize()}px;"
       >
-        {#each virtualRows as virtualRow}
+        {#each virtualRows as virtualRow, i (i)}
           {@const row = rows[virtualRow.index]}
           <div
             class="row {rowPadding} absolute top-0 left-0 w-full"

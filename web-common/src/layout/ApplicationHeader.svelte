@@ -24,6 +24,7 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import Tag from "../components/tag/Tag.svelte";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
@@ -101,9 +102,7 @@
       <Rill />
     </a>
 
-    <span class="rounded-full px-2 border text-fg-primary bg-surface-base">
-      {mode}
-    </span>
+    <Tag text={mode} color="gray"></Tag>
 
     {#if mode === "Preview"}
       {#if $exploresQuery?.data}
