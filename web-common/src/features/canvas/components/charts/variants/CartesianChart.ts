@@ -2,6 +2,8 @@ import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/i
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import {
   CartesianChartProvider,
+  getAxisRoles,
+  type CartesianAxisKey,
   type CartesianChartSpec as CartesianChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
 import {
@@ -116,9 +118,46 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     const config = get(this.specStore);
     const isMultiMeasure = isMultiFieldConfig(config.y);
 
+    const { dimensionAxis, measureAxis } = getAxisRoles(config);
+    const dimensionField =
+      dimensionAxis && config[dimensionAxis]
+        ? (config[dimensionAxis] as FieldConfig).field
+        : undefined;
+
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
       sortSelector.customSortItems = this.provider.customSortXItems;
+    }
+
+    // Align axis input roles (dimension vs measure) with current axis roles
+    const axisKeys: CartesianAxisKey[] = ["x", "y"];
+    axisKeys.forEach((axisKey) => {
+      const axisParam = inputParams[axisKey];
+      const chartFieldInput = axisParam.meta?.chartFieldInput;
+      if (!chartFieldInput) return;
+
+      if (axisKey === dimensionAxis) {
+        chartFieldInput.type = "dimension";
+      } else if (axisKey === measureAxis) {
+        chartFieldInput.type = "measure";
+      }
+
+      // Ensure excludedValues is always defined for positional inputs
+      if (!Array.isArray(chartFieldInput.excludedValues)) {
+        chartFieldInput.excludedValues = [];
+      }
+    });
+
+    // Once a dimension is chosen on one axis, exclude it from the opposite axis
+    if (dimensionAxis && measureAxis && dimensionField) {
+      const oppositeAxisParam = inputParams[measureAxis];
+      const oppositeChartFieldInput =
+        oppositeAxisParam.meta?.chartFieldInput;
+      if (oppositeChartFieldInput) {
+        const existing = new Set(oppositeChartFieldInput.excludedValues || []);
+        existing.add(dimensionField);
+        oppositeChartFieldInput.excludedValues = Array.from(existing);
+      }
     }
 
     if (isMultiMeasure) {
@@ -144,9 +183,17 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
         nullSelector: true,
       };
 
-      // Exclude the main y field from multi-field selector
+      // Exclude the main y field from multi-field selector, and also any
+      // current dimension field to avoid picking it as a measure.
       if (inputParams.y.meta?.chartFieldInput && config.y?.field) {
-        inputParams.y.meta.chartFieldInput.excludedValues = [config.y.field];
+        const excluded = new Set(
+          inputParams.y.meta.chartFieldInput.excludedValues || [],
+        );
+        excluded.add(config.y.field);
+        if (dimensionField) excluded.add(dimensionField);
+        inputParams.y.meta.chartFieldInput.excludedValues = Array.from(
+          excluded,
+        );
       }
     }
 
@@ -197,7 +244,18 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    const config = get(this.specStore);
+    const metricsViewName = config.metrics_view;
+    const metricsViewStore =
+      this.parent.metricsView.getMetricsViewFromName(metricsViewName);
+    const metricsViewQuery = get(metricsViewStore);
+    const metricsViewSpec = metricsViewQuery.metricsView;
+
+    return this.provider.createChartDataQuery(
+      ctx.runtime,
+      timeAndFilterStore,
+      metricsViewSpec,
+    );
   }
 
   static newComponentSpec(

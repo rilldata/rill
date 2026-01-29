@@ -21,6 +21,14 @@
   let open = false;
   let searchValue = "";
 
+  $: hasSelection = isTimeSelected || !!selectedItem;
+
+  function handleClear() {
+    // Notify parent that the selection has been cleared.
+    // Consumers that only care about the field name can treat an empty string as \"no field\".
+    onSelect("", "");
+  }
+
   $: ({ instanceId } = $runtime);
 
   $: ctx = getCanvasStore(canvasName, instanceId);
@@ -29,10 +37,12 @@
   $: timeDimension = getTimeDimensionForMetricView(metricName);
 
   $: isTimeSelected = $timeDimension && selectedItem === $timeDimension;
+  // Show all available field types in the dropdown; axis-specific filtering
+  // is handled by higher-level inspector logic (e.g. excludedValues).
   $: fieldData = useMetricFieldData(
     ctx,
     metricName,
-    [type],
+    ["measure", "dimension", "time"],
     searchableItems,
     searchValue,
     excludedValues,
@@ -51,7 +61,11 @@
       <Chip
         fullWidth
         caret
-        type={isTimeSelected ? "time" : type}
+        type={hasSelection ? (isTimeSelected ? "time" : type) : "measure"}
+        gray={!hasSelection}
+        removable={!!selectedItem}
+        removeTooltipText={selectedItem ? "Clear selected field" : undefined}
+        onRemove={handleClear}
         builders={[builder]}
       >
         <span class="font-bold truncate" slot="body">
@@ -60,7 +74,7 @@
           {:else if selectedItem}
             {$fieldData.displayMap[selectedItem]?.label || selectedItem}
           {:else}
-            Select a {type} field
+            Select a field
           {/if}
         </span>
       </Chip>
@@ -83,28 +97,96 @@
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
         {/if}
-        {#each $fieldData.filteredItems as item (item)}
-          <!-- Hide item if it's the already selected one -->
-          {#if item !== selectedItem}
-            <DropdownMenu.Item
-              class="pl-8 mx-1"
-              on:click={() => {
-                onSelect(item, $fieldData.displayMap[item]?.label || item);
-                open = false;
-              }}
-            >
-              <slot {item}>
-                {$fieldData.displayMap[item]?.label || item}
-              </slot>
-            </DropdownMenu.Item>
-          {/if}
+
+        {#if $fieldData.filteredItems.length === 0 && searchValue}
+          <div class="text-fg-disabled text-center p-2 w-full">
+            no results
+          </div>
         {:else}
-          {#if searchValue}
-            <div class="text-fg-disabled text-center p-2 w-full">
-              no results
+          {#if $fieldData.filteredItems.some(
+            (item) => $fieldData.displayMap[item]?.type === "measure",
+          )}
+            <div class="px-3 pt-2 pb-1 text-[10px] font-semibold text-fg-disabled">
+              MEASURES
             </div>
+            {#each $fieldData.filteredItems.filter(
+              (item) => $fieldData.displayMap[item]?.type === "measure",
+            ) as item (item)}
+              {#if item !== selectedItem}
+                <DropdownMenu.Item
+                  class="pl-8 mx-1"
+                  on:click={() => {
+                    onSelect(
+                      item,
+                      $fieldData.displayMap[item]?.label || item,
+                    );
+                    open = false;
+                  }}
+                >
+                  <slot {item}>
+                    {$fieldData.displayMap[item]?.label || item}
+                  </slot>
+                </DropdownMenu.Item>
+              {/if}
+            {/each}
           {/if}
-        {/each}
+
+          {#if $fieldData.filteredItems.some(
+            (item) => $fieldData.displayMap[item]?.type === "time",
+          )}
+            <div class="px-3 pt-2 pb-1 text-[10px] font-semibold text-fg-disabled">
+              TIME
+            </div>
+            {#each $fieldData.filteredItems.filter(
+              (item) => $fieldData.displayMap[item]?.type === "time",
+            ) as item (item)}
+              {#if item !== selectedItem}
+                <DropdownMenu.Item
+                  class="pl-8 mx-1"
+                  on:click={() => {
+                    onSelect(
+                      item,
+                      $fieldData.displayMap[item]?.label || item,
+                    );
+                    open = false;
+                  }}
+                >
+                  <slot {item}>
+                    {$fieldData.displayMap[item]?.label || item}
+                  </slot>
+                </DropdownMenu.Item>
+              {/if}
+            {/each}
+          {/if}
+
+          {#if $fieldData.filteredItems.some(
+            (item) => $fieldData.displayMap[item]?.type === "dimension",
+          )}
+            <div class="px-3 pt-2 pb-1 text-[10px] font-semibold text-fg-disabled">
+              DIMENSIONS
+            </div>
+            {#each $fieldData.filteredItems.filter(
+              (item) => $fieldData.displayMap[item]?.type === "dimension",
+            ) as item (item)}
+              {#if item !== selectedItem}
+                <DropdownMenu.Item
+                  class="pl-8 mx-1"
+                  on:click={() => {
+                    onSelect(
+                      item,
+                      $fieldData.displayMap[item]?.label || item,
+                    );
+                    open = false;
+                  }}
+                >
+                  <slot {item}>
+                    {$fieldData.displayMap[item]?.label || item}
+                  </slot>
+                </DropdownMenu.Item>
+              {/if}
+            {/each}
+          {/if}
+        {/if}
       </div>
     </DropdownMenu.Content>
   </DropdownMenu.Root>

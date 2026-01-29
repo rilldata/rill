@@ -16,6 +16,7 @@ import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboard
 import {
   getQueryServiceMetricsViewAggregationQueryOptions,
   type MetricsViewSpecMeasure,
+  type V1MetricsViewSpec,
   type V1Expression,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
@@ -35,10 +36,122 @@ import {
   vegaSortToAggregationSort,
 } from "../query-util";
 
+export type CartesianAxisKey = "x" | "y";
+
+export type CartesianAxisRole = "dimension" | "measure";
+
+export interface CartesianAxisRoles {
+  dimensionAxis?: CartesianAxisKey;
+  measureAxis?: CartesianAxisKey;
+}
+
+function isDimensionLikeAxis(field: FieldConfig | undefined): boolean {
+  if (!field) return false;
+  return field.type === "nominal" || field.type === "temporal";
+}
+
+function isMeasureLikeAxis(field: FieldConfig | undefined): boolean {
+  if (!field) return false;
+  return field.type === "quantitative";
+}
+
+export function getAxisRoles(config: CartesianChartSpec): CartesianAxisRoles {
+  const x = config.x;
+  const y = config.y;
+
+  const xIsMeasure = isMeasureLikeAxis(x);
+  const yIsMeasure = isMeasureLikeAxis(y);
+  const xIsDimension = isDimensionLikeAxis(x);
+  const yIsDimension = isDimensionLikeAxis(y);
+
+  let dimensionAxis: CartesianAxisKey | undefined;
+  let measureAxis: CartesianAxisKey | undefined;
+
+  // Prefer a single clear measure axis when possible
+  if (xIsMeasure && !yIsMeasure) {
+    measureAxis = "x";
+    if (yIsDimension) dimensionAxis = "y";
+  } else if (!xIsMeasure && yIsMeasure) {
+    measureAxis = "y";
+    if (xIsDimension) dimensionAxis = "x";
+  } else if (xIsMeasure && yIsMeasure) {
+    // Both axes are measures – prefer y for backwards compatibility
+    measureAxis = "y";
+  } else {
+    // No clear measure axis – fall back to dimension-like axes
+    if (xIsDimension && !yIsDimension) {
+      dimensionAxis = "x";
+    } else if (!xIsDimension && yIsDimension) {
+      dimensionAxis = "y";
+    } else if (xIsDimension && yIsDimension) {
+      // Both dimension-like – prefer x for backwards compatibility
+      dimensionAxis = "x";
+    }
+  }
+
+  return { dimensionAxis, measureAxis };
+}
+
+function getAxisRolesWithMetrics(
+  config: CartesianChartSpec,
+  metricsViewSpec: V1MetricsViewSpec | undefined,
+): CartesianAxisRoles {
+  const baseRoles = getAxisRoles(config);
+  if (!metricsViewSpec) return baseRoles;
+
+  const measureNames = new Set(
+    (metricsViewSpec.measures || []).map((m) => m.name),
+  );
+  const dimensionNames = new Set(
+    (metricsViewSpec.dimensions || []).map((d) => d.name),
+  );
+  if (metricsViewSpec.timeDimension) {
+    dimensionNames.add(metricsViewSpec.timeDimension);
+  }
+
+  const xField = config.x?.field;
+  const yField = config.y?.field;
+
+  const xIsMeasure = !!(xField && measureNames.has(xField));
+  const yIsMeasure = !!(yField && measureNames.has(yField));
+  const xIsDimension = !!(xField && dimensionNames.has(xField));
+  const yIsDimension = !!(yField && dimensionNames.has(yField));
+
+  let dimensionAxis: CartesianAxisKey | undefined;
+  let measureAxis: CartesianAxisKey | undefined;
+
+  // Prefer metrics-view-based classification
+  if (xIsMeasure && !yIsMeasure) {
+    measureAxis = "x";
+  } else if (!xIsMeasure && yIsMeasure) {
+    measureAxis = "y";
+  } else if (xIsMeasure && yIsMeasure) {
+    measureAxis = baseRoles.measureAxis ?? "y";
+  }
+
+  if (xIsDimension && !yIsDimension) {
+    dimensionAxis = "x";
+  } else if (!xIsDimension && yIsDimension) {
+    dimensionAxis = "y";
+  } else if (xIsDimension && yIsDimension) {
+    dimensionAxis = baseRoles.dimensionAxis ?? "x";
+  }
+
+  return {
+    dimensionAxis: dimensionAxis ?? baseRoles.dimensionAxis,
+    measureAxis: measureAxis ?? baseRoles.measureAxis,
+  };
+}
+
 export type CartesianChartSpec = {
   metrics_view: string;
-  x?: FieldConfig<"nominal" | "time">;
-  y?: FieldConfig<"quantitative">;
+  /**
+   * Both positional axes can be either dimension-like (nominal/temporal)
+   * or measure-like (quantitative). The actual "dimension" vs "measure"
+   * role is determined dynamically via `getAxisRoles`.
+   */
+  x?: FieldConfig<"nominal" | "quantitative" | "time">;
+  y?: FieldConfig<"nominal" | "quantitative" | "time">;
   color?: FieldConfig<"nominal"> | string;
 };
 
@@ -91,64 +204,146 @@ export class CartesianChartProvider {
   createChartDataQuery(
     runtime: Writable<Runtime>,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
   ): ChartDataQuery {
     const config = get(this.spec);
 
-    const isMultiMeasure = isMultiFieldConfig(config.y);
+    const { dimensionAxis, measureAxis } = getAxisRolesWithMetrics(
+      config,
+      metricsViewSpec,
+    );
+    const dimensionFieldConfig =
+      dimensionAxis && config[dimensionAxis]
+        ? (config[dimensionAxis] as FieldConfig)
+        : undefined;
+    const measureFieldConfig =
+      measureAxis && config[measureAxis]
+        ? (config[measureAxis] as FieldConfig)
+        : undefined;
+
+    // #region agent log
+    fetch("http://127.0.0.1:7242/ingest/9398fc01-29fe-493e-a10c-09e7c6bb4eaf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: "debug-session",
+        runId: "pre-fix-1",
+        hypothesisId: "H1",
+        location: "CartesianChartProvider.ts:createChartDataQuery:axis-selection",
+        message: "Axis roles and field configs before query build",
+        data: {
+          metricsView: metricsViewSpec?.name,
+          chartSpecMetricsView: config.metrics_view,
+          x: config.x,
+          y: config.y,
+          color: config.color,
+          dimensionAxis,
+          measureAxis,
+          dimensionFieldConfig,
+          measureFieldConfig,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion agent log
+
+    const isMultiMeasure = isMultiFieldConfig(measureFieldConfig);
 
     let measures: V1MetricsViewAggregationMeasure[] = [];
     let dimensions: V1MetricsViewAggregationDimension[] = [];
 
     let measuresSet = new Set<string>();
     if (isMultiMeasure) {
-      measuresSet = new Set(config.y?.fields);
-      if (config.y?.type === "quantitative" && config.y?.field) {
-        measuresSet.add(config.y.field);
+      measuresSet = new Set(measureFieldConfig?.fields);
+      if (measureFieldConfig?.type === "quantitative" && measureFieldConfig?.field) {
+        measuresSet.add(measureFieldConfig.field);
       }
       measures = Array.from(measuresSet).map((name) => ({ name }));
     } else {
-      if (config.y?.type === "quantitative" && config.y?.field) {
-        measuresSet = new Set([config.y.field]);
-        measures = [{ name: config.y.field }];
+      if (measureFieldConfig?.type === "quantitative" && measureFieldConfig?.field) {
+        measuresSet = new Set([measureFieldConfig.field]);
+        measures = [{ name: measureFieldConfig.field }];
       }
     }
 
-    let xAxisSort: V1MetricsViewAggregationSort | undefined;
+    let primaryAxisSort: V1MetricsViewAggregationSort | undefined;
     let limit: number | undefined;
     let hasColorDimension = false;
     let colorDimensionName = "";
     let colorLimit: number | undefined;
 
-    const dimensionName = config.x?.field;
+    const dimensionName = dimensionFieldConfig?.field;
 
-    if (config.x?.type === "nominal" && dimensionName) {
-      limit = config.x.limit ?? 100;
-      if (isMultiMeasure) {
-        const sort = config.x?.sort;
-        if (sort === "y" || sort === "-y") {
-          // Use first measure for y-based sorts
-          const firstMeasure = config.y?.fields?.[0];
-          if (firstMeasure) {
-            xAxisSort = {
-              name: firstMeasure,
-              desc: sort === "-y",
+    // #region agent log
+    fetch("http://127.0.0.1:7242/ingest/9398fc01-29fe-493e-a10c-09e7c6bb4eaf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: "debug-session",
+        runId: "pre-fix-1",
+        hypothesisId: "H2",
+        location: "CartesianChartProvider.ts:createChartDataQuery:measures-dimensions",
+        message: "Measures and dimensions after classification",
+        data: {
+          metricsView: metricsViewSpec?.name,
+          chartSpecMetricsView: config.metrics_view,
+          dimensionAxis,
+          measureAxis,
+          dimensionFieldConfig,
+          measureFieldConfig,
+          measures: Array.from(measuresSet),
+          isMultiMeasure,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion agent log
+
+    if (
+      dimensionFieldConfig &&
+      (dimensionFieldConfig.type === "nominal" ||
+        dimensionFieldConfig.type === "temporal") &&
+      dimensionName
+    ) {
+      if (dimensionFieldConfig.type === "nominal") {
+        limit = dimensionFieldConfig.limit ?? 100;
+        if (isMultiMeasure) {
+          const sort = dimensionFieldConfig.sort;
+          if (sort === "y" || sort === "-y" || sort === "measure" || sort === "-measure") {
+            // Use first measure for measure-based sorts
+            const firstMeasure = measureFieldConfig?.fields?.[0];
+            if (firstMeasure) {
+              primaryAxisSort = {
+                name: firstMeasure,
+                desc: sort.startsWith("-"),
+              };
+            }
+          } else if (sort === "x" || sort === "-x") {
+            primaryAxisSort = {
+              name: dimensionName,
+              desc: sort === "-x",
             };
           }
-        } else if (sort === "x" || sort === "-x") {
-          xAxisSort = {
-            name: dimensionName,
-            desc: sort === "-x",
-          };
+        } else {
+          // When we have a clear measure axis, allow vegaSortToAggregationSort
+          // to resolve measure-based sorts using the first measure field.
+          const primaryEncoder: "x" | "y" =
+            dimensionAxis === "y" ? "y" : "x";
+          const firstMeasureField =
+            measures.length > 0 ? measures[0].name : undefined;
+          primaryAxisSort = vegaSortToAggregationSort(
+            primaryEncoder,
+            config,
+            this.defaultSort,
+            firstMeasureField,
+          );
         }
-      } else {
-        xAxisSort = vegaSortToAggregationSort("x", config, this.defaultSort);
       }
-      dimensions = [{ name: dimensionName }];
-    } else if (config.x?.type === "temporal" && dimensionName) {
+
       dimensions = [{ name: dimensionName }];
     }
 
-    if (isFieldConfig(config.color) && !isMultiMeasure) {
+    if (isFieldConfig(config.color) && !isMultiMeasure && config.color.field) {
       colorDimensionName = config.color.field;
       colorLimit = config.color.limit ?? this.defaultSplitLimit;
       dimensions = [...dimensions, { name: colorDimensionName }];
@@ -163,11 +358,11 @@ export class CartesianChartProvider {
         const instanceId = $runtime.instanceId;
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
-          config.x?.type === "nominal" &&
-          !Array.isArray(config.x?.sort) &&
+          dimensionFieldConfig?.type === "nominal" &&
+          !Array.isArray(dimensionFieldConfig?.sort) &&
           !!dimensionName;
 
-        const topNWhere = getFilterWithNullHandling(where, config.x);
+        const topNWhere = getFilterWithNullHandling(where, dimensionFieldConfig);
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
           instanceId,
@@ -175,7 +370,7 @@ export class CartesianChartProvider {
           {
             measures,
             dimensions: [{ name: dimensionName }],
-            sort: xAxisSort ? [xAxisSort] : undefined,
+            sort: primaryAxisSort ? [primaryAxisSort] : undefined,
             where: topNWhere,
             timeRange: hasTimeSeries ? timeRange : undefined,
             limit: limit?.toString(),
@@ -213,8 +408,8 @@ export class CartesianChartProvider {
           {
             measures,
             dimensions: [{ name: colorDimensionName }],
-            sort: config?.y?.field
-              ? [{ name: config.y.field, desc: true }]
+            sort: measureFieldConfig?.field
+              ? [{ name: measureFieldConfig.field, desc: true }]
               : undefined,
             where: topNWhere,
             timeRange,
@@ -250,8 +445,8 @@ export class CartesianChartProvider {
           !!measures?.length &&
           !!dimensions?.length &&
           (hasColorDimension &&
-          config.x?.type === "nominal" &&
-          !Array.isArray(config.x?.sort)
+          dimensionFieldConfig?.type === "nominal" &&
+          !Array.isArray(dimensionFieldConfig?.sort)
             ? topNXData !== undefined
             : true) &&
           (hasColorDimension && colorDimensionName && colorLimit
@@ -260,14 +455,14 @@ export class CartesianChartProvider {
 
         let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
           where,
-          config.x,
+          dimensionFieldConfig,
         );
 
         let includedXValues: string[] = [];
 
-        // Apply topN filter for x dimension
-        if (Array.isArray(config.x?.sort)) {
-          includedXValues = config.x.sort;
+        // Apply topN filter for primary (dimension) axis
+        if (Array.isArray(dimensionFieldConfig?.sort)) {
+          includedXValues = dimensionFieldConfig.sort;
         } else if (topNXData?.length && dimensionName) {
           includedXValues = topNXData.map((d) => d[dimensionName] as string);
         }
@@ -298,7 +493,7 @@ export class CartesianChartProvider {
         this.combinedWhere.set(combinedWhere);
 
         // Update dimensions with timeGrain if temporal
-        if (config.x?.type === "temporal" && timeGrain) {
+        if (dimensionFieldConfig?.type === "temporal" && timeGrain) {
           dimensions = dimensions.map((d) =>
             d.name === dimensionName ? { ...d, timeGrain } : d,
           );
@@ -328,7 +523,7 @@ export class CartesianChartProvider {
           {
             measures: measuresWithComparison,
             dimensions,
-            sort: xAxisSort ? [xAxisSort] : undefined,
+            sort: primaryAxisSort ? [primaryAxisSort] : undefined,
             where: combinedWhere,
             timeRange,
             comparisonTimeRange:
@@ -337,7 +532,7 @@ export class CartesianChartProvider {
               comparisonTimeRange?.end
                 ? comparisonTimeRange
                 : undefined,
-            fillMissing: config.x?.type === "temporal",
+            fillMissing: dimensionFieldConfig?.type === "temporal",
             limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
           },
           {
@@ -358,8 +553,14 @@ export class CartesianChartProvider {
     const config = get(this.spec);
     const result: Record<string, string[] | undefined> = {};
 
-    if (config.x?.field) {
-      result[config.x.field] =
+    const { dimensionAxis } = getAxisRoles(config);
+    const dimensionFieldConfig =
+      dimensionAxis && config[dimensionAxis]
+        ? (config[dimensionAxis] as FieldConfig)
+        : undefined;
+
+    if (dimensionFieldConfig?.field) {
+      result[dimensionFieldConfig.field] =
         this.customSortXItems.length > 0
           ? [...this.customSortXItems]
           : undefined;
@@ -381,32 +582,50 @@ export class CartesianChartProvider {
 
   chartTitle(fields: ChartFieldsMap): string {
     const config = get(this.spec);
-    const isMultiMeasure = isMultiFieldConfig(config.y);
+    const { dimensionAxis, measureAxis } = getAxisRoles(config);
+    const dimensionFieldConfig =
+      dimensionAxis && config[dimensionAxis]
+        ? (config[dimensionAxis] as FieldConfig)
+        : undefined;
+    const measureFieldConfig =
+      measureAxis && config[measureAxis]
+        ? (config[measureAxis] as FieldConfig)
+        : undefined;
+
+    const isMultiMeasure = isMultiFieldConfig(measureFieldConfig);
 
     if (isMultiMeasure) {
-      const xLabel = config.x?.field
-        ? fields[config.x.field]?.displayName || config.x.field
+      const dimensionLabel = dimensionFieldConfig?.field
+        ? fields[dimensionFieldConfig.field]?.displayName ||
+          dimensionFieldConfig.field
         : "";
-      const measuresLabel = (config.y?.fields || [])
+      const measuresLabel = (measureFieldConfig?.fields || [])
         .map((m) => fields[m]?.displayName || m)
         .join(", ");
-      const preposition = xLabel === "Time" ? "over" : "by";
-      return `${measuresLabel} ${preposition} ${xLabel}`;
+      const preposition = dimensionLabel === "Time" ? "over" : "by";
+      return `${measuresLabel} ${preposition} ${dimensionLabel}`;
     } else {
-      const { x, y, color } = config;
-      const xLabel = x?.field ? fields[x.field]?.displayName || x.field : "";
-      const yLabel = y?.field ? fields[y.field]?.displayName || y.field : "";
+      const { color } = config;
+
+      const dimensionLabel = dimensionFieldConfig?.field
+        ? fields[dimensionFieldConfig.field]?.displayName ||
+          dimensionFieldConfig.field
+        : "";
+      const measureLabel = measureFieldConfig?.field
+        ? fields[measureFieldConfig.field]?.displayName ||
+          measureFieldConfig.field
+        : "";
 
       const colorLabel =
         typeof color === "object" && color?.field
           ? fields[color.field]?.displayName || color.field
           : "";
 
-      const preposition = xLabel === "Time" ? "over" : "per";
+      const preposition = dimensionLabel === "Time" ? "over" : "per";
 
       return colorLabel
-        ? `${yLabel} ${preposition} ${xLabel} split by ${colorLabel}`
-        : `${yLabel} ${preposition} ${xLabel}`;
+        ? `${measureLabel} ${preposition} ${dimensionLabel} split by ${colorLabel}`
+        : `${measureLabel} ${preposition} ${dimensionLabel}`;
     }
   }
 }

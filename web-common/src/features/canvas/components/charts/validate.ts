@@ -45,7 +45,50 @@ export function validateChartSchema(
         };
       }
 
-      const validateMeasuresRes = validateMeasures(metricsView, measures);
+      // Align field roles (measure vs dimension) with the metrics view spec.
+      // This corrects cases where a field like `ad_size` is typed as a measure
+      // in the chart spec but is actually a dimension in the metrics view.
+      const measureNamesFromSpec = new Set(measures);
+      const dimensionNamesFromSpec = new Set(dimensions);
+
+      const metricMeasureNames = new Set(
+        (metricsView.measures || []).map((m) => m.name),
+      );
+      const metricDimensionNames = new Set(
+        (metricsView.dimensions || []).map((d) => d.name),
+      );
+
+      const correctedMeasures = new Set<string>();
+      const correctedDimensions = new Set<string>(dimensions);
+
+      // Re-map measures based on the metrics view definition
+      for (const name of measureNamesFromSpec) {
+        if (metricMeasureNames.has(name)) {
+          correctedMeasures.add(name);
+        } else if (metricDimensionNames.has(name)) {
+          // Field is actually a dimension – treat it as such
+          correctedDimensions.add(name);
+        } else {
+          // Unknown field: keep it as a measure so validation surfaces it
+          correctedMeasures.add(name);
+        }
+      }
+
+      // Also remap any dimensions that are actually measures
+      for (const name of dimensionNamesFromSpec) {
+        if (metricMeasureNames.has(name)) {
+          correctedMeasures.add(name);
+          correctedDimensions.delete(name);
+        }
+      }
+
+      const correctedMeasuresArr = Array.from(correctedMeasures);
+      const correctedDimensionsArr = Array.from(correctedDimensions);
+
+      const validateMeasuresRes = validateMeasures(
+        metricsView,
+        correctedMeasuresArr,
+      );
       if (!validateMeasuresRes.isValid) {
         const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
         return {
@@ -54,7 +97,10 @@ export function validateChartSchema(
         };
       }
 
-      const validateDimensionsRes = validateDimensions(metricsView, dimensions);
+      const validateDimensionsRes = validateDimensions(
+        metricsView,
+        correctedDimensionsArr,
+      );
 
       if (!validateDimensionsRes.isValid) {
         const invalidDimensions =

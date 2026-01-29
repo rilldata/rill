@@ -12,6 +12,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
   import MarkTypeToggle from "./field-config/MarkTypeToggle.svelte";
+  import { useMetricFieldData } from "@rilldata/web-common/features/canvas/inspector/selectors";
 
   export let key: string;
   export let config: ComponentInputParam;
@@ -22,12 +23,13 @@
   export let onChange: (updatedConfig: FieldConfig) => void;
 
   $: ({ instanceId } = $runtime);
+  $: ctx = getCanvasStore(canvasName, instanceId);
   $: ({
     canvasEntity: {
       selectedComponent,
       metricsView: { getTimeDimensionForMetricView },
     },
-  } = getCanvasStore(canvasName, instanceId));
+  } = ctx);
 
   $: chartFieldInput = config.meta?.chartFieldInput;
   $: multiMetricSelector = chartFieldInput?.multiFieldSelector;
@@ -39,8 +41,30 @@
 
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
 
+  // Lookup table for the true role of each field (measure/dimension/time)
+  $: fieldData = useMetricFieldData(
+    ctx,
+    metricsView,
+    ["measure", "dimension", "time"],
+    undefined,
+    "",
+    chartFieldInput?.excludedValues,
+  );
+
   function updateFieldConfig(fieldName: string) {
+    // Allow clearing the field when an empty value is passed
+    if (!fieldName) {
+      const clearedConfig: FieldConfig = {
+        ...fieldConfig,
+        field: undefined as unknown as string,
+        sort: undefined,
+      };
+      onChange(clearedConfig);
+      return;
+    }
+
     const isTime = $timeDimension && fieldName === $timeDimension;
+    const metricFieldType = $fieldData.displayMap[fieldName]?.type;
 
     let updatedConfig: FieldConfig;
     if (isTime && $timeDimension) {
@@ -51,10 +75,22 @@
         sort: undefined,
       };
     } else {
+      let resolvedType: FieldConfig["type"];
+      if (metricFieldType === "time") {
+        resolvedType = "temporal";
+      } else if (metricFieldType === "dimension") {
+        resolvedType = "nominal";
+      } else if (metricFieldType === "measure") {
+        resolvedType = "quantitative";
+      } else {
+        // Fallback to axis role if we cannot resolve from metrics view
+        resolvedType = isDimension ? "nominal" : "quantitative";
+      }
+
       updatedConfig = {
         ...fieldConfig,
         field: fieldName,
-        type: isTime ? "temporal" : isDimension ? "nominal" : "quantitative",
+        type: resolvedType,
         sort: undefined,
       };
     }

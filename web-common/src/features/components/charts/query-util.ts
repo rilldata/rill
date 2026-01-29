@@ -32,6 +32,7 @@ export function vegaSortToAggregationSort(
   encoder: "x" | "y",
   config: CartesianChartSpec | HeatmapChartSpec | ComboChartSpec,
   defaultSort: ChartSortDirection,
+  measureFieldName?: string,
 ): V1MetricsViewAggregationSort | undefined {
   const encoderConfig = config[encoder];
 
@@ -46,7 +47,7 @@ export function vegaSortToAggregationSort(
   }
 
   let field: string | undefined;
-  let desc: boolean = false;
+  let desc = false;
 
   switch (sort) {
     case "x":
@@ -59,7 +60,7 @@ export function vegaSortToAggregationSort(
       if ("y" in config) {
         field = config.y?.field;
       } else if ("y1" in config) {
-        field = config.y1?.field;
+        field = (config as ComboChartSpec).y1?.field;
       }
       desc = sort === "-y";
       break;
@@ -67,6 +68,11 @@ export function vegaSortToAggregationSort(
     case "-color":
       field = isFieldConfig(config.color) ? config.color.field : undefined;
       desc = sort === "-color";
+      break;
+    case "measure":
+    case "-measure":
+      field = measureFieldName;
+      desc = sort === "-measure";
       break;
     default:
       return undefined;
