@@ -31,7 +31,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "API Key",
-			Description: "API key for connecting to Anthropic.",
+			Description: "API key for connecting to Claude.",
 			Secret:      true,
 		},
 		{
@@ -63,7 +63,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			DisplayName: "Base URL",
-			Description: "Custom base URL for the Anthropic API.",
+			Description: "Custom base URL for the Claude API.",
 			Placeholder: "",
 		},
 	},
