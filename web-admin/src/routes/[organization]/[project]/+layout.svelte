@@ -56,7 +56,7 @@
   import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -122,30 +122,25 @@
   $: ({ data: mockedUserDeploymentCredentials } =
     $mockedUserDeploymentCredentialsQuery);
 
-  $: ({
-    data: projectData,
-    error: projectError,
-    isFetching: projectFetching,
-  } = $projectQuery);
+  $: ({ data: projectData, error: projectError } = $projectQuery);
+  $: deploymentStatus = projectData?.deployment?.status;
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
   $: isProjectAvailable =
-    projectData?.deployment?.status ===
-      V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
-    projectData?.deployment?.status ===
-      V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
+    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
+    deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
 
   // Refetch list resource query when project query stops fetching.
   // This needs to happen when deployment status changes from updating to running after a redeploy.
-  let prevProjectFetching = false;
-  $: if (prevProjectFetching !== projectFetching) {
-    prevProjectFetching = projectFetching;
-    if (!projectFetching) {
-      void queryClient.refetchQueries(
-        createRuntimeServiceListResources(
+  let prevDeploymentStatus: V1DeploymentStatus =
+    V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
+  $: if (prevDeploymentStatus !== deploymentStatus) {
+    prevDeploymentStatus = deploymentStatus;
+    if (deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING) {
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(
           projectData.deployment.runtimeInstanceId,
-          undefined,
         ),
-      );
+      });
     }
   }
 
@@ -171,7 +166,7 @@
   }
 </script>
 
-{#if onProjectPage && projectData?.deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+{#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
   <ProjectTabs
     projectPermissions={projectData.projectPermissions}
     {organization}
@@ -190,9 +185,9 @@
   {#if !projectData.deployment}
     <!-- No deployment = the project is "hibernating" -->
     <RedeployProjectCta {organization} {project} />
-  {:else if projectData.deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
+  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
     <ProjectBuilding />
-  {:else if projectData.deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
+  {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
     <ErrorPage
       statusCode={500}
       header="Deployment Error"

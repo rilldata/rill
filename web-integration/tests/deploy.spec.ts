@@ -166,7 +166,6 @@ test.describe("Deploy journey", () => {
       const deployPage = await popupPromise;
 
       // Explore is opened with updated title after a re-deploying.
-      // Org title is correct
       await expect(
         deployPage.getByLabel("Breadcrumb navigation, level 2"),
       ).toHaveText("Adbids dashboard edited first org", {
