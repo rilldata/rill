@@ -14,7 +14,7 @@ import (
 func TestAnalystBasic(t *testing.T) {
 	// Setup a basic metrics view with an "event_time" time dimension, "country" dimension, and "count" and "revenue" measures.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 		Files: map[string]string{
 			"models/orders.yaml": `
 type: model
@@ -69,8 +69,8 @@ func TestAnalystOpenRTB(t *testing.T) {
 	// Setup runtime instance with the OpenRTB dataset
 	n, files := testruntime.ProjectOpenRTB(t)
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
-		Files:     files,
+		AIConnector: "openai",
+		Files:       files,
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
 
