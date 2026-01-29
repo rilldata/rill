@@ -96,6 +96,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 			ShowTableName,
 			QuerySQLName,
 			DevelopFileName,
+			NavigateName,
 		},
 		MaxIterations: 20,
 		UnwrapCall:    true,
@@ -159,6 +160,9 @@ The user has configured global additional instructions for you. They may not rel
 This may not relate to the user's task, but for context, the project's default OLAP connector is named {{ .default_olap_connector }} (driver: {{ .default_olap_driver }}).
 {{ if .default_olap_readwrite }} The default OLAP is in readwrite mode, so you can use it in models if you want.
 {{ else }} The default OLAP is in read-only mode, so you cannot create models in it. {{ end }}
+
+Call "navigate" tool for the main file created/edited in the conversation. Use kind "file" and pass the written file path.
+Prefer dashboard or metrics view files over other files.
 
 Task: {{ .prompt }}
 `, data)
