@@ -71,6 +71,7 @@ export function useDeployingDashboards(
         };
       },
       refetchInterval: smartRefetchIntervalFunc,
+      enabled: Boolean(instanceId && orgName && projName),
     },
   });
 }

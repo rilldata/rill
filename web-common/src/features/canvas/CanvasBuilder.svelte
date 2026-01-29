@@ -592,8 +592,7 @@
           <Button
             large
             builders={[builder]}
-            type="primary"
-            danger
+            type="destructive"
             onClick={() => {
               if (!pendingComponentDelete) return;
               const component = componentsStore.getNonReactive(

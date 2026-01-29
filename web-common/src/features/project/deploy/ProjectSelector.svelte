@@ -18,7 +18,7 @@
     <Search
       bind:value={searchText}
       background={false}
-      forcedInputStyle="bg-slate-100"
+      forcedInputStyle="bg-gray-100"
     />
   {/if}
   <div class="flex flex-col gap-y-0.5 w-full">

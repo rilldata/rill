@@ -20,25 +20,28 @@ import (
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
+	rillstorage "github.com/rilldata/rill/runtime/storage"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/option"
 
-	// Register database and provisioner implementations
+	// Register drivers
 	_ "github.com/rilldata/rill/admin/database/postgres"
 	_ "github.com/rilldata/rill/admin/provisioner/clickhousestatic"
 	_ "github.com/rilldata/rill/admin/provisioner/kubernetes"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
+	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
+	_ "github.com/rilldata/rill/runtime/drivers/openai"
 )
 
 // Config describes admin server config derived from environment variables.
@@ -231,15 +234,21 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				logger.Fatal("error creating github client", zap.Error(err))
 			}
 
-			// Init AI client
-			var aiClient ai.Client
+			// Init AI service
+			aiDriver := "mock_ai"
+			aiConfig := map[string]any{}
 			if conf.OpenAIAPIKey != "" {
-				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey, nil)
-				if err != nil {
-					logger.Fatal("error creating OpenAI client", zap.Error(err))
-				}
-			} else {
-				aiClient = ai.NewNoop()
+				aiDriver = "openai"
+				aiConfig["api_key"] = conf.OpenAIAPIKey
+			}
+			aiHandle, err := drivers.Open(aiDriver, "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+			if err != nil {
+				logger.Fatal("error creating AI client", zap.Error(err))
+			}
+			defer aiHandle.Close()
+			aiService, ok := aiHandle.AsAI("")
+			if !ok {
+				logger.Fatal("AI driver does not implement AI interface", zap.String("driver", aiHandle.Driver()))
 			}
 
 			// Init AssetsBucket handle
@@ -294,7 +303,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AutoscalerCron:            conf.AutoscalerCron,
 				ScaleDownConstraint:       conf.ScaleDownConstraint,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}

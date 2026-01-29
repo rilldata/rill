@@ -3,6 +3,7 @@ import { getSequentialColorsAsHex } from "@rilldata/web-common/features/themes/p
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
 import type { Config } from "vega-lite";
+import { definedLightModeColors } from "@rilldata/web-common/features/themes/colors";
 
 function resolveCSSVariable(
   cssVar: string,
@@ -15,12 +16,12 @@ function resolveCSSVariable(
 // Light and dark mode color values for canvas compatibility
 const colors = {
   light: {
-    grid: "#e5e7eb", // gray-200
-    axisLabel: "#6b7280", // gray-600
+    grid: definedLightModeColors.neutral[300].css(),
+    axisLabel: definedLightModeColors.neutral[500].css(),
   },
   dark: {
-    grid: "#374151", // gray-700
-    axisLabel: "#d1d5db", // gray-300
+    grid: definedLightModeColors.neutral[600].css(),
+    axisLabel: definedLightModeColors.neutral[400].css(),
   },
 };
 

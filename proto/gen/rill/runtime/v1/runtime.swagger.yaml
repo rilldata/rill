@@ -5489,6 +5489,8 @@ definitions:
         type: string
       frontendUrl:
         type: string
+      theme:
+        type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
