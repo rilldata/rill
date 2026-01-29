@@ -36,8 +36,6 @@ When you add a GCS data model through the Rill UI, you'll see three authenticati
   1. **Configure Data Model** - Define which bucket and objects to ingest
   The UI will only create the model file (no connector file is needed).
 
----
-
 ## Method 1: Service Account JSON (Recommended)
 
 Service Account JSON credentials provide the most secure and reliable authentication for GCS. This method works for both local development and Rill Cloud deployments.
@@ -92,8 +90,6 @@ sql: |
 ```bash
 connector.gcs.google_application_credentials=<json_credentials>
 ```
-
----
 
 ## Method 2: HMAC Keys
 
@@ -153,8 +149,6 @@ connector.gcs.secret=your-secret-access-key
 Notice that the connector uses `key_id` and `secret`. HMAC keys use S3-compatible authentication with GCS.
 :::
 
----
-
 ## Method 3: Public Buckets
 
 For publicly accessible GCS buckets, you don't need to create a connector. Simply use the GCS URI directly in your model configuration.
@@ -189,8 +183,6 @@ sql: |
   select * from read_parquet('gs://my-public-bucket/path/to/data/*.parquet')
 ```
 
----
-
 ## Method 4: Local Google Cloud CLI Credentials
 
 For local development, you can use credentials from the Google Cloud CLI. This method is **not suitable for production** or Rill Cloud deployments. This method is only available through manual configuration, and you don't need to create a connector file.
@@ -224,54 +216,20 @@ Rill will automatically detect and use your local Google Cloud CLI credentials w
 This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Service Account JSON or HMAC keys for production deployments.
 :::
 
----
 
-## Using GCS Data in Models
+## Reading Different File Types
 
-Once your connector is configured (or for public buckets, no connector needed), you can reference GCS paths in your model SQL queries using DuckDB's GCS functions.
+DuckDB supports reading various file formats directly from GCS:
 
-### Basic Example
+```sql
+-- Read Parquet files
+select * from read_parquet('gs://my-bucket/data/*.parquet')
 
-**With a connector (authenticated):**
+-- Read CSV files
+select * from read_csv('gs://my-bucket/data/*.csv', auto_detect=true, ignore_errors=1, header=true)
 
-```yaml
-type: model
-materialize: true
-
-connector: duckdb
-
-sql: |
-  select * from read_parquet('gs://my-bucket/data/*.parquet')
-```
-
-**Public bucket (no connector needed):**
-
-```yaml
-type: model
-materialize: true
-
-connector: duckdb
-
-sql: |
-  select * from read_parquet('gs://my-public-bucket/data/*.parquet')
-```
-
-### Reading Multiple File Types
-
-```yaml
-type: model
-materialize: true
-
-connector: duckdb
-
-sql: |
-  -- Read Parquet files
-  select * from read_parquet('gs://my-bucket/parquet-data/*.parquet')
-
-  UNION ALL
-
-  -- Read CSV files
-  select * from read_csv('gs://my-bucket/csv-data/*.csv', AUTO_DETECT=TRUE)
+-- Read JSON files
+select * from read_json('gs://my-bucket/data/*.json', auto_detect=true, ignore_errors=1)
 ```
 
 ### Path Patterns
@@ -292,8 +250,6 @@ SELECT * FROM read_parquet('gs://my-bucket/data/**/*.parquet')
 SELECT * FROM read_parquet('gs://my-bucket/data/2024-*.parquet')
 ```
 
----
-
 ## Deploy to Rill Cloud
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide Service Account JSON or HMAC Keys for Google Cloud Storage used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#gcs) for more information.
@@ -303,7 +259,6 @@ If you subsequently add sources that require new credentials (or if you simply e
 rill env push
 ```
 
----
 
 ## Appendix
 
