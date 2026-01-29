@@ -34,7 +34,10 @@
 </script>
 
 <div class="chat-message">
-  <div class="chat-message-content" bind:this={element}></div>
+  <div
+    class="chat-message-content bg-gray-200 dark:bg-gray-300"
+    bind:this={element}
+  ></div>
 </div>
 
 <style lang="postcss">
@@ -45,7 +48,7 @@
   .chat-message-content {
     @apply px-4 py-2 rounded-2xl;
     @apply text-sm leading-relaxed break-words;
-    @apply bg-surface-muted text-fg-primary rounded-br-lg;
+    @apply text-fg-primary rounded-br-lg;
   }
 
   :global(.chat-message-content .tiptap) {

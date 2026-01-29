@@ -165,11 +165,7 @@
 
   :global(.wrapper > button) {
     @apply border text-fg-primary;
-    @apply px-2 flex items-center justify-center bg-surface-subtle;
-  }
-
-  :global(.dark > .wrapper > button) {
-    @apply bg-surface-background;
+    @apply px-2 flex items-center justify-center bg-surface-background;
   }
 
   :global(.wrapper > button:focus) {

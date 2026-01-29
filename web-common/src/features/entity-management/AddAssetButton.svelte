@@ -1,12 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { File } from "lucide-svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
-  import File from "../../components/icons/File.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -158,7 +158,7 @@
       builders={[builder]}
       label="Add Asset"
       class="w-full"
-      type="primary"
+      type="secondary"
       selected={active}
     >
       <PlusCircleIcon size="14px" />
@@ -275,16 +275,17 @@
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
-          <Folder size="16px" /> Folder
+          <Folder size="14px" class="stroke-icon-muted" /> Folder
         </DropdownMenu.Item>
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
-          <File size="16px" /> Blank file
+          <File size="14px" class="stroke-icon-muted" /> Blank file
         </DropdownMenu.Item>
         <DropdownMenu.Item
           class="flex gap-x-2"
           on:click={() => (generateDataDialog = true)}
         >
-          <Wand size="14px" /> Generate data using AI (beta)
+          <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
+          using AI (beta)
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
