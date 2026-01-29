@@ -219,33 +219,6 @@ export interface Runtimev1Type {
   mapType?: V1MapType;
 }
 
-export type V1AIReportConfigWhere = { [key: string]: unknown };
-
-/**
- * AIReportConfig configures AI-powered reports that generate insights using an AI agent.
- */
-export interface V1AIReportConfig {
-  agent?: string;
-  prompt?: string;
-  timeRange?: V1AITimeRange;
-  comparisonTimeRange?: V1AITimeRange;
-  /** Explore dashboard name */
-  explore?: string;
-  dimensions?: string[];
-  measures?: string[];
-  where?: V1AIReportConfigWhere;
-}
-
-/**
- * AITimeRange defines a time range using ISO 8601 duration strings.
-The time range is resolved at report execution time.
- */
-export interface V1AITimeRange {
-  isoDuration?: string;
-  isoOffset?: string;
-  timeZone?: string;
-}
-
 /**
  * API defines a custom operation for querying data stored in Rill.
  */
@@ -2187,6 +2160,8 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export type V1ReportSpecResolverProperties = { [key: string]: unknown };
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -2194,6 +2169,8 @@ export interface V1ReportSpec {
   trigger?: boolean;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
+  resolver?: string;
+  resolverProperties?: V1ReportSpecResolverProperties;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
@@ -2206,9 +2183,6 @@ export interface V1ReportSpec {
   intervalsIsoDuration?: string;
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
-  /** "query" (default) or "ai_session" */
-  format?: string;
-  aiConfig?: V1AIReportConfig;
 }
 
 export interface V1ReportState {

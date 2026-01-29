@@ -13,39 +13,63 @@
           display: none !important;
           mso-hide: none;
       }
+      .ai-summary {
+          background-color: #F5F5F5;
+          padding: 15px;
+          border-radius: 4px;
+      }
     </mj-style>
   </mj-head>
   <mj-body>
     <mj-section>
       <mj-column>
         <mj-image container-background-color="#FFF" width="100px" src="https://cdn.rilldata.com/email-transactional/rill-logo-purple.png" />
-        
+
         <mj-spacer height="35px" />
-        
+
         <mj-text font-size="20px" font-weight="bold">
           {{ .DisplayName }}
         </mj-text>
 
-        <mj-text padding-bottom="0px">
+        <!-- Standard report intro (hidden for AI reports) -->
+        <mj-text css-class="{{ if .IsAIReport }}hidden{{ end }}" padding-bottom="0px">
           Your report for <b>{{ .ReportTimeString }}</b> is ready to view.
+        </mj-text>
+
+        <!-- AI report intro (hidden for standard reports) -->
+        <mj-text css-class="{{ if not .IsAIReport }}hidden{{ end }}" padding-bottom="0px">
+          Your report for <b>{{ .ReportTimeString }}</b> is ready.
         </mj-text>
 
         <mj-spacer height="20px" />
 
-        <mj-button css-class="{{ if not .OpenLink }}hidden{{ end }}" background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
+        <!-- AI report summary (hidden for standard reports) -->
+        <mj-text css-class="{{ if not .IsAIReport }}hidden{{ end }} ai-summary" font-size="14px" line-height="1.5" color="#333333">
+          {{ .Summary }}
+        </mj-text>
+
+        <mj-spacer css-class="{{ if not .IsAIReport }}hidden{{ end }}" height="20px" />
+
+        <!-- AI report button (hidden for standard reports) -->
+        <mj-button css-class="{{ if not .IsAIReport }}hidden{{ else }}{{ if not .OpenLink }}hidden{{ end }}{{ end }}" background-color="#3524C7" color="#FFFFFF" font-weight="bold" href="{{ .OpenLink }}">
+          View Full Analysis
+        </mj-button>
+
+        <!-- Standard report buttons (hidden for AI reports) -->
+        <mj-button css-class="{{ if .IsAIReport }}hidden{{ else }}{{ if not .OpenLink }}hidden{{ end }}{{ end }}" background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
           Open in browser
         </mj-button>
 
-        <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .DownloadLink }}">
+        <mj-button css-class="{{ if .IsAIReport }}hidden{{ end }}" background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .DownloadLink }}">
           Download {{ .DownloadFormat }} file
         </mj-button>
-        
+
         <mj-spacer height="20px" />
 
         <mj-divider border-color="#AAA" border-width="1px"></mj-divider>
 
         <mj-spacer height="20px" />
-        
+
         <mj-text align="center" font-size="12px">
           {{ if .EditLink }} To edit this report, <a href="{{ .EditLink }}">click here</a>. {{ end }} {{ if .UnsubscribeLink }} To unsubscribe from this report, <a href="{{ .UnsubscribeLink }}">click here</a>. {{ end }}
         </mj-text>

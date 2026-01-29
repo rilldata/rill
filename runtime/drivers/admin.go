@@ -9,7 +9,7 @@ import (
 var ErrNotAuthenticated = errors.New("not authenticated")
 
 type AdminService interface {
-	GetReportMetadata(ctx context.Context, reportName, reportFormat, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*ReportMetadata, error)
+	GetReportMetadata(ctx context.Context, reportName, resolver, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*ReportMetadata, error)
 	GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*AlertMetadata, error)
 	ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error)
 	GetDeploymentConfig(ctx context.Context) (*DeploymentConfig, error)
@@ -17,10 +17,10 @@ type AdminService interface {
 }
 
 type ReportMetadata struct {
-	RecipientURLs map[string]ReportURLs
+	ReportDelivery map[string]ReportDelivery
 }
 
-type ReportURLs struct {
+type ReportDelivery struct {
 	OpenURL        string
 	ExportURL      string
 	EditURL        string

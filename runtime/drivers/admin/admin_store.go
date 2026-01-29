@@ -11,11 +11,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, reportFormat, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, resolver, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
 		ProjectId:       h.config.ProjectID,
 		Report:          reportName,
-		Format:          reportFormat,
+		Resolver:        resolver,
 		OwnerId:         ownerID,
 		EmailRecipients: emailRecipients,
 		AnonRecipients:  anonRecipients,
@@ -32,9 +32,9 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, reportFormat
 		return nil, err
 	}
 
-	recipientURLs := make(map[string]drivers.ReportURLs, len(res.RecipientUrls))
-	for k, v := range res.RecipientUrls {
-		recipientURLs[k] = drivers.ReportURLs{
+	delivery := make(map[string]drivers.ReportDelivery, len(res.DeliveryMeta))
+	for k, v := range res.DeliveryMeta {
+		delivery[k] = drivers.ReportDelivery{
 			OpenURL:        v.OpenUrl,
 			ExportURL:      v.ExportUrl,
 			EditURL:        v.EditUrl,
@@ -45,7 +45,7 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, reportFormat
 	}
 
 	return &drivers.ReportMetadata{
-		RecipientURLs: recipientURLs,
+		ReportDelivery: delivery,
 	}, nil
 }
 

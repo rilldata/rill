@@ -14,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 func init() {
@@ -24,19 +26,22 @@ func init() {
 type aiProps struct {
 	Agent  string `mapstructure:"agent"`
 	Prompt string `mapstructure:"prompt"`
-	// Relative time range configuration may add exact start/end in the future
-	TimeRangeISODuration string `mapstructure:"time_range_iso_duration"`
-	TimeRangeTimeZone    string `mapstructure:"time_range_time_zone"`
+	// Time range for analysis (supports rilltime expressions, ISO durations, or fixed start/end)
+	TimeRange *metricsview.TimeRange `mapstructure:"time_range"`
 	// Optional comparison time range
-	ComparisonTimeRangeISODuration string `mapstructure:"comparison_time_range_iso_duration"`
-	ComparisonTimeRangeISOOffset   string `mapstructure:"comparison_time_range_iso_offset"`
+	ComparisonTimeRange *metricsview.TimeRange `mapstructure:"comparison_time_range"`
+	TimeZone            string                 `mapstructure:"time_zone"`
 	// Optional dashboard context for the agent
+	Context *contextualProps `mapstructure:"context"`
+	// IsReport indicates if the AI resolver is used for an automated report.
+	IsReport bool `mapstructure:"is_report"`
+}
+
+type contextualProps struct {
 	Explore    string         `mapstructure:"explore"`
 	Dimensions []string       `mapstructure:"dimensions"`
 	Measures   []string       `mapstructure:"measures"`
 	Where      map[string]any `mapstructure:"where"`
-	// IsScheduledInsight indicates if the AI resolver is used for a scheduled insight.
-	IsScheduledInsight bool `mapstructure:"is_scheduled_insight"`
 }
 
 // aiArgs contains the dynamic arguments for the AI resolver.
@@ -99,10 +104,10 @@ func (r *aiResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 // Refs implements runtime.Resolver.
 func (r *aiResolver) Refs() []*runtimev1.ResourceName {
 	var refs []*runtimev1.ResourceName
-	if r.props.Explore != "" {
+	if r.props.Context != nil && r.props.Context.Explore != "" {
 		refs = append(refs, &runtimev1.ResourceName{
 			Kind: runtime.ResourceKindExplore,
-			Name: r.props.Explore,
+			Name: r.props.Context.Explore,
 		})
 	}
 	return refs
@@ -113,22 +118,19 @@ func (r *aiResolver) Validate(ctx context.Context) error {
 	if r.props.Agent != ai.AnalystAgentName {
 		return errors.New("only 'analyst_agent' is supported as agent as of now")
 	}
-	if r.props.Prompt == "" {
-		return errors.New("prompt is required")
-	}
 	return nil
 }
 
 // ResolveInteractive implements runtime.Resolver.
 func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Resolve time ranges
-	timeStart, timeEnd, err := r.resolveTimeRange()
+	timeStart, timeEnd, err := r.resolveTimeRange(r.props.TimeRange, r.props.TimeZone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
 	// Resolve comparison time range
-	comparisonStart, comparisonEnd, err := r.resolveComparisonTimeRange(timeStart)
+	comparisonStart, comparisonEnd, err := r.resolveTimeRange(r.props.ComparisonTimeRange, r.props.TimeZone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
@@ -140,38 +142,49 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		InstanceID:        r.instanceID,
 		CreateIfNotExists: true,
 		Claims:            r.claims,
-		UserAgent:         "rill/report", // TODO change it to system/report or similar so that its not shown in AI sessions list
+		UserAgent:         "rill/report", // TODO change it to system/report or similar so that its not shown in AI sessions list, keeping it rill prefixed for now so that access checks pass
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AI session: %w", err)
 	}
 	defer session.Flush(ctx)
 
-	// Parse where filter if provided
+	var explore string
+	var dimensions, measures []string
 	var whereExpr *metricsview.Expression
-	if len(r.props.Where) > 0 {
-		whereExpr = &metricsview.Expression{}
-		if err := mapstructure.Decode(r.props.Where, whereExpr); err != nil {
-			return nil, fmt.Errorf("failed to parse where filter: %w", err)
+	if r.props.Context != nil {
+		explore = r.props.Context.Explore
+		dimensions = r.props.Context.Dimensions
+		measures = r.props.Context.Measures
+		if len(r.props.Context.Where) > 0 {
+			whereExpr = &metricsview.Expression{}
+			if err := mapstructure.Decode(r.props.Context.Where, whereExpr); err != nil {
+				return nil, fmt.Errorf("failed to parse where filter: %w", err)
+			}
 		}
 	}
 
-	// Build analyst agent args with all time ranges
 	agentArgs := &ai.AnalystAgentArgs{
-		Explore:             r.props.Explore,
-		Dimensions:          r.props.Dimensions,
-		Measures:            r.props.Measures,
+		Explore:             explore,
+		Dimensions:          dimensions,
+		Measures:            measures,
 		Where:               whereExpr,
 		TimeStart:           timeStart,
 		TimeEnd:             timeEnd,
 		ComparisonTimeStart: comparisonStart,
 		ComparisonTimeEnd:   comparisonEnd,
-		IsScheduledInsight:  r.props.IsScheduledInsight,
-		HideCharts:          r.args.CreateSharedSession, // Hide charts if creating shared session
+		DisableCharts:       r.args.CreateSharedSession, // Disable charts if creating shared session
+		IsReport:            r.props.IsReport,
+		IsReportUserPrompt:  r.props.Prompt != "",
+	}
+
+	prompt := r.props.Prompt
+	if r.props.IsReport && r.props.Prompt == "" {
+		prompt = "Generate the scheduled insight report."
 	}
 
 	routerArgs := &ai.RouterAgentArgs{
-		Prompt:           r.props.Prompt,
+		Prompt:           prompt,
 		Agent:            r.props.Agent,
 		AnalystAgentArgs: agentArgs,
 	}
@@ -233,68 +246,118 @@ func (r *aiResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, er
 	return nil, errors.New("security rule inference not implemented yet for AI resolver")
 }
 
-// resolveTimeRange resolves the time range from ISO duration to actual timestamps.
-func (r *aiResolver) resolveTimeRange() (start, end time.Time, err error) {
-	// Load timezone
-	loc := time.UTC
-	if r.props.TimeRangeTimeZone != "" {
-		loc, err = time.LoadLocation(r.props.TimeRangeTimeZone)
+// resolveTimeRange resolves the time range to actual timestamps using rilltime.
+func (r *aiResolver) resolveTimeRange(tr *metricsview.TimeRange, tz string) (start, end time.Time, err error) {
+	if tr == nil || tr.IsZero() {
+		return time.Time{}, time.Time{}, errors.New("time_range is required")
+	}
+
+	timezone := time.UTC
+	if tz != "" {
+		timezone, err = time.LoadLocation(tz)
 		if err != nil {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid timezone %q: %w", r.props.TimeRangeTimeZone, err)
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid time zone %q: %w", tz, err)
 		}
 	}
 
-	// Convert execution time to the specified timezone
-	execInTZ := r.args.ExecutionTime.In(loc)
-
-	// End is truncated to start of day
-	end = time.Date(execInTZ.Year(), execInTZ.Month(), execInTZ.Day(), 0, 0, 0, 0, loc)
-
-	// Parse duration and subtract from end to get start
-	dur, err := duration.ParseISO8601(r.props.TimeRangeISODuration)
-	if err != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("invalid ISO duration %q: %w", r.props.TimeRangeISODuration, err)
+	// If start and end are already set, return them directly
+	if !tr.Start.IsZero() && !tr.End.IsZero() {
+		return tr.Start.In(timezone), tr.End.In(timezone), nil
 	}
-	start = dur.Sub(end)
 
-	return start, end, nil
-}
+	if r.args.ExecutionTime.IsZero() {
+		return time.Time{}, time.Time{}, errors.New("execution_time is required to evaluate time ranges")
+	}
 
-// resolveComparisonTimeRange resolves the comparison time range.
-func (r *aiResolver) resolveComparisonTimeRange(mainTimeStart time.Time) (start, end time.Time, err error) {
-	if r.props.ComparisonTimeRangeISODuration == "" {
-		return time.Time{}, time.Time{}, nil
+	// Use expression if provided (rilltime syntax)
+	if tr.Expression != "" {
+		rt, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{
+			DefaultTimeZone: timezone,
+		})
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid time range expression %q: %w", tr.Expression, err)
+		}
+
+		start, end, _ = rt.Eval(rilltime.EvalOptions{
+			Now:       r.args.ExecutionTime,
+			Watermark: r.args.ExecutionTime,
+			MinTime:   time.Time{}, // TODO if context contains explore then resolve min time from the metrics view
+			MaxTime:   r.args.ExecutionTime,
+		})
+		return start, end, nil
 	}
-	// End of comparison = start of main time range
-	end = mainTimeStart
-	dur, err := duration.ParseISO8601(r.props.ComparisonTimeRangeISODuration)
-	if err != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("invalid comparison duration %q: %w", r.props.ComparisonTimeRangeISODuration, err)
+
+	// TODO how about we don't support ISO duration/offset as its deprecated in favor of rilltime expressions?
+
+	// Fallback to start/end with ISO duration/offset
+	start = tr.Start
+	end = tr.End
+	isISO := false
+	if start.IsZero() && end.IsZero() {
+		end = r.args.ExecutionTime
 	}
-	start = dur.Sub(end)
+
+	if tr.IsoDuration != "" {
+		d, err := duration.ParseISO8601(tr.IsoDuration)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid iso_duration %q: %w", tr.IsoDuration, err)
+		}
+
+		if !start.IsZero() && !end.IsZero() {
+			return time.Time{}, time.Time{}, errors.New(`cannot resolve "iso_duration" for a time range with fixed "start" and "end" timestamps`)
+		} else if !start.IsZero() {
+			end = d.Add(start)
+		} else if !end.IsZero() {
+			start = d.Sub(end)
+		}
+		isISO = true
+	}
 
 	// Apply offset if provided
-	if r.props.ComparisonTimeRangeISOOffset != "" {
-		d, err := duration.ParseISO8601(r.props.ComparisonTimeRangeISOOffset)
+	if tr.IsoOffset != "" {
+		d, err := duration.ParseISO8601(tr.IsoOffset)
 		if err != nil {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid comparison offset %q: %w", r.props.ComparisonTimeRangeISOOffset, err)
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid iso_offset %q: %w", tr.IsoOffset, err)
 		}
-		start = d.Sub(start)
-		end = d.Sub(end)
+
+		if !start.IsZero() {
+			start = d.Sub(start)
+		}
+		if !end.IsZero() {
+			end = d.Sub(end)
+		}
+		isISO = true
 	}
 
-	return start, end, nil
+	// Only modify the start and end if ISO duration or offset was sent.
+	// This is to maintain backwards compatibility for calls from the UI.
+	if isISO {
+		if !tr.RoundToGrain.Valid() {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid time grain %q", tr.RoundToGrain)
+		}
+		if tr.RoundToGrain != metricsview.TimeGrainUnspecified {
+			if !start.IsZero() {
+				start = timeutil.TruncateTime(start, tr.RoundToGrain.ToTimeutil(), timezone, 1, 1)
+			}
+			if !end.IsZero() {
+				end = timeutil.TruncateTime(end, tr.RoundToGrain.ToTimeutil(), timezone, 1, 1)
+			}
+		}
+		return start, end, nil
+	}
+
+	return time.Time{}, time.Time{}, errors.New("time range must have expression, iso_duration, or start/end")
 }
 
 // generateTitle generates a title for the AI session.
 func (r *aiResolver) generateTitle() string {
 	title := "AI Session"
-	if r.props.IsScheduledInsight {
-		title = "Scheduled Insight"
+	if r.props.IsReport {
+		title = "Report"
 	}
 	title = fmt.Sprintf("%s - %s", title, r.args.ExecutionTime.Format(time.RFC822))
-	if r.props.Explore != "" {
-		return fmt.Sprintf("%s: %s", title, r.props.Explore)
+	if r.props.Context != nil && r.props.Context.Explore != "" {
+		return fmt.Sprintf("%s: %s", title, r.props.Context.Explore)
 	}
 	return title
 }

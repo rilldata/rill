@@ -17,6 +17,7 @@ type DataYAML struct {
 	Args           map[string]any `yaml:"args"`
 	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
 	ResourceStatus map[string]any `yaml:"resource_status"`
+	AI             map[string]any `yaml:"ai"` // AI resolver properties
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -83,6 +84,19 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 		count++
 		resolver = "resource_status"
 		resolverProps = raw.ResourceStatus
+	}
+
+	// Handle AI resolver
+	if raw.AI != nil {
+		count++
+		resolver = "ai"
+		resolverProps = raw.AI
+		if context, ok := raw.AI["context"].(map[string]any); ok {
+			// Add explore ref if specified
+			if explore, ok := context["explore"].(string); ok && explore != "" {
+				refs = append(refs, ResourceName{Kind: ResourceKindExplore, Name: explore})
+			}
+		}
 	}
 
 	// Validate there was exactly one resolver

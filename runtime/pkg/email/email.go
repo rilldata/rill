@@ -38,11 +38,13 @@ type ScheduledReport struct {
 	ToName          string
 	DisplayName     string
 	ReportTime      time.Time
-	DownloadFormat  string
+	DownloadFormat  string // For standard reports (with file export)
 	OpenLink        string
-	DownloadLink    string
+	DownloadLink    string // For standard reports (with file export)
 	EditLink        string
 	UnsubscribeLink string
+	IsAIReport      bool   // Flag to indicate AI report (uses different template sections)
+	Summary         string // For AI reports
 }
 
 type scheduledReportData struct {
@@ -53,6 +55,8 @@ type scheduledReportData struct {
 	DownloadLink     template.URL
 	EditLink         template.URL
 	UnsubscribeLink  template.URL
+	IsAIReport       bool   // Flag for template conditionals
+	Summary          string // For AI reports
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
@@ -65,61 +69,21 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		DownloadLink:     template.URL(opts.DownloadLink),
 		EditLink:         template.URL(opts.EditLink),
 		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
-	}
-
-	// Build subject
-	subject := fmt.Sprintf("%s (%s)", opts.DisplayName, data.ReportTimeString)
-
-	var err error
-	// Resolve template
-	buf := new(bytes.Buffer)
-	err = c.templates.Lookup("scheduled_report.html").Execute(buf, data)
-	if err != nil {
-		return fmt.Errorf("email template error: %w", err)
-	}
-	html := buf.String()
-
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
-}
-
-// AIInsightReport contains information for sending AI-powered insight report emails.
-type AIInsightReport struct {
-	ToEmail         string
-	ToName          string
-	DisplayName     string
-	ReportTime      time.Time
-	Summary         string
-	OpenLink        string
-	EditLink        string
-	UnsubscribeLink string
-}
-
-type aiInsightReportData struct {
-	DisplayName      string
-	ReportTimeString string
-	Summary          string
-	OpenLink         template.URL
-	EditLink         template.URL
-	UnsubscribeLink  template.URL
-}
-
-func (c *Client) SendAIInsightReport(opts *AIInsightReport) error {
-	// Build template data
-	data := &aiInsightReportData{
-		DisplayName:      opts.DisplayName,
-		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
+		IsAIReport:       opts.IsAIReport,
 		Summary:          opts.Summary,
-		OpenLink:         template.URL(opts.OpenLink),
-		EditLink:         template.URL(opts.EditLink),
-		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
 	}
 
 	// Build subject
-	subject := fmt.Sprintf("AI Insight: %s (%s)", opts.DisplayName, data.ReportTimeString)
+	var subject string
+	if opts.IsAIReport {
+		subject = fmt.Sprintf("AI Insight: %s (%s)", opts.DisplayName, data.ReportTimeString)
+	} else {
+		subject = fmt.Sprintf("%s (%s)", opts.DisplayName, data.ReportTimeString)
+	}
 
 	// Resolve template
 	buf := new(bytes.Buffer)
-	err := c.templates.Lookup("ai_insight_report.html").Execute(buf, data)
+	err := c.templates.Lookup("scheduled_report.html").Execute(buf, data)
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}

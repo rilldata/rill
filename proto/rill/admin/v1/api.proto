@@ -2699,7 +2699,7 @@ message DeleteVirtualFileResponse {}
 message GetReportMetaRequest {
   string project_id = 1;
   string report = 3;
-  string format = 13;
+  string resolver = 13;
   string owner_id = 5;
   google.protobuf.Timestamp execution_time = 6;
   repeated string email_recipients = 7;
@@ -2712,7 +2712,7 @@ message GetReportMetaRequest {
 }
 
 message GetReportMetaResponse {
-  message URLs {
+  message DeliveryMeta {
     string open_url = 1;
     string export_url = 2;
     string edit_url = 3;
@@ -2720,7 +2720,7 @@ message GetReportMetaResponse {
     string user_id = 5;
     google.protobuf.Struct user_attrs = 6; // user attributes of intended recipient, will be empty for creator mode and for non Rill users
   }
-  map<string, URLs> recipient_urls = 2;
+  map<string, DeliveryMeta> delivery_meta = 2;
   reserved 1;
 }
 
@@ -3312,6 +3312,10 @@ message ReportOptions {
   string refresh_cron = 2;
   string refresh_time_zone = 9;
   string interval_duration = 13;
+  // Generic resolver configuration (preferred for new reports)
+  string resolver = 21;
+  google.protobuf.Struct resolver_properties = 22;
+  // Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
   string query_name = 3;
   string query_args_json = 4;
   uint64 export_limit = 5;
@@ -3332,33 +3336,6 @@ message ReportOptions {
    */
   string web_open_mode = 18;
   reserved 19;
-  // AI-powered report configuration (used when format is "ai_session")
-  string format = 21; // "query" (default) or "ai_session"
-  AIReportData ai_data = 22;
-}
-
-// AIReportData contains configuration for AI-powered reports
-message AIReportData {
-  string agent = 1; // Agent to use (defaults to "analyst_agent")
-  string prompt = 2; // Optional user prompt for the agent
-  AIReportTimeRange time_range = 3; // optional time range
-  AIReportTimeRange comparison_time_range = 4; // Optional comparison time range
-  AIReportContext context = 5; // Optional dashboard context
-}
-
-// AIReportTimeRange specifies a time range using ISO 8601 duration
-message AIReportTimeRange {
-  string iso_duration = 1; // ISO 8601 duration (e.g., "P7D", "P1M")
-  string iso_offset = 2; // Optional offset for comparison ranges
-  string time_zone = 3; // IANA timezone (e.g., "America/New_York")
-}
-
-// AIReportContext provides optional dashboard context for AI analysis
-message AIReportContext {
-  string explore = 1; // Dashboard/explore name
-  repeated string dimensions = 2; // Dimensions to focus on
-  repeated string measures = 3; // Measures to focus on
-  google.protobuf.Struct where = 4; // Filter expression
 }
 
 message AlertOptions {

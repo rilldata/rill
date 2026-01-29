@@ -5,6 +5,25 @@
  * Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
  * OpenAPI spec version: version not set
  */
+export interface GetAlertMetaResponseURLs {
+  openUrl?: string;
+  editUrl?: string;
+  unsubscribeUrl?: string;
+}
+
+export type GetReportMetaResponseDeliveryMetaUserAttrs = {
+  [key: string]: unknown;
+};
+
+export interface GetReportMetaResponseDeliveryMeta {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
+  unsubscribeUrl?: string;
+  userId?: string;
+  userAttrs?: GetReportMetaResponseDeliveryMetaUserAttrs;
+}
+
 export interface ListGithubUserReposResponseRepo {
   name?: string;
   owner?: string;
@@ -60,29 +79,6 @@ export const Runtimev1Operation = {
   OPERATION_NLIKE: "OPERATION_NLIKE",
   OPERATION_CAST: "OPERATION_CAST",
 } as const;
-
-export type V1AIReportContextWhere = { [key: string]: unknown };
-
-export interface V1AIReportContext {
-  explore?: string;
-  dimensions?: string[];
-  measures?: string[];
-  where?: V1AIReportContextWhere;
-}
-
-export interface V1AIReportData {
-  agent?: string;
-  prompt?: string;
-  timeRange?: V1AIReportTimeRange;
-  comparisonTimeRange?: V1AIReportTimeRange;
-  context?: V1AIReportContext;
-}
-
-export interface V1AIReportTimeRange {
-  isoDuration?: string;
-  isoOffset?: string;
-  timeZone?: string;
-}
 
 export interface V1AddOrganizationMemberUserResponse {
   pendingSignup?: boolean;
@@ -484,7 +480,7 @@ export interface V1GenerateReportYAMLResponse {
 }
 
 export type V1GetAlertMetaResponseRecipientUrls = {
-  [key: string]: V1GetAlertMetaResponseURLs;
+  [key: string]: GetAlertMetaResponseURLs;
 };
 
 export type V1GetAlertMetaResponseQueryForAttributes = {
@@ -494,12 +490,6 @@ export type V1GetAlertMetaResponseQueryForAttributes = {
 export interface V1GetAlertMetaResponse {
   recipientUrls?: V1GetAlertMetaResponseRecipientUrls;
   queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
-}
-
-export interface V1GetAlertMetaResponseURLs {
-  openUrl?: string;
-  editUrl?: string;
-  unsubscribeUrl?: string;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -689,23 +679,12 @@ The URL uses HTTPS with embedded username/password. */
   archiveCreatedOn?: string;
 }
 
-export type V1GetReportMetaResponseRecipientUrls = {
-  [key: string]: V1GetReportMetaResponseURLs;
+export type V1GetReportMetaResponseDeliveryMeta = {
+  [key: string]: GetReportMetaResponseDeliveryMeta;
 };
 
 export interface V1GetReportMetaResponse {
-  recipientUrls?: V1GetReportMetaResponseRecipientUrls;
-}
-
-export type V1GetReportMetaResponseURLsUserAttrs = { [key: string]: unknown };
-
-export interface V1GetReportMetaResponseURLs {
-  openUrl?: string;
-  exportUrl?: string;
-  editUrl?: string;
-  unsubscribeUrl?: string;
-  userId?: string;
-  userAttrs?: V1GetReportMetaResponseURLsUserAttrs;
+  deliveryMeta?: V1GetReportMetaResponseDeliveryMeta;
 }
 
 export interface V1GetServiceResponse {
@@ -1240,11 +1219,15 @@ export interface V1RenewBillingSubscriptionResponse {
   subscription?: V1Subscription;
 }
 
+export type V1ReportOptionsResolverProperties = { [key: string]: unknown };
+
 export interface V1ReportOptions {
   displayName?: string;
   refreshCron?: string;
   refreshTimeZone?: string;
   intervalDuration?: string;
+  resolver?: string;
+  resolverProperties?: V1ReportOptionsResolverProperties;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
@@ -1261,9 +1244,6 @@ export interface V1ReportOptions {
   explore?: string;
   canvas?: string;
   webOpenMode?: string;
-  /** "query" (default) or "ai_session" */
-  format?: string;
-  aiData?: V1AIReportData;
 }
 
 export interface V1RequestProjectAccessResponse {
@@ -2204,7 +2184,7 @@ It is optional. If the call is made with a deployment access token, it defaults 
 
 export type AdminServiceGetReportMetaBody = {
   report?: string;
-  format?: string;
+  resolver?: string;
   ownerId?: string;
   executionTime?: string;
   emailRecipients?: string[];

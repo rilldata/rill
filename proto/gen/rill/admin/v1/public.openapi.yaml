@@ -1,5 +1,30 @@
 components:
     schemas:
+        GetAlertMetaResponseURLs:
+            properties:
+                editUrl:
+                    type: string
+                openUrl:
+                    type: string
+                unsubscribeUrl:
+                    type: string
+            type: object
+        GetReportMetaResponseDeliveryMeta:
+            properties:
+                editUrl:
+                    type: string
+                exportUrl:
+                    type: string
+                openUrl:
+                    type: string
+                unsubscribeUrl:
+                    type: string
+                userAttrs:
+                    title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
+                    type: object
+                userId:
+                    type: string
+            type: object
         ListGithubUserReposResponseRepo:
             properties:
                 defaultBranch:
@@ -61,55 +86,6 @@ components:
                 - OPERATION_NLIKE
                 - OPERATION_CAST
             type: string
-        v1AIReportContext:
-            properties:
-                dimensions:
-                    items:
-                        type: string
-                    title: Dimensions to focus on
-                    type: array
-                explore:
-                    title: Dashboard/explore name
-                    type: string
-                measures:
-                    items:
-                        type: string
-                    title: Measures to focus on
-                    type: array
-                where:
-                    title: Filter expression
-                    type: object
-            title: AIReportContext provides optional dashboard context for AI analysis
-            type: object
-        v1AIReportData:
-            properties:
-                agent:
-                    title: Agent to use (defaults to "analyst_agent")
-                    type: string
-                comparisonTimeRange:
-                    $ref: '#/components/schemas/v1AIReportTimeRange'
-                context:
-                    $ref: '#/components/schemas/v1AIReportContext'
-                prompt:
-                    title: Optional user prompt for the agent
-                    type: string
-                timeRange:
-                    $ref: '#/components/schemas/v1AIReportTimeRange'
-            title: AIReportData contains configuration for AI-powered reports
-            type: object
-        v1AIReportTimeRange:
-            properties:
-                isoDuration:
-                    title: ISO 8601 duration (e.g., "P7D", "P1M")
-                    type: string
-                isoOffset:
-                    title: Optional offset for comparison ranges
-                    type: string
-                timeZone:
-                    title: IANA timezone (e.g., "America/New_York")
-                    type: string
-            title: AIReportTimeRange specifies a time range using ISO 8601 duration
-            type: object
         v1AddOrganizationMemberUserResponse:
             properties:
                 pendingSignup:
@@ -627,17 +603,8 @@ components:
                     type: object
                 recipientUrls:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1GetAlertMetaResponseURLs'
+                        $ref: '#/components/schemas/GetAlertMetaResponseURLs'
                     type: object
-            type: object
-        v1GetAlertMetaResponseURLs:
-            properties:
-                editUrl:
-                    type: string
-                openUrl:
-                    type: string
-                unsubscribeUrl:
-                    type: string
             type: object
         v1GetAlertYAMLResponse:
             properties:
@@ -908,26 +875,10 @@ components:
             type: object
         v1GetReportMetaResponse:
             properties:
-                recipientUrls:
+                deliveryMeta:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1GetReportMetaResponseURLs'
+                        $ref: '#/components/schemas/GetReportMetaResponseDeliveryMeta'
                     type: object
-            type: object
-        v1GetReportMetaResponseURLs:
-            properties:
-                editUrl:
-                    type: string
-                exportUrl:
-                    type: string
-                openUrl:
-                    type: string
-                unsubscribeUrl:
-                    type: string
-                userAttrs:
-                    title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
-                    type: object
-                userId:
-                    type: string
             type: object
         v1GetServiceResponse:
             properties:
@@ -1774,8 +1725,6 @@ components:
             type: object
         v1ReportOptions:
             properties:
-                aiData:
-                    $ref: '#/components/schemas/v1AIReportData'
                 canvas:
                     type: string
                 displayName:
@@ -1794,20 +1743,22 @@ components:
                 exportLimit:
                     format: uint64
                     type: string
-                format:
-                    description: '"query" (default) or "ai_session"'
-                    title: AI-powered report configuration (used when format is "ai_session")
-                    type: string
                 intervalDuration:
                     type: string
                 queryArgsJson:
                     type: string
                 queryName:
+                    title: Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
                     type: string
                 refreshCron:
                     type: string
                 refreshTimeZone:
                     type: string
+                resolver:
+                    title: Generic resolver configuration (preferred for new reports)
+                    type: string
+                resolverProperties:
+                    type: object
                 slackChannels:
                     items:
                         type: string

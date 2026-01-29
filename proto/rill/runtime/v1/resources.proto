@@ -601,6 +601,10 @@ message ReportSpec {
   bool trigger = 1;
   Schedule refresh_schedule = 3;
   uint32 timeout_seconds = 4;
+  // Generic resolver configuration (preferred for new reports)
+  string resolver = 19;
+  google.protobuf.Struct resolver_properties = 20;
+  // Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
   string query_name = 5;
   string query_args_json = 6;
   uint64 export_limit = 7;
@@ -612,9 +616,6 @@ message ReportSpec {
   string intervals_iso_duration = 13;
   int32 intervals_limit = 14;
   bool intervals_check_unclosed = 15;
-  // AI report configuration
-  string format = 17; // "query" (default) or "ai_session"
-  AIReportConfig ai_config = 18; // Configuration for AI-powered reports (only used when format = "ai_session")
 }
 
 message ReportState {
@@ -632,26 +633,6 @@ message ReportExecution {
   google.protobuf.Timestamp finished_on = 5;
 }
 
-// AIReportConfig configures AI-powered reports that generate insights using an AI agent.
-message AIReportConfig {
-  string agent = 1; // Agent to use (e.g., "analyst_agent")
-  string prompt = 2; // User prompt for the AI agent
-  AITimeRange time_range = 3; // Time range for analysis (resolved at execution time)
-  AITimeRange comparison_time_range = 4; // Optional comparison time range for period-over-period analysis
-  // Optional dashboard context to constrain the analysis
-  string explore = 5; // Explore dashboard name
-  repeated string dimensions = 6; // Dimensions to analyze
-  repeated string measures = 7; // Measures to analyze
-  google.protobuf.Struct where = 8; // Filter expression
-}
-
-// AITimeRange defines a time range using ISO 8601 duration strings.
-// The time range is resolved at report execution time.
-message AITimeRange {
-  string iso_duration = 1; // ISO 8601 duration (e.g., "P7D" for 7 days, "P1M" for 1 month)
-  string iso_offset = 2; // Optional ISO 8601 offset for comparison ranges (e.g., "P7D" to offset by 7 days)
-  string time_zone = 3; // IANA timezone (e.g., "America/New_York")
-}
 
 message Alert {
   AlertSpec spec = 1;

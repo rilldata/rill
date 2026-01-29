@@ -33,9 +33,10 @@ type AnalystAgentArgs struct {
 	TimeEnd             time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 	ComparisonTimeStart time.Time               `json:"comparison_time_start" yaml:"comparison_time_start" jsonschema:"Optional comparison period start time."`
 	ComparisonTimeEnd   time.Time               `json:"comparison_time_end" yaml:"comparison_time_end" jsonschema:"Optional comparison period end time."`
-	// scheduled insight report mode args
-	IsScheduledInsight bool `json:"is_scheduled_insight" yaml:"is_scheduled_insight" jsonschema:"Flag indicating this is an automated scheduled insight report."`
-	HideCharts         bool `json:"hide_charts" yaml:"hide_charts" jsonschema:"Flag indicating whether to suppress chart creation in the analysis."`
+	DisableCharts       bool                    `json:"disable_charts" yaml:"disable_charts" jsonschema:"Flag indicating whether to disable chart creation in the analysis."`
+	// Report mode args (for scheduled/automated reports)
+	IsReport           bool `json:"is_report" yaml:"is_report" jsonschema:"Flag indicating this is an automated report."`
+	IsReportUserPrompt bool `json:"is_report_user_prompt" yaml:"is_report_user_prompt" jsonschema:"Flag indicating whether the user has provided a custom prompt for this report."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -139,7 +140,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		tools = append(tools, ListMetricsViewsName, GetMetricsViewName)
 	}
 	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName)
-	if !args.HideCharts {
+	if !args.DisableCharts {
 		tools = append(tools, CreateChartName)
 	}
 
@@ -186,17 +187,20 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 	if err != nil {
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
 	}
-	if args.HideCharts {
+	if args.DisableCharts {
 		ff["chat_charts"] = false
 	}
 	data := map[string]any{
-		"ai_instructions": session.ProjectInstructions(),
-		"metrics_view":    metricsViewName,
-		"explore":         args.Explore,
-		"dimensions":      strings.Join(args.Dimensions, ", "),
-		"measures":        strings.Join(args.Measures, ", "),
-		"feature_flags":   ff,
-		"now":             time.Now(),
+		"ai_instructions":       session.ProjectInstructions(),
+		"metrics_view":          metricsViewName,
+		"explore":               args.Explore,
+		"dimensions":            strings.Join(args.Dimensions, ", "),
+		"measures":              strings.Join(args.Measures, ", "),
+		"feature_flags":         ff,
+		"forked":                session.Forked(),
+		"is_report":             args.IsReport,
+		"is_report_user_prompt": args.IsReportUserPrompt,
+		"now":                   time.Now(),
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
@@ -204,9 +208,6 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 		data["time_end"] = args.TimeEnd.Format(time.RFC3339)
 	}
 
-	// Add scheduled insight mode context
-	data["is_scheduled_insight"] = args.IsScheduledInsight
-	data["is_scheduled_insight_user_prompt"] = args.IsScheduledInsight && !(strings.EqualFold(strings.TrimSpace(args.Prompt), "Generate the scheduled insight report."))
 	if !args.ComparisonTimeStart.IsZero() && !args.ComparisonTimeEnd.IsZero() {
 		data["comparison_start"] = args.ComparisonTimeStart.Format(time.RFC3339)
 		data["comparison_end"] = args.ComparisonTimeEnd.Format(time.RFC3339)
@@ -218,15 +219,14 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 			return "", err
 		}
 	}
-	data["forked"] = session.Forked()
 
 	// Generate the system prompt
 	return executeTemplate(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights.
 You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
-{{ if .is_scheduled_insight }}
+{{ if .is_report }}
 You are operating in an automated scheduled insight report mode where you will come up with insights on your own without additional user input.
-{{ if .is_scheduled_insight_user_prompt }}The user has provided a custom prompt for this scheduled insight report. Tailor your analysis to address this prompt specifically. {{ end }}
+{{ if .is_report_user_prompt }}The user has provided a custom prompt for this scheduled insight report. Tailor your analysis to address this prompt specifically. {{ end }}
 {{ end }}
 
 Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
@@ -242,7 +242,7 @@ Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "200
 **Phase 1: discovery (setup)**
 {{ if .explore }}
 Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_view }}".
-{{ if not .is_scheduled_insight }}The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc. {{ end }}
+{{ if not .is_report }}The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc. {{ end }}
 The metrics view's definition and time range of available data has been provided in your tool calls.
 
 Here is an overview of the settings applied to the dashboard:
@@ -272,9 +272,9 @@ If you run into such issues, explicitly mention to the user that this may be due
 **Phase 2: analysis (loop)**
 In an iterative OODA loop, you should repeatedly use the "query_metrics_view" tool to query for insights.
 Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.
-Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to {{ if .is_scheduled_insight }} 50 {{ else }} 20 {{ end }} queries.
+Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20par queries.
 
-{{ if and .is_scheduled_insight (not .is_scheduled_insight_user_prompt) }}
+{{ if and .is_report (not .is_report_user_prompt) }}
 {{ if (and .comparison_start .comparison_end) }}
 <comparison_analysis>
 You are doing comparative analysis between two time periods in scheduled insight report mode, your analysis should:
@@ -372,9 +372,13 @@ After each query in Phase 2, think through:
 </thinking>
 
 <output_format>
-{{ if .is_scheduled_insight }}Start with a one line summary enclosed in a summary tag, do not include citation links in the summary. (required) {{ end }}
 **Format your analysis as follows**:
 {{ backticks }}markdown
+{{ if .is_report }}
+<summary>
+[One line summary. Do not include citation links.]
+</summary>
+{{ end }}
 Based on the data analysis, here are the key insights:
 
 1. ## [Headline with specific impact/number]
@@ -386,7 +390,7 @@ Based on the data analysis, here are the key insights:
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-{{ if not .is_scheduled_insight }} [Optional: Offer specific follow-up analysis options] {{ end }}
+{{ if not .is_report }} [Optional: Offer specific follow-up analysis options] {{ end }}
 {{ backticks }}
 
 **Citation Requirements**:

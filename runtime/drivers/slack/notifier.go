@@ -108,65 +108,6 @@ func (n *notifier) sendReportToUsers(d ReportStatusData) error {
 	return nil
 }
 
-func (n *notifier) SendAIInsightReport(s *drivers.AIInsightReport) error {
-	d := AIInsightReportData{
-		DisplayName:      s.DisplayName,
-		ReportTimeString: s.ReportTime.Format(time.RFC1123),
-		Summary:          s.Summary,
-		OpenLink:         s.OpenLink,
-	}
-
-	buf := new(bytes.Buffer)
-	err := n.templates.Lookup("ai_insight_report.slack").Execute(buf, d)
-	if err != nil {
-		return fmt.Errorf("slack template error: %w", err)
-	}
-	txt := buf.String()
-
-	if err := n.sendTextToChannels(txt); err != nil {
-		return err
-	}
-	if err := n.sendTextViaWebhooks(txt); err != nil {
-		return err
-	}
-
-	d.UnsubscribeLink = s.UnsubscribeLink
-	return n.sendAIInsightReportToUsers(d)
-}
-
-func (n *notifier) sendAIInsightReportToUsers(d AIInsightReportData) error {
-	if len(n.props.Users) == 0 {
-		return nil
-	}
-
-	if n.api == nil {
-		return fmt.Errorf("slack api is not configured, consider setting a bot token")
-	}
-
-	unsubLink := d.UnsubscribeLink
-
-	for _, email := range n.props.Users {
-		d.UnsubscribeLink = urlutil.MustWithQuery(unsubLink, map[string]string{"slack_user": email})
-
-		buf := new(bytes.Buffer)
-		err := n.templates.Lookup("ai_insight_report.slack").Execute(buf, d)
-		if err != nil {
-			return fmt.Errorf("slack template error: %w", err)
-		}
-		txt := buf.String()
-
-		user, err := n.api.GetUserByEmail(email)
-		if err != nil {
-			return fmt.Errorf("slack api error: %w", err)
-		}
-		_, _, err = n.api.PostMessage(user.ID, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
-		if err != nil {
-			return fmt.Errorf("slack api error: %w", err)
-		}
-	}
-	return nil
-}
-
 func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 	switch s.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
@@ -340,13 +281,4 @@ type AlertFailData struct {
 	FailRow             map[string]any
 	OpenLink            htemplate.URL
 	EditLink            htemplate.URL
-}
-
-// AIInsightReportData contains data for AI insight report Slack notifications.
-type AIInsightReportData struct {
-	DisplayName      string
-	ReportTimeString string
-	Summary          string
-	OpenLink         string
-	UnsubscribeLink  string
 }

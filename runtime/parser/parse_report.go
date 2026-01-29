@@ -27,9 +27,9 @@ type ReportYAML struct {
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
-	Timeout string `yaml:"timeout"`
-	Format  string `yaml:"format"` // "query" (default) or "ai_session"
-	Query   struct {
+	Timeout string    `yaml:"timeout"`
+	Data    *DataYAML `yaml:"data"` // Generic data resolver (preferred for new reports)
+	Query   struct {  // Legacy query-based report (deprecated - use data instead)
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
@@ -39,10 +39,6 @@ type ReportYAML struct {
 		IncludeHeader bool   `yaml:"include_header"`
 		Limit         uint   `yaml:"limit"`
 	} `yaml:"export"`
-	// Data block for AI-powered reports
-	Data struct {
-		AI *AIReportDataYAML `yaml:"ai"`
-	} `yaml:"data"`
 	Email struct {
 		Recipients []string `yaml:"recipients"`
 	} `yaml:"email"`
@@ -57,26 +53,6 @@ type ReportYAML struct {
 		} `yaml:"slack"`
 	} `yaml:"notify"`
 	Annotations map[string]string `yaml:"annotations"`
-}
-
-// AIReportDataYAML is the raw structure for AI-powered report configuration
-type AIReportDataYAML struct {
-	Agent     string `yaml:"agent"`
-	Prompt    string `yaml:"prompt"`
-	TimeRange struct {
-		ISODuration string `yaml:"iso_duration"`
-		TimeZone    string `yaml:"time_zone"`
-	} `yaml:"time_range"`
-	ComparisonTimeRange struct {
-		ISODuration string `yaml:"iso_duration"`
-		ISOOffset   string `yaml:"iso_offset"`
-	} `yaml:"comparison_time_range"`
-	Context struct {
-		Explore    string         `yaml:"explore"`
-		Dimensions []string       `yaml:"dimensions"`
-		Measures   []string       `yaml:"measures"`
-		Where      map[string]any `yaml:"where"`
-	} `yaml:"context"`
 }
 
 // parseReport parses a report definition and adds the resulting resource to p.Resources.
@@ -137,27 +113,24 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	// Parse format - "query" (default) or "ai_session"
-	format := strings.ToLower(tmp.Format)
-	if format == "" {
-		format = "query"
-	}
-	if format != "query" && format != "ai_session" {
-		return fmt.Errorf(`invalid value %q for property "format" (must be "query" or "ai_session")`, tmp.Format)
-	}
+	// Determine if using new data resolver or legacy query
+	var resolver string
+	var resolverProps *structpb.Struct
+	isLegacyQuery := tmp.Data == nil
 
-	// Parse AI config if format is "ai_session"
-	var aiConfig *runtimev1.AIReportConfig
-	if format == "ai_session" {
-		aiConfig, err = p.parseAIReportConfig(tmp.Data.AI)
+	if !isLegacyQuery {
+		// Parse the data resolver
+		var refs []ResourceName
+		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, node.Connector)
 		if err != nil {
-			return err
+			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
+		node.Refs = append(node.Refs, refs...)
 	}
 
-	// Parse query-based report config
+	// Parse legacy query-based report config
 	var exportFormat runtimev1.ExportFormat
-	if format == "query" {
+	if isLegacyQuery {
 		// Query name
 		if tmp.Query.Name == "" {
 			return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
@@ -195,10 +168,10 @@ func (p *Parser) parseReport(node *Node) error {
 		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
 
-	isLegacySyntax := len(tmp.Email.Recipients) > 0
+	isLegacyEmailSyntax := len(tmp.Email.Recipients) > 0
 
 	// Validate recipients
-	if isLegacySyntax {
+	if isLegacyEmailSyntax {
 		// Backward compatibility
 		for _, email := range tmp.Email.Recipients {
 			_, err := mail.ParseAddress(email)
@@ -225,8 +198,9 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	if format == "ai_session" && (len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0) {
-		return errors.New(`ai reports only support email notifications as of now`) // as we cannot reliably fetch user attributes for slack webhooks/channels for enforcing access control in recipient mode
+	// AI resolver only supports email notifications (can't reliably get user attributes for slack)
+	if resolver == "ai" && (len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0) {
+		return errors.New(`AI reports only support email notifications`) // can't reliably fetch user attributes for slack webhooks/channels for enforcing access control
 	}
 
 	// Track report
@@ -250,15 +224,20 @@ func (p *Parser) parseReport(node *Node) error {
 	if timeout != 0 {
 		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
-	r.ReportSpec.Format = format
-	r.ReportSpec.AiConfig = aiConfig
-	r.ReportSpec.QueryName = tmp.Query.Name
-	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
-	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
-	r.ReportSpec.ExportFormat = exportFormat
-	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
 
-	if isLegacySyntax {
+	// Set resolver or legacy query fields
+	if !isLegacyQuery {
+		r.ReportSpec.Resolver = resolver
+		r.ReportSpec.ResolverProperties = resolverProps
+	} else {
+		r.ReportSpec.QueryName = tmp.Query.Name
+		r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
+		r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
+		r.ReportSpec.ExportFormat = exportFormat
+		r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
+	}
+
+	if isLegacyEmailSyntax {
 		// Backwards compatibility
 		// Email settings
 		notifier, err := structpb.NewStruct(map[string]any{
@@ -321,66 +300,4 @@ func parseExportFormat(s string) (runtimev1.ExportFormat, error) {
 		}
 		return runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED, fmt.Errorf("invalid export format %q", s)
 	}
-}
-
-// parseAIReportConfig parses the AI configuration for AI-powered reports
-func (p *Parser) parseAIReportConfig(ai *AIReportDataYAML) (*runtimev1.AIReportConfig, error) {
-	if ai == nil {
-		return nil, errors.New(`"data.ai" is required when format is "ai_session"`)
-	}
-
-	// Validate time range
-	if ai.TimeRange.ISODuration == "" {
-		return nil, errors.New(`"data.ai.time_range.iso_duration" is required`)
-	}
-	err := duration.ValidateISO8601(ai.TimeRange.ISODuration, false, false)
-	if err != nil {
-		return nil, fmt.Errorf(`invalid value %q for "data.ai.time_range.iso_duration": %w`, ai.TimeRange.ISODuration, err)
-	}
-
-	// Validate comparison time range if provided
-	if ai.ComparisonTimeRange.ISODuration != "" {
-		err := duration.ValidateISO8601(ai.ComparisonTimeRange.ISODuration, false, false)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid value %q for "data.ai.comparison_time_range.iso_duration": %w`, ai.ComparisonTimeRange.ISODuration, err)
-		}
-	}
-	if ai.ComparisonTimeRange.ISOOffset != "" {
-		err := duration.ValidateISO8601(ai.ComparisonTimeRange.ISOOffset, false, false)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid value %q for "data.ai.comparison_time_range.iso_offset": %w`, ai.ComparisonTimeRange.ISOOffset, err)
-		}
-	}
-
-	// Build the proto config
-	config := &runtimev1.AIReportConfig{
-		Agent:  ai.Agent,
-		Prompt: ai.Prompt,
-		TimeRange: &runtimev1.AITimeRange{
-			IsoDuration: ai.TimeRange.ISODuration,
-			TimeZone:    ai.TimeRange.TimeZone,
-		},
-		Explore:    ai.Context.Explore,
-		Dimensions: ai.Context.Dimensions,
-		Measures:   ai.Context.Measures,
-	}
-
-	// Add comparison time range if provided
-	if ai.ComparisonTimeRange.ISODuration != "" {
-		config.ComparisonTimeRange = &runtimev1.AITimeRange{
-			IsoDuration: ai.ComparisonTimeRange.ISODuration,
-			IsoOffset:   ai.ComparisonTimeRange.ISOOffset,
-		}
-	}
-
-	// Add where filter if provided
-	if len(ai.Context.Where) > 0 {
-		where, err := structpb.NewStruct(ai.Context.Where)
-		if err != nil {
-			return nil, fmt.Errorf(`invalid value for "data.ai.context.where": %w`, err)
-		}
-		config.Where = where
-	}
-
-	return config, nil
 }

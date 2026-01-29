@@ -31,7 +31,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
 		attribute.String("args.report", req.Report),
-		attribute.String("args.format", req.Format),
+		attribute.String("args.resolver", req.Resolver),
 		attribute.StringSlice("args.email_recipients", req.EmailRecipients),
 		attribute.String("args.execution_time", req.ExecutionTime.String()),
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
@@ -59,7 +59,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	urls := make(map[string]*adminv1.GetReportMetaResponse_URLs)
+	delivery := make(map[string]*adminv1.GetReportMetaResponse_DeliveryMeta)
 
 	var recipients []string
 	recipients = append(recipients, req.EmailRecipients...)
@@ -78,7 +78,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	var tokens map[string]string
-	if webOpenMode == WebOpenModeRecipient || req.Format == "ai_session" {
+	if webOpenMode == WebOpenModeRecipient || req.Resolver == "ai" {
 		// in recipient mode tokens are used for unsubscribing and for ai reports, shared sessions are created so token is just used for authentication, so no access to resources is needed
 		tokens, err = s.createMagicTokensWithoutResources(ctx, proj.ID, req.Report, req.OwnerId, recipients)
 	} else {
@@ -90,7 +90,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	recipientUserIDs := make(map[string]string)
 	recipientUserAttrs := make(map[string]*structpb.Struct)
-	if req.Format == "ai_session" {
+	if req.Resolver == "ai" {
 		if webOpenMode == WebOpenModeCreator {
 			// in creator mode, only look up owner and use their attributes for all recipients
 			if req.OwnerId != "" {
@@ -126,11 +126,18 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 						userID = user.ID
 					}
 				}
-				// If user not found, leave empty - they may not be a Rill user
+				// If user not found, leave empty - they may not be a Rill user (which should not happen in recipient mode); we will just skip running the report for them
 				if userID != "" {
 					attr, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, userID, "")
 					if err != nil {
 						return nil, err
+					}
+					member := false
+					if val, ok := attr["member"]; ok {
+						member, _ = val.(bool)
+					}
+					if !member {
+						continue
 					}
 					recipientUserAttrs[recipient], err = structpb.NewStruct(attr)
 					recipientUserIDs[recipient] = userID
@@ -152,16 +159,16 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		if recipient == ownerEmail {
 			if webOpenMode == WebOpenModeRecipient {
 				// owner in recipient mode gets plain open and export url without token as token does not have any access
-				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Format, "", req.ExecutionTime.AsTime()),
+				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
+					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Resolver, "", req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 					UserId:    recipientUserIDs[recipient],
 					UserAttrs: recipientUserAttrs[recipient],
 				}
 			} else {
-				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Format, tokens[recipient], req.ExecutionTime.AsTime()),
+				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
+					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Resolver, tokens[recipient], req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 					UserId:    recipientUserIDs[recipient],
@@ -171,16 +178,16 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			continue
 		}
 		if webOpenMode == WebOpenModeCreator {
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Format, tokens[recipient], req.ExecutionTime.AsTime()),
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Resolver, tokens[recipient], req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
 				UserId:         recipientUserIDs[recipient],
 				UserAttrs:      recipientUserAttrs[recipient],
 			}
 		} else if webOpenMode == WebOpenModeRecipient {
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Format, "", req.ExecutionTime.AsTime()),
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Resolver, "", req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
 				UserId:         recipientUserIDs[recipient],
@@ -188,7 +195,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			}
 		} else {
 			// same as recipient but no open url
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
 				UserId:         recipientUserIDs[recipient],
@@ -198,7 +205,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		RecipientUrls: urls,
+		DeliveryMeta: delivery,
 	}, nil
 }
 
@@ -583,16 +590,21 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	res.Format = opts.Format
-	res.Query.Name = opts.QueryName
-	res.Query.ArgsJSON = opts.QueryArgsJson
-	res.Export.Format = opts.ExportFormat.String()
-	res.Export.IncludeHeader = opts.ExportIncludeHeader
-	res.Export.Limit = uint(opts.ExportLimit)
-	// Handle AI data if present
-	if opts.AiData != nil {
-		res.Data.AI = convertAIReportData(opts.AiData)
+
+	// Handle resolver-based reports (new style) vs legacy query-based reports
+	if opts.Resolver != "" && opts.ResolverProperties != nil {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties.AsMap(),
+		}
+	} else {
+		// Legacy query-based report
+		res.Query.Name = opts.QueryName
+		res.Query.ArgsJSON = opts.QueryArgsJson
+		res.Export.Format = opts.ExportFormat.String()
+		res.Export.IncludeHeader = opts.ExportIncludeHeader
+		res.Export.Limit = uint(opts.ExportLimit)
 	}
+
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -618,28 +630,6 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 }
 
 func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
-	// Format args as pretty YAML
-	var args map[string]interface{}
-	if opts.QueryArgsJson != "" {
-		err := json.Unmarshal([]byte(opts.QueryArgsJson), &args)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse queryArgsJSON: %w", err)
-		}
-	}
-
-	// Format export format as pretty string
-	var exportFormat string
-	switch opts.ExportFormat {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		exportFormat = "csv"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		exportFormat = "parquet"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		exportFormat = "xlsx"
-	default:
-		exportFormat = opts.ExportFormat.String()
-	}
-
 	res := reportYAML{}
 	res.Type = "report"
 	res.DisplayName = opts.DisplayName
@@ -647,16 +637,43 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	res.Format = opts.Format
-	res.Query.Name = opts.QueryName
-	res.Query.Args = args
-	res.Export.Format = exportFormat
-	res.Export.IncludeHeader = opts.ExportIncludeHeader
-	res.Export.Limit = uint(opts.ExportLimit)
-	// Handle AI data if present
-	if opts.AiData != nil {
-		res.Data.AI = convertAIReportData(opts.AiData)
+
+	// Handle resolver-based reports (new style) vs legacy query-based reports
+	if opts.Resolver != "" && opts.ResolverProperties != nil {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties.AsMap(),
+		}
+	} else {
+		// Legacy query-based report
+		// Format args as pretty YAML
+		var args map[string]interface{}
+		if opts.QueryArgsJson != "" {
+			err := json.Unmarshal([]byte(opts.QueryArgsJson), &args)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse queryArgsJSON: %w", err)
+			}
+		}
+
+		// Format export format as pretty string
+		var exportFormat string
+		switch opts.ExportFormat {
+		case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+			exportFormat = "csv"
+		case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+			exportFormat = "parquet"
+		case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+			exportFormat = "xlsx"
+		default:
+			exportFormat = opts.ExportFormat.String()
+		}
+
+		res.Query.Name = opts.QueryName
+		res.Query.Args = args
+		res.Export.Format = exportFormat
+		res.Export.IncludeHeader = opts.ExportIncludeHeader
+		res.Export.Limit = uint(opts.ExportLimit)
 	}
+
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -670,31 +687,6 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
 	}
 	return yaml.Marshal(res)
-}
-
-// convertAIReportData converts proto AIReportData to YAML struct
-func convertAIReportData(data *adminv1.AIReportData) *aiReportDataYAML {
-	res := &aiReportDataYAML{
-		Agent:  data.Agent,
-		Prompt: data.Prompt,
-	}
-	if data.TimeRange != nil {
-		res.TimeRange.ISODuration = data.TimeRange.IsoDuration
-		res.TimeRange.TimeZone = data.TimeRange.TimeZone
-	}
-	if data.ComparisonTimeRange != nil {
-		res.ComparisonTimeRange.ISODuration = data.ComparisonTimeRange.IsoDuration
-		res.ComparisonTimeRange.ISOOffset = data.ComparisonTimeRange.IsoOffset
-	}
-	if data.Context != nil {
-		res.Context.Explore = data.Context.Explore
-		res.Context.Dimensions = data.Context.Dimensions
-		res.Context.Measures = data.Context.Measures
-		if data.Context.Where != nil {
-			res.Context.Where = data.Context.Where.AsMap()
-		}
-	}
-	return res
 }
 
 // generateReportName generates a random report name with the display name as a seed.
@@ -897,8 +889,8 @@ type reportYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Format string `yaml:"format,omitempty"` // "query" (default) or "ai_session"
-	Query  struct {
+	Data  map[string]any `yaml:"data,omitempty"` // Generic data resolver block (e.g., data.ai, data.sql)
+	Query struct {       // Legacy query-based report (deprecated - use data instead)
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
@@ -908,9 +900,6 @@ type reportYAML struct {
 		IncludeHeader bool   `yaml:"include_header"`
 		Limit         uint   `yaml:"limit"`
 	} `yaml:"export"`
-	Data struct {
-		AI *aiReportDataYAML `yaml:"ai,omitempty"`
-	} `yaml:"data,omitempty"`
 	Notify struct {
 		Email struct {
 			Recipients []string `yaml:"recipients"`
@@ -922,26 +911,6 @@ type reportYAML struct {
 		} `yaml:"slack"`
 	} `yaml:"notify"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
-}
-
-// aiReportDataYAML is the structure for AI-powered report configuration
-type aiReportDataYAML struct {
-	Agent     string `yaml:"agent,omitempty"`
-	Prompt    string `yaml:"prompt"`
-	TimeRange struct {
-		ISODuration string `yaml:"iso_duration"`
-		TimeZone    string `yaml:"time_zone,omitempty"`
-	} `yaml:"time_range"`
-	ComparisonTimeRange struct {
-		ISODuration string `yaml:"iso_duration,omitempty"`
-		ISOOffset   string `yaml:"iso_offset,omitempty"`
-	} `yaml:"comparison_time_range,omitempty"`
-	Context struct {
-		Explore    string         `yaml:"explore,omitempty"`
-		Dimensions []string       `yaml:"dimensions,omitempty"`
-		Measures   []string       `yaml:"measures,omitempty"`
-		Where      map[string]any `yaml:"where,omitempty"`
-	} `yaml:"context,omitempty"`
 }
 
 type reportAnnotations struct {

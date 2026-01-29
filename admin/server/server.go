@@ -367,6 +367,7 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 		"domain": user.Email[strings.LastIndex(user.Email, "@")+1:],
 		"groups": groupNames,
 		"admin":  projectPermissions.ManageProject,
+		"member": projectPermissions.ReadProd,
 	}
 
 	for k, v := range attributes {

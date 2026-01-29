@@ -6491,6 +6491,37 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
+	// no validation rules for Resolver
+
+	if all {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportSpecValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportSpecValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportSpecValidationError{
+				field:  "ResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for QueryName
 
 	// no validation rules for QueryArgsJson
@@ -6544,37 +6575,6 @@ func (m *ReportSpec) validate(all bool) error {
 	// no validation rules for IntervalsLimit
 
 	// no validation rules for IntervalsCheckUnclosed
-
-	// no validation rules for Format
-
-	if all {
-		switch v := interface{}(m.GetAiConfig()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ReportSpecValidationError{
-					field:  "AiConfig",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ReportSpecValidationError{
-					field:  "AiConfig",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetAiConfig()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ReportSpecValidationError{
-				field:  "AiConfig",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
 
 	if len(errors) > 0 {
 		return ReportSpecMultiError(errors)
@@ -7036,304 +7036,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ReportExecutionValidationError{}
-
-// Validate checks the field values on AIReportConfig with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *AIReportConfig) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on AIReportConfig with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in AIReportConfigMultiError,
-// or nil if none found.
-func (m *AIReportConfig) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *AIReportConfig) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Agent
-
-	// no validation rules for Prompt
-
-	if all {
-		switch v := interface{}(m.GetTimeRange()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AIReportConfigValidationError{
-					field:  "TimeRange",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, AIReportConfigValidationError{
-					field:  "TimeRange",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetTimeRange()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return AIReportConfigValidationError{
-				field:  "TimeRange",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetComparisonTimeRange()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AIReportConfigValidationError{
-					field:  "ComparisonTimeRange",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, AIReportConfigValidationError{
-					field:  "ComparisonTimeRange",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetComparisonTimeRange()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return AIReportConfigValidationError{
-				field:  "ComparisonTimeRange",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	// no validation rules for Explore
-
-	if all {
-		switch v := interface{}(m.GetWhere()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AIReportConfigValidationError{
-					field:  "Where",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, AIReportConfigValidationError{
-					field:  "Where",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return AIReportConfigValidationError{
-				field:  "Where",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return AIReportConfigMultiError(errors)
-	}
-
-	return nil
-}
-
-// AIReportConfigMultiError is an error wrapping multiple validation errors
-// returned by AIReportConfig.ValidateAll() if the designated constraints
-// aren't met.
-type AIReportConfigMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m AIReportConfigMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m AIReportConfigMultiError) AllErrors() []error { return m }
-
-// AIReportConfigValidationError is the validation error returned by
-// AIReportConfig.Validate if the designated constraints aren't met.
-type AIReportConfigValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e AIReportConfigValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e AIReportConfigValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e AIReportConfigValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e AIReportConfigValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e AIReportConfigValidationError) ErrorName() string { return "AIReportConfigValidationError" }
-
-// Error satisfies the builtin error interface
-func (e AIReportConfigValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sAIReportConfig.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = AIReportConfigValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = AIReportConfigValidationError{}
-
-// Validate checks the field values on AITimeRange with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *AITimeRange) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on AITimeRange with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in AITimeRangeMultiError, or
-// nil if none found.
-func (m *AITimeRange) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *AITimeRange) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for IsoDuration
-
-	// no validation rules for IsoOffset
-
-	// no validation rules for TimeZone
-
-	if len(errors) > 0 {
-		return AITimeRangeMultiError(errors)
-	}
-
-	return nil
-}
-
-// AITimeRangeMultiError is an error wrapping multiple validation errors
-// returned by AITimeRange.ValidateAll() if the designated constraints aren't met.
-type AITimeRangeMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m AITimeRangeMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m AITimeRangeMultiError) AllErrors() []error { return m }
-
-// AITimeRangeValidationError is the validation error returned by
-// AITimeRange.Validate if the designated constraints aren't met.
-type AITimeRangeValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e AITimeRangeValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e AITimeRangeValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e AITimeRangeValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e AITimeRangeValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e AITimeRangeValidationError) ErrorName() string { return "AITimeRangeValidationError" }
-
-// Error satisfies the builtin error interface
-func (e AITimeRangeValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sAITimeRange.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = AITimeRangeValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = AITimeRangeValidationError{}
 
 // Validate checks the field values on Alert with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
