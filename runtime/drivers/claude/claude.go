@@ -408,8 +408,14 @@ func convertTools(tools []*aiv1.Tool) ([]anthropic.BetaToolUnionParam, error) {
 // convertTool converts a single Rill tool to a Claude beta tool union param.
 func convertTool(tool *aiv1.Tool) (anthropic.BetaToolUnionParam, error) {
 	inputSchema := anthropic.BetaToolInputSchemaParam{}
-	if err := json.Unmarshal([]byte(tool.InputSchema), &inputSchema); err != nil {
-		return anthropic.BetaToolUnionParam{}, fmt.Errorf("failed to parse schema for tool %q: %w", tool.Name, err)
+	if tool.InputSchema == "" {
+		// Default schema when none is provided
+		inputSchema.Type = "object"
+		inputSchema.Properties = map[string]any{}
+	} else {
+		if err := json.Unmarshal([]byte(tool.InputSchema), &inputSchema); err != nil {
+			return anthropic.BetaToolUnionParam{}, fmt.Errorf("failed to parse schema for tool %q: %w", tool.Name, err)
+		}
 	}
 
 	result := anthropic.BetaToolUnionParamOfTool(inputSchema, tool.Name)
