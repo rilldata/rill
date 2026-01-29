@@ -64,7 +64,6 @@ test.describe("Project Status - Model Overview", () => {
     await expect(headers.nth(4)).toContainText("Columns");
     await expect(headers.nth(5)).toContainText("Database Size");
 
-
     // Verify table rows are rendered (VirtualizedTable uses .row divs, skip the header row)
     const dataRows = tablesTable.locator(".row").filter({
       hasNot: adminPage.locator('[role="columnheader"]'),
