@@ -2,7 +2,7 @@
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import AlertsTableCompositeCell from "./AlertsTableCompositeCell.svelte";
 
