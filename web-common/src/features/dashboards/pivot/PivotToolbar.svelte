@@ -1,6 +1,5 @@
 <script context="module" lang="ts">
   export const lastNestState = writable<PivotChipData[] | null>(null);
-  import { }
 </script>
 
 <script lang="ts">
