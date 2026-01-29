@@ -11,14 +11,19 @@
 
   export let open = false;
   export let modelName: string;
-  export let onRefresh: () => void;
+  export let onRefresh: () => void | Promise<void>;
 
-  function handleRefresh() {
+  let isRefreshing = false;
+
+  async function handleRefresh() {
     try {
-      onRefresh();
+      isRefreshing = true;
+      await onRefresh();
       open = false;
     } catch (error) {
       console.error("Failed to refresh errored partitions:", error);
+    } finally {
+      isRefreshing = false;
     }
   }
 </script>
@@ -39,11 +44,16 @@
     <AlertDialogFooter>
       <Button
         type="secondary"
+        disabled={isRefreshing}
         onClick={() => {
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" onClick={handleRefresh}
+      <Button
+        type="primary"
+        onClick={handleRefresh}
+        disabled={isRefreshing}
+        loading={isRefreshing}
         >Refresh Errored Partitions</Button
       >
     </AlertDialogFooter>
