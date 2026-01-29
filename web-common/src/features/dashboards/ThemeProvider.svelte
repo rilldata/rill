@@ -9,6 +9,10 @@
   import { Theme } from "../themes/theme";
 
   export let theme: Theme | undefined;
+  /**
+   * Whether to apply full-width/height sizing classes.
+   * Set to false when the parent already controls dimensions (e.g., sidebar chat).
+   */
   export let applyLayout: boolean = true;
 
   let themeBoundary: HTMLElement | null = null;
