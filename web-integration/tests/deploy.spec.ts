@@ -166,24 +166,11 @@ test.describe("Deploy journey", () => {
       const deployPage = await popupPromise;
 
       // Explore is opened with updated title after a re-deploying.
-      let reloaded = false;
-      await expect
-        .poll(
-          async () => {
-            if (!reloaded) {
-              await rillDevPage.reload();
-              reloaded = true;
-            }
-
-            return deployPage
-              .getByLabel("Breadcrumb navigation, level 2")
-              .getByText("Adbids dashboard edited first org");
-          },
-          {
-            intervals: Array(6).fill(2_000),
-          },
-        )
-        .toBeTruthy();
+      await expect(
+        deployPage.getByLabel("Breadcrumb navigation, level 2"),
+      ).toHaveText("Adbids dashboard edited first org", {
+        timeout: 120_000,
+      });
     });
   });
 
