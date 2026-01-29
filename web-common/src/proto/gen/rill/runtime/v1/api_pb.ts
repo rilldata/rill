@@ -519,6 +519,11 @@ export class Instance extends Message$1<Instance> {
    */
   frontendUrl = "";
 
+  /**
+   * @generated from field: string theme = 26;
+   */
+  theme = "";
+
   constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
@@ -544,6 +549,7 @@ export class Instance extends Message$1<Instance> {
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 23, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 24, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 26, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -4501,11 +4507,15 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   explore = "";
 
   /**
+   * Optional canvas dashboard.
+   *
    * @generated from field: string canvas = 10;
    */
   canvas = "";
 
   /**
+   * Optional canvas component within a dashboard.
+   *
    * @generated from field: string canvas_component = 11;
    */
   canvasComponent = "";

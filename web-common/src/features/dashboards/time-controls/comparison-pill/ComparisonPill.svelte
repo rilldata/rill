@@ -133,28 +133,4 @@
     @apply h-7 rounded-full;
     @apply overflow-hidden select-none;
   }
-
-  /* :global(.wrapper > button) {
-    @apply border;
-  }
-
-  :global(.wrapper > button:not(:first-child)) {
-    @apply -ml-[1px];
-  }
-
-  :global(.wrapper > button) {
-    @apply border;
-    @apply px-2 flex items-center justify-center bg-surface-subtle;
-  }
-
-  :global(.wrapper > button:first-child) {
-    @apply pl-2.5 rounded-l-full;
-  }
-  :global(.wrapper > button:last-child) {
-    @apply pr-2.5 rounded-r-full;
-  }
-
-  :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-surface-background cursor-pointer;
-  } */
 </style>

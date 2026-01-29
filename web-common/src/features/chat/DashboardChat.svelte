@@ -5,6 +5,8 @@
   import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { canvasChatConfig } from "@rilldata/web-common/features/canvas/chat-context.ts";
+  import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
+  import { activeDashboardTheme } from "@rilldata/web-common/features/themes/active-dashboard-theme";
 
   export let kind: ResourceKind.Explore | ResourceKind.Canvas =
     ResourceKind.Explore;
@@ -16,5 +18,7 @@
 </script>
 
 {#if $dashboardChat && $chatOpen}
-  <SidebarChat config={chatConfig} />
+  <ThemeProvider theme={$activeDashboardTheme} applyLayout={false}>
+    <SidebarChat config={chatConfig} />
+  </ThemeProvider>
 {/if}

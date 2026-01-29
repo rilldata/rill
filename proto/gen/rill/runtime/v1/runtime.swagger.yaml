@@ -4051,8 +4051,10 @@ definitions:
         description: Optional explore dashboard.
       canvas:
         type: string
+        description: Optional canvas dashboard.
       canvasComponent:
         type: string
+        description: Optional canvas component within a dashboard.
       dimensions:
         type: array
         items:
@@ -5500,6 +5502,8 @@ definitions:
       aiInstructions:
         type: string
       frontendUrl:
+        type: string
+      theme:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,

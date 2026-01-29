@@ -1059,6 +1059,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for FrontendUrl
 
+	// no validation rules for Theme
+
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
 	}
