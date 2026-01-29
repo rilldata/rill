@@ -262,7 +262,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 We're constantly adding new data connectors. If you don't see what you need, [let us know](/contact) and we'll help you get connected.
 :::
 
-## Other Integrations
+## Service Integrations
 
 ### OpenAI
 ### Slack
@@ -273,15 +273,15 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
     header="AI"
     content="Define your own OpenAI Connector and define your own API key."
-    link="/developers/build/connectors/data-source/openai"
+    link="/developers/build/connectors/services/openai"
     linkLabel="Learn more"
     referenceLink="openai"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}
+    icon={<img src="/img/build/connectors/icons/Logo-Slack.svg" alt="Slack" className="slack-icon" />}
     header="Slack"
     content="Connect to Slack to send alerts and messages from Rill."
-    link="/developers/build/connectors/data-source/slack"
+    link="/developers/build/connectors/services/slack"
     linkLabel="Learn more"
     referenceLink="slack"
   />
