@@ -301,17 +301,24 @@ export interface V1AlertState {
   executionCount?: number;
 }
 
+export type V1AnalystAgentContextWherePerMetricsView = {
+  [key: string]: V1Expression;
+};
+
 /**
  * Context for prompts handled by the analyst_agent.
  */
 export interface V1AnalystAgentContext {
   /** Optional explore dashboard. */
   explore?: string;
+  canvas?: string;
+  canvasComponent?: string;
   /** Optional dimensions. */
   dimensions?: string[];
   /** Optional measures. */
   measures?: string[];
   where?: V1Expression;
+  wherePerMetricsView?: V1AnalystAgentContextWherePerMetricsView;
   /** Optional start of a time range. */
   timeStart?: string;
   /** Optional end of a time range. */

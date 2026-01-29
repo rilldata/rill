@@ -9,10 +9,6 @@ import {
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import {
-  getDimensionDisplayName,
-  getMeasureDisplayName,
-} from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import {
   getRuntimeServiceGetConversationQueryOptions,
   getRuntimeServiceListConversationsQueryOptions,
   type V1Message,
@@ -42,11 +38,9 @@ export function getMetricsViewPickerOptions(): Readable<PickerItem[]> {
       return metricsViews.flatMap((mv) => {
         const mvName = mv.meta?.name?.name ?? "";
         const metricsViewSpec = mv.metricsView?.state?.validSpec ?? {};
-        const mvDisplayName = metricsViewSpec?.displayName || mvName;
         const mvContext = {
           type: InlineContextType.MetricsView,
           value: mvName,
-          label: mvDisplayName,
           metricsView: mvName,
         } satisfies InlineContext;
         const mvPickerItem = {
@@ -61,7 +55,6 @@ export function getMetricsViewPickerOptions(): Readable<PickerItem[]> {
         const measurePickerItems = measures.map((m) => {
           const measureContext = {
             type: InlineContextType.Measure,
-            label: getMeasureDisplayName(m),
             value: m.name!,
             metricsView: mvName,
             measure: m.name!,
@@ -77,7 +70,6 @@ export function getMetricsViewPickerOptions(): Readable<PickerItem[]> {
         const dimensionPickerItems = dimensions.map((d) => {
           const dimensionContext = {
             type: InlineContextType.Dimension,
-            label: getDimensionDisplayName(d),
             value: d.name!,
             metricsView: mvName,
             dimension: d.name!,
