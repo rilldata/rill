@@ -37,7 +37,7 @@
 {#if $proj.data}
   <div class="flex flex-col gap-y-1 max-w-[400px]">
     <span
-      class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
+      class="uppercase text-fg-secondary font-semibold text-[10px] leading-none"
     >
       GitHub
     </span>
@@ -47,7 +47,7 @@
           <Github className="w-4 h-4" />
           <a
             href={getGitUrlFromRemote($proj.data?.project?.gitRemote)}
-            class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
+            class="text-fg-primary text-[12px] font-semibold font-mono leading-5 truncate"
             target="_blank"
             rel="noreferrer noopener"
           >
@@ -57,19 +57,19 @@
         {#if subpath}
           <div class="flex items-center">
             <span class="font-mono">subpath</span>
-            <span class="text-gray-800">
+            <span class="text-fg-primary">
               : /{subpath}
             </span>
           </div>
         {/if}
         <div class="flex items-center">
           <span class="font-mono">branch</span>
-          <span class="text-gray-800">
+          <span class="text-fg-primary">
             : {primaryBranch}
           </span>
         </div>
         {#if lastUpdated}
-          <span class="text-gray-500 text-[11px] leading-4">
+          <span class="text-fg-secondary text-[11px] leading-4">
             Synced {lastUpdated.toLocaleString(undefined, {
               month: "short",
               day: "numeric",
@@ -79,11 +79,11 @@
           </span>
         {/if}
       {:else}
-        <span class="my-1">
+        <span class="my-1 text-fg-tertiary">
           Unlock the power of BI-as-code with GitHub-backed collaboration,
           version control, and approval workflows.
           <a
-            href="https://docs.rilldata.com/deploy/deploy-dashboard/github-101"
+            href="https://docs.rilldata.com/developers/deploy/deploy-dashboard/github-101"
             target="_blank"
             class="text-primary-600"
           >

@@ -123,6 +123,6 @@
   .chart-container {
     @apply border rounded-md border-gray-200 px-1 py-2;
     @apply w-full h-[400px];
-    background: var(--surface);
+    background: var(--surface-subtle);
   }
 </style>

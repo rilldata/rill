@@ -22,14 +22,19 @@
   flex-direction: column;
   align-items: flex-start;
   min-height: 50px;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
   text-decoration: none;
   color: inherit;
   
   &:hover {
     text-decoration: none;
     color: inherit;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    transform: translateY(-4px);
+    
+    .tile-icon-header-icon-top img {
+      filter: brightness(0) saturate(100%) invert(25%) sepia(98%) saturate(2000%) hue-rotate(210deg) brightness(100%) contrast(102%);
+    }
   }
 }
 
@@ -48,6 +53,7 @@
 
 .tile-icon-header-icon-top img {
   filter: brightness(0) saturate(100%) invert(23%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(90%) contrast(90%);
+  transition: filter 0.2s ease;
 }
 
 .tile-icon-header-text {
@@ -150,8 +156,16 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     
     &:hover {
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      
+      .tile-icon-header-icon-top img {
+        filter: brightness(0) saturate(100%) invert(50%) sepia(98%) saturate(1500%) hue-rotate(200deg) brightness(105%) contrast(100%);
+      }
     }
+  }
+  
+  .tile-icon-header-icon-top img {
+    filter: brightness(0) saturate(100%) invert(90%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(100%) contrast(90%);
   }
   
   .tile-icon-header {

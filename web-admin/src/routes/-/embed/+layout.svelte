@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onNavigate } from "$app/navigation";
+  import { beforeNavigate, onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     getDashboardFromEmbedRoute,
@@ -17,9 +17,9 @@
     emitNotification,
   } from "@rilldata/web-common/lib/rpc";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
 
   export let data: PageData;
   const {
@@ -52,6 +52,15 @@
       (activeResource?.kind === ResourceKind.Explore.toString() ||
         activeResource?.kind === ResourceKind.MetricsView.toString()));
   $: onProjectPage = !activeResource;
+
+  // Suppress browser back/forward
+  beforeNavigate((nav) => {
+    if (!navigationEnabled) {
+      if (nav.type === "popstate") {
+        nav.cancel();
+      }
+    }
+  });
 
   onNavigate(({ from, to }) => {
     if (!navigationEnabled) return;

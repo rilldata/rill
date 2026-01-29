@@ -232,6 +232,7 @@ async function generateExploreLink(
     // So no need to use getCleanedUrlParamsForGoto
     const searchParams = convertPartialExploreStateToUrlParams(
       exploreSpec,
+      metricsViewSpec,
       exploreState,
       getTimeControlState(
         metricsViewSpec,

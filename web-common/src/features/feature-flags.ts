@@ -61,12 +61,12 @@ class FeatureFlags {
   exportHeader = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
-  darkMode = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
   developerChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
   generateCanvas = new FeatureFlag("user", false);
+  stickyDashboardState = new FeatureFlag("user", false);
 
   constructor() {
     this.ready = new Promise<void>((resolve) => {

@@ -34,7 +34,10 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import { copyParamsToTarget } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { type V1ExploreSpec } from "@rilldata/web-common/runtime-client";
+import {
+  type V1ExploreSpec,
+  type V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
 
 /**
  * getCleanedUrlParamsForGoto returns url params with defaults removed.
@@ -42,6 +45,7 @@ import { type V1ExploreSpec } from "@rilldata/web-common/runtime-client";
  */
 export function getCleanedUrlParamsForGoto(
   exploreSpec: V1ExploreSpec,
+  metricsViewSpec: V1MetricsViewSpec,
   partialExploreState: Partial<ExploreState>,
   timeControlsState: TimeControlState | undefined,
   defaultExploreUrlParams: URLSearchParams,
@@ -50,6 +54,7 @@ export function getCleanedUrlParamsForGoto(
   // Create params from the explore state
   const stateParams = convertPartialExploreStateToUrlParams(
     exploreSpec,
+    metricsViewSpec,
     partialExploreState,
     timeControlsState,
   );
@@ -75,6 +80,7 @@ export function getCleanedUrlParamsForGoto(
 
 export function convertPartialExploreStateToUrlParams(
   exploreSpec: V1ExploreSpec,
+  metricsViewSpec: V1MetricsViewSpec,
   partialExploreState: Partial<ExploreState>,
   // We have quite a bit of logic in TimeControlState to validate selections and update them
   // Eg: if a selected grain is not applicable for the current grain then we change it
@@ -123,7 +129,7 @@ export function convertPartialExploreStateToUrlParams(
     case DashboardState_ActivePage.DIMENSION_TABLE:
     case undefined:
       copyParamsToTarget(
-        toExploreUrlParams(partialExploreState, exploreSpec),
+        toExploreUrlParams(partialExploreState, exploreSpec, metricsViewSpec),
         searchParams,
       );
       break;
@@ -156,6 +162,12 @@ function toTimeRangesUrl(
 
   const timeRangeParam = toTimeRangeParam(timeControlsState.selectedTimeRange);
   searchParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
+
+  const timeDimension = partialExploreState.selectedTimeDimension;
+
+  if (timeDimension) {
+    searchParams.set(ExploreStateURLParams.TimeDimension, timeDimension);
+  }
 
   maybeSetParam(searchParams, partialExploreState, "selectedTimezone");
 
@@ -220,6 +232,7 @@ export function toTimeRangeParam(timeRange: TimeRange | undefined) {
 function toExploreUrlParams(
   partialExploreState: Partial<ExploreState>,
   exploreSpec: V1ExploreSpec,
+  metricsViewSpec: V1MetricsViewSpec,
 ) {
   const searchParams = new URLSearchParams();
 
@@ -237,6 +250,7 @@ function toExploreUrlParams(
   const visibleDimensionsParam = toVisibleDimensionsUrlParam(
     partialExploreState,
     exploreSpec,
+    metricsViewSpec,
   );
   if (visibleDimensionsParam) {
     searchParams.set(
@@ -305,21 +319,33 @@ function toVisibleMeasuresUrlParam(
 function toVisibleDimensionsUrlParam(
   partialExploreState: Partial<ExploreState>,
   exploreSpec: V1ExploreSpec,
+  metricsViewSpec: V1MetricsViewSpec,
 ) {
   if (!partialExploreState.visibleDimensions) return undefined;
 
+  // Filter out time dimensions since they are not rendered in leaderboards
+  const timeDimensionNames = new Set(
+    metricsViewSpec.dimensions
+      ?.filter((d) => d.type === "DIMENSION_TYPE_TIME")
+      .map((d) => d.name) ?? [],
+  );
+  const nonTimeDimensions =
+    exploreSpec.dimensions?.filter((d) => !timeDimensionNames.has(d)) ?? [];
+
+  // Also filter time dimensions from visible dimensions for comparison
+  const visibleNonTimeDimensions = partialExploreState.visibleDimensions.filter(
+    (d) => !timeDimensionNames.has(d),
+  );
+
   if (
-    // if the dimensions are exactly equal to dimensions from explore then show "*"
+    // if the dimensions are exactly equal to non-time dimensions from explore then show "*"
     // else the dimensions are re-ordered, so retain them in url param
-    arrayOrderedEquals(
-      partialExploreState.visibleDimensions,
-      exploreSpec.dimensions ?? [],
-    )
+    arrayOrderedEquals(visibleNonTimeDimensions, nonTimeDimensions)
   ) {
     return "*";
   }
 
-  return partialExploreState.visibleDimensions.join(",");
+  return visibleNonTimeDimensions.join(",");
 }
 
 function toTimeDimensionUrlParams(partialExploreState: Partial<ExploreState>) {

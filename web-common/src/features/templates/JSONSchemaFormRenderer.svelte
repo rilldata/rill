@@ -223,7 +223,7 @@
   on:submit|preventDefault={onSubmit}
 >
   {#if schema}
-    {#each renderOrder as [key, prop]}
+    {#each renderOrder as [key, prop] (key)}
       {#if isRadioEnum(prop)}
         <div class="py-1.5 first:pt-0 last:pb-0">
           {#if prop.title}
@@ -236,7 +236,7 @@
           >
             <svelte:fragment slot="custom-content" let:option>
               {#if groupedFields.get(key)}
-                {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
+                {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
                   <div class="py-1.5 first:pt-0 last:pb-0">
                     <SchemaField
                       id={childKey}
