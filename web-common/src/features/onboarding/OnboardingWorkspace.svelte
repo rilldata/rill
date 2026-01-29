@@ -73,27 +73,38 @@
       <GenerateSampleData type="home" />
       <Button
         onClick={() => createResourceAndNavigate(ResourceKind.Model)}
+        type="tertiary"
         large
+        forcedStyle="height: 3rem;"
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
-          size="16px"
+          class="stroke-icon-muted"
+          size="14px"
         />
         Create blank model
       </Button>
       <Button
         onClick={() => createResourceAndNavigate(ResourceKind.MetricsView)}
+        type="tertiary"
         large
+        forcedStyle="height: 3rem;"
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.MetricsView]}
-          size="16px"
+          class="stroke-icon-muted"
+          size="14px"
         />
         Create a metrics view
       </Button>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
-          <Button builders={[builder]} large>
+          <Button
+            type="tertiary"
+            builders={[builder]}
+            large
+            forcedStyle="height: 3rem;"
+          >
             <PresentationIcon size="16px" />
             Try demo projects
           </Button>

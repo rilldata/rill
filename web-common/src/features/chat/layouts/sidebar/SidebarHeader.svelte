@@ -56,11 +56,11 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem;
-    background: var(--surface-subtle);
     font-weight: 500;
     font-size: 0.875rem;
     min-height: 1.5rem;
   }
+
   .chatbot-title {
     @apply text-fg-secondary text-sm font-semibold;
     overflow: hidden;

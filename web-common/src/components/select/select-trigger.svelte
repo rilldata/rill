@@ -43,7 +43,7 @@
         on:click={() => {
           locked = false;
         }}
-        class="group grid bg-surface-subtle place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"
+        class="group grid bg-input place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"
       >
         <Lock size="14px" class="text-fg-secondary group-hover:hidden" />
         <UnlockIcon
@@ -57,9 +57,11 @@
       </TooltipContent>
     </Tooltip>
   {/if}
-  <div class="caret transition-transform">
-    <CaretDownIcon size="12px" className="fill-fg-secondary" />
-  </div>
+  {#if !locked}
+    <div class="caret transition-transform">
+      <CaretDownIcon size="12px" className="fill-fg-secondary" />
+    </div>
+  {/if}
 </SelectPrimitive.Trigger>
 
 <style lang="postcss">

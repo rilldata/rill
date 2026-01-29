@@ -33,6 +33,19 @@ const config = {
     locales: ["en"],
   },
 
+  // HubSpot tracking script
+  scripts: [
+    {
+      src: '//js-na2.hs-scripts.com/242088677.js',
+      async: true,
+      defer: true,
+      id: 'hs-script-loader',
+    },
+  ],
+
+  // Client modules for SPA route tracking
+  clientModules: [require.resolve('./src/clientModules/hubspot.js')],
+
   presets: [
     [
       "classic",

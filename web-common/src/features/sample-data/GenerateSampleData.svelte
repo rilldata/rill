@@ -52,13 +52,19 @@
 <Dialog.Root bind:open>
   <Dialog.Trigger asChild let:builder>
     {#if type === "init"}
-      <Button builders={[builder]} large>
-        <SparklesIcon size="14px" class="text-blue-500 rotate-90" />
+      <Button builders={[builder]} type="secondary" large>
+        <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
         <span>Generate sample data</span>
       </Button>
     {:else if type === "home"}
-      <Button class="button-home" builders={[builder]} large>
-        <SparklesIcon size="14px" class="text-blue-500 rotate-90" />
+      <Button
+        class="button-home"
+        type="tertiary"
+        builders={[builder]}
+        large
+        forcedStyle="height: 3rem;"
+      >
+        <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
         <span>Generate sample data</span>
       </Button>
     {:else}
