@@ -167,7 +167,10 @@ export function inferModelNameFromSQL(sql: string): string | undefined {
   const match = sql.match(/\bFROM\s+([^\s;,()]+)/i);
   if (!match) return;
   // Take the last segment if schema-qualified (e.g. schema.table)
-  const raw = match[1].replace(/[`"[\]]/g, "").split(".").pop();
+  const raw = match[1]
+    .replace(/[`"[\]]/g, "")
+    .split(".")
+    .pop();
   if (!raw) return;
   return sanitizeEntityName(raw);
 }
