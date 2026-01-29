@@ -3,7 +3,7 @@ import type { Writable } from "svelte/store";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector } from "./FormValidation";
-import { inferSourceName } from "../sourceUtils";
+import { inferModelNameFromSQL, inferSourceName } from "../sourceUtils";
 import {
   submitAddConnectorForm,
   submitAddSourceForm,
@@ -429,13 +429,16 @@ export class AddDataFormManager {
       });
     };
     clearFieldError(this.errorsStore);
-    if (name === "path") {
+    if (name === "path" || name === "sql") {
       const nameTainted =
         taintedFields && typeof taintedFields === "object"
           ? Boolean(taintedFields?.name)
           : false;
       if (nameTainted) return;
-      const inferred = inferSourceName(this.connector, value);
+      const inferred =
+        name === "sql"
+          ? inferModelNameFromSQL(value)
+          : inferSourceName(this.connector, value);
       if (inferred) {
         const formStore = this.formStore;
         formStore.update(

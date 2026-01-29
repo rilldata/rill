@@ -162,6 +162,16 @@ export function inferSourceName(connector: V1ConnectorDriver, path: string) {
   return sanitizeEntityName(fileName);
 }
 
+export function inferModelNameFromSQL(sql: string): string | undefined {
+  if (!sql) return;
+  const match = sql.match(/\bFROM\s+([^\s;,()]+)/i);
+  if (!match) return;
+  // Take the last segment if schema-qualified (e.g. schema.table)
+  const raw = match[1].replace(/[`"[\]]/g, "").split(".").pop();
+  if (!raw) return;
+  return sanitizeEntityName(raw);
+}
+
 export function getFileTypeFromPath(fileName) {
   if (!fileName.includes(".")) return "";
   const fileType = fileName.split(/[#?]/)[0].split(".").pop();
