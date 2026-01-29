@@ -46,14 +46,12 @@ var defaultFeatureFlags = map[string]string{
 	"alerts": "true",
 	// Controls visibility of report creation functionality
 	"reports": "true",
-	// Controls visibility of theme switching between light/dark modes
-	"dark_mode": "true",
 	// Controls visibility of project-level chat functionality
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality
 	"dashboard_chat": "{{ not .user.embed }}",
 	// Controls visibility of local rill developer chat functionality
-	"developer_chat": "false",
+	"developer_chat": "true",
 	// Controls whether charts are rendered in AI chats
 	"chat_charts": "true",
 	// Controls whether to show/hide deploy related actions.
@@ -62,6 +60,8 @@ var defaultFeatureFlags = map[string]string{
 	"generate_canvas": "false",
 	// Controls if the developer agent tool is available.
 	"developer_agent": "true",
+	// Controls if the dashboard state is persisted when navigating to a different dashboard.
+	"sticky_dashboard_state": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

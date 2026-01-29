@@ -74,13 +74,15 @@
   ];
 </script>
 
-<div class="pt-20 px-8 flex flex-col gap-y-6 items-center size-full">
+<div
+  class="pt-20 px-8 flex flex-col gap-y-6 items-center size-full bg-surface-subtle"
+>
   <div class="text-center">
     <div class="font-bold">Getting started</div>
     <p>Building data intuition at every step of analysis</p>
   </div>
   <ol
-    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface rounded-lg border"
+    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface-background rounded-lg border"
   >
     {#if olapConnector}
       {#each steps as step, i (step.heading)}

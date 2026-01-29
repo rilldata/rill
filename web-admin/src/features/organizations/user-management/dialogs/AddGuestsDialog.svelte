@@ -245,21 +245,21 @@
                 ? `: ${projectsErrorMessage}`
                 : ""}
             </div>
-            <Button type="plain" onClick={() => $projectsQuery?.refetch()}
+            <Button type="tertiary" onClick={() => $projectsQuery?.refetch()}
               >Retry</Button
             >
           </div>
         {:else if projects.length === 0}
-          <div class="text-xs text-slate-500">No projects</div>
+          <div class="text-xs text-fg-secondary">No projects</div>
         {:else}
           <Dropdown.Root
             bind:open={projectDropdownOpen}
             closeOnItemClick={false}
           >
             <Dropdown.Trigger
-              class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-white text-sm px-3 {projectDropdownOpen
-                ? 'bg-slate-200'
-                : 'hover:bg-slate-100'}"
+              class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
+                ? 'bg-gray-200'
+                : 'hover:bg-surface-hover'}"
             >
               <span>
                 {selectedProjectsLabel}
@@ -290,9 +290,9 @@
         <div class="text-xs font-medium mb-1">Access level</div>
         <Dropdown.Root bind:open={roleDropdownOpen}>
           <Dropdown.Trigger
-            class="min-w-[180px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-white text-sm px-3 {roleDropdownOpen
-              ? 'bg-slate-200'
-              : 'hover:bg-slate-100'}"
+            class="min-w-[180px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
+              ? 'bg-gray-200'
+              : 'hover:bg-surface-hover'}"
           >
             <span>{selectedRoleLabel}</span>
             {#if roleDropdownOpen}
@@ -325,7 +325,7 @@
       {/if}
     </form>
     <DialogFooter>
-      <Button type="plain" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="tertiary" onClick={() => (open = false)}>Cancel</Button>
       <Button
         type="primary"
         submitForm
