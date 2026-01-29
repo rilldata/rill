@@ -92,7 +92,7 @@ export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
     [V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING]: {
       icon: CheckCircle,
       iconProps: { className: "text-primary-600 hover:text-primary-500" },
-      text: "Ready",
+      text: "Running",
       textClass: "text-primary-600",
       wrapperClass: "bg-primary-50 border-primary-300",
     },
