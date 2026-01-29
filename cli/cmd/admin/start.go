@@ -35,12 +35,11 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/option"
 
-	// Register database and provisioner implementations
+	// Register drivers
 	_ "github.com/rilldata/rill/admin/database/postgres"
 	_ "github.com/rilldata/rill/admin/provisioner/clickhousestatic"
 	_ "github.com/rilldata/rill/admin/provisioner/kubernetes"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
-	// Register AI drivers
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
 )
@@ -236,24 +235,21 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Init AI service
-			var aiService drivers.AIService
-			var aiHandle drivers.Handle
+			aiDriver := "mock_ai"
+			aiConfig := map[string]any{}
 			if conf.OpenAIAPIKey != "" {
-				aiHandle, err = drivers.Open("openai", "admin", map[string]any{
-					"api_key": conf.OpenAIAPIKey,
-				}, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
-				if err != nil {
-					logger.Fatal("error creating OpenAI client", zap.Error(err))
-				}
-				aiService, _ = aiHandle.AsAI("admin")
-			} else {
-				aiHandle, err = drivers.Open("mock_ai", "admin", map[string]any{}, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
-				if err != nil {
-					logger.Fatal("error creating mock AI client", zap.Error(err))
-				}
-				aiService, _ = aiHandle.AsAI("admin")
+				aiDriver = "openai"
+				aiConfig["api_key"] = conf.OpenAIAPIKey
+			}
+			aiHandle, err := drivers.Open(aiDriver, "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+			if err != nil {
+				logger.Fatal("error creating AI client", zap.Error(err))
 			}
 			defer aiHandle.Close()
+			aiService, ok := aiHandle.AsAI("")
+			if !ok {
+				logger.Fatal("AI driver does not implement AI interface", zap.String("driver", aiHandle.Driver()))
+			}
 
 			// Init AssetsBucket handle
 			var clientOpts []option.ClientOption

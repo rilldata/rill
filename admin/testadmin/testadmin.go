@@ -35,10 +35,9 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
-	// Register database driver and supported provisioners
+	// Register drivers
 	_ "github.com/rilldata/rill/admin/database/postgres"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
-	// Register mock_ai driver
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 )
 
@@ -118,7 +117,8 @@ func New(t *testing.T) *Fixture {
 	mockAIHandle, err := drivers.Open("mock_ai", "test", map[string]any{}, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 	require.NoError(t, err)
 	t.Cleanup(func() { mockAIHandle.Close() })
-	mockAI, _ := mockAIHandle.AsAI("test")
+	mockAI, ok := mockAIHandle.AsAI("test")
+	require.True(t, ok)
 
 	// Admin service
 	admOpts := &admin.Options{

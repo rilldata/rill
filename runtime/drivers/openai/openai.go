@@ -80,10 +80,6 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, srcProps map[strin
 
 // Open implements drivers.Driver.
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if instanceID == "" {
-		return nil, drivers.ErrNotImplemented
-	}
-
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
@@ -149,12 +145,6 @@ func newOpenAIClient(conf *configProperties) (*openaidriver.Client, error) {
 		return nil, errors.New("API key is required")
 	}
 
-	// Simple case: no custom options
-	if conf.BaseURL == "" && conf.APIType == "" && conf.APIVersion == "" {
-		return openaidriver.NewClient(conf.APIKey), nil
-	}
-
-	// Configure client based on API type
 	var clientConfig openaidriver.ClientConfig
 	apiType := openaidriver.APIType(conf.APIType)
 	if apiType == openaidriver.APITypeAzure || apiType == openaidriver.APITypeAzureAD {
