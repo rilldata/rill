@@ -89,13 +89,13 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
+
 create_secrets_from_connectors: my_azure
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
 ```
 
 **Step 3: Add credentials to `.env`**
@@ -144,13 +144,13 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
+
 create_secrets_from_connectors: my_azure_conn
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
 ```
 
 **Step 3: Add credentials to `.env`**
@@ -201,13 +201,13 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
+
 create_secrets_from_connectors: my_azure_sas
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
 ```
 
 **Step 3: Add credentials to `.env`**
@@ -246,12 +246,12 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('azure://publicaccount.blob.core.windows.net/my-public-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://publicaccount.blob.core.windows.net/my-public-container/path/to/data/*.parquet')
 ```
 
 ---
@@ -279,12 +279,12 @@ Create `models/my_azure_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
 ```
 
 Rill will automatically detect and use your local Azure CLI credentials when no connector is specified.
@@ -303,24 +303,24 @@ Once your connector is configured (or for public containers, no connector needed
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://rilltest.blob.core.windows.net/my-container/data/*.parquet')
 ```
 
 **Public container (no connector needed):**
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('azure://publicaccount.blob.core.windows.net/my-public-container/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('azure://publicaccount.blob.core.windows.net/my-public-container/data/*.parquet')
 ```
 
 ### Path Patterns

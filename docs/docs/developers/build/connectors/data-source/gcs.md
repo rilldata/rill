@@ -78,14 +78,13 @@ Create `models/my_gcs_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
+
 create_secrets_from_connectors: my_gcs
-
-sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('gs://my-bucket/path/to/data/*.parquet')
 ```
 
 **Step 3: Add credentials to `.env`**
@@ -134,14 +133,13 @@ Create `models/my_gcs_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
+
 create_secrets_from_connectors: my_gcs_hmac
-
-sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('gs://my-bucket/path/to/data/*.parquet')
 ```
 
 **Step 3: Add credentials to `.env`**
@@ -183,13 +181,12 @@ Create `models/my_gcs_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('gs://my-public-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('gs://my-public-bucket/path/to/data/*.parquet')
 ```
 
 ---
@@ -213,13 +210,12 @@ Create `models/my_gcs_data.yaml`:
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('gs://my-bucket/path/to/data/*.parquet')
 ```
 
 Rill will automatically detect and use your local Google Cloud CLI credentials when no connector is specified.
@@ -240,43 +236,42 @@ Once your connector is configured (or for public buckets, no connector needed), 
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('gs://my-bucket/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('gs://my-bucket/data/*.parquet')
 ```
 
 **Public bucket (no connector needed):**
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
-sql: SELECT * FROM read_parquet('gs://my-public-bucket/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
+sql: |
+  select * from read_parquet('gs://my-public-bucket/data/*.parquet')
 ```
 
 ### Reading Multiple File Types
 
 ```yaml
 type: model
+materialize: true
+
 connector: duckdb
 
 sql: |
   -- Read Parquet files
-  SELECT * FROM read_parquet('gs://my-bucket/parquet-data/*.parquet')
-  
-  UNION ALL
-  
-  -- Read CSV files
-  SELECT * FROM read_csv('gs://my-bucket/csv-data/*.csv', AUTO_DETECT=TRUE)
+  select * from read_parquet('gs://my-bucket/parquet-data/*.parquet')
 
-refresh:
-  cron: "0 */6 * * *"
+  UNION ALL
+
+  -- Read CSV files
+  select * from read_csv('gs://my-bucket/csv-data/*.csv', AUTO_DETECT=TRUE)
 ```
 
 ### Path Patterns
