@@ -1085,6 +1085,9 @@ message DeveloperAgentContext {
   // Optional path to the file that the user is currently viewing/editing.
   // This helps the agent understand which file the user is referring to in their request.
   string current_file_path = 2;
+  // Optional toggle to enable checkpoint commit before any files are changed.
+  // Can be used to undo the changes reverting to the commit.
+  bool enable_checkpoint_commits = 3;
 }
 
 // Request message for RuntimeService.ListConversations

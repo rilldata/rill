@@ -4928,6 +4928,11 @@ definitions:
         description: |-
           Optional path to the file that the user is currently viewing/editing.
           This helps the agent understand which file the user is referring to in their request.
+      enableCheckpointCommits:
+        type: boolean
+        description: |-
+          Optional toggle to enable checkpoint commit before any files are changed.
+          Can be used to undo the changes reverting to the commit.
     description: Context for prompts handled by the developer_agent.
   v1DirEntry:
     type: object

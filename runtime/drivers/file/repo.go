@@ -429,10 +429,11 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 				return nil, err
 			}
 			return &drivers.RepoStatus{
-				IsGitRepo: true,
-				Branch:    st.Branch,
-				RemoteURL: st.RemoteURL,
-				Subpath:   subPath,
+				IsGitRepo:    true,
+				Branch:       st.Branch,
+				RemoteURL:    st.RemoteURL,
+				Subpath:      subPath,
+				LocalChanges: st.LocalChanges,
 			}, nil
 		}
 		return nil, err

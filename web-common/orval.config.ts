@@ -139,6 +139,13 @@ export default defineConfig({
               useInfiniteQueryParam: "pageToken",
             },
           },
+          RuntimeService_ListGitCommits: {
+            query: {
+              useQuery: true,
+              useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
+            },
+          },
         },
       },
     },

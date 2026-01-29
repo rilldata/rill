@@ -14,6 +14,7 @@
   import UserMessage from "./text/UserMessage.svelte";
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
   import WorkingBlock from "./working/WorkingBlock.svelte";
+  import DevelopBlock from "@rilldata/web-common/features/chat/core/messages/develop/DevelopBlock.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -123,6 +124,8 @@
         <ChartBlock {block} {tools} />
       {:else if block.type === "file-diff"}
         <FileDiffBlock {block} {tools} />
+      {:else if block.type === "develop"}
+        <DevelopBlock {block} />
       {/if}
     {/each}
   {/if}

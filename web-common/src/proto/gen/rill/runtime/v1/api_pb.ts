@@ -4590,6 +4590,14 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
    */
   currentFilePath = "";
 
+  /**
+   * Optional toggle to enable checkpoint commit before any files are changed.
+   * Can be used to undo the changes reverting to the commit.
+   *
+   * @generated from field: bool enable_checkpoint_commits = 3;
+   */
+  enableCheckpointCommits = false;
+
   constructor(data?: PartialMessage<DeveloperAgentContext>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4600,6 +4608,7 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "init_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "current_file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "enable_checkpoint_commits", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeveloperAgentContext {

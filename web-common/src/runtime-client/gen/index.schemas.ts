@@ -823,6 +823,9 @@ This should only be used when the project directory contains an empty project (e
   /** Optional path to the file that the user is currently viewing/editing.
 This helps the agent understand which file the user is referring to in their request. */
   currentFilePath?: string;
+  /** Optional toggle to enable checkpoint commit before any files are changed.
+Can be used to undo the changes reverting to the commit. */
+  enableCheckpointCommits?: boolean;
 }
 
 export interface V1DirEntry {
