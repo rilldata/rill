@@ -4,7 +4,13 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { errorStore } from "../../components/errors/error-store";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
-  import { viewAsUserStore } from "./viewAsUserStore";
+  import {
+    viewAsUserStore,
+    viewAsUserStateStore$,
+    clearViewAsUser,
+  } from "./viewAsUserStore";
+
+  export let isOrgAdmin: boolean = false;
 
   let active: boolean;
 </script>
@@ -17,12 +23,12 @@
       builders={[builder]}
       removeTooltipText="Clear view"
       onRemove={() => {
-        viewAsUserStore.set(null);
+        clearViewAsUser();
         errorStore.reset();
       }}
     >
       <div slot="body">
-        Viewing as <b>{$viewAsUserStore.email}</b>
+        Viewing as <b>{$viewAsUserStore?.email}</b>
       </div>
     </Chip>
   </DropdownMenu.Trigger>
@@ -32,8 +38,9 @@
   >
     <ViewAsUserPopover
       organization={$page.params.organization}
-      project={$page.params.project}
+      project={$page.params.project ?? $viewAsUserStateStore$?.projectContext}
       onSelectUser={() => (active = false)}
+      isOrgLevel={isOrgAdmin}
     />
   </DropdownMenu.Content>
 </DropdownMenu.Root>

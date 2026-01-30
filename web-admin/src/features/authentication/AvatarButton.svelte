@@ -12,6 +12,12 @@
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
+  /**
+   * Whether the current user can manage org members (org-level admin).
+   * This determines if "View As" should persist across projects.
+   */
+  export let isOrgAdmin: boolean = false;
+
   const user = createAdminServiceGetCurrentUser();
 
   let primaryMenuOpen = false;
@@ -66,6 +72,7 @@
                   subMenuOpen = false;
                   primaryMenuOpen = false;
                 }}
+                isOrgLevel={isOrgAdmin}
               />
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
