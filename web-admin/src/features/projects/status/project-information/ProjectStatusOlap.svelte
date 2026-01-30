@@ -1,11 +1,12 @@
 <script lang="ts">
+  import type { V1Connector } from "@rilldata/web-common/runtime-client";
   import TableIcon from "@rilldata/web-common/components/icons/TableIcon.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { formatConnectorName } from "../display-utils";
 
-  export let olapConnector: string | undefined;
+  export let olapConnector: V1Connector | undefined;
 </script>
 
 <div class="info-cell">
@@ -29,8 +30,13 @@
   <div class="cell-content">
     {#if olapConnector}
       <span class="connector-name">
-        {formatConnectorName(olapConnector)}
+        {formatConnectorName(olapConnector.type)}
       </span>
+      <div class="connector-details">
+        <span class="detail-value"
+          >{olapConnector.provision ? "Rill-Managed" : "Self-Managed"}</span
+        >
+      </div>
     {:else}
       <span class="connector-name">-</span>
     {/if}
@@ -56,6 +62,10 @@
 
   .connector-name {
     @apply text-sm font-medium text-gray-900;
+  }
+
+  .connector-details {
+    @apply flex items-center gap-2 text-xs text-gray-600;
   }
 
   .icon-muted {

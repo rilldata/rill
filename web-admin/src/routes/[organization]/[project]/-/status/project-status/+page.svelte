@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ProjectStatus from "@rilldata/web-admin/features/projects/status/ProjectStatus.svelte";
-  import ProjectParseErrors from "@rilldata/web-admin/features/projects/status/ProjectParseErrors.svelte";
-  import ProjectResources from "@rilldata/web-admin/features/projects/status/ProjectResources.svelte";
-  import ProjectLogs from "@rilldata/web-admin/features/projects/status/ProjectLogs.svelte";
+  import ProjectParseErrors from "@rilldata/web-admin/features/projects/status/parse-errors/ProjectParseErrors.svelte";
+  import ProjectResources from "@rilldata/web-admin/features/projects/status/resource-table/ProjectResources.svelte";
+  import ProjectLogs from "@rilldata/web-admin/features/projects/status/logs/ProjectLogs.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;

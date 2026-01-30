@@ -22,9 +22,7 @@
         <InfoCircle size="14px" color="#9ca3af" />
       </a>
       <TooltipContent slot="tooltip-content">
-        <p class="tooltip-text">
-          Configure AI connectors for your project.
-        </p>
+        <p class="tooltip-text">Configure AI connectors for your project.</p>
       </TooltipContent>
     </Tooltip>
   </div>

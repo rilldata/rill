@@ -74,7 +74,6 @@ export type StatusDisplay = {
   wrapperClass?: string;
 };
 
-
 export function getResourceKindTagColor(kind: string) {
   switch (kind) {
     case "rill.runtime.v1.MetricsView":

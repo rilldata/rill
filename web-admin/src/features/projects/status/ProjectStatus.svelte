@@ -1,11 +1,11 @@
 <script lang="ts">
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import ProjectStatusHeader from "./project-information/StatusHeader.svelte";
-  import ProjectStatusGitHub from "./project-information/StatusGitHub.svelte";
-  import ProjectStatusOlap from "./project-information/StatusOlap.svelte";
-  import ProjectStatusAI from "./project-information/StatusAI.svelte";
-  import ProjectStatusLocalDev from "./project-information/StatusLocalDev.svelte";
+  import ProjectStatusHeader from "./project-information/ProjectStatusHeader.svelte";
+  import ProjectStatusGitHub from "./project-information/ProjectStatusGitHub.svelte";
+  import ProjectStatusOlap from "./project-information/ProjectStatusOlap.svelte";
+  import ProjectStatusAI from "./project-information/ProjectStatusAI.svelte";
+  import ProjectStatusLocalDev from "./project-information/ProjectStatusLocalDev.svelte";
 
   export let organization: string;
   export let project: string;
@@ -17,7 +17,11 @@
     sensitive: true,
   });
 
-  $: olapConnector = $instanceQuery.data?.instance?.olapConnector;
+  $: instance = $instanceQuery.data?.instance;
+  $: olapConnectorName = instance?.olapConnector;
+  $: olapConnector = instance?.projectConnectors?.find(
+    (c) => c.name === olapConnectorName,
+  );
   $: aiConnector = $instanceQuery.data?.instance?.aiConnector;
 </script>
 

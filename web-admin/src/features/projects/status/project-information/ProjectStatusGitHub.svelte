@@ -54,8 +54,8 @@
       </a>
       <TooltipContent slot="tooltip-content">
         <p class="tooltip-text">
-          Unlock BI-as-code with GitHub-backed collaboration, version
-          control, and approval workflows.
+          Unlock BI-as-code with GitHub-backed collaboration, version control,
+          and approval workflows.
         </p>
       </TooltipContent>
     </Tooltip>

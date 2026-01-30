@@ -8,8 +8,8 @@
     formatEnvironmentName,
     getStatusDotClass,
     getStatusLabel,
-  } from "./display-utils";
-  import { useProjectDeployment, useRuntimeVersion } from "./selectors";
+  } from "../display-utils";
+  import { useProjectDeployment, useRuntimeVersion } from "../selectors";
 
   export let organization: string;
   export let project: string;
