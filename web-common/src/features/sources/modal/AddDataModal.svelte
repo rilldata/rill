@@ -21,12 +21,14 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
+  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES, MULTI_STEP_CONNECTORS } from "./constants";
   import { ICONS } from "./icons";
-  import { resetConnectorStep } from "./connectorStepStore";
+  import { resetConnectorStep, connectorStepStore } from "./connectorStepStore";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
+  let pendingConnectorName: string | null = null;
+  let connectorInstanceName: string | null = null;
   let requestConnector = false;
   let isSubmittingForm = false;
 
@@ -61,7 +63,26 @@
     function listen(e: PopStateEvent) {
       step = e.state?.step ?? 0;
       requestConnector = e.state?.requestConnector ?? false;
-      selectedConnector = e.state?.selectedConnector ?? null;
+      connectorInstanceName = e.state?.connectorInstanceName ?? null;
+
+      // Handle both full connector object and connector name string
+      if (e.state?.selectedConnector) {
+        selectedConnector = e.state.selectedConnector;
+        pendingConnectorName = null;
+      } else if (e.state?.connector) {
+        // Store the connector name to look up when connectors are loaded
+        pendingConnectorName = e.state.connector;
+        if (connectors.length > 0) {
+          const found = connectors.find((c) => c.name === e.state.connector);
+          if (found) {
+            selectedConnector = found;
+            pendingConnectorName = null;
+          }
+        }
+      } else {
+        selectedConnector = null;
+        pendingConnectorName = null;
+      }
     }
     window.addEventListener("popstate", listen);
 
@@ -70,6 +91,15 @@
     };
   });
 
+  // Handle pending connector name when connectors finish loading
+  $: if (pendingConnectorName && connectors.length > 0) {
+    const found = connectors.find((c) => c.name === pendingConnectorName);
+    if (found) {
+      selectedConnector = found;
+      pendingConnectorName = null;
+    }
+  }
+
   function goToConnectorForm(connector: V1ConnectorDriver) {
     // Reset multi-step state (auth selection, connector config) when switching connectors.
     resetConnectorStep();
@@ -77,6 +107,7 @@
     const state = {
       step: 2,
       selectedConnector: connector,
+      connectorInstanceName: null,
       requestConnector: false,
     };
     window.history.pushState(state, "", "");
@@ -100,7 +131,12 @@
   }
 
   function resetModal() {
-    const state = { step: 0, selectedConnector: null, requestConnector: false };
+    const state = {
+      step: 0,
+      selectedConnector: null,
+      connectorInstanceName: null,
+      requestConnector: false,
+    };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
     isSubmittingForm = false;
@@ -122,13 +158,29 @@
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
-  // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
     selectedConnector?.implementsObjectStore ||
-    selectedConnector?.implementsOlap ||
+    // selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
-    (selectedConnector?.implementsWarehouse &&
-      selectedConnector?.name !== "salesforce");
+    selectedConnector?.implementsWarehouse;
+
+  // Determine what to show in parentheses in the header
+  $: isMultiStepConnector = selectedConnector?.name
+    ? MULTI_STEP_CONNECTORS.includes(selectedConnector.name)
+    : false;
+  $: stepState = $connectorStepStore;
+  $: headerSuffix = (() => {
+    // For multi-step connectors, only show suffix on source step
+    if (isMultiStepConnector && stepState.step === "connector") {
+      return null;
+    }
+    // If public auth was selected, show "public"
+    if (stepState.selectedAuthMethod === "public") {
+      return "public";
+    }
+    // Otherwise show connector instance name or driver name
+    return connectorInstanceName ?? selectedConnector?.name;
+  })();
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -208,7 +260,12 @@
         </div>
       {/if}
 
-      {#if step === 2 && selectedConnector}
+      {#if step === 2 && pendingConnectorName && !selectedConnector}
+        <!-- Loading state while waiting for connector to be resolved -->
+        <div class="p-6 flex items-center justify-center">
+          <span class="text-fg-secondary">Loading...</span>
+        </div>
+      {:else if step === 2 && selectedConnector}
         <Dialog.Title class="p-4 border-b border-gray-200">
           {#if $duplicateSourceName !== null}
             Duplicate source
@@ -220,8 +277,11 @@
                   size="18px"
                 />
               {/if}
-              <span class="text-lg leading-none font-semibold"
-                >{selectedConnector.displayName}</span
+              <span class="text-lg leading-none font-semibold flex items-baseline gap-1.5"
+                >{selectedConnector.displayName}{#if headerSuffix}<span
+                    class="text-fg-muted font-normal text-sm italic"
+                    >{headerSuffix}</span
+                  >{/if}</span
               >
             </div>
           {/if}
@@ -237,6 +297,7 @@
           <AddDataForm
             connector={selectedConnector}
             formType={isConnectorType ? "connector" : "source"}
+            {connectorInstanceName}
             onClose={resetModal}
             onBack={back}
             bind:isSubmitting={isSubmittingForm}

@@ -20,6 +20,7 @@
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
 
   export let connector: V1ConnectorDriver;
+  export let connectorInstanceName: string | null = null;
   export let onClose: () => void;
   export let onBack: () => void;
 
@@ -91,10 +92,14 @@
   $: if (stepState.step === "source") {
     const sourceProperties = connector.sourceProperties ?? [];
     const initialValues = getInitialFormValuesFromProperties(sourceProperties);
-    const combinedValues = {
+    const combinedValues: Record<string, unknown> = {
       ...initialValues,
       ...(stepState.connectorConfig ?? {}),
     };
+    // If we have a connector instance name, use it for create_secrets_from_connectors
+    if (connectorInstanceName) {
+      combinedValues.create_secrets_from_connectors = connectorInstanceName;
+    }
     paramsForm.update(() => combinedValues, { taint: false });
   }
 
