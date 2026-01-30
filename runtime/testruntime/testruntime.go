@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
+	"github.com/rilldata/rill/runtime/drivers/starrocks/teststarrocks"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/storage"
@@ -42,6 +43,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	_ "github.com/rilldata/rill/runtime/drivers/starrocks"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
 
@@ -392,6 +394,58 @@ func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Ru
 				Type:   "clickhouse",
 				Name:   "clickhouse",
 				Config: Must(structpb.NewStruct(olapConfig)),
+			},
+			{
+				Type: "sqlite",
+				Name: "catalog",
+				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+				// "cache=shared" is needed to prevent threading problems.
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
+			},
+		},
+		Variables: map[string]string{"rill.stage_changes": "false"},
+	}
+
+	err := rt.CreateInstance(ctx, inst)
+	require.NoError(t, err)
+	require.NotEmpty(t, inst.ID)
+
+	ctrl, err := rt.Controller(ctx, inst.ID)
+	require.NoError(t, err)
+
+	_, err = ctrl.Get(ctx, runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+
+	err = ctrl.WaitUntilIdle(ctx, false)
+	require.NoError(t, err)
+
+	return rt, inst.ID
+}
+
+func NewInstanceWithStarRocksProject(t TestingT) (*runtime.Runtime, string) {
+	dsn := teststarrocks.StartWithData(t)
+
+	rt := New(t, true)
+	ctx := t.Context()
+
+	_, currentFile, _, _ := goruntime.Caller(0)
+	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_starrocks")
+
+	inst := &drivers.Instance{
+		Environment:      "test",
+		OLAPConnector:    "starrocks",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
+		Connectors: []*runtimev1.Connector{
+			{
+				Type:   "file",
+				Name:   "repo",
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": projectPath})),
+			},
+			{
+				Type:   "starrocks",
+				Name:   "starrocks",
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": dsn, "database": "test_db"})),
 			},
 			{
 				Type: "sqlite",

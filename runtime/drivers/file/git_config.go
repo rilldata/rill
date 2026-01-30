@@ -12,12 +12,10 @@ import (
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var (
-	errProjectNotFound = errors.New("not connected to a rill project")
-	errAuthRequired    = errors.New("authentication required to perform this action")
-)
+var errProjectNotFound = errors.New("not connected to a rill project")
 
 // loadGitConfig loads the git configuration for the repository
 // Should be called with c.gitMu held.
@@ -114,6 +112,13 @@ func (c *connection) gitSignature(ctx context.Context, client *client.Client, pa
 		}
 	}
 
+	if client == nil {
+		return &object.Signature{
+			Name:  "Rill Runtime",
+			Email: "runtime@rilldata.com",
+			When:  time.Now(),
+		}, nil
+	}
 	userResp, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		return nil, err
@@ -135,7 +140,7 @@ func (c *connection) getAdminClient() (*client.Client, error) {
 		return nil, err
 	}
 	if accessToken == "" {
-		return nil, errAuthRequired
+		return nil, drivers.ErrNotAuthenticated
 	}
 	adminURL, err := c.adminURL()
 	if err != nil {

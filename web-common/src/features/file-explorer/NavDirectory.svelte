@@ -25,7 +25,7 @@
   aria-label={directory.path}
   role="directory"
   class="w-full"
-  class:bg-slate-100={isDragDropHover}
+  class:bg-gray-100={isDragDropHover}
   on:mouseenter={() => navEntryDragDropStore.onMouseEnter(directory.path)}
   on:mouseleave={() => navEntryDragDropStore.onMouseLeave()}
   on:contextmenu={() => navEntryDragDropStore.resetDrag()}

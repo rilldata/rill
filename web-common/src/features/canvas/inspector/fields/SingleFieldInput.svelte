@@ -100,7 +100,7 @@
           {/if}
         {:else}
           {#if searchValue}
-            <div class="ui-copy-disabled text-center p-2 w-full">
+            <div class="text-fg-disabled text-center p-2 w-full">
               no results
             </div>
           {/if}

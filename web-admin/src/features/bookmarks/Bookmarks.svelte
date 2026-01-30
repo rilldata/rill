@@ -170,11 +170,12 @@
     <Button
       builders={[builder]}
       compact
+      square
       type="secondary"
       label="Other bookmark dropdown"
       active={open}
     >
-      <BookmarkIcon class="inline-flex" size="16px" />
+      <BookmarkIcon class="flex-none" size="16px" />
     </Button>
   </DropdownMenuTrigger>
   <DropdownMenuContent class="w-[450px]">
@@ -195,7 +196,7 @@
     {#if filteredBookmarks}
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-gray-500 text-[10px] h-6 uppercase">
+        <DropdownMenuLabel class="text-fg-secondary text-[10px] h-6 uppercase">
           Your bookmarks
         </DropdownMenuLabel>
         {#if filteredBookmarks.personal?.length}
@@ -210,14 +211,14 @@
             {/key}
           {/each}
         {:else}
-          <div class="my-2 ui-copy-disabled text-center">
+          <div class="my-2 text-fg-muted text-center">
             You have no bookmarks for this dashboard.
           </div>
         {/if}
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-gray-500">
+        <DropdownMenuLabel class="text-fg-secondary">
           <div class="text-[10px] h-4 uppercase">Managed bookmarks</div>
           <div class="text-[11px] font-normal">Created by project admin</div>
         </DropdownMenuLabel>
@@ -233,7 +234,7 @@
             {/key}
           {/each}
         {:else}
-          <div class="my-2 ui-copy-disabled text-center">
+          <div class="my-2 text-fg-muted text-center">
             There are no shared bookmarks for this dashboard.
           </div>
         {/if}

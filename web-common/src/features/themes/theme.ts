@@ -7,6 +7,7 @@ import { generateColorPalette } from "./palette-generator";
 import { TailwindColorSpacing } from "./color-config";
 import { primary } from "./colors";
 import { getChroma, resolveThemeObject } from "./theme-utils";
+import { createDarkVariation } from "./color-generation";
 
 export class Theme {
   colors: { light: Colors; dark: Colors };
@@ -43,10 +44,44 @@ export class Theme {
     };
   }
 
-  private stringifyVars(vars: Record<string, Color | undefined>) {
-    return Object.entries(vars)
-      .map(([k, v]) => `--${k}: ${v?.css("hsl") ?? "unset"};`)
-      .join("\n  ");
+  // Opacity percentages for fg-* hierarchy when auto-generating from fg-primary
+  private static FG_OPACITY_HIERARCHY: Record<string, number> = {
+    "fg-secondary": 85,
+    "fg-tertiary": 70,
+    "fg-muted": 55,
+    "fg-disabled": 40,
+    "fg-inverse": 100,
+    "fg-accent": 100,
+  };
+
+  private stringifyVars(vars: Record<string, Color | undefined>): string {
+    const lines: string[] = [];
+
+    for (const [k, v] of Object.entries(vars)) {
+      lines.push(`--${k}: ${v?.css("hsl") ?? "unset"};`);
+    }
+
+    // Generate fg-* hierarchy from fg-primary using color-mix
+    const fgPrimary = vars["fg-primary"];
+    if (fgPrimary) {
+      const fgPrimaryHsl = fgPrimary.css("hsl");
+      for (const [fgVar, opacity] of Object.entries(
+        Theme.FG_OPACITY_HIERARCHY,
+      )) {
+        // Only generate if not explicitly set
+        if (!(fgVar in vars)) {
+          if (opacity === 100) {
+            lines.push(`--${fgVar}: ${fgPrimaryHsl};`);
+          } else {
+            lines.push(
+              `--${fgVar}: color-mix(in oklab, ${fgPrimaryHsl} ${opacity}%, transparent);`,
+            );
+          }
+        }
+      }
+    }
+
+    return lines.join("\n  ");
   }
 
   private generateCSS(): string {
@@ -59,13 +94,15 @@ export class Theme {
       }
     }
 
-    return `
+    const css = `
  .dashboard-theme-boundary {
   ${this.stringifyVars(lightColors)}
 }
 .dark .dashboard-theme-boundary {
   ${this.stringifyVars(darkColors)}
 }`.trim();
+
+    return css;
   }
 
   private processTheme(spec: V1ThemeSpec) {
@@ -86,20 +123,23 @@ export class Theme {
       return { dark: {}, light: lightColors };
     }
 
-    const darkColors = this.processColors(spec.dark ?? {});
+    const darkColors = this.processColors(spec.dark ?? {}, true);
     const lightColors = this.processColors(spec.light ?? {});
 
     return { dark: darkColors, light: lightColors };
   }
 
-  private processColors(colors: V1ThemeColors) {
+  private processColors(colors: V1ThemeColors, dark: boolean = false) {
     const finalColors: Colors = {};
     const { primary, secondary, variables } = colors;
 
     if (primary) {
       const primaryReference = getChroma(primary);
       const primaryPalette = generateColorPalette(primaryReference);
-      for (const [i, color] of primaryPalette.entries()) {
+      const finalColorPalette = dark
+        ? createDarkVariation(primaryPalette)
+        : primaryPalette;
+      for (const [i, color] of finalColorPalette.entries()) {
         finalColors[`color-theme-${TailwindColorSpacing[i]}`] = color;
       }
       finalColors.primary = primaryReference;
@@ -108,7 +148,10 @@ export class Theme {
     if (secondary) {
       const secondaryReference = getChroma(secondary);
       const secondaryPalette = generateColorPalette(secondaryReference);
-      for (const [i, color] of secondaryPalette.entries()) {
+      const finalColorPalette = dark
+        ? createDarkVariation(secondaryPalette)
+        : secondaryPalette;
+      for (const [i, color] of finalColorPalette.entries()) {
         finalColors[`color-theme-secondary-${TailwindColorSpacing[i]}`] = color;
       }
       finalColors.secondary = secondaryReference;
@@ -123,32 +166,75 @@ export class Theme {
   }
 }
 
-// Needs refinement and better generated types from the backend
+// Theme color variables - includes both new semantic names and deprecated names for backwards compatibility
 type Colors = {
   primary?: Color;
   secondary?: Color;
 
-  ring?: Color;
-  radius?: Color;
-  surface?: Color;
-  background?: Color;
-  foreground?: Color;
+  // Surface semantic variables
+  "surface-base"?: Color;
+  "surface-background"?: Color;
+  "surface-hover"?: Color;
+  "surface-active"?: Color;
+  "surface-overlay"?: Color;
+  "surface-subtle"?: Color;
+  "surface-muted"?: Color;
+  "surface-card"?: Color;
 
-  card?: Color;
-  "card-foreground"?: Color;
-  popover?: Color;
-  "popover-foreground"?: Color;
-  "primary-foreground"?: Color;
-  "secondary-foreground"?: Color;
-  muted?: Color;
-  "muted-foreground"?: Color;
-  accent?: Color;
-  "accent-foreground"?: Color;
-  destructive?: Color;
-  "destructive-foreground"?: Color;
+  // Foreground semantic variables
+  "fg-primary"?: Color;
+  "fg-secondary"?: Color;
+  "fg-tertiary"?: Color;
+  "fg-inverse"?: Color;
+  "fg-muted"?: Color;
+  "fg-disabled"?: Color;
+  "fg-accent"?: Color;
+
+  // Accent semantic variables
+  "accent-primary"?: Color;
+  "accent-primary-action"?: Color;
+  "accent-secondary"?: Color;
+  "accent-secondary-action"?: Color;
+
+  // Icon semantic variables
+  "icon-default"?: Color;
+  "icon-muted"?: Color;
+  "icon-disabled"?: Color;
+  "icon-accent"?: Color;
+
+  // Border, input, and radius
   border?: Color;
   input?: Color;
+  radius?: Color;
 
+  // Ring (focus states)
+  "ring-focus"?: Color;
+  "ring-offset"?: Color;
+
+  // Dimension styling
+  dimension?: Color;
+  "dimension-foreground"?: Color;
+  "dimension-border"?: Color;
+
+  // Measure styling
+  measure?: Color;
+  "measure-foreground"?: Color;
+  "measure-border"?: Color;
+
+  // Tooltip
+  tooltip?: Color;
+
+  // Destructive actions
+  destructive?: Color;
+  "destructive-foreground"?: Color;
+
+  // Popover
+  popover?: Color;
+  "popover-accent"?: Color;
+  "popover-foreground"?: Color;
+  "popover-footer"?: Color;
+
+  // Sequential palette (9 colors)
   "color-sequential-1"?: Color;
   "color-sequential-2"?: Color;
   "color-sequential-3"?: Color;
@@ -159,6 +245,7 @@ type Colors = {
   "color-sequential-8"?: Color;
   "color-sequential-9"?: Color;
 
+  // Diverging palette (11 colors)
   "color-diverging-1"?: Color;
   "color-diverging-2"?: Color;
   "color-diverging-3"?: Color;
@@ -171,6 +258,7 @@ type Colors = {
   "color-diverging-10"?: Color;
   "color-diverging-11"?: Color;
 
+  // Qualitative palette (24 colors)
   "color-qualitative-1"?: Color;
   "color-qualitative-2"?: Color;
   "color-qualitative-3"?: Color;

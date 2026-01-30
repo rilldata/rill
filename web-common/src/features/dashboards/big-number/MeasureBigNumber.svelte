@@ -124,7 +124,7 @@
     this={useDiv ? "div" : "a"}
     role={useDiv ? "presentation" : "button"}
     tabindex={useDiv ? -1 : 0}
-    class="group big-number outline-gray-200 dark:outline-gray-300"
+    class="group big-number outline-border"
     class:shadow-grad={!useDiv}
     class:cursor-pointer={!useDiv}
     on:click={modified({
@@ -140,14 +140,14 @@
     href={tddHref}
   >
     <h2
-      class="line-clamp-2 ui-copy-muted hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
+      class="line-clamp-2 text-fg-muted hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
       {name}
     </h2>
     <div
       role="button"
-      class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
+      class="text-fg-secondary relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
       on:mouseover={handleMouseOver}
@@ -163,21 +163,26 @@
             {#if comparisonValue != null}
               <div
                 role="complementary"
-                class="w-fit max-w-full overflow-hidden text-ellipsis ui-copy-inactive"
+                class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
                 class:font-semibold={isComparisonPositive}
-                on:mouseenter={() =>
-                  (tooltipValue =
-                    measureValueFormatterTooltip(diff) ?? "no data")}
-                on:mouseleave={() =>
-                  (tooltipValue =
-                    measureValueFormatterTooltip(value) ?? "no data")}
+                on:mouseenter={() => {
+                  tooltipValue =
+                    measureValueFormatterTooltip(diff) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(diff) ?? "no data";
+                }}
+                on:mouseleave={() => {
+                  tooltipValue =
+                    measureValueFormatterTooltip(value) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                }}
               >
                 {#if !noChange}
                   {formattedDiff}
                 {:else}
-                  <span
-                    class="ui-copy-disabled-faint italic"
-                    style:font-size=".9em">no change</span
+                  <span class="text-fg-muted italic" style:font-size=".9em"
+                    >no change</span
                   >
                 {/if}
               </div>
@@ -185,16 +190,23 @@
             {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
               <div
                 role="complementary"
-                on:mouseenter={() =>
-                  (tooltipValue = numberPartsToString(
+                on:mouseenter={() => {
+                  tooltipValue = numberPartsToString(
                     formatMeasurePercentageDifference(
                       comparisonPercChange ?? 0,
                     ),
-                  ))}
-                on:mouseleave={() =>
-                  (tooltipValue =
-                    measureValueFormatterUnabridged(value) ?? "no data")}
-                class="w-fit ui-copy-inactive"
+                  );
+                  copyValue =
+                    measureValueFormatterUnabridged(comparisonPercChange) ??
+                    "no data";
+                }}
+                on:mouseleave={() => {
+                  tooltipValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                }}
+                class="w-fit text-fg-secondary"
                 class:text-red-500={!isComparisonPositive}
               >
                 <WithTween
@@ -232,9 +244,9 @@
           />
         </div>
       {:else if value === null}
-        <span class="ui-copy-disabled-faint italic text-sm">no data</span>
+        <span class="text-fg-muted italic text-sm">no data</span>
       {:else if value === undefined}
-        <span class="ui-copy-disabled-faint italic text-sm">n/a</span>
+        <span class="text-fg-muted italic text-sm">n/a</span>
       {/if}
     </div>
   </svelte:element>
@@ -248,6 +260,28 @@
   }
 
   .shadow-grad:hover {
-    @apply shadow-md bg-gradient-to-b from-surface to-gray-50 outline-1 outline;
+    @apply shadow-md outline-1 outline;
+    outline-color: color-mix(
+      in oklab,
+      var(--color-theme-500) calc(0.15 * 100%),
+      transparent
+    );
+
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--white) calc(0.15 * 100%), transparent),
+      50%,
+      color-mix(in oklab, var(--color-theme-300) calc(0.1 * 100%), transparent)
+    );
+  }
+
+  :global(.dark) .shadow-grad:hover {
+    @apply shadow-md  outline-1 outline outline-[#FFFFFF26];
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--white) calc(0.1 * 100%), transparent),
+      50%,
+      color-mix(in oklab, var(--white) calc(0.05 * 100%), transparent)
+    );
   }
 </style>
