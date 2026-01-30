@@ -232,7 +232,10 @@ export function deleteEnvVariable(
  * Generic properties (AWS, Google, etc.) use no prefix
  * Driver-specific properties use DriverName_PropertyKey format
  */
-export function getGenericEnvVarName(driverName: string, propertyKey: string): string {
+export function getGenericEnvVarName(
+  driverName: string,
+  propertyKey: string,
+): string {
   // Generic properties that don't need a driver prefix
   const genericProperties = new Set([
     // Google Cloud credentials
@@ -281,7 +284,10 @@ export function envVarExists(envBlob: string, varName: string): boolean {
 /**
  * Find the next available environment variable name by appending _1, _2, etc.
  */
-export function findAvailableEnvVarName(envBlob: string, baseName: string): string {
+export function findAvailableEnvVarName(
+  envBlob: string,
+  baseName: string,
+): string {
   let varName = baseName;
   let counter = 1;
 

@@ -121,7 +121,10 @@ describe("replaceOlapConnectorInYAML", () => {
 describe("getGenericEnvVarName", () => {
   describe("Generic properties - no driver prefix", () => {
     it("should return GOOGLE_APPLICATION_CREDENTIALS for google_application_credentials", () => {
-      const result = getGenericEnvVarName("bigquery", "google_application_credentials");
+      const result = getGenericEnvVarName(
+        "bigquery",
+        "google_application_credentials",
+      );
       expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS");
     });
 
@@ -136,7 +139,10 @@ describe("getGenericEnvVarName", () => {
     });
 
     it("should return AZURE_STORAGE_CONNECTION_STRING for azure_storage_connection_string", () => {
-      const result = getGenericEnvVarName("adx", "azure_storage_connection_string");
+      const result = getGenericEnvVarName(
+        "adx",
+        "azure_storage_connection_string",
+      );
       expect(result).toBe("AZURE_STORAGE_CONNECTION_STRING");
     });
 
@@ -175,7 +181,10 @@ describe("getGenericEnvVarName", () => {
     });
 
     it("should handle dots and hyphens by converting to underscores", () => {
-      const result = getGenericEnvVarName("custom", "property.with-mixed.separators");
+      const result = getGenericEnvVarName(
+        "custom",
+        "property.with-mixed.separators",
+      );
       expect(result).toBe("CUSTOM_PROPERTY_WITH_MIXED_SEPARATORS");
     });
   });
@@ -254,7 +263,10 @@ describe("findAvailableEnvVarName", () => {
 
   it("should handle base name with underscores", () => {
     const envBlob = `GOOGLE_APPLICATION_CREDENTIALS=value\nGOOGLE_APPLICATION_CREDENTIALS_1=value`;
-    const result = findAvailableEnvVarName(envBlob, "GOOGLE_APPLICATION_CREDENTIALS");
+    const result = findAvailableEnvVarName(
+      envBlob,
+      "GOOGLE_APPLICATION_CREDENTIALS",
+    );
     expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS_2");
   });
 
@@ -268,7 +280,10 @@ describe("findAvailableEnvVarName", () => {
 describe("makeDotEnvConnectorKey", () => {
   describe("Without existing env blob - returns base generic name", () => {
     it("should return generic name for google_application_credentials", () => {
-      const result = makeDotEnvConnectorKey("bigquery", "google_application_credentials");
+      const result = makeDotEnvConnectorKey(
+        "bigquery",
+        "google_application_credentials",
+      );
       expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS");
     });
 
@@ -321,7 +336,11 @@ describe("makeDotEnvConnectorKey", () => {
 
     it("should handle multiple different properties", () => {
       const envBlob = `AWS_ACCESS_KEY_ID=key1\nAWS_SECRET_ACCESS_KEY=secret1`;
-      const result = makeDotEnvConnectorKey("athena", "aws_access_key_id", envBlob);
+      const result = makeDotEnvConnectorKey(
+        "athena",
+        "aws_access_key_id",
+        envBlob,
+      );
       expect(result).toBe("AWS_ACCESS_KEY_ID_1");
     });
 
@@ -366,17 +385,29 @@ DATABASE_URL=something`;
 
     it("should support adding AWS credentials to existing non-AWS variables", () => {
       const envBlob = `MOTHERDUCK_TOKEN=token1\nGOOGLE_APPLICATION_CREDENTIALS=creds1`;
-      const result = makeDotEnvConnectorKey("athena", "aws_access_key_id", envBlob);
+      const result = makeDotEnvConnectorKey(
+        "athena",
+        "aws_access_key_id",
+        envBlob,
+      );
       expect(result).toBe("AWS_ACCESS_KEY_ID");
     });
 
     it("should support adding multiple AWS connectors", () => {
       const envBlob = `AWS_ACCESS_KEY_ID=key1\nAWS_SECRET_ACCESS_KEY=secret1`;
-      const result1 = makeDotEnvConnectorKey("s3", "aws_access_key_id", envBlob);
+      const result1 = makeDotEnvConnectorKey(
+        "s3",
+        "aws_access_key_id",
+        envBlob,
+      );
       expect(result1).toBe("AWS_ACCESS_KEY_ID_1");
 
       const updatedEnv = `${envBlob}\nAWS_ACCESS_KEY_ID_1=key2`;
-      const result2 = makeDotEnvConnectorKey("athena", "aws_secret_access_key", updatedEnv);
+      const result2 = makeDotEnvConnectorKey(
+        "athena",
+        "aws_secret_access_key",
+        updatedEnv,
+      );
       expect(result2).toBe("AWS_SECRET_ACCESS_KEY_1");
     });
   });
