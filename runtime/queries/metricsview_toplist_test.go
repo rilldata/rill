@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
@@ -40,6 +41,60 @@ func TestMetricsViewsToplistAgainstClickHouse(t *testing.T) {
 	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
 	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
 	t.Run("TestMetricsViewsToplist_measure_filters", func(t *testing.T) { TestMetricsViewsToplist_measure_filters(t) })
+}
+
+func TestMetricsViewsToplistAgainstStarRocks(t *testing.T) {
+	testmode.Expensive(t)
+
+	rt, instanceID := testruntime.NewInstanceWithStarRocksProject(t)
+	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testMetricsViewsToplist_measure_filters(t, rt, instanceID)
+	})
+}
+
+func testMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	ctr := &queries.ColumnTimeRange{
+		DatabaseSchema: "test_db",
+		TableName:      "ad_bids",
+		ColumnName:     "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	lmt := int64(250)
+	q := &queries.MetricsViewToplist{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		MeasureNames:    []string{"measure_1"},
+		TimeStart:       ctr.Result.Min,
+		TimeEnd:         timestamppb.New(maxTime),
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(1),
+							},
+						},
+					},
+				},
+			},
+		},
+		Limit:          &lmt,
+		SecurityClaims: testClaims(),
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
 }
 
 func TestMetricsViewsToplist_measure_filters(t *testing.T) {

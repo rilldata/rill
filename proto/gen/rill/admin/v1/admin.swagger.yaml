@@ -77,6 +77,26 @@ paths:
           in: path
           required: true
           type: string
+  /v1/deployments/{deploymentId}/config:
+    get:
+      summary: |-
+        GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+        This is called by the runtime to pull its Variables and Annotations from the admin service.
+      operationId: AdminService_GetDeploymentConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
   /v1/deployments/{deploymentId}/credentials:
     post:
       summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -2264,11 +2284,13 @@ paths:
               resourceName:
                 type: string
                 description: Name of the resource to grant access to.
-              filter:
-                $ref: '#/definitions/v1Expression'
+              metricsViewFilters:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
                 description: |-
-                  Optional filter to apply as a row filter in queries.
-                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+                  Optional metrics view to filter mapping to apply as row filters in queries.
+                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
               fields:
                 type: array
                 items:
@@ -4439,6 +4461,7 @@ definitions:
       - OPERATION_NIN
       - OPERATION_LIKE
       - OPERATION_NLIKE
+      - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
   v1AddOrganizationMemberUserResponse:
     type: object
@@ -5044,6 +5067,32 @@ definitions:
         $ref: '#/definitions/v1User'
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1GetDeploymentConfigResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+        title: Variables for the deployment (connector credentials, etc.)
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+        title: Annotations for the deployment (org/project metadata, etc.)
+      frontendUrl:
+        type: string
+        description: Frontend URL for the deployment.
+      updatedOn:
+        type: string
+        format: date-time
+        description: Timestamp when the deployment was last updated.
+      usesArchive:
+        type: boolean
+        description: Whether the deployment is git based or archive based.
+      duckdbConnectorConfig:
+        type: object
+        title: Duckdb connector config for the deployment
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
@@ -5198,11 +5247,15 @@ definitions:
       gitBranch:
         type: string
         description: The branch to use for the deployment.
-      gitEditBranch:
+      editable:
+        type: boolean
+        description: Whether editing is allowed. Set to true for dev deployments.
+      primaryBranch:
         type: string
-        description: |-
-          A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-          This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+        description: Primary branch of the project.
+      managedGitRepo:
+        type: boolean
+        description: Whether the git repo is managed by Rill.
       archiveDownloadUrl:
         type: string
         description: Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
@@ -5605,8 +5658,10 @@ definitions:
         type: string
       resourceName:
         type: string
-      filter:
-        $ref: '#/definitions/v1Expression'
+      metricsViewFilters:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
       fields:
         type: array
         items:

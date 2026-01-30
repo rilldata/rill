@@ -29,8 +29,7 @@
     <Alert.Footer class="mt-5">
       <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
-        type="primary"
-        status={rillManagedProject ? "error" : "info"}
+        type={rillManagedProject ? "destructive" : "primary"}
         href={deployUrl}
       >
         Yes, overwrite

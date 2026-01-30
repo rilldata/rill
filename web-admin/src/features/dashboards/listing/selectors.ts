@@ -4,7 +4,7 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
-import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
+import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 
 export function useDashboardsLastUpdated(
   instanceId: string,
@@ -42,7 +42,8 @@ export function useDashboards(
       select: (data) => {
         return data.resources.filter((res) => res.canvas || res.explore);
       },
-      refetchInterval: createSmartRefetchInterval,
+      enabled: !!instanceId,
+      refetchInterval: smartRefetchIntervalFunc,
     },
   });
 }

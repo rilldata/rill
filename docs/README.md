@@ -1,6 +1,6 @@
 # `docs/`
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/23baf08e-2d3e-44db-8bd4-938e54467a29/deploy-status)](https://app.netlify.com/sites/rill-developer/deploys)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/23baf08e-2d3e-44db-8bd4-938e54467a29/deploy-status)](https://app.netlify.com/sites/rill-developers/deploys)
 
 This folder contains docs for Rill, generated using [Docusaurus](https://docusaurus.io/) and deployed to [https://docs.rilldata.com](https://docs.rilldata.com).
 

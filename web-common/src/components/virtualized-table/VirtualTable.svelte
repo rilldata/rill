@@ -13,7 +13,6 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import type {
     V1MetricsViewColumn,
@@ -41,8 +40,6 @@
     isPin: boolean;
   };
 
-  const dispatch = createEventDispatcher();
-
   export let rows: V1MetricsViewRowsResponseDataItem[];
   export let columns: (VirtualizedTableColumns | V1MetricsViewColumn)[];
   export let valueAccessor: (name: string) => string = (name: string) => name;
@@ -66,6 +63,11 @@
   export let selectedIndexes: number[] = [];
   export let sortedColumn: string | null = null;
   export let name: string;
+  export let onSelectItem: (data: {
+    index: number;
+    meta: boolean;
+  }) => void = () => {};
+  export let onColumnClick: (column: string) => void = () => {};
 
   let container: HTMLDivElement;
   let showTooltip = false;
@@ -223,9 +225,9 @@
     }
 
     if (hovering.isHeader) {
-      dispatch("column-click", hovering.column);
+      onColumnClick(hovering.column);
     } else {
-      dispatch("select-item", {
+      onSelectItem({
         index: hovering.index,
         meta: e.ctrlKey || e.metaKey,
       });
@@ -277,7 +279,7 @@
     container.scrollTo({ top: scrollTop, left: scrollLeft });
   }
 
-  function togglePin(e: MouseEvent & { currentTarget: HTMLButtonElement }) {
+  function togglePin(e: PointerEvent & { currentTarget: HTMLButtonElement }) {
     const index = Number(e.currentTarget.dataset.index);
     if (pinnedColumns.has(index)) {
       let found = false;
@@ -398,11 +400,11 @@
   }
 
   .table-wrapper {
-    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-surface;
+    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-surface-base;
   }
 
   .has-selection tbody {
-    @apply text-gray-400;
+    @apply text-fg-secondary;
     --bar-color: #f0f0f0;
   }
 </style>

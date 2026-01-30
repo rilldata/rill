@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -449,18 +450,25 @@ func toMagicAuthTokensTable(tkns []*adminv1.MagicAuthToken) []*magicAuthToken {
 }
 
 func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
-	expr := metricsview.NewExpressionFromProto(t.Filter)
-	filter, err := metricsview.ExpressionToSQL(expr)
-	if err != nil {
-		panic(err)
+	filters := ""
+	for mv, filter := range t.MetricsViewFilters {
+		expr := metricsview.NewExpressionFromProto(filter)
+		sqlFilter, err := metricsview.ExpressionToSQL(expr)
+		if err != nil {
+			panic(err)
+		}
+		if filters != "" {
+			filters += ", "
+		}
+		filters += fmt.Sprintf("%s(%s)", mv, sqlFilter)
 	}
 
 	row := &magicAuthToken{
-		ID:        t.Id,
-		Filter:    filter,
-		CreatedBy: t.CreatedByUserEmail,
-		CreatedOn: t.CreatedOn.AsTime().Local().Format(time.DateTime),
-		UsedOn:    t.UsedOn.AsTime().Local().Format(time.DateTime),
+		ID:                 t.Id,
+		MetricsViewFilters: filters,
+		CreatedBy:          t.CreatedByUserEmail,
+		CreatedOn:          t.CreatedOn.AsTime().Local().Format(time.DateTime),
+		UsedOn:             t.UsedOn.AsTime().Local().Format(time.DateTime),
 	}
 	if t.ExpiresOn != nil {
 		row.ExpiresOn = t.ExpiresOn.AsTime().Local().Format(time.DateTime)
@@ -469,13 +477,13 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 }
 
 type magicAuthToken struct {
-	ID        string `header:"id" json:"id"`
-	Resource  string `header:"resource" json:"resource"`
-	Filter    string `header:"filter" json:"filter"`
-	CreatedBy string `header:"created by" json:"created_by"`
-	CreatedOn string `header:"created on" json:"created_on"`
-	UsedOn    string `header:"last used on" json:"used_on"`
-	ExpiresOn string `header:"expires on" json:"expires_on"`
+	ID                 string `header:"id" json:"id"`
+	Resource           string `header:"resource" json:"resource"`
+	MetricsViewFilters string `header:"metrics view filters" json:"metrics_view_filters"`
+	CreatedBy          string `header:"created by" json:"created_by"`
+	CreatedOn          string `header:"created on" json:"created_on"`
+	UsedOn             string `header:"last used on" json:"used_on"`
+	ExpiresOn          string `header:"expires on" json:"expires_on"`
 }
 
 func (p *Printer) PrintSubscriptions(subs []*adminv1.Subscription) {
@@ -741,6 +749,21 @@ func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
 	for _, d := range deployments {
 		res = append(res, toDeploymentRow(d))
 	}
+	slices.SortFunc(res, func(a, b *deployment) int {
+		// group by environment
+		if a.Environment < b.Environment {
+			return -1
+		} else if a.Environment > b.Environment {
+			return 1
+		}
+		// sort by branch if environment is same
+		if a.Branch < b.Branch {
+			return -1
+		} else if a.Branch > b.Branch {
+			return 1
+		}
+		return 0
+	})
 	return res
 }
 
@@ -750,8 +773,8 @@ func toDeploymentRow(d *adminv1.Deployment) *deployment {
 		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
 	}
 	return &deployment{
-		Environment: d.Environment,
 		Branch:      d.Branch,
+		Environment: d.Environment,
 		Status:      status,
 	}
 }
@@ -780,8 +803,8 @@ func formatDeploymentStatus(status adminv1.DeploymentStatus) string {
 }
 
 type deployment struct {
-	Environment string `header:"environment" json:"environment"`
 	Branch      string `header:"branch" json:"branch"`
+	Environment string `header:"environment" json:"environment"`
 	Status      string `header:"status" json:"status"`
 }
 

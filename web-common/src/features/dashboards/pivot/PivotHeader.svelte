@@ -68,7 +68,7 @@
 <style lang="postcss">
   .header {
     @apply flex flex-col border-b select-none;
-    @apply bg-surface justify-center py-2 gap-y-2;
+    @apply bg-surface-background justify-center py-2 gap-y-2;
     @apply flex flex-col flex-none relative overflow-hidden;
     @apply z-0;
     transition-property: height;
@@ -80,6 +80,6 @@
     @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
-    @apply w-20 flex items-center gap-x-1 flex-shrink-0;
+    @apply w-20 flex items-center gap-x-1 flex-shrink-0 text-fg-secondary;
   }
 </style>

@@ -65,9 +65,9 @@
 
 <style lang="postcss">
   .pan-button {
-    @apply cursor-pointer fill-slate-400;
+    @apply cursor-pointer fill-gray-400;
   }
   .pan-button:hover {
-    @apply fill-slate-300;
+    @apply fill-gray-300;
   }
 </style>

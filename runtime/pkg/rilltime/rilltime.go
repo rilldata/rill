@@ -57,16 +57,17 @@ var (
 	)
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
-		"TD":  "ref/D to ref",
-		"WTD": "ref/W to ref",
-		"MTD": "ref/M to ref",
-		"QTD": "ref/Q to ref",
-		"YTD": "ref/Y to ref",
-		"PDC": "-1D/D to ref/D",
-		"PWC": "-1W/W to ref/W",
-		"PMC": "-1M/M to ref/M",
-		"PQC": "-1Q/Q to ref/Q",
-		"PYC": "-1Y/Y to ref/Y",
+		// rill- prefixed strings snap to the end of the reference day
+		"TD":  "ref/D to ref/D+1D as of watermark",
+		"WTD": "ref/W to ref/D+1D as of watermark",
+		"MTD": "ref/M to ref/D+1D as of watermark",
+		"QTD": "ref/Q to ref/D+1D as of watermark",
+		"YTD": "ref/Y to ref/D+1D as of watermark",
+		"PDC": "-1D/D to ref/D as of watermark",
+		"PWC": "-1W/W to ref/W as of watermark",
+		"PMC": "-1M/M to ref/M as of watermark",
+		"PQC": "-1Q/Q to ref/Q as of watermark",
+		"PYC": "-1Y/Y to ref/Y as of watermark",
 		// TODO: previous period is contextual. should be handled in UI
 		"PP": "",
 		"PD": "-1D/D to ref/D",
@@ -918,25 +919,6 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	}
 
 	return nil, nil
-}
-
-func getMinGrain(d duration.StandardDuration) string {
-	if d.Second != 0 {
-		return "s"
-	} else if d.Minute != 0 {
-		return "m"
-	} else if d.Hour != 0 {
-		return "h"
-	} else if d.Day != 0 {
-		return "D"
-	} else if d.Week != 0 {
-		return "W"
-	} else if d.Month != 0 {
-		return "M"
-	} else if d.Year != 0 {
-		return "Y"
-	}
-	return ""
 }
 
 // truncateWithCorrection truncates time by a grain but corrects for https://en.wikipedia.org/wiki/ISO_week_date#First_week

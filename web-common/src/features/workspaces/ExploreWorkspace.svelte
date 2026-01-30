@@ -16,11 +16,13 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
+  import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
+  import DashboardStateManager from "../dashboards/state-managers/loaders/DashboardStateManager.svelte";
+  import Dashboard from "../dashboards/workspace/Dashboard.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -73,62 +75,76 @@
   }
 </script>
 
-<WorkspaceContainer>
-  <WorkspaceHeader
-    resource={exploreResource}
-    hasUnsavedChanges={$hasUnsavedChanges}
-    onTitleChange={onChangeCallback}
-    slot="header"
-    titleInput={fileName}
-    {filePath}
-    codeToggle
-    resourceKind={ResourceKind.Explore}
-  >
-    <div class="flex gap-x-2" slot="cta">
-      <PreviewButton
-        href="/explore/{exploreName}"
-        disabled={allErrors.length > 0 || resourceIsReconciling}
-        reconciling={resourceIsReconciling}
-      />
-    </div>
-  </WorkspaceHeader>
-
-  <WorkspaceEditorContainer
-    slot="body"
-    error={mainError}
-    showError={!!$remoteContent && selectedView === "code"}
-  >
-    {#if selectedView === "code"}
-      <ExploreEditor
-        bind:autoSave={$autoSave}
-        {exploreName}
-        {fileArtifact}
-        {lineBasedRuntimeErrors}
-      />
-    {:else if selectedView === "viz"}
-      {#if mainError}
-        <ErrorPage
-          body={mainError.message}
-          fatal
-          header="Unable to load dashboard preview"
-          statusCode={404}
-        />
-      {:else if exploreName && metricsViewName}
-        <DashboardWithProviders {exploreName} {metricsViewName} />
-      {:else}
-        <Spinner status={1} size="48px" />
-      {/if}
-    {/if}
-  </WorkspaceEditorContainer>
-
-  <VisualExploreEditing
-    autoSave={selectedView === "viz" || $autoSave}
-    slot="inspector"
-    exploreResource={exploreResource?.explore}
+{#key metricsViewName + exploreName}
+  <StateManagersProvider
     {metricsViewName}
     {exploreName}
-    {fileArtifact}
-    viewingDashboard={selectedView === "viz"}
-    switchView={() => selectedViewStore.set("code")}
-  />
-</WorkspaceContainer>
+    visualEditing
+    let:ready
+  >
+    <WorkspaceContainer>
+      <WorkspaceHeader
+        resource={exploreResource}
+        hasUnsavedChanges={$hasUnsavedChanges}
+        onTitleChange={onChangeCallback}
+        slot="header"
+        titleInput={fileName}
+        {filePath}
+        codeToggle
+        resourceKind={ResourceKind.Explore}
+      >
+        <div class="flex gap-x-2" slot="cta">
+          <PreviewButton
+            href="/explore/{exploreName}"
+            disabled={allErrors.length > 0 || resourceIsReconciling}
+            reconciling={resourceIsReconciling}
+          />
+        </div>
+      </WorkspaceHeader>
+
+      <WorkspaceEditorContainer
+        slot="body"
+        error={mainError}
+        showError={!!$remoteContent && selectedView === "code"}
+      >
+        {#if selectedView === "code"}
+          <ExploreEditor
+            bind:autoSave={$autoSave}
+            {exploreName}
+            {fileArtifact}
+            {lineBasedRuntimeErrors}
+          />
+        {:else if selectedView === "viz"}
+          {#if mainError}
+            <ErrorPage
+              body={mainError.message}
+              fatal
+              header="Unable to load dashboard preview"
+              statusCode={404}
+            />
+          {:else if exploreName && metricsViewName}
+            <DashboardStateManager {exploreName}>
+              <Dashboard {metricsViewName} {exploreName} />
+            </DashboardStateManager>
+          {:else}
+            <Spinner status={1} size="48px" />
+          {/if}
+        {/if}
+      </WorkspaceEditorContainer>
+
+      <svelte:fragment slot="inspector">
+        {#if ready}
+          <VisualExploreEditing
+            {metricsViewName}
+            {exploreName}
+            autoSave={selectedView === "viz" || $autoSave}
+            exploreResource={exploreResource?.explore}
+            {fileArtifact}
+            viewingDashboard={selectedView === "viz"}
+            switchView={() => selectedViewStore.set("code")}
+          />
+        {/if}
+      </svelte:fragment>
+    </WorkspaceContainer>
+  </StateManagersProvider>
+{/key}

@@ -66,5 +66,4 @@ export type ChatConfig = {
   emptyChatLabel: string;
   placeholder: string;
   minChatHeight: string;
-  enableMention: boolean; // TODO: should be a list of allowed mentions in the future
 };

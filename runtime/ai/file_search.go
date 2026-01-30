@@ -48,7 +48,7 @@ func (t *SearchFiles) Spec() *mcp.Tool {
 }
 
 func (t *SearchFiles) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAgentAccess(ctx, t.Runtime)
+	return checkDeveloperAccess(ctx, t.Runtime, true)
 }
 
 func (t *SearchFiles) Handler(ctx context.Context, args *SearchFilesArgs) (*SearchFilesResult, error) {

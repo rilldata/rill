@@ -69,6 +69,8 @@ type Instance struct {
 	AIInstructions string `db:"ai_instructions"`
 	// FrontendURL is the URL of the web interface.
 	FrontendURL string `db:"frontend_url"`
+	// Theme is the name of the theme resource to use for AI-generated charts.
+	Theme string `db:"theme"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.
@@ -172,6 +174,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
+		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 	}

@@ -219,6 +219,7 @@ message MetricsViewSpec {
     DIMENSION_TYPE_UNSPECIFIED = 0;
     DIMENSION_TYPE_CATEGORICAL = 1;
     DIMENSION_TYPE_TIME = 2;
+    DIMENSION_TYPE_GEOSPATIAL = 3;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -497,6 +498,7 @@ message ExplorePreset {
   optional string timezone = 12;
   optional string time_grain = 13;
   optional string select_time_range = 14;
+  optional string time_dimension = 34;
 
   // Comparison mode.
   ExploreComparisonMode comparison_mode = 7;
@@ -510,6 +512,7 @@ message ExplorePreset {
   optional bool explore_sort_asc = 18;
   optional ExploreSortType explore_sort_type = 19;
   optional string explore_expanded_dimension = 20;
+
 
   // Deprecated
   optional uint32 explore_leaderboard_measure_count = 30;

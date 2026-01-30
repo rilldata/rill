@@ -163,11 +163,13 @@
       class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
         LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
-      bind:clientWidth={leaderboardWrapperWidth}
     >
       {#each visibleDimensions as dimension (dimension.name)}
         {#if dimension.name}
-          <div class="leaderboard-wrapper">
+          <div
+            class="leaderboard-wrapper"
+            bind:clientWidth={leaderboardWrapperWidth}
+          >
             <Leaderboard
               leaderboardShowContextForAllMeasures
               timeControlsReady
@@ -243,7 +245,7 @@
   }
 
   .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-surface size-full;
+    @apply absolute border-[12.5px] pointer-events-none border-surface-card size-full;
     z-index: 20;
   }
 
