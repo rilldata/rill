@@ -1,9 +1,68 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
-import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
-import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
-import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+
+// Format environment name for display
+export function formatEnvironmentName(env: string | undefined): string {
+  if (!env) return "Production";
+  const lower = env.toLowerCase();
+  if (lower === "prod" || lower === "production") return "Production";
+  if (lower === "dev" || lower === "development") return "Development";
+  if (lower === "stage" || lower === "staging") return "Staging";
+  // Capitalize first letter for other environments
+  return env.charAt(0).toUpperCase() + env.slice(1);
+}
+
+// Simple status indicator (green/yellow/red/gray)
+export function getStatusDotClass(status: V1DeploymentStatus): string {
+  switch (status) {
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
+      return "bg-green-500"; // Green - Ready
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING:
+      return "bg-yellow-500"; // Yellow - In progress
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
+      return "bg-red-500"; // Red - Error
+    default:
+      return "bg-gray-400"; // Gray - Not deployed
+  }
+}
+
+export function getStatusLabel(status: V1DeploymentStatus): string {
+  switch (status) {
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
+      return "Ready";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
+      return "Pending";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
+      return "Updating";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING:
+      return "Stopping";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING:
+      return "Deleting";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
+      return "Error";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED:
+      return "Stopped";
+    case V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED:
+      return "Deleted";
+    default:
+      return "Not deployed";
+  }
+}
+
+// Format connector name for display
+export function formatConnectorName(connector: string | undefined): string {
+  if (!connector) return "—";
+  // Capitalize first letter and clean up common names
+  if (connector === "duckdb") return "DuckDB";
+  if (connector === "clickhouse") return "ClickHouse";
+  if (connector === "druid") return "Druid";
+  if (connector === "pinot") return "Pinot";
+  if (connector === "openai") return "OpenAI";
+  if (connector === "claude") return "Claude";
+  return connector.charAt(0).toUpperCase() + connector.slice(1);
+}
 
 export type StatusDisplay = {
   icon: any; // SvelteComponent
@@ -15,88 +74,6 @@ export type StatusDisplay = {
   wrapperClass?: string;
 };
 
-export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
-  {
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "Not deployed",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "Not deployed",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Pending",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Updating",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Stopping",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "Deleting",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "Deleted",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED]: {
-      icon: CancelCircle,
-      iconProps: { className: "text-red-600 hover:text-red-500" },
-      text: "Error",
-      textClass: "text-red-600",
-      wrapperClass: "bg-red-50 border-red-300",
-    },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING]: {
-      icon: CheckCircle,
-      iconProps: { className: "text-primary-600 hover:text-primary-500" },
-      text: "Ready",
-      textClass: "text-primary-600",
-      wrapperClass: "bg-primary-50 border-primary-300",
-    },
-  };
 
 export function getResourceKindTagColor(kind: string) {
   switch (kind) {
