@@ -108,7 +108,7 @@
   }
 </script>
 
-<section class="flex flex-col gap-y-4 size-full">
+<section class="flex flex-col gap-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
   </div>
@@ -124,7 +124,8 @@
             {:else if selectedTypes.length === 1}
               {prettyResourceKind(selectedTypes[0])}
             {:else}
-              {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length - 1} other{selectedTypes.length > 2 ? "s" : ""}
+              {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length -
+                1} other{selectedTypes.length > 2 ? "s" : ""}
             {/if}
             {#if filterDropdownOpen}
               <CaretUpIcon size="12px" />
@@ -139,7 +140,6 @@
           <DropdownMenu.CheckboxItem
             checked={selectedTypes.includes(type)}
             onCheckedChange={() => toggleType(type)}
-            onSelect={(e) => e.preventDefault()}
           >
             {prettyResourceKind(type)}
           </DropdownMenu.CheckboxItem>

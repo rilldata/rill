@@ -167,8 +167,9 @@
       loading={$userStatus.isFetching}
       onClick={() => void githubAccessManager.ensureGithubAccess()}
     >
-      <Github className="w-4 h-4" />
-      Connect to GitHub
+      <Github className="w-5 h-5 flex-shrink-0" />
+      <span class="hidden min-[1200px]:inline">Connect to GitHub</span>
+      <span class="min-[1200px]:hidden">Connect</span>
     </Button>
   </Dialog.Trigger>
   <Dialog.Content class="translate-y-[-200px]">

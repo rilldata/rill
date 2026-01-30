@@ -132,12 +132,10 @@
     {:else}
       {#each logs as log}
         <div class="log-entry {getLevelClass(log.level)}">
-          <span class="log-time">{formatTime(log.time)}</span>
-          <span class="log-level">{getLevelLabel(log.level)}</span>
-          <span class="log-message">{log.message}</span>
-          {#if log.jsonPayload}
-            <span class="log-payload">{log.jsonPayload}</span>
-          {/if}
+          {formatTime(log.time)}
+          {getLevelLabel(log.level)}
+          {log.message}
+          {log.jsonPayload ?? ""}
         </div>
       {/each}
     {/if}
@@ -146,7 +144,7 @@
 
 <style lang="postcss">
   .logs-section {
-    @apply flex flex-col gap-y-2;
+    @apply flex flex-col gap-y-2 min-w-0 overflow-hidden;
   }
 
   .logs-header {
@@ -166,7 +164,7 @@
   }
 
   .logs-container {
-    @apply h-64 overflow-y-auto font-mono text-xs max-w-full;
+    @apply h-64 overflow-y-auto overflow-x-hidden font-mono text-xs;
     @apply bg-surface-background border border-gray-200 rounded-md p-2;
   }
 
@@ -175,26 +173,11 @@
   }
 
   .log-entry {
-    @apply flex flex-wrap gap-x-2 py-0.5;
+    @apply py-0.5 break-words;
+    word-break: break-word;
   }
 
   .log-entry:hover {
     @apply bg-surface-hover;
-  }
-
-  .log-time {
-    @apply text-fg-secondary flex-shrink-0;
-  }
-
-  .log-level {
-    @apply flex-shrink-0 w-12 font-semibold;
-  }
-
-  .log-message {
-    @apply min-w-0 break-all;
-  }
-
-  .log-payload {
-    @apply text-fg-secondary;
   }
 </style>
