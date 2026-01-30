@@ -5,7 +5,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { formatConnectorName } from "../display-utils";
 
-  export let aiConnector: string | undefined;
+  export let aiConnector: { name?: string; type?: string } | undefined;
 </script>
 
 <div class="info-cell">
@@ -28,9 +28,16 @@
   </div>
   <div class="cell-content">
     {#if aiConnector}
-      <span class="connector-name">{formatConnectorName(aiConnector)}</span>
+      <span class="connector-name">
+        {formatConnectorName(aiConnector.name)}
+      </span>
+      <div class="connector-details">
+        <span class="detail-value">
+          {aiConnector.name === "admin" ? "Rill Managed" : aiConnector.type}
+        </span>
+      </div>
     {:else}
-      <span class="connector-name">-</span>
+      <span class="connector-name">Rill Managed</span>
     {/if}
   </div>
 </div>
@@ -54,6 +61,14 @@
 
   .connector-name {
     @apply text-sm font-medium text-gray-900;
+  }
+
+  .connector-details {
+    @apply flex items-center gap-2 text-xs text-gray-600;
+  }
+
+  .detail-value {
+    @apply text-xs text-gray-600;
   }
 
   .info-link {

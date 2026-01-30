@@ -22,7 +22,10 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === olapConnectorName,
   );
-  $: aiConnector = $instanceQuery.data?.instance?.aiConnector;
+  $: aiConnectorName = $instanceQuery.data?.instance?.aiConnector;
+  $: aiConnector = instance?.projectConnectors?.find(
+    (c) => c.name === aiConnectorName,
+  );
 </script>
 
 <!-- Header row with status and version (outside the box) -->
