@@ -3,6 +3,7 @@ package rilltime
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -279,9 +280,14 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 	var rt *Expression
 	var err error
 
-	rt, err = rillTimeParser.ParseString("", from)
-	if err != nil {
-		return nil, err
+	// Try parsing for "inf"
+	if infPattern.MatchString(from) {
+		rt = exprForAllTime(parseOpts)
+	} else {
+		rt, err = rillTimeParser.ParseString("", from)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if rt.Interval != nil {
@@ -322,6 +328,47 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		}
 	} else if parseOpts.DefaultTimeZone != nil {
 		rt.tz = parseOpts.DefaultTimeZone
+	}
+
+	return rt, nil
+}
+
+func ParseISO(duration, offset string, roundToGrain timeutil.TimeGrain, parseOpts ParseOptions) (*Expression, error) {
+	expr := duration
+
+	rt, err := Parse(expr, parseOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	if !infPattern.MatchString(duration) && rt.Interval.StartEnd != nil {
+		snap := ""
+		if roundToGrain != timeutil.TimeGrainUnspecified {
+			snap = reverseGrainMap[roundToGrain]
+		}
+
+		rt.Interval.StartEnd.Start.Points = slices.Delete(rt.Interval.StartEnd.Start.Points, 1, 2)
+		for _, point := range rt.Interval.StartEnd.Start.Points {
+			point.Snap = &snap
+		}
+
+		rt.Interval.StartEnd.End.Points = slices.Delete(rt.Interval.StartEnd.End.Points, 1, 2)
+		if rt.Interval.StartEnd.End != nil {
+			for _, point := range rt.Interval.StartEnd.End.Points {
+				point.Snap = &snap
+			}
+		}
+	}
+
+	if offset != "" {
+		offsetGrainPart, err := parseISODuration(offset)
+		if err != nil {
+			return nil, err
+		}
+
+		rt.Offset = &Offset{
+			Grain: offsetGrainPart,
+		}
 	}
 
 	return rt, nil
@@ -568,43 +615,18 @@ func (i *IsoInterval) previousPeriod(tm time.Time, tz *time.Location) (time.Time
 }
 
 func (l *LegacyISOInterval) expand() (*StartEndInterval, error) {
-	matches := iso8601PartsRegex.FindAllStringSubmatchIndex(l.ISO, -1)
-	parts := make([]*GrainDurationPart, len(matches))
-
-	timePartIndex := strings.Index(l.ISO, "T")
-	// Set the index to the end if "T" doesnt exist. This simplifies the check inside the loop.
-	if timePartIndex == -1 {
-		timePartIndex = len(l.ISO)
+	grainPoint, err := parseISODuration(l.ISO)
+	if err != nil {
+		return nil, err
 	}
 
 	smallestTimeutilGrain := timeutil.TimeGrainYear
 	smallestGrain := "Y"
-
-	for i, match := range matches {
-		if len(match) != 6 {
-			return nil, fmt.Errorf("invalid ISO duration %q", l.ISO)
-		}
-		numStr := l.ISO[match[2]:match[3]]
-		grain := l.ISO[match[4]:match[5]]
-
-		if match[4] > timePartIndex {
-			grain = strings.ToLower(grain)
-		}
-
-		timeutilGrain := grainMap[grain]
+	for _, part := range grainPoint.Duration.Parts {
+		timeutilGrain := grainMap[part.Grain]
 		if timeutilGrain < smallestTimeutilGrain {
 			smallestTimeutilGrain = timeutilGrain
-			smallestGrain = grain
-		}
-
-		num, err := strconv.Atoi(numStr)
-		if err != nil {
-			return nil, err
-		}
-
-		parts[i] = &GrainDurationPart{
-			Num:   num,
-			Grain: grain,
+			smallestGrain = part.Grain
 		}
 	}
 
@@ -619,19 +641,23 @@ func (l *LegacyISOInterval) expand() (*StartEndInterval, error) {
 			},
 		},
 	}
+	offsetPoint := &PointInTimeWithSnap{
+		Grain: &GrainPointInTime{
+			Parts: []*GrainPointInTimePart{offsetGrainPoint},
+		},
+		Snap: &smallestGrain,
+	}
 
 	return &StartEndInterval{
 		Start: &PointInTime{
 			Points: []*PointInTimeWithSnap{
 				{
+					Labeled: &LabeledPointInTime{Ref: true},
+				},
+				offsetPoint,
+				{
 					Grain: &GrainPointInTime{
-						Parts: []*GrainPointInTimePart{
-							{
-								Prefix:   "-",
-								Duration: &GrainDuration{Parts: parts},
-							},
-							offsetGrainPoint,
-						},
+						Parts: []*GrainPointInTimePart{grainPoint},
 					},
 					Snap: &smallestGrain,
 				},
@@ -641,13 +667,8 @@ func (l *LegacyISOInterval) expand() (*StartEndInterval, error) {
 			Points: []*PointInTimeWithSnap{
 				{
 					Labeled: &LabeledPointInTime{Ref: true},
-					Snap:    &smallestGrain,
 				},
-				{
-					Grain: &GrainPointInTime{
-						Parts: []*GrainPointInTimePart{offsetGrainPoint},
-					},
-				},
+				offsetPoint,
 			},
 		},
 	}, nil
@@ -877,37 +898,34 @@ func (g *GrainDurationPart) offset(tm time.Time, dir int, tz *time.Location) (ti
 	return timeutil.OffsetTime(tm, tg, offset, tz), tg
 }
 
-func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
-	// Try parsing for "inf"
-	if infPattern.MatchString(from) {
-		grainAlias := reverseGrainMap[parseOpts.SmallestGrain]
-		return &Expression{
-			Interval: &Interval{
-				StartEnd: &StartEndInterval{
-					Start: &PointInTime{
-						Points: []*PointInTimeWithSnap{
-							{
-								Labeled: &LabeledPointInTime{
-									Earliest: true,
-								},
+func exprForAllTime(parseOpts ParseOptions) *Expression {
+	grainAlias := reverseGrainMap[parseOpts.SmallestGrain]
+	return &Expression{
+		Interval: &Interval{
+			StartEnd: &StartEndInterval{
+				Start: &PointInTime{
+					Points: []*PointInTimeWithSnap{
+						{
+							Labeled: &LabeledPointInTime{
+								Earliest: true,
 							},
 						},
 					},
-					End: &PointInTime{
-						Points: []*PointInTimeWithSnap{
-							{
-								Labeled: &LabeledPointInTime{
-									Latest: true,
-								},
-								Snap: &grainAlias,
+				},
+				End: &PointInTime{
+					Points: []*PointInTimeWithSnap{
+						{
+							Labeled: &LabeledPointInTime{
+								Latest: true,
 							},
-							{
-								Grain: &GrainPointInTime{
-									Parts: []*GrainPointInTimePart{
-										{
-											Prefix:   "+",
-											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: grainAlias, Num: 1}}},
-										},
+							Snap: &grainAlias,
+						},
+						{
+							Grain: &GrainPointInTime{
+								Parts: []*GrainPointInTimePart{
+									{
+										Prefix:   "+",
+										Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: grainAlias, Num: 1}}},
 									},
 								},
 							},
@@ -915,10 +933,50 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 					},
 				},
 			},
-		}, nil
+		},
+	}
+}
+
+func parseISODuration(duration string) (*GrainPointInTimePart, error) {
+	matches := iso8601PartsRegex.FindAllStringSubmatchIndex(duration, -1)
+	parts := make([]*GrainDurationPart, len(matches))
+
+	timePartIndex := strings.Index(duration, "T")
+	// Set the index to the end if "T" doesnt exist. This simplifies the check inside the loop.
+	if timePartIndex == -1 {
+		timePartIndex = len(duration)
 	}
 
-	return nil, nil
+	for i, match := range matches {
+		if len(match) != 6 {
+			return nil, fmt.Errorf("invalid ISO duration %q", duration)
+		}
+		// Match contains start and end indices.
+		// 1st set is for the whole match, 2nd set is for the number, 3rd set is for the grain.
+		numStr := duration[match[2]:match[3]]
+		grain := duration[match[4]:match[5]]
+
+		// Grains in ISO can share characters, like minute and months. Lower case is for time parts vs upper case is for date parts.
+		// So if the grain falls after `T`, then it is a time part.
+		if match[2] > timePartIndex {
+			grain = strings.ToLower(grain)
+		}
+
+		num, err := strconv.Atoi(numStr)
+		if err != nil {
+			return nil, err
+		}
+
+		parts[i] = &GrainDurationPart{
+			Num:   num,
+			Grain: grain,
+		}
+	}
+
+	return &GrainPointInTimePart{
+		Prefix:   "-",
+		Duration: &GrainDuration{Parts: parts},
+	}, nil
 }
 
 // truncateWithCorrection truncates time by a grain but corrects for https://en.wikipedia.org/wiki/ISO_week_date#First_week
