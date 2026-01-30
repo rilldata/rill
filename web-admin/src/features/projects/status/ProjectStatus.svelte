@@ -129,7 +129,6 @@
     if (connector === "anthropic") return "Anthropic";
     return connector.charAt(0).toUpperCase() + connector.slice(1);
   }
-
 </script>
 
 <!-- Header row with status and version (outside the box) -->
