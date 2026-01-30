@@ -3,7 +3,9 @@
   import {
     createAdminServiceIssueMagicAuthToken,
     getAdminServiceListMagicAuthTokensQueryKey,
+    type AdminServiceIssueMagicAuthTokenBody,
   } from "@rilldata/web-admin/client";
+  import { isCanvasDashboardPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import { Button, IconButton } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -15,68 +17,48 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
-  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { Pencil } from "lucide-svelte";
   import { DateTime } from "luxon";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import {
-    convertDateToMinutes,
-    getExploreFields,
-    getSanitizedExploreStateParam,
-    hasDashboardDimensionThresholdFilter,
-    hasDashboardWhereFilter,
-  } from "./form-utils";
+  import CanvasFiltersSection from "./CanvasFiltersSection.svelte";
+  import ExploreFiltersSection from "./ExploreFiltersSection.svelte";
+  import { convertDateToMinutes } from "./form-utils";
 
   const queryClient = useQueryClient();
-  const StateManagers = getStateManagers();
-
-  const {
-    dashboardStore,
-    metricsViewName,
-    selectors: {
-      measures: { visibleMeasures },
-      dimensions: { visibleDimensions },
-    },
-    validSpecStore,
-  } = StateManagers;
 
   $: ({ organization, project, dashboard } = $page.params);
-
-  const timeControlStore = useTimeControlStore(StateManagers);
+  $: ({ instanceId } = $runtime);
+  $: isCanvas = isCanvasDashboardPage($page);
 
   $: isTitleEmpty = $form.title.trim() === "";
-
-  $: exploreFields = getExploreFields(
-    $dashboardStore,
-    $visibleDimensions,
-    $visibleMeasures,
-  );
-
-  $: sanitizedState = getSanitizedExploreStateParam(
-    $dashboardStore,
-    exploreFields,
-    $validSpecStore.data?.explore,
-  );
-
-  $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
-  $: hasDimensionThresholdFilter =
-    hasDashboardDimensionThresholdFilter($dashboardStore);
-  $: hasSomeFilter = hasWhereFilter || hasDimensionThresholdFilter;
 
   let url: string | null = null;
   let setExpiration = false;
   let apiError: string;
   let popoverOpen = false;
   let copied = false;
+
+  // These will be set by the child components via callbacks
+  let hasSomeFilter = false;
+  let dashboardDataProvider:
+    | (() => Partial<AdminServiceIssueMagicAuthTokenBody>)
+    | null = null;
+
+  function handleFilterStateChange(hasFilters: boolean) {
+    hasSomeFilter = hasFilters;
+  }
+
+  function handleProvideFilters(
+    provider: () => Partial<AdminServiceIssueMagicAuthTokenBody>,
+  ) {
+    dashboardDataProvider = provider;
+  }
 
   const formId = "create-public-url-form";
 
@@ -101,29 +83,21 @@
         const values = form.data;
 
         try {
-          const filter = hasSomeFilter
-            ? mergeDimensionAndMeasureFilters(
-                $dashboardStore.whereFilter,
-                $dashboardStore.dimensionThresholdFilters,
-              )
-            : undefined;
-          // TODO : add a check upstream to make sure if filter exists, metricsViewName is defined
-          const metricsViewFilters = filter
-            ? { [$metricsViewName]: filter }
-            : undefined;
+          if (!dashboardDataProvider) {
+            throw new Error("Dashboard data provider not initialized");
+          }
+
+          const dashboardData = dashboardDataProvider();
 
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
             org: organization,
             project,
             data: {
-              resourceType: ResourceKind.Explore as string,
+              ...dashboardData,
               resourceName: dashboard,
-              metricsViewFilters,
-              fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
-              state: sanitizedState ? sanitizedState : undefined,
               displayName: values.title,
             },
           });
@@ -174,53 +148,52 @@
       Create a shareable public URL for this view.
     </h3>
 
-    {#if !url}
-      <div class="flex flex-col gap-y-1 mt-4">
-        <Input
-          id="name-input"
-          bind:value={$form.title}
-          placeholder="Label this URL"
-        />
-      </div>
+    <div class="flex flex-col gap-y-1 mt-4">
+      <Input
+        id="name-input"
+        bind:value={$form.title}
+        placeholder="Label this URL"
+      />
+    </div>
 
-      <div class="mt-4" class:mb-4={!hasSomeFilter}>
-        <div class="flex items-center gap-x-2">
-          <Switch small id="has-expiration" bind:checked={setExpiration} />
-          <Label class="text-xs" for="has-expiration">Set expiration</Label>
+    <div class="mt-4" class:mb-4={!hasSomeFilter}>
+      <div class="flex items-center gap-x-2">
+        <Switch small id="has-expiration" bind:checked={setExpiration} />
+        <Label class="text-xs" for="has-expiration">Set expiration</Label>
+      </div>
+      {#if setExpiration}
+        <div class="flex items-center gap-x-1 pl-[30px]">
+          <label for="expires-at" class="text-fg-secondary font-medium">
+            Access expires {new Date($form.expiresAt).toLocaleDateString(
+              "en-US",
+              { year: "numeric", month: "short", day: "numeric" },
+            )}
+          </label>
+          <Popover bind:open={popoverOpen}>
+            <PopoverTrigger>
+              <IconButton ariaLabel="Edit expiration date">
+                <Pencil size="14px" class="text-primary-600" />
+              </IconButton>
+            </PopoverTrigger>
+            <PopoverContent align="end" class="p-0" strategy="fixed">
+              <Calendar
+                selection={DateTime.fromISO($form.expiresAt)}
+                singleDaySelection
+                maxDate={maxExpirationDate}
+                firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
+                onSelectDay={(date) => {
+                  $form.expiresAt = date.toISO();
+                  popoverOpen = false;
+                }}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
-        {#if setExpiration}
-          <div class="flex items-center gap-x-1 pl-[30px]">
-            <label for="expires-at" class="text-fg-secondary font-medium">
-              Access expires {new Date($form.expiresAt).toLocaleDateString(
-                "en-US",
-                { year: "numeric", month: "short", day: "numeric" },
-              )}
-            </label>
-            <Popover bind:open={popoverOpen}>
-              <PopoverTrigger>
-                <IconButton ariaLabel="Edit expiration date">
-                  <Pencil size="14px" class="text-primary-600" />
-                </IconButton>
-              </PopoverTrigger>
-              <PopoverContent align="end" class="p-0" strategy="fixed">
-                <Calendar
-                  selection={DateTime.fromISO($form.expiresAt)}
-                  singleDaySelection
-                  maxDate={maxExpirationDate}
-                  firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
-                  onSelectDay={(date) => {
-                    $form.expiresAt = date.toISO();
-                    popoverOpen = false;
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        {/if}
-      </div>
+      {/if}
+    </div>
 
-      <!-- TODO: revisit when time range lock is implemented -->
-      <!-- <div class="mt-4" class:mb-4={!hasWhereFilter}>
+    <!-- TODO: revisit when time range lock is implemented -->
+    <!-- <div class="mt-4" class:mb-4={!hasWhereFilter}>
       <div class="flex items-center gap-x-2">
         <Switch small id="lock-time-range" bind:checked={lockTimeRange} />
 
@@ -247,29 +220,18 @@
       {/if}
     </div> -->
 
-      {#if hasSomeFilter}
-        <hr class="mt-4 mb-4" />
-
-        <div class="flex flex-col gap-y-1">
-          <p class="text-xs text-fg-primary font-normal">
-            The following filters will be locked and hidden:
-          </p>
-          <div class="flex flex-row gap-1 mt-2">
-            <ExploreFilterChipsReadOnly
-              metricsViewNames={[$metricsViewName]}
-              filters={$dashboardStore.whereFilter}
-              dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}
-              dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
-              queryTimeStart={$timeControlStore.timeStart}
-              queryTimeEnd={$timeControlStore.timeEnd}
-            />
-          </div>
-        </div>
-
-        <p class="text-xs text-fg-primary font-normal mt-4 mb-4">
-          Measures and dimensions will be limited to current visible set.
-        </p>
-      {/if}
+    {#if isCanvas && instanceId}
+      <CanvasFiltersSection
+        {dashboard}
+        {instanceId}
+        onFilterStateChange={handleFilterStateChange}
+        onProvideFilters={handleProvideFilters}
+      />
+    {:else}
+      <ExploreFiltersSection
+        onFilterStateChange={handleFilterStateChange}
+        onProvideFilters={handleProvideFilters}
+      />
     {/if}
 
     <Button

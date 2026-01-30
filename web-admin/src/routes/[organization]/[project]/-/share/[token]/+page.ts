@@ -18,25 +18,41 @@ export const load = async ({
     throw error(404, "Unable to find the token's resource");
   }
 
-  const exploreName = tokenMetadata.resources.find(
+  // Check for explore resource
+  const exploreResource = tokenMetadata.resources.find(
     (r) => r.type === ResourceKind.Explore,
-  ); // Assumes only one explore per token
+  );
 
-  if (!exploreName) {
-    console.error("Token does not have an associated explore");
-    throw error(404, "Unable to find an explore");
+  // Check for canvas resource
+  const canvasResource = tokenMetadata.resources.find(
+    (r) => r.type === ResourceKind.Canvas,
+  );
+
+  if (!exploreResource && !canvasResource) {
+    console.error("Token does not have an associated explore or canvas");
+    throw error(404, "Unable to find a dashboard");
   }
 
+  // Determine which resource type to redirect to
+  const resourceType = exploreResource ? "explore" : "canvas";
+  const resourceName = exploreResource?.name || canvasResource?.name;
+
   const redirectUrl = new URL(
-    `/${organization}/${project}/-/share/${token}/explore/${exploreName.name}`,
+    `/${organization}/${project}/-/share/${token}/${resourceType}/${resourceName}`,
     url.origin,
   );
 
   // Get the initial state from the token
   if (tokenResp?.token?.state) {
-    redirectUrl.search = new URLSearchParams({
-      state: tokenResp.token.state,
-    }).toString();
+    if (canvasResource) {
+      // For canvas, state is already URL params, use them directly
+      redirectUrl.search = tokenResp.token.state;
+    } else {
+      // For explore, state is proto-serialized, wrap in state param
+      redirectUrl.search = new URLSearchParams({
+        state: tokenResp.token.state,
+      }).toString();
+    }
   }
 
   throw redirect(307, redirectUrl.toString());
