@@ -48,7 +48,7 @@
 
   // Create form directly from schema using factory function
   const {
-    form: paramsForm,
+    form: form,
     errors: paramsErrors,
     enhance: paramsEnhance,
     tainted: paramsTainted,
@@ -64,7 +64,7 @@
   const formManager = new AddDataFormManager({
     connector,
     formType,
-    formStore: paramsForm,
+    formStore: form,
     errorsStore: paramsErrors,
     getSelectedAuthMethod: () =>
       get(connectorStepStore).selectedAuthMethod ?? undefined,
@@ -89,8 +89,8 @@
   $: stepState = $connectorStepStore;
 
   // Form IDs
-  const paramsFormId = formManager.paramsFormId;
-  let multiStepFormId = paramsFormId;
+  const baseFormId = formManager.formId;
+  let multiStepFormId = baseFormId;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
@@ -116,12 +116,12 @@
 
     const requiredFields = getRequiredFieldsForValues(
       connectorSchema,
-      $paramsForm,
+      $form,
       isConnectorForm ? "connector" : "source",
     );
     for (const field of requiredFields) {
-      if (!isVisibleForValues(connectorSchema, field, $paramsForm)) continue;
-      const value = $paramsForm[field];
+      if (!isVisibleForValues(connectorSchema, field, $form)) continue;
+      const value = $form[field];
       const errorsForField = $paramsErrors[field] as any;
       if (isEmpty(value) || errorsForField?.length) return true;
     }
@@ -129,13 +129,13 @@
   })();
 
   $: formId = isStepFlowConnector
-    ? multiStepFormId || paramsFormId
-    : paramsFormId;
+    ? multiStepFormId || baseFormId
+    : baseFormId;
 
   $: submitting = $paramsSubmitting;
 
   // Get button labels from schema (e.g., rill-managed ClickHouse uses "Connect")
-  $: schemaButtonLabels = getSchemaButtonLabels(connectorSchema, $paramsForm);
+  $: schemaButtonLabels = getSchemaButtonLabels(connectorSchema, $form);
 
   $: primaryButtonLabel = isStepFlowConnector
     ? multiStepButtonLabel
@@ -176,7 +176,7 @@
     saveAnyway = true;
     const result = await formManager.saveConnectorAnyway({
       queryClient,
-      values: $paramsForm,
+      values: $form,
     });
     if (result.ok) {
       onClose();
@@ -191,7 +191,7 @@
     stepState,
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
-    paramsFormValues: $paramsForm,
+    formValues: $form,
   });
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
   $: saveAnywayLoading = submitting && saveAnyway;
@@ -233,11 +233,11 @@
         <MultiStepConnectorFlow
           {connector}
           {formManager}
-          {paramsForm}
+          {form}
           {paramsErrors}
           {paramsEnhance}
           {paramsSubmit}
-          {paramsFormId}
+          {baseFormId}
           {onStringInputChange}
           {handleFileUpload}
           submitting={$paramsSubmitting}
@@ -250,14 +250,14 @@
         />
       {:else if connectorSchema}
         <AddDataFormSection
-          id={paramsFormId}
+          id={baseFormId}
           enhance={paramsEnhance}
           onSubmit={paramsSubmit}
         >
           <JSONSchemaFormRenderer
             schema={connectorSchema}
             step={isConnectorForm ? "connector" : "source"}
-            form={paramsForm}
+            form={form}
             errors={$paramsErrors}
             {onStringInputChange}
             {handleFileUpload}

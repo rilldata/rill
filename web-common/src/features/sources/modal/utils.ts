@@ -109,22 +109,22 @@ function hasAllRequiredFieldsValid(
  */
 export function isMultiStepConnectorDisabled(
   schema: MultiStepFormSchema | null,
-  paramsFormValue: Record<string, unknown>,
-  paramsFormErrors: ValidationErrors,
+  formValues: Record<string, unknown>,
+  formErrors: ValidationErrors,
   step?: "connector" | "source" | string,
 ): boolean {
   if (!schema) return true;
 
   const currentStep =
-    step || (paramsFormValue?.__step as string | undefined) || "connector";
+    step || (formValues?.__step as string | undefined) || "connector";
 
   // Check for "public" auth method which should always enable the button
   const authInfo = getRadioEnumOptions(schema);
   const authKey = authInfo?.key || findRadioEnumKey(schema);
   if (authKey) {
     const methodFromForm =
-      paramsFormValue?.[authKey] != null
-        ? String(paramsFormValue[authKey])
+      formValues?.[authKey] != null
+        ? String(formValues[authKey])
         : undefined;
     if (methodFromForm === "public") return false;
   }
@@ -133,14 +133,14 @@ export function isMultiStepConnectorDisabled(
   // based on actual form values (handles nested conditions like connector_type + connection_mode)
   const required = getRequiredFieldsForStep(
     schema,
-    paramsFormValue,
+    formValues,
     currentStep,
   );
   return !hasAllRequiredFieldsValid(
     schema,
     required,
-    paramsFormValue,
-    paramsFormErrors,
+    formValues,
+    formErrors,
     currentStep,
   );
 }

@@ -64,7 +64,7 @@ const BUTTON_LABELS = {
 
 export class AddDataFormManager {
   formHeight: string;
-  paramsFormId: string;
+  formId: string;
 
   // Form stores (passed in from caller)
   private formStore: FormStore;
@@ -117,7 +117,7 @@ export class AddDataFormManager {
     const effectiveSchemaName = this.schemaName;
 
     // IDs
-    this.paramsFormId = `add-data-${effectiveSchemaName}-form`;
+    this.formId = `add-data-${effectiveSchemaName}-form`;
 
     const schema = getConnectorSchema(effectiveSchemaName);
 
@@ -492,14 +492,14 @@ export class AddDataFormManager {
     stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
-    paramsFormValues: Record<string, unknown>;
+    formValues: Record<string, unknown>;
   }): string {
     const connector = this.connector;
     const {
       stepState,
       isMultiStepConnector,
       isConnectorForm,
-      paramsFormValues,
+      formValues,
     } = ctx;
 
     const schema = getConnectorSchema(this.schemaName);
@@ -581,18 +581,18 @@ export class AddDataFormManager {
     // Multi-step connectors (S3, GCS, Azure)
     if (isMultiStepConnector) {
       if (stepState?.step === "connector") {
-        return getConnectorYamlPreview(paramsFormValues);
+        return getConnectorYamlPreview(formValues);
       } else {
         const combinedValues = {
           ...(stepState?.connectorConfig || {}),
-          ...paramsFormValues,
+          ...formValues,
         } as Record<string, unknown>;
         return getSourceYamlPreview(combinedValues);
       }
     }
 
-    if (isConnectorForm) return getConnectorYamlPreview(paramsFormValues);
-    return getSourceYamlPreview(paramsFormValues);
+    if (isConnectorForm) return getConnectorYamlPreview(formValues);
+    return getSourceYamlPreview(formValues);
   }
 
   /**

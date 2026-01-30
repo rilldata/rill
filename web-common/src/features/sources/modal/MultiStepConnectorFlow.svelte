@@ -17,7 +17,7 @@
 
   export let connector: V1ConnectorDriver;
   export let formManager: AddDataFormManager;
-  export let paramsForm: any;
+  export let form: any;
   export let paramsErrors: any;
   export let paramsEnhance: any;
   export let paramsSubmit: (
@@ -25,7 +25,7 @@
       currentTarget: EventTarget & HTMLFormElement;
     },
   ) => unknown;
-  export let paramsFormId: string;
+  export let baseFormId: string;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
   export let submitting: boolean;
@@ -35,7 +35,7 @@
   export let primaryButtonLabel = "";
   export let primaryLoadingCopy = "";
   export let isSubmitDisabled = true;
-  export let formId = paramsFormId;
+  export let formId = baseFormId;
   export let shouldShowSkipLink = false;
 
   const selectedAuthMethodStore = {
@@ -80,7 +80,7 @@
       ...stepState.connectorConfig,
       ...initialValues,
     };
-    paramsForm.update(() => combinedValues, { taint: false });
+    form.update(() => combinedValues, { taint: false });
   }
 
   // Restore defaults (and persisted auth) when returning to connector step.
@@ -89,7 +89,7 @@
     const schema = connector.name
       ? getConnectorSchema(connector.name) || null
       : null;
-    paramsForm.update(
+    form.update(
       (_$current) => {
         const base = schema
           ? getSchemaInitialValues(schema, { step: "connector" })
@@ -127,7 +127,7 @@
       if (fallback !== stepState.selectedAuthMethod) {
         setAuthMethod(fallback ?? null);
         if (fallback && authKey) {
-          paramsForm.update(($form) => {
+          form.update(($form) => {
             if ($form[authKey] !== fallback) $form[authKey] = fallback;
             return $form;
           });
@@ -142,7 +142,7 @@
   $: if (activeSchema) {
     const authKey = findRadioEnumKey(activeSchema);
     if (authKey) {
-      const currentValue = $paramsForm?.[authKey] as string | undefined;
+      const currentValue = $form?.[authKey] as string | undefined;
       const normalized = currentValue ? String(currentValue) : null;
       if (normalized !== (stepState.selectedAuthMethod ?? null)) {
         setAuthMethod(normalized);
@@ -152,10 +152,10 @@
 
   // Active auth method for UI (button labels/loading).
   $: activeAuthMethod = (() => {
-    if (!(activeSchema && paramsForm)) return selectedAuthMethod;
+    if (!(activeSchema && form)) return selectedAuthMethod;
     const authKey = findRadioEnumKey(activeSchema);
-    if (authKey && $paramsForm?.[authKey] != null) {
-      return String($paramsForm[authKey]);
+    if (authKey && $form?.[authKey] != null) {
+      return String($form[authKey]);
     }
     return selectedAuthMethod;
   })();
@@ -163,7 +163,7 @@
   // CTA and disable state for multi-step connectors.
   $: isSubmitDisabled = isMultiStepConnectorDisabled(
     activeSchema,
-    $paramsForm,
+    $form,
     $paramsErrors,
     stepState.step,
   );
@@ -179,20 +179,20 @@
       : activeAuthMethod === "public"
         ? "Continuing..."
         : "Testing connection...";
-  $: formId = paramsFormId;
+  $: formId = baseFormId;
   $: shouldShowSkipLink =
     stepState.step === "connector" && formManager.isMultiStepConnector;
 </script>
 
 <AddDataFormSection
-  id={paramsFormId}
+  id={baseFormId}
   enhance={paramsEnhance}
   onSubmit={paramsSubmit}
 >
   <JSONSchemaFormRenderer
     schema={activeSchema}
     step={stepState.step}
-    form={paramsForm}
+    form={form}
     errors={$paramsErrors}
     {onStringInputChange}
     {handleFileUpload}
