@@ -86,13 +86,13 @@
     const classesToAdd = ["text-right"];
     const classesToRemove = [
       "border-b",
-      "bg-surface-base",
+      "bg-surface-hover",
       "bg-gray-100",
       "bg-gray-200",
       "bg-primary-50",
       "bg-primary-100",
       "bg-primary-200",
-      "bg-surface-base",
+      "bg-surface-hover/50",
       "bg-gray-100",
       "bg-gray-200",
     ];
@@ -215,7 +215,8 @@
     );
     if (x > 0) {
       element.classList.remove(
-        "bg-surface-background",
+        "bg-surface-hover",
+        "bg-surface-hover/50",
         "bg-gray-100",
         "bg-gray-200",
       );
@@ -246,7 +247,7 @@
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
-    data.element.classList.add("bg-surface-background", "z-10");
+    data.element.classList.add("bg-surface-base", "z-10");
     if (data.x === 0) {
       const pinIcon = getPinIcon();
       return `
