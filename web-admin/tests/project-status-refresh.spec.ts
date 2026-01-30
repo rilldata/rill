@@ -34,13 +34,14 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
 
   test("should show Full Refresh option for sources", async ({ adminPage }) => {
     // Wait for the source row to be visible before interacting
-    await expect(adminPage.getByText("auction_data_raw")).toBeVisible({
+    // Look for bids_data_raw source which should be in the openrtb test project
+    await expect(adminPage.getByText("bids_data_raw")).toBeVisible({
       timeout: 60_000,
     });
 
     // Find a source row and click its actions menu
     const sourceRow = adminPage.locator(".row").filter({
-      hasText: "auction_data_raw",
+      hasText: "bids_data_raw",
     });
     // Target the dropdown menu trigger specifically (rows may have multiple buttons)
     await sourceRow.locator("[data-melt-dropdown-menu-trigger]").click();

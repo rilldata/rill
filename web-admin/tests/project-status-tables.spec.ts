@@ -25,11 +25,11 @@ test.describe("Project Status - Model Overview", () => {
     const viewsLabel = adminPage.locator("span", { hasText: /^Views$/ });
     await expect(viewsLabel).toBeVisible();
 
-    // OLAP Engine card - shows "OLAP (Rill Managed)" for DuckDB
-    await expect(adminPage.getByText("OLAP (Rill Managed)")).toBeVisible();
+    // OLAP Engine card - shows "DuckDB" for the connector name and "Rill-Managed" for provision type
+    await expect(adminPage.getByText("DuckDB")).toBeVisible();
 
-    // OLAP Engine should show "duckdb" for the openrtb project
-    await expect(adminPage.getByText("duckdb")).toBeVisible({
+    // OLAP Engine should show "Rill-Managed" for the openrtb project (Rill-provisioned)
+    await expect(adminPage.getByText("Rill-Managed")).toBeVisible({
       timeout: 15_000,
     });
   });
