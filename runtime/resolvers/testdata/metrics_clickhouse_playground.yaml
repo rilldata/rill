@@ -53,15 +53,13 @@ tests:
       dimensions:
         - name: type
       measures:
-        - name: total_transactions
+        - name: distinct_county_count
+      where:
+        cond:
+          op: eq
+          exprs:
+            - name: type
+            - val: 'terraced'
     result:
-      - total_transactions: 602799
-        type: other
-      - total_transactions: 9.142255e+06
+      - distinct_county_count: 132
         type: terraced
-      - total_transactions: 8.409109e+06
-        type: semi-detached
-      - total_transactions: 7.107089e+06
-        type: detached
-      - total_transactions: 5.552052e+06
-        type: flat
