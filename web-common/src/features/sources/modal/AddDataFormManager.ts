@@ -12,7 +12,7 @@ import { normalizeConnectorError } from "./utils";
 import {
   getConnectorSchema,
   getFormHeight,
-  isExplorerConnector as isExplorerConnectorSchema,
+  hasExplorerStep as hasExplorerStepSchema,
   isMultiStepConnector as isMultiStepConnectorSchema,
 } from "./connector-schemas";
 import {
@@ -138,9 +138,9 @@ export class AddDataFormManager {
     return isMultiStepConnectorSchema(schema);
   }
 
-  get isExplorerConnector(): boolean {
+  get hasExplorerStep(): boolean {
     const schema = getConnectorSchema(this.schemaName);
-    return isExplorerConnectorSchema(schema);
+    return hasExplorerStepSchema(schema);
   }
 
   /**
@@ -187,7 +187,7 @@ export class AddDataFormManager {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (this.isMultiStepConnector && stepState.step === "source") {
       setStep("connector");
-    } else if (this.isExplorerConnector && stepState.step === "explorer") {
+    } else if (this.hasExplorerStep && stepState.step === "explorer") {
       setStep("connector");
     } else {
       onBack();
@@ -209,7 +209,7 @@ export class AddDataFormManager {
       selectedAuthMethod,
     } = args;
     const isStepFlowConnector =
-      this.isMultiStepConnector || this.isExplorerConnector;
+      this.isMultiStepConnector || this.hasExplorerStep;
 
     // Use schema-provided button labels when available (e.g., rill-managed ClickHouse)
     if (schemaButtonLabels && step === "connector") {
@@ -257,7 +257,7 @@ export class AddDataFormManager {
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
     const isMultiStep = isMultiStepConnectorSchema(schema);
-    const isExplorer = isExplorerConnectorSchema(schema);
+    const isExplorer = hasExplorerStepSchema(schema);
     const isStepFlowConnector = isMultiStep || isExplorer;
     const isConnectorForm = this.formType === "connector";
 

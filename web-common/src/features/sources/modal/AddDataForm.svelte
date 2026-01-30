@@ -72,8 +72,8 @@
   });
 
   const isMultiStepConnector = formManager.isMultiStepConnector;
-  const isExplorerConnector = formManager.isExplorerConnector;
-  const isStepFlowConnector = isMultiStepConnector || isExplorerConnector;
+  const hasExplorerStep = formManager.hasExplorerStep;
+  const isStepFlowConnector = isMultiStepConnector || hasExplorerStep;
   const isSourceForm = formManager.isSourceForm;
   const isConnectorForm = formManager.isConnectorForm;
   let activeAuthMethod: string | null = null;
