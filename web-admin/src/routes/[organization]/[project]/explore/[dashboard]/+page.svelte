@@ -82,7 +82,15 @@
   );
 
   onNavigate(({ from, to }) => {
-    viewAsUserStore.set(null);
+    // Only clear "View As" state when navigating outside of the current project
+    const changedProject =
+      !from ||
+      !to ||
+      from.params.organization !== to.params.organization ||
+      from.params.project !== to.params.project;
+    if (changedProject) {
+      viewAsUserStore.set(null);
+    }
     errorStore.reset();
 
     const changedDashboard =
