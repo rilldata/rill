@@ -31,7 +31,7 @@ export type JSONSchemaField = {
   "x-accept"?: string;
   "x-informational"?: boolean;
   "x-docs-url"?: string;
-  "x-internal"?: boolean;
+  "x-ui-only"?: boolean;
   /**
    * Explicit grouping for radio/select options: maps an option value to the
    * child field keys that should render beneath that option.

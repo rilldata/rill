@@ -19,7 +19,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "self-hosted",
       "x-display": "radio",
       "x-enum-labels": ["Rill-managed ClickHouse", "Self-hosted ClickHouse"],
-      "x-internal": true,
+      "x-ui-only": true,
       "x-grouped-fields": {
         "rill-managed": ["managed"],
         "self-hosted": ["connection_mode"],
@@ -32,7 +32,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "parameters",
       "x-display": "tabs",
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
-      "x-internal": true,
+      "x-ui-only": true,
       "x-tab-group": {
         parameters: [
           "host",

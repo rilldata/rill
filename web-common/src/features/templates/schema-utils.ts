@@ -94,7 +94,7 @@ export function getSchemaFieldMetaList(
       default: prop.default,
       enum: prop.enum,
       informational: Boolean(prop["x-informational"]),
-      internal: Boolean(prop["x-internal"]),
+      internal: Boolean(prop["x-ui-only"]),
     }));
 }
 
@@ -181,7 +181,7 @@ export function filterSchemaInternalValues(
       const prop = properties[key] as JSONSchemaField | undefined;
       if (!prop) return false;
       if (!isStepMatch(schema, key, opts?.step)) return false;
-      return !prop["x-internal"];
+      return !prop["x-ui-only"];
     }),
   );
 }
