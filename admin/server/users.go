@@ -137,7 +137,11 @@ func (s *Server) computePylonEmailHash(email string) string {
 	if s.opts.PylonIdentitySecret == "" {
 		return ""
 	}
-	h := hmac.New(sha256.New, []byte(s.opts.PylonIdentitySecret))
+	secretBytes, err := hex.DecodeString(s.opts.PylonIdentitySecret)
+	if err != nil {
+		return ""
+	}
+	h := hmac.New(sha256.New, secretBytes)
 	h.Write([]byte(email))
 	return hex.EncodeToString(h.Sum(nil))
 }
