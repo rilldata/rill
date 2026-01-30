@@ -20,6 +20,7 @@
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
 
   export let connector: V1ConnectorDriver;
+  export let connectorInstanceName: string | null = null;
   export let onClose: () => void;
   export let onBack: () => void;
 
@@ -56,6 +57,7 @@
   const formManager = new AddDataFormManager({
     connector,
     formType: "connector",
+    connectorInstanceName,
     onParamsUpdate: forwardOnUpdate,
     onDsnUpdate: (_e: any) => {},
     getSelectedAuthMethod: () => activeAuthMethod ?? undefined,
@@ -87,14 +89,21 @@
 
   $: selectedAuthMethod = $selectedAuthMethodStore;
 
+  // Use connector instance name from prop or store (store is set during multi-step flow)
+  $: effectiveConnectorInstanceName = connectorInstanceName ?? stepState.connectorInstanceName;
+
   // Initialize (and clear) source step values whenever we enter the source step.
   $: if (stepState.step === "source") {
     const sourceProperties = connector.sourceProperties ?? [];
     const initialValues = getInitialFormValuesFromProperties(sourceProperties);
-    const combinedValues = {
+    const combinedValues: Record<string, unknown> = {
       ...initialValues,
       ...(stepState.connectorConfig ?? {}),
     };
+    // If we have a connector instance name, use it for create_secrets_from_connectors
+    if (effectiveConnectorInstanceName) {
+      combinedValues.create_secrets_from_connectors = effectiveConnectorInstanceName;
+    }
     paramsForm.update(() => combinedValues, { taint: false });
   }
 

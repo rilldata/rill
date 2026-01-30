@@ -16,6 +16,7 @@
   import {
     createRuntimeServiceCreateDirectory,
     createRuntimeServicePutFile,
+    createRuntimeServiceAnalyzeConnectors,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
@@ -31,6 +32,8 @@
   import { getName } from "./name-utils";
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
+  import { connectorIconMapping } from "../connectors/connector-icon-mapping";
+  import { getConnectorIconKey } from "../connectors/connectors-utils";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { Wand } from "lucide-svelte";
 
@@ -67,6 +70,37 @@
   );
 
   $: metricsViews = $metricsViewQuery?.data ?? [];
+
+  // Get connector resources to check for reconcile errors
+  $: connectorResourcesQuery = useFilteredResources(
+    instanceId,
+    ResourceKind.Connector,
+  );
+  // Create a set of connector names that have reconcile errors
+  $: connectorErrors = new Set(
+    ($connectorResourcesQuery?.data ?? [])
+      .filter((r) => r.meta?.reconcileError)
+      .map((r) => r.meta?.name?.name),
+  );
+
+  // Connectors for import data modal (object stores, warehouses, SQL stores)
+  $: connectors = createRuntimeServiceAnalyzeConnectors(instanceId, {
+    query: {
+      select: (data) => {
+        if (!data?.connectors) return;
+        const filtered = data.connectors
+          .filter(
+            (c) =>
+              c?.driver?.implementsObjectStore ||
+              c?.driver?.implementsWarehouse ||
+              c?.driver?.implementsSqlStore,
+          )
+          .sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+        return { connectors: filtered };
+      },
+    },
+  });
+  $: connectorsData = $connectors.data?.connectors ?? [];
 
   async function wrapNavigation(toPath: string | undefined) {
     if (!toPath) return;
@@ -184,25 +218,84 @@
       <svelte:component this={Database} color="#C026D3" size="16px" />
       Data
     </DropdownMenu.Item>
-    <DropdownMenu.Item
-      aria-label="Add Model"
-      class="flex gap-x-2"
-      disabled={!isModelingSupported}
-      on:click={() => handleAddResource(ResourceKind.Model)}
-    >
-      <svelte:component
-        this={resourceIconMapping[ResourceKind.Model]}
-        size="16px"
-      />
-      <div class="flex flex-col items-start">
-        Model
-        {#if !isModelingSupported}
-          <span class="text-fg-secondary text-xs">
-            Requires a supported OLAP driver
-          </span>
-        {/if}
-      </div>
-    </DropdownMenu.Item>
+    {#if connectorsData.length > 0 && isModelingSupported}
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger
+          class="flex gap-x-2"
+          disabled={!isModelingSupported}
+        >
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Model]}
+            size="16px"
+          />
+          <div class="flex flex-col items-start">
+            Model
+            {#if !isModelingSupported}
+              <span class="text-fg-secondary text-xs">
+                Requires a supported OLAP driver
+              </span>
+            {/if}
+          </div>
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
+          {#each connectorsData as connector (connector.name)}
+            {#if connector?.driver?.name}
+              {@const hasError = connectorErrors.has(connector.name)}
+              <DropdownMenu.Item
+                class="flex gap-x-2 {hasError ? 'text-red-600' : ''}"
+                disabled={hasError}
+                on:click={() => {
+                  addSourceModal.open(connector.driver?.name, connector.name);
+                }}
+              >
+                <svelte:component
+                  this={connectorIconMapping[getConnectorIconKey(connector)]}
+                  size="16px"
+                />
+                {connector.driver?.displayName ?? connector.name} ({connector.name})
+              </DropdownMenu.Item>
+            {/if}
+          {/each}
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            aria-label="Blank file"
+            class="flex gap-x-2"
+            disabled={!isModelingSupported}
+            on:click={() => handleAddResource(ResourceKind.Model)}
+          >
+            <File size="16px" />
+            <div class="flex flex-col items-start">
+              Blank file
+              {#if !isModelingSupported}
+                <span class="text-fg-secondary text-xs">
+                  Requires a supported OLAP driver
+                </span>
+              {/if}
+            </div>
+          </DropdownMenu.Item>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+    {:else}
+      <DropdownMenu.Item
+        aria-label="Model"
+        class="flex gap-x-2"
+        disabled={!isModelingSupported}
+        on:click={() => handleAddResource(ResourceKind.Model)}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Model]}
+          size="16px"
+        />
+        <div class="flex flex-col items-start">
+          Model
+          {#if !isModelingSupported}
+            <span class="text-fg-secondary text-xs">
+              Requires a supported OLAP driver
+            </span>
+          {/if}
+        </div>
+      </DropdownMenu.Item>
+    {/if}
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
@@ -273,7 +366,7 @@
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent class="w-[240px]">
+      <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
           <Folder size="14px" class="stroke-icon-muted" /> Folder
         </DropdownMenu.Item>

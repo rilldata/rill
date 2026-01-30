@@ -215,7 +215,8 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
-): Promise<void> {
+  skipNavigation: boolean = false,
+): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
 
@@ -250,12 +251,12 @@ export async function submitAddConnectorForm(
         newConnectorName,
         instanceId,
       );
-      return;
+      return newConnectorName;
     } else if (!existingSubmission.completed) {
       // If Test and Connect is clicked while another operation is running,
       // wait for it to complete
       await existingSubmission.promise;
-      return;
+      return existingSubmission.connectorName;
     }
   }
 
@@ -357,8 +358,10 @@ export async function submitAddConnectorForm(
         );
       }
 
-      // Go to the new connector file
-      await goto(`/files/${newConnectorFilePath}`);
+      // Go to the new connector file (unless skipNavigation for multi-step flows)
+      if (!skipNavigation) {
+        await goto(`/files/${newConnectorFilePath}`);
+      }
     } catch (error) {
       // If the operation was aborted, don't treat it as an error
       if (abortController.signal.aborted) {
@@ -406,6 +409,8 @@ export async function submitAddConnectorForm(
 
   // Wait for the submission to complete
   await submissionPromise;
+
+  return newConnectorName;
 }
 
 export async function submitAddSourceForm(

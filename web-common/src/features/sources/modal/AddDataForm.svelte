@@ -32,6 +32,7 @@
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
+  export let connectorInstanceName: string | null = null;
   export let isSubmitting: boolean;
   export let onBack: () => void;
   export let onClose: () => void;
@@ -63,6 +64,7 @@
     formManager = new AddDataFormManager({
       connector,
       formType,
+      connectorInstanceName,
       onParamsUpdate: (e: any) => handleOnUpdate(e),
       onDsnUpdate: (e: any) => handleOnUpdate(e),
       getSelectedAuthMethod: () => undefined,
@@ -454,6 +456,7 @@
         {#key connector.name}
           <ConnectorForm
             {connector}
+            {connectorInstanceName}
             {onClose}
             {onBack}
             bind:isSubmitDisabled={multiStepSubmitDisabled}

@@ -14,6 +14,7 @@
   import { navigationOpen } from "../navigation/Navigation.svelte";
   import { workspaces } from "./workspace-stores";
   import ConnectorRefreshButton from "@rilldata/web-common/features/connectors/ConnectorRefreshButton.svelte";
+  import ConnectorAddModelButton from "@rilldata/web-common/features/connectors/ConnectorAddModelButton.svelte";
 
   export let resourceKind: ResourceKind | undefined;
   export let titleInput: string;
@@ -71,16 +72,16 @@
       />
     </div>
 
-    {#if isConnector}
-      <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
-    {/if}
-
     <div class="flex items-center gap-x-2 w-fit flex-none">
-      <slot name="workspace-controls" {width} />
+      {#if isConnector}
+                <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
 
-      <div class="flex-none">
-        <slot name="cta" {width} />
-      </div>
+          <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
+
+      {/if}
+
+      <slot name="workspace-controls" {width} />
+      <slot name="cta" {width} />
 
       {#if showTableToggle}
         <Tooltip distance={8}>
