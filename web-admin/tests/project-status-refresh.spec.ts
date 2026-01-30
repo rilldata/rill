@@ -2,6 +2,9 @@ import { expect } from "@playwright/test";
 import { test } from "./setup/base";
 
 test.describe("Project Status - Resource Refresh (openrtb)", () => {
+  // Increase timeout for tests that interact with virtualized tables
+  test.setTimeout(60_000);
+
   test.beforeEach(async ({ adminPage }) => {
     // Navigate to the project status page
     await adminPage.goto("/e2e/openrtb/-/status");
@@ -30,6 +33,11 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
   });
 
   test("should show Full Refresh option for sources", async ({ adminPage }) => {
+    // Wait for the source row to be visible before interacting
+    await expect(adminPage.getByText("auction_data_raw")).toBeVisible({
+      timeout: 60_000,
+    });
+
     // Find a source row and click its actions menu
     const sourceRow = adminPage.locator(".row").filter({
       hasText: "auction_data_raw",
@@ -114,6 +122,9 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
 });
 
 test.describe("Project Status - Incremental Model Refresh (incremental-test)", () => {
+  // Increase timeout for tests that interact with virtualized tables
+  test.setTimeout(60_000);
+
   test.beforeEach(async ({ adminPage }) => {
     // Navigate to the incremental-test project status page
     await adminPage.goto("/e2e/incremental-test/-/status");

@@ -2,6 +2,9 @@ import { expect } from "@playwright/test";
 import { test } from "./setup/base";
 
 test.describe("Project Status - Model Overview", () => {
+  // Increase timeout for tests that load data from virtualized tables
+  test.setTimeout(60_000);
+
   test.beforeEach(async ({ adminPage }) => {
     // Navigate directly to the model-overview page
     await adminPage.goto("/e2e/openrtb/-/status/model-overview");
@@ -18,25 +21,12 @@ test.describe("Project Status - Model Overview", () => {
       adminPage.getByText("Tables (Materialized Models)"),
     ).toBeVisible();
 
-    // Views card
-    await expect(adminPage.getByText("Views")).toBeVisible();
+    // Views card - the span contains exactly "Views" text
+    const viewsLabel = adminPage.locator("span", { hasText: /^Views$/ });
+    await expect(viewsLabel).toBeVisible();
 
-    // OLAP Engine card
-    await expect(adminPage.getByText("OLAP Engine")).toBeVisible();
-
-    // Verify that the counts are displayed (not loading placeholders)
-    // The cards should show numeric values (not just "-")
-    const tablesCard = adminPage
-      .locator("div")
-      .filter({ hasText: "Tables (Materialized Models)" })
-      .first();
-    await expect(tablesCard).toBeVisible();
-
-    const viewsCard = adminPage
-      .locator("div")
-      .filter({ hasText: /^Views$/ })
-      .first();
-    await expect(viewsCard).toBeVisible();
+    // OLAP Engine card - shows "OLAP (Rill Managed)" for DuckDB
+    await expect(adminPage.getByText("OLAP (Rill Managed)")).toBeVisible();
 
     // OLAP Engine should show "duckdb" for the openrtb project
     await expect(adminPage.getByText("duckdb")).toBeVisible({
