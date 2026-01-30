@@ -429,7 +429,8 @@ func convertTool(tool *aiv1.Tool) (anthropic.BetaToolUnionParam, error) {
 func convertResponseMessage(msg *anthropic.BetaMessage) (*aiv1.CompletionMessage, error) {
 	var blocks []*aiv1.ContentBlock
 
-	for _, block := range msg.Content {
+	for idx := range msg.Content {
+		block := msg.Content[idx] // Note: Separate line to avoid lint error about copying large structs
 		switch block.Type {
 		case "text":
 			blocks = append(blocks, &aiv1.ContentBlock{
