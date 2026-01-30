@@ -18,7 +18,8 @@
   // Determine if we should use org-level popover:
   // - When at org level (no project param) and user is org admin
   // - OR when the view-as was activated at org level (sourceProject is "__org_level__")
-  $: isOrgLevelViewAs = $viewAsUserStateStore$?.sourceProject === "__org_level__";
+  $: isOrgLevelViewAs =
+    $viewAsUserStateStore$?.sourceProject === "__org_level__";
   $: isAtOrgLevel = !$page.params.project;
   $: useOrgPopover = isOrgAdmin && (isAtOrgLevel || isOrgLevelViewAs);
 

@@ -94,7 +94,8 @@
   // Determine if we should show the ViewAsUserChip
   // Show if there's an active view-as AND it's valid for the current context
   $: showViewAsChip =
-    $viewAsUserStore && isViewAsValidForProject($viewAsUserStateStore$, project);
+    $viewAsUserStore &&
+    isViewAsValidForProject($viewAsUserStateStore$, project);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
