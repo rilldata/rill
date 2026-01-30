@@ -164,8 +164,8 @@
   }
 
   :global(.wrapper > button) {
-    @apply border;
-    @apply px-2 flex items-center justify-center bg-surface;
+    @apply border text-fg-primary;
+    @apply px-2 flex items-center justify-center bg-surface-background;
   }
 
   :global(.wrapper > button:focus) {
@@ -180,12 +180,12 @@
   }
 
   :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-gray-50 cursor-pointer;
+    @apply bg-surface-hover cursor-pointer;
   }
 
   /* Doest apply to all instances except alert/report. So this seems unintentional
   :global(.wrapper > [data-state="open"]) {
-    @apply bg-gray-50 border-gray-400 z-50;
+    @apply bg-surface-background border-gray-400 z-50;
   }
   */
 </style>

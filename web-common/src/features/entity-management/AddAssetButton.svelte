@@ -1,12 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { File } from "lucide-svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
-  import File from "../../components/icons/File.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -29,10 +29,7 @@
     useFileNamesInDirectory,
   } from "./file-selectors";
   import { getName } from "./name-utils";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "./resource-icon-mapping";
+  import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { Wand } from "lucide-svelte";
@@ -161,7 +158,7 @@
       builders={[builder]}
       label="Add Asset"
       class="w-full"
-      type="subtle"
+      type="secondary"
       selected={active}
     >
       <PlusCircleIcon size="14px" />
@@ -195,13 +192,12 @@
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.Model]}
-        color={resourceColorMapping[ResourceKind.Model]}
         size="16px"
       />
       <div class="flex flex-col items-start">
         Model
         {#if !isModelingSupported}
-          <span class="text-gray-500 text-xs">
+          <span class="text-fg-secondary text-xs">
             Requires a supported OLAP driver
           </span>
         {/if}
@@ -214,7 +210,6 @@
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
-        color={resourceColorMapping[ResourceKind.MetricsView]}
         size="16px"
       />
       Metrics view
@@ -239,13 +234,14 @@
       <div class="flex gap-x-2 items-center">
         <svelte:component
           this={resourceIconMapping[ResourceKind.Explore]}
-          color={resourceColorMapping[ResourceKind.Explore]}
           size="16px"
         />
         <div class="flex flex-col items-start">
           Explore dashboard
           {#if metricsViews.length === 0}
-            <span class="text-gray-500 text-xs"> Requires a metrics view </span>
+            <span class="text-fg-secondary text-xs">
+              Requires a metrics view
+            </span>
           {/if}
         </div>
       </div>
@@ -262,13 +258,14 @@
       <div class="flex gap-x-2 items-center">
         <svelte:component
           this={resourceIconMapping[ResourceKind.Canvas]}
-          color={resourceColorMapping[ResourceKind.Canvas]}
           size="16px"
         />
         <div class="flex flex-col items-start">
           Canvas dashboard
           {#if metricsViews.length === 0}
-            <span class="text-gray-500 text-xs"> Requires a metrics view </span>
+            <span class="text-fg-secondary text-xs">
+              Requires a metrics view
+            </span>
           {/if}
         </div>
       </div>
@@ -278,16 +275,17 @@
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
-          <Folder size="16px" /> Folder
+          <Folder size="14px" class="stroke-icon-muted" /> Folder
         </DropdownMenu.Item>
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
-          <File size="16px" /> Blank file
+          <File size="14px" class="stroke-icon-muted" /> Blank file
         </DropdownMenu.Item>
         <DropdownMenu.Item
           class="flex gap-x-2"
           on:click={() => (generateDataDialog = true)}
         >
-          <Wand size="14px" /> Generate data using AI (beta)
+          <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
+          using AI (beta)
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
@@ -296,7 +294,6 @@
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.API]}
-            color={resourceColorMapping[ResourceKind.API]}
             size="16px"
           />
           API
@@ -309,7 +306,6 @@
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.Theme]}
-            color={resourceColorMapping[ResourceKind.Theme]}
             size="16px"
           />
           Theme
@@ -318,7 +314,7 @@
         <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Report)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
-              className="text-gray-900"
+              className="text-fg-primary"
               size="16px"
             />
             Report
@@ -326,7 +322,7 @@
           <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Alert)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
-              className="text-gray-900"
+              className="text-fg-primary"
               size="16px"
             />
             Alert

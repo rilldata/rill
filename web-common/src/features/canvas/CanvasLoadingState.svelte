@@ -25,7 +25,7 @@
   {:else}
     <header
       role="presentation"
-      class="bg-background border-b py-4 px-2 w-full h-[100px] select-none z-50 flex items-center justify-center"
+      class="bg-surface-background border-b py-4 px-2 w-full h-[100px] select-none z-50 flex items-center justify-center"
     ></header>
     <div class="size-full flex justify-center items-center">
       <DelayedSpinner isLoading={true} size="48px" />

@@ -369,13 +369,13 @@
     </div>
     {#if ($projectMembersInfiniteQuery?.isFetchingNextPage ?? false) || ($projectInvitesInfiniteQuery?.isFetchingNextPage ?? false)}
       <div class="flex items-center justify-center py-2">
-        <span class="text-xs text-gray-500">Loading more…</span>
+        <span class="text-xs text-fg-secondary">Loading more…</span>
       </div>
     {/if}
     <div class="h-px" bind:this={loadMoreTrigger} />
   </div>
-  <div class="mt-2 general-access-container bg-white pt-2">
-    <div class="text-xs text-gray-500 font-semibold uppercase">
+  <div class="mt-2 general-access-container bg-popover pt-2">
+    <div class="text-xs text-fg-secondary font-semibold uppercase">
       General Access
     </div>
     <Tooltip
@@ -397,7 +397,7 @@
         <GeneralAccessSelectorDropdown {organization} {project} />
 
         {#if hasAutogroupMembers}
-          {#each projectMemberUserGroupsList as group}
+          {#each projectMemberUserGroupsList as group, i (i)}
             {#if group.groupName === "autogroup:members"}
               <UsergroupSetRole {organization} {project} {group} />
             {/if}
@@ -407,7 +407,7 @@
 
       <TooltipContent slot="tooltip-content">
         <ul>
-          {#each userGroupMemberUsers.slice(0, 6) as user}
+          {#each userGroupMemberUsers.slice(0, 6) as user, i (i)}
             <div class="flex items-center gap-1 py-1">
               <Avatar
                 src={user.userPhotoUrl}
@@ -427,11 +427,11 @@
     </Tooltip>
   </div>
 </div>
-<div class="flex flex-row items-center px-3.5 py-3 border-t border-gray-200">
+<div class="flex flex-row items-center px-3.5 py-3 border-t">
   <a
     href="https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions#project-level-permissions"
     target="_blank"
-    class="text-xs text-primary-600 hover::text-primary-700"
+    class="text-xs text-primary-600 hover:text-primary-700"
     >Learn more about sharing</a
   >
   <div class="grow"></div>
