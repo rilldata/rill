@@ -24,14 +24,15 @@
     DEFAULT_TIMEZONES,
   } from "@rilldata/web-common/lib/time/config";
   import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
 
   import CanvasTabs from "./CanvasTabs.svelte";
 
-  import DefaultFilterDisplay from "./DefaultFilterDisplay.svelte";
   import { goto } from "$app/navigation";
+  import DefaultFilterDisplay from "./DefaultFilterDisplay.svelte";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -91,6 +92,18 @@
   $: themeNames = ($themesQuery?.data ?? [])
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
+
+  $: defaultThemeQuery = createRuntimeServiceGetInstance(
+    instanceId,
+    undefined,
+    {
+      query: {
+        select: (data) => data?.instance?.theme,
+      },
+    },
+  );
+
+  $: projectDefaultTheme = $defaultThemeQuery?.data;
 
   $: showFilterBar = $filtersEnabledStore;
   $: embeddedTheme = $_embeddedTheme;
@@ -228,6 +241,7 @@
         small
         {theme}
         {themeNames}
+        {projectDefaultTheme}
         onThemeChange={async (value) => {
           if (!value) {
             await updateProperties({}, ["theme"]);

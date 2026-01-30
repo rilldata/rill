@@ -269,7 +269,7 @@
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex flex-col h-fit justify-center;
+    @apply flex flex-col h-fit justify-center text-fg-primary;
   }
 
   .sm {
@@ -311,7 +311,7 @@
   .multiline-input {
     @apply p-0;
     @apply size-full;
-    @apply outline-none border-0 placeholder-fg-secondary;
+    @apply outline-none border-0 placeholder-fg-muted;
     @apply cursor-text;
     vertical-align: middle;
   }

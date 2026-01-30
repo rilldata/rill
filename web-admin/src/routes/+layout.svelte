@@ -38,12 +38,12 @@
     projectPermissions,
     organizationPermissions,
     organization: organizationObj,
-    organizationFaviconUrl,
     planDisplayName,
   } = data);
 
+  $: organizationFaviconUrl = organizationObj?.faviconUrl;
   $: organizationLogoUrl = getThemedLogoUrl(
-    $themeControl as "light" | "dark",
+    $themeControl,
     organizationObj as V1Organization | undefined,
   );
 

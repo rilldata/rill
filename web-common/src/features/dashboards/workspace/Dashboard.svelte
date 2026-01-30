@@ -1,16 +1,20 @@
 <script lang="ts">
-  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { onDestroy } from "svelte";
+  import { readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { activeDashboardTheme } from "../../themes/active-dashboard-theme";
+  import { createResolvedThemeStore } from "../../themes/selectors";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
@@ -18,12 +22,10 @@
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
+  import ThemeProvider from "../ThemeProvider.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
-  import ThemeProvider from "../ThemeProvider.svelte";
-  import { createResolvedThemeStore } from "../../themes/selectors";
-  import { readable, type Readable } from "svelte/store";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -126,6 +128,12 @@
   $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
 
   $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
+
+  // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
+  $: activeDashboardTheme.set($theme);
+
+  // Clear the active theme when this dashboard is destroyed
+  onDestroy(() => activeDashboardTheme.set(undefined));
 </script>
 
 <ThemeProvider theme={$theme}>

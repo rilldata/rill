@@ -5,7 +5,7 @@
     V1AssertionStatus,
     type V1AlertExecution,
     type V1AssertionResult,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 
   export let alertTime: string;
   export let timeZone: string;
