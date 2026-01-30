@@ -6652,6 +6652,8 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      pylonEmailHash:
+        type: string
   v1UserAuthToken:
     type: object
     properties:

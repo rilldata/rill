@@ -1568,6 +1568,7 @@ export interface V1User {
   quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
+  pylonEmailHash?: string;
 }
 
 export type V1UserAuthTokenAttributes = { [key: string]: unknown };

@@ -14959,6 +14959,11 @@ export class User extends Message<User> {
    */
   updatedOn?: Timestamp;
 
+  /**
+   * @generated from field: string pylon_email_hash = 8;
+   */
+  pylonEmailHash = "";
+
   constructor(data?: PartialMessage<User>) {
     super();
     proto3.util.initPartial(data, this);
@@ -14974,6 +14979,7 @@ export class User extends Message<User> {
     { no: 5, name: "quotas", kind: "message", T: UserQuotas },
     { no: 6, name: "created_on", kind: "message", T: Timestamp },
     { no: 7, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 8, name: "pylon_email_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): User {

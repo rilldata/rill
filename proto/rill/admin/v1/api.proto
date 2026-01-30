@@ -2986,6 +2986,7 @@ message User {
   UserQuotas quotas = 5;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp updated_on = 7;
+  string pylon_email_hash = 8;
 }
 
 message Service {
