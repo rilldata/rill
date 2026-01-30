@@ -99,16 +99,16 @@
 
   {#if clipboardSupported && !disabled}
     <Tooltip.Content
-      class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-gray-700 dark:bg-gray-900 text-surface"
+      class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-tooltip text-fg-inverse"
       sideOffset={16}
     >
       <FormattedDataType
-        customStyle="font-semibold"
+        customStyle="font-semibold !text-fg-inverse"
         isNull={value === null || value === undefined}
         type={dataType}
         {value}
       />
-      <div class="flex flex-row gap-x-6 items-baseline text-gray-100">
+      <div class="flex flex-row gap-x-6 items-baseline text-fg-muted">
         <div>
           <StackingWord key="shift">Copy</StackingWord>
           this value to clipboard
@@ -129,16 +129,10 @@
   }
 
   td.comparison-cell {
-    @apply bg-surface px-1 truncate;
+    @apply bg-transparent px-1 truncate;
   }
 
   td.dimension-cell {
-    @apply sticky left-0 z-30 bg-surface;
-  }
-
-  :global(tr:hover td.dimension-cell),
-  :global(tr:hover td.measure-cell),
-  :global(tr:hover td.comparison-cell) {
-    @apply bg-gray-100;
+    @apply sticky left-0 z-30;
   }
 </style>

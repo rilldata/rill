@@ -479,7 +479,15 @@ export function getTimeRange(
       end: new Date(selectedTimeRange.end),
     };
   } else if (selectedTimeRange?.name) {
-    if (selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
+    if (selectedTimeRange.start && selectedTimeRange.end) {
+      // Time range already resolved.
+      timeRange = {
+        name: selectedTimeRange.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+        interval: selectedTimeRange.interval,
+      };
+    } else if (selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
       const minTimeUnit =
         V1TimeGrainToDateTimeUnit[
           minTimeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED
@@ -492,13 +500,6 @@ export function getTimeRange(
         selectedTimezone,
         minTimeUnit,
       );
-    } else if (selectedTimeRange.start) {
-      timeRange = {
-        name: selectedTimeRange.name,
-        start: selectedTimeRange.start,
-        end: selectedTimeRange.end,
-        interval: selectedTimeRange.interval,
-      };
     } else {
       timeRange = isoDurationToFullTimeRange(
         selectedTimeRange?.name,

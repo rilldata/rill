@@ -97,7 +97,7 @@
               >
                 {annotation.description}
               </div>
-              <div class="text-muted-foreground font-normal text-sm">
+              <div class="text-fg-secondary font-normal text-sm">
                 {annotation.formattedTimeOrRange}
               </div>
             </div>
@@ -105,7 +105,7 @@
           {#if hasMoreAnnotations && !showingMore}
             <button
               on:click={() => (showingMore = true)}
-              class="flex flex-row items-center gap-x-1 mb-1 p-1 text-sm text-muted-foreground hover:bg-accent hover:rounded-sm outline-0"
+              class="flex flex-row items-center gap-x-1 mb-1 p-1 text-sm text-fg-secondary hover:bg-popover-accent hover:rounded-sm outline-0"
             >
               <ThreeDot className="rotate-90" size="16px" />
               <span>See more</span>
