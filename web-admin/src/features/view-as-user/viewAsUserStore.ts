@@ -5,9 +5,14 @@ export interface ViewAsUserState {
   user: V1User;
   /**
    * The project where "View As" was activated.
-   * If null, it means the user is an org-level admin and can view as across all projects.
+   * Used for querying users in the dropdown.
    */
-  projectContext: string | null;
+  sourceProject: string;
+  /**
+   * If true, the user is an org-level admin and the view-as persists across all projects.
+   * If false, the view-as is scoped to the sourceProject only.
+   */
+  isOrgLevel: boolean;
 }
 
 const viewAsUserStateStore = writable<ViewAsUserState | null>(null);
@@ -15,13 +20,15 @@ const viewAsUserStateStore = writable<ViewAsUserState | null>(null);
 /**
  * Sets the "View As" user with the project context.
  * @param user The user to view as
- * @param projectContext The project where this was activated. Pass null for org-level admins.
+ * @param sourceProject The project where this was activated (used for querying users)
+ * @param isOrgLevel Whether this is an org-level view-as that persists across projects
  */
 export function setViewAsUser(
   user: V1User,
-  projectContext: string | null,
+  sourceProject: string,
+  isOrgLevel: boolean,
 ): void {
-  viewAsUserStateStore.set({ user, projectContext });
+  viewAsUserStateStore.set({ user, sourceProject, isOrgLevel });
 }
 
 /**
@@ -32,20 +39,20 @@ export function clearViewAsUser(): void {
 }
 
 /**
- * Checks if "View As" is valid for the given project.
+ * Checks if "View As" is valid for the given project context.
  * Returns true if:
  * - No "View As" is active (nothing to validate)
- * - The "View As" was activated at org-level (projectContext is null)
- * - The "View As" was activated for this specific project
+ * - The "View As" is org-level (persists across all contexts)
+ * - The current project matches the source project
  */
 export function isViewAsValidForProject(
   state: ViewAsUserState | null,
-  currentProject: string | null,
+  currentProject: string | null | undefined,
 ): boolean {
   if (!state) return true; // No view-as active
-  if (state.projectContext === null) return true; // Org-level admin
-  if (!currentProject) return false; // View-as active but no current project
-  return state.projectContext === currentProject;
+  if (state.isOrgLevel) return true; // Org-level persists everywhere
+  if (!currentProject) return false; // Project-scoped but no current project
+  return state.sourceProject === currentProject;
 }
 
 /**
@@ -55,7 +62,6 @@ export const viewAsUserStateStore$ = viewAsUserStateStore;
 
 /**
  * Derived store that provides just the user for backward compatibility.
- * @deprecated Use viewAsUserStateStore$ for full context
  */
 export const viewAsUserStore = derived(
   viewAsUserStateStore,

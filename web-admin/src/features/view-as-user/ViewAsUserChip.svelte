@@ -13,6 +13,11 @@
   export let isOrgAdmin: boolean = false;
 
   let active: boolean;
+
+  // Use the current project if available, otherwise fall back to the source project
+  // where view-as was originally activated
+  $: projectForUserQuery =
+    $page.params.project ?? $viewAsUserStateStore$?.sourceProject;
 </script>
 
 <DropdownMenu.Root bind:open={active}>
@@ -38,7 +43,7 @@
   >
     <ViewAsUserPopover
       organization={$page.params.organization}
-      project={$page.params.project ?? $viewAsUserStateStore$?.projectContext}
+      project={projectForUserQuery}
       onSelectUser={() => (active = false)}
       isOrgLevel={isOrgAdmin}
     />

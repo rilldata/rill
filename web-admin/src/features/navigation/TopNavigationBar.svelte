@@ -78,25 +78,23 @@
   $: isOrgAdmin = !!manageOrgMembers;
 
   // Check if the current "View As" state is valid for the current context
-  // Clear it if navigating to a project where it's not valid (for project-level admins)
+  // Clear it if navigating to a context where it's not valid (for project-level admins)
   $: {
     const viewAsState = $viewAsUserStateStore$;
-    if (viewAsState) {
-      // If we're on an org page (no project) and the view-as was project-scoped, clear it
-      if (!project && viewAsState.projectContext !== null) {
-        clearViewAsUser();
-      }
-      // If we're on a different project and the view-as was project-scoped, clear it
-      else if (project && !isViewAsValidForProject(viewAsState, project)) {
+    if (viewAsState && !viewAsState.isOrgLevel) {
+      // For project-scoped view-as, clear when:
+      // - Navigating to org page (no project)
+      // - Navigating to a different project
+      if (!project || viewAsState.sourceProject !== project) {
         clearViewAsUser();
       }
     }
   }
 
   // Determine if we should show the ViewAsUserChip
+  // Show if there's an active view-as AND it's valid for the current context
   $: showViewAsChip =
-    $viewAsUserStore &&
-    (isOrgAdmin || isViewAsValidForProject($viewAsUserStateStore$, project));
+    $viewAsUserStore && isViewAsValidForProject($viewAsUserStateStore$, project);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";

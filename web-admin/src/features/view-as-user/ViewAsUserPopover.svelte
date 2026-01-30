@@ -21,12 +21,17 @@
     organization,
     project,
     { emailQuery: "%", pageSize: 1000, pageToken: undefined },
+    {
+      query: {
+        enabled: !!organization && !!project,
+      },
+    },
   );
 
   function handleViewAsUser(user: V1User) {
-    // If org-level, pass null for projectContext so it persists across projects
-    // If project-level, pass the current project so it's scoped to this project
-    setViewAsUser(user, isOrgLevel ? null : project);
+    // Always store the source project for querying users later
+    // isOrgLevel determines whether view-as persists across projects
+    setViewAsUser(user, project, isOrgLevel);
     errorStore.reset();
     onSelectUser(user);
   }
