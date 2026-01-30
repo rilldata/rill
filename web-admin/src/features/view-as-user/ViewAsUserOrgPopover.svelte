@@ -1,8 +1,8 @@
 <script lang="ts">
   import * as Command from "@rilldata/web-common/components/command/index.js";
   import {
-    createAdminServiceListProjectsForOrganization,
-    createAdminServiceSearchProjectUsers,
+    createAdminServiceListOrganizationMemberUsers,
+    type V1OrganizationMemberUser,
     type V1User,
   } from "../../client";
   import { errorStore } from "../../components/errors/error-store";
@@ -11,12 +11,10 @@
   export let organization: string;
   export let onSelectUser: (user: V1User) => void;
 
-  let selectedProject: string | null = null;
-
-  // Fetch projects for the organization
-  $: projectsQuery = createAdminServiceListProjectsForOrganization(
+  // Fetch all users in the organization
+  $: orgUsersQuery = createAdminServiceListOrganizationMemberUsers(
     organization,
-    { pageSize: 100 },
+    { pageSize: 1000 },
     {
       query: {
         enabled: !!organization,
@@ -24,35 +22,28 @@
     },
   );
 
-  // Fetch users for the selected project
-  $: projectUsersQuery = createAdminServiceSearchProjectUsers(
-    organization,
-    selectedProject ?? "",
-    { emailQuery: "%", pageSize: 1000, pageToken: undefined },
-    {
-      query: {
-        enabled: !!organization && !!selectedProject,
-      },
-    },
-  );
+  $: orgMembers = $orgUsersQuery.data?.members ?? [];
 
-  $: projects = $projectsQuery.data?.projects ?? [];
-  $: users = $projectUsersQuery.data?.users ?? [];
-
-  function handleSelectProject(projectName: string) {
-    selectedProject = projectName;
+  // Convert V1OrganizationMemberUser to V1User format
+  function memberToUser(member: V1OrganizationMemberUser): V1User {
+    return {
+      id: member.userId,
+      email: member.userEmail,
+      displayName: member.userName,
+      photoUrl: member.userPhotoUrl,
+    };
   }
 
-  function handleViewAsUser(user: V1User) {
-    if (!selectedProject) return;
-    // Org-level view-as persists across projects
-    setViewAsUser(user, selectedProject, true);
+  function handleViewAsUser(member: V1OrganizationMemberUser) {
+    const user = memberToUser(member);
+    // Org-level view-as: use a placeholder project name since we're at org level
+    // The actual project context will be set when navigating to a project
+    // For now, we need to pick the first project the user has access to
+    // Since this is org-level, we set isOrgLevel=true and sourceProject to empty
+    // The sourceProject will be used for the dropdown, but at org level we use org members API
+    setViewAsUser(user, "__org_level__", true);
     errorStore.reset();
     onSelectUser(user);
-  }
-
-  function handleBack() {
-    selectedProject = null;
   }
 </script>
 
@@ -61,59 +52,19 @@
     target="_blank"
     href="https://docs.rilldata.com/build/metrics-view/security#rill-cloud"
     >security policies</a
-  > by viewing this project from the perspective of another user.
+  > by viewing this organization from the perspective of another user.
 </div>
 
-{#if !selectedProject}
-  <!-- Project Selection -->
-  <Command.Root>
-    <Command.Input placeholder="Search for a project" />
-    <Command.List>
-      <Command.Empty>No projects found.</Command.Empty>
-      <Command.Group heading="Select a project">
-        {#each projects as project}
-          <Command.Item onSelect={() => handleSelectProject(project.name)}>
-            {project.name}
-          </Command.Item>
-        {/each}
-      </Command.Group>
-    </Command.List>
-  </Command.Root>
-{:else}
-  <!-- User Selection -->
-  <button
-    class="flex items-center gap-1 text-xs text-primary-500 hover:text-primary-600 mb-2 px-1"
-    on:click={handleBack}
-  >
-    <svg
-      class="w-3 h-3"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M15 19l-7-7 7-7"
-      />
-    </svg>
-    Back to projects
-  </button>
-  <div class="text-xs text-fg-muted mb-2 px-1">
-    Project: <span class="font-medium">{selectedProject}</span>
-  </div>
-  <Command.Root>
-    <Command.Input placeholder="Search for users" />
-    <Command.List>
-      <Command.Empty>No users found.</Command.Empty>
-      <Command.Group heading="Users">
-        {#each users as user}
-          <Command.Item onSelect={() => handleViewAsUser(user)}>
-            {user.email}
-          </Command.Item>
-        {/each}
-      </Command.Group>
-    </Command.List>
-  </Command.Root>
-{/if}
+<Command.Root>
+  <Command.Input placeholder="Search for users" />
+  <Command.List>
+    <Command.Empty>No users found.</Command.Empty>
+    <Command.Group heading="Organization Members">
+      {#each orgMembers as member}
+        <Command.Item onSelect={() => handleViewAsUser(member)}>
+          {member.userEmail}
+        </Command.Item>
+      {/each}
+    </Command.Group>
+  </Command.List>
+</Command.Root>
