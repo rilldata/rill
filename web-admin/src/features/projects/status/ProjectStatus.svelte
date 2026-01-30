@@ -23,7 +23,6 @@
   import ProjectClone from "./ProjectClone.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let organization: string;
   export let project: string;
@@ -131,10 +130,6 @@
     return connector.charAt(0).toUpperCase() + connector.slice(1);
   }
 
-  function handleEditInWeb() {
-    // TODO: Navigate to edit route
-    console.log("Edit in web");
-  }
 </script>
 
 <!-- Header row with status and version (outside the box) -->

@@ -5,9 +5,7 @@
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
-  $: basePage = `/${organization}/${project}/-/status`;
+  $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   const navItems = [
     {
