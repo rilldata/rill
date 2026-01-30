@@ -40,7 +40,7 @@ export function buildPickerTree(pickerItems: PickerItem[]): PickerTree {
   const boundaryIndices = new Set<string>();
   let prevItem: PickerItem | null = null;
   let firstBoundary: string | null = null;
-  rootNodes.forEach((rootNode, i) => {
+  rootNodes.forEach((rootNode) => {
     if (rootNode.item.currentlyActive || rootNode.item.recentlyUsed) {
       if (!firstBoundary) firstBoundary = rootNode.item.id;
       boundaryIndices.add(rootNode.item.id);
