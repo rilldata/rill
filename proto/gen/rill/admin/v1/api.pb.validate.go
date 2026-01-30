@@ -41388,6 +41388,8 @@ func (m *User) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for PylonEmailHash
+
 	if len(errors) > 0 {
 		return UserMultiError(errors)
 	}

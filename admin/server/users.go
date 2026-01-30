@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -116,12 +119,27 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 		return nil, err
 	}
 
+	user := userToPB(u)
+	// Add Pylon identity verification hash if secret is configured
+	user.PylonEmailHash = s.computePylonEmailHash(u.Email)
+
 	return &adminv1.GetCurrentUserResponse{
-		User: userToPB(u),
+		User: user,
 		Preferences: &adminv1.UserPreferences{
 			TimeZone: &u.PreferenceTimeZone,
 		},
 	}, nil
+}
+
+// computePylonEmailHash computes HMAC-SHA256 hash of email for Pylon identity verification.
+// Returns empty string if secret is not configured.
+func (s *Server) computePylonEmailHash(email string) string {
+	if s.opts.PylonIdentitySecret == "" {
+		return ""
+	}
+	h := hmac.New(sha256.New, []byte(s.opts.PylonIdentitySecret))
+	h.Write([]byte(email))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateUserPreferencesRequest) (*adminv1.UpdateUserPreferencesResponse, error) {

@@ -82,6 +82,7 @@ type Config struct {
 	GithubClientSecret        string                 `split_words:"true"`
 	GithubManagedAccount      string                 `split_words:"true"`
 	AssetsBucket              string                 `split_words:"true"`
+	PylonIdentitySecret       string                 `split_words:"true"`
 	// AssetsBucketGoogleCredentialsJSON is only required to be set for local development.
 	// For production use cases the service account will be directly attached to pods which is the recommended way of setting credentials.
 	AssetsBucketGoogleCredentialsJSON string `split_words:"true"`
@@ -367,6 +368,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubClientSecret:     conf.GithubClientSecret,
 					GithubManagedAccount:   conf.GithubManagedAccount,
 					AssetsBucket:           conf.AssetsBucket,
+					PylonIdentitySecret:    conf.PylonIdentitySecret,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
