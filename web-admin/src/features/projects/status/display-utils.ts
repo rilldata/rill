@@ -5,6 +5,19 @@ import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFi
 import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
+// Format connector name for display
+export function formatConnectorName(connector: string | undefined): string {
+  if (!connector) return "—";
+  // Capitalize first letter and clean up common names
+  if (connector === "duckdb") return "DuckDB";
+  if (connector === "clickhouse") return "ClickHouse";
+  if (connector === "druid") return "Druid";
+  if (connector === "pinot") return "Pinot";
+  if (connector === "openai") return "OpenAI";
+  if (connector === "claude") return "Claude";
+  return connector.charAt(0).toUpperCase() + connector.slice(1);
+}
+
 export type StatusDisplay = {
   icon: any; // SvelteComponent
   iconProps?: {

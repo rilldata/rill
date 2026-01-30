@@ -9,6 +9,7 @@
     type V1OlapTableInfo,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { formatConnectorName } from "@rilldata/web-admin/features/projects/status/display-utils";
 
   $: ({ instanceId } = $runtime);
 
@@ -18,7 +19,12 @@
     { sensitive: true },
     { query: { enabled: !!instanceId } },
   );
-  $: olapEngine = $instanceQuery.data?.instance?.olapConnector || "-";
+  $: instance = $instanceQuery.data?.instance;
+  $: olapConnectorName = instance?.olapConnector;
+  $: olapConnector = instance?.projectConnectors?.find(
+    (c) => c.name === olapConnectorName,
+  );
+  $: olapEngine = formatConnectorName(olapConnector?.type) || "-";
 
   // Get tables list
   $: tablesList = useTablesList(instanceId, "");
