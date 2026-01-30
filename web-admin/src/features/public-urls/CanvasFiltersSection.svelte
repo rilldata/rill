@@ -94,7 +94,7 @@
 
   <div class="flex flex-col gap-y-1">
     <p class="text-xs text-fg-primary font-normal">
-      The following filters will be locked and hidden:
+      The following filters will be locked:
     </p>
     {#if canvasAppliedFiltersStore}
       <div class="flex flex-col gap-2 my-2">
