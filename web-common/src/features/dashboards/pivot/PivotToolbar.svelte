@@ -135,7 +135,7 @@
     {#if !isFlat}
       <div class="flex items-center gap-x-2 pointer-events-auto">
         <Tooltip location="bottom" alignment="start" distance={8}>
-          <span class="text-fg-muted pl-2">Row limit</span>
+          <span class="text-fg-secondary pl-2">Row limit</span>
           <TooltipContent slot="tooltip-content">
             Only up to top N child rows are shown under each dimension
           </TooltipContent>
