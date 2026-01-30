@@ -3315,13 +3315,13 @@ definitions:
   explore_time_range_properties:
     oneOf:
       - type: string
-        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/developers/build/metrics-view/time-series/time-syntax#extensions) extensions for the selection
+        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection
       - type: object
         description: Object containing time range and comparison configuration
         properties:
           range:
             type: string
-            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/developers/build/metrics-view/time-series/time-syntax#extensions) extensions for the selection
+            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection
           comparison_offsets:
             type: array
             description: list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
