@@ -24,7 +24,6 @@
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === olapConnectorName,
   );
-  $: olapEngine = formatConnectorName(olapConnector?.type) || "-";
 
   // Get tables list
   $: tablesList = useTablesList(instanceId, "");
