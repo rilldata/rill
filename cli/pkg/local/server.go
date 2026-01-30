@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v71/github"
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -31,6 +33,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -662,6 +665,220 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 	return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 		LocalProjectName: localProjectName,
 		Project:          projects[0],
+	}), nil
+}
+
+// PullEnv implements localv1connect.LocalServiceHandler.
+func (s *Server) PullEnv(ctx context.Context, r *connect.Request[localv1.PullEnvRequest]) (*connect.Response[localv1.PullEnvResponse], error) {
+	// Check authentication
+	if !s.app.ch.IsAuthenticated() {
+		return nil, status.Error(codes.Unauthenticated, "must authenticate before pulling environment variables")
+	}
+
+	// Get admin client
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	// Determine project name and environment
+	projectName := r.Msg.Project
+	orgName := r.Msg.Org
+	environment := r.Msg.Environment
+	if environment == "" {
+		environment = "dev" // Default to dev
+	}
+
+	if projectName == "" || orgName == "" {
+		// Infer project name if not provided
+		projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
+		if err != nil {
+			if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+				return nil, status.Error(codes.NotFound, "no matching project found. Please specify org and project name")
+			}
+			return nil, err
+		}
+		if len(projects) == 0 {
+			return nil, status.Error(codes.NotFound, "no matching project found")
+		}
+		if projectName == "" {
+			projectName = projects[0].Name
+		}
+		if orgName == "" {
+			orgName = projects[0].OrgName
+		}
+	}
+
+	// Parse and verify the project directory
+	repo, instanceID, err := cmdutil.RepoForProjectPath(s.app.ProjectPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse project path: %w", err)
+	}
+	p, err := parser.Parse(ctx, repo, instanceID, "prod", "duckdb")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse project: %w", err)
+	}
+	if p.RillYAML == nil {
+		return nil, status.Error(codes.InvalidArgument, "not a valid Rill project (missing a rill.yaml file)")
+	}
+
+	// Fetch cloud variables
+	cloudVarsResp, err := c.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+		Org:         orgName,
+		Project:     projectName,
+		Environment: environment,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project variables: %w", err)
+	}
+
+	// Build map of cloud variables
+	cloudVars := make(map[string]string, len(cloudVarsResp.Variables))
+	for _, v := range cloudVarsResp.Variables {
+		cloudVars[v.Name] = v.Value
+	}
+
+	// Get current local .env variables
+	localDotEnv := p.GetDotEnv()
+
+	// Check if variables are already up to date
+	if maps.Equal(cloudVars, localDotEnv) {
+		return connect.NewResponse(&localv1.PullEnvResponse{
+			VariablesCount: int32(len(cloudVars)),
+			Modified:       false,
+		}), nil
+	}
+
+	// Merge local .env with cloud variables (local first, then cloud)
+	mergedVars := make(map[string]string)
+	maps.Copy(mergedVars, localDotEnv)
+	maps.Copy(mergedVars, cloudVars)
+
+	// Write merged variables to .env file
+	envPath := filepath.Join(s.app.ProjectPath, ".env")
+	err = godotenv.Write(mergedVars, envPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write .env file: %w", err)
+	}
+
+	// Ensure .env is in .gitignore
+	_, err = cmdutil.EnsureGitignoreHasDotenv(ctx, repo)
+	if err != nil {
+		// Log but don't fail on gitignore errors
+		s.logger.Warn("failed to update .gitignore", zap.Error(err))
+	}
+
+	return connect.NewResponse(&localv1.PullEnvResponse{
+		VariablesCount: int32(len(cloudVars)),
+		Modified:       true,
+	}), nil
+}
+
+// PushEnv implements localv1connect.LocalServiceHandler.
+func (s *Server) PushEnv(ctx context.Context, r *connect.Request[localv1.PushEnvRequest]) (*connect.Response[localv1.PushEnvResponse], error) {
+	// Check authentication
+	if !s.app.ch.IsAuthenticated() {
+		return nil, status.Error(codes.Unauthenticated, "must authenticate before pushing environment variables")
+	}
+
+	// Get admin client
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	// Determine project name
+	projectName := r.Msg.Project
+	orgName := r.Msg.Org
+	environment := r.Msg.Environment
+
+	if projectName == "" || orgName == "" {
+		// Infer project name if not provided
+		projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
+		if err != nil {
+			if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+				return nil, status.Error(codes.NotFound, "no matching project found. Please specify org and project name")
+			}
+			return nil, err
+		}
+		if len(projects) == 0 {
+			return nil, status.Error(codes.NotFound, "no matching project found")
+		}
+		if projectName == "" {
+			projectName = projects[0].Name
+		}
+		if orgName == "" {
+			orgName = projects[0].OrgName
+		}
+	}
+
+	// Parse local .env file
+	localDotEnv, err := ParseDotenv(ctx, s.app.ProjectPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse .env file: %w", err)
+	}
+
+	// Fetch existing cloud variables
+	cloudVarsResp, err := c.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+		Org:         orgName,
+		Project:     projectName,
+		Environment: environment,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project variables: %w", err)
+	}
+
+	// Build map of existing cloud variables
+	cloudVars := make(map[string]string)
+	for _, v := range cloudVarsResp.Variables {
+		cloudVars[v.Name] = v.Value
+	}
+
+	// Merge local .env with cloud variables
+	// Start with cloud variables, then overlay local ones
+	mergedVars := make(map[string]string)
+	for k, v := range cloudVars {
+		mergedVars[k] = v
+	}
+
+	addedCount := int32(0)
+	changedCount := int32(0)
+
+	for k, v := range localDotEnv {
+		if _, exists := cloudVars[k]; !exists {
+			// New variable
+			addedCount++
+			mergedVars[k] = v
+		} else if cloudVars[k] != v {
+			// Changed variable
+			changedCount++
+			mergedVars[k] = v
+		}
+		// If it exists and is the same, no change needed
+	}
+
+	// If there are no changes, return early
+	if addedCount == 0 && changedCount == 0 {
+		return connect.NewResponse(&localv1.PushEnvResponse{
+			AddedCount:   0,
+			ChangedCount: 0,
+		}), nil
+	}
+
+	// Update cloud variables with merged result
+	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+		Org:         orgName,
+		Project:     projectName,
+		Environment: environment,
+		Variables:   mergedVars,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update project variables: %w", err)
+	}
+
+	return connect.NewResponse(&localv1.PushEnvResponse{
+		AddedCount:   addedCount,
+		ChangedCount: changedCount,
 	}), nil
 }
 
