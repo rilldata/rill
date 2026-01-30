@@ -300,7 +300,6 @@ export async function submitAddConnectorForm(
         connector,
         formValues,
         "connector",
-        newConnectorName,
       );
 
       // Store the computed blobs in the submission so concurrent "Save Anyway" can reuse them
