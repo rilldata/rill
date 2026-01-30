@@ -251,8 +251,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					logger.Fatal("RILL_ADMIN_CLAUDE_API_KEY is required when AI driver is 'claude'")
 				}
 				aiConfig["api_key"] = conf.ClaudeAPIKey
-			case "", "mock_ai":
+			case "mock_ai":
+				// Nothing more to do
+			case "":
 				aiDriver = "mock_ai"
+				if conf.OpenAIAPIKey != "" { // Backwards compatibility
+					aiDriver = "openai"
+					aiConfig["api_key"] = conf.OpenAIAPIKey
+				}
 			default:
 				logger.Fatal("unknown AI driver", zap.String("driver", aiDriver))
 			}
