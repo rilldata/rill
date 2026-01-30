@@ -31,7 +31,9 @@
     const proj = $page.params.project;
     const shortKind = kindToShortName(resourceKind);
     // resource param creates the graph, expanded param opens it in expanded view
-    goto(`/${org}/${proj}/-/status/dag-viewer?resource=${shortKind}:${resourceName}&expanded=${resourceKind}:${resourceName}`);
+    goto(
+      `/${org}/${proj}/-/status/dag-viewer?resource=${shortKind}:${resourceName}&expanded=${resourceKind}:${resourceName}`,
+    );
   }
 </script>
 

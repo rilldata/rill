@@ -179,7 +179,12 @@
   $: {
     const width = containerEl?.clientWidth ?? 800;
     nodesStore.set(
-      buildNodes(width, { sources, metrics, models, dashboards }, activeToken, basePath),
+      buildNodes(
+        width,
+        { sources, metrics, models, dashboards },
+        activeToken,
+        basePath,
+      ),
     );
     edgesStore.set(buildEdges());
   }

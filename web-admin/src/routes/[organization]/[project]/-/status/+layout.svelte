@@ -15,16 +15,6 @@
       route: "/project-status",
       hasPermission: true,
     },
-    {
-      label: "Model Overview",
-      route: "/model-overview",
-      hasPermission: true,
-    },
-    {
-      label: "DAG Viewer",
-      route: "/dag-viewer",
-      hasPermission: true,
-    },
   ];
 </script>
 

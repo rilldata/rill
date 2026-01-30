@@ -34,7 +34,9 @@
     const proj = $page.params.project;
     const resourceName = resource?.meta?.name?.name;
     // resource param creates the graph, expanded param opens it in expanded view
-    goto(`/${org}/${proj}/-/status/dag-viewer?resource=model:${resourceName}&expanded=${ResourceKind.Model}:${resourceName}`);
+    goto(
+      `/${org}/${proj}/-/status/dag-viewer?resource=model:${resourceName}&expanded=${ResourceKind.Model}:${resourceName}`,
+    );
   }
 </script>
 

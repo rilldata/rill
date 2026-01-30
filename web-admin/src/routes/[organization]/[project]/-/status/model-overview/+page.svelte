@@ -44,7 +44,8 @@
     <div class="grid grid-cols-3 gap-4">
       <div class="flex flex-col gap-y-1 p-4 border rounded-md bg-surface">
         <div class="flex items-center gap-x-1">
-          <span class="text-sm text-fg-secondary">Tables (Materialized Models)</span
+          <span class="text-sm text-fg-secondary"
+            >Tables (Materialized Models)</span
           >
           <a
             href="https://docs.rilldata.com/build/models/performance#consider-which-models-to-materialize"

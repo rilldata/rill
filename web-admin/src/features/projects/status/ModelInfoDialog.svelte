@@ -21,7 +21,6 @@
           executorConnector: resource.model?.state?.executorConnector,
           resultConnector: resource.model?.state?.resultConnector,
           resultTable: resource.model?.state?.resultTable,
-          resultSchema: resource.model?.state?.resultSchema,
           partitionsModelId: resource.model?.state?.partitionsModelId,
           partitionsHaveErrors: resource.model?.state?.partitionsHaveErrors,
         },
