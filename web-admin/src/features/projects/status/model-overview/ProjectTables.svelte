@@ -14,12 +14,12 @@
     useTableMetadata,
     useTableCardinality,
     useModelResources,
-  } from "./selectors";
+  } from "../selectors";
   import ModelInfoDialog from "./ModelInfoDialog.svelte";
   import ModelLogsPanel from "./ModelLogsPanel.svelte";
   import ModelPartitionsDialog from "./ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "./RefreshErroredPartitionsDialog.svelte";
-  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
+  import RefreshResourceConfirmDialog from "../RefreshResourceConfirmDialog.svelte";
 
   $: ({ instanceId } = $runtime);
 

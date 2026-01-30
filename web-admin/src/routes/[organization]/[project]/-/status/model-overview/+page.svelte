@@ -3,7 +3,7 @@
     useTablesList,
     useTableMetadata,
   } from "@rilldata/web-admin/features/projects/status/selectors";
-  import ProjectTables from "@rilldata/web-admin/features/projects/status/ProjectTables.svelte";
+  import ProjectTables from "@rilldata/web-admin/features/projects/status/model-overview/ProjectTables.svelte";
   import {
     createRuntimeServiceGetInstance,
     type V1OlapTableInfo,
@@ -108,9 +108,20 @@
             </svg>
           </a>
         </div>
-        <span class="text-2xl font-semibold">
-          {$instanceQuery.isLoading ? "-" : olapEngine}
-        </span>
+        {#if $instanceQuery.isLoading}
+          <span class="text-2xl font-semibold">-</span>
+        {:else if olapConnector}
+          <span class="text-sm font-medium text-gray-900">
+            {formatConnectorName(olapConnector.type)}
+          </span>
+          <div class="flex items-center gap-2 text-xs text-gray-600">
+            <span class="text-xs text-gray-600">
+              {olapConnector.provision ? "Rill-Managed" : "Self-Managed"}
+            </span>
+          </div>
+        {:else}
+          <span class="text-sm font-medium text-gray-900">-</span>
+        {/if}
       </div>
     </div>
 
