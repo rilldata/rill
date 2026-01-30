@@ -12,11 +12,12 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
-func TestGenerateMetricsView(t *testing.T) {
+func TestGenerateMetricsViewWithoutAI(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": ``,
@@ -41,7 +42,7 @@ driver: duckdb
 	require.NoError(t, err)
 	defer release()
 
-	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -97,6 +98,80 @@ driver: duckdb
 				UseAi:      false,
 			})
 			require.NoError(t, err)
+
+			data, err := repo.Get(ctx, "/metrics/generated_metrics_view.yaml")
+			require.NoError(t, err)
+
+			for _, c := range tc.contains {
+				require.Contains(t, data, c)
+			}
+		})
+	}
+}
+
+func TestGenerateMetricsViewWithAI(t *testing.T) {
+	testmode.Expensive(t)
+
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		EnableLLM: true,
+		Files: map[string]string{
+			"ad_bids.sql": `SELECT now() AS time, 'DA' AS country, 3.141 as price`,
+		},
+	})
+
+	ctx, cancel := context.WithTimeout(testCtx(), 25*time.Second)
+	defer cancel()
+
+	repo, release, err := rt.Repo(ctx, instanceID)
+	require.NoError(t, err)
+	defer release()
+
+	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	require.NoError(t, err)
+
+	tt := []struct {
+		name          string
+		model         string
+		prompt        string
+		contains      []string
+		measuresCount int
+	}{
+		{
+			name:  "model passed in request",
+			model: "ad_bids",
+			contains: []string{
+				"model: ad_bids",
+				"measures:",
+				"format_preset: humanize",
+			},
+		},
+		{
+			name:   "excludes non-numeric measures",
+			model:  "ad_bids",
+			prompt: "Please make sure one of the measures uses the SQL expression `MAX(time)`",
+			contains: []string{
+				"measures:",
+				// Nothing to test here. If it generates a bad measure, the reconcile success assertions below will fail.
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			err = repo.Delete(ctx, "/metrics/generated_metrics_view.yaml", true)
+			require.NoError(t, err)
+
+			res, err := server.GenerateMetricsViewFile(ctx, &runtimev1.GenerateMetricsViewFileRequest{
+				InstanceId: instanceID,
+				Model:      tc.model,
+				Path:       "/metrics/generated_metrics_view.yaml",
+				UseAi:      true,
+			})
+			require.NoError(t, err)
+			require.True(t, res.AiSucceeded)
+
+			testruntime.ReconcileParserAndWait(t, rt, instanceID)
+			testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
 			data, err := repo.Get(ctx, "/metrics/generated_metrics_view.yaml")
 			require.NoError(t, err)

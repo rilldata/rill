@@ -2,14 +2,14 @@
   import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import "regular-table";
   import type { RegularTableElement } from "regular-table";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import "./regular-table-style.css";
   import { isEmptyPos, range } from "./regular-table-utils";
   import type { PivotPos, PivotRenderCallback } from "./types";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
 
-  const LOADING_CELL = `<div load class="loading-cell h-4 bg-gray-50 rounded" style="width: 100%; min-width: 32px;"/>`;
-  const NULL_CELL = `<div class="null-cell text-gray-400">-</div>`;
+  const LOADING_CELL = `<div load class="loading-cell h-4 rounded" style="width: 100%; min-width: 32px;"/>`;
+  const NULL_CELL = `<div class="null-cell text-fg-muted">-</div>`;
 
   export let getColumnHeaderData: (pos: PivotPos) => any = () => [];
   export let getRowHeaderData: (pos: PivotPos) => any = () => [];
@@ -32,8 +32,7 @@
   export let rowHeight = 24;
   export let getColumnWidth: (x: number) => number | void = () => undefined;
   export let getRowHeaderWidth: (x: number) => number | void = () => undefined;
-
-  const dispatch = createEventDispatcher();
+  export let onPositionChange: (pos: PivotPos) => void = () => {};
 
   let table: RegularTableElement;
   let initialized = false;
@@ -323,7 +322,7 @@
       lastRowHeaderSizer = getRowHeaderWidth;
     }
 
-    dispatch("pos", pos);
+    onPositionChange(pos);
   }
 
   onMount(() => {
@@ -334,16 +333,19 @@
 </script>
 
 <div class="relative w-full h-full" style={cssVarStyles}>
-  <regular-table class="w-full h-full tdd-table" bind:this={table} />
+  <regular-table
+    class="w-full h-full tdd-table text-fg-muted bg-surface-base"
+    bind:this={table}
+  />
 </div>
 
-<style>
+<style lang="postcss">
   :global(regular-table) {
     padding-left: 0px;
     padding-right: 0px;
   }
   :global(regular-table table) {
-    color: var(--color-gray-700);
+    color: inherit;
     table-layout: fixed;
     border-collapse: separate;
     font-family: Inter;

@@ -80,9 +80,17 @@ type devJWTClaims struct {
 var _ ClaimsProvider = (*devJWTClaims)(nil)
 
 func (c *devJWTClaims) Claims(instanceID string) *runtime.SecurityClaims {
+	// If there are no permissions set, we allow all permissions.
+	// This should keep Rill Developer working behind auth proxies that add an Authorization header with a non-Rill JWT.
+	// (The security risk here is not important since this is only used for Rill Developer, not Rill Cloud.)
+	perms := c.Permissions
+	if len(perms) == 0 {
+		perms = runtime.AllPermissions
+	}
+
 	return &runtime.SecurityClaims{
 		UserAttributes: c.Attrs,
-		Permissions:    c.Permissions,
+		Permissions:    perms,
 	}
 }
 

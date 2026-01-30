@@ -399,10 +399,12 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 
 		// check if there are uncommitted changes
-		// ignore errors since check is best effort and can fail in multiple cases
-		syncStatus, _ := gitutil.GetSyncStatus(gitPath, "", remote.Name)
-		if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
-			return nil, errors.New("project has uncommitted changes")
+		st, err := gitutil.RunGitStatus(gitPath, subPath, remote.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get git status: %w", err)
+		}
+		if st.LocalChanges || st.LocalCommits > 0 {
+			return nil, errors.New("local changes in repo, please commit and push before deploying")
 		}
 
 		// Get github repo status
@@ -427,7 +429,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			DirectoryName: directoryName,
 			GitRemote:     githubRemote,
 			Subpath:       subPath,
-			ProdBranch:    repoStatus.DefaultBranch,
+			PrimaryBranch: repoStatus.DefaultBranch,
 		}
 	}
 
@@ -465,7 +467,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 
 	return connect.NewResponse(&localv1.DeployProjectResponse{
-		DeployId:    projResp.Project.ProdDeploymentId,
+		DeployId:    projResp.Project.PrimaryDeploymentId,
 		Org:         projResp.Project.OrgName,
 		Project:     projResp.Project.Name,
 		FrontendUrl: projResp.Project.FrontendUrl,
@@ -553,9 +555,10 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			}
 			config := &gitutil.Config{
 				Remote:        projResp.Project.GitRemote,
-				DefaultBranch: projResp.Project.ProdBranch,
+				DefaultBranch: projResp.Project.PrimaryBranch,
+				Subpath:       projResp.Project.Subpath,
 			}
-			err = gitutil.CommitAndForcePush(ctx, reporoot, config, "", author)
+			err = s.app.ch.CommitAndSafePush(ctx, reporoot, config, "", author, "1")
 			if err != nil {
 				return nil, err
 			}
@@ -620,10 +623,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	if err != nil {
 		return nil, errors.New("failed to get assumed user email")
 	}
-	isRepresentingUser := false
-	if representingUser != "" {
-		isRepresentingUser = true
-	}
+	isRepresentingUser := representingUser != ""
 
 	return connect.NewResponse(&localv1.GetCurrentUserResponse{
 		User: &adminv1.User{

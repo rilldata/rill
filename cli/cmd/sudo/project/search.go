@@ -124,7 +124,7 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 		return nil, err
 	}
 
-	depl := proj.ProdDeployment
+	depl := proj.Deployment
 
 	if depl == nil {
 		return &projectStatusTableRow{
@@ -134,13 +134,13 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 		}, nil
 	}
 
-	if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
+	if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
 		var deplStatus string
 		switch depl.Status {
 		case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING:
 			deplStatus = "Pending"
-		case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR:
-			deplStatus = "Error"
+		case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED:
+			deplStatus = "Errored"
 		default:
 			deplStatus = depl.Status.String()
 		}

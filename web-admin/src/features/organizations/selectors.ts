@@ -5,6 +5,7 @@ import {
   getAdminServiceGetOrganizationQueryKey,
   getAdminServiceListProjectsForOrganizationQueryKey,
   type V1GetOrganizationResponse,
+  type V1Organization,
 } from "@rilldata/web-admin/client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { FetchQueryOptions } from "@tanstack/query-core";
@@ -18,7 +19,7 @@ export function areAllProjectsHibernating(organization: string) {
         enabled: !!organization,
         select: (data) =>
           data.projects?.length &&
-          data.projects.every((p) => !p.prodDeploymentId),
+          data.projects.every((p) => !p.primaryDeploymentId),
       },
     },
   );
@@ -30,13 +31,35 @@ export async function fetchAllProjectsHibernating(organization: string) {
     queryFn: () => adminServiceListProjectsForOrganization(organization),
     staleTime: Infinity,
   });
-  return projectsResp.projects?.every((p) => !p.prodDeploymentId) ?? false;
+  return projectsResp.projects?.every((p) => !p.primaryDeploymentId) ?? false;
 }
 
-export function getFetchOrganizationQueryOptions(organization: string) {
+function normalizeOrganization(
+  organization: string | V1Organization | undefined,
+): string {
+  if (typeof organization === "string") {
+    return organization;
+  }
+  if (
+    organization &&
+    typeof organization === "object" &&
+    "name" in organization &&
+    typeof organization.name === "string"
+  ) {
+    return organization.name;
+  }
+  throw new Error(
+    `Invalid organization parameter: expected string or V1Organization object with name property, got ${typeof organization}`,
+  );
+}
+
+export function getFetchOrganizationQueryOptions(
+  organization: string | V1Organization | undefined,
+) {
+  const orgName = normalizeOrganization(organization);
   return <FetchQueryOptions<V1GetOrganizationResponse>>{
-    queryKey: getAdminServiceGetOrganizationQueryKey(organization),
-    queryFn: () => adminServiceGetOrganization(organization),
+    queryKey: getAdminServiceGetOrganizationQueryKey(orgName),
+    queryFn: () => adminServiceGetOrganization(orgName),
     staleTime: Infinity,
   };
 }

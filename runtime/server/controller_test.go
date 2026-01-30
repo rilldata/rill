@@ -77,7 +77,7 @@ metrics_view: mv2
 	}
 
 	// Create test server
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	// Create all trigger
@@ -246,6 +246,7 @@ measures:
 `,
 		})
 		testruntime.ReconcileParserAndWait(t, rt, instanceID)
+		testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "m3", Full: true})
 		testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0) // m3, mv3, project_settings
 
 		ctrl, err := rt.Controller(context.Background(), instanceID)

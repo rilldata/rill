@@ -5,8 +5,6 @@
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
@@ -16,8 +14,6 @@
   export let isEmbedded = false;
   export let isPreview = false;
   export let previewLimit = 5;
-
-  const exploreColor = resourceColorMapping[ResourceKind.Explore];
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -116,6 +112,8 @@
     lastRefreshed: false,
     description: false,
   };
+
+  const initialSorting = [{ id: "name", desc: false }];
 </script>
 
 {#if isLoading}
@@ -131,12 +129,12 @@
       data={displayData}
       {columns}
       {columnVisibility}
+      {initialSorting}
       toolbar={!isPreview}
     >
       <ResourceListEmptyState
         slot="empty"
         icon={ExploreIcon}
-        iconColor={exploreColor}
         message="You don't have any dashboards yet"
       >
         <span slot="action">

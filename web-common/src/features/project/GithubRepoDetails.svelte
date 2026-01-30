@@ -12,12 +12,12 @@
   $: repoName = getRepoNameFromGitRemote(gitRemote);
 </script>
 
-<div class="flex flex-col w-fit mx-auto text-center text-sm">
-  <div class="flex flex-row gap-x-1 items-center">
+<div class="flex flex-col items-center gap-y-1 mx-auto text-center text-sm">
+  <div class="flex flex-row gap-x-1 items-center justify-center w-full">
     <Github className="w-4 h-4" />
     <a
       href={getGitUrlFromRemote(gitRemote)}
-      class="text-gray-800 font-semibold font-mono truncate"
+      class="text-fg-primary font-semibold font-mono truncate"
       target="_blank"
       rel="noreferrer noopener"
     >
@@ -27,14 +27,14 @@
   {#if subpath}
     <div>
       <span>subpath:</span>
-      <span class="text-gray-800 font-mono">
+      <span class="text-fg-primary font-mono">
         /{subpath}
       </span>
     </div>
   {/if}
   <div>
     <span>branch:</span>
-    <span class="text-gray-800 font-mono">
+    <span class="text-fg-primary font-mono">
       {branch}
     </span>
   </div>

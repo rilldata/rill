@@ -202,8 +202,8 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		}
 	}
 
-	timeDims := make(map[string]struct{})
 	// Validate and rewrite dimensions
+	timeDims := make(map[string]struct{})
 	allDims := make([]string, 0, len(mv.Dimensions))
 	for _, d := range mv.Dimensions {
 		if d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME {
@@ -215,15 +215,6 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	if err != nil {
 		return nil, nil, err
 	}
-	// TODO: Remove when the UI supports multiple time dimensions
-	// Skip adding time dims to the explore valid spec
-	var categoricalDims []string
-	for _, d := range spec.Dimensions {
-		if _, isTime := timeDims[d]; !isTime {
-			categoricalDims = append(categoricalDims, d)
-		}
-	}
-	spec.Dimensions = categoricalDims
 	spec.DimensionsSelector = nil
 
 	// Validate and rewrite measures

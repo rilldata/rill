@@ -195,7 +195,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize)
+	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize, req.Refresh)
 	if err != nil {
 		return nil, err
 	}
@@ -239,6 +239,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 			ExpiresOn:             expiresOn,
 			UsedOn:                timestamppb.New(t.UsedOn),
 			Prefix:                prefix,
+			Refresh:               t.Refresh,
 		}
 	}
 
@@ -292,7 +293,7 @@ func (s *Server) IssueUserAuthToken(ctx context.Context, req *adminv1.IssueUserA
 		representingUserID = &u.ID
 	}
 
-	authToken, err := s.admin.IssueUserAuthToken(ctx, userID, req.ClientId, req.DisplayName, representingUserID, ttl)
+	authToken, err := s.admin.IssueUserAuthToken(ctx, userID, req.ClientId, req.DisplayName, representingUserID, ttl, false)
 	if err != nil {
 		return nil, err
 	}
@@ -334,6 +335,35 @@ func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUse
 	}
 
 	return &adminv1.RevokeUserAuthTokenResponse{}, nil
+}
+
+func (s *Server) RevokeAllUserAuthTokens(ctx context.Context, req *adminv1.RevokeAllUserAuthTokensRequest) (*adminv1.RevokeAllUserAuthTokensResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
+	userID := req.UserId
+	if userID == "current" { // Special alias for the current user
+		if claims.OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+		}
+		userID = claims.OwnerID()
+	}
+	if userID != claims.OwnerID() && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to revoke auth tokens for other users")
+	}
+
+	tokensRevoked, err := s.admin.DB.DeleteAllUserAuthTokens(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.RevokeAllUserAuthTokensResponse{
+		TokensRevoked: int32(tokensRevoked),
+	}, nil
 }
 
 func (s *Server) RevokeRepresentativeAuthTokens(ctx context.Context, req *adminv1.RevokeRepresentativeAuthTokensRequest) (*adminv1.RevokeRepresentativeAuthTokensResponse, error) {
@@ -394,7 +424,7 @@ func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.
 	ttl := time.Duration(req.TtlMinutes) * time.Minute
 	displayName := fmt.Sprintf("Support for %s", u.Email)
 
-	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, &ttl)
+	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, &ttl, false)
 	if err != nil {
 		return nil, err
 	}
@@ -634,14 +664,16 @@ func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.Organization
 
 func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUser {
 	return &adminv1.ProjectMemberUser{
-		UserId:       m.ID,
-		UserEmail:    m.Email,
-		UserName:     m.DisplayName,
-		UserPhotoUrl: m.PhotoURL,
-		RoleName:     m.RoleName,
-		OrgRoleName:  m.OrgRoleName,
-		CreatedOn:    timestamppb.New(m.CreatedOn),
-		UpdatedOn:    timestamppb.New(m.UpdatedOn),
+		UserId:            m.ID,
+		UserEmail:         m.Email,
+		UserName:          m.DisplayName,
+		UserPhotoUrl:      m.PhotoURL,
+		RoleName:          m.RoleName,
+		OrgRoleName:       m.OrgRoleName,
+		CreatedOn:         timestamppb.New(m.CreatedOn),
+		UpdatedOn:         timestamppb.New(m.UpdatedOn),
+		Resources:         resourceNamesToPB(m.Resources),
+		RestrictResources: m.RestrictResources,
 	}
 }
 
@@ -660,16 +692,18 @@ func orgInviteToPB(i *database.OrganizationInviteWithRole) *adminv1.Organization
 	return &adminv1.OrganizationInvite{
 		Email:     i.Email,
 		RoleName:  i.RoleName,
-		InvitedBy: i.InvitedBy,
+		InvitedBy: safeStr(i.InvitedBy),
 	}
 }
 
 func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
 	return &adminv1.ProjectInvite{
-		Email:       i.Email,
-		RoleName:    i.RoleName,
-		OrgRoleName: i.OrgRoleName,
-		InvitedBy:   i.InvitedBy,
+		Email:             i.Email,
+		RoleName:          i.RoleName,
+		OrgRoleName:       i.OrgRoleName,
+		InvitedBy:         safeStr(i.InvitedBy),
+		RestrictResources: i.RestrictResources,
+		Resources:         resourceNamesToPB(i.Resources),
 	}
 }
 
@@ -705,7 +739,7 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 	}
 
 	// Find all tokens for the user and match by prefix
-	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
+	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -736,4 +770,15 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 		}
 	}
 	return nil, status.Error(codes.NotFound, "token not found")
+}
+
+func resourceNamesToPB(resources []database.ResourceName) []*adminv1.ResourceName {
+	rs := make([]*adminv1.ResourceName, 0, len(resources))
+	for _, r := range resources {
+		rs = append(rs, &adminv1.ResourceName{
+			Type: r.Type,
+			Name: r.Name,
+		})
+	}
+	return rs
 }

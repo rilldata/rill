@@ -45,6 +45,7 @@
     class:!text-left={type === "VARCHAR" || type === "CODE_STRING"}
   >
     <FormattedDataType
+      color="!text-fg-secondary"
       truncate
       {type}
       value={finalValue}

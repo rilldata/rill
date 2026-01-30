@@ -174,12 +174,14 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		onClusterClause := ""
+		// get the engine info of the given table - local table for distributed tables
+		var n string
 		if onCluster {
-			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+			n = localTableName(name)
+		} else {
+			n = name
 		}
-		// get the engine info of the given table
-		engine, err := c.getTableEngine(ctx, name)
+		engine, err := c.getTableEngine(ctx, n)
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +191,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 		// insert into table using the merge strategy
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
+			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 			Priority: 1,
 		})
 		if err != nil {

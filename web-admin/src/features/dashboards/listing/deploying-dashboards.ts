@@ -1,4 +1,3 @@
-import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import {
   createRuntimeServiceListResources,
@@ -6,82 +5,75 @@ import {
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import {
+  isResourceReconciling,
+  smartRefetchIntervalFunc,
+} from "@rilldata/web-admin/lib/refetch-interval-store.ts";
 
 export function useDeployingDashboards(
   instanceId: string,
   orgName: string,
   projName: string,
-  deploying: boolean,
   deployingDashboard: string | null,
 ): CreateQueryResult<{
-  redirectToDashboardPath: string | null;
-  dashboardsReconciling: boolean;
+  redirectPath: string | null;
   dashboardsErrored: boolean;
 }> {
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
-        if (!deploying) {
+        const resources = data.resources ?? [];
+        const dashboards = resources.filter(isDashboard);
+
+        const reconciling = getDashboardsReconciling(
+          dashboards,
+          deployingDashboard,
+        );
+        if (reconciling) {
           return {
-            redirectToDashboardPath: null,
-            dashboardsReconciling: false,
+            redirectPath: null,
             dashboardsErrored: false,
           };
         }
 
-        const resources = data.resources ?? [];
-        const dashboards = resources.filter(isDashboard);
-        const dashboard = getDashboard(dashboards, deployingDashboard) ?? null;
-        const hasValidDashboard = dashboard
-          ? isValidDashboard(dashboard)
-          : false;
-
-        if (!hasValidDashboard || !dashboard?.meta?.name?.name) {
+        const dashboardsErrored = getDashboardsErrored(
+          dashboards,
+          deployingDashboard,
+        );
+        if (dashboardsErrored) {
           return {
-            redirectToDashboardPath: null,
-            dashboardsReconciling: getDashboardsReconciling(
-              dashboards,
-              deployingDashboard,
-            ),
-            dashboardsErrored: getDashboardsErrored(
-              dashboards,
-              deployingDashboard,
-            ),
+            // Redirect to status page if dashboards errored
+            redirectPath: `/${orgName}/${projName}/-/status`,
+            dashboardsErrored,
+          };
+        }
+
+        const dashboard = dashboards.find(
+          (res) => res.meta?.name?.name === deployingDashboard,
+        );
+
+        // Redirect to home page if no specific dashboard was deployed
+        if (!deployingDashboard || !dashboard?.meta?.name) {
+          return {
+            redirectPath: `/${orgName}/${projName}`,
+            dashboardsErrored: false,
           };
         }
 
         const resourceRoute =
-          dashboard.meta?.name?.kind === ResourceKind.Explore
+          dashboard.meta.name.kind === ResourceKind.Explore
             ? "explore"
             : "canvas";
-        const redirectToDashboardPath = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
-
+        const redirectPath = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
         return {
-          redirectToDashboardPath,
-          dashboardsReconciling: false,
+          redirectPath,
           dashboardsErrored: false,
         };
       },
+      refetchInterval: smartRefetchIntervalFunc,
+      enabled: Boolean(instanceId && orgName && projName),
     },
   });
-}
-
-function getDashboard(
-  dashboards: V1Resource[],
-  dashboardName: string | null,
-): V1Resource | undefined {
-  let dashboard: V1Resource | undefined;
-  if (dashboardName) {
-    dashboard = dashboards.find(
-      (res) => res.meta?.name?.name === dashboardName,
-    );
-  } else {
-    dashboard =
-      dashboards.find((res) => res.canvas?.state?.validSpec) ??
-      dashboards.find((res) => res.explore?.state?.validSpec);
-  }
-
-  return dashboard;
 }
 
 function getDashboardsReconciling(
@@ -108,16 +100,12 @@ function getDashboardsErrored(
     );
     return dashboard ? hasErrored(dashboard) : false;
   } else {
-    return dashboards.every(hasErrored);
+    return dashboards.length > 0 && dashboards.some(hasErrored);
   }
 }
 
 function isDashboard(res: V1Resource) {
   return res.canvas || res.explore;
-}
-
-function isValidDashboard(res: V1Resource) {
-  return Boolean(res.canvas?.state?.validSpec || res.explore?.state?.validSpec);
 }
 
 function hasErrored(res: V1Resource) {

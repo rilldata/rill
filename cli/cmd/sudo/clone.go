@@ -51,7 +51,7 @@ func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("\tUsername: %s\n", res.GitUsername)
 			fmt.Printf("\tPassword: %s\n", res.GitPassword)
 			fmt.Printf("\tSubpath: %s\n", res.GitSubpath)
-			fmt.Printf("\tProd branch: %s\n", res.GitProdBranch)
+			fmt.Printf("\tPrimary branch: %s\n", res.GitPrimaryBranch)
 			fmt.Printf("\nNote the credentials are only valid for a limited duration of time.\n")
 
 			return nil

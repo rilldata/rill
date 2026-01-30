@@ -39,12 +39,14 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 		{
-			Key:    "azure_storage_connection_string",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "azure_storage_connection_string",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Azure Connection String",
+			Description: "Azure connection string for storage account",
+			Placeholder: "Paste your Azure connection string here",
+			Secret:      true,
 		},
 	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -74,7 +76,12 @@ type ConfigProperties struct {
 	Key              string `mapstructure:"azure_storage_key"`
 	SASToken         string `mapstructure:"azure_storage_sas_token"`
 	ConnectionString string `mapstructure:"azure_storage_connection_string"`
-	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
+	// A list of container or virtual directory prefixes that this connector is allowed to access.
+	// Useful when different containers or paths use different credentials, allowing the system
+	// to route access through the appropriate connector based on the blob path.
+	// Example formats: `azure://my-container/` `azure://my-container/path/` `azure://my-container/path/prefix`
+	PathPrefixes    []string `mapstructure:"path_prefixes"`
+	AllowHostAccess bool     `mapstructure:"allow_host_access"`
 }
 
 func (c *ConfigProperties) GetAccount() string {
@@ -261,8 +268,8 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {

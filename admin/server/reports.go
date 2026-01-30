@@ -47,9 +47,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	webOpenMode := WebOpenMode(req.WebOpenMode)
-	if webOpenMode == "" {
-		webOpenMode = WebOpenModeRecipient // Backwards compatibility during rollout
-	}
 	if !webOpenMode.Valid() {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid web open mode %q", req.WebOpenMode)
 	}
@@ -68,21 +65,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	var tokens map[string]string
-	if webOpenMode == WebOpenModeRecipient {
-		// This is the default mode for existing reports, this also implies that reports will break for users who don't have access to the project.
-		// But we agree this is acceptable and report owner needs to change to creator mode if they want to share with users who don't have access.
-		// In this mode, tokens are used only for unsubscribe links, so no access to resources or owner attributes
-		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, "", "", nil, recipients, nil)
-	} else {
-		// whereFilterJSON and accessibleFields is only needed for backwards compatibility during runtime rollout after admin upgrade, can be removed in next version
-		// nolint:staticcheck // needed during rollout for backwards compatibility
-		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.WhereFilterJson, req.AccessibleFields, recipients, req.Resources)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
-	}
-
 	var ownerEmail string
 	if req.OwnerId != "" {
 		owner, err := s.admin.DB.FindUser(ctx, req.OwnerId)
@@ -92,18 +74,37 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		ownerEmail = owner.Email
 	}
 
+	var tokens map[string]string
+	if webOpenMode == WebOpenModeRecipient {
+		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, req.OwnerId, ownerEmail, recipients)
+	} else {
+		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
+	}
+
 	// Generate URLs for each recipient based on web open mode, and whether they are the owner -
-	// 	Owner does not need a token and does not get an unsubscribe link.
+	// 	Owner does not get a token in recipient mode and does not get an unsubscribe link.
 	// 	Recipients in creator mode get a token and an unsubscribe link.
 	// 	Recipients in recipient mode get an unsubscribe link with token but no token for open/export.
 	// 	Recipients in none web open mode do not get an open link.
 	// 	Recipients other than owner do not get an edit link, they can edit from the project UI if they have permissions.
 	for _, recipient := range recipients {
 		if recipient == ownerEmail {
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
-				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
-				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+			if webOpenMode == WebOpenModeRecipient {
+				// owner in recipient mode gets plain open and export url without token as token does not have any access
+				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
+					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
+					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+				}
+			} else {
+				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
+					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
+					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+				}
 			}
 			continue
 		}
@@ -154,11 +155,11 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -211,11 +212,11 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -272,7 +273,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 	claims := auth.GetClaims(ctx)
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -407,11 +408,11 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -462,11 +463,11 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -614,7 +615,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID, whereFilterJSON string, accessibleFields, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
+func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -623,8 +624,6 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 	mgcOpts := &admin.IssueMagicAuthTokenOptions{
 		ProjectID:       projectID,
 		CreatedByUserID: createdByUserID,
-		FilterJSON:      whereFilterJSON,
-		Fields:          accessibleFields,
 		Internal:        true,
 		TTL:             &ttl,
 	}
@@ -662,7 +661,7 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 		mgcOpts.Attributes = attrs
 	}
 
-	// issue magic tokens for new external emails
+	// issue magic tokens
 	cctx, tx, err := s.admin.DB.NewTx(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
@@ -680,6 +679,67 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 				"groups": []string{},
 				"admin":  false,
 			}
+		}
+
+		tkn, err := s.admin.IssueMagicAuthToken(cctx, mgcOpts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to issue magic auth token for email %s: %w", email, err)
+		}
+
+		emailTokens[email] = tkn.Token().String()
+
+		_, err = s.admin.DB.InsertNotificationToken(cctx, &database.InsertNotificationTokenOptions{
+			ResourceKind:     runtime.ResourceKindReport,
+			ResourceName:     reportName,
+			RecipientEmail:   email,
+			MagicAuthTokenID: tkn.Token().ID.String(),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert report token for email %s: %w", email, err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return emailTokens, nil
+}
+
+func (s *Server) createUnsubMagicTokens(ctx context.Context, projectID, reportName, ownerID, ownerEmail string, emails []string) (map[string]string, error) {
+	var createdByUserID *string
+	if ownerID != "" {
+		createdByUserID = &ownerID
+	}
+	ttl := 3 * 30 * 24 * time.Hour // approx 3 months
+	mgcOpts := &admin.IssueMagicAuthTokenOptions{
+		ProjectID:       projectID,
+		CreatedByUserID: createdByUserID,
+		Internal:        true,
+		TTL:             &ttl,
+	}
+
+	// issue magic tokens
+	cctx, tx, err := s.admin.DB.NewTx(ctx, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	emailTokens := make(map[string]string)
+	for _, email := range emails {
+		if ownerEmail != "" && strings.EqualFold(ownerEmail, email) {
+			// skip creating unsubscribe token for owner email
+			continue
+		}
+		// set user attrs as per the email
+		mgcOpts.Attributes = map[string]interface{}{
+			"name":   "",
+			"email":  email,
+			"domain": email[strings.LastIndex(email, "@")+1:],
+			"groups": []string{},
+			"admin":  false,
 		}
 
 		tkn, err := s.admin.IssueMagicAuthToken(cctx, mgcOpts)

@@ -18,7 +18,8 @@
   import RangePickerV2 from "./new-time-dropdown/RangePickerV2.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
-  export let allTimeRange: TimeRange;
+  export let minDate: DateTime<true> | undefined;
+  export let maxDate: DateTime<true> | undefined;
   export let selectedRangeAlias: string | undefined;
   export let showPivot: boolean;
   export let minTimeGrain: V1TimeGrain | undefined;
@@ -27,7 +28,7 @@
   export let timeRanges: V1ExploreTimeRange[];
   export let showDefaultItem: boolean;
   export let activeTimeGrain: V1TimeGrain | undefined;
-  export let interval: Interval;
+  export let interval: Interval<true> | undefined;
   export let hidePan = false;
   export let canPanLeft: boolean = !hidePan;
   export let canPanRight: boolean = !hidePan;
@@ -41,11 +42,17 @@
   export let timeEnd: string | undefined;
   export let watermark: DateTime | undefined = undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let primaryTimeDimension: string | undefined = undefined;
+  export let selectedTimeDimension: string | undefined = undefined;
+  export let timeDimensions: { value: string; label: string }[] = [];
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
+  // Time dimension selection disabled when this function is not provided
+  export let onTimeDimensionSelect: ((dimension: string) => void) | undefined =
+    undefined;
 
   const newPicker = featureFlags.rillTime;
 
@@ -70,8 +77,8 @@
     <RangePickerV2
       {context}
       smallestTimeGrain={minTimeGrain}
-      minDate={DateTime.fromJSDate(allTimeRange.start).setZone(activeTimeZone)}
-      maxDate={DateTime.fromJSDate(allTimeRange.end).setZone(activeTimeZone)}
+      {minDate}
+      {maxDate}
       {watermark}
       {showDefaultItem}
       {defaultTimeRange}
@@ -84,13 +91,17 @@
       {lockTimeZone}
       {availableTimeZones}
       {showFullRange}
+      {timeDimensions}
+      {primaryTimeDimension}
+      {selectedTimeDimension}
       {onSelectTimeZone}
       {onSelectRange}
+      {onTimeDimensionSelect}
     />
-  {:else if interval.isValid && activeTimeGrain}
+  {:else if interval && activeTimeGrain}
     <Elements.RangePicker
-      minDate={DateTime.fromJSDate(allTimeRange.start)}
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      {minDate}
+      {maxDate}
       ranges={rangeBuckets}
       {showDefaultItem}
       {showFullRange}
@@ -115,7 +126,7 @@
   {#if availableTimeZones.length && !$newPicker}
     <Elements.Zone
       {context}
-      watermark={interval.end ?? DateTime.fromJSDate(new Date())}
+      watermark={interval?.end ?? DateTime.fromJSDate(new Date())}
       {activeTimeZone}
       {lockTimeZone}
       {availableTimeZones}
@@ -153,8 +164,8 @@
   }
 
   :global(.wrapper > button) {
-    @apply border;
-    @apply px-2 flex items-center justify-center bg-surface;
+    @apply border text-fg-primary;
+    @apply px-2 flex items-center justify-center bg-surface-background;
   }
 
   :global(.wrapper > button:focus) {
@@ -169,12 +180,12 @@
   }
 
   :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-gray-50 cursor-pointer;
+    @apply bg-surface-hover cursor-pointer;
   }
 
   /* Doest apply to all instances except alert/report. So this seems unintentional
   :global(.wrapper > [data-state="open"]) {
-    @apply bg-gray-50 border-gray-400 z-50;
+    @apply bg-surface-background border-gray-400 z-50;
   }
   */
 </style>

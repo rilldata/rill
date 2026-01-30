@@ -107,6 +107,10 @@
                 $dashboardStore.dimensionThresholdFilters,
               )
             : undefined;
+          // TODO : add a check upstream to make sure if filter exists, metricsViewName is defined
+          const metricsViewFilters = filter
+            ? { [$metricsViewName]: filter }
+            : undefined;
 
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
             org: organization,
@@ -114,7 +118,7 @@
             data: {
               resourceType: ResourceKind.Explore as string,
               resourceName: dashboard,
-              filter,
+              metricsViewFilters,
               fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
@@ -166,7 +170,7 @@
 
 {#if !url}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
-    <h3 class="text-xs text-gray-800 font-normal">
+    <h3 class="text-xs text-fg-primary font-normal">
       Create a shareable public URL for this view.
     </h3>
 
@@ -186,7 +190,7 @@
         </div>
         {#if setExpiration}
           <div class="flex items-center gap-x-1 pl-[30px]">
-            <label for="expires-at" class="text-slate-500 font-medium">
+            <label for="expires-at" class="text-fg-secondary font-medium">
               Access expires {new Date($form.expiresAt).toLocaleDateString(
                 "en-US",
                 { year: "numeric", month: "short", day: "numeric" },
@@ -223,7 +227,7 @@
         <div class="flex flex-row items-center gap-x-1">
           <Label class="text-xs" for="lock-time-range">Lock time range</Label>
           <Tooltip location="right" alignment="middle" distance={8}>
-            <div class="text-gray-500">
+            <div class="text-fg-secondary">
               <InfoCircle size="12px" />
             </div>
             <TooltipContent maxWidth="400px" slot="tooltip-content">
@@ -234,7 +238,7 @@
       </div>
       {#if lockTimeRange}
         <div class="w-full pl-[30px]">
-          <label for="lock-time-range" class="text-slate-500 font-medium">
+          <label for="lock-time-range" class="text-fg-secondary font-medium">
             {#if interval.isValid}
               <RangeDisplay {interval} grain={activeTimeGrain} {abbreviation} />
             {/if}
@@ -247,7 +251,7 @@
         <hr class="mt-4 mb-4" />
 
         <div class="flex flex-col gap-y-1">
-          <p class="text-xs text-gray-800 font-normal">
+          <p class="text-xs text-fg-primary font-normal">
             The following filters will be locked and hidden:
           </p>
           <div class="flex flex-row gap-1 mt-2">
@@ -262,7 +266,7 @@
           </div>
         </div>
 
-        <p class="text-xs text-gray-800 font-normal mt-4 mb-4">
+        <p class="text-xs text-fg-primary font-normal mt-4 mb-4">
           Measures and dimensions will be limited to current visible set.
         </p>
       {/if}

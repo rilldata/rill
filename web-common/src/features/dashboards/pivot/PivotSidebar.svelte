@@ -21,8 +21,6 @@
   $: ({ rows, columns, tableMode } = pivotState);
   $: splitColumns = splitPivotChips(columns);
 
-  const CHIP_HEIGHT = 34;
-
   let sidebarHeight = 0;
   let searchText = "";
 
@@ -61,19 +59,6 @@
   $: filteredMeasures = filterBasedOnSearch(measures, searchText);
   $: filteredDimensions = filterBasedOnSearch(dimensions, searchText);
 
-  // All of the following reactive statements can be avoided
-  // If and when Chrome/Firefox supports max-height with flex-basis
-  $: availableChipSpaces = Math.floor((sidebarHeight - 120) / CHIP_HEIGHT);
-
-  $: totalChips =
-    filteredMeasures.length +
-    filteredDimensions.length +
-    timeGrainOptions.length;
-
-  $: chipsPerSection = Math.floor(availableChipSpaces / 3);
-
-  $: extraSpace = availableChipSpaces - totalChips > 0;
-
   function filterBasedOnSearch(fullList: PivotChipData[], search: string) {
     return fullList.filter((d) =>
       d.title.toLowerCase().includes(search.toLowerCase()),
@@ -86,44 +71,24 @@
   bind:clientHeight={sidebarHeight}
   transition:slide={{ axis: "x" }}
 >
-  <div class="input-wrapper">
-    <Search theme bind:value={searchText} />
+  <div class="input-wrapper sticky top-0 z-10">
+    <Search theme background bind:value={searchText} />
   </div>
 
-  <PivotDrag
-    title="Time"
-    {extraSpace}
-    {chipsPerSection}
-    items={timeGrainOptions}
-    {tableMode}
-    otherChipCounts={[filteredDimensions.length, filteredMeasures.length]}
-  />
+  <PivotDrag title="Time" items={timeGrainOptions} {tableMode} />
 
-  <PivotDrag
-    title="Measures"
-    {extraSpace}
-    {chipsPerSection}
-    items={filteredMeasures}
-    otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
-  />
+  <PivotDrag title="Measures" items={filteredMeasures} />
 
-  <PivotDrag
-    title="Dimensions"
-    {extraSpace}
-    {chipsPerSection}
-    items={filteredDimensions}
-    {tableMode}
-    otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
-  />
+  <PivotDrag title="Dimensions" items={filteredDimensions} {tableMode} />
 </div>
 
 <style lang="postcss">
   .sidebar {
-    @apply flex flex-col flex-none relative overflow-hidden;
+    @apply flex flex-col relative overflow-y-scroll;
     @apply h-full border-r z-0 w-60;
     transition-property: width;
     will-change: width;
-    @apply select-none bg-surface;
+    @apply select-none bg-surface-background;
   }
 
   .input-wrapper {

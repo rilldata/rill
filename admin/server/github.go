@@ -276,8 +276,8 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	}
 
 	var branch string
-	if proj.ProdBranch != "" {
-		branch = proj.ProdBranch
+	if proj.PrimaryBranch != "" {
+		branch = proj.PrimaryBranch
 	} else {
 		branch = "main"
 	}
@@ -315,10 +315,10 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 
 	// TODO : migrate to use service rather than calling UpdateProject directly
 	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-		Org:        org.Name,
-		Project:    proj.Name,
-		ProdBranch: &branch,
-		GitRemote:  &req.Remote,
+		Org:           org.Name,
+		Project:       proj.Name,
+		PrimaryBranch: &branch,
+		GitRemote:     &req.Remote,
 	})
 	if err != nil {
 		return nil, err
@@ -1138,7 +1138,7 @@ func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, to
 		Password:      token,
 		DefaultBranch: branch,
 	}
-	return cligitutil.CommitAndForcePush(ctx, projPath, config, "", author)
+	return cligitutil.CommitAndPush(ctx, projPath, config, "", author)
 }
 
 func (s *Server) githubAppInstallationURL(state githubConnectState) (string, error) {

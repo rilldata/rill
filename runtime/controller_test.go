@@ -264,8 +264,8 @@ path: data/foo.csv
 	h, release, err := rt.AcquireHandle(context.Background(), id, fooModel.State.ResultConnector)
 	require.NoError(t, err)
 	defer release()
-	modelManager, ok := h.AsModelManager(id)
-	require.True(t, ok)
+	modelManager, err := h.AsModelManager(id)
+	require.NoError(t, err)
 
 	// Delete the underlying table
 	modelManager.Delete(context.Background(), &drivers.ModelResult{

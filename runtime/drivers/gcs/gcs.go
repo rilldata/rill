@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -79,11 +80,17 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type ConfigProperties struct {
-	SecretJSON      string `mapstructure:"google_application_credentials"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-	// When working in s3 compatible mode
+	// For GCS native authentication google service account json credentials
+	SecretJSON string `mapstructure:"google_application_credentials"`
+	// For S3-compatible mode HMAC credentials
 	KeyID  string `mapstructure:"key_id"`
 	Secret string `mapstructure:"secret"`
+	// A list of bucket path prefixes that this connector is allowed to access.
+	// Useful when different buckets or bucket prefixes use different credentials,
+	// allowing the system to select the appropriate connector based on the bucket path.
+	// Example formats: `gs://my-bucket/` `gs://my-bucket/path/` `gs://my-bucket/path/prefix`
+	PathPrefixes    []string `mapstructure:"path_prefixes"`
+	AllowHostAccess bool     `mapstructure:"allow_host_access"`
 }
 
 func NewConfigProperties(prop map[string]any) (*ConfigProperties, error) {
@@ -111,7 +118,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		s3Config := s3.ConfigProperties{
 			AccessKeyID:     conf.KeyID,
 			SecretAccessKey: conf.Secret,
-			Endpoint:        "storage.googleapis.com",
+			Endpoint:        "https://storage.googleapis.com",
+			Region:          "auto",
+			PathPrefixes:    convertPrefixesToS3(conf.PathPrefixes),
 			AllowHostAccess: conf.AllowHostAccess,
 		}
 		config := make(map[string]any)
@@ -265,8 +274,8 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return c, true
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return c, nil
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
@@ -295,4 +304,19 @@ func (c *Connection) newClient(ctx context.Context) (*gcp.HTTPClient, error) {
 	}
 	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
 	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
+}
+
+func convertPrefixesToS3(prefixes []string) []string {
+	out := make([]string, len(prefixes))
+	for i, p := range prefixes {
+		switch {
+		case strings.HasPrefix(p, "gs://"):
+			out[i] = "s3://" + strings.TrimPrefix(p, "gs://")
+		case strings.HasPrefix(p, "gcs://"):
+			out[i] = "s3://" + strings.TrimPrefix(p, "gcs://")
+		default:
+			out[i] = p
+		}
+	}
+	return out
 }

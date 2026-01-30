@@ -74,8 +74,8 @@ func testCatalogPartitions(t *testing.T, catalog drivers.CatalogStore) {
 	partitions, err = catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{ModelID: modelID, Limit: 10})
 	require.NoError(t, err)
 	require.Len(t, partitions, 2)
-	requirePartitionEqual(t, partition, partitions[0])
-	requirePartitionEqual(t, partition2, partitions[1])
+	requirePartitionEqual(t, partition2, partitions[0])
+	requirePartitionEqual(t, partition, partitions[1])
 
 	err = catalog.DeleteModelPartitions(ctx, modelID)
 	require.NoError(t, err)

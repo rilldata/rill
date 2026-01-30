@@ -1,4 +1,5 @@
 import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
+import { guidGenerator } from "@rilldata/web-common/lib/guid.ts";
 
 /**
  * Stores embed params in-memory so that the components that manipulate url need not be aware of these.
@@ -14,6 +15,9 @@ export class EmbedStore {
    */
   public readonly missingRequireParams: string[] = [];
   public readonly navigationEnabled: boolean;
+  public readonly theme: string | null;
+  public readonly themeMode: string | null;
+  public readonly embedId: string;
 
   /**
    * Clean session storage for dashboards that are navigated to for the 1st time.
@@ -32,11 +36,18 @@ export class EmbedStore {
     return this._instance;
   }
 
+  public static isEmbedded() {
+    return this._instance !== null;
+  }
+
   private constructor(url: URL) {
     this.instanceId = url.searchParams.get("instance_id") ?? "";
     this.runtimeHost = url.searchParams.get("runtime_host") ?? "";
     this.accessToken = url.searchParams.get("access_token") ?? "";
     this.navigationEnabled = url.searchParams.get("navigation") === "true";
+    this.theme = url.searchParams.get("theme");
+    this.themeMode = url.searchParams.get("theme_mode");
+    this.embedId = `embed-${guidGenerator()}`;
 
     if (!this.instanceId) {
       this.missingRequireParams.push("instance_id");

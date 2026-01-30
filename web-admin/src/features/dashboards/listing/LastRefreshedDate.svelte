@@ -27,7 +27,7 @@
 
 {#if data}
   <Tooltip distance={8}>
-    <div class="text-[11px] text-gray-600">
+    <div class="text-[11px] text-fg-secondary">
       Last refreshed {timeAgo(data)}
     </div>
     <TooltipContent slot="tooltip-content">

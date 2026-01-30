@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -25,14 +26,22 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/s3",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "aws_access_key_id",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_access_key_id",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS access key ID",
+			Description: "AWS access key ID for explicit credentials",
+			Placeholder: "Enter your AWS access key ID",
+			Secret:      true,
+			Required:    true,
 		},
 		{
-			Key:    "aws_secret_access_key",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_secret_access_key",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS secret access key",
+			Description: "AWS secret access key for explicit credentials",
+			Placeholder: "Enter your AWS secret access key",
+			Secret:      true,
+			Required:    true,
 		},
 		{
 			Key:         "region",
@@ -93,8 +102,6 @@ var spec = drivers.Spec{
 	ImplementsObjectStore: true,
 }
 
-const defaultPageSize = 20
-
 func init() {
 	drivers.Register("s3", driver{})
 	drivers.RegisterAsConnector("s3", driver{})
@@ -113,7 +120,12 @@ type ConfigProperties struct {
 	RoleARN         string `mapstructure:"aws_role_arn"`
 	RoleSessionName string `mapstructure:"aws_role_session_name"`
 	ExternalID      string `mapstructure:"aws_external_id"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	// A list of bucket path prefixes that this connector is allowed to access.
+	// Useful when different buckets or bucket prefixes use different credentials,
+	// allowing the system to select the appropriate connector based on the bucket path.
+	// Example formats: `s3://my-bucket/` `s3://my-bucket/path/` `s3://my-bucket/path/prefix`
+	PathPrefixes    []string `mapstructure:"path_prefixes"`
+	AllowHostAccess bool     `mapstructure:"allow_host_access"`
 }
 
 // Open implements drivers.Driver
@@ -253,8 +265,8 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return c, true
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return c, nil
 }
 
 // AsFileStore implements drivers.Connection.
@@ -350,6 +362,13 @@ func getS3Client(ctx context.Context, confProp *ConfigProperties, bucket string)
 	}
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
 		if confProp.Endpoint != "" {
+			// Apply workaround if using Google Cloud Storage (GCS) endpoint
+			// This fixes signature issues with AWS SDK v2 when using GCS
+			// See: https://github.com/aws/aws-sdk-go-v2/issues/1816#issuecomment-1927281540
+			if strings.Contains(confProp.Endpoint, "storage.googleapis.com") {
+				// GCS alters the Accept-Encoding header which breaks the request signature
+				ignoreSigningHeaders(o, []string{"Accept-Encoding"})
+			}
 			o.BaseEndpoint = aws.String(confProp.Endpoint)
 			o.UsePathStyle = true
 		}

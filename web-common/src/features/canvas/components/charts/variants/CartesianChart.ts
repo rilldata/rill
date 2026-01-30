@@ -98,6 +98,10 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     });
   }
 
+  protected supportsComparison(): boolean {
+    return true;
+  }
+
   getMeasureLabels(): string[] | undefined {
     const config = get(this.specStore);
     const metricsViewName = config.metrics_view;
@@ -149,10 +153,10 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     return inputParams;
   }
 
-  updateProperty(
+  updateProperty = (
     key: keyof CartesianCanvasChartSpec,
     value: CartesianCanvasChartSpec[keyof CartesianCanvasChartSpec],
-  ) {
+  ) => {
     const currentSpec = get(this.specStore);
 
     if (key === "y") {
@@ -187,7 +191,7 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     }
 
     super.updateProperty(key, value);
-  }
+  };
 
   createChartDataQuery(
     ctx: CanvasStore,

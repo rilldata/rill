@@ -10,7 +10,7 @@ import (
 	"github.com/google/jsonschema-go/jsonschema"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
-	"github.com/rilldata/rill/runtime/pkg/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -46,7 +46,7 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 	}
 
 	// Pass messages and tools to the AI service
-	res, err := s.admin.AI.Complete(ctx, &ai.CompleteOptions{
+	res, err := s.admin.AI.Complete(ctx, &drivers.CompleteOptions{
 		Messages:     messages,
 		Tools:        req.Tools,
 		OutputSchema: outputSchema,

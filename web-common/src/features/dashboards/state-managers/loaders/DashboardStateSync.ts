@@ -95,6 +95,7 @@ export class DashboardStateSync {
   public getUrlForExploreState(exploreState: ExploreState) {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
     const pageState = get(page);
     const { data: rillDefaultExploreURLParams } = get(
       this.rillDefaultExploreURLParams,
@@ -107,6 +108,7 @@ export class DashboardStateSync {
     const redirectUrl = new URL(pageState.url);
     const exploreStateParams = getCleanedUrlParamsForGoto(
       exploreSpec,
+      metricsViewSpec,
       exploreState,
       timeControlsState,
       rillDefaultExploreURLParams,
@@ -149,6 +151,8 @@ export class DashboardStateSync {
           // initExploreState.selectedComparisonTimeRange,
         ],
         initExploreState.selectedTimezone,
+        undefined,
+        initExploreState.selectedTimeDimension,
       );
     }
 
@@ -165,6 +169,7 @@ export class DashboardStateSync {
       this.extraPrefix,
       initExploreState,
       exploreSpec,
+      metricsViewSpec,
       timeControlsState,
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
@@ -237,6 +242,8 @@ export class DashboardStateSync {
           // partialExplore.selectedComparisonTimeRange,
         ],
         partialExplore.selectedTimezone,
+        undefined,
+        partialExplore.selectedTimeDimension,
       );
     }
 
@@ -260,6 +267,7 @@ export class DashboardStateSync {
       this.extraPrefix,
       updatedExploreState,
       exploreSpec,
+      metricsViewSpec,
       timeControlsState,
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
@@ -290,7 +298,7 @@ export class DashboardStateSync {
    *
    * This will check if the url needs to be changed and will navigate to the new url.
    */
-  private gotoNewState(exploreState: ExploreState) {
+  private async gotoNewState(exploreState: ExploreState) {
     // Updating state either in handleExploreInit or handleURLChange will synchronously update the state triggering this function.
     // Since those methods handle redirect themselves we need to skip this logic.
     // Those methods need to replace the current URL while this does a direct navigation.
@@ -299,6 +307,7 @@ export class DashboardStateSync {
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
     const timeControlsState = get(this.timeControlStore);
 
     const pageState = get(page);
@@ -312,6 +321,7 @@ export class DashboardStateSync {
       this.extraPrefix,
       exploreState,
       exploreSpec,
+      metricsViewSpec,
       timeControlsState,
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
@@ -324,14 +334,15 @@ export class DashboardStateSync {
       );
     }
 
-    this.updating = false;
     // If the state didnt result in a new url then skip goto.
     // This avoids adding redundant urls to the history.
     if (newUrl.search === pageState.url.search) {
+      this.updating = false;
       return;
     }
 
     // dashboard changed so we should update the url
-    return goto(newUrl);
+    await goto(newUrl);
+    this.updating = false;
   }
 }
