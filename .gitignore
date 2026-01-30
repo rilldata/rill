@@ -90,5 +90,5 @@ latest.txt
 /clickhouse/
 
 # Claude resources
-CLAUDE.md
+/CLAUDE.md
 .claude/

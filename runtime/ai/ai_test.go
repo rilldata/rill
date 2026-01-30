@@ -48,9 +48,9 @@ func newSession(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Sessio
 // - It ensures the test is skipped in CI (short mode).
 func newEval(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Session {
 	// Eval tests are expensive, but we don't use testmode.Expensive here because it should have already been called before ingesting data.
-	// Most of the time, the test should have been marked expensive when EnableLLM was set, and we can check it wasn't forgotten by checking testing.Short().
+	// Most of the time, the test should have been marked expensive when AIConnector was set, and we can check it wasn't forgotten by checking testing.Short().
 	if testing.Short() {
-		t.Fatal("eval test was not marked expensive; did you forget to set EnableLLM in testruntime.InstanceOptions?")
+		t.Fatal("eval test was not marked expensive; did you forget to set AIConnector in testruntime.InstanceOptions?")
 	}
 
 	// Create test runtime instance and AI session
