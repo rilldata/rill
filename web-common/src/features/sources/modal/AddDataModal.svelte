@@ -178,8 +178,8 @@
     if (stepState.selectedAuthMethod === "public") {
       return "public";
     }
-    // Otherwise show connector instance name or driver name
-    return connectorInstanceName ?? selectedConnector?.name;
+    // Show connector instance name from store (multi-step flow) or prop, or fall back to driver name
+    return stepState.connectorInstanceName ?? connectorInstanceName ?? selectedConnector?.name;
   })();
 </script>
 

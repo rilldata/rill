@@ -28,6 +28,7 @@ import {
   resetConnectorStep,
   setConnectorConfig,
   setAuthMethod,
+  setConnectorInstanceName,
   setStep,
   type ConnectorStepState,
 } from "./connectorStepStore";
@@ -68,6 +69,7 @@ export class AddDataFormManager {
   dsn: ReturnType<typeof superForm>;
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
+  private connectorInstanceName: string | null;
   private initialParamsValues: Record<string, unknown>;
   private initialDsnValues: Record<string, unknown>;
 
@@ -89,6 +91,7 @@ export class AddDataFormManager {
   constructor(args: {
     connector: V1ConnectorDriver;
     formType: AddDataFormType;
+    connectorInstanceName?: string | null;
     onParamsUpdate: (event: SuperFormUpdateEvent) => void;
     onDsnUpdate: (event: SuperFormUpdateEvent) => void;
     getSelectedAuthMethod?: () => string | undefined;
@@ -96,12 +99,14 @@ export class AddDataFormManager {
     const {
       connector,
       formType,
+      connectorInstanceName,
       onParamsUpdate,
       onDsnUpdate,
       getSelectedAuthMethod,
     } = args;
     this.connector = connector;
     this.formType = formType;
+    this.connectorInstanceName = connectorInstanceName ?? null;
     this.getSelectedAuthMethod = getSelectedAuthMethod;
 
     // Layout height
@@ -413,7 +418,12 @@ export class AddDataFormManager {
 
       try {
         if (isMultiStepConnector && stepState.step === "source") {
-          await submitAddSourceForm(queryClient, connector, values);
+          // Ensure connector instance name is set in values for create_secrets_from_connectors
+          const effectiveConnectorInstanceName = stepState.connectorInstanceName ?? this.connectorInstanceName;
+          const sourceValues = effectiveConnectorInstanceName
+            ? { ...values, create_secrets_from_connectors: effectiveConnectorInstanceName }
+            : values;
+          await submitAddSourceForm(queryClient, connector, sourceValues);
           resetConnectorStep();
           this.resetConnectorForms();
           onClose();
@@ -426,9 +436,10 @@ export class AddDataFormManager {
             setStep("source");
             return;
           }
-          await submitAddConnectorForm(queryClient, connector, values, false);
+          const connectorName = await submitAddConnectorForm(queryClient, connector, values, false, true);
           setConnectorConfig({});
           setAuthMethod(null);
+          setConnectorInstanceName(connectorName);
           this.resetConnectorForms();
           setStep("source");
           return;
@@ -621,9 +632,12 @@ export class AddDataFormManager {
       if (stepState?.step === "connector") {
         return getConnectorYamlPreview(paramsFormValues);
       } else {
+        // Include connector instance name in combined values for create_secrets_from_connectors
+        const effectiveConnectorInstanceName = stepState?.connectorInstanceName ?? this.connectorInstanceName;
         const combinedValues = {
           ...(stepState?.connectorConfig || {}),
           ...paramsFormValues,
+          ...(effectiveConnectorInstanceName ? { create_secrets_from_connectors: effectiveConnectorInstanceName } : {}),
         } as Record<string, unknown>;
         return getSourceYamlPreview(combinedValues);
       }

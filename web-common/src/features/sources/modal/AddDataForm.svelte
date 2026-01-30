@@ -64,6 +64,7 @@
     formManager = new AddDataFormManager({
       connector,
       formType,
+      connectorInstanceName,
       onParamsUpdate: (e: any) => handleOnUpdate(e),
       onDsnUpdate: (e: any) => handleOnUpdate(e),
       getSelectedAuthMethod: () => undefined,

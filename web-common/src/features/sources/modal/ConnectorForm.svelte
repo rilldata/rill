@@ -57,6 +57,7 @@
   const formManager = new AddDataFormManager({
     connector,
     formType: "connector",
+    connectorInstanceName,
     onParamsUpdate: forwardOnUpdate,
     onDsnUpdate: (_e: any) => {},
     getSelectedAuthMethod: () => activeAuthMethod ?? undefined,
@@ -88,6 +89,9 @@
 
   $: selectedAuthMethod = $selectedAuthMethodStore;
 
+  // Use connector instance name from prop or store (store is set during multi-step flow)
+  $: effectiveConnectorInstanceName = connectorInstanceName ?? stepState.connectorInstanceName;
+
   // Initialize (and clear) source step values whenever we enter the source step.
   $: if (stepState.step === "source") {
     const sourceProperties = connector.sourceProperties ?? [];
@@ -97,8 +101,8 @@
       ...(stepState.connectorConfig ?? {}),
     };
     // If we have a connector instance name, use it for create_secrets_from_connectors
-    if (connectorInstanceName) {
-      combinedValues.create_secrets_from_connectors = connectorInstanceName;
+    if (effectiveConnectorInstanceName) {
+      combinedValues.create_secrets_from_connectors = effectiveConnectorInstanceName;
     }
     paramsForm.update(() => combinedValues, { taint: false });
   }

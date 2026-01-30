@@ -72,19 +72,16 @@
       />
     </div>
 
-    {#if isConnector}
-      <div class="flex items-center gap-x-2">
-        <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
-        <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
-      </div>
-    {/if}
-
     <div class="flex items-center gap-x-2 w-fit flex-none">
-      <slot name="workspace-controls" {width} />
+      {#if isConnector}
+                <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
 
-      <div class="flex-none">
-        <slot name="cta" {width} />
-      </div>
+          <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
+
+      {/if}
+
+      <slot name="workspace-controls" {width} />
+      <slot name="cta" {width} />
 
       {#if showTableToggle}
         <Tooltip distance={8}>

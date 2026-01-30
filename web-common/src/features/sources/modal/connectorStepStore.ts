@@ -6,12 +6,14 @@ export type ConnectorStepState = {
   step: ConnectorStep;
   connectorConfig: Record<string, unknown> | null;
   selectedAuthMethod: string | null;
+  connectorInstanceName: string | null;
 };
 
 export const connectorStepStore = writable<ConnectorStepState>({
   step: "connector",
   connectorConfig: null,
   selectedAuthMethod: null,
+  connectorInstanceName: null,
 });
 
 export function setStep(step: ConnectorStep) {
@@ -29,10 +31,18 @@ export function setAuthMethod(method: string | null) {
   }));
 }
 
+export function setConnectorInstanceName(name: string | null) {
+  connectorStepStore.update((state) => ({
+    ...state,
+    connectorInstanceName: name,
+  }));
+}
+
 export function resetConnectorStep() {
   connectorStepStore.set({
     step: "connector",
     connectorConfig: null,
     selectedAuthMethod: null,
+    connectorInstanceName: null,
   });
 }
