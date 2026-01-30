@@ -19,18 +19,31 @@ export type JSONSchemaField = {
   };
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
+  /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
   "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
+  /** Render the field value in a monospace font. */
   "x-monospace"?: boolean;
+  /** Which modal step this field belongs to. */
   "x-step"?: "connector" | "source" | "explorer";
+  /** Field holds a secret value that should be stored in .env, not in YAML. */
   "x-secret"?: boolean;
+  /** Show this field only when other fields match the given values. */
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
+  /** Human-readable labels for each enum option, in the same order as `enum`. */
   "x-enum-labels"?: string[];
+  /** Descriptive text for each enum option, in the same order as `enum`. */
   "x-enum-descriptions"?: string[];
+  /** Placeholder text shown in the input when empty. */
   "x-placeholder"?: string;
+  /** Helper text displayed below the input. */
   "x-hint"?: string;
+  /** Accepted file types for file inputs (e.g. ".json,.csv"). */
   "x-accept"?: string;
+  /** Field is read-only and shown for informational purposes only. */
   "x-informational"?: boolean;
+  /** URL to external documentation for this field, shown as a help link. */
   "x-docs-url"?: string;
+  /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**
    * Explicit grouping for radio/select options: maps an option value to the
