@@ -3,11 +3,9 @@
     useTablesList,
     useTableMetadata,
   } from "@rilldata/web-admin/features/projects/status/selectors";
+  import { filterTemporaryTables } from "@rilldata/web-admin/features/projects/status/model-overview/utils";
   import ProjectTables from "@rilldata/web-admin/features/projects/status/model-overview/ProjectTables.svelte";
-  import {
-    createRuntimeServiceGetInstance,
-    type V1OlapTableInfo,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { formatConnectorName } from "@rilldata/web-admin/features/projects/status/display-utils";
 
@@ -27,11 +25,7 @@
 
   // Get tables list
   $: tablesList = useTablesList(instanceId, "");
-  $: filteredTables =
-    $tablesList.data?.tables?.filter(
-      (t): t is V1OlapTableInfo =>
-        !!t.name && !t.name.startsWith("__rill_tmp_"),
-    ) ?? [];
+  $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
 
   // Get table metadata to determine views vs tables
   $: tableMetadata = useTableMetadata(instanceId, "", filteredTables);

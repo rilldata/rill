@@ -4,7 +4,6 @@
   import {
     createRuntimeServiceCreateTrigger,
     getRuntimeServiceListResourcesQueryKey,
-    type V1OlapTableInfo,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -15,6 +14,7 @@
     useTableCardinality,
     useModelResources,
   } from "../selectors";
+  import { filterTemporaryTables } from "./utils";
   import ModelInfoDialog from "./ModelInfoDialog.svelte";
   import ModelLogsPanel from "./ModelLogsPanel.svelte";
   import ModelPartitionsDialog from "./ModelPartitionsDialog.svelte";
@@ -26,11 +26,7 @@
   $: tablesList = useTablesList(instanceId, "");
 
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
-  $: filteredTables =
-    $tablesList.data?.tables?.filter(
-      (t): t is V1OlapTableInfo =>
-        !!t.name && !t.name.startsWith("__rill_tmp_"),
-    ) ?? [];
+  $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
 
   $: tableMetadata = useTableMetadata(instanceId, "", filteredTables);
   $: tableCardinality = useTableCardinality(instanceId, filteredTables);

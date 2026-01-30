@@ -4,22 +4,27 @@
   import PartitionsFilter from "@rilldata/web-common/features/models/partitions/PartitionsFilter.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import type { Selected } from "bits-ui";
+  import {
+    shouldFilterByErrored,
+    shouldFilterByPending,
+    type PartitionFilterType,
+  } from "./utils";
 
   export let open = false;
   export let resource: V1Resource | null = null;
   export let onClose: () => void = () => {};
 
-  let selectedFilter = "all";
+  let selectedFilter: PartitionFilterType = "all";
 
   function onFilterChange(newSelection: Selected<string>) {
     if (newSelection?.value) {
-      selectedFilter = newSelection.value;
+      selectedFilter = newSelection.value as PartitionFilterType;
     }
   }
 
   $: modelName = resource?.meta?.name?.name ?? "";
-  $: whereErrored = selectedFilter === "errors";
-  $: wherePending = selectedFilter === "pending";
+  $: whereErrored = shouldFilterByErrored(selectedFilter);
+  $: wherePending = shouldFilterByPending(selectedFilter);
 </script>
 
 <Dialog.Root

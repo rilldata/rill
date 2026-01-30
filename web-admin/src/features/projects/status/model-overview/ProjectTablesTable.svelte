@@ -7,6 +7,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
+  import { compareSizesDescending } from "./utils";
   import ModelSizeCell from "./ModelSizeCell.svelte";
   import NameCell from "../NameCell.svelte";
   import MaterializationCell from "./MaterializationCell.svelte";
@@ -95,18 +96,7 @@
       sortingFn: (rowA, rowB) => {
         const sizeA = rowA.getValue("size") as string | number | undefined;
         const sizeB = rowB.getValue("size") as string | number | undefined;
-
-        let numA = -1;
-        if (sizeA && sizeA !== "-1") {
-          numA = typeof sizeA === "number" ? sizeA : parseInt(sizeA, 10);
-        }
-
-        let numB = -1;
-        if (sizeB && sizeB !== "-1") {
-          numB = typeof sizeB === "number" ? sizeB : parseInt(sizeB, 10);
-        }
-
-        return numB - numA; // Descending
+        return compareSizesDescending(sizeA, sizeB);
       },
       cell: ({ getValue }) =>
         flexRender(ModelSizeCell, {

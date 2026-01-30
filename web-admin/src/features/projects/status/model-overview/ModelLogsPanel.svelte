@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/runtime-client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { onMount, tick } from "svelte";
+  import { formatLogTime, getLogLevelClass, getLogLevelLabel } from "./utils";
 
   $: ({ instanceId } = $runtime);
 
@@ -58,45 +59,6 @@
     // Scroll to bottom on initial load
     tick().then(() => scrollToBottom());
   });
-
-  function formatTime(time: string | undefined): string {
-    if (!time) return "";
-    const date = new Date(time);
-    return date.toLocaleTimeString(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  }
-
-  function getLevelClass(level: string | undefined): string {
-    switch (level) {
-      case "LOG_LEVEL_ERROR":
-      case "LOG_LEVEL_FATAL":
-        return "text-red-600";
-      case "LOG_LEVEL_WARN":
-        return "text-yellow-600";
-      default:
-        return "text-fg-muted";
-    }
-  }
-
-  function getLevelLabel(level: string | undefined): string {
-    switch (level) {
-      case "LOG_LEVEL_ERROR":
-        return "ERROR";
-      case "LOG_LEVEL_FATAL":
-        return "FATAL";
-      case "LOG_LEVEL_WARN":
-        return "WARN";
-      case "LOG_LEVEL_INFO":
-        return "INFO";
-      case "LOG_LEVEL_DEBUG":
-        return "DEBUG";
-      default:
-        return "INFO";
-    }
-  }
 </script>
 
 <section class="flex flex-col gap-y-2">
@@ -123,9 +85,9 @@
     {:else}
       {#each modelLogs as log}
         <div class="py-0.5 flex gap-x-2 hover:bg-surface-hover">
-          <span class="text-fg-muted flex-none">{formatTime(log.time)}</span>
-          <span class="{getLevelClass(log.level)} flex-none w-12"
-            >{getLevelLabel(log.level)}</span
+          <span class="text-fg-muted flex-none">{formatLogTime(log.time)}</span>
+          <span class="{getLogLevelClass(log.level)} flex-none w-12"
+            >{getLogLevelLabel(log.level)}</span
           >
           <span class="text-fg-secondary break-all"
             >{log.message}{log.jsonPayload ? ` ${log.jsonPayload}` : ""}</span

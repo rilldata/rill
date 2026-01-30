@@ -9,6 +9,11 @@
     AlertCircleIcon,
   } from "lucide-svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import {
+    isModelPartitioned,
+    isModelIncremental,
+    hasModelErroredPartitions,
+  } from "./utils";
 
   export let resource: V1Resource | undefined;
   export let isDropdownOpen: boolean;
@@ -19,11 +24,9 @@
   export let onIncrementalRefreshClick: (resource: V1Resource) => void;
   export let onFullRefreshClick: (resource: V1Resource) => void;
 
-  $: isPartitioned = !!resource?.model?.spec?.partitionsResolver;
-  $: isIncremental = !!resource?.model?.spec?.incremental;
-  $: hasErroredPartitions =
-    !!resource?.model?.state?.partitionsModelId &&
-    !!resource?.model?.state?.partitionsHaveErrors;
+  $: isPartitioned = isModelPartitioned(resource);
+  $: isIncremental = isModelIncremental(resource);
+  $: hasErroredPartitions = hasModelErroredPartitions(resource);
 </script>
 
 {#if resource}
