@@ -186,7 +186,6 @@ async function saveConnectorAnyway(
       connector,
       formValues,
       "connector",
-      newConnectorName,
     );
   }
 
@@ -202,7 +201,6 @@ async function saveConnectorAnyway(
   await runtimeServicePutFile(resolvedInstanceId, {
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
-      connectorInstanceName: newConnectorName,
       existingEnvBlob: originalEnvBlob,
     }),
     create: true,
@@ -345,7 +343,6 @@ export async function submitAddConnectorForm(
         {
           path: newConnectorFilePath,
           blob: compileConnectorYAML(connector, formValues, {
-            connectorInstanceName: newConnectorName,
             existingEnvBlob: originalEnvBlob,
           }),
           create: true,

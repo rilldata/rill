@@ -39,7 +39,6 @@ export function compileConnectorYAML(
   options?: {
     fieldFilter?: (property: ConnectorDriverProperty) => boolean;
     orderedProperties?: ConnectorDriverProperty[];
-    connectorInstanceName?: string;
     existingEnvBlob?: string;
   },
 ) {
@@ -126,7 +125,6 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
-  _connectorInstanceName?: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -234,7 +232,7 @@ export function deleteEnvVariable(
  * Generic properties (AWS, Google, etc.) use no prefix
  * Driver-specific properties use DriverName_PropertyKey format
  */
-function getGenericEnvVarName(driverName: string, propertyKey: string): string {
+export function getGenericEnvVarName(driverName: string, propertyKey: string): string {
   // Generic properties that don't need a driver prefix
   const genericProperties = new Set([
     // Google Cloud credentials
@@ -275,7 +273,7 @@ function getGenericEnvVarName(driverName: string, propertyKey: string): string {
 /**
  * Check if an environment variable exists in the env blob
  */
-function envVarExists(envBlob: string, varName: string): boolean {
+export function envVarExists(envBlob: string, varName: string): boolean {
   const lines = envBlob.split("\n");
   return lines.some((line) => line.startsWith(`${varName}=`));
 }
@@ -283,7 +281,7 @@ function envVarExists(envBlob: string, varName: string): boolean {
 /**
  * Find the next available environment variable name by appending _1, _2, etc.
  */
-function findAvailableEnvVarName(envBlob: string, baseName: string): string {
+export function findAvailableEnvVarName(envBlob: string, baseName: string): string {
   let varName = baseName;
   let counter = 1;
 
