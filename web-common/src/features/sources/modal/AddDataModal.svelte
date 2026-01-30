@@ -40,7 +40,7 @@
   /**
    * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
    * Derives implements* flags from the schema's x-category.
-   * Uses x-backend-connector for the name when specified.
+   * Uses x-driver for the name when specified.
    */
   function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
     const schema = getConnectorSchema(info.name);

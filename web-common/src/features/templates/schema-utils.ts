@@ -375,14 +375,14 @@ export function getConditionalValues(
 }
 
 /**
- * Returns the backend connector name for a schema.
- * If x-backend-connector is specified, returns that; otherwise returns the schemaName.
+ * Returns the backend driver name for a schema.
+ * If x-driver is specified, returns that; otherwise returns the schemaName.
  */
 export function getBackendConnectorName(
   schema: MultiStepFormSchema | null,
   schemaName: string,
 ): string {
-  return schema?.["x-backend-connector"] ?? schemaName;
+  return schema?.["x-driver"] ?? schemaName;
 }
 
 /**

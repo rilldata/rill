@@ -77,12 +77,12 @@ export function getConnectorSchema(
 }
 
 /**
- * Get the backend connector name for a given schema name.
- * Returns x-backend-connector if specified, otherwise returns the schema name.
+ * Get the backend driver name for a given schema name.
+ * Returns x-driver if specified, otherwise returns the schema name.
  */
 export function getBackendConnectorName(schemaName: string): string {
   const schema = getConnectorSchema(schemaName);
-  return schema?.["x-backend-connector"] ?? schemaName;
+  return schema?.["x-driver"] ?? schemaName;
 }
 
 /**

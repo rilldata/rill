@@ -102,10 +102,10 @@ export type JSONSchemaObject = {
   "x-form-height"?: "default" | "tall";
   /**
    * Backend connector name when different from schema name.
-   * Used when a UI variant (e.g., "clickhousecloud") should submit
-   * to a different backend connector (e.g., "clickhouse").
+   * Used when a UI variant (e.g., "clickhousecloud") should map
+   * to a different backend driver (e.g., "clickhouse").
    */
-  "x-backend-connector"?: string;
+  "x-driver"?: string;
   /**
    * Custom button labels per field value.
    * Maps field key -> value -> button labels.
