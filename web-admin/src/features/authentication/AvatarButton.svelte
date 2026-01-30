@@ -10,6 +10,7 @@
   import { createAdminServiceGetCurrentUser } from "../../client";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
+  import ViewAsUserOrgPopover from "../view-as-user/ViewAsUserOrgPopover.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   /**
@@ -33,6 +34,9 @@
 
   $: ({ params } = $page);
 
+  // Determine if we're at org level (have org but no project)
+  $: isAtOrgLevel = !!params.organization && !params.project;
+
   function handlePylon() {
     window.Pylon("show");
   }
@@ -49,6 +53,7 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content>
     {#if params.organization && params.project}
+      <!-- Within a project: show View As for project admins -->
       <ProjectAccessControls
         organization={params.organization}
         project={params.project}
@@ -90,6 +95,28 @@
           Reports
         </DropdownMenu.Item>
       {/if}
+    {:else if isAtOrgLevel && isOrgAdmin}
+      <!-- At org level: show View As for org admins (with project selector) -->
+      <DropdownMenu.Sub bind:open={subMenuOpen}>
+        <DropdownMenu.SubTrigger
+          on:click={() => {
+            subMenuOpen = !subMenuOpen;
+          }}
+        >
+          View as
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent
+          class="flex flex-col min-w-[200px] max-w-[350px]"
+        >
+          <ViewAsUserOrgPopover
+            organization={params.organization}
+            onSelectUser={() => {
+              subMenuOpen = false;
+              primaryMenuOpen = false;
+            }}
+          />
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
     {/if}
 
     <ThemeToggle />
