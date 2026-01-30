@@ -572,6 +572,7 @@ export class AddDataFormManager {
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
           secretKeys: rewrittenSecretKeys,
           stringKeys: rewrittenStringKeys,
+          originalDriverName: connector.name || undefined,
         });
       }
       return getConnectorYamlPreview(rewrittenFormValues);

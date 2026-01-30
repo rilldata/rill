@@ -56,12 +56,13 @@ export function compileConnectorYAML(
   },
 ) {
   // Add instructions to the top of the file
+  const driverName = getDriverNameForConnector(connector.name as string);
   const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+
 type: connector
 
-driver: ${getDriverNameForConnector(connector.name as string)}`;
+driver: ${driverName}`;
 
   // Use the provided orderedProperties if available.
   let properties = options?.orderedProperties ?? [];

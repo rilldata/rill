@@ -13,11 +13,13 @@ import {
 } from "../templates/schema-utils";
 
 // Helper text that we put at the top of every Model YAML file
-const SOURCE_MODEL_FILE_TOP = `# Model YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+function sourceModelFileTop(driverName: string) {
+  return `# Model YAML
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
 
 type: model
 materialize: true`;
+}
 
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
@@ -26,6 +28,7 @@ export function compileSourceYAML(
     secretKeys?: string[];
     stringKeys?: string[];
     connectorInstanceName?: string;
+    originalDriverName?: string;
   },
 ) {
   const schema = getConnectorSchema(connector.name ?? "");
@@ -98,15 +101,16 @@ export function compileSourceYAML(
   // Use connector instance name if provided, otherwise fall back to driver name
   const connectorName = opts?.connectorInstanceName || connector.name;
 
+  const driverName = opts?.originalDriverName || connector.name || "duckdb";
   return (
-    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connectorName}\n\n` +
+    `${sourceModelFileTop(driverName)}\n\nconnector: ${connectorName}\n\n` +
     compiledKeyValues +
     devSection
   );
 }
 
 export function compileLocalFileSourceYAML(path: string) {
-  return `${SOURCE_MODEL_FILE_TOP}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
+  return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
 function buildDuckDbQuery(path: string | undefined): string {

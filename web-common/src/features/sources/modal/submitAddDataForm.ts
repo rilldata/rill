@@ -486,6 +486,7 @@ export async function submitAddSourceForm(
       secretKeys: schemaSecretKeys,
       stringKeys: schemaStringKeys,
       connectorInstanceName: yamlConnectorInstanceName,
+      originalDriverName: connector.name || undefined,
     }),
     create: true,
     createOnly: false,
