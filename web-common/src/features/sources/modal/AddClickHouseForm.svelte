@@ -20,7 +20,8 @@
   import type { ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
-  import { isEmpty, normalizeErrors } from "./utils";
+  import { normalizeErrors } from "../../templates/error-utils";
+  import { isEmpty } from "./utils";
   import {
     CONNECTOR_TYPE_OPTIONS,
     CONNECTION_TAB_OPTIONS,
@@ -244,7 +245,6 @@
       connectionTab === "parameters"
     ) {
       (values as any).ssl = true;
-      (values as any).port = "8443";
     }
 
     try {
@@ -400,14 +400,19 @@
                   id={propertyKey}
                   label={property.displayName}
                   placeholder={property.placeholder}
-                  optional={!property.required}
+                  optional={property.required}
                   secret={property.secret}
                   hint={property.hint}
                   errors={normalizeErrors($paramsErrors[propertyKey])}
                   bind:value={$paramsForm[propertyKey]}
                   onInput={(_, e) => onStringInputChange(e)}
                   alwaysShowError
-                  disabled={connectorType === "clickhouse-cloud" && isPortField}
+                  options={connectorType === "clickhouse-cloud" && isPortField
+                    ? [
+                        { value: "8443", label: "8443 (HTTPS)" },
+                        { value: "9440", label: "9440 (Native Secure)" },
+                      ]
+                    : undefined}
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
                 <Checkbox

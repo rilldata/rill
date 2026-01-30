@@ -16,6 +16,7 @@ rill org upload-logo [<org-name> [<path-to-image>]] [flags]
       --org string    Organization name
       --path string   Path to image file (PNG or JPEG)
       --remove        Remove the current logo
+      --dark          Target the dark-mode logo variant
 ```
 
 ### Global flags

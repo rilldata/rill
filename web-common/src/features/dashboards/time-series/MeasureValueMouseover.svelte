@@ -8,12 +8,16 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { fade } from "svelte/transition";
+
   export let point;
   export let xAccessor;
   export let yAccessor;
   export let showComparison = false;
   export let mouseoverFormat;
   export let numberKind: NumberKind;
+  export let colorClass = "stroke-gray-400";
+  export let strokeWidth = 2;
+
   $: comparisonYAccessor = `comparison.${yAccessor}`;
 
   $: x = point?.[xAccessor];
@@ -51,7 +55,7 @@
     y: currentPointIsNull ? lastAvailableCurrentY : y,
     yOverride: currentPointIsNull,
     yOverrideLabel: "no current data",
-    yOverrideStyleClass: "fill-gray-500 italic",
+    yOverrideStyleClass: "fill-fg-secondary italic",
     key: "main",
     label:
       showComparison &&
@@ -64,11 +68,11 @@
         : "",
     pointColor: "var(--color-theme-700)",
     valueStyleClass: "font-semibold",
-    valueColorClass: "fill-gray-600",
+    valueColorClass: "fill-fg-secondary",
     labelColorClass:
       !comparisonIsPositive && showComparison
         ? "fill-red-500"
-        : "fill-gray-600",
+        : "fill-fg-secondary",
   };
 
   $: comparisonPoint =
@@ -78,13 +82,13 @@
           y: comparisonPointIsNull ? lastAvailableComparisonY : comparisonY,
           yOverride: comparisonPointIsNull,
           yOverrideLabel: "no comparison data",
-          yOverrideStyleClass: "fill-gray-500 italic",
+          yOverrideStyleClass: "fill-fg-secondary italic",
           label: "prev.",
           key: "comparison",
           valueStyleClass: "font-normal",
           pointColor: "var(--color-theme-300)",
-          valueColorClass: "fill-gray-500",
-          labelColorClass: "fill-gray-500",
+          valueColorClass: "fill-fg-secondary",
+          labelColorClass: "fill-fg-secondary",
         }
       : undefined;
 
@@ -106,8 +110,6 @@
 </script>
 
 <WithGraphicContexts let:xScale let:yScale>
-  {@const strokeWidth = showComparison ? 2 : 4}
-  {@const colorClass = "stroke-gray-400"}
   <WithTween
     tweenProps={{ duration: 25 }}
     value={xScale(x)}
@@ -144,7 +146,7 @@
                 x2={xArrow + dist}
                 y1={yLoc}
                 y2={yLoc + signedDist}
-                stroke="var(--surface)"
+                stroke="var(--surface-background)"
                 stroke-width={strokeWidth + 3}
                 stroke-linecap="round"
               />
@@ -153,7 +155,7 @@
                 x2={xArrow - dist}
                 y1={yLoc}
                 y2={yLoc + signedDist}
-                stroke="var(--surface)"
+                stroke="var(--surface-background)"
                 stroke-width={strokeWidth + 3}
                 stroke-linecap="round"
               />
@@ -164,7 +166,7 @@
               x2={xArrow}
               y1={output.y + yBuffer}
               y2={output.dy - yBuffer}
-              stroke="var(--surface)"
+              stroke="var(--surface-background)"
               stroke-width={strokeWidth + 3}
               stroke-linecap="round"
             />
@@ -211,8 +213,8 @@
           x2={xArrow}
           y1={yScale(0)}
           y2={output.y}
-          stroke-width="4"
-          class="stroke-theme-300"
+          stroke-width={strokeWidth}
+          class={colorClass}
         />
       {/if}
     </WithTween>

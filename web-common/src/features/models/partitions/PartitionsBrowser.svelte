@@ -65,6 +65,6 @@
   }
 
   .help-text {
-    @apply text-xs text-gray-500;
+    @apply text-xs text-fg-secondary;
   }
 </style>

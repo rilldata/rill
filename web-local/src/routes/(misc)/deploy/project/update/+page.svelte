@@ -5,7 +5,6 @@
     getIsOrgOnTrial,
     getPlanUpgradeUrl,
   } from "@rilldata/web-common/features/organization/utils.ts";
-  import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import {
     createLocalServiceGetProjectRequest,
@@ -18,6 +17,7 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import type { PageData } from "./$types";
+  import { getDeployingPageUrl } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
 
   export let data: PageData;
 
@@ -52,8 +52,8 @@
       createManagedRepo,
     });
     const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
-    const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);
-    window.open(projectUrlWithSessionId, "_self");
+    const projectDeployLandingPage = getDeployingPageUrl(projectUrl, false);
+    window.open(projectDeployLandingPage, "_self");
   }
 
   function onRetry() {

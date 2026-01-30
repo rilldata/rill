@@ -25,18 +25,20 @@ import (
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
-	// Register database driver and supported provisioners
+	// Register drivers
 	_ "github.com/rilldata/rill/admin/database/postgres"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
+	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 )
 
 // Fixture is a test fixture for an admin service and server.
@@ -53,6 +55,7 @@ type Fixture struct {
 	Admin      *admin.Service
 	Server     *server.Server
 	ServerOpts *server.Options
+	Audience   *runtimeauth.Audience
 }
 
 // New creates an ephemeral admin service and server for testing.
@@ -110,6 +113,13 @@ func New(t *testing.T) *Fixture {
 		},
 	}))
 
+	// Initialize mock AI using drivers.Open pattern
+	mockAIHandle, err := drivers.Open("mock_ai", "test", map[string]any{}, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+	require.NoError(t, err)
+	t.Cleanup(func() { mockAIHandle.Close() })
+	mockAI, ok := mockAIHandle.AsAI("test")
+	require.True(t, ok)
+
 	// Admin service
 	admOpts := &admin.Options{
 		DatabaseDriver:            "postgres",
@@ -125,7 +135,7 @@ func New(t *testing.T) *Fixture {
 		AutoscalerCron:            "",
 		ScaleDownConstraint:       0,
 	}
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, newGithub(t), ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, newGithub(t), mockAI, nil, billing.NewNoop(), payment.NewNoop())
 	require.NoError(t, err)
 	t.Cleanup(func() { adm.Close() })
 
@@ -156,10 +166,16 @@ func New(t *testing.T) *Fixture {
 	group.Go(func() error { return srv.ServeHTTP(ctx) })
 	require.NoError(t, srv.AwaitServing(ctx))
 
+	// Create Audience
+	audienceURL := "http://example.org"
+	aud, err := runtimeauth.OpenAudience(context.Background(), zap.NewNop(), externalURL, audienceURL)
+	require.NoError(t, err)
+
 	return &Fixture{
 		Admin:      adm,
 		Server:     srv,
 		ServerOpts: srvOpts,
+		Audience:   aud,
 	}
 }
 

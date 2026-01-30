@@ -56,7 +56,7 @@
         name: row.original.userName ?? row.original.email,
         email: row.original.userEmail,
         isCurrentUser: row.original.userEmail === currentUserEmail,
-        pendingAcceptance: Boolean(row.original.invitedBy),
+        pendingAcceptance: "invitedBy" in row.original,
         photoUrl: row.original.userPhotoUrl,
         role: row.original.roleName,
       }),
@@ -88,6 +88,7 @@
       flexRender(UserGroupsCell, {
         userId: row.original.userId,
         organization,
+        groupCount: row.original.usergroupsCount ?? 0,
         onEditUserGroup,
       }),
     meta: {
@@ -102,6 +103,7 @@
       flexRender(UserProjectsCell, {
         organization,
         userId: row.original.userId,
+        projectCount: row.original.projectsCount ?? 0,
       }),
     meta: {
       widthPercent: 40,
@@ -119,6 +121,7 @@
         isCurrentUser: row.original.userEmail === currentUserEmail,
         organizationPermissions,
         isBillingContact: row.original.userEmail === billingContact,
+        pendingAcceptance: "invitedBy" in row.original,
         onAttemptRemoveBillingContactUser,
         onConvertToMember: () => onConvertToMember(row.original),
       }),
@@ -145,7 +148,7 @@
   const headerIcons = {
     roleName: {
       icon: ExternalLinkIcon,
-      href: "https://docs.rilldata.com/manage/roles-permissions#organization-level-permissions",
+      href: "https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions#organization-level-permissions",
     },
   };
 </script>

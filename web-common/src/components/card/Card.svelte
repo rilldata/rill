@@ -29,21 +29,24 @@
 
 <style lang="postcss">
   a {
-    @apply bg-no-repeat bg-center bg-cover;
+    @apply bg-no-repeat bg-center border bg-cover;
     @apply relative select-none;
     @apply size-60 rounded-md;
     @apply flex flex-col items-center justify-center gap-y-2;
-    @apply transition duration-300 ease-out;
     @apply cursor-pointer overflow-hidden;
 
     box-shadow:
       0px 2px 3px rgba(15, 23, 42, 0.06),
-      0px 1px 3px rgba(15, 23, 42, 0.08),
-      0px 0px 0px 1px rgba(15, 23, 42, 0.12);
+      0px 1px 3px rgba(15, 23, 42, 0.08);
   }
 
   .gradient {
-    @apply bg-gradient-to-b from-surface to-slate-50;
+    @apply bg-gradient-to-b from-[#FFFFFF] to-[#F8FAFC];
+  }
+
+  :global(.dark) .gradient {
+    @apply bg-gray-300;
+    background-image: linear-gradient(#6b6b6b33 34%, #00000033);
   }
 
   a[aria-disabled="true"] {
@@ -56,10 +59,6 @@
   }
 
   a:hover {
-    box-shadow:
-      0px 2px 3px rgba(99, 102, 241, 0.2),
-      0px 1px 3px rgba(15, 23, 42, 0.08),
-      0px 0px 0px 1px rgba(15, 23, 42, 0.12),
-      0px 4px 6px rgba(15, 23, 42, 0.12);
+    @apply shadow-lg;
   }
 </style>

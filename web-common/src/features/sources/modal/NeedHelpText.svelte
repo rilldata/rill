@@ -6,8 +6,10 @@
 </script>
 
 <div>
-  <div class="text-sm leading-none font-medium mb-4">Help</div>
-  <div class="text-sm leading-normal font-medium text-muted-foreground mb-2">
+  <div class="text-sm leading-none font-medium text-fg-secondary mb-4">
+    Help
+  </div>
+  <div class="text-sm leading-normal font-medium text-fg-muted mb-2">
     Need help connecting to {connector.displayName}? Check out our documentation
     for detailed instructions.
   </div>
@@ -22,4 +24,17 @@
     </a>
     <ExternalLinkIcon size="16px" color="#6366F1" />
   </span>
+  {#if connector.displayName === "DuckDB" || connector.displayName === "SQLite"}
+    <div class="mt-8">
+      <div class="text-sm leading-none font-medium text-fg-secondary mb-4">
+        Additional Information
+      </div>
+
+      <div class="text-sm leading-normal font-medium text-fg-muted mb-2">
+        External {connector.displayName} files are meant for local development only.
+        They may run fine on your machine, but aren’t reliably supported in production
+        deployments—especially if the file is large (100MB) or outside the data directory.
+      </div>
+    </div>
+  {/if}
 </div>

@@ -77,6 +77,26 @@ paths:
           in: path
           required: true
           type: string
+  /v1/deployments/{deploymentId}/config:
+    get:
+      summary: |-
+        GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+        This is called by the runtime to pull its Variables and Annotations from the admin service.
+      operationId: AdminService_GetDeploymentConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
   /v1/deployments/{deploymentId}/credentials:
     post:
       summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -464,6 +484,8 @@ paths:
               displayName:
                 type: string
               logoAssetId:
+                type: string
+              logoDarkAssetId:
                 type: string
               faviconAssetId:
                 type: string
@@ -1022,7 +1044,7 @@ paths:
                 format: int64
               subpath:
                 type: string
-              prodBranch:
+              primaryBranch:
                 type: string
               gitRemote:
                 type: string
@@ -1093,6 +1115,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: branch
+          description: Optional branch to get deployment for. If not set, then project's primary_branch is used.
+          in: query
+          required: false
+          type: string
         - name: accessTokenTtlSeconds
           in: query
           required: false
@@ -1162,7 +1189,7 @@ paths:
                 type: boolean
               directoryName:
                 type: string
-              prodBranch:
+              primaryBranch:
                 type: string
               gitRemote:
                 type: string
@@ -1491,6 +1518,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
         - name: userId
           in: query
           required: false
@@ -1524,6 +1555,14 @@ paths:
             properties:
               environment:
                 type: string
+              branch:
+                type: string
+                description: "Branch to deploy from. \nMust not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.\nOptional for `dev` deployments."
+              editable:
+                type: boolean
+                description: |-
+                  Whether the deployment is editable and the edited changes are persisted back to the git repo.
+                  Can't be set for `prod` deployments.
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
@@ -1608,6 +1647,9 @@ paths:
               theme:
                 type: string
                 description: Theme to use for the embedded resource.
+              themeMode:
+                type: string
+                description: 'Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".'
               navigation:
                 type: boolean
                 description: Navigation denotes whether navigation between different resources should be enabled in the embed.
@@ -1722,7 +1764,39 @@ paths:
                 type: string
               role:
                 type: string
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/members/{email}:
+    get:
+      summary: GetProjectMemberUser gets the member details
+      operationId: AdminService_GetProjectMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
     delete:
       summary: RemoveProjectMemberUser removes member from the project
       operationId: AdminService_RemoveProjectMemberUser
@@ -1781,6 +1855,39 @@ paths:
             properties:
               role:
                 type: string
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+  /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
+    get:
+      summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+      operationId: AdminService_ListUsergroupsForProjectAndUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListUsergroupsForProjectAndUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -2177,11 +2284,13 @@ paths:
               resourceName:
                 type: string
                 description: Name of the resource to grant access to.
-              filter:
-                $ref: '#/definitions/v1Expression'
+              metricsViewFilters:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
                 description: |-
-                  Optional filter to apply as a row filter in queries.
-                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+                  Optional metrics view to filter mapping to apply as row filters in queries.
+                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
               fields:
                 type: array
                 items:
@@ -2260,6 +2369,13 @@ paths:
             properties:
               role:
                 type: string
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
     put:
       summary: SetProjectMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetProjectMemberUsergroupRole
@@ -2293,6 +2409,13 @@ paths:
             properties:
               role:
                 type: string
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -4338,6 +4461,7 @@ definitions:
       - OPERATION_NIN
       - OPERATION_LIKE
       - OPERATION_NLIKE
+      - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
   v1AddOrganizationMemberUserResponse:
     type: object
@@ -4793,6 +4917,8 @@ definitions:
         type: string
       branch:
         type: string
+      editable:
+        type: boolean
       runtimeHost:
         type: string
       runtimeInstanceId:
@@ -4922,7 +5048,7 @@ definitions:
         format: date-time
       gitSubpath:
         type: string
-      gitProdBranch:
+      gitPrimaryBranch:
         type: string
       gitManagedRepo:
         type: boolean
@@ -4941,6 +5067,32 @@ definitions:
         $ref: '#/definitions/v1User'
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1GetDeploymentConfigResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+        title: Variables for the deployment (connector credentials, etc.)
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+        title: Annotations for the deployment (org/project metadata, etc.)
+      frontendUrl:
+        type: string
+        description: Frontend URL for the deployment.
+      updatedOn:
+        type: string
+        format: date-time
+        description: Timestamp when the deployment was last updated.
+      usesArchive:
+        type: boolean
+        description: Whether the deployment is git based or archive based.
+      duckdbConnectorConfig:
+        type: object
+        title: Duckdb connector config for the deployment
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
@@ -5042,12 +5194,17 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1GetProjectMemberUserResponse:
+    type: object
+    properties:
+      member:
+        $ref: '#/definitions/v1ProjectMemberUser'
   v1GetProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
-      prodDeployment:
+      deployment:
         $ref: '#/definitions/v1Deployment'
       jwt:
         type: string
@@ -5090,11 +5247,15 @@ definitions:
       gitBranch:
         type: string
         description: The branch to use for the deployment.
-      gitEditBranch:
+      editable:
+        type: boolean
+        description: Whether editing is allowed. Set to true for dev deployments.
+      primaryBranch:
         type: string
-        description: |-
-          A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-          This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+        description: Primary branch of the project.
+      managedGitRepo:
+        type: boolean
+        description: Whether the git repo is managed by Rill.
       archiveDownloadUrl:
         type: string
         description: Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
@@ -5446,6 +5607,14 @@ definitions:
           $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
+  v1ListUsergroupsForProjectAndUserResponse:
+    type: object
+    properties:
+      usergroups:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUsergroup'
   v1ListWhitelistedDomainsResponse:
     type: object
     properties:
@@ -5489,8 +5658,10 @@ definitions:
         type: string
       resourceName:
         type: string
-      filter:
-        $ref: '#/definitions/v1Expression'
+      metricsViewFilters:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
       fields:
         type: array
         items:
@@ -5519,6 +5690,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      restrictResources:
+        type: boolean
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1Organization:
     type: object
     properties:
@@ -5532,6 +5710,8 @@ definitions:
       description:
         type: string
       logoUrl:
+        type: string
+      logoDarkUrl:
         type: string
       faviconUrl:
         type: string
@@ -5709,14 +5889,14 @@ definitions:
         description: managed_git_id is set if the project is connected to a rill-managed git repo.
       subpath:
         type: string
-      prodBranch:
+      primaryBranch:
         type: string
       archiveAssetId:
         type: string
       prodSlots:
         type: string
         format: int64
-      prodDeploymentId:
+      primaryDeploymentId:
         type: string
       devSlots:
         type: string
@@ -5750,6 +5930,13 @@ definitions:
         type: string
       invitedBy:
         type: string
+      restrictResources:
+        type: boolean
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectMemberService:
     type: object
     properties:
@@ -5798,6 +5985,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      restrictResources:
+        type: boolean
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectPermissions:
     type: object
     properties:
@@ -6319,12 +6513,21 @@ definitions:
       name:
         type: string
         title: The name of the tool
+      displayName:
+        type: string
+        title: The display name of the tool
       description:
         type: string
         title: A human-readable description of the tool
+      meta:
+        type: object
+        title: Metadata about the tool
       inputSchema:
         type: string
         title: JSON Schema defining the expected parameters for the tool (as JSON string)
+      outputSchema:
+        type: string
+        title: JSON Schema defining the expected output of the tool (as JSON string)
     title: Tool represents a tool definition for AI usage
   v1ToolCall:
     type: object

@@ -45,6 +45,7 @@ type CatalogStore interface {
 	InsertModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error
+	UpdateModelPartitionsExecuted(ctx context.Context, modelID string, keys []string) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
@@ -106,13 +107,15 @@ type InstanceHealth struct {
 
 // AISession represents a session of AI interaction, such as a chat or MCP connection.
 type AISession struct {
-	ID         string    `db:"id"`
-	InstanceID string    `db:"instance_id"`
-	OwnerID    string    `db:"owner_id"`
-	Title      string    `db:"title"`
-	UserAgent  string    `db:"user_agent"`
-	CreatedOn  time.Time `db:"created_on"`
-	UpdatedOn  time.Time `db:"updated_on"`
+	ID                   string    `db:"id"`
+	InstanceID           string    `db:"instance_id"`
+	OwnerID              string    `db:"owner_id"`
+	Title                string    `db:"title"`
+	UserAgent            string    `db:"user_agent"`
+	SharedUntilMessageID string    `db:"shared_until_message_id"`
+	ForkedFromSessionID  string    `db:"forked_from_session_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
 }
 
 // AIMessage represents a message in an AISession.

@@ -15,13 +15,15 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { selectedComponent, components },
+    canvasEntity: { selectedComponent, componentsStore },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);
 
   $: parsedDocument = parseDocument($editorContent ?? "");
+
+  $: components = $componentsStore;
   $: component = components.get($selectedComponent ?? "");
 
   async function updateProperties(

@@ -805,7 +805,7 @@ func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, e
 	if job.Attempt >= job.MaxAttempts {
 		var args string
 		_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
-		h.logger.Error("Job failed, max attempts reached", zap.Int64("job_id", job.ID), zap.Int("num_attempt", job.Attempt), zap.Int("max_attempts", job.MaxAttempts), zap.String("kind", job.Kind), zap.String("args", args), zap.Error(err))
+		h.logger.Error("Job failed, max attempts reached", zap.Int64("job_id", job.ID), zap.Int("num_attempt", job.Attempt), zap.Int("max_attempts", job.MaxAttempts), zap.String("job_kind", job.Kind), zap.String("args", args), zap.Error(err))
 	}
 	return nil
 }
@@ -813,7 +813,7 @@ func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, e
 func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, panicVal any, trace string) *river.ErrorHandlerResult {
 	var args string
 	_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
-	h.logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
+	h.logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("job_kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
 	// Set the job to be immediately cancelled
 	return &river.ErrorHandlerResult{SetCancelled: true}
 }
@@ -837,21 +837,4 @@ func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) (*r
 	)
 
 	return periodicJob, nil
-}
-
-// Observability work wrapper for the job workers
-func work(ctx context.Context, logger *zap.Logger, name string, fn func(context.Context) error) error {
-	ctx, span := tracer.Start(ctx, fmt.Sprintf("runJob %s", name), oteltrace.WithAttributes(attribute.String("name", name)))
-	defer span.End()
-
-	start := time.Now()
-	logger.Info("job started", zap.String("name", name), observability.ZapCtx(ctx))
-	err := fn(ctx)
-	jobLatencyHistogram.Record(ctx, time.Since(start).Milliseconds(), metric.WithAttributes(attribute.String("name", name), attribute.Bool("failed", err != nil)))
-	if err != nil {
-		logger.Error("job failed", zap.String("name", name), zap.Error(err), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
-		return err
-	}
-	logger.Info("job completed", zap.String("name", name), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
-	return nil
 }

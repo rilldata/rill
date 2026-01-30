@@ -114,7 +114,7 @@
         label="Include metadata"
       />
       <Tooltip location="right" alignment="middle" distance={8}>
-        <div class="text-gray-500" style="transform:translateY(-.5px)">
+        <div class="text-fg-secondary" style="transform:translateY(-.5px)">
           <InfoCircle size="13px" />
         </div>
         <TooltipContent maxWidth="400px" slot="tooltip-content">
@@ -179,9 +179,9 @@
     {:else}
       <FormSection title="Slack notifications" padding="">
         <svelte:fragment slot="description">
-          <span class="text-sm text-slate-600">
+          <span class="text-sm text-fg-secondary">
             Slack has not been configured for this project. Read the <a
-              href="https://docs.rilldata.com/explore/alerts/slack"
+              href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets"
               target="_blank"
             >
               docs

@@ -38,16 +38,23 @@
             <div class="h-11 w-96 animate-pulse rounded bg-gray-200" />
           </DelayedContent>
         {:else if isErrorDisplayName}
-          <h1 class="text-4xl font-semibold text-gray-900">
-            Welcome to <span class="text-primary-600">{project}</span>
+          <h1
+            class="text-4xl font-semibold text-fg-secondary"
+            aria-label="Project title"
+          >
+            Welcome to <span class="text-accent-primary-action">{project}</span>
           </h1>
         {:else}
-          <h1 class="text-4xl font-semibold text-gray-900">
-            Welcome to <span class="text-primary-600">{projectDisplayName}</span
+          <h1
+            class="text-4xl font-semibold text-fg-secondary"
+            aria-label="Project title"
+          >
+            Welcome to <span class="text-accent-primary-action"
+              >{projectDisplayName}</span
             >
           </h1>
         {/if}
-        <p class="text-lg text-gray-600">
+        <p class="text-lg text-fg-muted">
           {#if $chat}
             Ask questions about your data, or explore your dashboards below
           {:else}
@@ -66,7 +73,7 @@
 
     <!-- Dashboards Section -->
     <div class="flex flex-col gap-y-4">
-      <h2 class="text-xl font-semibold text-gray-900">Dashboards</h2>
+      <h2 class="text-xl font-semibold text-fg-secondary">Dashboards</h2>
       <DashboardsTable isPreview />
     </div>
   </div>
