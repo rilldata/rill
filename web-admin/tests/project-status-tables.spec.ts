@@ -2,6 +2,9 @@ import { expect } from "@playwright/test";
 import { test } from "./setup/base";
 
 test.describe("Project Status - Model Overview", () => {
+  // Increase timeout for tests that load data from virtualized tables
+  test.setTimeout(60_000);
+
   test.beforeEach(async ({ adminPage }) => {
     // Navigate directly to the model-overview page
     await adminPage.goto("/e2e/openrtb/-/status/model-overview");
@@ -18,25 +21,12 @@ test.describe("Project Status - Model Overview", () => {
       adminPage.getByText("Tables (Materialized Models)"),
     ).toBeVisible();
 
-    // Views card
-    await expect(adminPage.getByText("Views")).toBeVisible();
+    // Views card - the span contains exactly "Views" text
+    const viewsLabel = adminPage.locator("span", { hasText: /^Views$/ });
+    await expect(viewsLabel).toBeVisible();
 
-    // OLAP Engine card
-    await expect(adminPage.getByText("OLAP Engine")).toBeVisible();
-
-    // Verify that the counts are displayed (not loading placeholders)
-    // The cards should show numeric values (not just "-")
-    const tablesCard = adminPage
-      .locator("div")
-      .filter({ hasText: "Tables (Materialized Models)" })
-      .first();
-    await expect(tablesCard).toBeVisible();
-
-    const viewsCard = adminPage
-      .locator("div")
-      .filter({ hasText: /^Views$/ })
-      .first();
-    await expect(viewsCard).toBeVisible();
+    // OLAP Engine card - shows "OLAP (Rill Managed)" for DuckDB
+    await expect(adminPage.getByText("OLAP (Rill Managed)")).toBeVisible();
 
     // OLAP Engine should show "duckdb" for the openrtb project
     await expect(adminPage.getByText("duckdb")).toBeVisible({
@@ -59,7 +49,10 @@ test.describe("Project Status - Model Overview", () => {
     const headers = tablesTable.locator('[role="columnheader"]');
     await expect(headers.nth(0)).toContainText("Type");
     await expect(headers.nth(1)).toContainText("Name");
-    await expect(headers.nth(2)).toContainText("Database Size");
+    await expect(headers.nth(2)).toContainText("Status");
+    await expect(headers.nth(3)).toContainText("Rows");
+    await expect(headers.nth(4)).toContainText("Columns");
+    await expect(headers.nth(5)).toContainText("Database Size");
 
     // Verify table rows are rendered (VirtualizedTable uses .row divs, skip the header row)
     const dataRows = tablesTable.locator(".row").filter({

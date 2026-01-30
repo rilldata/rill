@@ -11,7 +11,7 @@ import {
   addZoneOffset,
   removeLocalTimezoneOffset,
 } from "@rilldata/web-common/lib/time/timezone";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../config";
 import {
   durationToMillis,
