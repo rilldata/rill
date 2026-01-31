@@ -30,7 +30,7 @@ export const httpClient = async <T>(
 
   // Set JWT
   let jwt = get(runtime).jwt;
-  if (jwt && jwt.token) {
+  if (jwt && jwt.token && !interceptedConfig.headers?.["Authorization"]) {
     jwt = await maybeWaitForFreshJWT(jwt);
     interceptedConfig.headers = {
       ...interceptedConfig.headers,
