@@ -6,6 +6,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let connectorDriver: V1ConnectorDriver | undefined = undefined;
+  export let initialConnectorName: string | null = null;
   export let onSelect:
     | ((detail: {
         connector: string;
@@ -49,9 +50,14 @@
   let knownConnectorNames: Set<string> = new Set();
   let hasInitializedSelection = false;
   $: if (sidebar && sidebar.length > 0) {
-    // On first load, default to the first connector (existing behavior)
+    // On first load, use initialConnectorName if provided, otherwise default to first
     if (!hasInitializedSelection) {
-      selectedConnectorName = String(sidebar[0]?.name);
+      const initialMatch = initialConnectorName
+        ? sidebar.find((c) => c?.name === initialConnectorName)
+        : null;
+      selectedConnectorName = initialMatch
+        ? String(initialMatch.name)
+        : String(sidebar[0]?.name);
       knownConnectorNames = new Set(sidebar.map((c) => String(c?.name)));
       hasInitializedSelection = true;
     } else {

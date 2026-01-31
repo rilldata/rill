@@ -30,6 +30,7 @@
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let selectedSchemaName: string | null = null;
+  let connectorInstanceName: string | null = null;
   let requestConnector = false;
   let isSubmittingForm = false;
 
@@ -64,6 +65,7 @@
       requestConnector = e.state?.requestConnector ?? false;
       selectedConnector = e.state?.selectedConnector ?? null;
       selectedSchemaName = e.state?.schemaName ?? null;
+      connectorInstanceName = e.state?.connectorInstanceName ?? null;
     }
     window.addEventListener("popstate", listen);
 
@@ -107,6 +109,7 @@
       step: 0,
       selectedConnector: null,
       schemaName: null,
+      connectorInstanceName: null,
       requestConnector: false,
     };
     window.history.pushState(state, "", "");
@@ -243,6 +246,7 @@
           <AddDataForm
             connector={selectedConnector}
             schemaName={selectedSchemaName}
+            {connectorInstanceName}
             formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}

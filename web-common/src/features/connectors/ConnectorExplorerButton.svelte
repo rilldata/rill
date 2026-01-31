@@ -23,7 +23,7 @@
       displayName: connectorName,
       implementsOlap: true,
     };
-    addSourceModal.openExplorerForConnector(connectorDriver, driverName);
+    addSourceModal.openExplorerForConnector(connectorDriver, connectorName);
   }
 </script>
 

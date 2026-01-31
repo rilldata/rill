@@ -20,18 +20,20 @@ export const addSourceModal = (() => {
      */
     openExplorerForConnector: (
       connector: V1ConnectorDriver,
-      schemaName?: string,
+      connectorInstanceName?: string,
     ) => {
       // Reset any previous state
       resetConnectorStep();
       // Set the step to explorer before opening the modal
       setStep("explorer");
       // Open the modal at step 2 with the selected connector
-      // Use connector.name as schemaName if not provided
+      // schemaName is the driver name for form schema lookup
+      // connectorInstanceName is the specific instance to pre-select in explorer
       const state = {
         step: 2,
         selectedConnector: connector,
-        schemaName: schemaName ?? connector.name,
+        schemaName: connector.name, // Driver name for schema lookup
+        connectorInstanceName: connectorInstanceName, // Instance name to pre-select
         requestConnector: false,
       };
       window.history.pushState(state, "", "");

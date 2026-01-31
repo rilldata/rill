@@ -29,6 +29,7 @@
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
+  export let connectorInstanceName: string | null = null;
   export let formType: AddDataFormType;
   export let isSubmitting: boolean;
   export let onBack: () => void;
@@ -238,17 +239,18 @@
   <div
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
+    {#if isInExplorerMode}
+      <AddDataExplorerStep
+        {connector}
+        {connectorInstanceName}
+        onBack={() => resetConnectorStep()}
+        onModelCreated={handleModelCreated}
+      />
+    {:else}
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
-      {#if isInExplorerMode}
-        <AddDataExplorerStep
-          {connector}
-          formHeight={formManager.formHeight}
-          onBack={() => resetConnectorStep()}
-          onModelCreated={handleModelCreated}
-        />
-      {:else if isStepFlowConnector}
+      {#if isStepFlowConnector}
         <MultiStepConnectorFlow
           {connector}
           {formManager}
@@ -292,6 +294,7 @@
         </div>
       {/if}
     </div>
+    {/if}
 
     <!-- LEFT FOOTER - hidden in explorer mode (AddDataExplorerStep has its own footer) -->
     {#if !isInExplorerMode}

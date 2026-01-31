@@ -1,57 +1,51 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import DataExplorerDialog from "./DataExplorerDialog.svelte";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createModelFromExplorerSelection } from "./model-creation-utils";
-  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../../connectors/selectors";
+  import { generateMetricsFromTable } from "../../metrics-views/ai-generation/generateMetricsView";
 
   export let connector: V1ConnectorDriver;
+  export let connectorInstanceName: string | null = null;
   export let onModelCreated: (path: string) => void | Promise<void>;
   export let onBack: () => void;
-  export let formHeight: string = "";
 
   let selectedConnector = "";
   let selectedDatabase = "";
   let selectedSchema = "";
   let selectedTable = "";
-  let creatingModel = false;
+  let generatingMetrics = false;
   let instanceId: string;
 
   $: ({ instanceId } = $runtime);
-  $: modelingSupportQuery = useIsModelingSupportedForConnector(
-    instanceId,
-    selectedConnector || "",
-  );
-  $: isModelingSupportedForSelected = $modelingSupportQuery.data || false;
+  $: isOlapConnector = Boolean(connector?.implementsOlap);
 
-  async function handleCreateModel() {
+  async function handleGenerateMetrics() {
     if (!selectedConnector || !selectedTable) return;
     try {
-      creatingModel = true;
-      const [newModelPath] = await createModelFromExplorerSelection(
-        queryClient,
-        {
-          connector: selectedConnector,
-          database: selectedDatabase,
-          schema: selectedSchema,
-          table: selectedTable,
-          isModelingSupported: isModelingSupportedForSelected,
-        },
+      generatingMetrics = true;
+      await generateMetricsFromTable(
+        instanceId,
+        selectedConnector,
+        selectedDatabase,
+        selectedSchema,
+        selectedTable,
+        false, // Don't create explore dashboard, just metrics
+        isOlapConnector,
       );
-      await onModelCreated(newModelPath);
+      // Close the modal after successful generation
+      await onModelCreated("");
     } finally {
-      creatingModel = false;
+      generatingMetrics = false;
     }
   }
 </script>
 
-<div class="flex flex-col flex-grow h-full">
-  <div class={cn("flex flex-col flex-grow overflow-hidden p-0", formHeight)}>
+<div class="flex flex-col h-[600px]">
+  <div class="flex flex-col flex-1 overflow-hidden">
     <DataExplorerDialog
       connectorDriver={connector}
+      initialConnectorName={connectorInstanceName}
       onSelect={(detail) => {
         selectedConnector = detail.connector;
         selectedDatabase = detail.database;
@@ -62,15 +56,15 @@
   </div>
 
   <div
-    class="w-full bg-surface border-t border-gray-200 p-6 flex justify-between gap-2"
+    class="w-full bg-surface border-t border-gray-200 px-4 py-3 flex justify-between gap-2"
   >
     <Button onClick={onBack} type="secondary">Back</Button>
 
     <Button
-      disabled={!selectedTable || creatingModel}
-      loading={creatingModel}
+      disabled={!selectedTable || generatingMetrics}
+      loading={generatingMetrics}
       loadingCopy="Generating..."
-      onClick={handleCreateModel}
+      onClick={handleGenerateMetrics}
       type="primary"
     >
       Generate metrics with AI
