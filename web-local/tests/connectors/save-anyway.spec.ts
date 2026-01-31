@@ -36,7 +36,8 @@ test.describe("Save Anyway feature", () => {
 
     // Wait for navigation to connector file, then for the editor to appear
     await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/, {
-      timeout: 5000,
+      // Allow extra time for the file to be written and navigation to occur on slower CI
+      timeout: 6_000,
     });
     const codeEditor = page
       .getByLabel("codemirror editor")

@@ -1,11 +1,8 @@
 import { humanReadableErrorMessage } from "../errors/errors";
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-import type { ClickHouseConnectorType } from "./constants";
 import type { MultiStepFormSchema } from "./types";
 import {
   findRadioEnumKey,
   getRadioEnumOptions,
-  getRequiredFieldsByEnumValue,
   isStepMatch,
 } from "../../templates/schema-utils";
 
@@ -13,7 +10,7 @@ import {
  * Returns true for undefined, null, empty string, or whitespace-only string.
  * Useful for validating optional text inputs.
  */
-export function isEmpty(val: any) {
+export function isEmpty(val: unknown): boolean {
   return (
     val === undefined ||
     val === null ||
@@ -29,25 +26,41 @@ export function isEmpty(val: any) {
  * - If input resembles a Zod `_errors` array, returns that.
  * - Otherwise returns undefined.
  */
+type ErrorWithResponse = {
+  response?: {
+    data?: {
+      message?: string;
+      code?: number;
+    };
+  };
+  message?: string;
+  details?: string;
+};
+
 /**
  * Converts unknown error inputs into a unified connector error shape.
  * - Prefers native Error.message when present
  * - Maps server error responses to human-readable messages via `humanReadableErrorMessage`
  * - Returns `details` with original message when it differs from the human-readable message
  */
+function isErrorWithResponse(err: unknown): err is ErrorWithResponse {
+  return typeof err === "object" && err !== null && "response" in err;
+}
+
+function isErrorWithMessage(err: unknown): err is { message: string } {
+  return typeof err === "object" && err !== null && "message" in err;
+}
+
 export function normalizeConnectorError(
   connectorName: string,
-  err: any,
+  err: unknown,
 ): { message: string; details?: string } {
   let message: string;
-  let details: string | undefined = undefined;
+  let details: string | undefined;
 
   if (err instanceof Error) {
     message = err.message;
-  } else if (err?.message && err?.details) {
-    message = err.message;
-    details = err.details !== err.message ? err.details : undefined;
-  } else if (err?.response?.data) {
+  } else if (isErrorWithResponse(err) && err.response?.data) {
     const originalMessage = err.response.data.message;
     const humanReadable = humanReadableErrorMessage(
       connectorName,
@@ -56,8 +69,13 @@ export function normalizeConnectorError(
     );
     message = humanReadable;
     details = humanReadable !== originalMessage ? originalMessage : undefined;
-  } else if (err?.message) {
+  } else if (isErrorWithMessage(err)) {
     message = err.message;
+    const errorWithDetails = err as ErrorWithResponse;
+    details =
+      errorWithDetails.details && errorWithDetails.details !== err.message
+        ? errorWithDetails.details
+        : undefined;
   } else {
     message = "Unknown error";
   }
@@ -65,19 +83,24 @@ export function normalizeConnectorError(
   return { message, details };
 }
 
-/**
- * Indicates whether a connector in "connector" mode exposes only a DSN field
- * (i.e., DSN exists and no other config properties are present).
- */
-export function hasOnlyDsn(
-  connector: V1ConnectorDriver | undefined,
-  isConnectorForm: boolean,
+type FormErrors = string[] | undefined;
+type ValidationErrors = Record<string, FormErrors>;
+
+function hasAllRequiredFieldsValid(
+  schema: MultiStepFormSchema,
+  requiredFields: string[],
+  formValues: Record<string, unknown>,
+  formErrors: ValidationErrors,
+  step: "connector" | "source" | string,
 ): boolean {
-  if (!isConnectorForm) return false;
-  const props = connector?.configProperties ?? [];
-  const hasDsn = props.some((p) => p.key === "dsn");
-  const hasOthers = props.some((p) => p.key !== "dsn");
-  return hasDsn && !hasOthers;
+  if (!requiredFields.length) return true;
+  return requiredFields.every((fieldId) => {
+    if (!isStepMatch(schema, fieldId, step)) return true;
+    const value = formValues[fieldId];
+    const errorsForField = formErrors[fieldId];
+    const hasErrors = Boolean(errorsForField?.length);
+    return !isEmpty(value) && !hasErrors;
+  });
 }
 
 /**
@@ -86,63 +109,34 @@ export function hasOnlyDsn(
  */
 export function isMultiStepConnectorDisabled(
   schema: MultiStepFormSchema | null,
-  paramsFormValue: Record<string, unknown>,
-  paramsFormErrors: Record<string, unknown>,
+  formValues: Record<string, unknown>,
+  formErrors: ValidationErrors,
   step?: "connector" | "source" | string,
-) {
+): boolean {
   if (!schema) return true;
 
-  // For source step, gate on required fields from the JSON schema.
-  const currentStep = step || (paramsFormValue?.__step as string | undefined);
-  if (currentStep === "source") {
-    const required = getRequiredFieldsForStep(
-      schema,
-      paramsFormValue,
-      "source",
-    );
-    if (!required.length) return false;
-    return !required.every((fieldId) => {
-      if (!isStepMatch(schema, fieldId, "source")) return true;
-      const value = paramsFormValue[fieldId];
-      const errorsForField = paramsFormErrors[fieldId] as any;
-      const hasErrors = Boolean(errorsForField?.length);
-      return !isEmpty(value) && !hasErrors;
-    });
+  const currentStep =
+    step || (formValues?.__step as string | undefined) || "connector";
+
+  // Check for "public" auth method which should always enable the button
+  const authInfo = getRadioEnumOptions(schema);
+  const authKey = authInfo?.key || findRadioEnumKey(schema);
+  if (authKey) {
+    const methodFromForm =
+      formValues?.[authKey] != null ? String(formValues[authKey]) : undefined;
+    if (methodFromForm === "public") return false;
   }
 
-  const authInfo = getRadioEnumOptions(schema);
-  const options = authInfo?.options ?? [];
-  const authKey = authInfo?.key || findRadioEnumKey(schema);
-  const methodFromForm =
-    authKey && paramsFormValue?.[authKey] != null
-      ? String(paramsFormValue[authKey])
-      : undefined;
-  const hasValidFormSelection = options.some(
-    (opt) => opt.value === methodFromForm,
+  // Use getRequiredFieldsForStep which correctly evaluates all conditionals
+  // based on actual form values (handles nested conditions like connector_type + connection_mode)
+  const required = getRequiredFieldsForStep(schema, formValues, currentStep);
+  return !hasAllRequiredFieldsValid(
+    schema,
+    required,
+    formValues,
+    formErrors,
+    currentStep,
   );
-  const method =
-    (hasValidFormSelection && methodFromForm) ||
-    authInfo?.defaultValue ||
-    options[0]?.value;
-
-  if (!method) return true;
-
-  // Selecting "public" should always enable the button for multi-step auth flows.
-  if (method === "public") return false;
-
-  const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
-    step: "connector",
-  });
-  const requiredFields = requiredByMethod[method] ?? [];
-  if (!requiredFields.length) return true;
-
-  return !requiredFields.every((fieldId) => {
-    if (!isStepMatch(schema, fieldId, "connector")) return true;
-    const value = paramsFormValue[fieldId];
-    const errorsForField = paramsFormErrors[fieldId] as any;
-    const hasErrors = Boolean(errorsForField?.length);
-    return !isEmpty(value) && !hasErrors;
-  });
 }
 
 function getRequiredFieldsForStep(
@@ -176,27 +170,4 @@ function matchesCondition(
     if (def.const === undefined || def.const === null) return false;
     return String(values?.[depKey]) === String(def.const);
   });
-}
-
-/**
- * Applies ClickHouse Cloud-specific default requirements for connector values.
- * - For ClickHouse Cloud: enforces `ssl: true`
- * - Otherwise returns values unchanged
- */
-export function applyClickHouseCloudRequirements(
-  connectorName: string | undefined,
-  connectorType: ClickHouseConnectorType,
-  values: Record<string, unknown>,
-): Record<string, unknown> {
-  // Only force SSL for ClickHouse Cloud when the user is using individual params.
-  // DSN strings encapsulate their own protocol, so we should not inject `ssl` there.
-  const isDsnBased = "dsn" in values;
-  const shouldEnforceSSL =
-    connectorName === "clickhouse" &&
-    connectorType === "clickhouse-cloud" &&
-    !isDsnBased;
-  if (shouldEnforceSSL) {
-    return { ...values, ssl: true } as Record<string, unknown>;
-  }
-  return values;
 }
