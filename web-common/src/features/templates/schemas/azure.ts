@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const azureSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "Azure Blob Storage",
+  "x-category": "objectStore",
   properties: {
     auth_method: {
       type: "string",
@@ -23,6 +25,7 @@ export const azureSchema: MultiStepFormSchema = {
         "Provide the storage account name and SAS token.",
         "Access publicly readable blobs without credentials.",
       ],
+      "x-ui-only": true,
       "x-grouped-fields": {
         connection_string: ["azure_storage_connection_string"],
         account_key: ["azure_storage_account", "azure_storage_key"],
