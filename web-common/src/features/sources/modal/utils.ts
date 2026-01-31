@@ -123,19 +123,13 @@ export function isMultiStepConnectorDisabled(
   const authKey = authInfo?.key || findRadioEnumKey(schema);
   if (authKey) {
     const methodFromForm =
-      formValues?.[authKey] != null
-        ? String(formValues[authKey])
-        : undefined;
+      formValues?.[authKey] != null ? String(formValues[authKey]) : undefined;
     if (methodFromForm === "public") return false;
   }
 
   // Use getRequiredFieldsForStep which correctly evaluates all conditionals
   // based on actual form values (handles nested conditions like connector_type + connection_mode)
-  const required = getRequiredFieldsForStep(
-    schema,
-    formValues,
-    currentStep,
-  );
+  const required = getRequiredFieldsForStep(schema, formValues, currentStep);
   return !hasAllRequiredFieldsValid(
     schema,
     required,

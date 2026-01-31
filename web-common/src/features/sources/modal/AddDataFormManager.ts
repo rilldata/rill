@@ -397,7 +397,14 @@ export class AddDataFormManager {
     isMultiStep: boolean;
     isExplorer: boolean;
   }) {
-    const { queryClient, values, submitValues, isPublicAuth, isMultiStep, isExplorer } = args;
+    const {
+      queryClient,
+      values,
+      submitValues,
+      isPublicAuth,
+      isMultiStep,
+      isExplorer,
+    } = args;
     const nextStep = isMultiStep ? "source" : "explorer";
 
     if (isPublicAuth) {
@@ -505,12 +512,8 @@ export class AddDataFormManager {
     formValues: Record<string, unknown>;
   }): string {
     const connector = this.connector;
-    const {
-      stepState,
-      isMultiStepConnector,
-      isConnectorForm,
-      formValues,
-    } = ctx;
+    const { stepState, isMultiStepConnector, isConnectorForm, formValues } =
+      ctx;
 
     const schema = getConnectorSchema(this.schemaName);
     const schemaConnectorFields = schema
