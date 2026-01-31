@@ -36,34 +36,36 @@
 {#if canBrowseTables}
   {#if connector.name}
     <li class="connector-entry">
-      <button
-        class="connector-entry-header text-fg-primary"
-        aria-label={connector.name}
-        on:click={() => {
-          store.toggleItem(connectorName);
-        }}
-      >
-        <CaretDownIcon
-          className="transform transition-transform text-fg-secondary {expanded
-            ? 'rotate-0'
-            : '-rotate-90'}"
-          size="14px"
-        />
-        <span class="flex-none">
-          {#if connector.driver?.name}
-            <svelte:component
-              this={connectorIconMapping[getConnectorIconKey(connector)]}
-              size="16px"
-            />
-          {/if}
-        </span>
+      <div class="connector-entry-header text-fg-primary">
+        <button
+          class="connector-toggle"
+          aria-label={connector.name}
+          on:click={() => {
+            store.toggleItem(connectorName);
+          }}
+        >
+          <CaretDownIcon
+            className="transform transition-transform text-fg-secondary {expanded
+              ? 'rotate-0'
+              : '-rotate-90'}"
+            size="14px"
+          />
+          <span class="flex-none">
+            {#if connector.driver?.name}
+              <svelte:component
+                this={connectorIconMapping[getConnectorIconKey(connector)]}
+                size="16px"
+              />
+            {/if}
+          </span>
 
-        <h4>{connector.name}</h4>
+          <h4>{connector.name}</h4>
+        </button>
 
         {#if isOlapConnector}
           <Tag height={16} class="ml-auto">OLAP</Tag>
         {/if}
-      </button>
+      </div>
 
       {#if expanded}
         <DatabaseExplorer {instanceId} {connector} {store} />
@@ -79,12 +81,18 @@
 
   .connector-entry-header {
     @apply flex gap-x-1 items-center flex-none;
-    @apply w-full px-2 h-6 outline-none;
+    @apply w-full pr-2 h-6;
     @apply z-10 bg-surface-subtle;
   }
 
-  button:hover {
+  .connector-entry-header:hover {
     @apply bg-popover-accent;
+  }
+
+  .connector-toggle {
+    @apply flex gap-x-1 items-center flex-grow;
+    @apply h-full pl-2 outline-none;
+    @apply cursor-pointer;
   }
 
   h4 {

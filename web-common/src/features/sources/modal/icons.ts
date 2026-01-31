@@ -16,7 +16,7 @@ import Postgres from "../../../components/icons/connectors/Postgres.svelte";
 import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
 import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
 import SQLite from "../../../components/icons/connectors/SQLite.svelte";
-import ClickHouseCloud from "../../../components/icons/connectors/ClickHouseCloudIcon.svelte";
+import ClickHouseCloud from "../../../components/icons/connectors/ClickHouseCloud.svelte";
 import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
 
 export const ICONS = {
