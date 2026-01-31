@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -509,6 +510,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
+	// Determine if this is an AI report (using ai resolver)
+	isAIReport := rep.Spec.Resolver == "ai"
+
 	var ownerID, webOpenMode string
 	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
 		ownerID = id
@@ -530,7 +534,11 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
+	if anonRecipients && isAIReport {
+		return false, fmt.Errorf("AI reports can only have email notifiers") // as we cannot reliably fetch user attributes for slack webhooks/channels for enforcing access control in recipient mode
+	}
+
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Resolver, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
@@ -540,78 +548,18 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		switch notifier.Connector {
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				opts := &email.ScheduledReport{
-					ToEmail:        recipient,
-					ToName:         "",
-					DisplayName:    rep.Spec.DisplayName,
-					ReportTime:     t,
-					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-				}
-				urls, ok := meta.RecipientURLs[recipient]
-				if !ok {
-					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
-				}
-				opts.OpenLink = urls.OpenURL
-				u, err := createExportURL(urls.ExportURL, t)
-				if err != nil {
-					return false, err
-				}
-				opts.DownloadLink = u.String()
-				opts.EditLink = urls.EditURL
-				opts.UnsubscribeLink = urls.UnsubscribeURL
-				err = r.C.Runtime.Email.SendScheduledReport(opts)
-				sent = true
-				if err != nil {
-					return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
-				}
+			var err error
+			if isAIReport {
+				sent, err = r.sendAIReportEmails(ctx, self, rep, t, webOpenMode, meta, recipients)
+			} else {
+				sent, err = r.sendStandardReportEmails(rep, t, meta, recipients)
+			}
+			if err != nil {
+				return sent, err
 			}
 		default:
-			err := func() (outErr error) {
-				conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
-				if err != nil {
-					return err
-				}
-				defer release()
-				n, err := conn.AsNotifier(notifier.Properties.AsMap())
-				if err != nil {
-					return err
-				}
-				urls, ok := meta.RecipientURLs[""]
-				if !ok {
-					return fmt.Errorf("failed to get recipient URLs for anon user")
-				}
-				u, err := createExportURL(urls.ExportURL, t)
-				if err != nil {
-					return err
-				}
-				msg := &drivers.ScheduledReport{
-					DisplayName:     rep.Spec.DisplayName,
-					ReportTime:      t,
-					DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:        urls.OpenURL,
-					DownloadLink:    u.String(),
-					UnsubscribeLink: urls.UnsubscribeURL,
-				}
-				start := time.Now()
-				defer func() {
-					totalLatency := time.Since(start).Milliseconds()
-
-					if r.C.Activity != nil {
-						r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
-							attribute.Bool("failed", outErr != nil),
-							attribute.String("connector", notifier.Connector),
-							attribute.String("notification_type", "scheduled_report"),
-						)
-					}
-				}()
-				err = n.SendScheduledReport(msg)
-				sent = true
-				if err != nil {
-					return fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
-				}
-				return nil
-			}()
+			var err error
+			sent, err = r.sendNonEmailNotification(ctx, rep, t, meta, notifier)
 			if err != nil {
 				return sent, err
 			}
@@ -619,6 +567,224 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return false, nil
+}
+
+// sendAIReportEmails sends AI-powered report emails to recipients.
+// For creator mode, all recipients share the same AI session. For recipient mode, each user gets their own session.
+func (r *ReportReconciler) sendAIReportEmails(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode string, meta *drivers.ReportMetadata, recipients []string) (bool, error) {
+	reports := make(map[string]*aiReport)
+	sent := false
+
+	for _, recipient := range recipients {
+		delivery, ok := meta.ReportDelivery[recipient]
+		if !ok {
+			r.C.Logger.Warn("Skipping recipient - failed to get recipient URLs", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			continue
+		}
+
+		// Skip recipients without user ID/attributes
+		if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
+			r.C.Logger.Warn("Skipping recipient - no user attributes found", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			continue
+		}
+
+		// Run report for each unique user - In creator mode, all recipients share the same session (so all recipients will have same userID which is the ownerID).
+		// For recipient mode, each user gets their own session.
+		report, exists := reports[delivery.UserID]
+		if !exists {
+			var err error
+			report, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
+			if err != nil {
+				return sent, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
+			}
+			reports[delivery.UserID] = report
+		}
+
+		opts := &email.ScheduledReport{
+			ToEmail:         recipient,
+			ToName:          "",
+			DisplayName:     rep.Spec.DisplayName,
+			ReportTime:      t,
+			IsAIReport:      true,
+			Summary:         truncateSummary(report.summary, 500),
+			OpenLink:        buildAISessionURL(delivery.OpenURL, report.sessionID),
+			EditLink:        delivery.EditURL,
+			UnsubscribeLink: delivery.UnsubscribeURL,
+		}
+		if err := r.C.Runtime.Email.SendScheduledReport(opts); err != nil {
+			return true, fmt.Errorf("failed to send AI report email to %q: %w", recipient, err)
+		}
+		sent = true
+	}
+
+	return sent, nil
+}
+
+// sendStandardReportEmails sends standard scheduled report emails with export links.
+func (r *ReportReconciler) sendStandardReportEmails(rep *runtimev1.Report, t time.Time, meta *drivers.ReportMetadata, recipients []string) (bool, error) {
+	sent := false
+
+	for _, recipient := range recipients {
+		urls, ok := meta.ReportDelivery[recipient]
+		if !ok {
+			return sent, fmt.Errorf("failed to get recipient URLs for %q", recipient)
+		}
+
+		downloadURL, err := createExportURL(urls.ExportURL, t)
+		if err != nil {
+			return sent, err
+		}
+
+		opts := &email.ScheduledReport{
+			ToEmail:         recipient,
+			ToName:          "",
+			DisplayName:     rep.Spec.DisplayName,
+			ReportTime:      t,
+			DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+			OpenLink:        urls.OpenURL,
+			DownloadLink:    downloadURL.String(),
+			EditLink:        urls.EditURL,
+			UnsubscribeLink: urls.UnsubscribeURL,
+		}
+		if err := r.C.Runtime.Email.SendScheduledReport(opts); err != nil {
+			return true, fmt.Errorf("failed to send report email to %q: %w", recipient, err)
+		}
+		sent = true
+	}
+
+	return sent, nil
+}
+
+// sendNonEmailNotification sends report via non-email notifiers (e.g., Slack).
+func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *runtimev1.Report, t time.Time, meta *drivers.ReportMetadata, notifier *runtimev1.Notifier) (bool, error) {
+	conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
+	if err != nil {
+		return false, err
+	}
+	defer release()
+
+	n, err := conn.AsNotifier(notifier.Properties.AsMap())
+	if err != nil {
+		return false, err
+	}
+
+	urls, ok := meta.ReportDelivery[""]
+	if !ok {
+		return false, fmt.Errorf("failed to get recipient URLs for anon user")
+	}
+
+	downloadURL, err := createExportURL(urls.ExportURL, t)
+	if err != nil {
+		return false, err
+	}
+
+	msg := &drivers.ScheduledReport{
+		DisplayName:     rep.Spec.DisplayName,
+		ReportTime:      t,
+		DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+		OpenLink:        urls.OpenURL,
+		DownloadLink:    downloadURL.String(),
+		UnsubscribeLink: urls.UnsubscribeURL,
+	}
+
+	start := time.Now()
+	err = n.SendScheduledReport(msg)
+	totalLatency := time.Since(start).Milliseconds()
+
+	if r.C.Activity != nil {
+		r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
+			attribute.Bool("failed", err != nil),
+			attribute.String("connector", notifier.Connector),
+			attribute.String("notification_type", "scheduled_report"),
+		)
+	}
+
+	if err != nil {
+		return false, fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
+	}
+
+	return true, nil
+}
+
+type aiReport struct {
+	sessionID string
+	summary   string
+}
+
+// triggerAIReport executes an AI-powered report and returns session id with summary.
+// If userID is provided, the session will be created with that user's claims for row-level security.
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, error) {
+	if rep.Spec.Resolver != "ai" {
+		return nil, fmt.Errorf("triggerAIReport called for non-AI report")
+	}
+
+	if userID == "" || len(userAttrs) == 0 {
+		return nil, fmt.Errorf("userID and userAttrs are required for AI report")
+	}
+
+	// Create claims for executing the AI resolver
+	// The userID determines what data the AI can access (row-level security)
+	claims := &runtime.SecurityClaims{
+		UserID:         userID,
+		UserAttributes: userAttrs,
+		SkipChecks:     false,
+		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+	}
+
+	// Get resolver properties from spec and add is_report flag
+	props := rep.Spec.ResolverProperties.AsMap()
+	props["is_report"] = true
+	if props["agent"] == nil {
+		props["agent"] = ai.AnalystAgentName
+	}
+
+	// Execute AI resolver
+	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           "ai",
+		ResolverProperties: props,
+		Args: map[string]any{
+			"execution_time":        t,
+			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
+		},
+		Claims: claims,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute AI resolver: %w", err)
+	}
+	defer result.Close()
+
+	// Get the result row
+	row, err := result.Next()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AI resolver result: %w", err)
+	}
+
+	sessionID, ok := row["ai_session_id"].(string)
+	if !ok || sessionID == "" {
+		return nil, fmt.Errorf("AI resolver did not return a valid session ID")
+	}
+	summary, _ := row["summary"].(string)
+
+	r.C.Logger.Info("AI session created", zap.String("report", self.Meta.Name.Name), zap.String("session_id", sessionID), zap.String("user_id", userID), observability.ZapCtx(ctx))
+
+	return &aiReport{
+		sessionID: sessionID,
+		summary:   summary,
+	}, nil
+}
+
+func buildAISessionURL(baseOpenURL, sessionID string) string {
+	// replace {session_id} in the baseOpenURL with the actual sessionID
+	return strings.ReplaceAll(baseOpenURL, "%7Bsession_id%7D", sessionID)
+}
+
+// truncateSummary truncates the summary to a maximum length, adding ellipsis if truncated.
+func truncateSummary(summary string, maxLen int) string {
+	if len(summary) <= maxLen {
+		return summary
+	}
+	return summary[:maxLen-3] + "..."
 }
 
 func createExportURL(inURL string, executionTime time.Time) (*url.URL, error) {

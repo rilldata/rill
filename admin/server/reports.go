@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -22,6 +23,7 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,6 +31,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
 		attribute.String("args.report", req.Report),
+		attribute.String("args.resolver", req.Resolver),
 		attribute.StringSlice("args.email_recipients", req.EmailRecipients),
 		attribute.String("args.execution_time", req.ExecutionTime.String()),
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
@@ -56,7 +59,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	urls := make(map[string]*adminv1.GetReportMetaResponse_URLs)
+	delivery := make(map[string]*adminv1.GetReportMetaResponse_DeliveryMeta)
 
 	var recipients []string
 	recipients = append(recipients, req.EmailRecipients...)
@@ -75,13 +78,75 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	var tokens map[string]string
-	if webOpenMode == WebOpenModeRecipient {
-		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, req.OwnerId, ownerEmail, recipients)
+	if webOpenMode == WebOpenModeRecipient || req.Resolver == "ai" {
+		// in recipient mode tokens are used for unsubscribing and for ai reports, shared sessions are created so token is just used for authentication, so no access to resources is needed
+		tokens, err = s.createMagicTokensWithoutResources(ctx, proj.ID, req.Report, req.OwnerId, recipients)
 	} else {
 		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
+	}
+
+	recipientUserIDs := make(map[string]string)
+	recipientUserAttrs := make(map[string]*structpb.Struct)
+	if req.Resolver == "ai" {
+		if webOpenMode == WebOpenModeCreator {
+			// in creator mode, only look up owner and use their attributes for all recipients
+			if req.OwnerId != "" {
+				attr, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
+				if err != nil {
+					return nil, err
+				}
+				pbAttrs, err := structpb.NewStruct(attr)
+				if err != nil {
+					return nil, err
+				}
+				for _, recipient := range recipients {
+					recipientUserAttrs[recipient] = pbAttrs
+					recipientUserIDs[recipient] = req.OwnerId
+				}
+			}
+		} else {
+			// Build a map of email -> user ID for recipients
+			for _, recipient := range recipients {
+				if recipient == "" {
+					continue
+				}
+				userID := ""
+				if recipient == ownerEmail {
+					userID = req.OwnerId
+				} else {
+					// Look up user by email
+					user, err := s.admin.DB.FindUserByEmail(ctx, recipient)
+					if err != nil && !errors.Is(err, database.ErrNotFound) {
+						return nil, err
+					}
+					if user != nil {
+						userID = user.ID
+					}
+				}
+				// If user not found, leave empty - they may not be a Rill user (which should not happen in recipient mode); we will just skip running the report for them
+				if userID != "" {
+					attr, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, userID, "")
+					if err != nil {
+						return nil, err
+					}
+					member := false
+					if val, ok := attr["member"]; ok {
+						member, _ = val.(bool)
+					}
+					if !member {
+						continue
+					}
+					recipientUserAttrs[recipient], err = structpb.NewStruct(attr)
+					recipientUserIDs[recipient] = userID
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
 	}
 
 	// Generate URLs for each recipient based on web open mode, and whether they are the owner -
@@ -94,43 +159,53 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		if recipient == ownerEmail {
 			if webOpenMode == WebOpenModeRecipient {
 				// owner in recipient mode gets plain open and export url without token as token does not have any access
-				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
+				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
+					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Resolver, "", req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+					UserId:    recipientUserIDs[recipient],
+					UserAttrs: recipientUserAttrs[recipient],
 				}
 			} else {
-				urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
+				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
+					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Resolver, tokens[recipient], req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+					UserId:    recipientUserIDs[recipient],
+					UserAttrs: recipientUserAttrs[recipient],
 				}
 			}
 			continue
 		}
 		if webOpenMode == WebOpenModeCreator {
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Resolver, tokens[recipient], req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
+				UserId:         recipientUserIDs[recipient],
+				UserAttrs:      recipientUserAttrs[recipient],
 			}
 		} else if webOpenMode == WebOpenModeRecipient {
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, req.Resolver, "", req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
+				UserId:         recipientUserIDs[recipient],
+				UserAttrs:      recipientUserAttrs[recipient],
 			}
 		} else {
 			// same as recipient but no open url
-			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
+				UserId:         recipientUserIDs[recipient],
+				UserAttrs:      recipientUserAttrs[recipient],
 			}
 		}
 	}
 
 	return &adminv1.GetReportMetaResponse{
-		RecipientUrls: urls,
+		DeliveryMeta: delivery,
 	}, nil
 }
 
@@ -515,11 +590,21 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	res.Query.Name = opts.QueryName
-	res.Query.ArgsJSON = opts.QueryArgsJson
-	res.Export.Format = opts.ExportFormat.String()
-	res.Export.IncludeHeader = opts.ExportIncludeHeader
-	res.Export.Limit = uint(opts.ExportLimit)
+
+	// Handle resolver-based reports (new style) vs legacy query-based reports
+	if opts.Resolver != "" && opts.ResolverProperties != nil {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties.AsMap(),
+		}
+	} else {
+		// Legacy query-based report
+		res.Query.Name = opts.QueryName
+		res.Query.ArgsJSON = opts.QueryArgsJson
+		res.Export.Format = opts.ExportFormat.String()
+		res.Export.IncludeHeader = opts.ExportIncludeHeader
+		res.Export.Limit = uint(opts.ExportLimit)
+	}
+
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -545,28 +630,6 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 }
 
 func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
-	// Format args as pretty YAML
-	var args map[string]interface{}
-	if opts.QueryArgsJson != "" {
-		err := json.Unmarshal([]byte(opts.QueryArgsJson), &args)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse queryArgsJSON: %w", err)
-		}
-	}
-
-	// Format export format as pretty string
-	var exportFormat string
-	switch opts.ExportFormat {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		exportFormat = "csv"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		exportFormat = "parquet"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		exportFormat = "xlsx"
-	default:
-		exportFormat = opts.ExportFormat.String()
-	}
-
 	res := reportYAML{}
 	res.Type = "report"
 	res.DisplayName = opts.DisplayName
@@ -574,11 +637,43 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	res.Query.Name = opts.QueryName
-	res.Query.Args = args
-	res.Export.Format = exportFormat
-	res.Export.IncludeHeader = opts.ExportIncludeHeader
-	res.Export.Limit = uint(opts.ExportLimit)
+
+	// Handle resolver-based reports (new style) vs legacy query-based reports
+	if opts.Resolver != "" && opts.ResolverProperties != nil {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties.AsMap(),
+		}
+	} else {
+		// Legacy query-based report
+		// Format args as pretty YAML
+		var args map[string]interface{}
+		if opts.QueryArgsJson != "" {
+			err := json.Unmarshal([]byte(opts.QueryArgsJson), &args)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse queryArgsJSON: %w", err)
+			}
+		}
+
+		// Format export format as pretty string
+		var exportFormat string
+		switch opts.ExportFormat {
+		case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+			exportFormat = "csv"
+		case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+			exportFormat = "parquet"
+		case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+			exportFormat = "xlsx"
+		default:
+			exportFormat = opts.ExportFormat.String()
+		}
+
+		res.Query.Name = opts.QueryName
+		res.Query.Args = args
+		res.Export.Format = exportFormat
+		res.Export.IncludeHeader = opts.ExportIncludeHeader
+		res.Export.Limit = uint(opts.ExportLimit)
+	}
+
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -707,7 +802,7 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 	return emailTokens, nil
 }
 
-func (s *Server) createUnsubMagicTokens(ctx context.Context, projectID, reportName, ownerID, ownerEmail string, emails []string) (map[string]string, error) {
+func (s *Server) createMagicTokensWithoutResources(ctx context.Context, projectID, reportName, ownerID string, emails []string) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -729,10 +824,6 @@ func (s *Server) createUnsubMagicTokens(ctx context.Context, projectID, reportNa
 
 	emailTokens := make(map[string]string)
 	for _, email := range emails {
-		if ownerEmail != "" && strings.EqualFold(ownerEmail, email) {
-			// skip creating unsubscribe token for owner email
-			continue
-		}
 		// set user attrs as per the email
 		mgcOpts.Attributes = map[string]interface{}{
 			"name":   "",
@@ -798,7 +889,8 @@ type reportYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Query struct {
+	Data  map[string]any `yaml:"data,omitempty"` // Generic data resolver block (e.g., data.ai, data.sql)
+	Query struct {       // Legacy query-based report (deprecated - use data instead)
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`

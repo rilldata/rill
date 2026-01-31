@@ -3645,6 +3645,8 @@ paths:
             properties:
               report:
                 type: string
+              resolver:
+                type: string
               ownerId:
                 type: string
               executionTime:
@@ -4401,6 +4403,31 @@ paths:
           required: false
           type: string
 definitions:
+  GetAlertMetaResponseURLs:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      editUrl:
+        type: string
+      unsubscribeUrl:
+        type: string
+  GetReportMetaResponseDeliveryMeta:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
+      unsubscribeUrl:
+        type: string
+      userId:
+        type: string
+      userAttrs:
+        type: object
+        title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -4986,18 +5013,9 @@ definitions:
       recipientUrls:
         type: object
         additionalProperties:
-          $ref: '#/definitions/v1GetAlertMetaResponseURLs'
+          $ref: '#/definitions/GetAlertMetaResponseURLs'
       queryForAttributes:
         type: object
-  v1GetAlertMetaResponseURLs:
-    type: object
-    properties:
-      openUrl:
-        type: string
-      editUrl:
-        type: string
-      unsubscribeUrl:
-        type: string
   v1GetAlertYAMLResponse:
     type: object
     properties:
@@ -5269,21 +5287,10 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      recipientUrls:
+      deliveryMeta:
         type: object
         additionalProperties:
-          $ref: '#/definitions/v1GetReportMetaResponseURLs'
-  v1GetReportMetaResponseURLs:
-    type: object
-    properties:
-      openUrl:
-        type: string
-      exportUrl:
-        type: string
-      editUrl:
-        type: string
-      unsubscribeUrl:
-        type: string
+          $ref: '#/definitions/GetReportMetaResponseDeliveryMeta'
   v1GetServiceResponse:
     type: object
     properties:
@@ -6174,8 +6181,14 @@ definitions:
         type: string
       intervalDuration:
         type: string
+      resolver:
+        type: string
+        title: Generic resolver configuration (preferred for new reports)
+      resolverProperties:
+        type: object
       queryName:
         type: string
+        title: Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
       queryArgsJson:
         type: string
       exportLimit:
@@ -6216,13 +6229,9 @@ definitions:
         type: string
         title: |-
           web_open_mode is used to determine how to create or disable open link for the report
-          - send "recipient" for older reports (old behaviour)
-          - send "creator" for reports that should be opened with creators permissions
+          - send "recipient" for reports that should be opened with recipient's permissions - requires login
+          - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
           - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-          - send "filtered" for reports that should be opened with creators permissions but with locked filters
-      filter:
-        $ref: '#/definitions/v1Expression'
-        title: use with OPEN_MODE_FILTERED
   v1RequestProjectAccessResponse:
     type: object
   v1ResourceName:

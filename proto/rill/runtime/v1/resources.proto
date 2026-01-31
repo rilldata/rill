@@ -601,6 +601,10 @@ message ReportSpec {
   bool trigger = 1;
   Schedule refresh_schedule = 3;
   uint32 timeout_seconds = 4;
+  // Generic resolver configuration (preferred for new reports)
+  string resolver = 19;
+  google.protobuf.Struct resolver_properties = 20;
+  // Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
   string query_name = 5;
   string query_args_json = 6;
   uint64 export_limit = 7;
@@ -628,6 +632,7 @@ message ReportExecution {
   google.protobuf.Timestamp started_on = 4;
   google.protobuf.Timestamp finished_on = 5;
 }
+
 
 message Alert {
   AlertSpec spec = 1;

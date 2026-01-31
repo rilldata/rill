@@ -38,11 +38,13 @@ type ScheduledReport struct {
 	ToName          string
 	DisplayName     string
 	ReportTime      time.Time
-	DownloadFormat  string
+	DownloadFormat  string // For standard reports (with file export)
 	OpenLink        string
-	DownloadLink    string
+	DownloadLink    string // For standard reports (with file export)
 	EditLink        string
 	UnsubscribeLink string
+	IsAIReport      bool   // Flag to indicate AI report (uses different template sections)
+	Summary         string // For AI reports
 }
 
 type scheduledReportData struct {
@@ -53,6 +55,8 @@ type scheduledReportData struct {
 	DownloadLink     template.URL
 	EditLink         template.URL
 	UnsubscribeLink  template.URL
+	IsAIReport       bool   // Flag for template conditionals
+	Summary          string // For AI reports
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
@@ -65,15 +69,15 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		DownloadLink:     template.URL(opts.DownloadLink),
 		EditLink:         template.URL(opts.EditLink),
 		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
+		IsAIReport:       opts.IsAIReport,
+		Summary:          opts.Summary,
 	}
 
-	// Build subject
 	subject := fmt.Sprintf("%s (%s)", opts.DisplayName, data.ReportTimeString)
 
-	var err error
 	// Resolve template
 	buf := new(bytes.Buffer)
-	err = c.templates.Lookup("scheduled_report.html").Execute(buf, data)
+	err := c.templates.Lookup("scheduled_report.html").Execute(buf, data)
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}
