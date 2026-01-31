@@ -53,7 +53,7 @@ test.describe("Default olap_connector behavior", () => {
 
     await page.getByRole("button", { name: "Add Data" }).click();
     await page.locator("#clickhouse").click();
-    await page.locator("#managed").selectOption("rill-managed");
+    await page.getByRole("radio", { name: "Rill-managed ClickHouse" }).check();
     await page
       .getByRole("dialog", { name: "ClickHouse" })
       .getByRole("button", {

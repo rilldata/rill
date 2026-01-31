@@ -166,7 +166,8 @@
           contenteditable
           class="multiline-input"
           class:pointer-events-none={disabled}
-          {placeholder}
+          data-placeholder={placeholder}
+          aria-label={label || title || placeholder}
           role="textbox"
           tabindex="0"
           aria-multiline="true"
@@ -329,6 +330,12 @@
     @apply py-1;
     line-height: 1.58;
     word-wrap: break-word;
+  }
+
+  .multiline-input:empty::before {
+    content: attr(data-placeholder);
+    @apply text-gray-400;
+    pointer-events: none;
   }
 
   .input-wrapper:focus-within {
