@@ -18,15 +18,20 @@ export const addSourceModal = (() => {
      * Open the Data Explorer modal for a specific OLAP connector.
      * This directly opens the explorer step without requiring form submission.
      */
-    openExplorerForConnector: (connector: V1ConnectorDriver) => {
+    openExplorerForConnector: (
+      connector: V1ConnectorDriver,
+      schemaName?: string,
+    ) => {
       // Reset any previous state
       resetConnectorStep();
       // Set the step to explorer before opening the modal
       setStep("explorer");
       // Open the modal at step 2 with the selected connector
+      // Use connector.name as schemaName if not provided
       const state = {
         step: 2,
         selectedConnector: connector,
+        schemaName: schemaName ?? connector.name,
         requestConnector: false,
       };
       window.history.pushState(state, "", "");
