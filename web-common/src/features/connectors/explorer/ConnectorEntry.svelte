@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Plus } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { Tag } from "../../../components/tag";
   import {
@@ -11,7 +10,6 @@
   import { connectorIconMapping } from "../connector-icon-mapping";
   import { getConnectorIconKey } from "../connectors-utils";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
-  import { addSourceModal } from "../../sources/modal/add-source-visibility";
 
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
@@ -67,20 +65,6 @@
         {#if isOlapConnector}
           <Tag height={16} class="ml-auto">OLAP</Tag>
         {/if}
-        {#if implementsOlap && connector.driver}
-          <button
-            class="add-model-button"
-            aria-label="Add model from {connectorName}"
-            title="Add model from this connector"
-            on:click={() => {
-              if (connector.driver) {
-                addSourceModal.openExplorerForConnector(connector.driver);
-              }
-            }}
-          >
-            <Plus size="14" />
-          </button>
-        {/if}
       </div>
 
       {#if expanded}
@@ -113,14 +97,5 @@
 
   h4 {
     @apply text-xs font-medium;
-  }
-
-  .add-model-button {
-    @apply flex items-center justify-center flex-none;
-    @apply w-5 h-5 rounded;
-    @apply text-fg-secondary hover:text-fg-primary;
-    @apply hover:bg-gray-200;
-    @apply transition-colors;
-    @apply cursor-pointer;
   }
 </style>
