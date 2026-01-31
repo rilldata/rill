@@ -73,60 +73,6 @@
 </script>
 
 <div class="flex flex-col md:flex-row h-full">
-  <!-- Left sidebar: existing connectors of the same type -->
-  <aside
-    class="w-full md:w-64 h-full overflow-y-auto md:border-r border-gray-200 bg-[#FAFAFA]"
-  >
-    <div class="sticky top-0 z-10 bg-[#FAFAFA] p-4 border-gray-200">
-      {#if sidebar.length > 0}
-        <h3 class="text-lg font-semibold">Existing connectors</h3>
-        <p class="mt-4 text-sm text-muted-foreground">
-          Choose data from an existing connector or create a new one.
-        </p>
-      {:else}
-        <h3 class="text-lg font-semibold">Connected successfully!</h3>
-        <p class="mt-1 text-sm text-muted-foreground">
-          Pick a table to create a model.
-        </p>
-      {/if}
-    </div>
-    <div class="first:pt-0 px-4 pb-4">
-      <div class="flex flex-col gap-4">
-        {#if sidebar.length > 0}
-          {#each sidebar as c (c.name)}
-            <button
-              class="w-full text-left text-sm px-4 py-3 h-[40px] font-medium text-foreground rounded-[10px] border transition-colors flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-              class:border-gray-200={selectedConnectorName !== c.name}
-              class:border-indigo-500={selectedConnectorName === c.name}
-              class:bg-indigo-50={selectedConnectorName === c.name}
-              aria-label={c.name}
-              on:click={() => {
-                selectedConnectorName = String(c.name);
-              }}
-            >
-              <span
-                class="inline-flex items-center justify-center h-4 w-4 rounded-full border-2"
-                class:border-gray-300={selectedConnectorName !== c.name}
-                class:border-indigo-500={selectedConnectorName === c.name}
-                class:bg-indigo-500={selectedConnectorName === c.name}
-                aria-hidden="true"
-              >
-                <span
-                  class="h-2 w-2 rounded-full"
-                  class:bg-transparent={selectedConnectorName !== c.name}
-                  class:bg-white={selectedConnectorName === c.name}
-                />
-              </span>
-              <span class="text-base text-gray-900">{c.name}</span>
-            </button>
-          {/each}
-        {:else}
-          <span class="text-sm text-gray-500">No connectors found</span>
-        {/if}
-      </div>
-    </div>
-  </aside>
-
   <!-- Right content: data explorer -->
   <section class="flex-1 flex flex-col gap-4 p-4">
     <div class="flex flex-col gap-1">

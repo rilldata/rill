@@ -265,10 +265,9 @@ export class AddDataFormManager {
     const isExplorer = hasExplorerStepSchema(schema);
     const isStepFlowConnector = isMultiStep || isExplorer;
     const isConnectorForm = this.formType === "connector";
-    const supportsTableExplorer =
-      Boolean((connector as any)?.implementsOlap) ||
-      Boolean((connector as any)?.implementsSqlStore) ||
-      Boolean((connector as any)?.implementsWarehouse);
+    const supportsTableExplorer = Boolean(
+      (connector as any)?.implementsOlap,
+    );
 
     return async (event: {
       form: SuperValidated<FormData, string, FormData>;

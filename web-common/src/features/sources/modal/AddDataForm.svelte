@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
@@ -12,11 +13,12 @@
   import NeedHelpText from "./NeedHelpText.svelte";
   import { isEmpty } from "./utils";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
-  import { connectorStepStore } from "./connectorStepStore";
+  import { connectorStepStore, resetConnectorStep } from "./connectorStepStore";
   import YamlPreview from "./YamlPreview.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import AddDataExplorerStep from "./AddDataExplorerStep.svelte";
   import { get } from "svelte/store";
   import { getConnectorSchema } from "./connector-schemas";
   import {
@@ -88,6 +90,10 @@
 
   $: stepState = $connectorStepStore;
 
+  // Track if we're in explorer mode (for OLAP connectors)
+  $: isOlapConnector = Boolean(connector.implementsOlap);
+  $: isInExplorerMode = stepState.step === "explorer";
+
   // Form IDs
   const baseFormId = formManager.formId;
   let multiStepFormId = baseFormId;
@@ -102,6 +108,12 @@
     (stepState.step === "source" || stepState.step === "explorer")
   ) {
     showSaveAnyway = false;
+  }
+
+  async function handleModelCreated(path: string) {
+    resetConnectorStep();
+    await goto(`/files${path}`);
+    onClose();
   }
 
   $: isSubmitDisabled = (() => {
@@ -229,7 +241,14 @@
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
-      {#if isStepFlowConnector}
+      {#if isInExplorerMode}
+        <AddDataExplorerStep
+          {connector}
+          formHeight={formManager.formHeight}
+          onBack={() => resetConnectorStep()}
+          onModelCreated={handleModelCreated}
+        />
+      {:else if isStepFlowConnector}
         <MultiStepConnectorFlow
           {connector}
           {formManager}
@@ -274,77 +293,81 @@
       {/if}
     </div>
 
-    <!-- LEFT FOOTER -->
-    <div
-      class="w-full bg-surface-subtle border-t border-gray-200 p-6 flex justify-between gap-2"
-    >
-      <Button onClick={() => formManager.handleBack(onBack)} type="secondary"
-        >Back</Button
+    <!-- LEFT FOOTER - hidden in explorer mode (AddDataExplorerStep has its own footer) -->
+    {#if !isInExplorerMode}
+      <div
+        class="w-full bg-surface-subtle border-t border-gray-200 p-6 flex justify-between gap-2"
       >
+        <Button onClick={() => formManager.handleBack(onBack)} type="secondary"
+          >Back</Button
+        >
 
-      <div class="flex gap-2">
-        {#if shouldShowSaveAnywayButton}
+        <div class="flex gap-2">
+          {#if shouldShowSaveAnywayButton}
+            <Button
+              disabled={false}
+              loading={saveAnywayLoading}
+              loadingCopy="Saving..."
+              onClick={handleSaveAnyway}
+              type="secondary"
+            >
+              Save Anyway
+            </Button>
+          {/if}
+
           <Button
-            disabled={false}
-            loading={saveAnywayLoading}
-            loadingCopy="Saving..."
-            onClick={handleSaveAnyway}
-            type="secondary"
+            disabled={submitting || isSubmitDisabled}
+            loading={submitting}
+            loadingCopy={primaryLoadingCopy}
+            form={formId}
+            submitForm
+            type="primary"
           >
-            Save Anyway
+            {primaryButtonLabel}
           </Button>
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <!-- RIGHT SIDE PANEL - hidden in explorer mode -->
+  {#if !isInExplorerMode}
+    <div
+      class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
+    >
+      <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
+        {#if paramsError}
+          <SubmissionError
+            message={paramsError ?? ""}
+            details={paramsErrorDetails ?? ""}
+          />
         {/if}
 
-        <Button
-          disabled={submitting || isSubmitDisabled}
-          loading={submitting}
-          loadingCopy={primaryLoadingCopy}
-          form={formId}
-          submitForm
-          type="primary"
-        >
-          {primaryButtonLabel}
-        </Button>
-      </div>
-    </div>
-  </div>
-
-  <!-- RIGHT SIDE PANEL -->
-  <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
-  >
-    <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
-      {#if paramsError}
-        <SubmissionError
-          message={paramsError ?? ""}
-          details={paramsErrorDetails ?? ""}
+        <YamlPreview
+          title={isStepFlowConnector
+            ? stepState.step === "connector"
+              ? "Connector preview"
+              : "Model preview"
+            : isSourceForm
+              ? "Model preview"
+              : "Connector preview"}
+          yaml={yamlPreview}
         />
-      {/if}
 
-      <YamlPreview
-        title={isStepFlowConnector
-          ? stepState.step === "connector"
-            ? "Connector preview"
-            : "Model preview"
-          : isSourceForm
-            ? "Model preview"
-            : "Connector preview"}
-        yaml={yamlPreview}
-      />
+        {#if shouldShowSkipLink}
+          <div class="text-sm leading-normal font-medium text-muted-foreground">
+            Already connected? <button
+              type="button"
+              class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
+              on:click={() => formManager.handleSkip()}
+            >
+              Import your data
+            </button>
+          </div>
+        {/if}
+      </div>
 
-      {#if shouldShowSkipLink}
-        <div class="text-sm leading-normal font-medium text-muted-foreground">
-          Already connected? <button
-            type="button"
-            class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
-            on:click={() => formManager.handleSkip()}
-          >
-            Import your data
-          </button>
-        </div>
-      {/if}
+      <NeedHelpText {connector} />
     </div>
-
-    <NeedHelpText {connector} />
-  </div>
+  {/if}
 </div>

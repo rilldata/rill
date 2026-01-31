@@ -49,6 +49,14 @@
 </script>
 
 <div class="flex flex-col flex-grow h-full">
+  <!-- Header with connector name -->
+  <div class="px-6 pt-6 pb-4 border-b border-gray-200">
+    <h2 class="text-lg font-semibold text-gray-900">
+      {connector.displayName ?? connector.name}
+      <span class="text-gray-500 font-normal">{connector.name}</span>
+    </h2>
+  </div>
+
   <div class={cn("flex flex-col flex-grow overflow-hidden p-0", formHeight)}>
     <DataExplorerDialog
       connectorDriver={connector}
@@ -69,11 +77,11 @@
     <Button
       disabled={!selectedTable || creatingModel}
       loading={creatingModel}
-      loadingCopy="Creating model..."
+      loadingCopy="Generating..."
       onClick={handleCreateModel}
       type="primary"
     >
-      Create model
+      Generate metrics with AI
     </Button>
   </div>
 </div>
