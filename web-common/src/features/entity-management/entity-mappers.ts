@@ -115,7 +115,7 @@ export function removeLeadingSlash(path: string): string {
 }
 
 // Add a leading slash if it doesn't exist.
-// Temporary, we should eventually make sure this is added in all places
+// While all files returned by Repo APIs have this already, AI interactions might not always have it.
 export function addLeadingSlash(path: string): string {
   if (path.startsWith("/")) return path;
   return "/" + path;

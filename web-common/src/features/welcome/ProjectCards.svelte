@@ -17,6 +17,10 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
+  import {
+    connectorIconMapping,
+    connectorLabelMapping,
+  } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -63,18 +67,12 @@
 </script>
 
 <section class="flex flex-col items-center gap-y-5">
-  <Subheading>Or jump right into a project.</Subheading>
+  <Subheading>Or jump right into an example project.</Subheading>
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <Card
-      disabled={!!selectedProjectName}
-      isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
-      on:click={() => unpackProject()}
-    >
-      <AddCircleOutline size="2em" className="text-fg-secondary" />
-      <CardTitle position="middle">Start with an empty project</CardTitle>
-    </Card>
-
     {#each EXAMPLES as example (example.name)}
+      {@const icon = connectorIconMapping[example.connector]}
+      {@const label =
+        connectorLabelMapping[example.connector] ?? example.connector}
       <Card
         redirect
         imageUrl={example.image}
@@ -84,9 +82,28 @@
           await unpackProject(example);
         }}
       >
-        <CardTitle>{example.title}</CardTitle>
-        <CardDescription>{example.description}</CardDescription>
+        <div class="absolute top-[160px] w-full pl-3">
+          <div class="flex flex-row w-fit items-center gap-x-1">
+            {#if icon}
+              <svelte:component this={icon} />
+            {/if}
+            <span class="italic text-slate-600">{label}</span>
+          </div>
+        </div>
+        <CardTitle className="w-full pl-3">{example.title}</CardTitle>
+        <CardDescription className="w-full text-left pl-3">
+          {example.description}
+        </CardDescription>
       </Card>
     {/each}
+
+    <Card
+      disabled={!!selectedProjectName}
+      isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
+      on:click={() => unpackProject()}
+    >
+      <AddCircleOutline size="2em" className="text-fg-secondary" />
+      <CardTitle position="middle">Start with an empty project</CardTitle>
+    </Card>
   </div>
 </section>

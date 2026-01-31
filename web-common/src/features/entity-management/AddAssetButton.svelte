@@ -20,7 +20,7 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
   import { directoryState } from "../file-explorer/directory-store";
-  import { createResourceFile } from "../file-explorer/new-files";
+  import { createResourceAndNavigate } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
   import { removeLeadingSlash } from "./entity-mappers";
@@ -68,18 +68,6 @@
 
   $: metricsViews = $metricsViewQuery?.data ?? [];
 
-  async function wrapNavigation(toPath: string | undefined) {
-    if (!toPath) return;
-    const previousScreenName = getScreenNameFromPage();
-    await goto(`/files${toPath}`);
-    await behaviourEvent?.fireSourceTriggerEvent(
-      BehaviourEventAction.Navigate,
-      BehaviourEventMedium.Button,
-      previousScreenName,
-      MetricsEventSpace.LeftPanel,
-    );
-  }
-
   /**
    * Open the Add Data modal
    */
@@ -92,11 +80,6 @@
       getScreenNameFromPage(),
       MetricsEventSpace.LeftPanel,
     );
-  }
-
-  async function handleAddResource(resourceKind: ResourceKind) {
-    const newFilePath = await createResourceFile(resourceKind);
-    await wrapNavigation(newFilePath);
   }
 
   /**
@@ -188,7 +171,7 @@
       aria-label="Add Model"
       class="flex gap-x-2"
       disabled={!isModelingSupported}
-      on:click={() => handleAddResource(ResourceKind.Model)}
+      on:click={() => createResourceAndNavigate(ResourceKind.Model)}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.Model]}
@@ -206,7 +189,7 @@
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
-      on:click={() => handleAddResource(ResourceKind.MetricsView)}
+      on:click={() => createResourceAndNavigate(ResourceKind.MetricsView)}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
@@ -219,13 +202,12 @@
       aria-label="Add Explore Dashboard"
       class="flex gap-x-2"
       disabled={metricsViews.length === 0}
-      on:click={async () => {
+      on:click={() => {
         if (metricsViews.length === 1) {
-          const newFilePath = await createResourceFile(
+          void createResourceAndNavigate(
             ResourceKind.Explore,
             metricsViews.pop(),
           );
-          await wrapNavigation(newFilePath);
         } else {
           showExploreDialog = true;
         }
@@ -249,10 +231,7 @@
 
     <DropdownMenu.Item
       class="flex items-center justify-between gap-x-2"
-      on:click={async () => {
-        const newFilePath = await createResourceFile(ResourceKind.Canvas);
-        await wrapNavigation(newFilePath);
-      }}
+      on:click={() => createResourceAndNavigate(ResourceKind.Canvas)}
       disabled={metricsViews.length === 0}
     >
       <div class="flex gap-x-2 items-center">
@@ -290,7 +269,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() => handleAddResource(ResourceKind.API)}
+          on:click={() => createResourceAndNavigate(ResourceKind.API)}
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.API]}
@@ -302,7 +281,7 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
-          on:click={() => handleAddResource(ResourceKind.Theme)}
+          on:click={() => createResourceAndNavigate(ResourceKind.Theme)}
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.Theme]}
@@ -311,7 +290,7 @@
           Theme
         </DropdownMenu.Item>
         <!-- Temporarily hide Report and Alert options -->
-        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Report)}>
+        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(ResourceKind.Report)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
               className="text-fg-primary"
@@ -319,7 +298,7 @@
             />
             Report
           </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Alert)}>
+          <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(ResourceKind.Alert)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
               className="text-fg-primary"
@@ -332,10 +311,6 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<CreateExploreDialog
-  {wrapNavigation}
-  bind:open={showExploreDialog}
-  {metricsViews}
-/>
+<CreateExploreDialog bind:open={showExploreDialog} {metricsViews} />
 
-<GenerateSampleData initializeProject={false} bind:open={generateDataDialog} />
+<GenerateSampleData type="modal" bind:open={generateDataDialog} />

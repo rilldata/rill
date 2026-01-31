@@ -1,5 +1,3 @@
-import { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
-import { NEW_CONVERSATION_ID } from "@rilldata/web-common/features/chat/core/utils.ts";
 import {
   runtimeServiceUnpackEmpty,
   type V1Message,
@@ -10,14 +8,21 @@ import {
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
-import { get } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { overlay } from "@rilldata/web-common/layout/overlay-store.ts";
-import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-import { goto } from "$app/navigation";
 import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store.ts";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
+import {
+  ConversationManager,
+  getConversationManager,
+} from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
+import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
+import { goto } from "$app/navigation";
 
+export const generatingSampleData = writable(false);
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
 
 export async function generateSampleData(
@@ -25,6 +30,8 @@ export async function generateSampleData(
   instanceId: string,
   userPrompt: string,
 ) {
+  const agentPrompt = `Generate a new model with fresh data for the following user prompt: ${userPrompt}`;
+
   try {
     if (initializeProject) {
       overlay.set({
@@ -48,114 +55,164 @@ export async function generateSampleData(
       });
 
       await projectResetPromise;
+      await featureFlags.ready;
     }
 
-    overlay.set({
-      title: `Hang tight! We're generating the data you requested.`,
-      detail: {
-        component: OptionCancelToAIAction,
-        props: {
-          onCancel: () => {
-            conversation.cancelStream();
-            cancelled = true;
-          },
-        },
-      },
+    const developerChatEnabled = get(featureFlags.developerChat);
+
+    generatingSampleData.set(true);
+    const conversationManager = getConversationManager(instanceId, {
+      conversationState: "browserStorage",
+      agent: ToolName.DEVELOPER_AGENT,
     });
-    const conversation = new Conversation(
-      instanceId,
-      NEW_CONVERSATION_ID,
-      ToolName.DEVELOPER_AGENT,
-    );
-    const agentPrompt = `Generate a NEW model with fresh data for the following user prompt: ${userPrompt}`;
-    conversation.draftMessage.set(agentPrompt);
 
-    let created = false;
-    let lastReadFile: string | null = null;
-    const messages = new Map<string, V1Message>();
-
-    const parseFile = (call: V1Message, result: V1Message) => {
-      try {
-        const resultContent = JSON.parse(result.contentData!);
-        const hasErroredOut =
-          !!resultContent.parse_error ||
-          resultContent.resources?.some((r) => !!r.reconcile_error);
-        if (hasErroredOut) return null;
-
-        const callContent = JSON.parse(call.contentData!);
-        return callContent.path as string;
-      } catch {
-        // json parse errors shouldn't happen. ignore if it ever does.
-      }
-      return null;
-    };
-
-    const handleMessage = (msg: V1Message) => {
-      messages.set(msg.id!, msg);
-      if (
-        msg.type !== MessageType.RESULT ||
-        msg.contentType === MessageContentType.ERROR
-      ) {
-        return;
-      }
-
-      switch (msg.tool) {
-        // Sometimes AI detects that model is already present.
-        case ToolName.READ_FILE: {
-          const callMsg = messages.get(msg.parentId!);
-          if (!callMsg) break;
-
-          // Keep a copy of the file that was read.
-          // LLM can some time read a file and decide not to generate data.
-          lastReadFile = parseFile(callMsg, msg);
-          break;
-        }
-
-        case ToolName.WRITE_FILE: {
-          const callMsg = messages.get(msg.parentId!);
-          if (!callMsg) break;
-
-          const path = parseFile(callMsg, msg);
-          if (!path) break;
-
-          sourceImportedPath.set(path);
-          created = true;
-          overlay.set(null);
-          void goto(`/files${path}`);
-          break;
-        }
-      }
-    };
-    const handleMessageUnsub = conversation.on("message", handleMessage);
-
-    let cancelled = false;
-
-    conversation.cancelStream();
-
-    await conversation.sendMessage({});
-
-    await waitUntil(() => !get(conversation.isStreaming));
-
-    handleMessageUnsub();
-    overlay.set(null);
-    if (cancelled) return;
-    if (!created) {
-      if (lastReadFile) {
-        eventBus.emit("notification", {
-          message: `Data already present at ${lastReadFile}`,
-        });
-      } else {
-        eventBus.emit("notification", {
-          message: "Failed to generate sample data",
-        });
-      }
-      return;
+    if (developerChatEnabled) {
+      await generateSampleDataWithDevChat(agentPrompt, conversationManager);
+    } else {
+      await generateSampleDataWithOverlay(agentPrompt, conversationManager);
     }
-  } catch {
-    overlay.set(null);
+  } catch (err) {
+    console.error(err);
     eventBus.emit("notification", {
       message: "Failed to generate sample data. Please try again.",
       type: "error",
     });
+  } finally {
+    overlay.set(null);
+    generatingSampleData.set(false);
   }
+}
+
+/**
+ * New path that starts a chat with the prompt. User feedback will be through the chat window.
+ */
+async function generateSampleDataWithDevChat(
+  agentPrompt: string,
+  conversationManager: ConversationManager,
+) {
+  // Since the user doesn't see the chat when dev chat is not enabled, older chat shouldn't interfere with this prompt.
+  conversationManager.enterNewConversationMode();
+  const conversation = get(conversationManager.getCurrentConversation());
+  conversation.cancelStream();
+
+  overlay.set(null);
+  sidebarActions.startChat(agentPrompt);
+  // Wait for the stream to start async through the sidebar action.
+  await waitUntil(() => get(conversation.isStreaming));
+
+  // Then wait for the stream to end.
+  await waitUntil(() => !get(conversation.isStreaming), -1);
+}
+
+/**
+ * Goes through the legacy path without developer chat enabled.
+ * User feedback is through overlay and notifications.
+ */
+async function generateSampleDataWithOverlay(
+  agentPrompt: string,
+  conversationManager: ConversationManager,
+) {
+  const conversation = get(conversationManager.getCurrentConversation());
+  conversation.cancelStream();
+
+  let cancelled = false;
+  let created = false;
+  let lastReadFile: string | null = null;
+
+  const messages = new Map<string, V1Message>();
+  const messageUnsub = conversation.on("message", (msg) => {
+    messages.set(msg.id!, msg);
+
+    if (
+      msg.type !== MessageType.RESULT ||
+      msg.contentType === MessageContentType.ERROR
+    ) {
+      return;
+    }
+
+    switch (msg.tool) {
+      // Sometimes AI detects that model is already present.
+      case ToolName.READ_FILE: {
+        if (!msg.parentId) break;
+
+        const callMsg = messages.get(msg.parentId);
+        if (!callMsg) break;
+
+        const path = parseFile(callMsg, msg);
+        if (path) {
+          // Keep a copy of the file that was read.
+          // LLM can some time read a file and decide not to generate data.
+          lastReadFile = path;
+        }
+
+        break;
+      }
+
+      case ToolName.WRITE_FILE: {
+        const callMsg = messages.get(msg.parentId ?? "");
+        if (!callMsg) break;
+
+        const path = parseFile(callMsg, msg);
+        if (!path) break;
+
+        created = true;
+        void goto(`/files${path}`);
+        overlay.set(null);
+        sourceImportedPath.set(path);
+
+        break;
+      }
+    }
+  });
+
+  overlay.set({
+    title: `Hang tight! We're generating the data you requested.`,
+    detail: {
+      component: OptionCancelToAIAction,
+      props: {
+        onCancel: () => {
+          conversation.cancelStream();
+          cancelled = true;
+        },
+      },
+    },
+  });
+  conversation.draftMessage.set(agentPrompt);
+  await conversation.sendMessage({});
+
+  // Wait for the stream to end.
+  await waitUntil(() => !get(conversation.isStreaming), -1);
+
+  messageUnsub();
+
+  if (created || cancelled) return;
+
+  if (lastReadFile) {
+    eventBus.emit("notification", {
+      message: `Data already present at ${lastReadFile}`,
+    });
+  } else {
+    eventBus.emit("notification", {
+      message: "Failed to generate sample data",
+    });
+  }
+  overlay.set(null);
+}
+
+function parseFile(call: V1Message, result: V1Message) {
+  if (!result.contentData || !call.contentData) return null;
+
+  try {
+    const resultContent = JSON.parse(result.contentData);
+    const hasErroredOut =
+      !!resultContent.parse_error ||
+      resultContent.resources?.some((r) => !!r.reconcile_error);
+    if (hasErroredOut) return null;
+
+    const callContent = JSON.parse(call.contentData);
+    return callContent.path as string;
+  } catch {
+    // json parse errors shouldn't happen. ignore if it ever does.
+  }
+  return null;
 }
