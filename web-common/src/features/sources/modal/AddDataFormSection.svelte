@@ -6,7 +6,7 @@
 
 <form
   {id}
-  class="pb-5 flex-grow overflow-y-auto"
+  class="pb-5 flex-grow overflow-y-auto pr-8"
   use:enhance
   on:submit|preventDefault={onSubmit}
 >

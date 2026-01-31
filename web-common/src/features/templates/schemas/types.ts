@@ -92,6 +92,21 @@ export type ButtonLabels = {
   loading: string;
 };
 
+/**
+ * Pre-defined form template that auto-populates fields with preset values.
+ * Useful for common configurations like ClickHouse Playground.
+ */
+export type FormTemplate = {
+  /** Unique identifier for the template */
+  id: string;
+  /** Display name shown in the template selector */
+  label: string;
+  /** Brief description of the template */
+  description?: string;
+  /** Field values to apply when the template is selected */
+  values: Record<string, unknown>;
+};
+
 export type JSONSchemaObject = {
   $schema?: string;
   type: "object";
@@ -125,6 +140,11 @@ export type JSONSchemaObject = {
    * Example: { "connector_type": { "rill-managed": { idle: "Connect", loading: "Connecting..." } } }
    */
   "x-button-labels"?: Record<string, Record<string, ButtonLabels>>;
+  /**
+   * Pre-defined templates for auto-populating form fields.
+   * Useful for common configurations like ClickHouse Playground.
+   */
+  "x-templates"?: FormTemplate[];
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;
