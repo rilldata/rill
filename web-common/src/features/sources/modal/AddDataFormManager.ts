@@ -210,33 +210,36 @@ export class AddDataFormManager {
     } = args;
     const isStepFlowConnector =
       this.isMultiStepConnector || this.hasExplorerStep;
+    const isOnConnectorStep = step === "connector";
+    const isOnSourceOrExplorerStep = step === "source" || step === "explorer";
 
-    // Use schema-provided button labels when available (e.g., rill-managed ClickHouse)
-    if (schemaButtonLabels && step === "connector") {
+    // Schema-provided labels override defaults (e.g. rill-managed ClickHouse)
+    if (schemaButtonLabels && isOnConnectorStep) {
       return submitting ? schemaButtonLabels.loading : schemaButtonLabels.idle;
     }
 
     if (isConnectorForm) {
-      if (isStepFlowConnector && step === "connector") {
-        if (selectedAuthMethod === "public") {
-          return submitting
-            ? BUTTON_LABELS.public.submitting
-            : BUTTON_LABELS.public.idle;
-        }
-        return submitting
-          ? BUTTON_LABELS.connector.submitting
-          : BUTTON_LABELS.connector.idle;
+      // Step 1 of multi-step: "Test and Connect" or "Continue" for public auth
+      if (isStepFlowConnector && isOnConnectorStep) {
+        const labels =
+          selectedAuthMethod === "public"
+            ? BUTTON_LABELS.public
+            : BUTTON_LABELS.connector;
+        return submitting ? labels.submitting : labels.idle;
       }
-      if (isStepFlowConnector && (step === "source" || step === "explorer")) {
+      // Step 2 of multi-step: "Import Data"
+      if (isStepFlowConnector && isOnSourceOrExplorerStep) {
         return submitting
           ? BUTTON_LABELS.source.submitting
           : BUTTON_LABELS.source.idle;
       }
+      // Single-step connector form
       return submitting
         ? BUTTON_LABELS.connector.submitting
         : BUTTON_LABELS.connector.idle;
     }
 
+    // Source-only form (no connector step)
     return "Test and Add data";
   }
 
@@ -268,42 +271,42 @@ export class AddDataFormManager {
     }) => {
       const values = event.form.data;
       const stepState = get(connectorStepStore) as ConnectorStepState;
-      const stepForFilter =
-        isStepFlowConnector &&
-        (stepState.step === "source" || stepState.step === "explorer")
-          ? stepState.step
-          : this.formType === "source"
-            ? "source"
-            : "connector";
-      const filteredValues = schema
-        ? filterSchemaValuesForSubmit(schema, values, {
-            step: stepForFilter,
-          })
-        : values;
-      const submitValues = filteredValues;
+      const isOnSourceOrExplorerStep =
+        stepState.step === "source" || stepState.step === "explorer";
+      const isOnConnectorStep = stepState.step === "connector";
+
+      // Resolve the auth method from form values or the parent component's state
       const authKey = schema ? findRadioEnumKey(schema) : null;
       const selectedAuthMethod =
-        (authKey && values && values[authKey] != null
+        (authKey && values?.[authKey] != null
           ? String(values[authKey])
           : undefined) ||
         getSelectedAuthMethod?.() ||
         "";
-      // Fast-path: public auth skips validation/test and goes straight to source step.
-      if (
-        isMultiStep &&
-        stepState.step === "connector" &&
-        selectedAuthMethod === "public"
-      ) {
+      const isPublicAuth = selectedAuthMethod === "public";
+
+      // Filter form values to only include fields for the current step
+      const stepForFilter =
+        isStepFlowConnector && isOnSourceOrExplorerStep
+          ? stepState.step
+          : this.formType === "source"
+            ? "source"
+            : "connector";
+      const submitValues = schema
+        ? filterSchemaValuesForSubmit(schema, values, { step: stepForFilter })
+        : values;
+
+      // Fast-path: public auth skips validation/test and advances directly
+      if (isMultiStep && isOnConnectorStep && isPublicAuth) {
         const connectorValues = this.filterValuesForStep(values, "connector");
         setConnectorConfig(connectorValues);
         setStep("source");
         return;
       }
 
-      if (
-        isStepFlowConnector &&
-        (stepState.step === "source" || stepState.step === "explorer")
-      ) {
+      // --- Validation ---
+      if (isStepFlowConnector && isOnSourceOrExplorerStep) {
+        // Source/explorer step uses its own validation schema (not superforms)
         const sourceValidator = getValidationSchemaForConnector(
           connector.name as string,
           "source",
@@ -318,17 +321,16 @@ export class AddDataFormManager {
             if (!fieldErrors[key]) fieldErrors[key] = [];
             fieldErrors[key].push(issue.message);
           }
-          const errorsStore = this.errorsStore;
-          errorsStore.set(fieldErrors);
+          this.errorsStore.set(fieldErrors);
           event.cancel?.();
           return;
         }
-        const errorsStore = this.errorsStore;
-        errorsStore.set({});
+        this.errorsStore.set({});
       } else if (!event.form.valid) {
         return;
       }
 
+      // Show "Save Anyway" when a connector test fails
       if (
         typeof setShowSaveAnyway === "function" &&
         this.shouldShowSaveAnywayButton({
@@ -341,58 +343,33 @@ export class AddDataFormManager {
         setShowSaveAnyway(true);
       }
 
+      // --- Submission ---
       try {
-        if (
-          isStepFlowConnector &&
-          (stepState.step === "source" || stepState.step === "explorer")
-        ) {
-          const connectorInstanceName =
-            stepState.connectorInstanceName ?? undefined;
+        if (isStepFlowConnector && isOnSourceOrExplorerStep) {
+          // Step 2: submit the source/model and close
           await submitAddSourceForm(
             queryClient,
             connector,
             submitValues,
-            connectorInstanceName,
+            stepState.connectorInstanceName ?? undefined,
           );
           onClose();
-        } else if (isStepFlowConnector && stepState.step === "connector") {
-          // For public auth, skip Test & Connect and go straight to the next step.
-          if (selectedAuthMethod === "public") {
-            const connectorValues = this.filterValuesForStep(
-              values,
-              "connector",
-            );
-            setConnectorConfig(connectorValues);
-            setConnectorInstanceName(null);
-            if (isMultiStep) {
-              setStep("source");
-            } else if (isExplorer) {
-              setStep("explorer");
-            }
-            return;
-          }
-          const connectorInstanceName = await submitAddConnectorForm(
+        } else if (isStepFlowConnector && isOnConnectorStep) {
+          // Step 1: test connector, persist config, then advance to step 2
+          await this.submitConnectorStepAndAdvance({
             queryClient,
-            connector,
+            values,
             submitValues,
-            false,
-          );
-          const connectorValues = this.filterValuesForStep(
-            submitValues,
-            "connector",
-          );
-          setConnectorConfig(connectorValues);
-          setConnectorInstanceName(connectorInstanceName);
-          if (isMultiStep) {
-            setStep("source");
-          } else if (isExplorer) {
-            setStep("explorer");
-          }
-          return;
+            isPublicAuth,
+            isMultiStep,
+            isExplorer,
+          });
         } else if (this.formType === "source") {
+          // Single-step source form
           await submitAddSourceForm(queryClient, connector, submitValues);
           onClose();
         } else {
+          // Single-step connector form
           await submitAddConnectorForm(
             queryClient,
             connector,
@@ -406,6 +383,43 @@ export class AddDataFormManager {
         setParamsError(message, details);
       }
     };
+  }
+
+  /**
+   * Submit the connector step: test the connection (or skip for public auth),
+   * persist connector config, then advance to the source/explorer step.
+   */
+  private async submitConnectorStepAndAdvance(args: {
+    queryClient: QueryClient;
+    values: FormData;
+    submitValues: FormData;
+    isPublicAuth: boolean;
+    isMultiStep: boolean;
+    isExplorer: boolean;
+  }) {
+    const { queryClient, values, submitValues, isPublicAuth, isMultiStep, isExplorer } = args;
+    const nextStep = isMultiStep ? "source" : "explorer";
+
+    if (isPublicAuth) {
+      // Public auth skips the connection test
+      const connectorValues = this.filterValuesForStep(values, "connector");
+      setConnectorConfig(connectorValues);
+      setConnectorInstanceName(null);
+      setStep(nextStep);
+      return;
+    }
+
+    // Test the connection, then persist config and advance
+    const connectorInstanceName = await submitAddConnectorForm(
+      queryClient,
+      this.connector,
+      submitValues,
+      false,
+    );
+    const connectorValues = this.filterValuesForStep(submitValues, "connector");
+    setConnectorConfig(connectorValues);
+    setConnectorInstanceName(connectorInstanceName);
+    setStep(nextStep);
   }
 
   onStringInputChange = (
@@ -480,10 +494,6 @@ export class AddDataFormManager {
     }
   }
 
-  /**
-   * Compute YAML preview for the current form state.
-   * Schema conditionals handle connector-specific requirements (e.g., managed flag, SSL).
-   */
   /**
    * Compute YAML preview for the current form state.
    * Schema conditionals handle connector-specific requirements.
