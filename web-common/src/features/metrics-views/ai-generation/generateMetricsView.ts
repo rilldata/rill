@@ -2,7 +2,10 @@ import { goto } from "$app/navigation";
 import { createCanvasDashboardWithoutNavigation } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  ResourceKind,
+  resourceIsLoading,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createResourceFile } from "@rilldata/web-common/features/file-explorer/new-files";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -466,6 +469,26 @@ export async function createModelAndMetricsAndExplore(
 }
 
 /**
+ * Waits for a metrics view resource to finish reconciling.
+ * Reconciliation is complete when the status is IDLE.
+ */
+async function waitForMetricsViewReconciliation(
+  instanceId: string,
+  metricsViewFilePath: string,
+  timeoutMs: number = 10000,
+): Promise<void> {
+  const metricsViewResource = fileArtifacts
+    .getFileArtifact(metricsViewFilePath)
+    .getResource(queryClient, instanceId);
+
+  // Wait for the resource to be fully reconciled
+  await waitUntil(() => {
+    const resource = get(metricsViewResource).data;
+    return resource !== undefined && !resourceIsLoading(resource);
+  }, timeoutMs);
+}
+
+/**
  * Helper function to create metrics view from table with AI.
  * Returns the metrics view resource after creation.
  */
@@ -529,6 +552,9 @@ async function createMetricsViewFromTable(
   if (!resource) {
     throw new Error("Failed to create a Metrics View resource");
   }
+
+  // Wait for the metrics view to finish reconciling before returning
+  await waitForMetricsViewReconciliation(instanceId, newMetricsViewFilePath);
 
   return resource;
 }
@@ -611,7 +637,23 @@ export function useCreateMetricsViewWithCanvasUIAction(
         throw new Error("Failed to get metrics view name");
       }
 
-      // Step 2: Create Canvas dashboard
+      // Step 2: Wait a bit for metrics view to fully reconcile
+      // This ensures the metrics view is ready before we generate the canvas
+      overlay.set({
+        title: `Preparing metrics view...`,
+        detail: {
+          component: OptionToCancelAIGeneration,
+          props: {
+            onCancel: () => {
+              abortController.abort("Canvas creation cancelled by user");
+            },
+          },
+        },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Step 3: Create Canvas dashboard
       overlay.set({
         title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
         detail: {
@@ -629,7 +671,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
         metricsViewName,
       );
 
-      // Step 3: Navigate to Canvas dashboard
+      // Step 4: Navigate to Canvas dashboard
       if (canvasFilePath) {
         await goto(`/files${canvasFilePath}`);
         void behaviourEvent?.fireNavigationEvent(
@@ -707,7 +749,23 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
         throw new Error("Failed to get metrics view name");
       }
 
-      // Step 2: Create Explore dashboard (without navigation)
+      // Step 2: Wait a bit for metrics view to fully reconcile
+      // This ensures the metrics view is ready before we generate dashboards
+      overlay.set({
+        title: `Preparing metrics view...`,
+        detail: {
+          component: OptionToCancelAIGeneration,
+          props: {
+            onCancel: () => {
+              abortController.abort("Dashboard creation cancelled by user");
+            },
+          },
+        },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Step 3: Create Explore dashboard (without navigation)
       overlay.set({
         title: `Creating Explore dashboard...`,
         detail: {
@@ -726,7 +784,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
         resource,
       );
 
-      // Step 3: Try to create Canvas dashboard
+      // Step 4: Try to create Canvas dashboard
       overlay.set({
         title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
         detail: {
@@ -744,7 +802,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
         metricsViewName,
       );
 
-      // Step 4: Navigate to Canvas if successful, otherwise Explore
+      // Step 5: Navigate to Canvas if successful, otherwise Explore
       if (canvasFilePath) {
         await goto(`/files${canvasFilePath}`);
         void behaviourEvent?.fireNavigationEvent(
