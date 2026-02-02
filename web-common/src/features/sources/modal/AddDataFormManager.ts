@@ -419,9 +419,13 @@ export class AddDataFormManager {
       try {
         if (isMultiStepConnector && stepState.step === "source") {
           // Ensure connector instance name is set in values for create_secrets_from_connectors
-          const effectiveConnectorInstanceName = stepState.connectorInstanceName ?? this.connectorInstanceName;
+          const effectiveConnectorInstanceName =
+            stepState.connectorInstanceName ?? this.connectorInstanceName;
           const sourceValues = effectiveConnectorInstanceName
-            ? { ...values, create_secrets_from_connectors: effectiveConnectorInstanceName }
+            ? {
+                ...values,
+                create_secrets_from_connectors: effectiveConnectorInstanceName,
+              }
             : values;
           await submitAddSourceForm(queryClient, connector, sourceValues);
           resetConnectorStep();
@@ -436,7 +440,13 @@ export class AddDataFormManager {
             setStep("source");
             return;
           }
-          const connectorName = await submitAddConnectorForm(queryClient, connector, values, false, true);
+          const connectorName = await submitAddConnectorForm(
+            queryClient,
+            connector,
+            values,
+            false,
+            true,
+          );
           setConnectorConfig({});
           setAuthMethod(null);
           setConnectorInstanceName(connectorName);
@@ -633,11 +643,14 @@ export class AddDataFormManager {
         return getConnectorYamlPreview(paramsFormValues);
       } else {
         // Include connector instance name in combined values for create_secrets_from_connectors
-        const effectiveConnectorInstanceName = stepState?.connectorInstanceName ?? this.connectorInstanceName;
+        const effectiveConnectorInstanceName =
+          stepState?.connectorInstanceName ?? this.connectorInstanceName;
         const combinedValues = {
           ...(stepState?.connectorConfig || {}),
           ...paramsFormValues,
-          ...(effectiveConnectorInstanceName ? { create_secrets_from_connectors: effectiveConnectorInstanceName } : {}),
+          ...(effectiveConnectorInstanceName
+            ? { create_secrets_from_connectors: effectiveConnectorInstanceName }
+            : {}),
         } as Record<string, unknown>;
         return getSourceYamlPreview(combinedValues);
       }

@@ -9,10 +9,18 @@ describe("addSourceModal", () => {
   let resetConnectorStepSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    pushStateSpy = vi.spyOn(window.history, "pushState").mockImplementation(() => {});
-    dispatchEventSpy = vi.spyOn(window, "dispatchEvent").mockImplementation(() => true);
-    setStepSpy = vi.spyOn(connectorStepStore, "setStep").mockImplementation(() => {});
-    resetConnectorStepSpy = vi.spyOn(connectorStepStore, "resetConnectorStep").mockImplementation(() => {});
+    pushStateSpy = vi
+      .spyOn(window.history, "pushState")
+      .mockImplementation(() => {});
+    dispatchEventSpy = vi
+      .spyOn(window, "dispatchEvent")
+      .mockImplementation(() => true);
+    setStepSpy = vi
+      .spyOn(connectorStepStore, "setStep")
+      .mockImplementation(() => {});
+    resetConnectorStepSpy = vi
+      .spyOn(connectorStepStore, "resetConnectorStep")
+      .mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -31,7 +39,7 @@ describe("addSourceModal", () => {
           requestConnector: false,
         }),
         "",
-        ""
+        "",
       );
     });
 
@@ -47,7 +55,7 @@ describe("addSourceModal", () => {
           requestConnector: false,
         }),
         "",
-        ""
+        "",
       );
     });
 
@@ -63,7 +71,7 @@ describe("addSourceModal", () => {
           requestConnector: false,
         }),
         "",
-        ""
+        "",
       );
     });
 
@@ -77,7 +85,7 @@ describe("addSourceModal", () => {
             connector: "s3",
             connectorInstanceName: "s3_custom",
           }),
-        })
+        }),
       );
     });
   });
@@ -94,7 +102,7 @@ describe("addSourceModal", () => {
           requestConnector: false,
         }),
         "",
-        ""
+        "",
       );
       expect(resetConnectorStepSpy).toHaveBeenCalled();
     });

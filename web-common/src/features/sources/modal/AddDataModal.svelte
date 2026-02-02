@@ -21,7 +21,12 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES, MULTI_STEP_CONNECTORS } from "./constants";
+  import {
+    OLAP_ENGINES,
+    ALL_CONNECTORS,
+    SOURCES,
+    MULTI_STEP_CONNECTORS,
+  } from "./constants";
   import { ICONS } from "./icons";
   import { resetConnectorStep, connectorStepStore } from "./connectorStepStore";
 
@@ -179,7 +184,11 @@
       return "public";
     }
     // Show connector instance name from store (multi-step flow) or prop, or fall back to driver name
-    return stepState.connectorInstanceName ?? connectorInstanceName ?? selectedConnector?.name;
+    return (
+      stepState.connectorInstanceName ??
+      connectorInstanceName ??
+      selectedConnector?.name
+    );
   })();
 </script>
 
@@ -277,7 +286,8 @@
                   size="18px"
                 />
               {/if}
-              <span class="text-lg leading-none font-semibold flex items-baseline gap-1.5"
+              <span
+                class="text-lg leading-none font-semibold flex items-baseline gap-1.5"
                 >{selectedConnector.displayName}{#if headerSuffix}<span
                     class="text-fg-muted font-normal text-sm italic"
                     >{headerSuffix}</span

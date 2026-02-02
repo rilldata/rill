@@ -74,10 +74,9 @@
 
     <div class="flex items-center gap-x-2 w-fit flex-none">
       {#if isConnector}
-                <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
+        <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
 
-          <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
-
+        <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
       {/if}
 
       <slot name="workspace-controls" {width} />
