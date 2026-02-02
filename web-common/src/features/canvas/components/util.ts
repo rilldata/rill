@@ -9,11 +9,14 @@ import type {
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
-import type {
-  V1ComponentSpec,
-  V1MetricsViewSpec,
-  V1ResolveCanvasResponseResolvedComponents,
-  V1Resource,
+import {
+  type MetricsViewSpecDimension,
+  MetricsViewSpecDimensionType,
+  type MetricsViewSpecMeasure,
+  type V1ComponentSpec,
+  type V1MetricsViewSpec,
+  type V1ResolveCanvasResponseResolvedComponents,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { BaseCanvasComponent } from "./BaseCanvasComponent";
@@ -36,6 +39,9 @@ import {
   type ChartMetadataConfig,
 } from "@rilldata/web-common/features/components/charts/config.ts";
 import { readable } from "svelte/store";
+import { getFieldsByType } from "@rilldata/web-common/features/components/charts/util.ts";
+import type { TimeDimensionDefinition } from "@rilldata/web-common/features/components/charts/types.ts";
+import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
@@ -226,10 +232,10 @@ export function getLabelForComponent(
       readable(componentSpec?.rendererProperties as any),
     );
 
-    const fields = Object.fromEntries([
-      ...(metricsViewSpec?.measures?.map((m) => [m.name!, m]) ?? []),
-      ...(metricsViewSpec?.dimensions?.map((d) => [d.name!, d]) ?? []),
-    ]);
+    const fields = getFieldsForSpec(
+      componentSpec?.rendererProperties as any,
+      metricsViewSpec ?? {},
+    );
 
     return provider.chartTitle(fields);
   }
