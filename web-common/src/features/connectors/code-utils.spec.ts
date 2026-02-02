@@ -170,24 +170,24 @@ describe("getGenericEnvVarName", () => {
   });
 
   describe("GCS special mappings - backwards compatible keys with GS_ env vars", () => {
-    it("should return GS_ACCESS_KEY_ID for gcs key_id", () => {
+    it("should return GCP_ACCESS_KEY_ID for gcs key_id", () => {
       const result = getGenericEnvVarName("gcs", "key_id");
-      expect(result).toBe("GS_ACCESS_KEY_ID");
+      expect(result).toBe("GCP_ACCESS_KEY_ID");
     });
 
-    it("should return GS_SECRET_ACCESS_KEY for gcs secret", () => {
+    it("should return GCP_SECRET_ACCESS_KEY for gcs secret", () => {
       const result = getGenericEnvVarName("gcs", "secret");
-      expect(result).toBe("GS_SECRET_ACCESS_KEY");
+      expect(result).toBe("GCP_SECRET_ACCESS_KEY");
     });
 
-    it("should return GS_ACCESS_KEY_ID for gs key_id (alternate driver name)", () => {
+    it("should return GCP_ACCESS_KEY_ID for gs key_id (alternate driver name)", () => {
       const result = getGenericEnvVarName("gs", "key_id");
-      expect(result).toBe("GS_ACCESS_KEY_ID");
+      expect(result).toBe("GCP_ACCESS_KEY_ID");
     });
 
-    it("should return GS_SECRET_ACCESS_KEY for gs secret (alternate driver name)", () => {
+    it("should return GCP_SECRET_ACCESS_KEY for gs secret (alternate driver name)", () => {
       const result = getGenericEnvVarName("gs", "secret");
-      expect(result).toBe("GS_SECRET_ACCESS_KEY");
+      expect(result).toBe("GCP_SECRET_ACCESS_KEY");
     });
   });
 

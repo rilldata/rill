@@ -237,15 +237,15 @@ export function getGenericEnvVarName(
   propertyKey: string,
 ): string {
   // Special mappings for specific driver + property combinations
-  // GCS uses key_id/secret for backwards compatibility but env vars should be GS_ACCESS_KEY_ID/GS_SECRET_ACCESS_KEY
+  // GCS uses key_id/secret for backwards compatibility but env vars should be GCP_ACCESS_KEY_ID/GCP_SECRET_ACCESS_KEY
   const specialMappings: Record<string, Record<string, string>> = {
     gcs: {
-      key_id: "GS_ACCESS_KEY_ID",
-      secret: "GS_SECRET_ACCESS_KEY",
+      key_id: "GCP_ACCESS_KEY_ID",
+      secret: "GCP_SECRET_ACCESS_KEY",
     },
     gs: {
-      key_id: "GS_ACCESS_KEY_ID",
-      secret: "GS_SECRET_ACCESS_KEY",
+      key_id: "GCP_ACCESS_KEY_ID",
+      secret: "GCP_SECRET_ACCESS_KEY",
     },
   };
 
