@@ -113,21 +113,8 @@
       th.setAttribute("title", value.value);
     }
 
-    // Add mouseover event to update the value in the store without changing visibility
-    th.onmouseover = () => {
-      if (value?.value !== undefined && value?.value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value.value));
-      }
-    };
-
-    // Add focus event to update the value in the store without changing visibility
-    th.onfocus = () => {
-      if (value?.value !== undefined && value?.value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value.value));
-      }
-    };
+    th.onmouseover = () => cellInspectorStore.updateValue(value?.value);
+    th.onfocus = () => cellInspectorStore.updateValue(value?.value);
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
       th.style.width = `${maybeWidth}px`;
@@ -161,20 +148,8 @@
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
 
-    // Add mouseover event to update the value in the store without changing visibility
-    td.onmouseover = () => {
-      if (value !== undefined && value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value));
-      }
-    };
-
-    td.onfocus = () => {
-      if (value !== undefined && value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value));
-      }
-    };
+    td.onmouseover = () => cellInspectorStore.updateValue(value);
+    td.onfocus = () => cellInspectorStore.updateValue(value);
 
     const maybeWidth = getColumnWidth(x);
     if (maybeWidth) {

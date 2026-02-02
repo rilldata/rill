@@ -79,6 +79,7 @@ func New(t TestingT, allowHostAccess bool) *runtime.Runtime {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 		AllowHostAccess:              allowHostAccess,
+		EnableConfigReloader:         !allowHostAccess,
 	}
 
 	logger := zap.NewNop()
