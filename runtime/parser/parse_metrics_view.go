@@ -376,8 +376,14 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			if dim.LookupTable == "" || dim.LookupKeyColumn == "" || dim.LookupValueColumn == "" {
 				return fmt.Errorf("all lookup fields should be defined (lookup_table, lookup_key_column and lookup_value_column should be defined")
 			}
+			if dim.Column == "" && dim.Expression == "" {
+				return fmt.Errorf("either column or expression must be defined for lookup dimension %q", dim.Name)
+			}
 			if strings.Contains(dim.Expression, "dictGet") {
 				return fmt.Errorf("dictGet expression and lookup fields cannot be used together")
+			}
+			if dim.Unnest {
+				return fmt.Errorf("unnest cannot be used with lookup fields")
 			}
 		}
 

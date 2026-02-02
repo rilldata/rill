@@ -233,7 +233,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			var keyExpr string
 			if dim.Column != "" {
 				keyExpr = ast.Dialect.EscapeIdentifier(dim.Column)
-			} else if dim.Expression != "" {
+			} else {
 				keyExpr = dim.Expression
 			}
 			lkMeta = &lookupMeta{

@@ -692,19 +692,13 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
 
-		if dim.Unnest && dim.LookupTable != "" {
-			return "", false, nil, fmt.Errorf("dimension %q is unnested and also has a lookup. This is not supported", name)
-		}
-
 		var lm *lookupMeta
 		if dim.LookupTable != "" {
 			var keyExpr string
 			if dim.Column != "" {
 				keyExpr = b.ast.Dialect.EscapeIdentifier(dim.Column)
-			} else if dim.Expression != "" {
-				keyExpr = dim.Expression
 			} else {
-				return "", false, nil, fmt.Errorf("dimension %q has a lookup table but no column or expression defined", name)
+				keyExpr = dim.Expression
 			}
 			lm = &lookupMeta{
 				table:    dim.LookupTable,
