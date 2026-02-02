@@ -43,7 +43,8 @@
             <div class="flex flex-col gap-0.5">
               <span class="font-medium">{template.label}</span>
               {#if template.description}
-                <span class="text-xs text-gray-500">{template.description}</span>
+                <span class="text-xs text-gray-500">{template.description}</span
+                >
               {/if}
             </div>
           </DropdownMenu.Item>
