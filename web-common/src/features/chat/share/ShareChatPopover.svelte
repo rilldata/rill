@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Share, Link, Check } from "lucide-svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import {
@@ -9,6 +8,7 @@
   } from "@rilldata/web-common/components/popover";
   import { createRuntimeServiceShareConversation } from "@rilldata/web-common/runtime-client";
   import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import { Check, Link, Share } from "lucide-svelte";
 
   export let conversationId: string | undefined = undefined;
   export let instanceId: string;
@@ -16,7 +16,7 @@
   export let project: string | undefined = undefined;
   export let disabled = false;
 
-  const disabledTooltip = "Start a conversation to share";
+  const DISABLED_TOOLTIP = "Start a conversation to share";
   const COPIED_FEEDBACK_DURATION_MS = 1500;
 
   let isOpen = false;
@@ -75,7 +75,7 @@
     >
       <Share class="text-gray-500" size="16px" />
       <svelte:fragment slot="tooltip-content">
-        {disabled ? disabledTooltip : "Share conversation"}
+        {disabled ? DISABLED_TOOLTIP : "Share conversation"}
       </svelte:fragment>
     </IconButton>
   </PopoverTrigger>

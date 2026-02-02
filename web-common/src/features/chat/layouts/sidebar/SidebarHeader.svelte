@@ -42,7 +42,7 @@
       bgGray
       on:click={handleNewConversation}
     >
-<PlusIcon className="text-gray-500" />
+      <PlusIcon className="text-gray-500" />
       <svelte:fragment slot="tooltip-content">New conversation</svelte:fragment>
     </IconButton>
 

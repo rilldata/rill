@@ -1,6 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
+  import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
   import { onMount } from "svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
@@ -15,7 +16,6 @@
     conversationSidebarCollapsed,
     toggleConversationSidebar,
   } from "./fullpage-store";
-  import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
 
   $: ({ instanceId } = $runtime);
   $: organization = $page.params.organization;
@@ -72,15 +72,16 @@
 
   <!-- Main Chat Area -->
   <div class="chat-main">
-    <div class="chat-header">
-      <ShareChatPopover
-        conversationId={currentConversation?.id}
-        {instanceId}
-        {organization}
-        {project}
-        disabled={!currentConversation?.id}
-      />
-    </div>
+    {#if currentConversation?.id}
+      <div class="chat-header">
+        <ShareChatPopover
+          conversationId={currentConversation.id}
+          {instanceId}
+          {organization}
+          {project}
+        />
+      </div>
+    {/if}
     <div class="chat-content">
       <div class="chat-messages-wrapper">
         <Messages
