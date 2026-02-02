@@ -17,6 +17,7 @@
   export let disabled = false;
 
   const disabledTooltip = "Start a conversation to share";
+  const COPIED_FEEDBACK_DURATION_MS = 1500;
 
   let isOpen = false;
   let copied = false;
@@ -26,7 +27,8 @@
   const shareConversationMutation = createRuntimeServiceShareConversation();
 
   async function handleCreateLink() {
-    if (isSharing || !conversationId || !organization || !project) return;
+    if (copied || isSharing || !conversationId || !organization || !project)
+      return;
 
     isSharing = true;
     shareError = null;
@@ -50,7 +52,7 @@
       setTimeout(() => {
         copied = false;
         isOpen = false;
-      }, 1500);
+      }, COPIED_FEEDBACK_DURATION_MS);
     } catch (error) {
       console.error("[ShareChatPopover] Share failed:", error);
       shareError = isHTTPError(error)
