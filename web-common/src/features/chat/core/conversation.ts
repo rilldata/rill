@@ -247,7 +247,7 @@ export class Conversation {
 
     try {
       await this.startStreaming({
-        userFeedbackContext: {
+        feedbackAgentContext: {
           targetMessageId,
           sentiment,
           categories: categories ?? [],
@@ -300,12 +300,12 @@ export class Conversation {
 
   /**
    * Start streaming completion responses.
-   * Used for both regular messages (with prompt) and feedback submission (with userFeedbackContext).
+   * Used for both regular messages (with prompt) and feedback submission (with feedbackAgentContext).
    */
   private async startStreaming(request: {
     prompt?: string;
     context?: RuntimeServiceCompleteBody;
-    userFeedbackContext?: {
+    feedbackAgentContext?: {
       targetMessageId: string;
       sentiment: FeedbackSentiment;
       categories: FeedbackCategory[];
@@ -324,9 +324,10 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt: request.prompt,
-      // Don't send agent for feedback - let router handle user_feedback directly
-      agent: request.userFeedbackContext ? undefined : this.agent,
-      userFeedbackContext: request.userFeedbackContext,
+      agent: request.feedbackAgentContext
+        ? ToolName.FEEDBACK_AGENT
+        : this.agent,
+      feedbackAgentContext: request.feedbackAgentContext,
       ...request.context,
     };
 

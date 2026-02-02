@@ -17,24 +17,15 @@ func TestUserFeedbackPositive(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
 	s := newSession(t, rt, instanceID)
 
-	// Seed a message to target with feedback
-	userMsg := s.AddMessage(&ai.AddMessageOptions{
-		Role:    ai.RoleUser,
-		Type:    ai.MessageTypeCall,
-		Tool:    ai.RouterAgentName,
-		Content: "What is 2 + 2?",
-	})
-	responseMsg := s.WithParent(userMsg.ID).AddMessage(&ai.AddMessageOptions{
-		Role:    ai.RoleAssistant,
-		Type:    ai.MessageTypeResult,
-		Tool:    ai.RouterAgentName,
-		Content: "2 + 2 = 4",
-	})
+	// Create a real tool call to target with feedback
+	var listRes *ai.ListMetricsViewsResult
+	callRes, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &listRes, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
 
-	// Invoke the user_feedback tool with positive feedback
-	var res *ai.UserFeedbackResult
-	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.UserFeedbackToolName, &res, &ai.UserFeedbackArgs{
-		TargetMessageID: responseMsg.ID,
+	// Invoke the user_feedback tool with positive feedback targeting the tool result
+	var res *ai.FeedbackAgentResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
+		TargetMessageID: callRes.Result.ID,
 		Sentiment:       "positive",
 	})
 
@@ -84,28 +75,31 @@ func TestUserFeedbackAttribution(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			s := newEval(t, rt, instanceID)
 
-			// Seed a user message
+			// Create a RouterAgent call message with the user's prompt.
+			// We use AddMessage (rather than CallTool) to control the AI response content for testing specific attribution scenarios.
 			routerArgs, err := json.Marshal(ai.RouterAgentArgs{Prompt: c.userPrompt})
 			require.NoError(t, err)
 
 			userMsg := s.AddMessage(&ai.AddMessageOptions{
-				Role:    ai.RoleUser,
-				Type:    ai.MessageTypeCall,
-				Tool:    ai.RouterAgentName,
-				Content: string(routerArgs),
+				Role:        ai.RoleUser,
+				Type:        ai.MessageTypeCall,
+				Tool:        ai.RouterAgentName,
+				ContentType: ai.MessageContentTypeJSON,
+				Content:     string(routerArgs),
 			})
 
-			// Seed an AI response message
+			// Create a controlled AI response message to test specific attribution scenarios
 			responseMsg := s.WithParent(userMsg.ID).AddMessage(&ai.AddMessageOptions{
-				Role:    ai.RoleAssistant,
-				Type:    ai.MessageTypeResult,
-				Tool:    ai.RouterAgentName,
-				Content: c.aiResponse,
+				Role:        ai.RoleAssistant,
+				Type:        ai.MessageTypeResult,
+				Tool:        ai.RouterAgentName,
+				ContentType: ai.MessageContentTypeText,
+				Content:     c.aiResponse,
 			})
 
 			// Test negative feedback targeting the AI response
-			var res *ai.UserFeedbackResult
-			_, err = s.CallTool(t.Context(), ai.RoleUser, ai.UserFeedbackToolName, &res, &ai.UserFeedbackArgs{
+			var res *ai.FeedbackAgentResult
+			_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
 				TargetMessageID: responseMsg.ID,
 				Sentiment:       "negative",
 				Comment:         c.comment,
@@ -144,8 +138,8 @@ func TestUserFeedbackAccessDeniedForNonRillUserAgent(t *testing.T) {
 	})
 
 	// Try to call user_feedback - should fail with access denied
-	var res *ai.UserFeedbackResult
-	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.UserFeedbackToolName, &res, &ai.UserFeedbackArgs{
+	var res *ai.FeedbackAgentResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.FeedbackAgentName, &res, &ai.FeedbackAgentArgs{
 		TargetMessageID: "some-message-id",
 		Sentiment:       "positive",
 	})

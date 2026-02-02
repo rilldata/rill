@@ -304,8 +304,8 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	}
 
 	// Validate request - either prompt or feedback context must be provided
-	if req.Prompt == "" && req.UserFeedbackContext == nil {
-		return status.Error(codes.InvalidArgument, "prompt or user_feedback_context must be provided")
+	if req.Prompt == "" && req.FeedbackAgentContext == nil {
+		return status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
 	}
 
 	// Setup user agent
@@ -383,13 +383,13 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
-	var userFeedbackArgs *ai.UserFeedbackArgs
-	if req.UserFeedbackContext != nil {
-		userFeedbackArgs = &ai.UserFeedbackArgs{
-			TargetMessageID: req.UserFeedbackContext.TargetMessageId,
-			Sentiment:       req.UserFeedbackContext.Sentiment,
-			Categories:      req.UserFeedbackContext.Categories,
-			Comment:         req.UserFeedbackContext.Comment,
+	var feedbackAgentArgs *ai.FeedbackAgentArgs
+	if req.FeedbackAgentContext != nil {
+		feedbackAgentArgs = &ai.FeedbackAgentArgs{
+			TargetMessageID: req.FeedbackAgentContext.TargetMessageId,
+			Sentiment:       req.FeedbackAgentContext.Sentiment,
+			Categories:      req.FeedbackAgentContext.Categories,
+			Comment:         req.FeedbackAgentContext.Comment,
 		}
 	}
 
@@ -400,7 +400,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		Agent:              req.Agent,
 		AnalystAgentArgs:   analystAgentArgs,
 		DeveloperAgentArgs: developerAgentArgs,
-		UserFeedbackArgs:   userFeedbackArgs,
+		FeedbackAgentArgs:  feedbackAgentArgs,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.

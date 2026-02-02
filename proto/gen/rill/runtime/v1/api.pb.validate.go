@@ -11075,22 +11075,22 @@ var _ interface {
 	ErrorName() string
 } = DeveloperAgentContextValidationError{}
 
-// Validate checks the field values on UserFeedbackContext with the rules
+// Validate checks the field values on FeedbackAgentContext with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *UserFeedbackContext) Validate() error {
+func (m *FeedbackAgentContext) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UserFeedbackContext with the rules
+// ValidateAll checks the field values on FeedbackAgentContext with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// UserFeedbackContextMultiError, or nil if none found.
-func (m *UserFeedbackContext) ValidateAll() error {
+// FeedbackAgentContextMultiError, or nil if none found.
+func (m *FeedbackAgentContext) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UserFeedbackContext) validate(all bool) error {
+func (m *FeedbackAgentContext) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -11104,19 +11104,19 @@ func (m *UserFeedbackContext) validate(all bool) error {
 	// no validation rules for Comment
 
 	if len(errors) > 0 {
-		return UserFeedbackContextMultiError(errors)
+		return FeedbackAgentContextMultiError(errors)
 	}
 
 	return nil
 }
 
-// UserFeedbackContextMultiError is an error wrapping multiple validation
-// errors returned by UserFeedbackContext.ValidateAll() if the designated
+// FeedbackAgentContextMultiError is an error wrapping multiple validation
+// errors returned by FeedbackAgentContext.ValidateAll() if the designated
 // constraints aren't met.
-type UserFeedbackContextMultiError []error
+type FeedbackAgentContextMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UserFeedbackContextMultiError) Error() string {
+func (m FeedbackAgentContextMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -11125,11 +11125,11 @@ func (m UserFeedbackContextMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UserFeedbackContextMultiError) AllErrors() []error { return m }
+func (m FeedbackAgentContextMultiError) AllErrors() []error { return m }
 
-// UserFeedbackContextValidationError is the validation error returned by
-// UserFeedbackContext.Validate if the designated constraints aren't met.
-type UserFeedbackContextValidationError struct {
+// FeedbackAgentContextValidationError is the validation error returned by
+// FeedbackAgentContext.Validate if the designated constraints aren't met.
+type FeedbackAgentContextValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -11137,24 +11137,24 @@ type UserFeedbackContextValidationError struct {
 }
 
 // Field function returns field value.
-func (e UserFeedbackContextValidationError) Field() string { return e.field }
+func (e FeedbackAgentContextValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UserFeedbackContextValidationError) Reason() string { return e.reason }
+func (e FeedbackAgentContextValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UserFeedbackContextValidationError) Cause() error { return e.cause }
+func (e FeedbackAgentContextValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UserFeedbackContextValidationError) Key() bool { return e.key }
+func (e FeedbackAgentContextValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UserFeedbackContextValidationError) ErrorName() string {
-	return "UserFeedbackContextValidationError"
+func (e FeedbackAgentContextValidationError) ErrorName() string {
+	return "FeedbackAgentContextValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e UserFeedbackContextValidationError) Error() string {
+func (e FeedbackAgentContextValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -11166,14 +11166,14 @@ func (e UserFeedbackContextValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUserFeedbackContext.%s: %s%s",
+		"invalid %sFeedbackAgentContext.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UserFeedbackContextValidationError{}
+var _ error = FeedbackAgentContextValidationError{}
 
 var _ interface {
 	Field() string
@@ -11181,7 +11181,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UserFeedbackContextValidationError{}
+} = FeedbackAgentContextValidationError{}
 
 // Validate checks the field values on ListConversationsRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -12791,7 +12791,7 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 		if _, ok := _CompleteStreamingRequest_Agent_InLookup[m.GetAgent()]; !ok {
 			err := CompleteStreamingRequestValidationError{
 				field:  "Agent",
-				reason: "value must be in list [analyst_agent developer_agent]",
+				reason: "value must be in list [analyst_agent developer_agent feedback_agent]",
 			}
 			if !all {
 				return err
@@ -12860,11 +12860,11 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetUserFeedbackContext()).(type) {
+		switch v := interface{}(m.GetFeedbackAgentContext()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "UserFeedbackContext",
+					field:  "FeedbackAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -12872,16 +12872,16 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "UserFeedbackContext",
+					field:  "FeedbackAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetUserFeedbackContext()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetFeedbackAgentContext()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CompleteStreamingRequestValidationError{
-				field:  "UserFeedbackContext",
+				field:  "FeedbackAgentContext",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -12973,6 +12973,7 @@ var _CompleteStreamingRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-z
 var _CompleteStreamingRequest_Agent_InLookup = map[string]struct{}{
 	"analyst_agent":   {},
 	"developer_agent": {},
+	"feedback_agent":  {},
 }
 
 // Validate checks the field values on CompleteStreamingResponse with the rules

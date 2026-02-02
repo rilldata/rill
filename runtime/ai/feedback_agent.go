@@ -2,7 +2,6 @@ package ai
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -12,45 +11,38 @@ import (
 	"go.uber.org/zap"
 )
 
-// UserFeedbackToolName is the tool name used for user feedback messages.
-const UserFeedbackToolName = "user_feedback"
+// FeedbackAgentName is the name of the feedback agent.
+const FeedbackAgentName = "feedback_agent"
 
-// UserFeedback implements the user_feedback tool for recording and attributing feedback.
-type UserFeedback struct {
+// FeedbackAgent handles user feedback on AI responses.
+// For negative feedback, it runs attribution to help triage issues.
+type FeedbackAgent struct {
 	Runtime *runtime.Runtime
 }
 
-var _ Tool[*UserFeedbackArgs, *UserFeedbackResult] = (*UserFeedback)(nil)
+var _ Tool[*FeedbackAgentArgs, *FeedbackAgentResult] = (*FeedbackAgent)(nil)
 
-// UserFeedbackArgs represents the input arguments for user feedback.
-type UserFeedbackArgs struct {
+// FeedbackAgentArgs represents the input arguments for the feedback agent.
+type FeedbackAgentArgs struct {
 	TargetMessageID string   `json:"target_message_id" jsonschema:"The ID of the message being rated."`
 	Sentiment       string   `json:"sentiment" jsonschema:"The sentiment of the feedback: positive or negative.,enum=positive,enum=negative"`
 	Categories      []string `json:"categories,omitempty" jsonschema:"Feedback categories (only for negative sentiment)."`
 	Comment         string   `json:"comment,omitempty" jsonschema:"Optional free-text comment."`
 }
 
-// UserFeedbackResult represents the result of recording user feedback.
+// FeedbackAgentResult represents the result of recording user feedback.
 // For negative feedback, includes attribution prediction for analytics and LLM context.
-type UserFeedbackResult struct {
+type FeedbackAgentResult struct {
 	Response             string  `json:"response"`
 	PredictedAttribution string  `json:"predicted_attribution,omitempty"`
 	AttributionReasoning string  `json:"attribution_reasoning,omitempty"`
 	SuggestedAction      *string `json:"suggested_action,omitempty"`
 }
 
-// FeedbackAttributionResult is the structured output type for AI attribution prediction.
-// The jsonschema tags constrain the LLM output to valid attribution values.
-type FeedbackAttributionResult struct {
-	PredictedAttribution string  `json:"predicted_attribution" jsonschema:"The predicted attribution for the issue.,enum=rill,enum=project,enum=user"`
-	AttributionReasoning string  `json:"attribution_reasoning" jsonschema:"Explanation of why this attribution was chosen."`
-	SuggestedAction      *string `json:"suggested_action,omitempty" jsonschema:"For project or user attribution, a specific action the user can take to get better results."`
-}
-
-func (t *UserFeedback) Spec() *mcp.Tool {
+func (t *FeedbackAgent) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        UserFeedbackToolName,
-		Title:       "User Feedback",
+		Name:        FeedbackAgentName,
+		Title:       "Feedback Agent",
 		Description: "Records user feedback on AI responses. For negative feedback, runs attribution to help triage issues.",
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Recording feedback...",
@@ -59,7 +51,7 @@ func (t *UserFeedback) Spec() *mcp.Tool {
 	}
 }
 
-func (t *UserFeedback) CheckAccess(ctx context.Context) (bool, error) {
+func (t *FeedbackAgent) CheckAccess(ctx context.Context) (bool, error) {
 	// Must be allowed to use AI features
 	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.UseAI) {
@@ -73,12 +65,12 @@ func (t *UserFeedback) CheckAccess(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (t *UserFeedback) Handler(ctx context.Context, args *UserFeedbackArgs) (*UserFeedbackResult, error) {
+func (t *FeedbackAgent) Handler(ctx context.Context, args *FeedbackAgentArgs) (*FeedbackAgentResult, error) {
 	s := GetSession(ctx)
 
 	// For positive feedback, return simple acknowledgment
 	if args.Sentiment == "positive" {
-		return &UserFeedbackResult{
+		return &FeedbackAgentResult{
 			Response: "Thanks for the positive feedback! I'm glad I could help.",
 		}, nil
 	}
@@ -88,12 +80,12 @@ func (t *UserFeedback) Handler(ctx context.Context, args *UserFeedbackArgs) (*Us
 	if err != nil {
 		// Log the error but still return a response
 		s.logger.Warn("failed to analyze feedback", zap.String("session_id", s.id), zap.Error(err))
-		return &UserFeedbackResult{
+		return &FeedbackAgentResult{
 			Response: "Thanks for your feedback. I apologize that my response didn't meet your expectations. I'll use this to improve.",
 		}, nil
 	}
 
-	return &UserFeedbackResult{
+	return &FeedbackAgentResult{
 		Response:             t.generateFeedbackResponse(attribution),
 		PredictedAttribution: attribution.PredictedAttribution,
 		AttributionReasoning: attribution.AttributionReasoning,
@@ -101,8 +93,16 @@ func (t *UserFeedback) Handler(ctx context.Context, args *UserFeedbackArgs) (*Us
 	}, nil
 }
 
+// feedbackAttributionResult is the structured output type for AI attribution prediction.
+// The jsonschema tags constrain the LLM output to valid attribution values.
+type feedbackAttributionResult struct {
+	PredictedAttribution string  `json:"predicted_attribution" jsonschema:"The predicted attribution for the issue.,enum=rill,enum=project,enum=user"`
+	AttributionReasoning string  `json:"attribution_reasoning" jsonschema:"Explanation of why this attribution was chosen."`
+	SuggestedAction      *string `json:"suggested_action,omitempty" jsonschema:"For project or user attribution, a specific action the user can take to get better results."`
+}
+
 // predictAttribution analyzes feedback to determine attribution.
-func (t *UserFeedback) predictAttribution(ctx context.Context, s *Session, feedback *UserFeedbackArgs) (*FeedbackAttributionResult, error) {
+func (t *FeedbackAgent) predictAttribution(ctx context.Context, s *Session, feedback *FeedbackAgentArgs) (*feedbackAttributionResult, error) {
 	// Find the target message that was downvoted
 	targetMsg, ok := s.Message(FilterByID(feedback.TargetMessageID))
 	if !ok {
@@ -111,20 +111,21 @@ func (t *UserFeedback) predictAttribution(ctx context.Context, s *Session, feedb
 
 	// Find the user's original prompt (parent call of the target message)
 	var originalPrompt string
-	if targetMsg.ParentID != "" {
-		parentMsg, ok := s.Message(FilterByID(targetMsg.ParentID))
-		if ok && parentMsg.Tool == RouterAgentName && parentMsg.Type == MessageTypeCall {
-			var args RouterAgentArgs
-			if err := json.Unmarshal([]byte(parentMsg.Content), &args); err == nil {
-				originalPrompt = args.Prompt
-			}
+	parentMsg, ok := s.Message(FilterByID(targetMsg.ParentID))
+	if ok {
+		parentContent, err := s.UnmarshalMessageContent(parentMsg)
+		if err != nil {
+			return nil, err
+		}
+		if args, ok := parentContent.(*RouterAgentArgs); ok {
+			originalPrompt = args.Prompt
 		}
 	}
 
 	// Ask the AI to analyze the feedback and determine why the user's expectations were not met.
 	// UnwrapCall keeps attribution as an internal implementation detail - no separate messages are created.
 	// The attribution result is stored in the user_feedback result for analytics and LLM context.
-	var attribution FeedbackAttributionResult
+	var attribution feedbackAttributionResult
 	err := s.Complete(ctx, "Feedback attribution", &attribution, &CompleteOptions{
 		Messages: []*aiv1.CompletionMessage{
 			NewTextCompletionMessage(RoleSystem, t.systemPrompt()),
@@ -139,7 +140,7 @@ func (t *UserFeedback) predictAttribution(ctx context.Context, s *Session, feedb
 	return &attribution, nil
 }
 
-func (t *UserFeedback) systemPrompt() string {
+func (t *FeedbackAgent) systemPrompt() string {
 	return mustExecuteTemplate(`
 <role>
 You are analyzing feedback on your own AI responses.
@@ -171,7 +172,7 @@ For "rill" attribution, set suggested_action to null (internal errors don't requ
 `, nil)
 }
 
-func (t *UserFeedback) buildAttributionPrompt(originalPrompt, aiResponse string, feedback *UserFeedbackArgs) string {
+func (t *FeedbackAgent) buildAttributionPrompt(originalPrompt, aiResponse string, feedback *FeedbackAgentArgs) string {
 	// Only include categories if provided
 	var categories string
 	if len(feedback.Categories) > 0 {
@@ -203,7 +204,7 @@ Determine attribution and provide your analysis.
 
 // generateFeedbackResponse creates a user-visible response based on attribution results.
 // Note: attribution_reasoning is stored for analytics but not shown to users.
-func (t *UserFeedback) generateFeedbackResponse(attribution *FeedbackAttributionResult) string {
+func (t *FeedbackAgent) generateFeedbackResponse(attribution *feedbackAttributionResult) string {
 	var response strings.Builder
 
 	response.WriteString("Thanks for your feedback. ")

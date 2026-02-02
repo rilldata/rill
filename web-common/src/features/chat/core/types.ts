@@ -53,8 +53,8 @@ export const ToolName = {
   READ_FILE: "read_file",
   WRITE_FILE: "write_file",
 
-  // Feedback tools
-  USER_FEEDBACK: "user_feedback",
+  // Feedback agent
+  FEEDBACK_AGENT: "feedback_agent",
 } as const;
 
 // =============================================================================

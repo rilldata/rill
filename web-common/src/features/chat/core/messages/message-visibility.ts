@@ -60,7 +60,7 @@ function isFeedbackCall(msg: V1Message): boolean {
   }
   try {
     const parsed = JSON.parse(msg.contentData || "");
-    return !!parsed.user_feedback_args;
+    return !!parsed.feedback_agent_args;
   } catch {
     return false;
   }
@@ -77,7 +77,7 @@ function isFeedbackResponse(
 
   try {
     const parsed = JSON.parse(msg.contentData || "");
-    return parsed.agent === ToolName.USER_FEEDBACK;
+    return parsed.agent === ToolName.FEEDBACK_AGENT;
   } catch {
     return false;
   }

@@ -4620,12 +4620,12 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
 }
 
 /**
- * Context for submitting user feedback on an AI message.
- * When provided, the request records feedback and, for negative sentiment, runs attribution.
+ * Context for prompts handled by the feedback_agent.
+ * When provided, the agent records feedback and, for negative sentiment, runs attribution.
  *
- * @generated from message rill.runtime.v1.UserFeedbackContext
+ * @generated from message rill.runtime.v1.FeedbackAgentContext
  */
-export class UserFeedbackContext extends Message$1<UserFeedbackContext> {
+export class FeedbackAgentContext extends Message$1<FeedbackAgentContext> {
   /**
    * The ID of the message being rated.
    *
@@ -4654,13 +4654,13 @@ export class UserFeedbackContext extends Message$1<UserFeedbackContext> {
    */
   comment = "";
 
-  constructor(data?: PartialMessage<UserFeedbackContext>) {
+  constructor(data?: PartialMessage<FeedbackAgentContext>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.UserFeedbackContext";
+  static readonly typeName = "rill.runtime.v1.FeedbackAgentContext";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "target_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "sentiment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -4668,20 +4668,20 @@ export class UserFeedbackContext extends Message$1<UserFeedbackContext> {
     { no: 4, name: "comment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserFeedbackContext {
-    return new UserFeedbackContext().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FeedbackAgentContext {
+    return new FeedbackAgentContext().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UserFeedbackContext {
-    return new UserFeedbackContext().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FeedbackAgentContext {
+    return new FeedbackAgentContext().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UserFeedbackContext {
-    return new UserFeedbackContext().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FeedbackAgentContext {
+    return new FeedbackAgentContext().fromJsonString(jsonString, options);
   }
 
-  static equals(a: UserFeedbackContext | PlainMessage<UserFeedbackContext> | undefined, b: UserFeedbackContext | PlainMessage<UserFeedbackContext> | undefined): boolean {
-    return proto3.util.equals(UserFeedbackContext, a, b);
+  static equals(a: FeedbackAgentContext | PlainMessage<FeedbackAgentContext> | undefined, b: FeedbackAgentContext | PlainMessage<FeedbackAgentContext> | undefined): boolean {
+    return proto3.util.equals(FeedbackAgentContext, a, b);
   }
 }
 
@@ -5302,12 +5302,12 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
   developerAgentContext?: DeveloperAgentContext;
 
   /**
-   * Optional feedback context. If provided, the router_agent calls the user_feedback tool,
-   * which records feedback and, for negative feedback, attributes the cause.
+   * Optional context for prompts handled by the feedback_agent.
+   * The field is ignored if another agent is selected.
    *
-   * @generated from field: rill.runtime.v1.UserFeedbackContext user_feedback_context = 13;
+   * @generated from field: rill.runtime.v1.FeedbackAgentContext feedback_agent_context = 13;
    */
-  userFeedbackContext?: UserFeedbackContext;
+  feedbackAgentContext?: FeedbackAgentContext;
 
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
@@ -5323,7 +5323,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
-    { no: 13, name: "user_feedback_context", kind: "message", T: UserFeedbackContext },
+    { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {

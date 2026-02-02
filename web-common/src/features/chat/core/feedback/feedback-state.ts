@@ -20,8 +20,8 @@ import { writable, type Readable } from "svelte/store";
 import { MessageType, ToolName } from "../types";
 import type { FeedbackSentiment } from "./types";
 
-/** Tool name used for feedback messages (matches backend UserFeedbackToolName) */
-export const USER_FEEDBACK_TOOL = "user_feedback";
+/** Tool name used for feedback messages (matches backend FeedbackAgentName) */
+export const FEEDBACK_AGENT_TOOL = "feedback_agent";
 
 /** Structure of feedback call content stored in messages */
 export interface FeedbackCallContent {
@@ -60,8 +60,8 @@ export class FeedbackState {
     );
 
     for (const msg of messages) {
-      // Extract sentiments from user_feedback call messages
-      if (msg.tool === USER_FEEDBACK_TOOL && msg.type === MessageType.CALL) {
+      // Extract sentiments from feedback_agent call messages
+      if (msg.tool === FEEDBACK_AGENT_TOOL && msg.type === MessageType.CALL) {
         if (!msg.contentData) continue;
         try {
           const content = JSON.parse(msg.contentData) as FeedbackCallContent;
@@ -73,7 +73,7 @@ export class FeedbackState {
         }
       }
 
-      // Extract feedback responses from user_feedback result messages
+      // Extract feedback responses from feedback_agent result messages
       const feedbackResponse = this.extractFeedbackResponse(msg, messageMap);
       if (feedbackResponse) {
         responseMap.set(
@@ -114,7 +114,7 @@ export class FeedbackState {
   // ----- Private helpers -----
 
   /**
-   * Extract feedback response data from a user_feedback result message.
+   * Extract feedback response data from a feedback_agent result message.
    * Uses parent relationship to get the target_message_id from the call.
    */
   private extractFeedbackResponse(
@@ -122,7 +122,7 @@ export class FeedbackState {
     messageMap: Map<string, V1Message>,
   ): { response: string; targetMessageId: string } | null {
     if (
-      msg.tool !== ToolName.USER_FEEDBACK ||
+      msg.tool !== ToolName.FEEDBACK_AGENT ||
       msg.type !== MessageType.RESULT
     ) {
       return null;
