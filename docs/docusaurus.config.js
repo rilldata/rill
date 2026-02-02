@@ -694,7 +694,7 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/openai',
-            to: '/developers/build/connectors/ai/openai',
+            to: '/developers/build/connectors/data-source/openai',
           },
           {
             from: '/build/connectors/data-source/postgres',
@@ -904,7 +904,7 @@ const config = {
           },
           {
             from: '/build/connect/data-source/openai',
-            to: '/developers/build/connectors/ai/openai',
+            to: '/developers/build/connectors/data-source/openai',
           },
           // ============================================
           // /connect/* → /developers/build/connectors/*
@@ -1023,7 +1023,7 @@ const config = {
           },
           {
             from: '/connect/data-source/openai',
-            to: '/developers/build/connectors/ai/openai',
+            to: '/developers/build/connectors/data-source/openai',
           },
           // ============================================
           // /deploy/* → /developers/deploy/*
@@ -1573,7 +1573,6 @@ const config = {
             from: '/reference/connectors/https',
             to: '/developers/build/connectors/data-source/https',
           },
-
 
           // {
           //   from: '/old-page',

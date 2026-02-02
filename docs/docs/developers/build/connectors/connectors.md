@@ -273,7 +273,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
     header="AI"
     content="Define your own OpenAI Connector and define your own API key."
-    link="/developers/build/connectors/ai/openai"
+    link="/developers/build/connectors/data-source/openai"
     linkLabel="Learn more"
     referenceLink="openai"
   />
