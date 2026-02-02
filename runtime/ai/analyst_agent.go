@@ -265,7 +265,7 @@ Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "200
 <process>
 **Phase 1: discovery (setup)**
 {{ if .explore }}
-Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_views }}".
+Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view(s) {{ .metrics_views }}.
 The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
 The metrics view's definition and time range of available data has been provided in your tool calls.
 
@@ -279,7 +279,7 @@ You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.
 {{ else if .canvas }}
-Your goal is to analyze the contents of the canvas "{{ .canvas }}", which is powered by the metrics view "{{ .metrics_views }}".
+Your goal is to analyze the contents of the canvas "{{ .canvas }}", which is powered by the metrics view(s) {{ .metrics_views }}.
 The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
 The metrics views and canvas definitions have been provided in your tool calls.
 

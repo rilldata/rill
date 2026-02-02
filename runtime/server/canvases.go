@@ -30,7 +30,22 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to canvas data")
 	}
 
-	return s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims)
+	res, err := s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Errorf(codes.NotFound, "canvas with name %q not found", req.Canvas)
+		}
+		if errors.Is(err, runtime.ErrForbidden) {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have access to canvas %q", req.Canvas)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &runtimev1.ResolveCanvasResponse{
+		Canvas:                 res.Canvas,
+		ResolvedComponents:     res.ResolvedComponents,
+		ReferencedMetricsViews: res.ReferencedMetricsViews,
+	}, nil
 }
 
 func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveComponentRequest) (*runtimev1.ResolveComponentResponse, error) {

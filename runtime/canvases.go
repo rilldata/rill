@@ -8,22 +8,23 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
-func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, claims *SecurityClaims) (*runtimev1.ResolveCanvasResponse, error) {
+type ResolveCanvasResult struct {
+	Canvas                 *runtimev1.Resource
+	ResolvedComponents     map[string]*runtimev1.Resource
+	ReferencedMetricsViews map[string]*runtimev1.Resource
+}
+
+func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, claims *SecurityClaims) (*ResolveCanvasResult, error) {
 	// Find the canvas resource
 	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: canvas}, false)
 	if err != nil {
-		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Errorf(codes.NotFound, "canvas with name %q not found", canvas)
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// Check if the user has access to the canvas
@@ -32,13 +33,13 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 		return nil, fmt.Errorf("failed to apply security policy: %w", err)
 	}
 	if !access {
-		return nil, status.Errorf(codes.PermissionDenied, "user does not have access to canvas %q", canvas)
+		return nil, ErrForbidden
 	}
 
 	// Exit early if the canvas is not valid
 	spec := res.GetCanvas().State.ValidSpec
 	if spec == nil {
-		return &runtimev1.ResolveCanvasResponse{
+		return &ResolveCanvasResult{
 			Canvas: res,
 		}, nil
 	}
@@ -56,7 +57,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 			cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindComponent, Name: item.Component}, false)
 			if err != nil {
 				if errors.Is(err, drivers.ErrResourceNotFound) {
-					return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
+					return nil, fmt.Errorf("component %q in valid spec not found", item.Component)
 				}
 				return nil, err
 			}
@@ -131,7 +132,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 		mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: mvName}, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
-				return nil, status.Errorf(codes.Internal, "metrics view %q in valid spec not found", mvName)
+				return nil, fmt.Errorf("metrics view %q in valid spec not found", mvName)
 			}
 			return nil, err
 		}
@@ -154,7 +155,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 	}
 
 	// Return the response
-	return &runtimev1.ResolveCanvasResponse{
+	return &ResolveCanvasResult{
 		Canvas:                 res,
 		ResolvedComponents:     components,
 		ReferencedMetricsViews: referencedMetricsViews,
