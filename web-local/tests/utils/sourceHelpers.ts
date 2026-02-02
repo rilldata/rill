@@ -33,20 +33,15 @@ export async function uploadFile(
   await page.getByLabel("Add Data").click();
   // click local file button
   await page.locator("button#local_file").click();
-  // wait for file chooser while clicking on upload button
-  const [fileChooser] = await Promise.all([
-    page.waitForEvent("filechooser"),
-    page.getByText("Upload a CSV, JSON or Parquet file").click(),
-  ]);
   // input the `file` after joining with `testDataPath`
-  const fileUploadPromise = fileChooser.setFiles([
-    path.join(TestDataPath, file),
-  ]);
+  await page.setInputFiles("input[type=file]", [path.join(TestDataPath, file)]);
+  // click upload.
+  await page.getByRole("button", { name: "Upload" }).click();
+
   const fileRespWaitPromise = page.waitForResponse(/files\/entry/);
 
   // TODO: infer duplicate
   if (isDuplicate) {
-    await fileUploadPromise;
     let duplicatePromise;
     if (keepBoth) {
       // click on `Keep Both` if `isDuplicate`=true and `keepBoth`=true
@@ -57,7 +52,7 @@ export async function uploadFile(
     }
     await Promise.all([fileRespWaitPromise, duplicatePromise]);
   } else {
-    await Promise.all([fileRespWaitPromise, fileUploadPromise]);
+    await Promise.all([fileRespWaitPromise]);
     // if not duplicate wait and make sure `Duplicate source name` modal is not open
     await asyncWait(100);
     await expect(page.getByText("Duplicate source name")).toBeHidden();

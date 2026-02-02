@@ -31,7 +31,7 @@
   let className: $$Props["class"] = undefined;
   export let value: $$Props["value"] = undefined;
   export let files: $$Props["files"] = undefined;
-  export let type: $$Props["type"];
+  export let type: $$Props["type"] = undefined;
   export { className as class };
 
   // Workaround for https://github.com/sveltejs/svelte/issues/9305

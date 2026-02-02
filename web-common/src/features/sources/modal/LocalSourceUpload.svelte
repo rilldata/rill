@@ -66,7 +66,6 @@
 
   const files = filesProxy(form, "files");
   $: filesError = Object.values($errors.files ?? {})[0] ?? "";
-  console.log(initFiles, $files);
 
   $: ({ instanceId } = $runtime);
 
@@ -155,7 +154,7 @@
     {#if showBack}
       <Button onClick={onBack} type="secondary">Back</Button>
     {/if}
-    <Button form={FORM_ID} submitForm type="primary" disabled={filesError}>
+    <Button form={FORM_ID} submitForm type="primary" disabled={!!filesError}>
       Upload
     </Button>
   </div>

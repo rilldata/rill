@@ -109,7 +109,6 @@
       <LocalSourceUpload
         initFiles={uploadedFiles}
         onClose={() => (showLargeFilesDialog = false)}
-        showBack={false}
       />
     </div>
   </Dialog.Content>

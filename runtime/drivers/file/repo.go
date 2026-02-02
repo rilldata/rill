@@ -54,9 +54,13 @@ func (c *connection) ListGlob(ctx context.Context, glob string, skipDirs bool) (
 			return drivers.ErrRepoListLimitExceeded
 		}
 
-		f, err := d.Info()
-		if err != nil {
-			return err
+		var size int64
+		if !d.IsDir() {
+			f, err := d.Info()
+			if err != nil {
+				return err
+			}
+			size = f.Size()
 		}
 
 		// Track file (p is already relative to the FS root)
@@ -68,7 +72,7 @@ func (c *connection) ListGlob(ctx context.Context, glob string, skipDirs bool) (
 		entries = append(entries, drivers.DirEntry{
 			Path:  p,
 			IsDir: d.IsDir(),
-			Size:  f.Size(),
+			Size:  size,
 		})
 
 		return nil
