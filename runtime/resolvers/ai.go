@@ -306,7 +306,7 @@ func (r *aiResolver) resolveTimeRange(tr *metricsview.TimeRange, tz string) (sta
 
 	// If start and end are already set, return them directly
 	if !tr.Start.IsZero() && !tr.End.IsZero() {
-		return tr.Start.In(timezone), tr.End.In(timezone), nil
+		return tr.Start, tr.End, nil
 	}
 
 	if r.args.ExecutionTime.IsZero() {
