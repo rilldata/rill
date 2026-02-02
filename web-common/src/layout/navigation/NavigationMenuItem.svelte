@@ -15,22 +15,18 @@
   >
     {#if $$slots.icon}
       <div
-        class="grid place-content-center opacity-80 ui-copy-icon"
+        class="grid place-content-center opacity-80 text-fg-secondary"
         style:height="18px"
       >
         <slot name="icon" />
       </div>
     {/if}
-    <div
-      class:ui-copy={!disabled}
-      class:ui-copy-disabled={disabled}
-      class="text-left"
-    >
+    <div class:text-fg-disabled={disabled} class="text-left">
       <slot />
 
       <div
-        class:ui-copy-muted={!disabled}
-        class:ui-copy-disabled-faint={disabled}
+        class:text-fg-secondary={!disabled}
+        class:text-fg-disabled={disabled}
         style:font-size="11px"
       >
         <slot name="description" />
@@ -39,7 +35,7 @@
 
     {#if $$slots["right"]}
       <div
-        class="grid place-content-center text-right ui-copy-muted"
+        class="grid place-content-center text-right text-fg-muted"
         style:height="18px"
       >
         <slot name="right" />

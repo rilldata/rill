@@ -42,7 +42,7 @@
       bgGray
       on:click={handleNewConversation}
     >
-      <PlusIcon className="text-gray-500" />
+<PlusIcon className="text-gray-500" />
       <svelte:fragment slot="tooltip-content">New conversation</svelte:fragment>
     </IconButton>
 
@@ -67,25 +67,25 @@
   </div>
 </div>
 
-<style>
+<style lang="postcss">
   .chatbot-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1rem;
-    background: var(--surface);
     font-weight: 500;
     font-size: 0.875rem;
     min-height: 1.5rem;
   }
+
   .chatbot-title {
+    @apply text-fg-secondary text-sm font-semibold;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 180px;
-    color: #111827;
-    font-size: 0.75rem;
   }
+
   .chatbot-header-actions {
     display: flex;
     align-items: center;

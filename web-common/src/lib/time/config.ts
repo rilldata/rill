@@ -4,7 +4,7 @@
  * manually define these in the dashboard configuration.
  */
 
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { Duration, DurationUnit } from "luxon";
 import {
   Period,
@@ -732,7 +732,8 @@ export const TIME_COMPARISON = {
     description:
       "Compare the current time range to the same time range the month before",
     comparisonType: TimeComparisonOption.MONTH,
-    offsetIso: "P1M",
+    // Setting this to P1M prevents month over month comparisons for 31-day months
+    offsetIso: "P31D",
     rillTimeOffset: "-1M",
   },
   [TimeComparisonOption.QUARTER]: {

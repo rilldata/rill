@@ -34,12 +34,7 @@
   }
 </script>
 
-<Popover
-  bind:open={isOpen}
-  onOutsideClick={() => {
-    isOpen = false;
-  }}
->
+<Popover bind:open={isOpen}>
   <PopoverTrigger asChild let:builder>
     <Tooltip distance={8} suppress={isOpen}>
       <Button type="secondary" builders={[builder]} selected={isOpen}
@@ -58,7 +53,7 @@
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
         <div class="flex flex-col gap-y-4">
-          <h3 class="text-xs text-gray-800 font-normal">
+          <h3 class="text-xs text-fg-primary font-normal">
             Share your current view with another project member.
           </h3>
           <Button

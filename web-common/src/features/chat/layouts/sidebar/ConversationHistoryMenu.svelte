@@ -47,14 +47,14 @@
     align="end"
   >
     {#if conversations.length === 0}
-      <div class="px-3 py-4 text-center text-gray-500 text-sm">
+      <div class="px-3 py-4 text-center text-fg-secondary text-sm">
         No conversations yet.
       </div>
     {:else}
       {#each GROUP_ORDER as groupKey}
         {#if groupedConversations[groupKey] && groupedConversations[groupKey].length > 0}
           <DropdownMenu.Group>
-            <DropdownMenu.Label class="px-1 text-xs text-gray-500">
+            <DropdownMenu.Label class="px-1 text-xs text-fg-secondary">
               {groupKey}
             </DropdownMenu.Label>
             {#each groupedConversations[groupKey] as conv}

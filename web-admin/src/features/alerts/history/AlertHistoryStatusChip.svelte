@@ -5,7 +5,7 @@
     type V1AlertExecution,
     V1AssertionStatus,
     type V1AssertionResult,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 
   export let currentExecution: V1AlertExecution;
   export let result: V1AssertionResult;

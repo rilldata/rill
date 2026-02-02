@@ -480,6 +480,12 @@ const metricsViewReducers = {
     });
   },
 
+  setTimeDimension(name: string, column: string) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedTimeDimension = column;
+    });
+  },
+
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.showTimeComparison = showTimeComparison;

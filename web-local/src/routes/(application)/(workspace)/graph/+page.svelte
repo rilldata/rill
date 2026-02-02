@@ -37,7 +37,7 @@
   }
 
   .header h1 {
-    @apply text-lg font-semibold text-foreground;
+    @apply text-lg font-semibold text-fg-primary;
   }
 
   .header-title {
@@ -46,7 +46,7 @@
   /* seed-label removed */
 
   .header p {
-    @apply text-sm text-gray-500 mt-1;
+    @apply text-sm text-fg-secondary mt-1;
   }
 
   .graph-wrapper {

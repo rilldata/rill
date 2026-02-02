@@ -27,8 +27,8 @@
   <Dropdown.Root bind:open={isDropdownOpen}>
     <Dropdown.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
-        ? 'bg-slate-200'
-        : 'hover:bg-slate-100'} px-2 py-1"
+        ? 'bg-gray-200'
+        : 'hover:bg-surface-hover'} px-2 py-1"
     >
       <span class="capitalize">
         {groupCount} Group{groupCount !== 1 ? "s" : ""}
@@ -47,9 +47,9 @@
       {:else}
         {#each userGroups as userGroup (userGroup.id)}
           <Dropdown.Item on:click={() => onEditUserGroup(userGroup.name)}>
-            <span class="text-gray-700">{userGroup.name}</span>
+            <span class="text-fg-primary">{userGroup.name}</span>
             {#if userGroup.count > 0}
-              <span class="text-gray-500">
+              <span class="text-fg-secondary">
                 {userGroup.count} member{userGroup.count > 1 ? "s" : ""}
               </span>
             {/if}
@@ -59,5 +59,5 @@
     </Dropdown.Content>
   </Dropdown.Root>
 {:else}
-  <div class="w-18 rounded-sm px-2 py-1 text-gray-400">No groups</div>
+  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">No groups</div>
 {/if}

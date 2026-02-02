@@ -46,7 +46,7 @@ import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
-import { createCustomMapStore } from "@rilldata/web-common/lib/map-utils";
+import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 
 export const lastVisitedState = new Map<string, string>();
 
