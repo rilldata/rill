@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
@@ -10,6 +11,30 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
+import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry.ts";
+import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
+import {
+  BehaviourEventAction,
+  BehaviourEventMedium,
+} from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+
+export async function createResourceAndNavigate(
+  kind: ResourceKind,
+  baseResource?: V1Resource,
+) {
+  const filePath = await createResourceFile(kind, baseResource);
+  if (!filePath) return;
+
+  const previousScreenName = getScreenNameFromPage();
+  await goto(`/files${filePath}`);
+  await behaviourEvent?.fireSourceTriggerEvent(
+    BehaviourEventAction.Navigate,
+    BehaviourEventMedium.Button,
+    previousScreenName,
+    MetricsEventSpace.LeftPanel,
+  );
+}
 
 export async function createResourceFile(
   kind: ResourceKind,
