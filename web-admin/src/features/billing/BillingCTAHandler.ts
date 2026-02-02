@@ -1,5 +1,4 @@
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
-import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
 import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
 import {
@@ -44,8 +43,10 @@ export class BillingCTAHandler {
         break;
 
       case "payment":
+        // Redirect to the payment page which shows plan details and requirements
+        // before proceeding to Stripe portal
         window.open(
-          await fetchPaymentsPortalURL(this.organization, window.location.href),
+          `/${this.organization}/-/settings/billing/payment`,
           "_self",
         );
         break;
