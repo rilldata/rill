@@ -27,12 +27,12 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *metricsview.
 		}
 	}
 
-	err := e.resolveTimeRange(ctx, qry.TimeRange, tz, executionTime)
+	err := e.ResolveTimeRange(ctx, qry.TimeRange, tz, executionTime)
 	if err != nil {
 		return fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	err = e.resolveTimeRange(ctx, qry.ComparisonTimeRange, tz, executionTime)
+	err = e.ResolveTimeRange(ctx, qry.ComparisonTimeRange, tz, executionTime)
 	if err != nil {
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
@@ -59,8 +59,8 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *metricsview.
 	return nil
 }
 
-// resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveTimeRange(ctx context.Context, tr *metricsview.TimeRange, tz *time.Location, executionTime *time.Time) error {
+// ResolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
+func (e *Executor) ResolveTimeRange(ctx context.Context, tr *metricsview.TimeRange, tz *time.Location, executionTime *time.Time) error {
 	if tr == nil || tr.IsZero() {
 		return nil
 	}

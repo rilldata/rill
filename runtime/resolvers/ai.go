@@ -13,9 +13,11 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
+	"github.com/rilldata/rill/runtime/queries"
 )
 
 func init() {
@@ -168,13 +170,13 @@ func (r *aiResolver) Validate(ctx context.Context) error {
 // ResolveInteractive implements runtime.Resolver.
 func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Resolve time ranges if provided
-	timeStart, timeEnd, err := r.resolveTimeRange(r.props.TimeRange, r.props.TimeZone)
+	err := r.resolveTimeRange(ctx, r.props.TimeRange, r.props.TimeZone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
 	// Resolve comparison time range if provided
-	comparisonStart, comparisonEnd, err := r.resolveTimeRange(r.props.ComparisonTimeRange, r.props.TimeZone)
+	err = r.resolveTimeRange(ctx, r.props.ComparisonTimeRange, r.props.TimeZone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
@@ -213,10 +215,10 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		Dimensions:          dimensions,
 		Measures:            measures,
 		Where:               whereExpr,
-		TimeStart:           timeStart,
-		TimeEnd:             timeEnd,
-		ComparisonTimeStart: comparisonStart,
-		ComparisonTimeEnd:   comparisonEnd,
+		TimeStart:           r.props.TimeRange.Start,
+		TimeEnd:             r.props.TimeRange.End,
+		ComparisonTimeStart: r.props.ComparisonTimeRange.Start,
+		ComparisonTimeEnd:   r.props.ComparisonTimeRange.End,
 		DisableCharts:       r.args.CreateSharedSession, // Disable charts if creating shared session
 		IsReport:            r.props.IsReport,
 		IsReportUserPrompt:  r.props.Prompt != "",
@@ -290,27 +292,43 @@ func (r *aiResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, er
 	return nil, errors.New("security rule inference not implemented yet for AI resolver")
 }
 
-// resolveTimeRange resolves the time range to actual timestamps using rilltime.
-func (r *aiResolver) resolveTimeRange(tr *metricsview.TimeRange, tz string) (start, end time.Time, err error) {
+// resolveTimeRange resolves and rewrites the time range to actual timestamps using rilltime.
+func (r *aiResolver) resolveTimeRange(ctx context.Context, tr *metricsview.TimeRange, tz string) error {
 	if tr == nil || tr.IsZero() {
-		return time.Time{}, time.Time{}, nil
+		return nil
 	}
 
+	var err error
 	timezone := time.UTC
 	if tz != "" {
 		timezone, err = time.LoadLocation(tz)
 		if err != nil {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid time zone %q: %w", tz, err)
+			return fmt.Errorf("invalid time zone %q: %w", tz, err)
 		}
 	}
 
-	// If start and end are already set, return them directly
+	// If start and end are already set, nothing to do
 	if !tr.Start.IsZero() && !tr.End.IsZero() {
-		return tr.Start, tr.End, nil
+		return nil
 	}
 
+	// if metrics view is provided, we can get the metrics view's time bounds
+	if r.metricsView != "" {
+		mv, security, err := queries.ResolveMVAndSecurityFromAttributes(ctx, r.runtime, r.instanceID, r.metricsView, r.claims)
+		if err != nil {
+			return fmt.Errorf("failed to resolve metrics view %q: %w", r.metricsView, err)
+		}
+		// create executor to resolve relative time ranges
+		e, err := executor.New(ctx, r.runtime, r.instanceID, mv.ValidSpec, mv.Streaming, security, 10, r.claims.UserAttributes)
+		if err != nil {
+			return fmt.Errorf("failed to create executor: %w", err)
+		}
+		return e.ResolveTimeRange(ctx, tr, timezone, &r.args.ExecutionTime)
+	}
+
+	// Without explore/metrics view, we can only use execution time to resolve time ranges
 	if r.args.ExecutionTime.IsZero() {
-		return time.Time{}, time.Time{}, errors.New("execution_time is required to evaluate time ranges")
+		return errors.New("execution_time is required to evaluate time ranges without explore context")
 	}
 
 	// Use expression if provided (rilltime syntax)
@@ -319,40 +337,43 @@ func (r *aiResolver) resolveTimeRange(tr *metricsview.TimeRange, tz string) (sta
 			DefaultTimeZone: timezone,
 		})
 		if err != nil {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid time range expression %q: %w", tr.Expression, err)
+			return fmt.Errorf("invalid time range expression %q: %w", tr.Expression, err)
 		}
 
-		start, end, _ = rt.Eval(rilltime.EvalOptions{
-			Now:       r.args.ExecutionTime,
+		start, end, _ := rt.Eval(rilltime.EvalOptions{
+			Now:       time.Now(),
 			Watermark: r.args.ExecutionTime,
-			MinTime:   time.Time{}, // TODO if context contains explore then resolve min time from the metrics view
+			MinTime:   time.Time{},
 			MaxTime:   r.args.ExecutionTime,
 		})
-		return start, end, nil
+		tr.Start = start
+		tr.End = end
+		// Clear other fields
+		tr.Expression = ""
+		tr.IsoDuration = ""
+		tr.IsoOffset = ""
+		tr.RoundToGrain = metricsview.TimeGrainUnspecified
+		return nil
 	}
 
-	// TODO how about we don't support ISO duration/offset as its deprecated in favor of rilltime expressions?
-
-	// Fallback to start/end with ISO duration/offset
-	start = tr.Start
-	end = tr.End
+	// Fallback to start/end with ISO duration/offset // TODO how about we don't support ISO duration/offset as its deprecated in favor of rilltime expressions?
 	isISO := false
-	if start.IsZero() && end.IsZero() {
-		end = r.args.ExecutionTime
+	if tr.Start.IsZero() && tr.End.IsZero() {
+		tr.End = r.args.ExecutionTime
 	}
 
 	if tr.IsoDuration != "" {
 		d, err := duration.ParseISO8601(tr.IsoDuration)
 		if err != nil {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid iso_duration %q: %w", tr.IsoDuration, err)
+			return fmt.Errorf("invalid iso_duration %q: %w", tr.IsoDuration, err)
 		}
 
-		if !start.IsZero() && !end.IsZero() {
-			return time.Time{}, time.Time{}, errors.New(`cannot resolve "iso_duration" for a time range with fixed "start" and "end" timestamps`)
-		} else if !start.IsZero() {
-			end = d.Add(start)
-		} else if !end.IsZero() {
-			start = d.Sub(end)
+		if !tr.Start.IsZero() && !tr.End.IsZero() {
+			return errors.New(`cannot resolve "iso_duration" for a time range with fixed "start" and "end" timestamps`)
+		} else if !tr.Start.IsZero() {
+			tr.End = d.Add(tr.Start)
+		} else if !tr.End.IsZero() {
+			tr.Start = d.Sub(tr.End)
 		}
 		isISO = true
 	}
@@ -361,14 +382,14 @@ func (r *aiResolver) resolveTimeRange(tr *metricsview.TimeRange, tz string) (sta
 	if tr.IsoOffset != "" {
 		d, err := duration.ParseISO8601(tr.IsoOffset)
 		if err != nil {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid iso_offset %q: %w", tr.IsoOffset, err)
+			return fmt.Errorf("invalid iso_offset %q: %w", tr.IsoOffset, err)
 		}
 
-		if !start.IsZero() {
-			start = d.Sub(start)
+		if !tr.Start.IsZero() {
+			tr.Start = d.Sub(tr.Start)
 		}
-		if !end.IsZero() {
-			end = d.Sub(end)
+		if !tr.End.IsZero() {
+			tr.End = d.Sub(tr.End)
 		}
 		isISO = true
 	}
@@ -377,20 +398,25 @@ func (r *aiResolver) resolveTimeRange(tr *metricsview.TimeRange, tz string) (sta
 	// This is to maintain backwards compatibility for calls from the UI.
 	if isISO {
 		if !tr.RoundToGrain.Valid() {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid time grain %q", tr.RoundToGrain)
+			return fmt.Errorf("invalid time grain %q", tr.RoundToGrain)
 		}
 		if tr.RoundToGrain != metricsview.TimeGrainUnspecified {
-			if !start.IsZero() {
-				start = timeutil.TruncateTime(start, tr.RoundToGrain.ToTimeutil(), timezone, 1, 1)
+			if !tr.Start.IsZero() {
+				tr.Start = timeutil.TruncateTime(tr.Start, tr.RoundToGrain.ToTimeutil(), timezone, 1, 1)
 			}
-			if !end.IsZero() {
-				end = timeutil.TruncateTime(end, tr.RoundToGrain.ToTimeutil(), timezone, 1, 1)
+			if !tr.End.IsZero() {
+				tr.End = timeutil.TruncateTime(tr.End, tr.RoundToGrain.ToTimeutil(), timezone, 1, 1)
 			}
 		}
-		return start, end, nil
+		// Clear other fields
+		tr.Expression = ""
+		tr.IsoDuration = ""
+		tr.IsoOffset = ""
+		tr.RoundToGrain = metricsview.TimeGrainUnspecified
+		return nil
 	}
 
-	return time.Time{}, time.Time{}, errors.New("time range must have expression, iso_duration, or start/end")
+	return errors.New("time range must have expression, iso_duration, or start/end")
 }
 
 // generateTitle generates a title for the AI session.

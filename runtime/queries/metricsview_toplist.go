@@ -68,7 +68,7 @@ func (q *MetricsViewToplist) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
+	mv, security, err := ResolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 }
 
 func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
+	mv, security, err := ResolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
