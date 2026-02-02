@@ -3,10 +3,7 @@
   import { onMount } from "svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import {
-    cleanupConversationManager,
-    getConversationManager,
-  } from "../../core/conversation-manager";
+  import { getConversationManager } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import SidebarHeader from "./SidebarHeader.svelte";
@@ -43,8 +40,9 @@
     const currentProject = from?.params?.project;
     const targetProject = to?.params?.project;
 
+    // Clear conversation only when switching projects
     if (currentProject !== targetProject) {
-      cleanupConversationManager(instanceId);
+      conversationManager.enterNewConversationMode();
     }
   });
 

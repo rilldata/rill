@@ -33,6 +33,19 @@ const config = {
     locales: ["en"],
   },
 
+  // HubSpot tracking script
+  scripts: [
+    {
+      src: '//js-na2.hs-scripts.com/242088677.js',
+      async: true,
+      defer: true,
+      id: 'hs-script-loader',
+    },
+  ],
+
+  // Client modules for SPA route tracking
+  clientModules: [require.resolve('./src/clientModules/hubspot.js')],
+
   presets: [
     [
       "classic",
@@ -142,18 +155,31 @@ const config = {
             activeBaseRegex: "^/guide.*", // Keep Docs active for all doc pages
           },
           {
-            to: "/reference/project-files",
+            type: "dropdown",
             label: "Reference",
             position: "left",
-            className: "navbar-reference-link",
-            activeBasePath: "/reference/project-files",
-          },
-          {
-            to: "/api/admin/",
-            label: "API",
-            position: "left",
-            className: "navbar-api-link",
-            activeBasePath: "/api/admin/",
+            to: "/reference/project-files",
+            className: 'my-custom-dropdown',
+            activeBaseRegex: "^(/reference|/api/admin)",
+            items: [
+              {
+                to: "/reference/project-files",
+                label: "Project Files",
+              },
+              {
+                to: "/reference/cli",
+                label: "CLI",
+              },
+              {
+                to: "/reference/time-syntax/rill-iso-extensions",
+                label: "Rill ISO 8601",
+              },
+              {
+                to: "/api/admin/",
+                label: "REST API",
+              },
+
+            ],
           },
 
           // {
@@ -172,8 +198,7 @@ const config = {
             to: "/contact",
             label: "Contact Us",
             position: "left",
-            className: "navbar-contact-link",
-            activeBasePath: "/contact",
+            activeBaseRegex: "^/contact",
           },
 
 
@@ -1458,7 +1483,7 @@ const config = {
           },
           {
             from: '/reference/rill-iso-extensions',
-            to: '/developers/build/metrics-view/time-series/time-syntax',
+            to: '/reference/time-syntax/rill-iso-extensions',
           },
           {
             from: '/reference/olap-engines/',

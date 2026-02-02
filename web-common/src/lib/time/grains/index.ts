@@ -3,8 +3,8 @@
  * to generate either a subset of time grains or a single time grain.
  */
 
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { Duration, Interval } from "luxon";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import { Duration } from "luxon";
 import { TIME_GRAIN } from "../config";
 import type { AvailableTimeGrain, TimeGrain } from "../types";
 import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";

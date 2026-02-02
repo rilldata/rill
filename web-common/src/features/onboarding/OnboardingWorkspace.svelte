@@ -1,105 +1,154 @@
 <script lang="ts">
-  import { IconSpaceFixer } from "../../components/button";
+  import { goto } from "$app/navigation";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Button from "../../components/button/Button.svelte";
-  import Add from "../../components/icons/Add.svelte";
-  import { createRuntimeServiceGetInstance } from "../../runtime-client";
+  import { createRuntimeServiceUnpackExample } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import ImportData from "@rilldata/web-common/components/icons/ImportData.svelte";
+  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { createResourceAndNavigate } from "@rilldata/web-common/features/file-explorer/new-files.ts";
+  import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants.ts";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+  import { LightbulbIcon, PresentationIcon } from "lucide-svelte";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 
   $: ({ instanceId } = $runtime);
 
-  let steps: OnboardingStep[];
-  $: instance = createRuntimeServiceGetInstance(instanceId, {
-    sensitive: true,
-  });
-  $: olapConnector = $instance.data?.instance?.olapConnector;
-  $: if (olapConnector) {
-    steps = olapConnector === "duckdb" ? duckDbSteps : nonDuckDbSteps;
+  const unpackExampleProject = createRuntimeServiceUnpackExample();
+
+  async function unpackProject(example: (typeof EXAMPLES)[number]) {
+    await behaviourEvent?.fireSplashEvent(
+      example
+        ? BehaviourEventAction.ExampleAdd
+        : BehaviourEventAction.ProjectEmpty,
+      BehaviourEventMedium.Card,
+      MetricsEventSpace.Workspace,
+      example?.name,
+    );
+
+    try {
+      await $unpackExampleProject.mutateAsync({
+        instanceId,
+        data: {
+          name: example.name,
+          force: true,
+        },
+      });
+
+      await waitUntil(() => fileArtifacts.hasFileArtifact(example.firstFile));
+      await goto(`/files${example.firstFile}`);
+    } catch (err) {
+      console.error("Failed to create example project", err);
+    }
   }
-
-  interface OnboardingStep {
-    id: string;
-    heading: string;
-    description: string;
-  }
-
-  // Onboarding steps for DuckDB OLAP driver
-  const duckDbSteps: OnboardingStep[] = [
-    {
-      id: "source",
-      heading: "Import your data source",
-      description:
-        "Click 'Add data' or drag a file (Parquet, NDJSON, or CSV) into this window.",
-    },
-    {
-      id: "model",
-      heading: "Model your sources into one big table",
-      description:
-        "Build intuition about your sources and use SQL to model them into an analytics-ready resource.",
-    },
-    {
-      id: "metrics",
-      heading: "Define your metrics and dimensions",
-      description:
-        "Define aggregate metrics and break out dimensions for your modeled data.",
-    },
-    {
-      id: "dashboard",
-      heading: "Explore your metrics dashboard",
-      description:
-        "Interactively explore line charts and leaderboards to uncover insights.",
-    },
-  ];
-
-  // Onboarding steps for non-DuckDB OLAP drivers (ClickHouse, Druid)
-  const nonDuckDbSteps: OnboardingStep[] = [
-    {
-      id: "table",
-      heading: "Explore your tables",
-      description:
-        "Find your database tables in the left-hand-side navigational sidebar.",
-    },
-    {
-      id: "metrics",
-      heading: "Define your metrics and dimensions",
-      description:
-        "Define aggregate metrics and break out dimensions for your tables.",
-    },
-    {
-      id: "dashboard",
-      heading: "Explore your metrics dashboard",
-      description:
-        "Interactively explore line charts and leaderboards to uncover insights.",
-    },
-  ];
 </script>
 
-<div class="pt-20 px-8 flex flex-col gap-y-6 items-center size-full">
-  <div class="text-center">
-    <div class="font-bold">Getting started</div>
-    <p>Building data intuition at every step of analysis</p>
+<div class="container">
+  <div class="cta-container">
+    <div class="import-data-container cta-item">
+      <div class="flex flex-col gap-y-1">
+        <div class="font-semibold text-base">Import data</div>
+        <div class="text-xs">
+          Add or drag a file here (Parquet, NDJSON, CSV).
+        </div>
+      </div>
+      <div class="mx-auto">
+        <ImportData />
+      </div>
+      <Button type="primary" onClick={addSourceModal.open}>+ Add Data</Button>
+    </div>
+
+    <div class="my-auto text-gray-400 text-base">or</div>
+
+    <div class="flex flex-col w-64 gap-y-4">
+      <GenerateSampleData type="home" />
+      <Button
+        onClick={() => createResourceAndNavigate(ResourceKind.Model)}
+        type="tertiary"
+        large
+        forcedStyle="height: 3rem;"
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Model]}
+          size="14px"
+        />
+        Create blank model
+      </Button>
+      <Button
+        onClick={() => createResourceAndNavigate(ResourceKind.MetricsView)}
+        type="tertiary"
+        large
+        forcedStyle="height: 3rem;"
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.MetricsView]}
+          size="14px"
+        />
+        Create a metrics view
+      </Button>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild let:builder>
+          <Button
+            type="tertiary"
+            builders={[builder]}
+            large
+            forcedStyle="height: 3rem;"
+          >
+            <PresentationIcon size="16px" />
+            Try demo projects
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content side="right" align="start">
+          {#each EXAMPLES as example (example.name)}
+            <DropdownMenu.Item on:click={() => unpackProject(example)}>
+              {example.title}
+            </DropdownMenu.Item>
+          {/each}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </div>
   </div>
-  <ol
-    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface-subtle rounded-lg border"
-  >
-    {#if olapConnector}
-      {#each steps as step, i (step.heading)}
-        <li class="flex gap-x-0.5">
-          <span class="font-bold">{i + 1}.</span>
-          <div class="flex flex-col items-start gap-y-2">
-            <div class="flex flex-col items-start gap-y-0.5">
-              <h5 class="font-bold">{step.heading}</h5>
-              <p>{step.description}</p>
-            </div>
-            {#if step.id === "source"}
-              <Button type="secondary" onClick={addSourceModal.open}>
-                <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
-                <span>Add data</span>
-              </Button>
-            {/if}
-          </div>
-        </li>
-      {/each}
-    {/if}
-  </ol>
+
+  <div class="flex flex-row gap-x-8 items-center w-full">
+    <div class="h-px grow border"></div>
+    <LightbulbIcon class="text-border" size="16px" />
+    <div class="h-px grow border"></div>
+  </div>
+
+  <div class="flex flex-col mx-auto w-fit gap-y-2 text-xs text-slate-500">
+    <div class="font-semibold text-center">Tips for data workflow in rill</div>
+    <ul class="list-decimal">
+      <li>Import data – Add or drag files (Parquet, NDJSON, CSV).</li>
+      <li>Model sources – Combine and shape data with SQL.</li>
+      <li>Define metrics – Create metrics and dimensions.</li>
+      <li>Explore insights – Visualize data in interactive dashboards.</li>
+    </ul>
+  </div>
 </div>
+
+<style lang="postcss">
+  .container {
+    @apply flex flex-col m-auto px-8 gap-y-6 w-fit;
+  }
+
+  .cta-container {
+    @apply flex flex-row text-center gap-x-6;
+  }
+
+  .import-data-container {
+    @apply flex flex-col w-64 p-6 gap-y-4;
+  }
+
+  .cta-item {
+    @apply bg-surface border rounded-md shadow-sm;
+  }
+</style>
