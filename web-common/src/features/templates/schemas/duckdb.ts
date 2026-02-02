@@ -5,68 +5,13 @@ export const duckdbSchema: MultiStepFormSchema = {
   type: "object",
   title: "DuckDB",
   "x-category": "olap",
-  "x-button-labels": {
-    connector_type: {
-      "rill-managed": { idle: "Connect", loading: "Connecting..." },
-    },
-  },
   properties: {
-    connector_type: {
-      type: "string",
-      title: "Connection type",
-      enum: ["rill-managed", "self-hosted"],
-      default: "self-hosted",
-      "x-display": "radio",
-      "x-enum-labels": ["Rill-managed DuckDB", "Self-hosted DuckDB"],
-      "x-ui-only": true,
-      "x-grouped-fields": {
-        "rill-managed": ["managed"],
-        "self-hosted": ["path"],
-      },
-      "x-step": "connector",
-    },
-    managed: {
-      type: "boolean",
-      title: "Managed",
-      description:
-        "This option uses DuckDB as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your DuckDB instance.",
-      default: false,
-      "x-informational": true,
-      "x-visible-if": {
-        connector_type: "rill-managed",
-      },
-      "x-step": "connector",
-    },
     path: {
       type: "string",
       title: "Path",
       description: "Path to external DuckDB database",
       "x-placeholder": "/path/to/main.db",
-      "x-visible-if": {
-        connector_type: "self-hosted",
-      },
-      "x-step": "connector",
     },
   },
-  required: ["connector_type"],
-  allOf: [
-    {
-      if: { properties: { connector_type: { const: "rill-managed" } } },
-      then: {
-        required: ["managed"],
-        properties: {
-          managed: { const: true },
-        },
-      },
-    },
-    {
-      if: { properties: { connector_type: { const: "self-hosted" } } },
-      then: {
-        required: ["path"],
-        properties: {
-          managed: { const: false },
-        },
-      },
-    },
-  ],
+  required: ["path"],
 };
