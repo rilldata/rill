@@ -1,6 +1,6 @@
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import type { DateTimeUnit } from "luxon";
+import type { DateTimeUnit, Interval } from "luxon";
 
 const MAX_BUCKETS = 1500;
 
