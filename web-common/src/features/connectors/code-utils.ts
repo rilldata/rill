@@ -26,8 +26,9 @@ import {
   makeSufficientlyQualifiedTableName,
 } from "./connectors-utils";
 
-const YAML_MODEL_TEMPLATE = `# Model YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+function yamlModelTemplate(driverName: string) {
+  return `# Model YAML
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
 
 type: model
 materialize: true
@@ -36,6 +37,7 @@ connector: {{ connector }}
 
 sql: {{ sql }}{{ dev_section }}
 `;
+}
 
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
@@ -325,7 +327,7 @@ export async function createYamlModelFromTable(
     ? `\n\ndev:\n  sql: ${selectStatement} limit 10000`
     : "";
 
-  const yamlContent = YAML_MODEL_TEMPLATE.replace("{{ connector }}", connector)
+  const yamlContent = yamlModelTemplate(driverName).replace("{{ connector }}", connector)
     .replace(/{{ sql }}/g, selectStatement)
     .replace("{{ dev_section }}", devSection);
 
@@ -404,7 +406,7 @@ export async function createSqlModelFromTable(
 
   // Create model
   const topComments =
-    "-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/build/models";
+    `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,
