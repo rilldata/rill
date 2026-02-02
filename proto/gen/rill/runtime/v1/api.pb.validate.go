@@ -12462,7 +12462,7 @@ func (m *CompleteRequest) validate(all bool) error {
 		if _, ok := _CompleteRequest_Agent_InLookup[m.GetAgent()]; !ok {
 			err := CompleteRequestValidationError{
 				field:  "Agent",
-				reason: "value must be in list [analyst_agent developer_agent]",
+				reason: "value must be in list [analyst_agent developer_agent feedback_agent]",
 			}
 			if !all {
 				return err
@@ -12524,6 +12524,35 @@ func (m *CompleteRequest) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return CompleteRequestValidationError{
 				field:  "DeveloperAgentContext",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetFeedbackAgentContext()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "FeedbackAgentContext",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "FeedbackAgentContext",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFeedbackAgentContext()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteRequestValidationError{
+				field:  "FeedbackAgentContext",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -12613,6 +12642,7 @@ var _CompleteRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$
 var _CompleteRequest_Agent_InLookup = map[string]struct{}{
 	"analyst_agent":   {},
 	"developer_agent": {},
+	"feedback_agent":  {},
 }
 
 // Validate checks the field values on CompleteResponse with the rules defined

@@ -2671,6 +2671,7 @@ If not set, it will infer an agent based on the prompt and conversation history.
   agent?: string;
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
+  feedbackAgentContext?: V1FeedbackAgentContext;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {

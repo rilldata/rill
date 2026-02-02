@@ -210,9 +210,9 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		return nil, ErrForbidden
 	}
 
-	// Add basic validation - fail fast for invalid requests
-	if req.Prompt == "" {
-		return nil, status.Error(codes.InvalidArgument, "prompt cannot be empty")
+	// Validate request - either prompt or feedback context must be provided
+	if req.Prompt == "" && req.FeedbackAgentContext == nil {
+		return nil, status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
 	}
 
 	// Setup user agent
@@ -262,6 +262,15 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
+	var feedbackAgentArgs *ai.FeedbackAgentArgs
+	if req.FeedbackAgentContext != nil {
+		feedbackAgentArgs = &ai.FeedbackAgentArgs{
+			TargetMessageID: req.FeedbackAgentContext.TargetMessageId,
+			Sentiment:       req.FeedbackAgentContext.Sentiment,
+			Categories:      req.FeedbackAgentContext.Categories,
+			Comment:         req.FeedbackAgentContext.Comment,
+		}
+	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
@@ -270,6 +279,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		Agent:              req.Agent,
 		AnalystAgentArgs:   analystAgentArgs,
 		DeveloperAgentArgs: developerAgentArgs,
+		FeedbackAgentArgs:  feedbackAgentArgs,
 	})
 	if err != nil && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.

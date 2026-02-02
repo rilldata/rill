@@ -5178,6 +5178,14 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   developerAgentContext?: DeveloperAgentContext;
 
+  /**
+   * Optional context for prompts handled by the feedback_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.FeedbackAgentContext feedback_agent_context = 13;
+   */
+  feedbackAgentContext?: FeedbackAgentContext;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5192,6 +5200,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
+    { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {

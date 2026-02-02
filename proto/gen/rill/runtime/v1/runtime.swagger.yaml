@@ -431,6 +431,11 @@ paths:
                 description: |-
                   Optional context for prompts handled by the developer_agent.
                   The field is ignored if another agent is selected.
+              feedbackAgentContext:
+                $ref: '#/definitions/v1FeedbackAgentContext'
+                description: |-
+                  Optional context for prompts handled by the feedback_agent.
+                  The field is ignored if another agent is selected.
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
