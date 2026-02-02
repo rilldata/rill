@@ -1573,13 +1573,6 @@ const config = {
             from: '/reference/connectors/https',
             to: '/developers/build/connectors/data-source/https',
           },
-          // ============================================
-          // /developers/build/connectors/data-source/<ai> -> /developers/build/connectors/ai/<ai>
-          // ============================================
-          {
-            from: '/developers/build/connectors/data-source/openai',
-            to: '/developers/build/connectors/ai/openai',
-          }
 
 
           // {
