@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as Alert from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
@@ -6,7 +7,10 @@
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { NUMERICS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import {
+    NUMERICS,
+    TIMESTAMPS,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
@@ -28,6 +32,11 @@
   export let resetEditing: () => void;
 
   let editingClone = structuredClone(item);
+  let showTypeMismatchModal = false;
+  let previousTypeValue: "time" | "geo" | "categorical" | undefined = (
+    item as YAMLDimension
+  ).type;
+  let typeMismatchMessage = "";
 
   let columnOptions: MenuOption[] = columns.map(({ name, type }) => ({
     value: name ?? "",
@@ -183,7 +192,6 @@
         ],
         selected: 0,
       },
-
       {
         label: "Description",
         optional: true,
@@ -196,6 +204,22 @@
         ],
         selected: 0,
       },
+      {
+        label: "Type",
+        optional: true,
+        fields: [
+          {
+            key: "type",
+            label: "Type",
+            options: [
+              { label: "Categorical", value: "categorical" },
+              { label: "Time", value: "time" },
+              { label: "Geospatial", value: "geo" },
+            ],
+          },
+        ],
+        selected: 0,
+      },
     ],
   };
 
@@ -203,11 +227,66 @@
     ({ type }) => type && NUMERICS.has(type),
   );
 
+  // Returns column type only for simple column refs or expressions that exactly match a column name
+  $: selectedColumnType = (() => {
+    if (type !== "dimensions") return undefined;
+    const dimensionClone = editingClone as YAMLDimension;
+
+    if (dimensionClone.column) {
+      return columns.find((c) => c.name === dimensionClone.column)?.type;
+    }
+
+    if (dimensionClone.expression) {
+      return columns.find((c) => c.name === dimensionClone.expression.trim())
+        ?.type;
+    }
+
+    return undefined;
+  })();
+
+  $: isColumnTimeType = selectedColumnType
+    ? TIMESTAMPS.has(selectedColumnType)
+    : false;
+
+  function handleTypeChange(newType: string) {
+    const typedNewType = newType as "time" | "geo" | "categorical";
+
+    if (typedNewType === "time" && !isColumnTimeType && selectedColumnType) {
+      typeMismatchMessage = `This column is stored as ${selectedColumnType}, not a time value. Do you want to treat this dimension as a time type anyway?`;
+      showTypeMismatchModal = true;
+    } else if (
+      typedNewType !== "time" &&
+      isColumnTimeType &&
+      selectedColumnType
+    ) {
+      typeMismatchMessage = `This column is stored as a time value (${selectedColumnType}). Do you want to treat this dimension as ${typedNewType} anyway?`;
+      showTypeMismatchModal = true;
+    } else {
+      previousTypeValue = typedNewType;
+    }
+  }
+
+  function confirmTypeChange() {
+    previousTypeValue = editingClone.type as
+      | "time"
+      | "geo"
+      | "categorical"
+      | undefined;
+    showTypeMismatchModal = false;
+  }
+
+  function cancelTypeChange() {
+    editingClone.type = previousTypeValue;
+    showTypeMismatchModal = false;
+  }
+
   $: ({ editorContent, updateEditorContent } = fileArtifact);
 
   $: requiredPropertiesUnfilled = properties[type]
     .filter(({ optional, fields, selected }) => {
-      const value = editingClone[fields[selected].key];
+      const field = fields[selected];
+      if (!field) return false;
+      const value = editingClone[field.key];
       return !optional && (value === undefined || value === "");
     })
     .map(({ label }) => label);
@@ -275,7 +354,7 @@
 />
 
 <div
-  class="h-full w-[320px] bg-surface flex-none flex flex-col border select-none rounded-[2px]"
+  class="h-full w-[320px] bg-surface-background flex-none flex flex-col border select-none rounded-[2px]"
 >
   <h1 class="pt-6 px-5">{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
 
@@ -288,10 +367,12 @@
       {#if boolean}
         <div class="flex gap-x-2 items-center h-full rounded-full">
           <Switch bind:checked={editingClone[key]} id="auto-save" medium />
-          <Label class="font-medium text-sm" for="auto-save">{label}</Label>
+          <Label class="font-medium text-fg-secondary text-sm" for="auto-save"
+            >{label}</Label
+          >
           {#if hint}
             <Tooltip location="left">
-              <div class="text-gray-500">
+              <div class="text-fg-muted">
                 <InfoCircle size="13px" />
               </div>
               <TooltipContent slot="tooltip-content">
@@ -324,9 +405,12 @@
           {selected}
           bind:value={editingClone[key]}
           fields={fields.map(({ label }) => label)}
-          onChange={(e) => {
+          onChange={(newValue) => {
             if (!editing && key === "column" && type === "dimensions") {
-              editingClone.name = e;
+              editingClone.name = newValue;
+            }
+            if (key === "type" && type === "dimensions") {
+              handleTypeChange(newValue);
             }
           }}
           onFieldSwitch={(index) => {
@@ -341,7 +425,7 @@
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
-    <p>
+    <p class="text-fg-muted">
       For more options,
       <button on:click={switchView} class="text-primary-600 font-medium">
         edit in YAML
@@ -353,7 +437,7 @@
       {/if}
       <div class="flex gap-x-2 self-end">
         <Button
-          type="secondary"
+          type="tertiary"
           onClick={() => {
             onCancel(unsavedChanges);
           }}
@@ -381,6 +465,24 @@
     </div>
   </div>
 </div>
+
+<Alert.Root bind:open={showTypeMismatchModal}>
+  <Alert.Trigger asChild>
+    <div class="hidden"></div>
+  </Alert.Trigger>
+  <Alert.Content noCancel>
+    <Alert.Header>
+      <Alert.Title>Type mismatch</Alert.Title>
+      <Alert.Description>
+        {typeMismatchMessage}
+      </Alert.Description>
+    </Alert.Header>
+    <Alert.Footer>
+      <Button type="tertiary" onClick={cancelTypeChange}>Cancel</Button>
+      <Button type="primary" onClick={confirmTypeChange}>Confirm</Button>
+    </Alert.Footer>
+  </Alert.Content>
+</Alert.Root>
 
 <style lang="postcss">
   h1 {

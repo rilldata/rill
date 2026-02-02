@@ -37,12 +37,13 @@
 
 <style lang="postcss">
   button {
-    @apply border rounded-[2px] bg-gray-50 grid place-content-center p-[1.5px];
+    @apply border rounded-[2px] bg-transparent grid place-content-center p-[1.5px];
   }
 
   button:hover {
     @apply border-primary-400;
   }
+
   .checked {
     @apply bg-primary-400 border-primary-400;
   }

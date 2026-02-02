@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Switch } from "@rilldata/web-common/components/button";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -15,7 +15,8 @@
 
 <Tooltip distance={8} location="top">
   <Button type="toolbar" {onClick}>
-    <Switch checked={excludeMode}>Exclude</Switch>
+    <Switch checked={excludeMode} small />
+    <p>Exclude</p>
   </Button>
   <TooltipContent slot="tooltip-content">
     <TooltipTitle>

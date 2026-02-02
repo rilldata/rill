@@ -3,7 +3,7 @@ import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ url }) => {
   const showUpgradeDialog = !!getSingleUseUrlParam(
-    url,
+    url as URL,
     "upgrade",
     "rill:app:showUpgrade",
   );

@@ -35,6 +35,7 @@ export function updateExploreSessionStore(
   storageNamespacePrefix: string | undefined,
   exploreState: ExploreState,
   exploreSpec: V1ExploreSpec,
+  metricsViewSpec: V1MetricsViewSpec,
   timeControlsState: TimeControlState | undefined,
 ) {
   const apiWebView =
@@ -47,6 +48,7 @@ export function updateExploreSessionStore(
   // Build the url search params for the entire state
   const urlSearchParams = convertPartialExploreStateToUrlParams(
     exploreSpec,
+    metricsViewSpec,
     exploreState,
     timeControlsState,
   );

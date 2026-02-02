@@ -158,7 +158,7 @@
   }
 
   .contents-empty {
-    @apply px-2 py-1.5 w-full ui-copy-inactive;
+    @apply px-2 py-1.5 w-full text-fg-disabled;
   }
 
   .section-boundary {
