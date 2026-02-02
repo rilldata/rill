@@ -189,14 +189,14 @@ type Parser struct {
 	Errors    []*runtimev1.ParseError
 
 	// Internal state
-	resourcesForPath            map[string][]*Resource    // Reverse index of Resource.Paths
-	resourcesForUnspecifiedRef  map[string][]*Resource    // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
-	resourceNamesForDataPaths   map[string][]ResourceName // Index of local data files to resources that depend on them
-	insertedResources           []*Resource
-	updatedResources            []*Resource
-	deletedResources            []*Resource
-	postParseHooks              map[ResourceName][]postParseHook
-	resourceNamesForInferredRef map[string]map[ResourceName]bool
+	resourcesForPath           map[string][]*Resource    // Reverse index of Resource.Paths
+	resourcesForUnspecifiedRef map[string][]*Resource    // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
+	resourceNamesForDataPaths  map[string][]ResourceName // Index of local data files to resources that depend on them
+	insertedResources          []*Resource
+	updatedResources           []*Resource
+	deletedResources           []*Resource
+	postParseHooks             map[ResourceName][]postParseHook
+	resourcesForInferredRef    map[string]map[ResourceName]bool // Index of inferred refs to resources that reference them
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -339,7 +339,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.resourcesForPath = make(map[string][]*Resource)
 	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
 	p.postParseHooks = make(map[ResourceName][]postParseHook)
-	p.resourceNamesForInferredRef = make(map[string]map[ResourceName]bool)
+	p.resourcesForInferredRef = make(map[string]map[ResourceName]bool)
 	p.insertedResources = nil
 	p.updatedResources = nil
 	p.deletedResources = nil
@@ -984,16 +984,22 @@ func (p *Parser) deleteResource(r *Resource) {
 
 	// Remove from resourcesForInferredRef
 	// 1. If it is the resource which was inferred
-	delete(p.resourceNamesForInferredRef, strings.ToLower(r.Name.Name))
+	delete(p.resourcesForInferredRef, strings.ToLower(r.Name.Name))
 	// 2. If it is a resource which had an inferred ref to another resource
-	for k, resMap := range p.resourceNamesForInferredRef {
-		if _, ok := resMap[r.Name.Normalized()]; !ok {
+	for _, ref := range r.Refs {
+		c := strings.ToLower(ref.Name)
+		resMap, ok := p.resourcesForInferredRef[c]
+		if !ok {
+			continue
+		}
+		norm := r.Name.Normalized()
+		if _, ok := resMap[norm]; !ok {
 			continue
 		}
 		if len(resMap) == 1 {
-			delete(p.resourceNamesForInferredRef, k)
+			delete(p.resourcesForInferredRef, c)
 		} else {
-			delete(resMap, r.Name.Normalized())
+			delete(resMap, norm)
 		}
 	}
 
@@ -1097,7 +1103,7 @@ func (p *Parser) addConnectorRef(connector string) postParseHook {
 		}
 
 		c := strings.ToLower(connector)
-		if res, ok := p.resourceNamesForInferredRef[c]; ok {
+		if res, ok := p.resourcesForInferredRef[c]; ok {
 			if _, ok := res[r.Name.Normalized()]; ok {
 				// already has a ref
 				return false
@@ -1112,11 +1118,11 @@ func (p *Parser) addConnectorRef(connector string) postParseHook {
 		}
 		r.Refs = append(r.Refs, n)
 
-		// index in resourceNamesForInferredRef
-		resourceMap, ok := p.resourceNamesForInferredRef[c]
+		// index in resourcesForInferredRef
+		resourceMap, ok := p.resourcesForInferredRef[c]
 		if !ok {
 			resourceMap = make(map[ResourceName]bool)
-			p.resourceNamesForInferredRef[c] = resourceMap
+			p.resourcesForInferredRef[c] = resourceMap
 		}
 		resourceMap[r.Name.Normalized()] = true
 		return true
