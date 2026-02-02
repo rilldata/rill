@@ -9,7 +9,17 @@
   let open = false;
 </script>
 
-{#if templates.length > 0}
+{#if templates.length === 1}
+  <div class="mb-4">
+    <button
+      type="button"
+      class="text-sm font-medium text-primary-500 hover:text-primary-600 hover:underline"
+      on:click={() => onSelectTemplate(templates[0])}
+    >
+      Use {templates[0].label}
+    </button>
+  </div>
+{:else if templates.length > 1}
   <div class="mb-4">
     <DropdownMenu.Root bind:open>
       <DropdownMenu.Trigger asChild let:builder>
