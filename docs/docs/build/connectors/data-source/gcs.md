@@ -69,7 +69,7 @@ Create `connectors/my_gcs.yaml`:
 type: connector
 driver: gcs
 
-google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
+google_application_credentials: '{{ env "GOOGLE_APPLICATION_CREDENTIALS" }}'
 ```
 
 **Step 2: Create model configuration**
@@ -123,8 +123,8 @@ Create `connectors/my_gcs_hmac.yaml`:
 type: connector
 driver: gcs
 
-key_id: "{{ .env.KEY_ID }}"
-secret: "{{ .env.SECRET }}"
+key_id: '{{ env "GS_ACCESS_KEY_ID" }}'
+secret: '{{ env "GS_SECRET_ACCESS_KEY" }}'
 ```
 
 **Step 2: Create model configuration**
@@ -145,8 +145,8 @@ refresh:
 **Step 3: Add credentials to `.env`**
 
 ```bash
-KEY_ID=GOOG1234567890ABCDEFG
-SECRET=your-secret-access-key
+GS_ACCESS_KEY_ID=GOOG1234567890ABCDEFG
+GS_SECRET_ACCESS_KEY=your-secret-access-key
 ```
 
 :::info

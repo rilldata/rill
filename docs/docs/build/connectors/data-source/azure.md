@@ -80,7 +80,7 @@ type: connector
 driver: azure
 
 azure_storage_account: rilltest
-azure_storage_key: "{{ .env.AZURE_STORAGE_KEY }}"
+azure_storage_key: '{{ env "AZURE_STORAGE_KEY" }}'
 ```
 
 **Step 2: Create model configuration**
@@ -100,7 +100,7 @@ refresh:
 **Step 3: Add credentials to `.env`**
 
 ```bash
-connector.azure.azure_storage_key=your_storage_account_key
+AZURE_STORAGE_KEY=your_storage_account_key
 ```
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your storage account keys.
@@ -134,7 +134,7 @@ Create `connectors/my_azure_conn.yaml`:
 type: connector
 driver: azure
 
-azure_storage_connection_string: "{{ .env.AZURE_STORAGE_CONNECTION_STRING }}"
+azure_storage_connection_string: '{{ env "AZURE_STORAGE_CONNECTION_STRING" }}'
 ```
 
 **Step 2: Create model configuration**
@@ -154,7 +154,7 @@ refresh:
 **Step 3: Add credentials to `.env`**
 
 ```bash
-connector.azure.azure_storage_connection_string=your_connection_string
+AZURE_STORAGE_CONNECTION_STRING=your_connection_string
 ```
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your connection string.
@@ -190,7 +190,7 @@ type: connector
 driver: azure
 
 azure_storage_account: rilltest 
-azure_storage_sas_token: "{{ .env.AZURE_STORAGE_SAS_TOKEN }}"
+azure_storage_sas_token: '{{ env "AZURE_STORAGE_SAS_TOKEN" }}'
 ```
 
 **Step 2: Create model configuration**
@@ -210,7 +210,7 @@ refresh:
 **Step 3: Add credentials to `.env`**
 
 ```bash
-connector.azure.azure_storage_sas_token=your_sas_token
+AZURE_STORAGE_SAS_TOKEN=your_sas_token
 ```
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers) to create your Azure SAS token.

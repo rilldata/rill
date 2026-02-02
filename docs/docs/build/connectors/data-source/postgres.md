@@ -33,12 +33,12 @@ driver: postgres
 host: "localhost"
 port: "5432"
 user: "postgres"
-password: "{{ .env.POSTGRES_PASSWORD }}"
+password: '{{ env "POSTGRES_PASSWORD" }}'
 dbname: "postgres"
 ```
 
 :::tip Using the Add Data Form
-You can also use the Add Data form in Rill Developer, which will automatically create the `postgres.yaml` file and populate the `.env` file with `connector.postgres.*` parameters based on the parameters or connection string you provide.
+You can also use the Add Data form in Rill Developer, which will automatically create the `postgres.yaml` file and populate the `.env` file with `POSTGRES_*` parameters based on the parameters or connection string you provide.
 :::
 
 ## Separating Dev and Prod Environments

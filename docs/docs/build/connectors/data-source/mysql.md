@@ -36,12 +36,12 @@ host: "localhost"
 port: 3306 
 database: "mydatabase" 
 user: "myusername" 
-password: "{{ .env.MYSQL_PASSWORD }}"
+password: '{{ env "MYSQL_PASSWORD" }}'
 ssl_mode: "DISABLED" 
 ```
 
 :::tip Using the Add Data Form
-You can also use the Add Data form in Rill Developer, which will automatically create the `mysql.yaml` file and populate the `.env` file with `connector.mysql.*` parameters based on the parameters or connection string you provide.
+You can also use the Add Data form in Rill Developer, which will automatically create the `mysql.yaml` file and populate the `.env` file with `MYSQL_*` parameters based on the parameters or connection string you provide.
 :::
 
 ## Separating Dev and Prod Environments

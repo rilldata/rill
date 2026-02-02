@@ -26,11 +26,11 @@ Create a connector with your credentials to connect to Snowflake. Here's an exam
 type: connector
 driver: snowflake
 
-dsn: "{{ .env.SNOWFLAKE_DSN }}" 
+dsn: '{{ env "SNOWFLAKE_DSN" }}' 
 ```
 
 :::tip Using the Add Data Form
-You can also use the Add Data form in Rill Developer, which will automatically create the `snowflake.yaml` file and populate the `.env` file with `connector.snowflake.*` parameters based on the parameters or connection string you provide.
+You can also use the Add Data form in Rill Developer, which will automatically create the `snowflake.yaml` file and populate the `.env` file with `SNOWFLAKE_*` parameters based on the parameters or connection string you provide.
 :::
 
 

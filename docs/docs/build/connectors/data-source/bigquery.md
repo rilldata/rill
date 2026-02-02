@@ -38,14 +38,14 @@ You'll need to contact your internal cloud admin to create your Service Account 
 :::
 
 
-Create a connector with your credentials to connect to BigQuery. Here's an example connector configuration file you can copy into your `connectors` directory to get started. The UI will also populate your `.env` with `connector.bigquery.google_application_credentials`.
+Create a connector with your credentials to connect to BigQuery. Here's an example connector configuration file you can copy into your `connectors` directory to get started. The UI will also populate your `.env` with `GOOGLE_APPLICATION_CREDENTIALS`.
 
 ```yaml
 type: connector
 
 driver: bigquery
 
-google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
+google_application_credentials: '{{ env "GOOGLE_APPLICATION_CREDENTIALS" }}'
 project_id: "rilldata"
 ```
 
