@@ -169,6 +169,28 @@ describe("getGenericEnvVarName", () => {
     });
   });
 
+  describe("GCS special mappings - backwards compatible keys with GS_ env vars", () => {
+    it("should return GS_ACCESS_KEY_ID for gcs key_id", () => {
+      const result = getGenericEnvVarName("gcs", "key_id");
+      expect(result).toBe("GS_ACCESS_KEY_ID");
+    });
+
+    it("should return GS_SECRET_ACCESS_KEY for gcs secret", () => {
+      const result = getGenericEnvVarName("gcs", "secret");
+      expect(result).toBe("GS_SECRET_ACCESS_KEY");
+    });
+
+    it("should return GS_ACCESS_KEY_ID for gs key_id (alternate driver name)", () => {
+      const result = getGenericEnvVarName("gs", "key_id");
+      expect(result).toBe("GS_ACCESS_KEY_ID");
+    });
+
+    it("should return GS_SECRET_ACCESS_KEY for gs secret (alternate driver name)", () => {
+      const result = getGenericEnvVarName("gs", "secret");
+      expect(result).toBe("GS_SECRET_ACCESS_KEY");
+    });
+  });
+
   describe("Case conversion - camelCase to SCREAMING_SNAKE_CASE", () => {
     it("should convert camelCase property names", () => {
       const result = getGenericEnvVarName("bigquery", "projectId");

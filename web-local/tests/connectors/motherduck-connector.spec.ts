@@ -51,7 +51,7 @@ test.describe("MotherDuck welcome flow", () => {
     await expect(connectorEditor).toContainText("driver: duckdb");
     // Confirm the new {{ env "MOTHERDUCK_TOKEN" }} format exists
     await expect(connectorEditor).toContainText(
-      'token: \'{{ env "MOTHERDUCK_TOKEN" }}\'',
+      "token: '{{ env \"MOTHERDUCK_TOKEN\" }}'",
     );
     await expect(connectorEditor).toContainText(`path: "${path}"`);
 

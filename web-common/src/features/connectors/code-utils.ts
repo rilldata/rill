@@ -236,12 +236,29 @@ export function getGenericEnvVarName(
   driverName: string,
   propertyKey: string,
 ): string {
+  // Special mappings for specific driver + property combinations
+  // GCS uses key_id/secret for backwards compatibility but env vars should be GS_ACCESS_KEY_ID/GS_SECRET_ACCESS_KEY
+  const specialMappings: Record<string, Record<string, string>> = {
+    gcs: {
+      key_id: "GS_ACCESS_KEY_ID",
+      secret: "GS_SECRET_ACCESS_KEY",
+    },
+    gs: {
+      key_id: "GS_ACCESS_KEY_ID",
+      secret: "GS_SECRET_ACCESS_KEY",
+    },
+  };
+
+  // Check for special mappings first
+  const driverMappings = specialMappings[driverName.toLowerCase()];
+  if (driverMappings && driverMappings[propertyKey.toLowerCase()]) {
+    return driverMappings[propertyKey.toLowerCase()];
+  }
+
   // Generic properties that don't need a driver prefix
   const genericProperties = new Set([
     // Google Cloud credentials
     "google_application_credentials",
-    "gs_access_key_id",
-    "gs_secret_access_key",
     // AWS credentials (used by S3, Athena, Redshift, etc.)
     "aws_access_key_id",
     "aws_secret_access_key",

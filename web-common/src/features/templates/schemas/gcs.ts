@@ -19,7 +19,7 @@ export const gcsSchema: MultiStepFormSchema = {
       ],
       "x-grouped-fields": {
         credentials: ["google_application_credentials"],
-        hmac: ["gs_access_key_id", "gs_secret_access_key"],
+        hmac: ["key_id", "secret"],
         public: [],
       },
       "x-step": "connector",
@@ -35,7 +35,7 @@ export const gcsSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "credentials" },
     },
-    gs_access_key_id: {
+    key_id: {
       type: "string",
       title: "Access Key ID",
       description: "HMAC access key ID for S3-compatible authentication",
@@ -44,7 +44,7 @@ export const gcsSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "hmac" },
     },
-    gs_secret_access_key: {
+    secret: {
       type: "string",
       title: "Secret Access Key",
       description: "HMAC secret access key for S3-compatible authentication",
@@ -81,7 +81,7 @@ export const gcsSchema: MultiStepFormSchema = {
     },
     {
       if: { properties: { auth_method: { const: "hmac" } } },
-      then: { required: ["gs_access_key_id", "gs_secret_access_key"] },
+      then: { required: ["key_id", "secret"] },
     },
   ],
 };

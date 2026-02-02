@@ -91,7 +91,7 @@ test.describe("ClickHouse connector", () => {
     );
     await expect(codeEditor).toContainText('username: "default"');
     await expect(codeEditor).toContainText(
-      'password: \'{{ env "CLICKHOUSE_PASSWORD" }}\'',
+      "password: '{{ env \"CLICKHOUSE_PASSWORD\" }}'",
     );
 
     // Assert that the connector explorer now has a ClickHouse connector
@@ -138,7 +138,7 @@ test.describe("ClickHouse connector", () => {
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: clickhouse");
     await expect(codeEditor).toContainText(
-      'dsn: \'{{ env "CLICKHOUSE_DSN" }}\'',
+      "dsn: '{{ env \"CLICKHOUSE_DSN\" }}'",
     );
 
     // Go to the `.env` file and verify the CLICKHOUSE_DSN is set

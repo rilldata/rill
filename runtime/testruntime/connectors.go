@@ -100,8 +100,8 @@ var Connectors = map[string]ConnectorAcquireFunc{
 
 		return map[string]string{
 			"google_application_credentials": gac,
-			"gs_access_key_id":               hmacKey,
-			"gs_secret_access_key":           hmacSecret,
+			"key_id":                         hmacKey,
+			"secret":                         hmacSecret,
 		}
 	},
 	"gcs_s3_compat": func(t TestingT) map[string]string {
@@ -112,8 +112,8 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, hmacSecret, "GCS RILL_RUNTIME_GCS_TEST_HMAC_SECRET not configured")
 
 		return map[string]string{
-			"gs_access_key_id":     hmacKey,
-			"gs_secret_access_key": hmacSecret,
+			"key_id": hmacKey,
+			"secret": hmacSecret,
 		}
 	},
 	// S3 connector uses an actual S3 bucket with data populated from testdata/init_data/azure.
