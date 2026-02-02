@@ -1,7 +1,6 @@
 import { goto } from "$app/navigation";
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types";
-import { extractMessageText } from "@rilldata/web-common/features/chat/core/utils";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -18,7 +17,6 @@ import {
 import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
-  type V1Message,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { get, writable } from "svelte/store";
@@ -121,7 +119,7 @@ export async function createCanvasDashboardFromMetricsView(
     `${metricsViewName}_canvas`,
     fileArtifacts.getNamesForKind(ResourceKind.Canvas),
   );
-  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
+  const canvasFilePath = `/canvas/${canvasName}.yaml`;
 
   try {
     // Request AI-generated canvas dashboard
@@ -165,68 +163,59 @@ export async function createCanvasDashboardFromMetricsView(
 }
 
 /**
- * Helper function to detect if a canvas file was created in a conversation message.
- * Checks if the message text mentions the expected file path.
- */
-function isCanvasFileCreated(
-  message: V1Message,
-  expectedPath: string,
-): boolean {
-  // Check if the assistant's message mentions the file path
-  if (message.role === "assistant") {
-    const messageText = extractMessageText(message);
-    return messageText.includes(expectedPath);
-  }
-  return false;
-}
-
-/**
  * Creates a Canvas dashboard from a metrics view using the developer agent.
  * Opens the developer agent sidebar, sends generation prompt, and navigates to the created file.
  */
-export function createCanvasDashboardFromMetricsViewWithAgent(
+export async function createCanvasDashboardFromMetricsViewWithAgent(
   instanceId: string,
   metricsViewName: string,
-): void {
+): Promise<void> {
   // 1. Generate unique canvas name
   const canvasName = getName(
     `${metricsViewName}_canvas`,
     fileArtifacts.getNamesForKind(ResourceKind.Canvas),
   );
-  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
+  const canvasFilePath = `/canvas/${canvasName}.yaml`;
 
   // 2. Construct prompt for developer agent
   const prompt = `Create a canvas dashboard at ${canvasFilePath} based on the "${metricsViewName}" metrics view. Include appropriate visualizations like KPI grids, charts, and leaderboards based on the available measures and dimensions.`;
 
-  // 3. Set up file creation detection
-  // Get conversation manager and start a new conversation
-  const conversationManager = getConversationManager(instanceId, {
-    conversationState: "browserStorage",
-    agent: ToolName.DEVELOPER_AGENT,
-  });
-
-  // Start a new conversation instead of continuing existing one
-  conversationManager.enterNewConversationMode();
-
-  const currentConversation = get(conversationManager.getCurrentConversation());
-
-  // Set generating state
-  generatingCanvas.set(true);
-
-  // Set up timeout fallback (30s)
-  const timeoutId = setTimeout(() => {
-    generatingCanvas.set(false);
-    eventBus.emit("notification", {
-      message: "Canvas generation is taking longer than expected",
-      detail: "Check the chat sidebar for progress",
+  try {
+    // 3. Set up file creation detection
+    // Get conversation manager and start a new conversation
+    const conversationManager = getConversationManager(instanceId, {
+      conversationState: "browserStorage",
+      agent: ToolName.DEVELOPER_AGENT,
     });
-  }, 30000);
 
-  const unsubscribe = currentConversation.on("message", (message) => {
-    // Check if this is a file write for our canvas
-    if (isCanvasFileCreated(message, canvasFilePath)) {
-      clearTimeout(timeoutId);
-      generatingCanvas.set(false);
+    // Start a new conversation instead of continuing existing one
+    conversationManager.enterNewConversationMode();
+
+    const currentConversation = get(
+      conversationManager.getCurrentConversation(),
+    );
+
+    // Set generating state
+    generatingCanvas.set(true);
+
+    // 4. Start the chat with the generation prompt
+    sidebarActions.startChat(prompt);
+
+    // Wait for the stream to start async through the sidebar action.
+    await waitUntil(() => get(currentConversation.isStreaming));
+
+    // Then wait for the stream to end before checking for file creation
+    await waitUntil(() => !get(currentConversation.isStreaming), -1);
+
+    // After streaming completes, verify the file was created
+    const fileArtifact = fileArtifacts.getFileArtifact(canvasFilePath);
+    const fileExists = await waitUntil(() => {
+      const resource = get(fileArtifact.getResource(queryClient, instanceId));
+      return resource.data !== undefined;
+    }, 5000).catch(() => false);
+
+    if (fileExists) {
+      // Navigate to the created canvas
       void goto(`/files${canvasFilePath}`);
       void behaviourEvent?.fireNavigationEvent(
         metricsViewName,
@@ -235,12 +224,21 @@ export function createCanvasDashboardFromMetricsViewWithAgent(
         getScreenNameFromPage(),
         MetricsEventScreenName.Canvas,
       );
-      unsubscribe();
+    } else {
+      eventBus.emit("notification", {
+        message: "Canvas file was not created",
+        detail: "Check the chat sidebar for errors",
+      });
     }
-  });
-
-  // 4. Start the chat with the generation prompt
-  sidebarActions.startChat(prompt);
+  } catch (err) {
+    console.error("Error generating canvas with agent:", err);
+    eventBus.emit("notification", {
+      message: "Failed to generate canvas dashboard",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  } finally {
+    generatingCanvas.set(false);
+  }
 }
 
 /**
@@ -291,7 +289,10 @@ export async function createCanvasDashboardFromTableWithAgent(
 
     // Step 2: Generate canvas dashboard using developer agent
     // This will open the chat sidebar and handle the rest of the flow
-    createCanvasDashboardFromMetricsViewWithAgent(instanceId, metricsViewName);
+    void createCanvasDashboardFromMetricsViewWithAgent(
+      instanceId,
+      metricsViewName,
+    );
   } catch (err) {
     // Remove overlay on error
     overlay.set(null);
@@ -319,7 +320,7 @@ export async function createCanvasDashboardWithoutNavigation(
     `${metricsViewName}_canvas`,
     fileArtifacts.getNamesForKind(ResourceKind.Canvas),
   );
-  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
+  const canvasFilePath = `/canvas/${canvasName}.yaml`;
 
   try {
     // Request AI-generated canvas dashboard
