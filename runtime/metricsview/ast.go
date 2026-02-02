@@ -110,12 +110,20 @@ type FieldNode struct {
 	Expr        string
 	Unnest      bool
 	TreatNullAs string // only used for measures
+	LookupMeta  *lookupMeta
 }
 
 // ExprNode represents an expression for a WHERE clause.
 type ExprNode struct {
 	Expr string
 	Args []any
+}
+
+type lookupMeta struct {
+	table    string
+	keyExpr  string
+	keyCol   string
+	valueCol string
 }
 
 // And returns a new node that is the AND of the current node and the given expression.
@@ -220,11 +228,28 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			return nil, fmt.Errorf("failed to compile dimension %q expression: %w", dim.Name, err)
 		}
 
+		var lkMeta *lookupMeta
+		if dim.LookupTable != "" {
+			var keyExpr string
+			if dim.Column != "" {
+				keyExpr = ast.Dialect.EscapeIdentifier(dim.Column)
+			} else if dim.Expression != "" {
+				keyExpr = dim.Expression
+			}
+			lkMeta = &lookupMeta{
+				table:    dim.LookupTable,
+				keyExpr:  keyExpr,
+				keyCol:   dim.LookupKeyColumn,
+				valueCol: dim.LookupValueColumn,
+			}
+		}
+
 		f := FieldNode{
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
 			Expr:        expr,
 			Unnest:      dim.Unnest,
+			LookupMeta:  lkMeta,
 		}
 
 		if dim.Unnest {
