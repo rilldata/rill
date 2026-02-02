@@ -71,6 +71,14 @@ func newAI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver
 		args.ExecutionTime = time.Now()
 	}
 
+	if props.Agent != ai.AnalystAgentName {
+		return nil, errors.New("only 'analyst_agent' is supported as agent as of now")
+	}
+
+	if !props.IsReport && props.Prompt == "" {
+		return nil, errors.New("prompt is required for non-report AI sessions")
+	}
+
 	// Get metrics view if explore is provided
 	var mv string
 	if props.Context != nil && props.Context.Explore != "" {
@@ -151,36 +159,25 @@ func (r *aiResolver) Validate(ctx context.Context) error {
 	if r.props.Agent != ai.AnalystAgentName {
 		return errors.New("only 'analyst_agent' is supported as agent as of now")
 	}
+	if !r.props.IsReport && r.props.Prompt == "" {
+		return errors.New("prompt is required for non-report AI sessions")
+	}
 	return nil
 }
 
 // ResolveInteractive implements runtime.Resolver.
 func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	// Resolve time ranges
+	// Resolve time ranges if provided
 	timeStart, timeEnd, err := r.resolveTimeRange(r.props.TimeRange, r.props.TimeZone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	// Resolve comparison time range
+	// Resolve comparison time range if provided
 	comparisonStart, comparisonEnd, err := r.resolveTimeRange(r.props.ComparisonTimeRange, r.props.TimeZone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
-
-	runner := ai.NewRunner(r.runtime, r.runtime.Activity())
-
-	// Create a new AI session
-	session, err := runner.Session(ctx, &ai.SessionOptions{
-		InstanceID:        r.instanceID,
-		CreateIfNotExists: true,
-		Claims:            r.claims,
-		UserAgent:         "rill/report", // TODO change it to system/report or similar so that its not shown in AI sessions list, keeping it rill prefixed for now so that access checks pass
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create AI session: %w", err)
-	}
-	defer session.Flush(ctx)
 
 	var explore string
 	var dimensions, measures []string
@@ -197,6 +194,20 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		}
 	}
 
+	runner := ai.NewRunner(r.runtime, r.runtime.Activity())
+
+	// Create a new AI session
+	session, err := runner.Session(ctx, &ai.SessionOptions{
+		InstanceID:        r.instanceID,
+		CreateIfNotExists: true,
+		Claims:            r.claims,
+		UserAgent:         "rill/report", // TODO change it to system/report or similar so that its not shown in AI sessions list, keeping it rill prefixed for now so that access checks pass
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AI session: %w", err)
+	}
+	defer session.Flush(ctx)
+
 	agentArgs := &ai.AnalystAgentArgs{
 		Explore:             explore,
 		Dimensions:          dimensions,
@@ -212,7 +223,7 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 	}
 
 	prompt := r.props.Prompt
-	if r.props.IsReport && r.props.Prompt == "" {
+	if r.props.IsReport && prompt == "" {
 		prompt = "Generate the scheduled insight report."
 	}
 
@@ -282,7 +293,7 @@ func (r *aiResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, er
 // resolveTimeRange resolves the time range to actual timestamps using rilltime.
 func (r *aiResolver) resolveTimeRange(tr *metricsview.TimeRange, tz string) (start, end time.Time, err error) {
 	if tr == nil || tr.IsZero() {
-		return time.Time{}, time.Time{}, errors.New("time_range is required")
+		return time.Time{}, time.Time{}, nil
 	}
 
 	timezone := time.UTC
