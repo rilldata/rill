@@ -400,11 +400,11 @@
   }
 
   .table-wrapper {
-    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-surface;
+    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-surface-base;
   }
 
   .has-selection tbody {
-    @apply text-gray-400;
+    @apply text-fg-secondary;
     --bar-color: #f0f0f0;
   }
 </style>

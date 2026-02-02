@@ -2,15 +2,18 @@ package openai
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/mitchellh/mapstructure"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/storage"
 	openaidriver "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func init() {
@@ -77,31 +80,20 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, srcProps map[strin
 
 // Open implements drivers.Driver.
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if instanceID == "" {
-		return nil, drivers.ErrNotImplemented
-	}
-
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
 
-	opts := &ai.Options{
-		BaseURL:     conf.BaseURL,
-		APIType:     openaidriver.APIType(conf.APIType),
-		APIVersion:  conf.APIVersion,
-		Model:       conf.Model,
-		Temperature: conf.Temperature,
-	}
-	aiClient, err := ai.NewOpenAI(conf.APIKey, opts)
+	client, err := newOpenAIClient(conf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OpenAI client: %w", err)
 	}
 
 	return &openai{
-		aiClient: aiClient,
-		config:   conf,
+		client: client,
+		config: conf,
 	}, nil
 }
 
@@ -126,12 +118,53 @@ type configProperties struct {
 	APIVersion string `mapstructure:"api_version"`
 }
 
+func (c *configProperties) getModel() string {
+	if c.Model != "" {
+		return c.Model
+	}
+	return "gpt-5.2" // openai.GPT5
+}
+
+func (c *configProperties) getTemperature() float32 {
+	if c.Temperature > 0 {
+		return c.Temperature
+	}
+	return 1 // Default temperature if not specified
+}
+
 type openai struct {
-	aiClient ai.Client
-	config   *configProperties
+	client *openaidriver.Client
+	config *configProperties
 }
 
 var _ drivers.AIService = (*openai)(nil)
+
+// newOpenAIClient creates a new OpenAI client based on configuration.
+func newOpenAIClient(conf *configProperties) (*openaidriver.Client, error) {
+	if conf.APIKey == "" {
+		return nil, errors.New("API key is required")
+	}
+
+	var clientConfig openaidriver.ClientConfig
+	apiType := openaidriver.APIType(conf.APIType)
+	if apiType == openaidriver.APITypeAzure || apiType == openaidriver.APITypeAzureAD {
+		clientConfig = openaidriver.DefaultAzureConfig(conf.APIKey, conf.BaseURL)
+	} else {
+		clientConfig = openaidriver.DefaultConfig(conf.APIKey)
+	}
+
+	if conf.BaseURL != "" {
+		clientConfig.BaseURL = conf.BaseURL
+	}
+	if conf.APIVersion != "" {
+		clientConfig.APIVersion = conf.APIVersion
+	}
+	if conf.APIType != "" {
+		clientConfig.APIType = apiType
+	}
+
+	return openaidriver.NewClientWithConfig(clientConfig), nil
+}
 
 // AsAI implements drivers.Handle.
 func (o *openai) AsAI(instanceID string) (drivers.AIService, bool) {
@@ -231,19 +264,263 @@ func (o *openai) Ping(ctx context.Context) error {
 }
 
 // Complete implements drivers.AIService.
+// It sends a chat completion request to OpenAI and returns the response.
 func (o *openai) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
-	res, err := o.aiClient.Complete(ctx, &ai.CompleteOptions{
-		Messages:     opts.Messages,
-		Tools:        opts.Tools,
-		OutputSchema: opts.OutputSchema,
-	})
+	// Convert Rill messages to OpenAI's message format
+	var reqMsgs []openaidriver.ChatCompletionMessage
+	for _, msg := range opts.Messages {
+		openaiMsgs, err := convertRillMessageToOpenAIMessages(msg) // each Rill message may become multiple OpenAI messages
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert message: %w", err)
+		}
+		reqMsgs = append(reqMsgs, openaiMsgs...)
+	}
+
+	// Convert Rill tools to OpenAI's tool format
+	var openaiTools []openaidriver.Tool
+	if len(opts.Tools) > 0 {
+		openaiTools = make([]openaidriver.Tool, len(opts.Tools))
+		for i, tool := range opts.Tools {
+			openaiTool, err := convertRillToolToOpenAITool(tool)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert tool: %w", err)
+			}
+			openaiTools[i] = openaiTool
+		}
+	}
+
+	// Determine response format based on output schema
+	var responseFormat *openaidriver.ChatCompletionResponseFormat
+	if opts.OutputSchema != nil {
+		responseFormat = &openaidriver.ChatCompletionResponseFormat{
+			Type: openaidriver.ChatCompletionResponseFormatTypeJSONSchema,
+			JSONSchema: &openaidriver.ChatCompletionResponseFormatJSONSchema{
+				Name:   "llm_completion_result",
+				Schema: opts.OutputSchema,
+			},
+		}
+	}
+
+	// Prepare request parameters
+	params := openaidriver.ChatCompletionRequest{
+		Model:          o.config.getModel(),
+		Messages:       reqMsgs,
+		Temperature:    o.config.getTemperature(),
+		ResponseFormat: responseFormat,
+	}
+	if len(openaiTools) > 0 {
+		params.Tools = openaiTools
+		params.ToolChoice = "auto"
+	}
+
+	// Send request to OpenAI
+	res, err := o.client.CreateChatCompletion(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
+	// Return error if no choices are returned
+	if len(res.Choices) == 0 {
+		return nil, errors.New("no choices returned")
+	}
+
+	// Convert OpenAI's response to Rill's message format
 	return &drivers.CompleteResult{
-		Message:      res.Message,
-		InputTokens:  res.InputTokens,
-		OutputTokens: res.OutputTokens,
+		Message:      convertOpenAIMessageToRillMessage(res.Choices[0].Message),
+		InputTokens:  res.Usage.PromptTokens,
+		OutputTokens: res.Usage.CompletionTokens,
+	}, nil
+}
+
+// convertRillMessageToOpenAIMessages converts a single Rill CompletionMessage to one or more OpenAI ChatCompletionMessages.
+//
+// This handles the asymmetric nature of OpenAI's tool calling pattern:
+// - Tool calls: Multiple calls are grouped in ONE assistant message (how OpenAI sends them)
+// - Tool results: Each result becomes a SEPARATE message with role="tool" (how OpenAI expects responses)
+//
+// Note: In practice, Rill messages have at most 1 text block (from OpenAI's single Content field),
+// so we don't need to worry about concatenating multiple text blocks.
+func convertRillMessageToOpenAIMessages(msg *aiv1.CompletionMessage) ([]openaidriver.ChatCompletionMessage, error) {
+	var result []openaidriver.ChatCompletionMessage
+
+	// Separate content into regular content vs tool results
+	var regularContent string
+	var toolCalls []openaidriver.ToolCall
+	var toolResults []*aiv1.ToolResult
+
+	for _, block := range msg.Content {
+		switch blockType := block.BlockType.(type) {
+		case *aiv1.ContentBlock_Text:
+			regularContent += blockType.Text
+
+		case *aiv1.ContentBlock_ToolCall:
+			openaiToolCall, err := convertRillToolCallToOpenAIToolCall(blockType.ToolCall)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert tool call: %w", err)
+			}
+			toolCalls = append(toolCalls, openaiToolCall)
+
+		case *aiv1.ContentBlock_ToolResult:
+			toolResults = append(toolResults, blockType.ToolResult)
+		}
+	}
+
+	// Create main message for text content and tool calls
+	// This preserves OpenAI's original structure: text + multiple tool calls in one message
+	if regularContent != "" || len(toolCalls) > 0 {
+		mainMsg := openaidriver.ChatCompletionMessage{
+			Role:      msg.Role,
+			Content:   regularContent,
+			ToolCalls: toolCalls, // Multiple tool calls grouped together (mirrors original OpenAI response)
+		}
+		result = append(result, mainMsg)
+	}
+
+	// Create separate messages for each tool result
+	// This follows OpenAI's expected pattern: each tool result = separate message with role="tool"
+	// The tool_call_id links each result back to the specific tool call that generated it
+	for _, toolResult := range toolResults {
+		toolMsg := openaidriver.ChatCompletionMessage{
+			Role:       openaidriver.ChatMessageRoleTool,
+			Content:    toolResult.Content,
+			ToolCallID: toolResult.Id, // Links back to the original tool call
+		}
+		result = append(result, toolMsg)
+	}
+
+	return result, nil
+}
+
+// convertOpenAIMessageToRillMessage converts OpenAI ChatCompletionMessage to Rill CompletionMessage format.
+func convertOpenAIMessageToRillMessage(message openaidriver.ChatCompletionMessage) *aiv1.CompletionMessage {
+	// Handle standard text responses (simple case)
+	if len(message.ToolCalls) == 0 {
+		contentBlocks := []*aiv1.ContentBlock{
+			{
+				BlockType: &aiv1.ContentBlock_Text{Text: message.Content},
+			},
+		}
+		return &aiv1.CompletionMessage{
+			Role:    openaidriver.ChatMessageRoleAssistant,
+			Content: contentBlocks,
+		}
+	}
+
+	// Handle responses with tool calls (complex case)
+	var contentBlocks []*aiv1.ContentBlock
+
+	// Include any text content alongside tool calls
+	if message.Content != "" {
+		contentBlocks = append(contentBlocks, &aiv1.ContentBlock{
+			BlockType: &aiv1.ContentBlock_Text{Text: message.Content},
+		})
+	}
+
+	// Convert each tool call to a content block
+	for _, toolCall := range message.ToolCalls {
+		toolCallProto, err := convertOpenAIToolCallToRillToolCall(toolCall)
+		if err != nil {
+			// Log the error but continue processing other tool calls
+			// This prevents one malformed tool call from breaking the entire response
+			continue
+		}
+
+		contentBlocks = append(contentBlocks, &aiv1.ContentBlock{
+			BlockType: &aiv1.ContentBlock_ToolCall{
+				ToolCall: toolCallProto,
+			},
+		})
+	}
+
+	return &aiv1.CompletionMessage{
+		Role:    openaidriver.ChatMessageRoleAssistant,
+		Content: contentBlocks,
+	}
+}
+
+// convertRillToolToOpenAITool converts a single Rill Tool to OpenAI Tool format.
+func convertRillToolToOpenAITool(tool *aiv1.Tool) (openaidriver.Tool, error) {
+	schemaMap, err := parseToolSchema(tool.InputSchema)
+	if err != nil {
+		return openaidriver.Tool{}, fmt.Errorf("failed to convert tool %s: %w", tool.Name, err)
+	}
+
+	return openaidriver.Tool{
+		Type: openaidriver.ToolTypeFunction,
+		Function: &openaidriver.FunctionDefinition{
+			Name:        tool.Name,
+			Description: tool.Description,
+			Parameters:  schemaMap,
+		},
+	}, nil
+}
+
+// parseToolSchema parses a JSON schema string and returns a map, with fallback to default schema.
+func parseToolSchema(schemaJSON string) (map[string]interface{}, error) {
+	if schemaJSON == "" {
+		// Default schema when none is provided
+		return map[string]interface{}{
+			"type":       "object",
+			"properties": map[string]interface{}{},
+		}, nil
+	}
+
+	var schemaMap map[string]interface{}
+	if err := json.Unmarshal([]byte(schemaJSON), &schemaMap); err != nil {
+		return nil, fmt.Errorf("failed to parse tool schema JSON: %w", err)
+	}
+
+	return schemaMap, nil
+}
+
+// convertRillToolCallToOpenAIToolCall converts a Rill ToolCall to OpenAI ToolCall format
+func convertRillToolCallToOpenAIToolCall(toolCall *aiv1.ToolCall) (openaidriver.ToolCall, error) {
+	arguments, err := marshalToolCallInput(toolCall.Input)
+	if err != nil {
+		return openaidriver.ToolCall{}, fmt.Errorf("failed to marshal input for tool %s: %w", toolCall.Name, err)
+	}
+
+	return openaidriver.ToolCall{
+		ID:   toolCall.Id,
+		Type: openaidriver.ToolTypeFunction,
+		Function: openaidriver.FunctionCall{
+			Name:      toolCall.Name,
+			Arguments: arguments,
+		},
+	}, nil
+}
+
+// marshalToolCallInput converts tool call input to JSON string for OpenAI API
+func marshalToolCallInput(input *structpb.Struct) (string, error) {
+	if input == nil {
+		return "{}", nil
+	}
+
+	inputJSON, err := json.Marshal(input.AsMap())
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal tool call input: %w", err)
+	}
+	return string(inputJSON), nil
+}
+
+// convertOpenAIToolCallToRillToolCall converts an OpenAI ToolCall to Rill ToolCall format.
+func convertOpenAIToolCallToRillToolCall(toolCall openaidriver.ToolCall) (*aiv1.ToolCall, error) {
+	// Parse OpenAI ToolCall arguments
+	var input map[string]interface{}
+	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal tool call arguments for %s: %w", toolCall.Function.Name, err)
+	}
+
+	// Convert input to protobuf Struct
+	inputStruct, err := structpb.NewStruct(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert tool call input to protobuf struct for %s: %w", toolCall.Function.Name, err)
+	}
+
+	// Create Rill ToolCall
+	return &aiv1.ToolCall{
+		Id:    toolCall.ID,
+		Name:  toolCall.Function.Name,
+		Input: inputStruct,
 	}, nil
 }

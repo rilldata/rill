@@ -178,7 +178,7 @@
     {#if hasValidHoveredPoints && offsetPosition}
       <div
         use:portal
-        class=" w-fit label text-[10px] font-semibold flex flex-col z-[1000] shadow-sm bg-surface text-gray-500 -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
+        class=" w-fit label text-[10px] font-semibold flex flex-col z-[1000] shadow-sm bg-surface-subtle text-fg-secondary -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
         style:top="{clientPosition.y}px"
         style:left="{clientPosition.x + 10}px"
       >
@@ -191,9 +191,9 @@
               />
               <span>{formatterFunction(point.value)}</span>
               {#if hasComparison}
-                <span class="text-gray-400"
-                  >{formatDate(point.originalDate)}</span
-                >
+                <span class="text-fg-muted">
+                  {formatDate(point.originalDate)}
+                </span>
               {/if}
             </div>
           {/if}
@@ -234,7 +234,7 @@
     </svg>
 
     <div
-      class="w-full h-fit min-h-[16px] flex justify-between text-gray-500 mt-0.5 relative"
+      class="w-full h-fit min-h-[16px] flex justify-between text-fg-secondary mt-0.5 relative"
     >
       {#if hoveredPoints.length > 0}
         {@const percentage = xScale(hoveredPoints[0].index) / 100}
@@ -249,7 +249,7 @@
           >
             <RangeDisplay {interval} {timeGrain} />
             {#if comparisonPoint}
-              <span class="text-gray-400">
+              <span class="text-fg-muted">
                 vs. {formatDate(comparisonPoint.originalDate)}
               </span>
             {/if}

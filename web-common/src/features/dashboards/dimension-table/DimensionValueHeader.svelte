@@ -70,7 +70,7 @@
     enableResize={true}
     position="top-left"
     borderRight={true}
-    bgClass="bg-surface"
+    bgClass="bg-surface-background"
     onClick={sortByDimensionValue}
     onResize={onResizeColumn}
   >
@@ -79,7 +79,7 @@
         >{column?.label || column?.name}</span
       >
       {#if $sortedByDimensionValue}
-        <div class="ui-copy-icon">
+        <div class="text-fg-secondary">
           {#if $sortedAscending}
             <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
               <ArrowDown size="12px" />
@@ -100,7 +100,7 @@
       position="left"
       header={{ size: width, start: row.start }}
       borderRight={horizontalScrolling}
-      bgClass="bg-surface"
+      bgClass="bg-surface-background"
     >
       <Cell
         label="Filter dimension value"

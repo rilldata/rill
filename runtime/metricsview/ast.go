@@ -1105,10 +1105,10 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.TimeRange != nil {
-		// if spine generates more than 1000 values then return an error
+		// if spine generates more than 1500 values then return an error
 		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
 		if bins > 1500 {
-			return nil, errors.New("failed to apply time spine: time range has more than 1500 bins")
+			return nil, fmt.Errorf("failed to apply time spine: time range has more than 1500 bins for %q grain, move to a larger grain", spine.TimeRange.Grain)
 		}
 
 		timeDim := a.MetricsView.TimeDimension

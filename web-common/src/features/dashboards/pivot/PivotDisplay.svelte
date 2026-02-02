@@ -170,7 +170,7 @@
   }
 
   .content {
-    @apply flex w-full flex-col bg-gray-50 overflow-hidden;
+    @apply flex w-full flex-col bg-surface-subtle overflow-hidden;
     @apply p-2 gap-y-2;
   }
 </style>

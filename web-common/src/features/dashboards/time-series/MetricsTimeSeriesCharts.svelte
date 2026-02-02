@@ -45,7 +45,7 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { Tooltip } from "bits-ui";
   import { DateTime } from "luxon";
@@ -379,7 +379,7 @@
             <button
               {...builder}
               use:builder.action
-              class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
+              class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
             >
               by <b>
                 {V1TimeGrainToDateTimeUnit[effectiveGrain]}
@@ -500,7 +500,7 @@
 
           {#if hasTimeseriesError}
             <div
-              class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
+              class="flex flex-col p-5 items-center justify-center text-xs text-fg-muted"
             >
               {#if $timeSeriesDataStore.error?.timeseries}
                 <span>

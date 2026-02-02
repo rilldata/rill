@@ -543,15 +543,17 @@
 
     <!-- LEFT FOOTER -->
     <div
-      class="w-full bg-surface border-t border-gray-200 p-6 flex justify-between gap-2"
+      class="w-full bg-surface-subtle border-t border-gray-200 p-6 flex justify-between gap-2"
     >
       <Button
         onClick={() =>
           isMultiStepConnector
             ? multiStepHandleBack()
             : formManager?.handleBack(onBack)}
-        type="secondary">Back</Button
+        type="tertiary"
       >
+        Back
+      </Button>
 
       <div class="flex gap-2">
         {#if shouldShowSaveAnywayButton}
@@ -582,7 +584,7 @@
 
   <!-- RIGHT SIDE PANEL -->
   <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
+    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface-subtle w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
   >
     <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
       {#if dsnError || paramsError || clickhouseError}

@@ -85,12 +85,14 @@ export function createPivotAggregationRowQuery(
           timeRange: {
             start: timeRange?.start ? timeRange.start : config.time.timeStart,
             end: timeRange?.end ? timeRange.end : config.time.timeEnd,
+            timeDimension: config.time.timeDimension,
           },
           comparisonTimeRange:
             hasComparison && comparisonTime
               ? {
                   start: comparisonTime.start,
                   end: comparisonTime.end,
+                  timeDimension: config.time.timeDimension,
                 }
               : undefined,
           sort,

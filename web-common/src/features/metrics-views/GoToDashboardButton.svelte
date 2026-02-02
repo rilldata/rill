@@ -10,8 +10,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
-  import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
-  import { ResourceKind } from "../entity-management/resource-selectors";
   import {
     createCanvasDashboardFromMetricsView,
     createCanvasDashboardFromMetricsViewWithAgent,
@@ -82,7 +80,7 @@
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}
             <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
-              <ExploreIcon color={resourceColorMapping[ResourceKind.Explore]} />
+              <ExploreIcon />
               {label}
             </DropdownMenu.Item>
           {/if}

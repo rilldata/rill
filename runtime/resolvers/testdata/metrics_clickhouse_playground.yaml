@@ -1,0 +1,65 @@
+project_files:
+  clickhouse.yaml:
+    type: connector
+    driver: clickhouse
+    host: play.clickhouse.com
+    port: 9440
+    username: play
+    ssl: true
+  uk_price_paid.yaml:
+    type: metrics_view
+    connector: clickhouse
+    model: uk_price_paid
+    timeseries: date
+    dimensions:
+      - column: date
+      - column: postcode1
+      - column: postcode2
+      - column: type
+      - column: duration
+      - column: addr1
+      - column: addr2
+      - column: street
+      - column: locality
+      - column: town
+      - column: district
+      - column: county
+    measures:
+      - name: total_transactions
+        expression: COUNT(*)
+      - name: total_price_paid
+        expression: SUM(price)
+      - name: average_sale_price
+        expression: AVG(price)
+      - name: min_sale_price
+        expression: MIN(price)
+      - name: max_sale_price
+        expression: MAX(price)
+      - name: new_build_transactions
+        expression: SUM(is_new)
+      - name: average_price_new_build_flag_weighted
+        expression: AVG(price * is_new)
+      - name: distinct_postcode1_count
+        expression: COUNT(DISTINCT postcode1)
+      - name: distinct_town_count
+        expression: COUNT(DISTINCT town)
+      - name: distinct_county_count
+        expression: COUNT(DISTINCT county)
+tests:
+  - name: simple_query
+    resolver: metrics
+    properties:
+      metrics_view: uk_price_paid
+      dimensions:
+        - name: type
+      measures:
+        - name: distinct_county_count
+      where:
+        cond:
+          op: eq
+          exprs:
+            - name: type
+            - val: 'terraced'
+    result:
+      - distinct_county_count: 132
+        type: terraced
