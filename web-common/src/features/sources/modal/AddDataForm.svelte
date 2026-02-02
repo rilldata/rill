@@ -95,6 +95,9 @@
   $: isOlapConnector = Boolean(connector.implementsOlap);
   $: isInExplorerMode = stepState.step === "explorer";
 
+  // Track if the explorer step is generating metrics
+  let explorerIsGenerating = false;
+
   // Form IDs
   const baseFormId = formManager.formId;
   let multiStepFormId = baseFormId;
@@ -113,7 +116,10 @@
 
   async function handleModelCreated(path: string) {
     resetConnectorStep();
-    await goto(`/files${path}`);
+    // Only navigate if path is provided; if empty, navigation was already handled
+    if (path) {
+      await goto(`/files${path}`);
+    }
     onClose();
   }
 
@@ -175,7 +181,7 @@
     saveAnyway = false;
   }
 
-  $: isSubmitting = submitting;
+  $: isSubmitting = submitting || explorerIsGenerating;
 
   // Reset errors when form is modified
   $: if ($paramsTainted) paramsError = null;
@@ -245,6 +251,7 @@
         {connectorInstanceName}
         onBack={() => resetConnectorStep()}
         onModelCreated={handleModelCreated}
+        bind:isGenerating={explorerIsGenerating}
       />
     {:else}
     <div

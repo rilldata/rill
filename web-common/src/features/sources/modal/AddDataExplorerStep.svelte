@@ -9,12 +9,16 @@
   export let connectorInstanceName: string | null = null;
   export let onModelCreated: (path: string) => void | Promise<void>;
   export let onBack: () => void;
+  export let isGenerating = false;
 
   let selectedConnector = "";
   let selectedDatabase = "";
   let selectedSchema = "";
   let selectedTable = "";
   let generatingMetrics = false;
+
+  // Keep the exported isGenerating in sync with the internal generatingMetrics state
+  $: isGenerating = generatingMetrics;
   let instanceId: string;
 
   $: ({ instanceId } = $runtime);
