@@ -33,6 +33,7 @@
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { Wand } from "lucide-svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
   let active = false;
   let showExploreDialog = false;
@@ -42,6 +43,7 @@
   const createFolder = createRuntimeServiceCreateDirectory();
 
   $: ({ instanceId } = $runtime);
+  const { developerChat } = featureFlags;
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
@@ -259,13 +261,15 @@
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
           <File size="14px" class="stroke-icon-muted" /> Blank file
         </DropdownMenu.Item>
-        <DropdownMenu.Item
-          class="flex gap-x-2"
-          on:click={() => (generateDataDialog = true)}
-        >
-          <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
-          using AI (beta)
-        </DropdownMenu.Item>
+        {#if $developerChat}
+          <DropdownMenu.Item
+            class="flex gap-x-2"
+            on:click={() => (generateDataDialog = true)}
+          >
+            <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
+            using AI (beta)
+          </DropdownMenu.Item>
+        {/if}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"

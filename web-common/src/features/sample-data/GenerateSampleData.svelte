@@ -9,6 +9,7 @@
   import { object, string } from "yup";
   import IconButton from "../../components/button/IconButton.svelte";
   import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
   export let type: "init" | "home" | "modal";
   export let open = false;
@@ -16,6 +17,7 @@
   const initializeProject = type === "init";
 
   $: ({ instanceId } = $runtime);
+  const { developerChat } = featureFlags;
 
   const FORM_ID = "generate-sample-data-form";
 
@@ -49,62 +51,66 @@
   }
 </script>
 
-<Dialog.Root bind:open>
-  <Dialog.Trigger asChild let:builder>
-    {#if type === "init"}
-      <Button builders={[builder]} type="secondary" large>
-        <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
-        <span>Generate sample data</span>
-      </Button>
-    {:else if type === "home"}
-      <Button
-        class="button-home"
-        type="tertiary"
-        builders={[builder]}
-        large
-        forcedStyle="height: 3rem;"
-      >
-        <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
-        <span>Generate sample data</span>
-      </Button>
-    {:else}
-      <div class="hidden"></div>
-    {/if}
-  </Dialog.Trigger>
-  <Dialog.Content>
-    <form
-      id={FORM_ID}
-      on:submit|preventDefault={submit}
-      use:enhance
-      class="relative"
-    >
-      <Dialog.Header>
-        <Dialog.Title class="flex flex-row items-center gap-x-1 text-blue-500">
-          <SparklesIcon size="16px" class="rotate-90" />
+{#if $developerChat}
+  <Dialog.Root bind:open>
+    <Dialog.Trigger asChild let:builder>
+      {#if type === "init"}
+        <Button builders={[builder]} type="secondary" large>
+          <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
           <span>Generate sample data</span>
-        </Dialog.Title>
-        <Dialog.Description>
-          <div>What is the business context or domain of your data?</div>
-        </Dialog.Description>
-      </Dialog.Header>
-      <textarea
-        class="prompt-input"
-        bind:value={$form.prompt}
-        class:empty={$form.prompt.length === 0}
-        placeholder={`E.g. "e-commerce transactions"`}
-        on:keydown={handleKeydown}
-      />
-      <div class="absolute right-3 bottom-8">
-        <IconButton ariaLabel="Send message" on:click={submit}>
-          <SendIcon size="1.3em" />
-        </IconButton>
-      </div>
-      {#if $errors.prompt}
-        <div class="error">{$errors.prompt?.[0]}</div>
+        </Button>
+      {:else if type === "home"}
+        <Button
+          class="button-home"
+          type="tertiary"
+          builders={[builder]}
+          large
+          forcedStyle="height: 3rem;"
+        >
+          <SparklesIcon size="14px" class="stroke-icon-muted rotate-90" />
+          <span>Generate sample data</span>
+        </Button>
+      {:else}
+        <div class="hidden"></div>
       {/if}
-    </form>
-  </Dialog.Content>
-</Dialog.Root>
+    </Dialog.Trigger>
+    <Dialog.Content>
+      <form
+        id={FORM_ID}
+        on:submit|preventDefault={submit}
+        use:enhance
+        class="relative"
+      >
+        <Dialog.Header>
+          <Dialog.Title
+            class="flex flex-row items-center gap-x-1 text-blue-500"
+          >
+            <SparklesIcon size="16px" class="rotate-90" />
+            <span>Generate sample data</span>
+          </Dialog.Title>
+          <Dialog.Description>
+            <div>What is the business context or domain of your data?</div>
+          </Dialog.Description>
+        </Dialog.Header>
+        <textarea
+          class="prompt-input"
+          bind:value={$form.prompt}
+          class:empty={$form.prompt.length === 0}
+          placeholder={`E.g. "e-commerce transactions"`}
+          on:keydown={handleKeydown}
+        />
+        <div class="absolute right-3 bottom-8">
+          <IconButton ariaLabel="Send message" on:click={submit}>
+            <SendIcon size="1.3em" />
+          </IconButton>
+        </div>
+        {#if $errors.prompt}
+          <div class="error">{$errors.prompt?.[0]}</div>
+        {/if}
+      </form>
+    </Dialog.Content>
+  </Dialog.Root>
+{/if}
 
 <style lang="postcss">
   .prompt-input {
