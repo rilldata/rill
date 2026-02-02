@@ -42,7 +42,7 @@ Request:
 • 'time_range' is inclusive of start time, exclusive of end time
 • 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 • Include 'sort' and 'limit' parameters to optimize query performance and avoid unbounded result sets
-• Results are capped at 500 rows maximum to prevent context overflow; use filters and aggregations to reduce result size
+• Results are capped to prevent context overflow; use filters and aggregations to reduce result size
 • For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
 
 Response:
@@ -184,16 +184,12 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		return nil, fmt.Errorf("failed to get instance config: %w", err)
 	}
 
-	// Cap the limit to prevent AI queries from pulling too many rows
-	if cfg.AIQueryRowLimit > 0 {
-		args = capLimit(args, cfg.AIQueryRowLimit)
-	}
-
-	// Run the metrics query
+	// Run the metrics query with a limit cap to prevent AI queries from pulling too many rows
 	res, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         session.InstanceID(),
 		Resolver:           "metrics",
 		ResolverProperties: map[string]any(args),
+		Args:               map[string]any{"limit_cap": cfg.AIQueryRowLimit},
 		Claims:             session.Claims(),
 	})
 	if err != nil {
@@ -272,34 +268,4 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID strin
 	openURL.RawQuery = values.Encode()
 
 	return openURL.String(), nil
-}
-
-// capLimit caps the limit in args to the given max value.
-// If limit is not set or exceeds the cap, it is set to the cap.
-func capLimit(args QueryMetricsViewArgs, cap int64) QueryMetricsViewArgs {
-	// Make a shallow copy to avoid modifying the original
-	result := make(QueryMetricsViewArgs, len(args))
-	for k, v := range args {
-		result[k] = v
-	}
-
-	// Get current limit if set
-	var currentLimit int64
-	if v, ok := result["limit"]; ok {
-		switch l := v.(type) {
-		case int64:
-			currentLimit = l
-		case int:
-			currentLimit = int64(l)
-		case float64:
-			currentLimit = int64(l)
-		}
-	}
-
-	// Apply cap if limit is not set or exceeds the cap
-	if currentLimit <= 0 || currentLimit > cap {
-		result["limit"] = cap
-	}
-
-	return result
 }

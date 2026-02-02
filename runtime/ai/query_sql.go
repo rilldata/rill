@@ -35,7 +35,7 @@ func (t *QuerySQL) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        QuerySQLName,
 		Title:       "Query SQL",
-		Description: "Execute a raw SQL query against an OLAP connector to introspect data. Results are capped at 500 rows maximum to prevent context overflow; use LIMIT, WHERE, or aggregations to reduce result size.",
+		Description: "Execute a raw SQL query against an OLAP connector to introspect data. Results are capped to prevent context overflow; use LIMIT, WHERE, or aggregations to reduce result size.",
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Executing SQL query...",
 			"openai/toolInvocation/invoked":  "Executed SQL query",
@@ -70,16 +70,10 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 		return nil, fmt.Errorf("failed to get instance config: %w", err)
 	}
 
-	// Apply the AI query row limit (default 500)
-	limit := cfg.AIQueryRowLimit
-	if limit <= 0 {
-		limit = 500 // Fallback default
-	}
-
-	// Build resolver properties with configurable limit
+	// Build resolver properties with AI row limit cap
 	props := map[string]any{
 		"sql":   args.SQL,
-		"limit": limit,
+		"limit": cfg.AIQueryRowLimit,
 	}
 	if args.Connector != "" {
 		props["connector"] = args.Connector
