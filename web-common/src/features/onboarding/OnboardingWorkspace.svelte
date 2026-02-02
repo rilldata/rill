@@ -79,7 +79,6 @@
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.Model]}
-          class="stroke-icon-muted"
           size="14px"
         />
         Create blank model
@@ -92,7 +91,6 @@
       >
         <svelte:component
           this={resourceIconMapping[ResourceKind.MetricsView]}
-          class="stroke-icon-muted"
           size="14px"
         />
         Create a metrics view

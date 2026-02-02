@@ -3,20 +3,20 @@ import type { V1Message } from "@rilldata/web-common/runtime-client";
 /**
  * Generic block that doesnt really have specific rendering.
  */
-export type GenericBlock = {
-  type: "generic-block";
+export type SimpleToolCall = {
+  type: "simple-tool-call-block";
   id: string;
   message: V1Message;
   resultMessage: V1Message;
 };
 
-export function createGenericBlock(
+export function createSimpleTooCall(
   message: V1Message,
   resultMessage: V1Message | undefined,
-): GenericBlock | null {
+): SimpleToolCall | null {
   if (!resultMessage) return null;
   return {
-    type: "generic-block",
+    type: "simple-tool-call-block",
     id: `generic-block-${message.id}`,
     message,
     resultMessage,

@@ -17,9 +17,9 @@ import {
 import { goto } from "$app/navigation";
 import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 import {
-  createGenericBlock,
-  type GenericBlock,
-} from "@rilldata/web-common/features/chat/core/messages/generic/generic-block.ts";
+  createSimpleTooCall,
+  type SimpleToolCall,
+} from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 
 // =============================================================================
 // RENDER MODES
@@ -38,7 +38,7 @@ export type ToolRenderMode = "inline" | "block" | "hidden";
 // =============================================================================
 
 /** Block types that can be created by tools */
-export type ToolBlockType = ChartBlock | FileDiffBlock | GenericBlock;
+export type ToolBlockType = ChartBlock | FileDiffBlock | SimpleToolCall;
 
 /**
  * Configuration for a tool's rendering behavior.
@@ -94,7 +94,7 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
 
   [ToolName.NAVIGATE]: {
     renderMode: "block",
-    createBlock: createGenericBlock,
+    createBlock: createSimpleTooCall,
     onResult: handleNavigateToolCall,
   },
 

@@ -14,7 +14,7 @@
   import UserMessage from "./text/UserMessage.svelte";
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
   import WorkingBlock from "./working/WorkingBlock.svelte";
-  import GenericBlock from "@rilldata/web-common/features/chat/core/messages/generic/GenericBlock.svelte";
+  import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -124,8 +124,8 @@
         <ChartBlock {block} {tools} />
       {:else if block.type === "file-diff"}
         <FileDiffBlock {block} {tools} />
-      {:else if block.type === "generic-block"}
-        <GenericBlock {block} {tools} />
+      {:else if block.type === "simple-tool-call-block"}
+        <SimpleToolCallBlock {block} {tools} />
       {/if}
     {/each}
   {/if}
