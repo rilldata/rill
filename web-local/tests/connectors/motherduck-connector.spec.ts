@@ -49,17 +49,16 @@ test.describe("MotherDuck welcome flow", () => {
       .getByRole("textbox");
     await expect(connectorEditor).toContainText("type: connector");
     await expect(connectorEditor).toContainText("driver: duckdb");
-    // Confirm the original {{ .env.MOTHERDUCK_TOKEN }} format exists
+    // Confirm the new {{ env "MOTHERDUCK_TOKEN" }} format exists
     await expect(connectorEditor).toContainText(
-      'token: "{{ .env.MOTHERDUCK_TOKEN }}"',
+      'token: \'{{ env "MOTHERDUCK_TOKEN" }}\'',
     );
     await expect(connectorEditor).toContainText(`path: "${path}"`);
 
-    // Now update the connector file to use case-insensitive env function syntax
-    // Replace entire quoted value to avoid nested quote issues in YAML
+    // Now update the connector file to use mixed-case env var name to test case-insensitivity
     const currentContent = await connectorEditor.textContent();
     const updatedContent = currentContent!.replace(
-      '"{{ .env.MOTHERDUCK_TOKEN }}"',
+      `'{{ env "MOTHERDUCK_TOKEN" }}'`,
       `'{{ env "motherduck_TOKEN" }}'`,
     );
     await updateCodeEditor(page, updatedContent);

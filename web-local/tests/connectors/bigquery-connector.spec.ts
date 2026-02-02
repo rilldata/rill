@@ -103,7 +103,7 @@ test.describe("BigQuery connector", () => {
     );
     // New ALL_CAPS env variable naming (generic property without driver prefix)
     await expect(codeEditor).toContainText(
-      'google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"',
+      'google_application_credentials: \'{{ env "GOOGLE_APPLICATION_CREDENTIALS" }}\'',
     );
 
     // Go to the `.env` file and verify the credentials are stored with new naming
@@ -187,7 +187,7 @@ test.describe("BigQuery connector", () => {
       .getByLabel("codemirror editor")
       .getByRole("textbox");
     await expect(codeEditor).toContainText(
-      'google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS_1 }}"',
+      'google_application_credentials: \'{{ env "GOOGLE_APPLICATION_CREDENTIALS_1" }}\'',
     );
 
     // Verify .env has both variables

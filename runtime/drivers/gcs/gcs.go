@@ -39,7 +39,7 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 		{
-			Key:         "key_id",
+			Key:         "gs_access_key_id",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Access Key ID",
 			Description: "HMAC access key ID for S3-compatible authentication",
@@ -47,7 +47,7 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 		{
-			Key:         "secret",
+			Key:         "gs_secret_access_key",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Secret Access Key",
 			Description: "HMAC secret access key for S3-compatible authentication",
@@ -83,8 +83,8 @@ type ConfigProperties struct {
 	// For GCS native authentication google service account json credentials
 	SecretJSON string `mapstructure:"google_application_credentials"`
 	// For S3-compatible mode HMAC credentials
-	KeyID  string `mapstructure:"key_id"`
-	Secret string `mapstructure:"secret"`
+	KeyID  string `mapstructure:"gs_access_key_id"`
+	Secret string `mapstructure:"gs_secret_access_key"`
 	// A list of bucket path prefixes that this connector is allowed to access.
 	// Useful when different buckets or bucket prefixes use different credentials,
 	// allowing the system to select the appropriate connector based on the bucket path.

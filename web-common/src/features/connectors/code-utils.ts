@@ -100,11 +100,11 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
+        return `${key}: '{{ env "${makeDotEnvConnectorKey(
           connector.name as string,
           key,
           options?.existingEnvBlob,
-        )} }}"`;
+        )}" }}'`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -240,8 +240,8 @@ export function getGenericEnvVarName(
   const genericProperties = new Set([
     // Google Cloud credentials
     "google_application_credentials",
-    "key_id",
-    "secret",
+    "gs_access_key_id",
+    "gs_secret_access_key",
     // AWS credentials (used by S3, Athena, Redshift, etc.)
     "aws_access_key_id",
     "aws_secret_access_key",
