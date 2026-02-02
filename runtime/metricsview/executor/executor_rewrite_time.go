@@ -128,7 +128,7 @@ func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *metricsview.Time
 	}
 
 	if tr.IsoDuration != "" {
-		rt, err := rilltime.ParseISO(tr.IsoDuration, tr.IsoOffset, tr.RoundToGrain.ToTimeutil(), rilltime.ParseOptions{
+		rt, err := rilltime.ParseLegacy(tr.IsoDuration, tr.IsoOffset, tr.RoundToGrain.ToTimeutil(), rilltime.ParseOptions{
 			DefaultTimeZone: tz,
 			SmallestGrain:   timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
 		})

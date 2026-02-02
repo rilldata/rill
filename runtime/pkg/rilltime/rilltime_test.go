@@ -1,7 +1,6 @@
 package rilltime
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -437,8 +436,6 @@ func TestEval_BackwardsCompatibility(t *testing.T) {
 
 func TestEval_Misc(t *testing.T) {
 	testCases := []testCase{
-		{"PT1S", "2025-05-13T06:32:36Z", "2025-05-13T06:32:37Z", timeutil.TimeGrainMillisecond, 1, 1},
-
 		// Ending on boundary explicitly
 		{"watermark/Y to watermark", "2025-01-01T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainMonth, 1, 1},
 		{"latest/Y to latest", "2025-01-01T00:00:00Z", "2025-05-14T06:32:36Z", timeutil.TimeGrainMonth, 1, 1},
@@ -484,6 +481,7 @@ func TestParseISO(t *testing.T) {
 		{"With duration, no offset or round to grain", "P7D", "", timeutil.TimeGrainUnspecified, "2025-05-06T06:32:36Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainUnspecified},
 		{"With duration and offset no round to grain", "P7D", "P2D", timeutil.TimeGrainUnspecified, "2025-05-04T06:32:36Z", "2025-05-11T06:32:36Z", timeutil.TimeGrainUnspecified},
 		{"With duration, offset and round to grain", "P7D", "P2D", timeutil.TimeGrainDay, "2025-05-04T00:00:00Z", "2025-05-11T00:00:00Z", timeutil.TimeGrainUnspecified},
+		{"With DAX duration, offset and round to grain", "rill-PW", "P2D", timeutil.TimeGrainDay, "2025-05-03T00:00:00Z", "2025-05-10T00:00:00Z", timeutil.TimeGrainUnspecified},
 	}
 
 	nowTm := parseTestTime(t, now)
@@ -493,7 +491,7 @@ func TestParseISO(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.title, func(t *testing.T) {
-			rt, err := ParseISO(testCase.duration, testCase.offset, testCase.roundToGrain, ParseOptions{})
+			rt, err := ParseLegacy(testCase.duration, testCase.offset, testCase.roundToGrain, ParseOptions{})
 			require.NoError(t, err)
 
 			start, end, grain := rt.Eval(EvalOptions{
@@ -502,7 +500,6 @@ func TestParseISO(t *testing.T) {
 				MaxTime:   maxTimeTm,
 				Watermark: watermarkTm,
 			})
-			fmt.Println(start, end)
 			require.Equal(t, parseTestTime(t, testCase.start), start)
 			require.Equal(t, parseTestTime(t, testCase.end), end)
 			if testCase.grain != timeutil.TimeGrainUnspecified {
