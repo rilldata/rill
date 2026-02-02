@@ -16,6 +16,7 @@ import {
 } from "./thinking/thinking-block";
 import { getToolConfig, type ToolConfig } from "./tools/tool-registry";
 import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
+import type { SimpleToolCall } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 
 // =============================================================================
 // TYPES
@@ -26,7 +27,8 @@ export type Block =
   | ThinkingBlock
   | ChartBlock
   | FileDiffBlock
-  | WorkingBlock;
+  | WorkingBlock
+  | SimpleToolCall;
 
 export type {
   ChartBlock,
@@ -34,6 +36,7 @@ export type {
   TextBlock,
   ThinkingBlock,
   WorkingBlock,
+  SimpleToolCall,
 };
 
 // =============================================================================

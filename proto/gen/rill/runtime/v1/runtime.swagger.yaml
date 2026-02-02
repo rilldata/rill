@@ -5021,6 +5021,8 @@ definitions:
         type: string
       selectTimeRange:
         type: string
+      timeDimension:
+        type: string
       comparisonMode:
         $ref: '#/definitions/v1ExploreComparisonMode'
         description: Comparison mode.
@@ -5511,6 +5513,8 @@ definitions:
       aiInstructions:
         type: string
       frontendUrl:
+        type: string
+      theme:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,

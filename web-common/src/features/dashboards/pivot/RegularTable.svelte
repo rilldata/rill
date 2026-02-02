@@ -8,8 +8,8 @@
   import { isEmptyPos, range } from "./regular-table-utils";
   import type { PivotPos, PivotRenderCallback } from "./types";
 
-  const LOADING_CELL = `<div load class="loading-cell h-4 bg-gray-50 rounded" style="width: 100%; min-width: 32px;"/>`;
-  const NULL_CELL = `<div class="null-cell text-gray-400">-</div>`;
+  const LOADING_CELL = `<div load class="loading-cell h-4 rounded" style="width: 100%; min-width: 32px;"/>`;
+  const NULL_CELL = `<div class="null-cell text-fg-muted">-</div>`;
 
   export let getColumnHeaderData: (pos: PivotPos) => any = () => [];
   export let getRowHeaderData: (pos: PivotPos) => any = () => [];
@@ -113,21 +113,8 @@
       th.setAttribute("title", value.value);
     }
 
-    // Add mouseover event to update the value in the store without changing visibility
-    th.onmouseover = () => {
-      if (value?.value !== undefined && value?.value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value.value));
-      }
-    };
-
-    // Add focus event to update the value in the store without changing visibility
-    th.onfocus = () => {
-      if (value?.value !== undefined && value?.value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value.value));
-      }
-    };
+    th.onmouseover = () => cellInspectorStore.updateValue(value?.value);
+    th.onfocus = () => cellInspectorStore.updateValue(value?.value);
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
       th.style.width = `${maybeWidth}px`;
@@ -161,20 +148,8 @@
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
 
-    // Add mouseover event to update the value in the store without changing visibility
-    td.onmouseover = () => {
-      if (value !== undefined && value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value));
-      }
-    };
-
-    td.onfocus = () => {
-      if (value !== undefined && value !== null) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(String(value));
-      }
-    };
+    td.onmouseover = () => cellInspectorStore.updateValue(value);
+    td.onfocus = () => cellInspectorStore.updateValue(value);
 
     const maybeWidth = getColumnWidth(x);
     if (maybeWidth) {
@@ -333,16 +308,19 @@
 </script>
 
 <div class="relative w-full h-full" style={cssVarStyles}>
-  <regular-table class="w-full h-full tdd-table" bind:this={table} />
+  <regular-table
+    class="w-full h-full tdd-table text-fg-muted bg-surface-base"
+    bind:this={table}
+  />
 </div>
 
-<style>
+<style lang="postcss">
   :global(regular-table) {
     padding-left: 0px;
     padding-right: 0px;
   }
   :global(regular-table table) {
-    color: var(--color-gray-700);
+    color: inherit;
     table-layout: fixed;
     border-collapse: separate;
     font-family: Inter;

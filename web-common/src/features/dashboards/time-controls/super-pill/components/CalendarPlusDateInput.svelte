@@ -128,7 +128,7 @@
     <Button
       fit
       compact
-      type="subtle"
+      type="secondary"
       disabled={!inputInterval?.isValid}
       onClick={() => {
         onApply(inputInterval);

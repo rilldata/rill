@@ -14,6 +14,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
 - [**MotherDuck**](#motherduck) - MotherDuck cloud database
 - [**Pinot**](#pinot) - Apache Pinot
+- [**StarRocks**](#starrocks) - StarRocks analytical database
 
 ### _Data Warehouses_
 - [**Athena**](#athena) - Amazon Athena
@@ -39,7 +40,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**Slack**](#slack) - Slack data
 
 :::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
 :::
 
 
@@ -732,6 +733,57 @@ max_open_conns: 100 # Maximum number of open connections to the Pinot database
 timeout_ms: 30000 # Query timeout in milliseconds
 ```
 
+## StarRocks
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `starrocks` _(required)_
+
+### `dsn`
+
+_[string]_ - DSN (Data Source Name) for the StarRocks connection. Follows MySQL protocol format. 
+
+### `host`
+
+_[string]_ - StarRocks FE (Frontend) server hostname 
+
+### `port`
+
+_[integer]_ - MySQL protocol port of StarRocks FE 
+
+### `username`
+
+_[string]_ - Username for authentication 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+### `catalog`
+
+_[string]_ - StarRocks catalog name (for external catalogs like Iceberg, Hive) 
+
+### `database`
+
+_[string]_ - StarRocks database name 
+
+### `ssl`
+
+_[boolean]_ - Enable SSL/TLS encryption 
+
+```yaml
+# Example: StarRocks connector configuration
+type: connector # Must be `connector` (required)
+driver: starrocks # Must be `starrocks` _(required)_
+host: "starrocks-fe.example.com" # Hostname of the StarRocks FE server  
+port: 9030 # MySQL protocol port of StarRocks FE  
+username: "analyst" # Username for authentication  
+password: "{{ .env.connector.starrocks.password }}" # Password for authentication  
+catalog: "default_catalog" # StarRocks catalog name  
+database: "my_database" # StarRocks database name  
+ssl: false # Enable SSL/TLS encryption
+```
+
 ## Postgres
 
 ### `driver`
@@ -1013,7 +1065,7 @@ openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
 # Convert URL safe format for Snowflake
 cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
 ```
-See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+See: https://docs.snowflake.com/en/guide/key-pair-auth
 :::
  
 

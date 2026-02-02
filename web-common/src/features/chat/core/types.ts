@@ -55,6 +55,9 @@ export const ToolName = {
 
   // Feedback agent
   FEEDBACK_AGENT: "feedback_agent",
+
+  // Common tools
+  NAVIGATE: "navigate",
 } as const;
 
 // =============================================================================
