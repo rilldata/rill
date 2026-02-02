@@ -10,13 +10,22 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
 
 ## Available Integrations
 
+### Claude
 ### OpenAI
 ### Slack
 
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
+    icon={<img src="/img/build/connectors/icons/Logo-Claude.svg" alt="Claude" className="sheets-icon" />}
+    header="AI"
+    content="Create and define a Claude Connector with your own API key."
+    link="/developers/build/connectors/services/claude"
+    linkLabel="Learn more"
+    referenceLink="claude"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="OpenAI" className="sheets-icon" />}
     header="AI"
     content="Create and define an OpenAI Connector with your own API key."
     link="/developers/build/connectors/services/openai"
