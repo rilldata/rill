@@ -218,26 +218,26 @@
       <svelte:component this={Database} color="#C026D3" size="16px" />
       Data
     </DropdownMenu.Item>
-    {#if connectorsData.length > 0 && isModelingSupported}
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger
-          class="flex gap-x-2"
-          disabled={!isModelingSupported}
-        >
-          <svelte:component
-            this={resourceIconMapping[ResourceKind.Model]}
-            size="16px"
-          />
-          <div class="flex flex-col items-start">
-            Model
-            {#if !isModelingSupported}
-              <span class="text-fg-secondary text-xs">
-                Requires a supported OLAP driver
-              </span>
-            {/if}
-          </div>
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger
+        class="flex gap-x-2"
+        disabled={!isModelingSupported}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Model]}
+          size="16px"
+        />
+        <div class="flex flex-col items-start">
+          Model
+          {#if !isModelingSupported}
+            <span class="text-fg-secondary text-xs">
+              Requires a supported OLAP driver
+            </span>
+          {/if}
+        </div>
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
+        {#if connectorsData.length > 0 && isModelingSupported}
           {#each connectorsData as connector (connector.name)}
             {#if connector?.driver?.name}
               {@const hasError = connectorErrors.has(connector.name)}
@@ -257,54 +257,35 @@
             {/if}
           {/each}
           <DropdownMenu.Separator />
-          <DropdownMenu.Item
-            class="flex gap-x-2"
-            on:click={() => {
-              addSourceModal.open("https");
-            }}
-          >
-            <Globe size="16px" />
-            Public Data (https)
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            aria-label="Blank file"
-            class="flex gap-x-2"
-            disabled={!isModelingSupported}
-            on:click={() => handleAddResource(ResourceKind.Model)}
-          >
-            <File size="16px" />
-            <div class="flex flex-col items-start">
-              Blank file
-              {#if !isModelingSupported}
-                <span class="text-fg-secondary text-xs">
-                  Requires a supported OLAP driver
-                </span>
-              {/if}
-            </div>
-          </DropdownMenu.Item>
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
-    {:else}
-      <DropdownMenu.Item
-        aria-label="Model"
-        class="flex gap-x-2"
-        disabled={!isModelingSupported}
-        on:click={() => handleAddResource(ResourceKind.Model)}
-      >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.Model]}
-          size="16px"
-        />
-        <div class="flex flex-col items-start">
-          Model
-          {#if !isModelingSupported}
-            <span class="text-fg-secondary text-xs">
-              Requires a supported OLAP driver
-            </span>
-          {/if}
-        </div>
-      </DropdownMenu.Item>
-    {/if}
+        {/if}
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={() => {
+            addSourceModal.open("https");
+          }}
+        >
+          <Globe size="16px" />
+          Public Data (https)
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          aria-label="Blank file"
+          class="flex gap-x-2"
+          disabled={!isModelingSupported}
+          on:click={() => handleAddResource(ResourceKind.Model)}
+        >
+          <File size="16px" />
+          <div class="flex flex-col items-start">
+            Blank file
+            {#if !isModelingSupported}
+              <span class="text-fg-secondary text-xs">
+                Requires a supported OLAP driver
+              </span>
+            {/if}
+          </div>
+        </DropdownMenu.Item>
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
+    <DropdownMenu.Separator />
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
