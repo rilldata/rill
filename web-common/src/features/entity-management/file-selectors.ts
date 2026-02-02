@@ -1,12 +1,9 @@
-import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import {
   createRuntimeServiceListFiles,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
   type V1ListFilesResponse,
-  type V1WatchFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 
@@ -187,8 +184,7 @@ export function useDirectoryNamesInDirectorySelector(
   return directoryNames;
 }
 
-// export const UploadFileSizeLimitInBytes = 100 * 1024 * 1024; // 100MB limit
-export const UploadFileSizeLimitInBytes = 100;
+export const UploadFileSizeLimitInBytes = 100 * 1024 * 1024; // 100MB limit
 export function getFilesExceedingGithubPushLimit(instanceId: string) {
   return createRuntimeServiceListFiles(
     instanceId,
@@ -204,17 +200,4 @@ export function getFilesExceedingGithubPushLimit(instanceId: string) {
     },
     queryClient,
   );
-}
-
-export function maybeSendLargeFileNotification(file: V1WatchFilesResponse) {
-  const size = Number(file.size ?? "0");
-  if (size < UploadFileSizeLimitInBytes) return;
-
-  eventBus.emit("notification", {
-    type: "default",
-    message: `A file ${file.path} (${formatMemorySize(size)}) uploaded is too large for deploy. Please upload to s3 or similar service before deploying this project.`,
-    options: {
-      persisted: true,
-    },
-  });
 }

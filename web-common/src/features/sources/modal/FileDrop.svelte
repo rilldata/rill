@@ -103,12 +103,14 @@
   <Dialog.Trigger asChild>
     <div class="hidden"></div>
   </Dialog.Trigger>
-  <Dialog.Content>
-    <Dialog.Title>Local file</Dialog.Title>
-    <LocalSourceUpload
-      initFiles={uploadedFiles}
-      onClose={() => (showLargeFilesDialog = false)}
-      showBack={false}
-    />
+  <Dialog.Content class="max-w-fit w-fit p-0">
+    <Dialog.Title class="p-4 border-b border-gray-200">Local file</Dialog.Title>
+    <div class="w-fit">
+      <LocalSourceUpload
+        initFiles={uploadedFiles}
+        onClose={() => (showLargeFilesDialog = false)}
+        showBack={false}
+      />
+    </div>
   </Dialog.Content>
 </Dialog.Root>
