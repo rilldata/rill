@@ -97,37 +97,39 @@
 
   $: adjustment = 30 - (comparisonOptions?.length ?? 0) * 10;
 
-  function getFormattedDiff(comparisonValue: number, currentValue: number) {
-    const delta = currentValue - comparisonValue;
+  // Single source of truth for all computed values
+  $: computedValues = {
+    primary: hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal,
+    comparison: comparisonVal,
+    delta:
+      comparisonVal != null && currentValue != null
+        ? currentValue - comparisonVal
+        : null,
+    percent: comparisonPercChange,
+  } as const;
+
+  // Get value based on hover type
+  function getValueForType(type: typeof hoveredValue) {
+    switch (type) {
+      case "comparison":
+        return computedValues.comparison;
+      case "delta":
+        return computedValues.delta;
+      case "percent":
+        return computedValues.percent;
+      default:
+        return computedValues.primary;
+    }
+  }
+
+  function getFormattedDiff(delta: number) {
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
   }
 
   function handleHoverOrFocus(type: typeof hoveredValue) {
     hoveredValue = type;
 
-    let value: number | null | undefined;
-    switch (type) {
-      case "primary":
-        value = hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
-        break;
-      case "comparison":
-        value = comparisonVal;
-        break;
-      case "delta":
-        if (
-          comparisonVal !== null &&
-          comparisonVal !== undefined &&
-          currentValue !== null &&
-          currentValue !== undefined
-        ) {
-          value = currentValue - comparisonVal;
-        }
-        break;
-      case "percent":
-        value = comparisonPercChange;
-        break;
-    }
-
+    const value = getValueForType(type);
     if (value !== undefined && value !== null) {
       cellInspectorStore.updateValue(value.toString());
     }
@@ -137,38 +139,22 @@
     hoveredValue = null;
   }
 
-  $: displayValue =
-    hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
-
-  $: tooltipDisplayValue = (() => {
-    if (hoveredValue === "comparison") return comparisonVal;
-    if (
-      hoveredValue === "delta" &&
-      comparisonVal !== null &&
-      currentValue !== null
-    ) {
-      return currentValue - comparisonVal;
-    }
-    if (hoveredValue === "percent" && comparisonPercChange !== null) {
-      return comparisonPercChange;
-    }
-    return displayValue;
-  })();
+  $: activeValue = getValueForType(hoveredValue);
 
   $: tooltipValue = (() => {
-    if (hoveredValue === "percent" && comparisonPercChange !== null) {
+    if (hoveredValue === "percent" && computedValues.percent !== null) {
       return numberPartsToString(
-        formatMeasurePercentageDifference(comparisonPercChange),
+        formatMeasurePercentageDifference(computedValues.percent),
       );
     }
-    return tooltipDisplayValue !== null && tooltipDisplayValue !== undefined
-      ? measureValueFormatterTooltip(tooltipDisplayValue)
+    return activeValue !== null && activeValue !== undefined
+      ? measureValueFormatterTooltip(activeValue)
       : "no data";
   })();
 
   $: copyValue =
-    displayValue !== null && displayValue !== undefined
-      ? measureValueFormatterUnabridged(displayValue)
+    computedValues.primary !== null && computedValues.primary !== undefined
+      ? measureValueFormatterUnabridged(computedValues.primary)
       : "no data";
 
   function shiftClickHandler() {
@@ -226,9 +212,7 @@
             <div class="loading h-6 w-16"></div>
           {:else if primaryTotalResult.data}
             <span class:opacity-50={primaryTotalResult.isFetching}>
-              {measureValueFormatter(
-                hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal,
-              )}
+              {measureValueFormatter(computedValues.primary)}
             </span>
           {/if}
         </div>
@@ -252,19 +236,16 @@
                   on:focus={() => handleHoverOrFocus("comparison")}
                   on:blur={handleLeaveOrBlur}
                 >
-                  {measureValueFormatter(comparisonVal)}
+                  {measureValueFormatter(computedValues.comparison)}
                 </span>
               {/if}
 
               {#if comparisonOptions?.includes("delta")}
                 <span
                   class="comparison-value"
-                  class:text-red-500={primaryTotal !== null &&
-                    comparisonVal !== null &&
-                    primaryTotal - comparisonVal < 0}
-                  class:ui-copy-disabled-faint={comparisonVal === null}
-                  class:italic={comparisonVal === null}
-                  class:text-sm={comparisonVal === null}
+                  class:ui-copy-disabled-faint={computedValues.delta === null}
+                  class:italic={computedValues.delta === null}
+                  class:text-sm={computedValues.delta === null}
                   role="button"
                   tabindex="0"
                   on:mouseover={() => handleHoverOrFocus("delta")}
@@ -272,18 +253,18 @@
                   on:focus={() => handleHoverOrFocus("delta")}
                   on:blur={handleLeaveOrBlur}
                 >
-                  {#if comparisonVal != null && currentValue != null}
-                    {getFormattedDiff(comparisonVal, currentValue)}
+                  {#if computedValues.delta != null}
+                    {getFormattedDiff(computedValues.delta)}
                   {:else}
                     no change
                   {/if}
                 </span>
               {/if}
 
-              {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
+              {#if comparisonOptions?.includes("percent_change") && computedValues.percent != null && !measureIsPercentage}
                 <span
                   class="w-fit font-semibold text-fg-disabled"
-                  class:text-red-500={primaryTotal && primaryTotal < 0}
+                  class:text-red-500={computedValues.percent < 0}
                   role="button"
                   tabindex="0"
                   on:mouseover={() => handleHoverOrFocus("percent")}
@@ -296,7 +277,7 @@
                     showPosSign
                     tabularNumber={false}
                     value={formatMeasurePercentageDifference(
-                      comparisonPercChange,
+                      computedValues.percent,
                     )}
                   />
                 </span>
