@@ -11,6 +11,11 @@
 
   const navItems = [
     {
+      label: "General",
+      route: "",
+      hasPermission: true,
+    },
+    {
       label: "Environment Variables",
       route: "/environment-variables",
       hasPermission: true,
