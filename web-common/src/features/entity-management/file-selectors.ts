@@ -194,7 +194,9 @@ export function getFilesExceedingGithubPushLimit(instanceId: string) {
         select: (data) =>
           data.files?.filter(
             (f) =>
-              !f.isDir && f.size && Number(f.size) > UploadFileSizeLimitInBytes,
+              !f.isDir &&
+              f.size &&
+              Number(f.size) >= UploadFileSizeLimitInBytes,
           ) ?? [],
       },
     },

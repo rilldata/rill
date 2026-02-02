@@ -194,10 +194,12 @@ func (w *Watcher) runInner() error {
 			} else if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) || e.Has(fsnotify.Chmod) {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
 				s, err := os.Stat(e.Name)
+				// This could be deleted before we get the event, so ignore errors but log them.
 				if err != nil {
-					continue
+					w.logger.Warn("failed to stat file", zap.String("path", e.Name), zap.Error(err))
+				} else {
+					we.Size = s.Size()
 				}
-				we.Size = s.Size()
 			} else {
 				continue
 			}

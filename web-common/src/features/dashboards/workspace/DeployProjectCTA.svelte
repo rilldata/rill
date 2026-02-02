@@ -38,7 +38,7 @@
   let remoteChangeDialog = false;
   let deployConfirmOpen = false;
   let updateProjectDropdownOpen = false;
-  let projectHasLargeFilesOpen = false;
+  let projectHasLargeFilesDialogOpen = false;
 
   const userQuery = createLocalServiceGetCurrentUser();
   const metadata = createLocalServiceGetMetadata();
@@ -156,7 +156,7 @@
 
 {#if $filesExceedingGithubPushLimit.data?.length}
   <ProjectHasLargeFiles
-    bind:open={projectHasLargeFilesOpen}
+    bind:open={projectHasLargeFilesDialogOpen}
     files={$filesExceedingGithubPushLimit.data ?? []}
   />
 {:else if isDeployed && !hasRemoteChanges}

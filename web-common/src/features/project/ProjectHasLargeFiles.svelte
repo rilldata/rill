@@ -37,7 +37,9 @@
           </div>
           <ul class="flex flex-col list-disc ml-5 gap-y-1">
             {#each files as file (file.path)}
-              {@const formattedSize = formatMemorySize(Number(file.size || 0))}
+              {@const formattedSize = formatMemorySize(
+                file.size ? Number(file.size) : 0,
+              )}
               {@const [, fileName] = splitFolderAndFileName(file.path)}
               <li>
                 {fileName} ({formattedSize})
