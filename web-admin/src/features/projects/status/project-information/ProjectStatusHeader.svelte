@@ -77,7 +77,7 @@
   }
 
   .deployment-env {
-    @apply text-sm font-medium text-gray-700;
+    @apply text-sm font-medium text-gray-500 italic;
   }
 
   .status-message {
