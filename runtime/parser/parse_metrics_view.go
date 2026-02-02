@@ -19,21 +19,21 @@ import (
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
-	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Parent            string           `yaml:"parent"` // Parent metrics view, if any
-	DisplayName       string           `yaml:"display_name"`
-	Title             string           `yaml:"title"` // Deprecated: use display_name
-	Description       string           `yaml:"description"`
-	AIInstructions    string           `yaml:"ai_instructions"`
-	Model             string           `yaml:"model"`
-	Database          string           `yaml:"database"`
-	DatabaseSchema    string           `yaml:"database_schema"`
-	Table             string           `yaml:"table"`
-	TimeDimension     string           `yaml:"timeseries"`
-	Watermark         string           `yaml:"watermark"`
-	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	commonYAML        `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Parent            string `yaml:"parent"` // Parent metrics view, if any
+	DisplayName       string `yaml:"display_name"`
+	Title             string `yaml:"title"` // Deprecated: use display_name
+	Description       string `yaml:"description"`
+	AIInstructions    string `yaml:"ai_instructions"`
+	Model             string `yaml:"model"`
+	Database          string `yaml:"database"`
+	DatabaseSchema    string `yaml:"database_schema"`
+	Table             string `yaml:"table"`
+	TimeDimension     string `yaml:"timeseries"`
+	Watermark         string `yaml:"watermark"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name                    string
 		DisplayName             string `yaml:"display_name"`
@@ -375,9 +375,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if dim.LookupTable != "" || dim.LookupKeyColumn != "" || dim.LookupValueColumn != "" {
 			if dim.LookupTable == "" || dim.LookupKeyColumn == "" || dim.LookupValueColumn == "" {
 				return fmt.Errorf("all lookup fields should be defined (lookup_table, lookup_key_column and lookup_value_column should be defined")
-			}
-			if dim.Column == "" && dim.Expression == "" {
-				return fmt.Errorf("either column or expression must be defined for lookup dimension %q", dim.Name)
 			}
 			if strings.Contains(dim.Expression, "dictGet") {
 				return fmt.Errorf("dictGet expression and lookup fields cannot be used together")
