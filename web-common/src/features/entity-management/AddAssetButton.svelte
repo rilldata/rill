@@ -5,7 +5,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
+  import { Database, Folder, Globe, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
@@ -257,6 +257,15 @@
             {/if}
           {/each}
           <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            class="flex gap-x-2"
+            on:click={() => {
+              addSourceModal.open("https");
+            }}
+          >
+            <Globe size="16px" />
+            Public Data (https)
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             aria-label="Blank file"
             class="flex gap-x-2"
