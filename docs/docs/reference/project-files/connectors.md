@@ -35,7 +35,8 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 ### _Other_
 - [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**OpenAI**](#openai) - OpenAI data
+- [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
+- [**Claude**](#claude) - Claude connector for chat with your own API key
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
 
@@ -665,6 +666,40 @@ model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
 api_type: "openai" # The type of OpenAI API to use  
 api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD  
+```
+
+## Claude
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "claude" 
+
+### `api_key`
+
+_[string]_ - API key for connecting to Claude _(required)_
+
+### `model`
+
+_[string]_ - The Claude model to use (e.g., 'claude-opus-4-5') 
+
+### `max_tokens`
+
+_[number]_ - Maximum number of tokens in the response (e.g., 8192) 
+
+### `temperature`
+
+_[number]_ - Sampling temperature to use (e.g., 0.0) 
+
+### `base_url`
+
+_[string]_ - The base URL for the Claude API 
+
+```yaml
+# Example: Claude connector configuration
+type: connector
+driver: claude
+api_key: "{{ .env.claude_api_key }}"
+model: claude-opus-4-5
 ```
 
 ## Pinot
