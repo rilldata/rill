@@ -73,11 +73,13 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		Summary:          opts.Summary,
 	}
 
+	// Build subject
 	subject := fmt.Sprintf("%s (%s)", opts.DisplayName, data.ReportTimeString)
 
+	var err error
 	// Resolve template
 	buf := new(bytes.Buffer)
-	err := c.templates.Lookup("scheduled_report.html").Execute(buf, data)
+	err = c.templates.Lookup("scheduled_report.html").Execute(buf, data)
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}

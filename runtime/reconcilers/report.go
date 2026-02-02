@@ -510,6 +510,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
+	if rep.Spec.Resolver != "" && rep.Spec.Resolver != "ai" {
+		return false, fmt.Errorf("unsupported report resolver: %q", rep.Spec.Resolver)
+	}
+
 	// Determine if this is an AI report (using ai resolver)
 	isAIReport := rep.Spec.Resolver == "ai"
 

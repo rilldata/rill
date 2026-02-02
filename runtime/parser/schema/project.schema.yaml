@@ -2672,7 +2672,7 @@ definitions:
         type: report
         display_name: Weekly Sales Report
         refresh:
-          cron: "0 9 * * MON"
+          cron: "0 9 * * 1"
         query:
           name: MetricsViewAggregation
           args:
@@ -2690,6 +2690,9 @@ definitions:
           email:
             recipients:
               - sales@example.com
+        annotations:
+          admin_owner_user_id: user-123
+          web_open_mode: recipient # report will use recipient's permission to run the query
       - # Example: AI-powered insight report
         type: report
         display_name: Daily AI Insights
@@ -2710,7 +2713,7 @@ definitions:
             recipients:
               - team@example.com
         annotations:
-          admin_owner_user_id: user-123
+          admin_owner_user_id: user-123 # report will be run with this user permission
     allOf:
       - title: Properties
         type: object
@@ -2760,10 +2763,10 @@ definitions:
             $ref: '#/definitions/data_properties'
             description: |
               Data source for the report using the generic resolver pattern.
-              Supports sql, metrics_sql, api, glob, or ai resolvers.
+              Supports ai resolvers only as of now.
           query:
             type: object
-            description: "Legacy query-based report configuration (deprecated: use data instead)"
+            description: "Legacy query-based report configuration"
             properties:
               name:
                 type: string

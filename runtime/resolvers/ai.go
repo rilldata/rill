@@ -71,21 +71,48 @@ func newAI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver
 		args.ExecutionTime = time.Now()
 	}
 
+	// Get metrics view if explore is provided
+	var mv string
+	if props.Context != nil && props.Context.Explore != "" {
+		c, err := opts.Runtime.Controller(ctx, opts.InstanceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get controller: %w", err)
+		}
+		e, err := c.Get(ctx, &runtimev1.ResourceName{
+			Kind: runtime.ResourceKindExplore,
+			Name: props.Context.Explore,
+		}, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get explore %q: %w", props.Context.Explore, err)
+		}
+		exp := e.GetExplore()
+		if exp == nil {
+			return nil, fmt.Errorf("resource %q is not an explore", props.Context.Explore)
+		}
+		spec := exp.State.ValidSpec
+		if spec == nil {
+			return nil, fmt.Errorf("explore %q has no valid spec", props.Context.Explore)
+		}
+		mv = spec.MetricsView
+	}
+
 	return &aiResolver{
-		runtime:    opts.Runtime,
-		instanceID: opts.InstanceID,
-		props:      props,
-		args:       args,
-		claims:     opts.Claims,
+		runtime:     opts.Runtime,
+		instanceID:  opts.InstanceID,
+		props:       props,
+		args:        args,
+		claims:      opts.Claims,
+		metricsView: mv,
 	}, nil
 }
 
 type aiResolver struct {
-	runtime    *runtime.Runtime
-	instanceID string
-	props      *aiProps
-	args       *aiArgs
-	claims     *runtime.SecurityClaims
+	runtime     *runtime.Runtime
+	instanceID  string
+	props       *aiProps
+	args        *aiArgs
+	claims      *runtime.SecurityClaims
+	metricsView string // optional metrics view spec if available
 }
 
 var _ runtime.Resolver = &aiResolver{}
@@ -108,6 +135,12 @@ func (r *aiResolver) Refs() []*runtimev1.ResourceName {
 		refs = append(refs, &runtimev1.ResourceName{
 			Kind: runtime.ResourceKindExplore,
 			Name: r.props.Context.Explore,
+		})
+	}
+	if r.metricsView != "" {
+		refs = append(refs, &runtimev1.ResourceName{
+			Kind: runtime.ResourceKindMetricsView,
+			Name: r.metricsView,
 		})
 	}
 	return refs

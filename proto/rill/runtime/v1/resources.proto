@@ -602,8 +602,8 @@ message ReportSpec {
   Schedule refresh_schedule = 3;
   uint32 timeout_seconds = 4;
   // Generic resolver configuration (preferred for new reports)
-  string resolver = 19;
-  google.protobuf.Struct resolver_properties = 20;
+  string resolver = 17;
+  google.protobuf.Struct resolver_properties = 18;
   // Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
   string query_name = 5;
   string query_args_json = 6;

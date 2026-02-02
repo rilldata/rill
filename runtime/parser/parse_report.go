@@ -18,10 +18,10 @@ import (
 // ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
 type ReportYAML struct {
 	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName string           `yaml:"display_name"`
-	Title       string           `yaml:"title"` // Deprecated: use display_name
-	Refresh     *ScheduleYAML    `yaml:"refresh"`
-	Watermark   string           `yaml:"watermark"` // options: "trigger_time", "inherit"
+	DisplayName string        `yaml:"display_name"`
+	Title       string        `yaml:"title"` // Deprecated: use display_name
+	Refresh     *ScheduleYAML `yaml:"refresh"`
+	Watermark   string        `yaml:"watermark"` // options: "trigger_time", "inherit"
 	Intervals   struct {
 		Duration      string `yaml:"duration"`
 		Limit         uint   `yaml:"limit"`
@@ -29,7 +29,7 @@ type ReportYAML struct {
 	} `yaml:"intervals"`
 	Timeout string    `yaml:"timeout"`
 	Data    *DataYAML `yaml:"data"` // Generic data resolver (preferred for new reports)
-	Query   struct {  // Legacy query-based report (deprecated - use data instead)
+	Query   struct { // Legacy query-based report
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
@@ -124,6 +124,10 @@ func (p *Parser) parseReport(node *Node) error {
 		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, node.Connector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
+		}
+		if resolver != "ai" {
+			// supports ai resolver only as of now // TODO: support other resolvers
+			return fmt.Errorf("reports only support the AI resolver")
 		}
 		node.Refs = append(node.Refs, refs...)
 	}
@@ -228,7 +232,7 @@ func (p *Parser) parseReport(node *Node) error {
 	// Set resolver or legacy query fields
 	if !isLegacyQuery {
 		r.ReportSpec.Resolver = resolver
-		r.ReportSpec.ResolverProperties = resolverProps
+		r.ReportSpec.ResolverProperties = resolverProps // TODO validate properties
 	} else {
 		r.ReportSpec.QueryName = tmp.Query.Name
 		r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
