@@ -11,14 +11,24 @@
   export let store: ConnectorExplorerStore;
 
   $: connectorName = connector?.name as string;
+  $: hasError = !!connector?.errorMessage;
 
-  $: databaseSchemasQuery = useListDatabaseSchemas(instanceId, connectorName);
+  $: databaseSchemasQuery = useListDatabaseSchemas(
+    instanceId,
+    connectorName,
+    undefined,
+    !hasError,
+  );
 
   $: ({ data, error, isLoading } = $databaseSchemasQuery);
 </script>
 
 <div class="wrapper">
-  {#if isLoading}
+  {#if hasError}
+    <span class="message pl-6"
+      >Error: {connector.errorMessage}</span
+    >
+  {:else if isLoading}
     <span class="message pl-6">Loading tables...</span>
   {:else if error}
     <span class="message pl-6"
