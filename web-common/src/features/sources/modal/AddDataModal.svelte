@@ -71,6 +71,9 @@
   });
 
   function goToConnectorForm(connector: V1ConnectorDriver) {
+    // Reset multi-step state (auth selection, connector config) when switching connectors.
+    resetConnectorStep();
+
     const state = {
       step: 2,
       selectedConnector: connector,
@@ -121,7 +124,7 @@
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
-    selectedConnector?.name === "gcs" ||
+    selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
@@ -197,7 +200,7 @@
           </div>
         </section>
 
-        <div class="text-slate-500">
+        <div class="text-fg-secondary">
           Don't see what you're looking for?
           <button
             class="text-primary-500 hover:text-primary-600 font-medium"
@@ -247,7 +250,7 @@
       {#if step === 2 && requestConnector}
         <div class="p-6">
           <Dialog.Title>Request a connector</Dialog.Title>
-          <RequestConnectorForm on:close={resetModal} on:back={back} />
+          <RequestConnectorForm onClose={resetModal} onBack={back} />
         </div>
       {/if}
     </Dialog.Content>

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -430,9 +431,75 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	})
 }
 
+// ListBranches implements drivers.RepoStore.
+func (r *repo) ListBranches(ctx context.Context) ([]string, string, error) {
+	return nil, "", drivers.ErrNotImplemented
+}
+
+// SwitchBranch implements drivers.RepoStore.
+func (r *repo) SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error {
+	return drivers.ErrNotImplemented
+}
+
+// ListCommits implements drivers.RepoStore.
+func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([]drivers.Commit, string, error) {
+	return nil, "", drivers.ErrNotImplemented
+}
+
+// Status implements drivers.RepoStore.
+func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
+	if r.git == nil {
+		return &drivers.RepoStatus{}, nil
+	}
+
+	err := r.rlockEnsureReady(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.RUnlock()
+
+	// run git fetch - only updates the remote tracking branch and not the working tree.
+	err = r.git.fetchCurrentBranch(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch current branch: %w", err)
+	}
+
+	// run git status
+	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Git status: %w", err)
+	}
+	return &drivers.RepoStatus{
+		IsGitRepo:     true,
+		Branch:        st.Branch,
+		RemoteURL:     st.RemoteURL,
+		ManagedRepo:   r.git.managedRepo,
+		LocalChanges:  st.LocalChanges,
+		LocalCommits:  st.LocalCommits,
+		RemoteCommits: st.RemoteCommits,
+	}, nil
+}
+
+func (r *repo) Commit(ctx context.Context, message string) (string, error) {
+	if r.git == nil {
+		return "", fmt.Errorf("commits are not supported for this repo type")
+	}
+
+	err := r.rlockEnsureReady(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer r.mu.RUnlock()
+
+	if !r.git.editable() {
+		return "", fmt.Errorf("repo is not editable")
+	}
+	return r.git.commitToDefaultBranch(ctx, message)
+}
+
 // Pull implements drivers.RepoStore.
-func (r *repo) Pull(ctx context.Context, discardChanges, forceHandshake bool) error {
-	return r.pull(ctx, discardChanges, forceHandshake)
+func (r *repo) Pull(ctx context.Context, opts *drivers.PullOptions) error {
+	return r.pull(ctx, opts)
 }
 
 // CommitAndPush implements drivers.RepoStore.
@@ -456,7 +523,19 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 		return fmt.Errorf("commits are not supported for this repo type")
 	}
 
-	return r.git.commitAndPushToDefaultBranch(ctx, message, force)
+	// TODO: This should merge to the current branch
+	// A separate merge RPC should merge to primary branch
+	return r.git.commitAndPushToPrimaryBranch(ctx, message, force)
+}
+
+// RestoreCommit implements drivers.RepoStore.
+func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, error) {
+	return "", drivers.ErrNotImplemented
+}
+
+// MergeToBranch implements drivers.RepoStore.
+func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
+	return drivers.ErrNotImplemented
 }
 
 // CommitHash implements drivers.RepoStore.
@@ -511,7 +590,7 @@ func (r *repo) close() error {
 	}
 
 	if r.git != nil && r.git.editable() {
-		err := r.git.commitToEditBranch(ctx)
+		_, err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit")
 		if err != nil {
 			return fmt.Errorf("close failed: could not commit to edit branch: %w", err)
 		}
@@ -552,7 +631,8 @@ func (r *repo) rlockEnsureReady(ctx context.Context) error {
 
 	// Release read lock and clone (which uses a singleflight)
 	r.mu.RUnlock()
-	err = r.pull(ctx, false, false)
+	// UserTriggered set to true to make sure the first pull gets the latest code files.
+	err = r.pull(ctx, &drivers.PullOptions{UserTriggered: true})
 	if err != nil {
 		return err
 	}
@@ -563,11 +643,11 @@ func (r *repo) rlockEnsureReady(ctx context.Context) error {
 
 // pull clones/pulls the repo with the latest code files.
 // It is safe for concurrent use and deduplicates concurrent calls (using a singleflight).
-func (r *repo) pull(ctx context.Context, discardChanges, forceHandshake bool) error {
+func (r *repo) pull(ctx context.Context, opts *drivers.PullOptions) error {
 	ctx, span := tracer.Start(ctx, "r.pull")
 	defer span.End()
 
-	key := fmt.Sprintf("pull(_, %v, %v)", discardChanges, forceHandshake)
+	key := fmt.Sprintf("pull(_, %v, %v, %v)", opts.DiscardChanges, opts.ForceHandshake, opts.UserTriggered)
 
 	ch := r.singleflight.DoChan(key, func() (any, error) {
 		// Using context.Background to prevent context cancellation of the first caller to cause other callers to fail.
@@ -582,7 +662,7 @@ func (r *repo) pull(ctx context.Context, discardChanges, forceHandshake bool) er
 		defer r.mu.Unlock()
 
 		// Do the actual pull.
-		err = r.pullInner(ctx, discardChanges, forceHandshake)
+		err = r.pullInner(ctx, opts)
 		r.ready = r.ready || (err == nil) // If a pull previously succeeded, we still consider the repo ready even though the latest pull failed.
 		r.pullErr = err
 		return nil, r.pullErr
@@ -613,16 +693,16 @@ func (r *repo) checkReady(ctx context.Context) (bool, error) {
 
 // pullInner implements the actual clone/pull logic.
 // Unlike r.pull(), it is NOT safe for concurrent use and expects r.mu to be held with a write lock.
-func (r *repo) pullInner(ctx context.Context, discardChanges, forceHandshake bool) error {
+func (r *repo) pullInner(ctx context.Context, opts *drivers.PullOptions) error {
 	// Ensure the underlying repos are initialized and have valid credentials.
-	err := r.checkHandshake(ctx, forceHandshake)
+	err := r.checkHandshake(ctx, opts.ForceHandshake)
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
 
 	// Push the pull into the underlying repos. These are created/updated by checkSyncHandshake.
-	if r.git != nil {
-		err = r.git.pull(ctx, discardChanges)
+	if r.git != nil && opts.UserTriggered {
+		err = r.git.pull(ctx, opts.DiscardChanges)
 		if err != nil {
 			return fmt.Errorf("git pull failed: %w", err)
 		}
@@ -700,8 +780,10 @@ func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 
 		r.git.remoteURL = meta.GitUrl
 		r.git.defaultBranch = meta.GitBranch
-		r.git.editBranch = meta.GitEditBranch
+		r.git.editableDepl = meta.Editable
+		r.git.primaryBranch = meta.PrimaryBranch
 		r.git.subpath = meta.GitSubpath
+		r.git.managedRepo = meta.ManagedGitRepo
 	} else {
 		r.git = nil
 	}

@@ -433,7 +433,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 			provisioner,
 			prod_slots,
 			subpath,
-			prod_branch,
+			primary_branch,
 			archive_asset_id,
 			git_remote,
 			github_installation_id,
@@ -454,7 +454,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		opts.Provisioner,
 		opts.ProdSlots,
 		opts.Subpath,
-		opts.ProdBranch,
+		opts.PrimaryBranch,
 		opts.ArchiveAssetID,
 		opts.GitRemote,
 		opts.GithubInstallationID,
@@ -494,13 +494,13 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 			description = $2,
 			public = $3,
 			directory_name = $4,
-			prod_branch = $5,
+			primary_branch = $5,
 			git_remote = $6,
 			github_installation_id = $7,
 			github_repo_id = $8,
 			managed_git_repo_id = $9,
 			archive_asset_id = $10,
-			prod_deployment_id = $11,
+			primary_deployment_id = $11,
 			provisioner = $12,
 			prod_slots = $13,
 			subpath = $14,
@@ -517,13 +517,13 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.Description,
 		opts.Public,
 		opts.DirectoryName,
-		opts.ProdBranch,
+		opts.PrimaryBranch,
 		opts.GitRemote,
 		opts.GithubInstallationID,
 		opts.GithubRepoID,
 		opts.ManagedGitRepoID,
 		opts.ArchiveAssetID,
-		opts.ProdDeploymentID,
+		opts.PrimaryDeploymentID,
 		opts.Provisioner,
 		opts.ProdSlots,
 		opts.Subpath,
@@ -1610,11 +1610,15 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		return nil, err
 	}
 
+	if opts.MetricsViewFilterJSONs == nil {
+		opts.MetricsViewFilterJSONs = make(map[string]string)
+	}
+
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, filter_json, fields, state, display_name, internal, resources)
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view_filter_jsons, fields, state, display_name, internal, resources)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.FilterJSON, opts.Fields, opts.State, opts.DisplayName, opts.Internal, resources,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsViewFilterJSONs, opts.Fields, opts.State, opts.DisplayName, opts.Internal, resources,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
@@ -2936,7 +2940,7 @@ func (c *connection) FindOrganizationIDsWithoutBilling(ctx context.Context) ([]s
 
 func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error) {
 	var count int
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND prod_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND primary_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
 	if err != nil {
 		return 0, parseErr("billing projects", err)
 	}
@@ -3405,9 +3409,10 @@ func (c *connection) provisionerResourcesFromDTOs(dtos []*provisionerResourceDTO
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenDTO struct {
 	*database.MagicAuthToken
-	Attributes pgtype.JSON      `db:"attributes"`
-	Fields     pgtype.TextArray `db:"fields"`
-	Resources  pgtype.JSONB     `db:"resources"`
+	Attributes             pgtype.JSON      `db:"attributes"`
+	Fields                 pgtype.TextArray `db:"fields"`
+	Resources              pgtype.JSONB     `db:"resources"`
+	MetricsViewFilterJSONs pgtype.JSONB     `db:"metrics_view_filter_jsons"`
 }
 
 func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret bool) (*database.MagicAuthToken, error) {
@@ -3420,6 +3425,10 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 		return nil, err
 	}
 	err = dto.Resources.AssignTo(&dto.MagicAuthToken.Resources)
+	if err != nil {
+		return nil, err
+	}
+	err = dto.MetricsViewFilterJSONs.AssignTo(&dto.MagicAuthToken.MetricsViewFilterJSONs)
 	if err != nil {
 		return nil, err
 	}
@@ -3440,9 +3449,10 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes pgtype.JSON      `db:"attributes"`
-	Fields     pgtype.TextArray `db:"fields"`
-	Resources  pgtype.JSONB     `db:"resources"`
+	Attributes             pgtype.JSON      `db:"attributes"`
+	Fields                 pgtype.TextArray `db:"fields"`
+	Resources              pgtype.JSONB     `db:"resources"`
+	MetricsViewFilterJSONs pgtype.JSONB     `db:"metrics_view_filter_jsons"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
@@ -3455,6 +3465,10 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 		return nil, err
 	}
 	err = dto.Resources.AssignTo(&dto.MagicAuthToken.Resources)
+	if err != nil {
+		return nil, err
+	}
+	err = dto.MetricsViewFilterJSONs.AssignTo(&dto.MagicAuthToken.MetricsViewFilterJSONs)
 	if err != nil {
 		return nil, err
 	}

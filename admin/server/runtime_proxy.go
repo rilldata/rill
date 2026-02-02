@@ -38,10 +38,10 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)
 	}
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return httputil.Errorf(http.StatusBadRequest, "no prod deployment for project")
 	}
-	depl, err := s.admin.DB.FindDeployment(r.Context(), *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(r.Context(), *proj.PrimaryDeploymentID)
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)
 	}

@@ -13,6 +13,7 @@ rill project tables [<project-name>] [flags]
 ### Flags
 
 ```
+      --branch string    Target deployment by Git branch (default: primary deployment)
       --local            Target local runtime instead of Rill Cloud
       --path string      Project directory (default ".")
       --project string   Project name

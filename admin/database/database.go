@@ -482,8 +482,8 @@ type Project struct {
 	Subpath string `db:"subpath"`
 	// ProdVersion is the runtime version to use for the production deployment.
 	ProdVersion string `db:"prod_version"`
-	// ProdBranch is the Git branch to use for the production deployment for Git-connected projects.
-	ProdBranch string `db:"prod_branch"`
+	// PrimaryBranch is the Git branch to use for the primary production deployment for Git-connected projects.
+	PrimaryBranch string `db:"primary_branch"`
 	// Deprecated: See the ProjectVariable type instead.
 	ProdVariables map[string]string `db:"prod_variables"`
 	// Deprecated: See the ProjectVariable type instead.
@@ -494,8 +494,8 @@ type Project struct {
 	// ProdTTLSeconds is the time-to-live for the production deployment.
 	// If the project has not been accessed in this time, its deployment(s) will be hibernated.
 	ProdTTLSeconds *int64 `db:"prod_ttl_seconds"`
-	// ProdDeploymentID is the ID of the current production deployment.
-	ProdDeploymentID *string `db:"prod_deployment_id"`
+	// PrimaryDeploymentID is the ID of the current primary deployment.
+	PrimaryDeploymentID *string `db:"primary_deployment_id"`
 	// DevSlots is the number of slots to use for dev deployments.
 	DevSlots int `db:"dev_slots"`
 	// DevTTLSeconds is the time-to-live for dev deployments.
@@ -525,7 +525,7 @@ type InsertProjectOptions struct {
 	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
-	ProdBranch           string
+	PrimaryBranch        string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
 	DevSlots             int
@@ -546,8 +546,8 @@ type UpdateProjectOptions struct {
 	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
-	ProdBranch           string
-	ProdDeploymentID     *string
+	PrimaryBranch        string
+	PrimaryDeploymentID  *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
 	DevSlots             int
@@ -809,22 +809,22 @@ type InsertDeploymentAuthTokenOptions struct {
 
 // MagicAuthToken is a persistent API token for accessing a specific (filtered) resource in a project.
 type MagicAuthToken struct {
-	ID                    string
-	SecretHash            []byte         `db:"secret_hash"`
-	Secret                []byte         `db:"secret"`
-	SecretEncryptionKeyID string         `db:"secret_encryption_key_id"`
-	ProjectID             string         `db:"project_id"`
-	CreatedOn             time.Time      `db:"created_on"`
-	ExpiresOn             *time.Time     `db:"expires_on"`
-	UsedOn                time.Time      `db:"used_on"`
-	CreatedByUserID       *string        `db:"created_by_user_id"`
-	Attributes            map[string]any `db:"attributes"`
-	FilterJSON            string         `db:"filter_json"`
-	Fields                []string       `db:"fields"`
-	State                 string         `db:"state"`
-	DisplayName           string         `db:"display_name"`
-	Internal              bool           `db:"internal"`
-	Resources             []ResourceName `db:"resources"`
+	ID                     string
+	SecretHash             []byte            `db:"secret_hash"`
+	Secret                 []byte            `db:"secret"`
+	SecretEncryptionKeyID  string            `db:"secret_encryption_key_id"`
+	ProjectID              string            `db:"project_id"`
+	CreatedOn              time.Time         `db:"created_on"`
+	ExpiresOn              *time.Time        `db:"expires_on"`
+	UsedOn                 time.Time         `db:"used_on"`
+	CreatedByUserID        *string           `db:"created_by_user_id"`
+	Attributes             map[string]any    `db:"attributes"`
+	MetricsViewFilterJSONs map[string]string `db:"metrics_view_filter_jsons"`
+	Fields                 []string          `db:"fields"`
+	State                  string            `db:"state"`
+	DisplayName            string            `db:"display_name"`
+	Internal               bool              `db:"internal"`
+	Resources              []ResourceName    `db:"resources"`
 }
 
 type ResourceName struct {
@@ -840,19 +840,19 @@ type MagicAuthTokenWithUser struct {
 
 // InsertMagicAuthTokenOptions defines options for creating a MagicAuthToken.
 type InsertMagicAuthTokenOptions struct {
-	ID              string
-	SecretHash      []byte
-	Secret          []byte
-	ProjectID       string `validate:"required"`
-	ExpiresOn       *time.Time
-	CreatedByUserID *string
-	Attributes      map[string]any
-	Resources       []ResourceName
-	FilterJSON      string
-	Fields          []string
-	State           string
-	DisplayName     string
-	Internal        bool
+	ID                     string
+	SecretHash             []byte
+	Secret                 []byte
+	ProjectID              string `validate:"required"`
+	ExpiresOn              *time.Time
+	CreatedByUserID        *string
+	Attributes             map[string]any
+	Resources              []ResourceName
+	MetricsViewFilterJSONs map[string]string
+	Fields                 []string
+	State                  string
+	DisplayName            string
+	Internal               bool
 }
 
 type NotificationToken struct {

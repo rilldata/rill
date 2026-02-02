@@ -13,6 +13,11 @@
   export let activeIndex: number;
   export let excludeMode = false;
   export let cellLabel: string | undefined = undefined;
+  export let onSelectItem: (data: {
+    index: number;
+    meta: boolean;
+  }) => void = () => {};
+  export let onInspect: (rowIndex: number) => void = () => {};
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
@@ -47,8 +52,8 @@
         {rowActive}
         suppressTooltip={scrolling}
         {...getCellProps(row, column, selectedIndex)}
-        on:inspect
-        on:select-item
+        {onInspect}
+        {onSelectItem}
         label={cellLabel}
       />
     {/each}

@@ -2,6 +2,7 @@
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -17,6 +18,7 @@
   import { Interval } from "luxon";
   import type { KPISpec } from ".";
   import { BIG_NUMBER_MIN_WIDTH } from ".";
+  import type { ChartDataPoint } from "@rilldata/web-common/components/time-series-chart/types";
 
   type Query<T> = QueryObserverResult<T, HTTPError>;
   type TimeSeriesQuery = Query<V1MetricsViewTimeSeriesResponse>;
@@ -37,10 +39,7 @@
   export let hasTimeSeries: boolean | undefined;
   export let comparisonLabel: string | undefined;
 
-  let hoveredPoints: {
-    date: Date;
-    value: number | null | undefined;
-  }[] = [];
+  let hoveredPoints: ChartDataPoint[] = [];
 
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
@@ -86,6 +85,26 @@
     const delta = currentValue - comparisonValue;
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
   }
+
+  function handleBigNumberMouseOver() {
+    const displayValue =
+      hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
+    cellInspectorStore.updateValue(displayValue);
+  }
+
+  function handleBigNumberFocus() {
+    const displayValue =
+      hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
+    cellInspectorStore.updateValue(displayValue);
+  }
+
+  function handleComparisonMouseOver() {
+    cellInspectorStore.updateValue(comparisonVal);
+  }
+
+  function handleComparisonFocus() {
+    cellInspectorStore.updateValue(comparisonVal);
+  }
 </script>
 
 <div class="wrapper" class:spark-right={isSparkRight}>
@@ -107,6 +126,10 @@
     <div
       class="big-number h-9 grid place-content-center"
       class:hovered-value={hoveredPoints?.[0]?.value != null}
+      role="button"
+      tabindex="0"
+      on:mouseover={handleBigNumberMouseOver}
+      on:focus={handleBigNumberFocus}
     >
       {#if primaryTotalResult.isError}
         <AlertTriangleIcon class=" text-red-300" size="34px" />
@@ -131,7 +154,13 @@
           <div class="loading h-[14px] w-6"></div>
         {:else if comparisonTotalResult.data}
           {#if comparisonOptions?.includes("previous")}
-            <span class="comparison-value">
+            <span
+              class="comparison-value"
+              role="button"
+              tabindex="0"
+              on:mouseover={handleComparisonMouseOver}
+              on:focus={handleComparisonFocus}
+            >
               {measureValueFormatter(comparisonVal)}
             </span>
           {/if}
@@ -142,7 +171,7 @@
               class:text-red-500={primaryTotal !== null &&
                 comparisonVal !== null &&
                 primaryTotal - comparisonVal < 0}
-              class:ui-copy-disabled-faint={comparisonVal === null}
+              class:text-fg-muted={comparisonVal === null}
               class:italic={comparisonVal === null}
               class:text-sm={comparisonVal === null}
             >
@@ -156,11 +185,11 @@
 
           {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
             <span
-              class="w-fit font-semibold ui-copy-inactive"
+              class="w-fit font-semibold text-fg-disabled"
               class:text-red-500={primaryTotal && primaryTotal < 0}
             >
               <PercentageChange
-                color="text-gray-500"
+                color="text-fg-secondary"
                 showPosSign
                 tabularNumber={false}
                 value={formatMeasurePercentageDifference(comparisonPercChange)}
@@ -171,14 +200,14 @@
       </div>
 
       {#if comparisonLabel}
-        <p class="text-sm text-gray-400 break-words">
+        <p class="text-sm text-fg-secondary break-words">
           vs {comparisonLabel?.toLowerCase()}
         </p>
       {/if}
     {/if}
 
     {#if !showSparkline && timeGrain && interval.isValid && !hideTimeRange}
-      <span class="text-gray-500">
+      <span class="text-fg-secondary">
         <RangeDisplay {interval} {timeGrain} />
       </span>
     {/if}
@@ -234,11 +263,11 @@
 
   .measure-name {
     @apply w-full truncate flex-none;
-    @apply text-center font-medium text-sm text-gray-800;
+    @apply text-center font-medium text-sm text-fg-primary;
   }
 
   :global(.dark) .measure-name {
-    @apply text-gray-900;
+    @apply text-fg-primary;
   }
 
   .spark-right .measure-name {
@@ -246,11 +275,11 @@
   }
 
   .big-number {
-    @apply text-3xl font-medium text-gray-800;
+    @apply text-3xl font-medium text-fg-primary;
   }
 
   :global(.dark) .big-number {
-    @apply text-gray-900;
+    @apply text-fg-primary;
   }
 
   .hovered-value {
@@ -272,7 +301,7 @@
 
   .comparison-value {
     @apply w-fit max-w-full overflow-hidden;
-    @apply font-medium text-ellipsis text-gray-500;
+    @apply font-medium text-ellipsis text-fg-secondary;
   }
 
   @container component-container (inline-size < 300px) {
@@ -292,6 +321,6 @@
   }
 
   .loading {
-    @apply bg-slate-200 animate-pulse rounded-full;
+    @apply bg-gray-200 animate-pulse rounded-full;
   }
 </style>

@@ -251,6 +251,9 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 	)
+	if req.Branch != "" {
+		observability.AddRequestAttributes(ctx, attribute.String("args.branch", req.Branch))
+	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
@@ -283,20 +286,45 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	if proj.ProdDeploymentID == nil || !permissions.ReadProd {
-		return &adminv1.GetProjectResponse{
-			Project:            s.projToDTO(proj, org.Name),
-			ProjectPermissions: permissions,
-		}, nil
-	}
+	var depl *database.Deployment
+	if req.Branch != "" {
+		if !permissions.ReadDev {
+			return &adminv1.GetProjectResponse{
+				Project:            s.projToDTO(proj, org.Name),
+				ProjectPermissions: permissions,
+			}, nil
+		}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+		depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", req.Branch)
+		if err != nil {
+			return nil, err
+		}
+		if len(depls) == 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "no deployment found for branch %q", req.Branch)
+		} else if len(depls) > 1 {
+			return nil, status.Errorf(codes.InvalidArgument, "multiple deployments found for branch %q. Recreate deployments to resolve", req.Branch)
+		}
+		depl = depls[0]
 
-	if !permissions.ReadProdStatus {
-		depl.StatusMessage = ""
+		if !permissions.ReadDevStatus {
+			depl.StatusMessage = ""
+		}
+	} else {
+		if proj.PrimaryDeploymentID == nil || !permissions.ReadProd {
+			return &adminv1.GetProjectResponse{
+				Project:            s.projToDTO(proj, org.Name),
+				ProjectPermissions: permissions,
+			}, nil
+		}
+
+		depl, err = s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !permissions.ReadProdStatus {
+			depl.StatusMessage = ""
+		}
 	}
 
 	var attr map[string]any
@@ -333,17 +361,46 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			})
 		}
 
-		attr = mdl.Attributes
-		if mdl.FilterJSON != "" {
-			expr := &runtimev1.Expression{}
-			err := protojson.Unmarshal([]byte(mdl.FilterJSON), expr)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
-			}
+		if len(mdl.Resources) == 0 {
+			// If no resources are specified, deny all access.
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Allow: false,
+					},
+				},
+			})
+		}
 
+		attr = mdl.Attributes
+		for mv, filter := range mdl.MetricsViewFilterJSONs {
+			expr := &runtimev1.Expression{}
+			err := protojson.Unmarshal([]byte(filter), expr)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view %q filter: %s", mv, err.Error())
+			}
+			if mv == "" {
+				return nil, status.Errorf(codes.Internal, "empty metrics view name in metrics view filter")
+			}
+			if mv == "*" { // backwards compatibility: apply to all MVs
+				rules = append(rules, &runtimev1.SecurityRule{
+					Rule: &runtimev1.SecurityRule_RowFilter{
+						RowFilter: &runtimev1.SecurityRuleRowFilter{
+							Expression: expr,
+						},
+					},
+				})
+				continue
+			}
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_RowFilter{
 					RowFilter: &runtimev1.SecurityRuleRowFilter{
+						ConditionResources: []*runtimev1.ResourceName{
+							{
+								Kind: runtime.ResourceKindMetricsView,
+								Name: mv,
+							},
+						},
 						Expression: expr,
 					},
 				},
@@ -375,7 +432,12 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		runtime.UseAI,
 	}
 	if permissions.ManageProject {
-		instancePermissions = append(instancePermissions, runtime.EditTrigger, runtime.ReadResolvers)
+		instancePermissions = append(
+			instancePermissions,
+			runtime.ReadInstance,
+			runtime.ReadResolvers,
+			runtime.EditTrigger,
+		)
 	}
 
 	var systemPermissions []runtime.Permission
@@ -406,7 +468,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	return &adminv1.GetProjectResponse{
 		Project:            s.projToDTO(proj, org.Name),
-		ProdDeployment:     deploymentToDTO(depl),
+		Deployment:         deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
 	}, nil
@@ -496,7 +558,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.prod_version", req.ProdVersion),
 		attribute.Int64("args.prod_slots", req.ProdSlots),
 		attribute.String("args.sub_path", req.Subpath),
-		attribute.String("args.prod_branch", req.ProdBranch),
+		attribute.String("args.primary_branch", req.PrimaryBranch),
 		attribute.String("args.git_remote", req.GitRemote),
 		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
 		attribute.Bool("args.skip_deploy", req.SkipDeploy),
@@ -580,7 +642,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubInstallationID: nil,         // Populated below
 		GithubRepoID:         nil,         // Populated below
 		ManagedGitRepoID:     nil,         // Populated below
-		ProdBranch:           "",          // Populated below
+		PrimaryBranch:        "",          // Populated below
 		Subpath:              req.Subpath, // Populated below
 		ProdVersion:          req.ProdVersion,
 		ProdSlots:            int(req.ProdSlots),
@@ -594,7 +656,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	if req.GitRemote != "" && req.ArchiveAssetId != "" {
 		return nil, status.Error(codes.InvalidArgument, "cannot set both git_remote and archive_asset_id")
 	} else if req.GitRemote != "" {
-		opts.GithubRepoID, opts.GithubInstallationID, opts.ManagedGitRepoID, opts.ProdBranch, err = s.githubOptsForRemote(ctx, org.ID, req.ProdBranch, userID, req.GitRemote)
+		opts.GithubRepoID, opts.GithubInstallationID, opts.ManagedGitRepoID, opts.PrimaryBranch, err = s.githubOptsForRemote(ctx, org.ID, req.PrimaryBranch, userID, req.GitRemote)
 		if err != nil {
 			return nil, err
 		}
@@ -691,8 +753,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.ProdVersion != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.prod_version", *req.ProdVersion))
 	}
-	if req.ProdBranch != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
+	if req.PrimaryBranch != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.primary_branch", *req.PrimaryBranch))
 	}
 	if req.GitRemote != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.git_remote", *req.GitRemote))
@@ -741,7 +803,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	githubRepoID := proj.GithubRepoID
 	managedGitRepoID := proj.ManagedGitRepoID
 	subpath := valOrDefault(req.Subpath, proj.Subpath)
-	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
+	primaryBranch := valOrDefault(req.PrimaryBranch, proj.PrimaryBranch)
 	archiveAssetID := proj.ArchiveAssetID
 
 	transferRepo := false
@@ -771,7 +833,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 			tmp := claims.OwnerID()
 			userID = &tmp
 		}
-		githubRepoID, githubInstID, managedGitRepoID, prodBranch, err = s.githubOptsForRemote(ctx, proj.OrganizationID, prodBranch, userID, *req.GitRemote)
+		githubRepoID, githubInstID, managedGitRepoID, primaryBranch, err = s.githubOptsForRemote(ctx, proj.OrganizationID, primaryBranch, userID, *req.GitRemote)
 		if err != nil {
 			return nil, err
 		}
@@ -799,7 +861,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		gitRemote = nil
 		githubInstID = nil
 		subpath = ""
-		prodBranch = ""
+		primaryBranch = ""
 	}
 
 	prodTTLSeconds := proj.ProdTTLSeconds
@@ -823,8 +885,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ManagedGitRepoID:     managedGitRepoID,
 		Subpath:              subpath,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
-		ProdBranch:           prodBranch,
-		ProdDeploymentID:     proj.ProdDeploymentID,
+		PrimaryBranch:        primaryBranch,
+		PrimaryDeploymentID:  proj.PrimaryDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
 		DevSlots:             proj.DevSlots,
@@ -1477,7 +1539,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		GitPassword:          token,
 		GitPasswordExpiresAt: timestamppb.New(expiresAt),
 		GitSubpath:           proj.Subpath,
-		GitProdBranch:        proj.ProdBranch,
+		GitPrimaryBranch:     proj.PrimaryBranch,
 		GitManagedRepo:       proj.ManagedGitRepoID != nil,
 	}, nil
 }
@@ -1780,9 +1842,9 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		GithubRepoID:         proj.GithubRepoID,
 		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		ProdVersion:          proj.ProdVersion,
-		ProdBranch:           proj.ProdBranch,
+		PrimaryBranch:        proj.PrimaryBranch,
 		Subpath:              proj.Subpath,
-		ProdDeploymentID:     proj.ProdDeploymentID,
+		PrimaryDeploymentID:  proj.PrimaryDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
@@ -1985,8 +2047,8 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 	}
 
 	var depl *database.Deployment
-	if proj.ProdDeploymentID != nil {
-		depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	if proj.PrimaryDeploymentID != nil {
+		depl, err = s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -2065,8 +2127,8 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if proj.ProdDeploymentID != nil {
-			depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+		if proj.PrimaryDeploymentID != nil {
+			depl, err = s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -2088,28 +2150,28 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	return &adminv1.Project{
-		Id:               p.ID,
-		Name:             p.Name,
-		OrgId:            p.OrganizationID,
-		OrgName:          orgName,
-		Description:      p.Description,
-		Public:           p.Public,
-		CreatedByUserId:  safeStr(p.CreatedByUserID),
-		DirectoryName:    p.DirectoryName,
-		Provisioner:      p.Provisioner,
-		ProdVersion:      p.ProdVersion,
-		ProdSlots:        int64(p.ProdSlots),
-		ProdBranch:       p.ProdBranch,
-		Subpath:          p.Subpath,
-		GitRemote:        safeStr(p.GitRemote),
-		ManagedGitId:     safeStr(p.ManagedGitRepoID),
-		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
-		ProdDeploymentId: safeStr(p.ProdDeploymentID),
-		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
-		FrontendUrl:      s.admin.URLs.Project(orgName, p.Name),
-		Annotations:      p.Annotations,
-		CreatedOn:        timestamppb.New(p.CreatedOn),
-		UpdatedOn:        timestamppb.New(p.UpdatedOn),
+		Id:                  p.ID,
+		Name:                p.Name,
+		OrgId:               p.OrganizationID,
+		OrgName:             orgName,
+		Description:         p.Description,
+		Public:              p.Public,
+		CreatedByUserId:     safeStr(p.CreatedByUserID),
+		DirectoryName:       p.DirectoryName,
+		Provisioner:         p.Provisioner,
+		ProdVersion:         p.ProdVersion,
+		ProdSlots:           int64(p.ProdSlots),
+		PrimaryBranch:       p.PrimaryBranch,
+		Subpath:             p.Subpath,
+		GitRemote:           safeStr(p.GitRemote),
+		ManagedGitId:        safeStr(p.ManagedGitRepoID),
+		ArchiveAssetId:      safeStr(p.ArchiveAssetID),
+		PrimaryDeploymentId: safeStr(p.PrimaryDeploymentID),
+		ProdTtlSeconds:      safeInt64(p.ProdTTLSeconds),
+		FrontendUrl:         s.admin.URLs.Project(orgName, p.Name),
+		Annotations:         p.Annotations,
+		CreatedOn:           timestamppb.New(p.CreatedOn),
+		UpdatedOn:           timestamppb.New(p.UpdatedOn),
 	}
 }
 
@@ -2121,7 +2183,7 @@ func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID
 	return asset.OrganizationID != nil && *asset.OrganizationID == orgID && asset.OwnerID == ownerID
 }
 
-func (s *Server) githubOptsForRemote(ctx context.Context, orgID, branch string, userID *string, gitRemote string) (githubRepoID, instID *int64, mgdGitRepoID *string, prodBranch string, resErr error) {
+func (s *Server) githubOptsForRemote(ctx context.Context, orgID, branch string, userID *string, gitRemote string) (githubRepoID, instID *int64, mgdGitRepoID *string, primaryBranch string, resErr error) {
 	isMgdGitRepo := true
 	mgdGitRepo, err := s.admin.DB.FindManagedGitRepo(ctx, gitRemote)
 	if err != nil {
@@ -2205,9 +2267,9 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		GithubRepoID:         &id,
 		ManagedGitRepoID:     p.ManagedGitRepoID,
 		ProdVersion:          p.ProdVersion,
-		ProdBranch:           p.ProdBranch,
+		PrimaryBranch:        p.PrimaryBranch,
 		Subpath:              p.Subpath,
-		ProdDeploymentID:     p.ProdDeploymentID,
+		PrimaryDeploymentID:  p.PrimaryDeploymentID,
 		ProdSlots:            p.ProdSlots,
 		ProdTTLSeconds:       p.ProdTTLSeconds,
 		DevSlots:             p.DevSlots,

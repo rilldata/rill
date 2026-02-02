@@ -10,7 +10,7 @@
   {#each fields as field, i (field)}
     <button
       on:click={() => onClick(i, field)}
-      class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
+      class="-ml-[1px] first-of-type:-ml-0 px-2 border first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
       class:selected={selected === i}
     >
       {field}
@@ -20,11 +20,11 @@
 
 <style lang="postcss">
   button {
-    @apply capitalize;
+    @apply capitalize bg-input text-fg-secondary;
   }
 
   button:hover:not(.selected) {
-    @apply bg-slate-50;
+    @apply bg-surface-hover;
   }
 
   .option-wrapper {
@@ -43,6 +43,6 @@
   }
 
   .option-wrapper > .selected {
-    @apply border-primary-500 z-50 text-primary-700;
+    @apply border-primary-500 z-50 text-accent-primary-action;
   }
 </style>

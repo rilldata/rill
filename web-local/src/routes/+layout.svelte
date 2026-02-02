@@ -4,7 +4,7 @@
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
-  import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
+  import FileAndResourceWatcher from "@rilldata/web-common/features/entity-management/FileAndResourceWatcher.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import RemoteProjectManager from "@rilldata/web-common/features/project/RemoteProjectManager.svelte";
@@ -77,7 +77,7 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <ResourceWatcher {host} {instanceId}>
+  <FileAndResourceWatcher {host} {instanceId}>
     <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
       {#if data.initialized}
         <BannerCenter />
@@ -90,7 +90,7 @@
 
       <slot />
     </div>
-  </ResourceWatcher>
+  </FileAndResourceWatcher>
 </QueryClientProvider>
 
 {#if $overlay !== null}

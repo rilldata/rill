@@ -49,12 +49,6 @@ export const FromURLParamsSortTypeMap: Record<string, V1ExploreSortType> = {
 };
 export const ToURLParamSortTypeMap = reverseMap(FromURLParamsSortTypeMap);
 
-export const FromURLParamTimeGrainMap: Record<string, V1TimeGrain> = {};
-Object.values(TIME_GRAIN).forEach((tg) => {
-  FromURLParamTimeGrainMap[tg.label] = tg.grain;
-});
-export const ToURLParamTimeGrainMapMap = reverseMap(FromURLParamTimeGrainMap);
-
 export const FromURLParamTimeDimensionMap: Record<string, V1TimeGrain> = {};
 Object.values(TIME_GRAIN).forEach((tg) => {
   FromURLParamTimeDimensionMap["time." + tg.label] = tg.grain;

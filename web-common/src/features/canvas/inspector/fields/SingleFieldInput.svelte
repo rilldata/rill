@@ -66,7 +66,7 @@
       </Chip>
     </DropdownMenu.Trigger>
 
-    <DropdownMenu.Content class="p-0">
+    <DropdownMenu.Content class="p-0" sameWidth>
       <div class="p-3 pb-1">
         <Search bind:value={searchValue} autofocus={false} />
       </div>
@@ -100,7 +100,7 @@
           {/if}
         {:else}
           {#if searchValue}
-            <div class="ui-copy-disabled text-center p-2 w-full">
+            <div class="text-fg-disabled text-center p-2 w-full">
               no results
             </div>
           {/if}

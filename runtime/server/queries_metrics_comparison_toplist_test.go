@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -19,7 +18,7 @@ import (
 func getMetricsTestServer(t *testing.T, projectName string) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -28,7 +27,7 @@ func getMetricsTestServer(t *testing.T, projectName string) (*server.Server, str
 func getMetricsTestServerWithDefaultInstanceConfigs(t *testing.T, projectName string, instConfig map[string]string) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceForProjectWithConfigs(t, projectName, instConfig)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -181,17 +180,7 @@ func TestServer_MetricsViewComparison_nulls(t *testing.T) {
 	// NOTE: Unstable due to sleep. Commenting until we support configuring settings at instance create time.
 	t.Skip()
 
-	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
-
-	// TODO: Support configuring at create time
-	_, err := server.EditInstance(testCtx(), &runtimev1.EditInstanceRequest{
-		InstanceId: instanceId,
-		Variables: map[string]string{
-			"rill.metrics.approximate_comparisons": "false",
-		},
-	})
-	require.NoError(t, err)
-	time.Sleep(2 * time.Second)
+	server, instanceId := getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids_2rows", map[string]string{"rill.metrics.approximate_comparisons": "true"})
 
 	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,

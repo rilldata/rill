@@ -9,7 +9,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-series/totals-data-store";
 import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { Period } from "@rilldata/web-common/lib/time/types";
 import {
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
@@ -28,6 +27,7 @@ import {
   type DimensionDataItem,
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
+import { isGrainAllowed } from "@rilldata/web-common/lib/time/new-grains";
 
 export interface TimeSeriesDatum {
   ts?: Date;
@@ -65,6 +65,13 @@ export function createMetricsViewTimeSeries(
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
+      const timeGrain = isGrainAllowed(
+        timeControls.selectedTimeRange?.interval,
+        timeControls.minTimeGrain,
+      )
+        ? timeControls.selectedTimeRange?.interval
+        : timeControls.minTimeGrain;
+
       return createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricsViewName,
@@ -83,10 +90,9 @@ export function createMetricsViewTimeSeries(
           timeEnd: isComparison
             ? timeControls.comparisonAdjustedEnd
             : timeControls.adjustedEnd,
-          timeGranularity:
-            timeControls.selectedTimeRange?.interval ??
-            timeControls.minTimeGrain,
+          timeGranularity: timeGrain,
           timeZone: dashboardStore.selectedTimezone,
+          timeDimension: dashboardStore.selectedTimeDimension,
         },
         {
           query: {
@@ -122,8 +128,13 @@ export function createTimeSeriesDataStore(
       }
 
       const showComparison = timeControls.showTimeComparison;
-      const interval =
-        timeControls.selectedTimeRange?.interval ?? timeControls.minTimeGrain;
+
+      const timeGrain = isGrainAllowed(
+        timeControls.selectedTimeRange?.interval,
+        timeControls.minTimeGrain,
+      )
+        ? timeControls.selectedTimeRange?.interval
+        : timeControls.minTimeGrain;
 
       const { metricsView, explore } = validSpec.data;
 
@@ -233,8 +244,8 @@ export function createTimeSeriesDataStore(
         ]) => {
           let preparedTimeSeriesData: TimeSeriesDatum[] = [];
 
-          if (!primary.isFetching && interval) {
-            const intervalDuration = TIME_GRAIN[interval]?.duration as Period;
+          if (!primary.isFetching && timeGrain) {
+            const intervalDuration = TIME_GRAIN[timeGrain]?.duration;
             preparedTimeSeriesData = prepareTimeSeries(
               primary?.data?.data || [],
               comparison?.data?.data || [],

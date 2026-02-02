@@ -23,11 +23,10 @@
     <svelte:fragment slot="sidebar-footer">
       <Button
         type="secondary"
-        gray
         onClick={() => (mcpDialogOpen = true)}
         class="w-full"
       >
-        <APIIcon size="14px" />
+        <APIIcon size="14px" className="!fill-current" />
         Connect your own client
       </Button>
     </svelte:fragment>
@@ -46,11 +45,12 @@
 
 <style lang="postcss">
   .chat-page-wrapper {
+    @apply bg-surface-background;
     flex: 1;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    background: #ffffff;
+
     min-height: 0;
   }
 </style>

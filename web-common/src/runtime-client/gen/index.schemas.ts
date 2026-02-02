@@ -80,6 +80,7 @@ export const MetricsViewSpecDimensionType = {
   DIMENSION_TYPE_UNSPECIFIED: "DIMENSION_TYPE_UNSPECIFIED",
   DIMENSION_TYPE_CATEGORICAL: "DIMENSION_TYPE_CATEGORICAL",
   DIMENSION_TYPE_TIME: "DIMENSION_TYPE_TIME",
+  DIMENSION_TYPE_GEOSPATIAL: "DIMENSION_TYPE_GEOSPATIAL",
 } as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
@@ -179,6 +180,8 @@ export const TypeCode = {
   CODE_DECIMAL: "CODE_DECIMAL",
   CODE_JSON: "CODE_JSON",
   CODE_UUID: "CODE_UUID",
+  CODE_POINT: "CODE_POINT",
+  CODE_POLYGON: "CODE_POLYGON",
 } as const;
 
 export interface ProtobufAny {
@@ -882,6 +885,7 @@ If not found in `time_ranges`, it should be added to the list. */
   timezone?: string;
   timeGrain?: string;
   selectTimeRange?: string;
+  timeDimension?: string;
   comparisonMode?: V1ExploreComparisonMode;
   compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
@@ -902,6 +906,7 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortBy?: string;
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
+  pivotRowLimit?: number;
 }
 
 export type V1ExploreSortType =
@@ -1028,6 +1033,10 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
+export interface V1ForkConversationResponse {
+  conversationId?: string;
+}
+
 export interface V1GenerateCanvasFileResponse {
   /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
@@ -1059,6 +1068,7 @@ export interface V1GenerateResolverResponse {
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
+  isOwner?: boolean;
 }
 
 export interface V1GetExploreResponse {
@@ -1092,6 +1102,57 @@ export type V1GetTableResponseSchema = { [key: string]: string };
 
 export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
+}
+
+export interface V1GitBranch {
+  name?: string;
+  hasDeployment?: boolean;
+  editableDeployment?: boolean;
+}
+
+export interface V1GitCommit {
+  commitSha?: string;
+  authorName?: string;
+  authorEmail?: string;
+  committedOn?: string;
+  message?: string;
+}
+
+export interface V1GitCommitResponse {
+  commitSha?: string;
+}
+
+export interface V1GitMergeToBranchResponse {
+  /** The output of the git merge command. Only set for unsuccessful merges. */
+  output?: string;
+}
+
+export interface V1GitPullResponse {
+  /** The output of the git pull command. Only set for unsuccessful pulls. */
+  output?: string;
+}
+
+export interface V1GitPushResponse {
+  [key: string]: unknown;
+}
+
+export interface V1GitStatusResponse {
+  /** The current branch of the git repo. */
+  branch?: string;
+  /** The remote url of the git repo. */
+  githubUrl?: string;
+  /** If the repo is managed by Rill. */
+  managedGit?: boolean;
+  /** local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo. */
+  localChanges?: boolean;
+  /** local_commits returns number of local commits that are not pushed to the remote git repo. */
+  localCommits?: number;
+  /** remote_commits returns number of remote commits not pulled yet. */
+  remoteCommits?: number;
+}
+
+export interface V1GitSwitchBranchResponse {
+  [key: string]: unknown;
 }
 
 export type V1HealthResponseInstancesHealth = {
@@ -1150,6 +1211,7 @@ export interface V1Instance {
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
   frontendUrl?: string;
+  theme?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1211,6 +1273,16 @@ export interface V1ListExamplesResponse {
 
 export interface V1ListFilesResponse {
   files?: V1DirEntry[];
+}
+
+export interface V1ListGitBranchesResponse {
+  currentBranch?: string;
+  branches?: V1GitBranch[];
+}
+
+export interface V1ListGitCommitsResponse {
+  commits?: V1GitCommit[];
+  nextPageToken?: string;
 }
 
 export interface V1ListInstancesResponse {
@@ -1921,6 +1993,7 @@ export const V1Operation = {
   OPERATION_NIN: "OPERATION_NIN",
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
+  OPERATION_CAST: "OPERATION_CAST",
 } as const;
 
 export interface V1ParseError {
@@ -2065,6 +2138,10 @@ If a model is specified, a normal incremental refresh is triggered. Use the "mod
 }
 
 export interface V1RefreshTriggerState {
+  [key: string]: unknown;
+}
+
+export interface V1ReloadConfigResponse {
   [key: string]: unknown;
 }
 
@@ -2217,6 +2294,10 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RestoreGitCommitResponse {
+  newCommitSha?: string;
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2278,6 +2359,10 @@ It is ORed together with the condition_kinds. */
 
 export interface V1SecurityRuleTransitiveAccess {
   resource?: V1ResourceName;
+}
+
+export interface V1ShareConversationResponse {
+  [key: string]: unknown;
 }
 
 export interface V1Source {
@@ -2550,12 +2635,6 @@ export type RuntimeServiceGetInstanceParams = {
 
 export type RuntimeServiceDeleteInstanceBody = { [key: string]: unknown };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
-export type RuntimeServiceEditInstanceBodyAnnotations = {
-  [key: string]: string;
-};
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -2567,9 +2646,6 @@ export type RuntimeServiceEditInstanceBody = {
   adminConnector?: string;
   aiConnector?: string;
   connectors?: V1Connector[];
-  variables?: RuntimeServiceEditInstanceBodyVariables;
-  annotations?: RuntimeServiceEditInstanceBodyAnnotations;
-  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
@@ -2606,6 +2682,15 @@ export type RuntimeServiceListConversationsParams = {
    * Optional search pattern for filtering by user agent.
    */
   userAgentPattern?: string;
+};
+
+export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
+
+export type RuntimeServiceShareConversationBody = {
+  /** optional message ID up to which to share otherwise share all current messages
+only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+It supports a special value of "none" to unshare the conversation. */
+  untilMessageId?: string;
 };
 
 export type ConnectorServiceListBucketsParams = {
@@ -2724,6 +2809,38 @@ export type RuntimeServiceGenerateResolverBody = {
   /** table and connector should not be provided if metrics_view is provided. */
   metricsView?: string;
 };
+
+export type RuntimeServiceGitSwitchBranchBody = {
+  branch?: string;
+  create?: boolean;
+  ignoreLocalChanges?: boolean;
+};
+
+export type RuntimeServiceGitCommitBody = {
+  commitMessage?: string;
+};
+
+export type RuntimeServiceListGitCommitsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type RuntimeServiceGitMergeToBranchBody = {
+  branch?: string;
+  /** In case of merge conflicts, prefer current changes. */
+  force?: boolean;
+};
+
+export type RuntimeServiceGitPullBody = {
+  discardLocal?: boolean;
+};
+
+export type RuntimeServiceGitPushBody = {
+  commitMessage?: string;
+  force?: boolean;
+};
+
+export type RuntimeServiceRestoreGitCommitBody = { [key: string]: unknown };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;
@@ -3130,6 +3247,8 @@ export type RuntimeServiceQueryResolverBody = {
   resolverArgs?: RuntimeServiceQueryResolverBodyResolverArgs;
   limit?: number;
 };
+
+export type RuntimeServiceReloadConfigBody = { [key: string]: unknown };
 
 export type QueryServiceExportReportBody = {
   /** The execution time to evaluate the report relative to.
