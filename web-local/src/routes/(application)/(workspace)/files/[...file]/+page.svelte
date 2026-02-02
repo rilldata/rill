@@ -87,8 +87,6 @@
     const directory = filePath.split("/").slice(0, -1).join("/");
     directoryState.expand(directory);
   }
-
-  $: console.log("generatingCanvas", $generatingCanvas);
 </script>
 
 <svelte:head>
@@ -97,7 +95,7 @@
 
 <div class="flex h-full overflow-hidden">
   <div class="flex-1 overflow-hidden">
-    {#if true}
+    {#if $generatingCanvas}
       <GeneratingCanvasMessage />
     {:else if workspace}
       <svelte:component this={workspace} {fileArtifact} />
