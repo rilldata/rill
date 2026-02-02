@@ -48,10 +48,7 @@
   function onFocus() {
     onInspect(row.index);
     cellActive = true;
-    // Update the cell inspector store with the cell value
-    if (value !== undefined && value !== null) {
-      cellInspectorStore.updateValue(value.toString());
-    }
+    cellInspectorStore.updateValue(value);
   }
 
   function onSelect(e: MouseEvent) {

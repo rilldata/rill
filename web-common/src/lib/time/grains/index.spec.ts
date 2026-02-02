@@ -1,4 +1,4 @@
-import { V1TimeGrain } from "../../../runtime-client";
+import { V1TimeGrain } from "../../../runtime-client/gen/index.schemas";
 import { TIME_GRAIN } from "../config";
 import {
   durationToMillis,

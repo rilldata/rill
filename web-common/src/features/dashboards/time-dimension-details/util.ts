@@ -46,9 +46,9 @@ export function getClassForCell(
 ) {
   const bgColors = {
     fixed: {
-      base: "bg-surface-background",
-      highlighted: "bg-gray-100",
-      doubleHighlighted: "bg-gray-200",
+      base: "bg-surface-base",
+      highlighted: "bg-surface-hover/50",
+      doubleHighlighted: "bg-surface-hover",
     },
     scrubbed: {
       base: "bg-primary-50",
@@ -56,9 +56,9 @@ export function getClassForCell(
       doubleHighlighted: "bg-primary-200",
     },
     default: {
-      base: "bg-surface-background",
-      highlighted: "bg-gray-100",
-      doubleHighlighted: "bg-gray-200",
+      base: "bg-surface-base",
+      highlighted: "bg-surface-hover/50",
+      doubleHighlighted: "bg-surface-hover",
     },
   };
 
