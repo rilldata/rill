@@ -1,4 +1,5 @@
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
@@ -44,11 +45,22 @@ export function hasCanvasFilters(canvasEntity: CanvasEntity): boolean {
 }
 
 /**
- * Extracts the current canvas state from the URL.
- * Canvas state is already encoded in URL parameters (tr, f.*, compare_tr, grain, tz).
- * This function returns the URL state as a string to be passed to the magic auth token API.
+ * Returns the sanitized canvas state from the URL.
+ * Removes filter parameters (f and f.*) so locked filters don't appear in the shared URL.
+ * This ensures we do not leak hidden filter information to the URL recipient.
  */
-export function getCanvasStateUrl(currentUrl: URL): string {
+export function getSanitizedCanvasStateUrl(currentUrl: URL): string {
   const searchParams = new URLSearchParams(currentUrl.search);
+  const filterPrefix: string = ExploreStateURLParams.Filters; // "f"
+
+  // Remove all filter-related parameters (f, f.metricsViewName, etc.)
+  const keysToDelete: string[] = [];
+  searchParams.forEach((_, key) => {
+    if (key === filterPrefix || key.startsWith(`${filterPrefix}.`)) {
+      keysToDelete.push(key);
+    }
+  });
+  keysToDelete.forEach((key) => searchParams.delete(key));
+
   return searchParams.toString();
 }
