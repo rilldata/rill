@@ -21,6 +21,7 @@ export const ToProtoOperationMap: Record<V1Operation, Operation> = {
   [V1Operation.OPERATION_NIN]: Operation.NIN,
   [V1Operation.OPERATION_LIKE]: Operation.LIKE,
   [V1Operation.OPERATION_NLIKE]: Operation.NLIKE,
+  [V1Operation.OPERATION_CAST]: Operation.CAST,
 };
 
 export const FromProtoOperationMap = {} as Record<Operation, V1Operation>;

@@ -2,7 +2,7 @@ import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains.ts"
 import {
   V1TimeGrain,
   type V1TimeRange,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime, type DateTimeFormatOptions, Interval } from "luxon";
 
 // Formats a Luxon interval for human readable display throughout the application.
@@ -113,4 +113,57 @@ function getCorrectGrainOrder(grain: V1TimeGrain) {
   )
     return yearGrainOrder + 1;
   return V1TimeGrainToOrder[grain];
+}
+
+const quarterGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER];
+const weekGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_WEEK];
+
+/**
+ * Formats a datetime according to the specified grain, showing only
+ * the relevant precision for that grain level.
+ */
+export function formatDateTimeByGrain(
+  dt: DateTime,
+  grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+): string {
+  if (!dt.isValid) return "Invalid date";
+
+  const grainOrder = getCorrectGrainOrder(grain);
+
+  const format: DateTimeFormatOptions = {
+    year: "numeric",
+  };
+
+  // Show month for quarter grain and finer
+  if (grainOrder <= quarterGrainOrder) {
+    format.month = "short";
+  }
+
+  // Show day for day grain and finer
+  if (grainOrder <= weekGrainOrder) {
+    format.day = "numeric";
+  }
+
+  // Show time components for hour grain and finer
+  if (grainOrder <= hourGrainOrder) {
+    format.hour = "numeric";
+    format.hour12 = true;
+  }
+
+  // Show minutes for minute grain and finer
+  if (grainOrder <= minuteGrainOrder) {
+    format.minute = "numeric";
+  }
+
+  // Show seconds only for second grain and millisecond grain
+  // (can't use order comparison since second, minute, millisecond all have order 0)
+  // may address in a follow up - bgh
+  if (
+    grain === V1TimeGrain.TIME_GRAIN_SECOND ||
+    grain === V1TimeGrain.TIME_GRAIN_MILLISECOND
+  ) {
+    format.second = "2-digit";
+  }
+
+  return dt.toLocaleString(format);
 }

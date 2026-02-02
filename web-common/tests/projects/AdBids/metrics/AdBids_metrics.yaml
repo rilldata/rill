@@ -2,10 +2,10 @@
 # Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 
 version: 1
-type: metrics_view 
+type: metrics_view
 
 display_name: Adbids
-table: AdBids
+table: AdBids_model
 timeseries: timestamp
 
 dimensions:
@@ -15,6 +15,14 @@ dimensions:
   - name: domain
     display_name: Domain
     column: domain
+  - name: timestamp
+    display_name: Timestamp
+    column: timestamp
+    type: time
+  - name: offset_timestamp
+    display_name: Offset Timestamp
+    column: offset_timestamp
+    type: time
 
 measures:
   - name: total_records

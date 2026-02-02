@@ -98,7 +98,7 @@ describe("DashboardStateManager", () => {
     const ExploreStateSubsetForRillDefaultState: Partial<ExploreState> = {
       selectedTimeRange: {
         name: "rill-QTD",
-        interval: V1TimeGrain.TIME_GRAIN_WEEK,
+        interval: V1TimeGrain.TIME_GRAIN_DAY,
       } as DashboardTimeControls,
       showTimeComparison: false,
       selectedComparisonTimeRange: undefined,

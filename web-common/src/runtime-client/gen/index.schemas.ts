@@ -884,6 +884,7 @@ If not found in `time_ranges`, it should be added to the list. */
   timezone?: string;
   timeGrain?: string;
   selectTimeRange?: string;
+  timeDimension?: string;
   comparisonMode?: V1ExploreComparisonMode;
   compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
@@ -1102,6 +1103,57 @@ export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
 }
 
+export interface V1GitBranch {
+  name?: string;
+  hasDeployment?: boolean;
+  editableDeployment?: boolean;
+}
+
+export interface V1GitCommit {
+  commitSha?: string;
+  authorName?: string;
+  authorEmail?: string;
+  committedOn?: string;
+  message?: string;
+}
+
+export interface V1GitCommitResponse {
+  commitSha?: string;
+}
+
+export interface V1GitMergeToBranchResponse {
+  /** The output of the git merge command. Only set for unsuccessful merges. */
+  output?: string;
+}
+
+export interface V1GitPullResponse {
+  /** The output of the git pull command. Only set for unsuccessful pulls. */
+  output?: string;
+}
+
+export interface V1GitPushResponse {
+  [key: string]: unknown;
+}
+
+export interface V1GitStatusResponse {
+  /** The current branch of the git repo. */
+  branch?: string;
+  /** The remote url of the git repo. */
+  githubUrl?: string;
+  /** If the repo is managed by Rill. */
+  managedGit?: boolean;
+  /** local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo. */
+  localChanges?: boolean;
+  /** local_commits returns number of local commits that are not pushed to the remote git repo. */
+  localCommits?: number;
+  /** remote_commits returns number of remote commits not pulled yet. */
+  remoteCommits?: number;
+}
+
+export interface V1GitSwitchBranchResponse {
+  [key: string]: unknown;
+}
+
 export type V1HealthResponseInstancesHealth = {
   [key: string]: V1InstanceHealth;
 };
@@ -1158,6 +1210,7 @@ export interface V1Instance {
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
   frontendUrl?: string;
+  theme?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1219,6 +1272,16 @@ export interface V1ListExamplesResponse {
 
 export interface V1ListFilesResponse {
   files?: V1DirEntry[];
+}
+
+export interface V1ListGitBranchesResponse {
+  currentBranch?: string;
+  branches?: V1GitBranch[];
+}
+
+export interface V1ListGitCommitsResponse {
+  commits?: V1GitCommit[];
+  nextPageToken?: string;
 }
 
 export interface V1ListInstancesResponse {
@@ -1929,6 +1992,7 @@ export const V1Operation = {
   OPERATION_NIN: "OPERATION_NIN",
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
+  OPERATION_CAST: "OPERATION_CAST",
 } as const;
 
 export interface V1ParseError {
@@ -2227,6 +2291,10 @@ export interface V1ResourceMeta {
 export interface V1ResourceName {
   kind?: string;
   name?: string;
+}
+
+export interface V1RestoreGitCommitResponse {
+  newCommitSha?: string;
 }
 
 export interface V1Schedule {
@@ -2739,6 +2807,38 @@ export type RuntimeServiceGenerateResolverBody = {
   /** table and connector should not be provided if metrics_view is provided. */
   metricsView?: string;
 };
+
+export type RuntimeServiceGitSwitchBranchBody = {
+  branch?: string;
+  create?: boolean;
+  ignoreLocalChanges?: boolean;
+};
+
+export type RuntimeServiceGitCommitBody = {
+  commitMessage?: string;
+};
+
+export type RuntimeServiceListGitCommitsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type RuntimeServiceGitMergeToBranchBody = {
+  branch?: string;
+  /** In case of merge conflicts, prefer current changes. */
+  force?: boolean;
+};
+
+export type RuntimeServiceGitPullBody = {
+  discardLocal?: boolean;
+};
+
+export type RuntimeServiceGitPushBody = {
+  commitMessage?: string;
+  force?: boolean;
+};
+
+export type RuntimeServiceRestoreGitCommitBody = { [key: string]: unknown };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;

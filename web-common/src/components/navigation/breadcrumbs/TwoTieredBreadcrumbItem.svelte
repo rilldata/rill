@@ -3,9 +3,11 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import type { PathOptions } from "./types";
 
-  export let options: PathOptions;
+  export let pathOptions: PathOptions;
   export let current: string;
   export let isCurrentPage = false;
+
+  $: ({ options } = pathOptions);
 
   $: selected = options.get(current.toLowerCase());
 
@@ -30,7 +32,7 @@
     {#if selected}
       <a
         href={isCurrentPage ? "#top" : undefined}
-        class="text-gray-500 hover:text-gray-600 flex flex-row items-center gap-x-2"
+        class="text-fg-secondary hover:text-fg-secondary flex flex-row items-center gap-x-2"
         class:current={isCurrentPage}
       >
         <span>{selected?.label}</span>
@@ -59,7 +61,7 @@
                       href={subItem.href}
                       preloadData={false}
                     >
-                      <span class="text-xs text-gray-800 flex-grow">
+                      <span class="text-xs text-fg-primary flex-grow">
                         {subItem.label}
                       </span>
                     </DropdownMenu.Item>
@@ -73,7 +75,7 @@
                 href={subItems.href}
                 preloadData={false}
               >
-                <span class="text-xs text-gray-800 flex-grow">
+                <span class="text-xs text-fg-primary flex-grow">
                   {subItems.label}
                 </span>
               </DropdownMenu.Item>
@@ -87,12 +89,12 @@
 
 <style lang="postcss">
   .current {
-    @apply text-gray-800 font-medium;
+    @apply text-fg-primary font-medium;
   }
 
   .trigger {
     @apply flex flex-col justify-center items-center;
-    @apply transition-transform text-gray-500;
+    @apply transition-transform text-fg-secondary;
     @apply px-0.5 py-1 rounded;
   }
 

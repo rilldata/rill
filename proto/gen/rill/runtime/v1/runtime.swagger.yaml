@@ -1187,6 +1187,261 @@ paths:
                 description: table and connector should not be provided if metrics_view is provided.
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/git/branches:
+    get:
+      operationId: RuntimeService_ListGitBranches
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGitBranchesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/branches/switch:
+    post:
+      operationId: RuntimeService_GitSwitchBranch
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitSwitchBranchResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              create:
+                type: boolean
+              ignoreLocalChanges:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/commit:
+    post:
+      summary: GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+      operationId: RuntimeService_GitCommit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitCommitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              commitMessage:
+                type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/commits:
+    get:
+      operationId: RuntimeService_ListGitCommits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGitCommitsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/merge:
+    post:
+      summary: |-
+        GitMergeToBranch merges current branch to the specified branch.
+        Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+        It restores back to the original branch after the merge.
+      operationId: RuntimeService_GitMergeToBranch
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitMergeToBranchResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              force:
+                type: boolean
+                description: In case of merge conflicts, prefer current changes.
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/pull:
+    post:
+      summary: |-
+        GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+        If there are any merge conflicts the pull is aborted.
+        Force can be set to true to force the pull and overwrite any local changes.
+      operationId: RuntimeService_GitPull
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitPullResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              discardLocal:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/push:
+    post:
+      summary: |-
+        GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+        It only pushes the changes to the existing remote repo.
+      operationId: RuntimeService_GitPush
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitPushResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              commitMessage:
+                type: string
+              force:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/restore/{commitSha}:
+    post:
+      summary: |-
+        RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+        This effectively discards all the changes made after the specified commit.
+      operationId: RuntimeService_RestoreGitCommit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RestoreGitCommitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: commitSha
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.RestoreGitCommit
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/status:
+    get:
+      summary: GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+      operationId: RuntimeService_GitStatus
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/logs:
     get:
       summary: GetLogs returns recent logs from a controller
@@ -4761,6 +5016,8 @@ definitions:
         type: string
       selectTimeRange:
         type: string
+      timeDimension:
+        type: string
       comparisonMode:
         $ref: '#/definitions/v1ExploreComparisonMode'
         description: Comparison mode.
@@ -5090,6 +5347,73 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GitBranch:
+    type: object
+    properties:
+      name:
+        type: string
+      hasDeployment:
+        type: boolean
+      editableDeployment:
+        type: boolean
+  v1GitCommit:
+    type: object
+    properties:
+      commitSha:
+        type: string
+      authorName:
+        type: string
+      authorEmail:
+        type: string
+      committedOn:
+        type: string
+        format: date-time
+      message:
+        type: string
+  v1GitCommitResponse:
+    type: object
+    properties:
+      commitSha:
+        type: string
+  v1GitMergeToBranchResponse:
+    type: object
+    properties:
+      output:
+        type: string
+        description: The output of the git merge command. Only set for unsuccessful merges.
+  v1GitPullResponse:
+    type: object
+    properties:
+      output:
+        type: string
+        description: The output of the git pull command. Only set for unsuccessful pulls.
+  v1GitPushResponse:
+    type: object
+  v1GitStatusResponse:
+    type: object
+    properties:
+      branch:
+        type: string
+        description: The current branch of the git repo.
+      githubUrl:
+        type: string
+        description: The remote url of the git repo.
+      managedGit:
+        type: boolean
+        description: If the repo is managed by Rill.
+      localChanges:
+        type: boolean
+        description: local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+      localCommits:
+        type: integer
+        format: int32
+        description: local_commits returns number of local commits that are not pushed to the remote git repo.
+      remoteCommits:
+        type: integer
+        format: int32
+        description: remote_commits returns number of remote commits not pulled yet.
+  v1GitSwitchBranchResponse:
+    type: object
   v1HealthResponse:
     type: object
     properties:
@@ -5164,6 +5488,8 @@ definitions:
       aiInstructions:
         type: string
       frontendUrl:
+        type: string
+      theme:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
@@ -5276,6 +5602,26 @@ definitions:
           type: object
           $ref: '#/definitions/v1DirEntry'
     title: Response message for RuntimeService.ListFiles
+  v1ListGitBranchesResponse:
+    type: object
+    properties:
+      currentBranch:
+        type: string
+      branches:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1GitBranch'
+  v1ListGitCommitsResponse:
+    type: object
+    properties:
+      commits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1GitCommit'
+      nextPageToken:
+        type: string
   v1ListInstancesResponse:
     type: object
     properties:
@@ -6548,6 +6894,7 @@ definitions:
       - OPERATION_NIN
       - OPERATION_LIKE
       - OPERATION_NLIKE
+      - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
   v1ParseError:
     type: object
@@ -7016,6 +7363,12 @@ definitions:
         type: string
       name:
         type: string
+  v1RestoreGitCommitResponse:
+    type: object
+    properties:
+      newCommitSha:
+        type: string
+    title: Response message for RuntimeService.RestoreGitCommit
   v1Schedule:
     type: object
     properties:

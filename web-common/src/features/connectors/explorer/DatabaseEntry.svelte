@@ -34,13 +34,13 @@
       on:click={() => store.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
-        className="transform transition-transform text-gray-400 {expanded
+        className="transform transition-transform text-fg-secondary {expanded
           ? 'rotate-0'
           : '-rotate-90'}"
         size="14px"
       />
-      <Database size="14px" class="shrink-0 text-gray-400" />
-      <span class="truncate">
+      <Database size="14px" class="shrink-0 text-fg-secondary" />
+      <span class="truncate text-fg-primary">
         {database}
       </span>
     </button>
@@ -85,10 +85,10 @@
   }
 
   button:hover {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   .message {
-    @apply pl-2 pr-3.5 pt-2 pb-2 text-gray-500;
+    @apply pl-2 pr-3.5 pt-2 pb-2 text-fg-secondary;
   }
 </style>

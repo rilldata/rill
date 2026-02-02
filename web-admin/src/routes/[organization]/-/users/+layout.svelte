@@ -11,7 +11,7 @@
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/users`;
 
-  // https://docs.rilldata.com/manage/roles-permissions#organization-level-permissions
+  // https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions#organization-level-permissions
   // org admin and editor can manage org members
   $: hasManageOrgMembers = organizationPermissions?.manageOrgMembers;
 
