@@ -3,18 +3,17 @@
   import { ThumbsDown, ThumbsUp } from "lucide-svelte";
   import { slide } from "svelte/transition";
   import type { Conversation } from "../conversation";
+  import type { FeedbackData } from "../messages/text/text-block";
 
   export let messageId: string;
   export let conversation: Conversation;
+  export let feedback: FeedbackData | undefined;
   export let onDownvote: (messageId: string) => void;
 
-  // Subscribe to reactive stores
-  $: sentimentsStore = conversation.feedback.sentiments;
-  $: responsesStore = conversation.feedback.responses;
-  $: pendingMessageIdStore = conversation.feedback.pendingMessageId;
-  $: currentSentiment = $sentimentsStore.get(messageId) ?? null;
-  $: feedbackResponse = $responsesStore.get(messageId) ?? null;
-  $: isPending = $pendingMessageIdStore === messageId;
+  // Derive state from props (not stores)
+  $: currentSentiment = feedback?.sentiment ?? null;
+  $: feedbackResponse = feedback?.response ?? null;
+  $: isPending = feedback?.isPending ?? false;
   $: isStreaming = conversation.isStreaming;
   $: isDisabled = $isStreaming;
 

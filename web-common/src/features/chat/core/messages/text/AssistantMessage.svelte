@@ -2,18 +2,17 @@
 <script lang="ts">
   import { enhanceCitationLinks } from "@rilldata/web-common/features/chat/core/messages/text/enhance-citation-links.ts";
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
-  import type { V1Message } from "../../../../../runtime-client";
   import type { Conversation } from "../../conversation";
   import FeedbackButtons from "../../feedback/FeedbackButtons.svelte";
   import { extractMessageText } from "../../utils";
+  import type { TextBlock } from "./text-block";
 
-  export let message: V1Message;
+  export let block: TextBlock;
   export let conversation: Conversation;
   export let onDownvote: (messageId: string) => void;
 
+  $: message = block.message;
   $: messageId = message.id ?? "";
-
-  // Message content and styling
   $: content = extractMessageText(message);
 </script>
 
@@ -22,7 +21,12 @@
     <Markdown {content} />
   </div>
   <div class="chat-message-actions">
-    <FeedbackButtons {messageId} {conversation} {onDownvote} />
+    <FeedbackButtons
+      {messageId}
+      {conversation}
+      feedback={block.feedback}
+      {onDownvote}
+    />
   </div>
 </div>
 

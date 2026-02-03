@@ -26,7 +26,6 @@ import {
   type Writable,
 } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import { FeedbackState } from "./feedback/feedback-state";
 import type { FeedbackCategory, FeedbackSentiment } from "./feedback/types";
 import { transformToBlocks, type Block } from "./messages/block-transform";
 import { MessageContentType, MessageType, ToolName } from "./types";
@@ -57,9 +56,6 @@ export class Conversation {
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
 
-  // Feedback state (submission handled by submitFeedback method below)
-  public readonly feedback = new FeedbackState();
-
   // Events
   private readonly events = new EventEmitter<ConversationEvents>();
   public readonly on = this.events.on.bind(
@@ -76,7 +72,6 @@ export class Conversation {
     V1GetConversationResponse,
     RpcStatus
   >;
-  private readonly unsubscribeFeedbackHydration: () => void;
 
   // Reactive store for conversationId - enables query to auto-update when ID changes
   private readonly conversationIdStore: Writable<string>;
@@ -113,15 +108,6 @@ export class Conversation {
     );
 
     this.conversationQuery = createQuery(queryOptionsStore, queryClient);
-
-    // Hydrate feedback state when conversation data loads
-    this.unsubscribeFeedbackHydration = this.conversationQuery.subscribe(
-      (query) => {
-        if (query.data?.messages) {
-          this.feedback.hydrateFromMessages(query.data.messages);
-        }
-      },
-    );
   }
 
   /**
@@ -258,8 +244,8 @@ export class Conversation {
   /**
    * Submit user feedback for a message.
    *
-   * Updates feedback state optimistically, then streams the submission to the server.
-   * The feedback is stored as messages in the conversation (visible to LLM in future turns).
+   * Streams the feedback submission to the server. The feedback is stored as messages
+   * in the conversation and will be picked up by transformToBlocks for UI display.
    */
   public async submitFeedback(
     targetMessageId: string,
@@ -272,10 +258,6 @@ export class Conversation {
       this.streamError.set("Please wait for the current operation to complete");
       return;
     }
-
-    // Optimistic state updates
-    this.feedback.setSentiment(targetMessageId, sentiment);
-    this.feedback.setPending(targetMessageId);
 
     this.streamError.set(null);
     this.isStreaming.set(true);
@@ -297,7 +279,6 @@ export class Conversation {
       });
       this.streamError.set(this.formatTransportError(error as Error));
     } finally {
-      this.feedback.setPending(null);
       this.isStreaming.set(false);
     }
   }
@@ -326,7 +307,6 @@ export class Conversation {
       this.sseClient = null;
     }
 
-    this.unsubscribeFeedbackHydration();
     this.events.clearListeners();
   }
 

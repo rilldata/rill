@@ -131,7 +131,7 @@
         <UserMessage message={block.message} />
       {:else if block.type === "text" && block.message.role === "assistant"}
         <AssistantMessage
-          message={block.message}
+          {block}
           conversation={currentConversation}
           onDownvote={handleDownvote}
         />

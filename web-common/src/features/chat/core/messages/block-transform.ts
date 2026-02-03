@@ -2,19 +2,33 @@
  * Block Transformation
  *
  * Transforms raw API messages (V1Message) into UI blocks (Block).
+ *
+ * This module is the single source of truth for how messages become UI elements.
+ * It handles:
+ * - Routing messages to appropriate block types (text, thinking, chart, etc.)
+ * - Filtering hidden messages (internal tools, results shown inline)
+ * - Extracting feedback data and attaching it to assistant messages
+ * - Correlating tool calls with their results
  */
 
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageType, ToolName } from "../types";
 import { type ChartBlock } from "./chart/chart-block";
 import { type FileDiffBlock } from "./file-diff/file-diff-block";
-import { shouldHideMessage } from "./message-visibility";
-import { createTextBlock, type TextBlock } from "./text/text-block";
+import {
+  createTextBlock,
+  type FeedbackData,
+  type TextBlock,
+} from "./text/text-block";
 import {
   createThinkingBlock,
   type ThinkingBlock,
 } from "./thinking/thinking-block";
-import { getToolConfig, type ToolConfig } from "./tools/tool-registry";
+import {
+  getToolConfig,
+  isHiddenTool,
+  type ToolConfig,
+} from "./tools/tool-registry";
 import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
 import type { SimpleToolCall } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 
@@ -53,13 +67,9 @@ export function transformToBlocks(
 ): Block[] {
   const blocks: Block[] = [];
 
-  // Build result map for correlating tool calls with their results
+  // Build lookup maps
   const resultMap = buildResultMessageMap(messages);
-
-  // Build message map for parent lookups (used by visibility checks)
-  const messageMap = new Map(
-    messages.filter((m) => m.id).map((m) => [m.id!, m]),
-  );
+  const feedbackMap = buildFeedbackMap(messages);
 
   // Accumulator for messages going into the current thinking block
   let thinkingMessages: V1Message[] = [];
@@ -80,13 +90,17 @@ export function transformToBlocks(
 
   // Process each message
   for (const msg of messages) {
-    const routing = getBlockRoute(msg, messageMap);
+    const routing = getBlockRoute(msg);
 
     switch (routing.route) {
-      case "text":
+      case "text": {
         flushThinking(true);
-        blocks.push(createTextBlock(msg));
+        // Attach feedback for assistant messages (router_agent results)
+        const feedback =
+          msg.role === "assistant" ? feedbackMap.get(msg.id!) : undefined;
+        blocks.push(createTextBlock(msg, feedback));
         break;
+      }
 
       case "thinking":
         thinkingMessages.push(msg);
@@ -118,8 +132,10 @@ export function transformToBlocks(
 }
 
 // =============================================================================
-// ROUTING
+// HELPERS
 // =============================================================================
+
+// ----- Routing -----
 
 type BlockRoute =
   | { route: "text" }
@@ -130,12 +146,9 @@ type BlockRoute =
 /**
  * Determines where a message should be routed for rendering.
  */
-function getBlockRoute(
-  msg: V1Message,
-  messageMap: Map<string, V1Message>,
-): BlockRoute {
-  // Visibility check (handles hidden tools, results, feedback messages)
-  if (shouldHideMessage(msg, messageMap)) {
+function getBlockRoute(msg: V1Message): BlockRoute {
+  // Visibility check
+  if (shouldHideMessage(msg)) {
     return { route: "skip" };
   }
 
@@ -160,6 +173,52 @@ function getBlockRoute(
   return { route: "skip" };
 }
 
+// ----- Visibility -----
+//
+// "Hidden" messages are still rendered, just in different UI locations:
+// - Internal tools (analyst_agent, feedback_agent, etc.) → thinking blocks
+// - Tool results → inside their parent tool call's collapsible UI
+// - Feedback-related router_agent messages → feedback shown inline on target message
+//
+// Exception: router_agent results are the AI's text responses and ARE shown
+// as main chat blocks (unless they're feedback-related).
+
+function shouldHideMessage(msg: V1Message): boolean {
+  // Internal tools → rendered in thinking blocks (see tool-registry.ts)
+  if (msg.tool !== ToolName.ROUTER_AGENT && isHiddenTool(msg.tool)) {
+    return true;
+  }
+
+  // Tool results → rendered inside parent tool call's UI
+  if (msg.type === MessageType.RESULT && msg.tool !== ToolName.ROUTER_AGENT) {
+    return true;
+  }
+
+  // Feedback-related router_agent messages → feedback is shown inline on the target message
+  // The backend sets agent: "feedback_agent" in router_agent content for feedback requests
+  if (msg.tool === ToolName.ROUTER_AGENT && isFeedbackRouterMessage(msg)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Check if a router_agent message is feedback-related.
+ * The backend marks these with agent: "feedback_agent" in the content.
+ */
+function isFeedbackRouterMessage(msg: V1Message): boolean {
+  if (!msg.contentData) return false;
+  try {
+    const content = JSON.parse(msg.contentData);
+    return content.agent === ToolName.FEEDBACK_AGENT;
+  } catch {
+    return false;
+  }
+}
+
+// ----- Result Correlation -----
+
 /**
  * Build a map from tool call message IDs to their result messages.
  */
@@ -174,4 +233,62 @@ function buildResultMessageMap(
       )
       .map((msg) => [msg.parentId, msg]),
   );
+}
+
+// ----- Feedback Extraction -----
+
+/** Structure of feedback call content stored in messages */
+interface FeedbackCallContent {
+  target_message_id: string;
+  sentiment: "positive" | "negative";
+  categories?: string[];
+  comment?: string;
+}
+
+/**
+ * Build a map of feedback data keyed by target message ID.
+ * Scans for feedback_agent CALL and RESULT messages.
+ */
+function buildFeedbackMap(messages: V1Message[]): Map<string, FeedbackData> {
+  const feedbackMap = new Map<string, FeedbackData>();
+
+  for (const msg of messages) {
+    // Find feedback_agent CALL messages
+    if (msg.tool === ToolName.FEEDBACK_AGENT && msg.type === MessageType.CALL) {
+      try {
+        const content = JSON.parse(
+          msg.contentData || "",
+        ) as FeedbackCallContent;
+        if (content.target_message_id && content.sentiment) {
+          // Find the corresponding RESULT
+          const resultMsg = messages.find(
+            (m) =>
+              m.tool === ToolName.FEEDBACK_AGENT &&
+              m.type === MessageType.RESULT &&
+              m.parentId === msg.id,
+          );
+
+          let response: string | null = null;
+          if (resultMsg) {
+            try {
+              const resultContent = JSON.parse(resultMsg.contentData || "");
+              response = resultContent.response || null;
+            } catch {
+              // Skip malformed result
+            }
+          }
+
+          feedbackMap.set(content.target_message_id, {
+            sentiment: content.sentiment,
+            response,
+            isPending: !resultMsg,
+          });
+        }
+      } catch {
+        // Skip malformed feedback messages
+      }
+    }
+  }
+
+  return feedbackMap;
 }
