@@ -48,8 +48,10 @@
     error={hibernateResult.error?.message ?? ""}
     onConfirm={hibernateProject}
   >
-    <svelte:fragment let:builder>
-      <Button builders={[builder]} type="secondary">Hibernate project</Button>
+    <svelte:fragment slot="default" let:builder>
+      <Button builders={[builder]} type="secondary-destructive"
+        >Hibernate project</Button
+      >
     </svelte:fragment>
   </AlertDialogGuardedConfirmation>
 </SettingsContainer>

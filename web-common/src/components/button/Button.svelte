@@ -2,6 +2,7 @@
   export type ButtonType =
     | "primary"
     | "secondary"
+    | "secondary-destructive"
     | "tertiary"
     | "neutral"
     | "destructive"
@@ -117,11 +118,17 @@
     @apply cursor-not-allowed;
   }
 
-  /* button:focus {
+  button:focus,
+  a:focus {
+    @apply outline-none;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
     @apply outline-none;
     box-shadow: 0px 0px 4px 1px
       color-mix(in oklab, var(--focus-color) 50%, transparent);
-  } */
+  }
 
   /* PRIMARY STYLES */
 
@@ -167,6 +174,25 @@
   }
 
   .secondary:disabled {
+    @apply opacity-50;
+  }
+
+  /* SECONDARY DESTRUCTIVE STYLES */
+
+  .secondary-destructive {
+    --focus-color: var(--color-destructive-600);
+    @apply bg-transparent border border-destructive text-destructive;
+  }
+
+  :global(.dark) .secondary-destructive {
+    @apply bg-transparent;
+  }
+
+  .secondary-destructive:hover:not(:disabled) {
+    @apply bg-destructive/10 text-destructive;
+  }
+
+  .secondary-destructive:disabled {
     @apply opacity-50;
   }
 

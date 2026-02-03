@@ -109,7 +109,9 @@
         onConfirm={makePublic}
       >
         <svelte:fragment let:builder>
-          <Button builders={[builder]} type="secondary">Make public</Button>
+          <Button builders={[builder]} type="secondary-destructive"
+            >Make public</Button
+          >
         </svelte:fragment>
       </AlertDialogGuardedConfirmation>
     {/if}

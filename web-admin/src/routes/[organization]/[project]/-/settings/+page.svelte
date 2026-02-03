@@ -28,7 +28,7 @@
   }
 
   .danger-zone-title {
-    @apply text-lg font-semibold text-red-600;
+    @apply text-lg font-semibold;
   }
 
   .danger-zone-items {
