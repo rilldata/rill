@@ -24,7 +24,7 @@
     type FlyParams,
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
-  import { keepPreviousData, type QueryClient } from "@tanstack/svelte-query";
+  import { keepPreviousData } from "@tanstack/svelte-query";
 
   export let measure: MetricsViewSpecMeasure;
   export let withTimeseries = true;

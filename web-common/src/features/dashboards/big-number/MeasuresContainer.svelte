@@ -188,7 +188,6 @@
           {metricsViewName}
           where={chartWhere}
           ready={chartReady}
-          queryClient={ctx.queryClient}
         />
       </div>
     {/each}
