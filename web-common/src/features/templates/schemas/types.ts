@@ -129,6 +129,12 @@ export type JSONSchemaObject = {
    */
   "x-form-height"?: "default" | "tall";
   /**
+   * Form width for the add data modal.
+   * "wide" = wider form for connectors with templates or more content
+   * "default" = standard form width
+   */
+  "x-form-width"?: "default" | "wide";
+  /**
    * Backend connector name when different from schema name.
    * Used when a UI variant (e.g., "clickhousecloud") should map
    * to a different backend driver (e.g., "clickhouse").
