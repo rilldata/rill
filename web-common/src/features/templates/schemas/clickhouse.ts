@@ -8,39 +8,35 @@ export const clickhouseSchema: MultiStepFormSchema = {
   "x-form-height": "tall",
   "x-form-width": "wide",
   "x-button-labels": {
-    connector_type: {
+    deployment_type: {
       "rill-managed": { idle: "Connect", loading: "Connecting..." },
     },
   },
-  "x-templates": [
-    {
-      id: "playground",
-      label: "ClickHouse Playground",
-      description: "Free public ClickHouse instance for testing and demos",
-      values: {
-        connector_type: "self-hosted",
-        connection_mode: "parameters",
-        host: "play.clickhouse.com",
-        port: "9440",
-        username: "play",
-        password: "",
-        database: "default",
-        ssl: true,
-      },
-    },
-  ],
   properties: {
-    connector_type: {
+    deployment_type: {
       type: "string",
       title: "Connection type",
-      enum: ["rill-managed", "self-hosted"],
-      default: "self-hosted",
-      "x-display": "radio",
-      "x-enum-labels": ["Rill-managed ClickHouse", "Self-hosted ClickHouse"],
+      enum: ["cloud", "playground", "self-managed", "rill-managed"],
+      default: "cloud",
+      "x-display": "connection-type",
+      "x-enum-labels": [
+        "ClickHouse Cloud",
+        "ClickHouse Playground",
+        "Self Managed",
+        "Rill Managed",
+      ],
+      "x-enum-descriptions": [
+        "Connect to your ClickHouse Cloud instance",
+        "Free public instance for testing and demos",
+        "Connect to your own self-hosted server",
+        "Rill manages your ClickHouse infrastructure",
+      ],
       "x-ui-only": true,
       "x-grouped-fields": {
+        cloud: ["connection_mode"],
+        playground: ["host", "port", "username", "password", "database", "ssl"],
+        "self-managed": ["connection_mode"],
         "rill-managed": ["managed"],
-        "self-hosted": ["connection_mode"],
       },
       "x-step": "connector",
     },
@@ -64,7 +60,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
         dsn: ["dsn"],
       },
       "x-visible-if": {
-        connector_type: "self-hosted",
+        deployment_type: ["cloud", "self-managed"],
       },
       "x-step": "connector",
     },
@@ -77,7 +73,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "clickhouse://localhost:9000?username=default&password=password",
       "x-secret": true,
       "x-visible-if": {
-        connector_type: "self-hosted",
+        deployment_type: ["cloud", "self-managed"],
       },
       "x-step": "connector",
     },
@@ -86,10 +82,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       title: "Managed",
       description:
         "This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance.",
-      default: false,
+      default: true,
       "x-informational": true,
       "x-visible-if": {
-        connector_type: "rill-managed",
+        deployment_type: "rill-managed",
       },
       "x-step": "connector",
     },
@@ -100,20 +96,27 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "your.clickhouse.server.com",
       "x-hint": "Your ClickHouse hostname (e.g., your-server.com)",
       "x-visible-if": {
-        connector_type: "self-hosted",
+        deployment_type: ["cloud", "self-managed", "playground"],
+      },
+      "x-disabled-if": {
+        deployment_type: "playground",
       },
       "x-step": "connector",
     },
     port: {
       type: "string",
       title: "Port",
-      description: "Port number of the ClickHouse server",
+      description:
+        "Port number of the ClickHouse server. Common ports: 8443 (HTTPS), 9440 (Native TLS, secure), 8123 (HTTP, insecure), 9000 (Native TCP, insecure)",
       pattern: "^\\d+$",
       errorMessage: { pattern: "Port must be a number" },
-      default: "9000",
-      "x-placeholder": "9000",
+      default: "8443",
+      "x-placeholder": "8443",
       "x-visible-if": {
-        connector_type: "self-hosted",
+        deployment_type: ["cloud", "self-managed", "playground"],
+      },
+      "x-disabled-if": {
+        deployment_type: "playground",
       },
       "x-step": "connector",
     },
@@ -124,7 +127,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-visible-if": {
-        connector_type: "self-hosted",
+        deployment_type: ["cloud", "self-managed", "playground"],
+      },
+      "x-disabled-if": {
+        deployment_type: "playground",
       },
       "x-step": "connector",
     },
@@ -135,7 +141,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "Database password",
       "x-secret": true,
       "x-visible-if": {
-        connector_type: "self-hosted",
+        deployment_type: ["cloud", "self-managed", "playground"],
+      },
+      "x-disabled-if": {
+        deployment_type: "playground",
       },
       "x-step": "connector",
     },
@@ -146,7 +155,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-visible-if": {
-        connector_type: "self-hosted",
+        deployment_type: ["cloud", "self-managed", "playground"],
+      },
+      "x-disabled-if": {
+        deployment_type: "playground",
       },
       "x-step": "connector",
     },
@@ -157,7 +169,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "Cluster name. If set, models are created as distributed tables.",
       "x-placeholder": "Cluster name",
       "x-visible-if": {
-        connector_type: "self-hosted",
+        deployment_type: ["cloud", "self-managed"],
       },
       "x-step": "connector",
     },
@@ -167,15 +179,18 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Use SSL to connect to the ClickHouse server",
       default: true,
       "x-visible-if": {
-        connector_type: "self-hosted",
+        deployment_type: ["cloud", "self-managed", "playground"],
+      },
+      "x-disabled-if": {
+        deployment_type: "playground",
       },
       "x-step": "connector",
     },
   },
-  required: ["connector_type"],
+  required: ["deployment_type"],
   allOf: [
     {
-      if: { properties: { connector_type: { const: "rill-managed" } } },
+      if: { properties: { deployment_type: { const: "rill-managed" } } },
       then: {
         required: ["managed"],
         properties: {
@@ -184,9 +199,52 @@ export const clickhouseSchema: MultiStepFormSchema = {
       },
     },
     {
+      if: { properties: { deployment_type: { const: "playground" } } },
+      then: {
+        properties: {
+          managed: { const: false },
+          host: { const: "play.clickhouse.com" },
+          port: { const: "9440" },
+          username: { const: "play" },
+          password: { const: "" },
+          database: { const: "default" },
+          ssl: { const: true },
+        },
+      },
+    },
+    {
       if: {
         properties: {
-          connector_type: { const: "self-hosted" },
+          deployment_type: { const: "cloud" },
+          connection_mode: { const: "parameters" },
+        },
+      },
+      then: {
+        required: ["host", "username", "port"],
+        properties: {
+          managed: { const: false },
+          ssl: { const: true },
+        },
+      },
+    },
+    {
+      if: {
+        properties: {
+          deployment_type: { const: "cloud" },
+          connection_mode: { const: "dsn" },
+        },
+      },
+      then: {
+        required: ["dsn"],
+        properties: {
+          managed: { const: false },
+        },
+      },
+    },
+    {
+      if: {
+        properties: {
+          deployment_type: { const: "self-managed" },
           connection_mode: { const: "parameters" },
         },
       },
@@ -201,7 +259,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
     {
       if: {
         properties: {
-          connector_type: { const: "self-hosted" },
+          deployment_type: { const: "self-managed" },
           connection_mode: { const: "dsn" },
         },
       },

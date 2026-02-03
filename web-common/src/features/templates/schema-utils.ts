@@ -45,6 +45,25 @@ export function isVisibleForValues(
   });
 }
 
+export function isDisabledForValues(
+  schema: MultiStepFormSchema,
+  key: string,
+  values: Record<string, unknown>,
+): boolean {
+  const prop = schema.properties?.[key];
+  if (!prop) return false;
+  const conditions = prop["x-disabled-if"];
+  if (!conditions) return false;
+
+  return Object.entries(conditions).every(([depKey, expected]) => {
+    const actual = values?.[depKey];
+    if (Array.isArray(expected)) {
+      return expected.map(String).includes(String(actual));
+    }
+    return String(actual) === String(expected);
+  });
+}
+
 export function getFieldLabel(
   schema: MultiStepFormSchema,
   key: string,
@@ -321,6 +340,8 @@ function filterValuesByTabGroups(
   for (const [key, prop] of Object.entries(properties)) {
     if (!isStepMatch(schema, key, opts?.step)) continue;
     if (prop["x-display"] !== "tabs") continue;
+    // Only filter by tab groups if the tab field is visible
+    if (!isVisibleForValues(schema, key, values)) continue;
     const tabGroups = prop["x-tab-group"];
     if (!tabGroups) continue;
     const selected = String(values?.[key] ?? "");

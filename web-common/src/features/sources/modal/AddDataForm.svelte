@@ -24,6 +24,7 @@
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
+  import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -259,6 +260,7 @@
             errors={$paramsErrors}
             {onStringInputChange}
             {handleFileUpload}
+            iconMap={ICONS}
           />
         </AddDataFormSection>
       {:else}

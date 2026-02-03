@@ -20,7 +20,7 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
+  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "connection-type";
   /** Render the field value in a monospace font. */
   "x-monospace"?: boolean;
   /** Which modal step this field belongs to. */
@@ -29,10 +29,14 @@ export type JSONSchemaField = {
   "x-secret"?: boolean;
   /** Show this field only when other fields match the given values. */
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
+  /** Disable this field (read-only) when other fields match the given values. */
+  "x-disabled-if"?: Record<string, JSONSchemaVisibleIfValue>;
   /** Human-readable labels for each enum option, in the same order as `enum`. */
   "x-enum-labels"?: string[];
   /** Descriptive text for each enum option, in the same order as `enum`. */
   "x-enum-descriptions"?: string[];
+  /** Icon identifiers for each enum option, in the same order as `enum`. */
+  "x-enum-icons"?: string[];
   /** Placeholder text shown in the input when empty. */
   "x-placeholder"?: string;
   /** Helper text displayed below the input. */

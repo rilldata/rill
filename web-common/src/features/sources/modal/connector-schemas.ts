@@ -6,7 +6,6 @@ import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
-import { clickhousecloudSchema } from "../../templates/schemas/clickhousecloud";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { mysqlSchema } from "../../templates/schemas/mysql";
 import { postgresSchema } from "../../templates/schemas/postgres";
@@ -27,7 +26,6 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
   bigquery: bigquerySchema,
   clickhouse: clickhouseSchema,
-  clickhousecloud: clickhousecloudSchema,
   mysql: mysqlSchema,
   postgres: postgresSchema,
   redshift: redshiftSchema,
