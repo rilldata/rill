@@ -120,6 +120,12 @@ func (s *Stripe) CreateCheckoutSession(ctx context.Context, opts *CheckoutSessio
 		BillingAddressCollection: stripe.String(string(stripe.CheckoutSessionBillingAddressCollectionRequired)),
 		// Currency is required for setup mode to determine available payment methods
 		Currency: stripe.String(string(stripe.CurrencyUSD)),
+		// Add custom text to show pricing information
+		CustomText: &stripe.CheckoutSessionCustomTextParams{
+			Submit: &stripe.CheckoutSessionCustomTextSubmitParams{
+				Message: stripe.String("Team Plan: $250/month (10 GB included, $25/GB after). Unlimited projects & users."),
+			},
+		},
 	}
 
 	sess, err := checkoutsession.New(params)
