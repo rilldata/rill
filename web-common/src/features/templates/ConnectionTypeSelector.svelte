@@ -24,12 +24,27 @@
     "rill-managed": Sparkles,
   };
 
+  // Map option values to colors (bg, text)
+  const COLORS: Record<string, { bg: string; text: string }> = {
+    cloud: { bg: "bg-yellow-100", text: "text-yellow-600" },
+    playground: { bg: "bg-green-100", text: "text-green-600" },
+    "self-managed": { bg: "bg-purple-100", text: "text-purple-600" },
+    "rill-managed": { bg: "bg-blue-100", text: "text-blue-600" },
+  };
+
   function getIcon(optionValue: string): ComponentType<SvelteComponent> {
     return ICONS[optionValue] ?? Server;
   }
 
+  function getColors(optionValue: string): { bg: string; text: string } {
+    return COLORS[optionValue] ?? { bg: "bg-gray-100", text: "text-gray-500" };
+  }
+
   $: selectedOption = options.find((opt) => opt.value === value);
   $: SelectedIcon = selectedOption ? getIcon(selectedOption.value) : Server;
+  $: selectedColors = selectedOption
+    ? getColors(selectedOption.value)
+    : { bg: "bg-gray-100", text: "text-gray-500" };
 
   function handleChange(newValue: string | undefined) {
     if (newValue) {
@@ -54,7 +69,7 @@
       {#if selectedOption}
         <div class="flex items-center gap-3">
           <div
-            class="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center bg-yellow-100 text-yellow-600"
+            class="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center {selectedColors.bg} {selectedColors.text}"
           >
             <svelte:component this={SelectedIcon} size="18" />
           </div>
@@ -80,10 +95,11 @@
     <Select.Content class="w-full" sameWidth>
       {#each options as option (option.value)}
         {@const Icon = getIcon(option.value)}
+        {@const colors = getColors(option.value)}
         <Select.Item value={option.value} class="py-2">
           <div class="flex items-center gap-3">
             <div
-              class="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center bg-gray-100 text-gray-500"
+              class="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center {colors.bg} {colors.text}"
             >
               <svelte:component this={Icon} size="16" />
             </div>
