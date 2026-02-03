@@ -45,20 +45,4 @@
   .info-box {
     @apply p-4 bg-white border border-gray-200 rounded-lg;
   }
-
-  .info-grid {
-    @apply grid grid-cols-1 gap-6;
-  }
-
-  @media (min-width: 768px) {
-    .info-grid {
-      @apply grid-cols-2;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .info-grid {
-      @apply grid-cols-4;
-    }
-  }
 </style>
