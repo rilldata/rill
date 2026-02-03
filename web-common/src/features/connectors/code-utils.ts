@@ -327,7 +327,8 @@ export async function createYamlModelFromTable(
     ? `\n\ndev:\n  sql: ${selectStatement} limit 10000`
     : "";
 
-  const yamlContent = yamlModelTemplate(driverName).replace("{{ connector }}", connector)
+  const yamlContent = yamlModelTemplate(driverName)
+    .replace("{{ connector }}", connector)
     .replace(/{{ sql }}/g, selectStatement)
     .replace("{{ dev_section }}", devSection);
 
@@ -405,8 +406,7 @@ export async function createSqlModelFromTable(
   );
 
   // Create model
-  const topComments =
-    `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
+  const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,
