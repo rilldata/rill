@@ -3,6 +3,7 @@ import type { ChartScales, ChartConfig, TimeSeriesPoint } from "./types";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 import { DateTime } from "luxon";
+import { dateToIndex } from "./utils";
 
 export type AnnotationGroup = {
   items: Annotation[];
@@ -22,21 +23,6 @@ export type AnnotationGroup = {
 
 export const AnnotationWidth = 10;
 export const AnnotationHeight = 10;
-
-function dateToIndex(data: TimeSeriesPoint[], date: Date): number | null {
-  if (data.length === 0) return null;
-  const ms = date.getTime();
-  let best = 0;
-  let bestDist = Infinity;
-  for (let i = 0; i < data.length; i++) {
-    const dist = Math.abs(data[i].ts.toMillis() - ms);
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = i;
-    }
-  }
-  return best;
-}
 
 /**
  * Group annotations by time grain bucket, then compute pixel positions.
@@ -82,7 +68,10 @@ export function groupAnnotations(
 
   for (const [, bucket] of buckets) {
     // Use the first annotation's startTime for positioning
-    const startIdx = dateToIndex(data, bucket.annotations[0].startTime);
+    const startIdx = dateToIndex(
+      data,
+      bucket.annotations[0].startTime.getTime(),
+    );
     if (startIdx === null) continue;
 
     const left = scales.x(startIdx);
@@ -91,7 +80,7 @@ export function groupAnnotations(
     let right = left + AnnotationWidth;
     for (const a of bucket.annotations) {
       if (a.endTime) {
-        const endIdx = dateToIndex(data, a.endTime);
+        const endIdx = dateToIndex(data, a.endTime.getTime());
         if (endIdx !== null) {
           right = Math.max(right, scales.x(endIdx));
         }

@@ -1,4 +1,4 @@
-<!-- @component 
+<!-- @component
 The NumericPlot component has three elements:
 - toggles between the summary statistics and the top K values for the secondary plot
 - a primary plot in the form of a histogram & rug plot
@@ -8,17 +8,8 @@ Otherwise, the page will jump around as the data is fetched.
 -->
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
-  import { outline } from "@rilldata/web-common/components/data-graphic/actions/outline";
-  import { GraphicContext } from "@rilldata/web-common/components/data-graphic/elements";
-  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import { WithParentClientRect } from "@rilldata/web-common/components/data-graphic/functional-components";
-  import WithBisector from "@rilldata/web-common/components/data-graphic/functional-components/WithBisector.svelte";
-  import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
-  import {
-    HistogramPrimitive,
-    Rug,
-  } from "@rilldata/web-common/components/data-graphic/marks";
-  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
+  import { barplotPolyline } from "@rilldata/web-common/components/data-graphic/utils";
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
   import TopKIcon from "@rilldata/web-common/components/icons/TopK.svelte";
   import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
@@ -32,6 +23,10 @@ Otherwise, the page will jump around as the data is fetched.
     TopKEntry,
     V1NumericStatistics,
   } from "@rilldata/web-common/runtime-client";
+  import { extent, bisector, max, min } from "d3-array";
+  import { scaleLinear } from "d3-scale";
+  import { interpolateReds } from "d3-scale-chromatic";
+  import { tweened } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
@@ -47,16 +42,112 @@ Otherwise, the page will jump around as the data is fetched.
   let summaryMode: "summary" | "topk" = "summary";
 
   let topKLimit = 15;
-
-  // the rowHeight determines how big the secondary plots should be.
-  // We will use this to predetermine the height of the secondary graphics;
-  // this is important because we want to avoid reflowing the page after
-  // the data has been fetched.
   let rowHeight = 24;
 
   let focusPoint: TopKEntry | undefined = undefined;
-  // reset focus point once the mode changes.
   $: if (summaryMode !== "summary") focusPoint = undefined;
+
+  // Responsive width
+  let containerWidth = 400;
+
+  // Layout constants
+  const histHeight = 64;
+  const rugHeight = 16;
+  const margins = { top: 1, right: 4, bottom: 0, left: 4 };
+
+  $: plotLeft = margins.left;
+  $: plotRight = containerWidth - margins.right;
+  $: plotTop = margins.top;
+  $: plotBottom = histHeight - margins.bottom;
+
+  // Histogram scales
+  $: xMin = min(data, (d) => d.low);
+  $: xMax = max(data, (d) => d.high);
+  $: [, yMax] = extent(data, (d) => d.count);
+
+  $: xScale = scaleLinear()
+    .domain([xMin ?? 0, xMax ?? 1])
+    .range([plotLeft, plotRight]);
+  $: yScale = scaleLinear()
+    .domain([0, yMax ?? 1])
+    .range([plotBottom, plotTop]);
+
+  // Histogram path
+  $: separator = data?.length < 30 && INTEGERS.has(type) ? 1 : 0;
+  const histGradientId = `hist-gradient-${guidGenerator()}`;
+  $: histPath = data
+    ? barplotPolyline(
+        data,
+        "low",
+        "high",
+        "count",
+        xScale,
+        yScale,
+        separator,
+        false,
+        1,
+      )
+    : "";
+
+  // Bisection for hover
+  const bisectLeft = bisector(
+    (d: NumericHistogramBinsBin) => ((d.high ?? 0) + (d.low ?? 0)) / 2,
+  );
+  const bisect = (data: NumericHistogramBinsBin[], value: number) =>
+    bisectLeft.left(data, value);
+
+  // Mouse tracking
+  let mouseX: number | undefined = undefined;
+  $: hoveredBin =
+    mouseX !== undefined && data
+      ? data[bisect(data, xScale.invert(mouseX))]
+      : undefined;
+
+  // TopK focus tweened position
+  const tweenedFocusX = tweened(0, { duration: 200, easing: cubicOut });
+  const tweenedFocusY = tweened(0, { duration: 200, easing: cubicOut });
+  $: if (focusPoint?.value) void tweenedFocusX.set(xScale(+focusPoint.value));
+  $: if (focusPoint?.count !== undefined)
+    void tweenedFocusY.set(yScale(focusPoint.count));
+
+  // Rug rendering
+  const rugTiers = 32;
+  $: rugBuckets = buildRugBuckets(rug);
+
+  function buildRugBuckets(
+    rugData: NumericOutliersOutlier[],
+  ): NumericOutliersOutlier[][] {
+    if (!rugData?.length) return [];
+    const largest = Math.max(...rugData.map((d) => d.count ?? 0));
+    const buckets: NumericOutliersOutlier[][] = Array.from(
+      { length: rugTiers },
+      () => [],
+    );
+    rugData.forEach((datum) => {
+      const count = datum.count ?? 0;
+      if (count === 0) return;
+      const idx = Math.min(
+        rugTiers - 1,
+        Math.floor((count / largest) * rugTiers),
+      );
+      buckets[idx] = [...buckets[idx], datum];
+    });
+    return buckets;
+  }
+
+  $: rugColorScale = scaleLinear().domain([0, 1]).range([0.2, 0.65]);
+
+  function drawRugSegments(
+    points: NumericOutliersOutlier[],
+    scale: (v: number) => number,
+  ): string {
+    return points
+      .map((p) => {
+        const x = scale(p.high ?? 0);
+        return `M${x},0 L${x},${rugHeight} L${x},0`;
+      })
+      .join("");
+  }
 </script>
 
 <div
@@ -93,208 +184,226 @@ Otherwise, the page will jump around as the data is fetched.
       >
     </IconButton>
   </div>
-  <WithParentClientRect let:rect let:styles let:toNumber>
-    <GraphicContext
-      yMin={0}
-      width={(rect?.width || 400) -
-        toNumber(styles?.paddingLeft) -
-        toNumber(styles?.paddingRight)}
-      height={64}
-      left={4}
-      right={4}
-      top={1}
-      bottom={0}
-      bodyBuffer={0}
-      marginBuffer={0}
-      xType={ScaleType.NUMBER}
-      yType={ScaleType.NUMBER}
+  <div bind:clientWidth={containerWidth}>
+    <!-- Histogram -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <svg
+      class="overflow-visible"
+      width={containerWidth}
+      height={histHeight}
+      on:mousemove={(e) => {
+        mouseX = e.offsetX;
+      }}
+      on:mouseleave={() => {
+        mouseX = undefined;
+      }}
     >
-      <SimpleDataGraphic let:config let:xScale let:yScale let:mouseoverValue>
-        <WithBisector
-          data={data || []}
-          callback={(dt) => (dt.high + dt.low) / 2}
-          value={mouseoverValue?.x}
-          let:point
-        >
-          {#if data}
-            <g class="text-red-400">
-              <line
-                x1={config.plotLeft}
-                x2={config.plotRight}
-                y1={config.plotBottom}
-                y2={config.plotBottom}
-                stroke="currentColor"
-                stroke-width={1}
-              />
-            </g>
-            <HistogramPrimitive
-              {data}
-              xLowAccessor="low"
-              xHighAccessor="high"
-              yAccessor="count"
-              separator={data.length < 30 && INTEGERS.has(type) ? 1 : 0}
+      <defs>
+        <linearGradient id={histGradientId} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="5%" stop-color="hsla(1,70%, 80%, .5)" />
+          <stop
+            offset="95%"
+            stop-color="hsla(1,70%, 80%, .5)"
+            stop-opacity={0.4}
+          />
+        </linearGradient>
+      </defs>
+
+      {#if data}
+        <!-- baseline -->
+        <line
+          x1={plotLeft}
+          x2={plotRight}
+          y1={plotBottom}
+          y2={plotBottom}
+          class="stroke-red-400"
+          stroke-width={1}
+        />
+
+        <!-- histogram bars -->
+        {#if histPath?.length}
+          <path d={histPath} fill="url(#{histGradientId})" />
+          <path
+            d={histPath}
+            stroke="hsla(1,90%, 60%, .7)"
+            fill="none"
+            stroke-width={1}
+          />
+        {/if}
+
+        <!-- zero line -->
+        <line
+          x1={xScale(0)}
+          x2={xScale(0)}
+          y1={yScale(0)}
+          y2={plotTop}
+          class="stroke-gray-400"
+          stroke-dasharray="2,2"
+          shape-rendering="crispEdges"
+        />
+
+        <!-- hover highlight -->
+        {#if hoveredBin}
+          <g
+            transition:fade|global={{ duration: 50 }}
+            shape-rendering="crispEdges"
+          >
+            <rect
+              x={xScale(hoveredBin.low ?? 0)}
+              y={plotTop}
+              width={Math.abs(
+                xScale(hoveredBin.high ?? 0) - xScale(hoveredBin.low ?? 0),
+              )}
+              height={plotBottom - plotTop}
+              class="fill-gray-700"
+              opacity={0.2}
             />
-            <!-- zero line -->
+            <rect
+              x={xScale(hoveredBin.low ?? 0)}
+              y={yScale(hoveredBin.count ?? 0)}
+              width={Math.abs(
+                xScale(hoveredBin.high ?? 0) - xScale(hoveredBin.low ?? 0),
+              )}
+              height={plotBottom - yScale(hoveredBin.count ?? 0)}
+              class="fill-red-200"
+            />
             <line
-              x1={xScale(0) || 0}
-              x2={xScale(0) || 0}
-              y1={yScale(0) || 0}
-              y2={config.plotTop}
-              class="stroke-gray-400"
-              stroke-dasharray="2,2"
-              shape-rendering="crispEdges"
+              x1={xScale(hoveredBin.low ?? 0)}
+              x2={xScale(hoveredBin.low ?? 0)}
+              y1={yScale(0)}
+              y2={yScale(hoveredBin.count ?? 0)}
+              class="stroke-red-500"
+              stroke-width="2"
             />
-            <!-- show mouseover support shapes -->
-            {#if point}
-              <g
-                transition:fade|global={{ duration: 50 }}
-                shape-rendering="crispEdges"
-              >
-                <rect
-                  x={xScale(point.low)}
-                  y={config.plotTop}
-                  width={Math.abs(xScale(point.high) - xScale(point.low))}
-                  height={config.plotBottom - config.plotTop}
-                  class="fill-gray-700"
-                  opacity={0.2}
-                />
-                <rect
-                  x={xScale(point.low)}
-                  y={yScale(point.count)}
-                  width={Math.abs(xScale(point.high) - xScale(point.low))}
-                  height={config.plotBottom - yScale(point.count)}
-                  class="fill-red-200"
-                />
-                <line
-                  x1={xScale(point.low)}
-                  x2={xScale(point.low)}
-                  y1={yScale(0)}
-                  y2={yScale(point.count)}
-                  class="stroke-red-500"
-                  stroke-width="2"
-                />
-                <line
-                  x1={xScale(point.high)}
-                  x2={xScale(point.high)}
-                  y1={yScale(0)}
-                  y2={yScale(point.count)}
-                  class="stroke-red-500"
-                  stroke-width="2"
-                />
-                <line
-                  x1={xScale(point.low)}
-                  x2={xScale(point.high)}
-                  y1={yScale(point.count)}
-                  y2={yScale(point.count)}
-                  class="stroke-red-500"
-                  stroke-width="2"
-                />
-                <line
-                  x1={xScale(point.low)}
-                  x2={xScale(point.high)}
-                  y1={yScale(0) - 0.5}
-                  y2={yScale(0) - 0.5}
-                  class="stroke-red-500"
-                  stroke-width={1}
-                />
-              </g>
-            {/if}
-
-            <!-- mouseovers -->
-            {#if point?.low !== undefined}
-              <g
-                in:fly|global={{ duration: 200, x: -16 }}
-                out:fly|global={{ duration: 200, x: -16 }}
-                font-size={config.fontSize}
-                style:user-select={"none"}
-              >
-                <text
-                  use:outline
-                  x={config.plotLeft}
-                  y={config.plotTop + 12}
-                  class="fill-gray-500"
-                  opacity={0.8}
-                  >({justEnoughPrecision(point?.low)}, {justEnoughPrecision(
-                    point?.high,
-                  )}{point?.high === data.at(-1)?.high ? ")" : "]"}</text
-                >
-                <text
-                  use:outline
-                  x={config.plotLeft}
-                  y={config.plotTop + 24}
-                  class="fill-gray-500"
-                  opacity={0.8}
-                >
-                  {formatInteger(Math.trunc(point.count))} row{#if point.count !== 1}s{/if}
-                  ({((point.count / totalRows) * 100).toFixed(2)}%)
-                </text>
-              </g>
-            {/if}
-
-            <!-- support topK mouseover effect on graphs -->
-            {#if focusPoint?.count !== undefined && focusPoint?.value && topK && summaryMode === "topk"}
-              <g transition:fade={{ duration: 200 }}>
-                <WithTween
-                  value={[xScale(+focusPoint.value), yScale(focusPoint.count)]}
-                  let:output
-                  tweenProps={{ duration: 200, easing: cubicOut }}
-                >
-                  <line
-                    x1={output[0]}
-                    x2={output[0]}
-                    y1={config.plotTop}
-                    y2={config.plotBottom}
-                    stroke="gray"
-                    stroke-width={1}
-                    opacity={0.7}
-                  />
-                  <line
-                    x1={output[0]}
-                    x2={output[0]}
-                    y1={output[1]}
-                    y2={config.plotBottom}
-                    stroke="gray"
-                    stroke-width={6}
-                    opacity={0.7}
-                  />
-                </WithTween>
-              </g>
-            {/if}
-          {/if}
-        </WithBisector>
-      </SimpleDataGraphic>
-      <SimpleDataGraphic top={0} bottom={0} height={16}>
-        {#if rug}
-          <Rug xAccessor="high" densityAccessor="count" data={rug} />
-        {/if}
-      </SimpleDataGraphic>
-      <!-- we'll prefill the height of the summary such that if the data hasn't been fetched yet,
-        we'll preserve the space to keep the window from jumping.
-      -->
-      <div
-        class="pt-1"
-        style:height={summaryMode === "summary" ? `${6 * rowHeight}px` : "auto"}
-      >
-        {#if summaryMode === "summary" && summary}
-          {@const rowHeight = 24}
-          <div class="pt-1">
-            <SummaryNumberPlot {rowHeight} {summary} {type} />
-          </div>
-        {:else if topK && summaryMode === "topk"}
-          <div class="pt-1 px-1">
-            <TopK
-              onFocusTopK={(value) => {
-                focusPoint = value;
-              }}
-              k={topKLimit}
-              {topK}
-              {totalRows}
-              colorClass="bg-red-200"
-              {type}
+            <line
+              x1={xScale(hoveredBin.high ?? 0)}
+              x2={xScale(hoveredBin.high ?? 0)}
+              y1={yScale(0)}
+              y2={yScale(hoveredBin.count ?? 0)}
+              class="stroke-red-500"
+              stroke-width="2"
             />
-          </div>
+            <line
+              x1={xScale(hoveredBin.low ?? 0)}
+              x2={xScale(hoveredBin.high ?? 0)}
+              y1={yScale(hoveredBin.count ?? 0)}
+              y2={yScale(hoveredBin.count ?? 0)}
+              class="stroke-red-500"
+              stroke-width="2"
+            />
+            <line
+              x1={xScale(hoveredBin.low ?? 0)}
+              x2={xScale(hoveredBin.high ?? 0)}
+              y1={yScale(0) - 0.5}
+              y2={yScale(0) - 0.5}
+              class="stroke-red-500"
+              stroke-width={1}
+            />
+          </g>
         {/if}
-      </div>
-    </GraphicContext>
-  </WithParentClientRect>
+
+        <!-- hover labels -->
+        {#if hoveredBin?.low !== undefined}
+          <g
+            in:fly|global={{ duration: 200, x: -16 }}
+            out:fly|global={{ duration: 200, x: -16 }}
+            font-size="12"
+            style:user-select={"none"}
+          >
+            <text
+              x={plotLeft}
+              y={plotTop + 12}
+              class="fill-fg-secondary text-outline"
+              opacity={0.8}
+              >({justEnoughPrecision(hoveredBin?.low ?? 0)}, {justEnoughPrecision(
+                hoveredBin?.high ?? 0,
+              )}{hoveredBin?.high === data.at(-1)?.high ? ")" : "]"}</text
+            >
+            <text
+              x={plotLeft}
+              y={plotTop + 24}
+              class="fill-fg-secondary text-outline"
+              opacity={0.8}
+            >
+              {formatInteger(Math.trunc(hoveredBin.count ?? 0))} row{#if (hoveredBin.count ?? 0) !== 1}s{/if}
+              ({(((hoveredBin.count ?? 0) / totalRows) * 100).toFixed(2)}%)
+            </text>
+          </g>
+        {/if}
+
+        <!-- topK focus indicator -->
+        {#if focusPoint?.count !== undefined && focusPoint?.value && topK && summaryMode === "topk"}
+          <g transition:fade={{ duration: 200 }}>
+            <line
+              x1={$tweenedFocusX}
+              x2={$tweenedFocusX}
+              y1={plotTop}
+              y2={plotBottom}
+              stroke="gray"
+              stroke-width={1}
+              opacity={0.7}
+            />
+            <line
+              x1={$tweenedFocusX}
+              x2={$tweenedFocusX}
+              y1={$tweenedFocusY}
+              y2={plotBottom}
+              stroke="gray"
+              stroke-width={6}
+              opacity={0.7}
+            />
+          </g>
+        {/if}
+      {/if}
+    </svg>
+
+    <!-- Rug plot -->
+    {#if rug}
+      <svg class="overflow-visible" width={containerWidth} height={rugHeight}>
+        <g transform="translate(0, 0)">
+          {#each rugBuckets as bucket, i (i)}
+            {#if bucket.length > 0}
+              <path
+                d={drawRugSegments(bucket, xScale)}
+                stroke-width={1}
+                stroke={interpolateReds(rugColorScale(i / rugTiers))}
+              />
+            {/if}
+          {/each}
+        </g>
+      </svg>
+    {/if}
+
+    <!-- Summary / TopK section -->
+    <div
+      class="pt-1"
+      style:height={summaryMode === "summary" ? `${6 * rowHeight}px` : "auto"}
+    >
+      {#if summaryMode === "summary" && summary}
+        {@const rowHeight = 24}
+        <div class="pt-1">
+          <SummaryNumberPlot
+            {rowHeight}
+            {summary}
+            {type}
+            {xScale}
+            {plotRight}
+          />
+        </div>
+      {:else if topK && summaryMode === "topk"}
+        <div class="pt-1 px-1">
+          <TopK
+            onFocusTopK={(value) => {
+              focusPoint = value;
+            }}
+            k={topKLimit}
+            {topK}
+            {totalRows}
+            colorClass="bg-red-200"
+            {type}
+          />
+        </div>
+      {/if}
+    </div>
+  </div>
 </div>

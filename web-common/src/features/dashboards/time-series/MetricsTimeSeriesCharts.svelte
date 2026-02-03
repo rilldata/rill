@@ -340,7 +340,7 @@
       class:pb-4={!showTimeDimensionDetail}
       class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
     >
-      {#each renderedMeasures as measure (measure.name)}
+      {#each renderedMeasures as measure, i (measure.name)}
         <div class="flex flex-row gap-x-4">
           <MeasureBigNumber
             {measure}
@@ -359,6 +359,7 @@
 
           {#if activeTimeGrain}
             <MeasureChart
+              showAxis={i === 0}
               {measure}
               {scrubController}
               {sharedHoverIndex}

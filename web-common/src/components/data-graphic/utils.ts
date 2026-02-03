@@ -2,16 +2,7 @@ import { bisector } from "d3-array";
 import type { ScaleLinear, ScaleTime } from "d3-scale";
 import { area, curveLinear, curveStep, line } from "d3-shape";
 import { timeFormat } from "d3-time-format";
-import { getContext } from "svelte";
-import { derived, writable } from "svelte/store";
-import { contexts } from "./constants";
 import { curveStepExtended } from "./marks/curveStepExtended";
-import { ScaleType } from "./state";
-import type {
-  GraphicScale,
-  ScaleStore,
-  SimpleConfigurationStore,
-} from "./state/types";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
@@ -116,188 +107,72 @@ export function areaFactory(args: LineGeneratorArguments) {
 }
 
 /**
- * Return a list of ticks to be represented on the
- * axis or grid depending on axis-side, it's length and
- * the data type of field
+ * Generates an SVG path string for a histogram / bar plot.
+ * Each bin is defined by a low/high x range and a y count value.
+ * The path traces the outline of all non-zero bins, suitable for
+ * both fill and stroke rendering.
  */
-export function getTicks(
-  xOrY: string,
-  scale: GraphicScale,
-  axisLength: number,
-  scaleType: ScaleType,
-) {
-  const isDate = scaleType === ScaleType.DATE;
-  const tickCount = Math.trunc(axisLength / (xOrY === "x" ? 100 : 50));
-
-  let ticks = scale.ticks(tickCount);
-
-  // Prevent overlapping ticks on X axis
-  if (xOrY === "x" && axisLength / ticks.length < 60) {
-    ticks = scale.ticks(tickCount - 1);
-  }
-
-  if (ticks.length <= 1) {
-    if (isDate) ticks = scale.domain();
-    else ticks = scale.nice().domain();
-  }
-
-  return ticks;
-}
-
 export function barplotPolyline(
-  data,
-  xLow,
-  xHigh,
-  yAccessor,
-  X,
-  Y,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: Record<string, any>[],
+  xLow: string,
+  xHigh: string,
+  yAccessor: string,
+  xScale: (v: number) => number,
+  yScale: (v: number) => number,
   separator = 1,
   closeBottom = false,
   inflator = 1,
 ): string {
   if (!data?.length) return "";
-  const path = data.reduce((pointsPathString, datum, i) => {
-    const low = datum[xLow];
-    const high = datum[xHigh];
-    const count = datum[yAccessor];
 
-    const x = X(low) + separator;
+  const baseline = yScale(0);
 
-    const width = Math.max(0.5, X(high) - X(low) - separator * 2);
-    const y = Y(0) * (1 - inflator) + Y(count) * inflator;
+  const path = data.reduce((acc: string, datum, i) => {
+    const count = datum[yAccessor] ?? 0;
+    if (count === 0) return acc;
 
-    const computedHeight = Math.min(
-      Y(0),
-      Y(0) * inflator - Y(count) * inflator,
+    const low = datum[xLow] ?? 0;
+    const high = datum[xHigh] ?? 0;
+    const x = xScale(low) + separator;
+    const width = Math.max(0.5, xScale(high) - xScale(low) - separator * 2);
+    const y = baseline * (1 - inflator) + yScale(count) * inflator;
+    const barHeight = Math.min(
+      baseline,
+      baseline * inflator - yScale(count) * inflator,
     );
-    const height = separator > 0 ? computedHeight : 0;
+    const dropHeight = separator > 0 ? barHeight : 0;
 
-    // do not add zero values here
-    if (count === 0) {
-      return pointsPathString;
-    }
+    const prevIsZero = i > 0 && !data[i - 1][yAccessor];
+    const nextIsZero = i < data.length - 1 && !data[i + 1][yAccessor];
 
-    let p1 = "";
-
-    const nextPointIsZero = i < data.length - 1 && data[i + 1][yAccessor] === 0;
-
-    const lastPointWasZero = i > 0 && data[i - 1][yAccessor] === 0;
-
-    if (separator === 0 && lastPointWasZero) {
-      // we will need to start this thing at 0?
-      p1 = `M${x},${y + computedHeight}`;
+    // Move to the bottom-left of this bar
+    let move: string;
+    if (separator === 0 && prevIsZero) {
+      move = `M${x},${y + barHeight}`;
     } else if (separator > 0 || i === 0) {
-      // standard case.
-      p1 = `${i !== 0 ? "M" : ""}${x},${y + height}`;
+      move = `${i !== 0 ? "M" : ""}${x},${y + dropHeight}`;
+    } else {
+      move = "";
     }
 
-    const p2 = `${x},${y}`;
-    const p3 = `${x + width},${y}`;
-
-    const p4 =
-      separator > 0 || nextPointIsZero
-        ? `${x + width},${y + (separator > 0 ? height : computedHeight)}`
+    const topLeft = `${x},${y}`;
+    const topRight = `${x + width},${y}`;
+    const bottomRight =
+      separator > 0 || nextIsZero
+        ? `${x + width},${y + (separator > 0 ? dropHeight : barHeight)}`
         : "";
-    const closedBottom = closeBottom ? `${x},${y + height}` : "";
+    const close = closeBottom ? `${x},${y + dropHeight}` : "";
 
-    return pointsPathString + `${p1} ${p2} ${p3} ${p4} ${closedBottom} `;
+    return acc + `${move} ${topLeft} ${topRight} ${bottomRight} ${close} `;
   }, " ");
-  const lastElement = data.findLast((d) => d[yAccessor]);
-  if (!lastElement) return "";
-  return (
-    `M${X(data[0][xLow]) + separator},${Y(0)} ` +
-    path +
-    ` ${X(lastElement[xHigh]) - separator},${Y(0)} `
-  );
-}
 
-/** utilizes the provided scales to calculate the line thinness in a way
- * that enables higher-density "overplotted lines".
- */
+  const lastNonZero = data.findLast((d) => d[yAccessor]);
+  if (!lastNonZero) return "";
 
-export function createAdaptiveLineThicknessStore(yAccessor) {
-  let data;
-
-  // get xScale, yScale, and config from contexts
-  const xScale = getContext<ScaleStore>(contexts.scale("x"));
-  const yScale = getContext<ScaleStore>(contexts.scale("y"));
-  const config = getContext<SimpleConfigurationStore>(contexts.config);
-
-  // capture data state.
-  const dataStore = writable(data);
-
-  const store = derived(
-    [xScale, yScale, config, dataStore],
-    ([$xScale, $yScale, $config, $data]) => {
-      if (!$data) {
-        return 1;
-      }
-      const totalTravelDistance = $data
-        .filter((di) => di[yAccessor] !== null)
-        .map((di, i) => {
-          if (i === $data.length - 1) {
-            return 0;
-          }
-          const max = Math.max(
-            $yScale($data[i + 1][yAccessor]),
-            $yScale($data[i][yAccessor]),
-          );
-          const min = Math.min(
-            $yScale($data[i + 1][yAccessor]),
-            $yScale($data[i][yAccessor]),
-          );
-          if (isNaN(min) || isNaN(max)) return 1 / $data.length;
-          return Math.abs(max - min);
-        })
-        .reduce((acc, v) => acc + v, 0);
-
-      const yIshDistanceTravelled =
-        2 /
-        (totalTravelDistance /
-          (($xScale.range()[1] - $xScale.range()[0]) *
-            ($config.devicePixelRatio || 3)));
-
-      const xIshDistanceTravellled =
-        (($xScale.range()[1] - $xScale.range()[0]) *
-          ($config.devicePixelRatio || 3) *
-          0.7) /
-        $data.length /
-        1.5;
-
-      const value = Math.min(
-        1,
-        /** to determine the stroke width of the path, let's look at
-         * the bigger of two values:
-         * 1. the "y-ish" distance travelled
-         * the inverse of "total travel distance", which is the Y
-         * gap size b/t successive points divided by the zoom window size;
-         * 2. time series length / available X pixels
-         * the time series divided by the total number of pixels in the existing
-         * zoom window.
-         *
-         * These heuristics could be refined, but this seems to provide a reasonable approximation for
-         * the stroke width. (1) excels when lots of successive points are close together in the Y direction,
-         * whereas (2) excels` when a line is very, very noisy (and thus the X direction is the main constraint).
-         */
-        Math.max(
-          // the y-ish distance travelled
-          yIshDistanceTravelled,
-          // the time series length / available X pixels
-          xIshDistanceTravellled,
-        ),
-      );
-
-      return value;
-    },
-  );
-
-  return {
-    subscribe: store.subscribe,
-    /** trigger an update when the data changes */
-    setData(d) {
-      dataStore.set(d);
-    },
-  };
+  const startX = xScale(data[0][xLow] ?? 0) + separator;
+  const endX = xScale(lastNonZero[xHigh] ?? 0) - separator;
+  return `M${startX},${baseline} ${path} ${endX},${baseline} `;
 }
 
 // This is function equivalent of WithBisector

@@ -1,7 +1,6 @@
 <script lang="ts">
   import TimestampDetail from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
   import TimestampSpark from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
-  import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
@@ -32,6 +31,8 @@
 
   let timestampDetailHeight = 160;
   let active = false;
+  let clientWidth: number;
+  let secondWidth: number;
 
   /** queries used to power the different plots */
   $: nullPercentage = getNullPercentage(
@@ -55,12 +56,12 @@
     active,
   );
 
+  $: fetchingSummaries = isFetching($timeSeries, $nullPercentage);
+
   function toggleColumnProfile() {
     active = !active;
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
-
-  $: fetchingSummaries = isFetching($timeSeries, $nullPercentage);
 </script>
 
 <ProfileContainer
@@ -80,19 +81,17 @@
   <div slot="left">{columnName}</div>
 
   <!-- wrap in div to get size of grid item -->
-  <div class={TIMESTAMP_TOKENS.textClass} slot="summary">
-    <WithParentClientRect let:rect>
-      <TimestampSpark
-        bottom={4}
-        color={"currentColor"}
-        data={$timeSeries?.spark}
-        height={18}
-        top={4}
-        width={rect?.width || 400}
-        xAccessor="ts"
-        yAccessor="count"
-      />
-    </WithParentClientRect>
+  <div class={TIMESTAMP_TOKENS.textClass} slot="summary" bind:clientWidth>
+    <TimestampSpark
+      bottom={4}
+      color={"currentColor"}
+      data={$timeSeries?.spark}
+      height={18}
+      top={4}
+      width={clientWidth || 400}
+      xAccessor="ts"
+      yAccessor="count"
+    />
   </div>
   <NullPercentageSpark
     nullCount={$nullPercentage?.nullCount}
@@ -102,22 +101,24 @@
   />
 
   <div slot="details">
-    <div class="pl-8 py-4" style:height="{timestampDetailHeight + 64 + 28}px">
-      <WithParentClientRect let:rect>
-        {#if $timeSeries?.data?.length && $timeSeries?.estimatedRollupInterval?.interval && $timeSeries?.smallestTimegrain}
-          <TimestampDetail
-            width={rect?.width - 56 || 400}
-            mouseover={true}
-            height={timestampDetailHeight}
-            data={$timeSeries?.data}
-            spark={$timeSeries?.spark}
-            rollupTimeGrain={$timeSeries?.estimatedRollupInterval?.interval}
-            estimatedSmallestTimeGrain={$timeSeries?.smallestTimegrain}
-            xAccessor="ts"
-            yAccessor="count"
-          />
-        {/if}
-      </WithParentClientRect>
+    <div
+      class="pl-8 py-4"
+      style:height="{timestampDetailHeight + 64 + 28}px"
+      bind:clientWidth={secondWidth}
+    >
+      {#if $timeSeries?.data?.length && $timeSeries?.estimatedRollupInterval?.interval && $timeSeries?.smallestTimegrain}
+        <TimestampDetail
+          width={secondWidth - 56 || 400}
+          mouseover={true}
+          height={timestampDetailHeight}
+          data={$timeSeries?.data}
+          spark={$timeSeries?.spark}
+          rollupTimeGrain={$timeSeries?.estimatedRollupInterval?.interval}
+          estimatedSmallestTimeGrain={$timeSeries?.smallestTimegrain}
+          xAccessor="ts"
+          yAccessor="count"
+        />
+      {/if}
     </div>
   </div>
 </ProfileContainer>

@@ -1,11 +1,8 @@
-import { scaleLinear } from "d3-scale";
-import { max, min } from "d3-array";
+import { min, max } from "d3-array";
 import type {
   TimeSeriesPoint,
   DimensionSeriesData,
   ChartConfig,
-  ChartScales,
-  PlotBounds,
 } from "./types";
 
 interface ExtentConfig {
@@ -113,55 +110,6 @@ export function computeYExtent(
 }
 
 /**
- * Compute X extent as index range [0, N-1].
- */
-export function computeXExtent(data: TimeSeriesPoint[]): [number, number] {
-  return [0, Math.max(0, data.length - 1)];
-}
-
-/**
- * Create index-based X scale.
- */
-export function createXScale(
-  data: TimeSeriesPoint[],
-  plotBounds: PlotBounds,
-): ChartScales["x"] {
-  return scaleLinear<number>()
-    .domain(computeXExtent(data))
-    .range([plotBounds.left, plotBounds.left + plotBounds.width]);
-}
-
-/**
- * Create Y scale from value extent.
- */
-export function createYScale(
-  yExtent: [number, number],
-  plotBounds: PlotBounds,
-): ChartScales["y"] {
-  return scaleLinear<number>()
-    .domain(yExtent)
-    .range([plotBounds.top + plotBounds.height, plotBounds.top]); // Inverted for SVG
-}
-
-/**
- * Create both X and Y scales.
- */
-export function createScales(
-  data: TimeSeriesPoint[],
-  dimensionData: DimensionSeriesData[],
-  showComparison: boolean,
-  plotBounds: PlotBounds,
-): ChartScales {
-  const yRawExtent = computeYExtent(data, dimensionData, showComparison);
-  const yExtent = computeNiceYExtent(yRawExtent[0], yRawExtent[1]);
-
-  return {
-    x: createXScale(data, plotBounds),
-    y: createYScale(yExtent, plotBounds),
-  };
-}
-
-/**
  * Compute chart configuration from dimensions.
  */
 export function computeChartConfig(
@@ -192,18 +140,4 @@ export function computeChartConfig(
       height: plotHeight,
     },
   };
-}
-
-/**
- * Update scales with new data while preserving animation continuity.
- */
-export function updateScalesWithData(
-  existingScales: ChartScales | null,
-  data: TimeSeriesPoint[],
-  dimensionData: DimensionSeriesData[],
-  showComparison: boolean,
-  plotBounds: PlotBounds,
-): ChartScales {
-  // Always recompute scales - animation is handled by tweening the domain values
-  return createScales(data, dimensionData, showComparison, plotBounds);
 }

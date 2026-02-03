@@ -31,31 +31,9 @@ export function createVisibilityObserver(rootMargin = "120px"): {
   return { visible, observe };
 }
 
-const EMPTY_HOVER: HoverState = {
+export const EMPTY_HOVER: HoverState = {
   index: null,
   screenX: null,
   screenY: null,
   isHovered: false,
 };
-
-/**
- * Create a simple hover state store.
- */
-export function createHoverState(): Writable<HoverState> {
-  return writable<HoverState>(EMPTY_HOVER);
-}
-
-export { EMPTY_HOVER };
-
-/**
- * Helper to get ordered start/end dates.
- */
-export function getOrderedDates(
-  start: Date | null,
-  end: Date | null,
-): { start: Date | null; end: Date | null } {
-  if (!start || !end) return { start, end };
-  return start.getTime() > end.getTime()
-    ? { start: end, end: start }
-    : { start, end };
-}

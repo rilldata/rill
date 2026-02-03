@@ -8,6 +8,7 @@
     ChartConfig,
   } from "./types";
   import MeasureChartPointIndicator from "./MeasureChartPointIndicator.svelte";
+  import { computeBarSlotGeometry, barCenterX } from "./utils";
 
   export let scales: ChartScales;
   export let config: ChartConfig;
@@ -21,24 +22,22 @@
   export let visibleEnd: number = 0;
   export let formatter: (value: number | null) => string;
 
-  $: visibleCount = Math.max(1, visibleEnd - visibleStart + 1);
-  $: slotWidth = config.plotBounds.width / visibleCount;
-  $: gap = slotWidth * 0.2;
-  $: bandWidth = slotWidth - gap;
-
   // Bar count: dimension comparison uses dimensionData.length, time comparison uses 2
   $: barCount = isComparingDimension
     ? dimensionData.length
     : showComparison
       ? 2
       : 1;
-  $: barGap = barCount > 1 ? 2 : 0;
-  $: totalGaps = barGap * (barCount - 1);
-  $: singleBarWidth = (bandWidth - totalGaps) / barCount;
+  $: visibleCount = Math.max(1, visibleEnd - visibleStart + 1);
+  $: geo = computeBarSlotGeometry(
+    config.plotBounds.width,
+    visibleCount,
+    barCount,
+  );
 
   // Slot center for bar positioning
   $: slot = hoveredIndex - visibleStart;
-  $: slotCenterX = config.plotBounds.left + (slot + 0.5) * slotWidth;
+  $: slotCenterX = config.plotBounds.left + (slot + 0.5) * geo.slotWidth;
 
   $: y = hoveredPoint?.value ?? null;
   $: comparisonY = hoveredPoint?.comparisonValue ?? null;
@@ -60,22 +59,25 @@
 
 {#if hoveredPoint}
   <!-- Primary point indicator (hidden in comparison modes) -->
-  {#if !currentPointIsNull && !isComparingDimension && !showComparison}
+  {#if !isComparingDimension && !showComparison}
     <MeasureChartPointIndicator
       x={$tweenedX}
-      y={$tweenedY}
+      y={currentPointIsNull ? scales.y(0) : $tweenedY}
       zeroY={scales.y(0)}
-      value={formatter(y ?? null)}
+      value={currentPointIsNull ? "no current data" : formatter(y ?? null)}
     />
   {/if}
 
   <!-- Time comparison: primary point circle (right bar, index 1) -->
   {#if !isComparingDimension && showComparison && !currentPointIsNull}
     {@const primaryBarX = isBarMode
-      ? slotCenterX -
-        bandWidth / 2 +
-        (singleBarWidth + barGap) +
-        singleBarWidth / 2
+      ? barCenterX(
+          slotCenterX,
+          geo.bandWidth,
+          geo.singleBarWidth,
+          geo.barGap,
+          1,
+        )
       : $tweenedX}
     <circle
       cx={primaryBarX}
@@ -98,15 +100,18 @@
     />
     {#each dimensionData as dim, i (i)}
       {@const pt = dim.data[hoveredIndex]}
-      {@const barX = isBarMode
-        ? slotCenterX -
-          bandWidth / 2 +
-          i * (singleBarWidth + barGap) +
-          singleBarWidth / 2
+      {@const bx = isBarMode
+        ? barCenterX(
+            slotCenterX,
+            geo.bandWidth,
+            geo.singleBarWidth,
+            geo.barGap,
+            i,
+          )
         : $tweenedX}
       {#if pt?.value !== null && pt?.value !== undefined}
         <circle
-          cx={barX}
+          cx={bx}
           cy={scales.y(pt.value)}
           r={4}
           fill={dim.color}
@@ -119,7 +124,13 @@
   <!-- Time comparison: comparison point circle (left bar, index 0) -->
   {#if !isComparingDimension && showComparison && hasValidComparisonPoint}
     {@const compBarX = isBarMode
-      ? slotCenterX - bandWidth / 2 + singleBarWidth / 2
+      ? barCenterX(
+          slotCenterX,
+          geo.bandWidth,
+          geo.singleBarWidth,
+          geo.barGap,
+          0,
+        )
       : $tweenedX}
     <circle
       cx={compBarX}

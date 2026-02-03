@@ -1,60 +1,80 @@
 <script lang="ts">
-  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import { HistogramPrimitive } from "@rilldata/web-common/components/data-graphic/marks";
-  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
+  import { extent, max, min } from "d3-array";
+  import { scaleLinear } from "d3-scale";
+  import { barplotPolyline } from "@rilldata/web-common/components/data-graphic/utils";
+  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
   import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
   import type { NumericHistogramBinsBin } from "@rilldata/web-common/runtime-client";
 
+  const gradientId = `spark-gradient-${guidGenerator()}`;
+  const height = 18;
+  const margins = { top: 4, right: 1, bottom: 1, left: 1 };
+
   export let compact = false;
   export let data: NumericHistogramBinsBin[];
   export let type: string;
 
-  $: summaryWidthSize =
+  $: width =
     COLUMN_PROFILE_CONFIG.summaryVizWidth[compact ? "small" : "medium"];
+  $: plotLeft = margins.left;
+  $: plotRight = width - margins.right;
+  $: plotBottom = height - margins.bottom;
+  $: plotTop = margins.top;
+
+  $: xMin = min(data, (d) => d.low);
+  $: xMax = max(data, (d) => d.high);
+  $: [, yMax] = extent(data, (d) => d.count);
+
+  $: xScale = scaleLinear()
+    .domain([xMin ?? 0, xMax ?? 1])
+    .range([plotLeft, plotRight]);
+  $: yScale = scaleLinear()
+    .domain([0, yMax ?? 1])
+    .range([plotBottom, plotTop]);
+
+  $: separator = data.length < 20 && INTEGERS.has(type) ? 0.25 : 0;
+
+  $: d = barplotPolyline(
+    data,
+    "low",
+    "high",
+    "count",
+    xScale,
+    yScale,
+    separator,
+    false,
+    1,
+  );
 </script>
 
 {#if data}
   <Tooltip location="right" distance={8}>
-    <SimpleDataGraphic
-      xType={ScaleType.NUMBER}
-      yType={ScaleType.NUMBER}
-      yMin={0}
-      width={summaryWidthSize}
-      height={18}
-      bodyBuffer={0}
-      marginBuffer={0}
-      left={1}
-      right={1}
-      top={4}
-      bottom={1}
-      let:config
-    >
-      <g class="text-red-200">
+    <svg class="overflow-visible" {width} {height}>
+      <defs>
+        <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="5%" stop-color="currentColor" />
+          <stop offset="95%" stop-color="currentColor" stop-opacity={0.5} />
+        </linearGradient>
+      </defs>
+      <g class="text-red-300">
         <line
-          x1={config.plotLeft}
-          x2={config.plotRight}
-          y1={config.plotBottom}
-          y2={config.plotBottom}
+          x1={plotLeft}
+          x2={plotRight}
+          y1={plotBottom}
+          y2={plotBottom}
+          class="text-red-200"
           stroke="currentColor"
           stroke-width={0.5}
         />
+        {#if d?.length}
+          <path {d} fill="url(#{gradientId})" />
+          <path {d} stroke="currentColor" fill="none" stroke-width={0.5} />
+        {/if}
       </g>
-      <g class="text-red-300">
-        <HistogramPrimitive
-          {data}
-          xLowAccessor="low"
-          xHighAccessor="high"
-          yAccessor="count"
-          lineThickness={0.5}
-          separator={data.length < 20 && INTEGERS.has(type) ? 0.25 : 0}
-          color="currentColor"
-          stopOpacity={0.5}
-        />
-      </g>
-    </SimpleDataGraphic>
+    </svg>
     <TooltipContent slot="tooltip-content">
       the distribution of the values of this column
     </TooltipContent>

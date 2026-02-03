@@ -27,7 +27,6 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import { adjustTimeInterval } from "../utils";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import {
     createQueryServiceMetricsViewTimeSeries,
@@ -45,8 +44,7 @@
     TimeComparisonLineColor,
   } from "../chart-colors";
   import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime } from "luxon";
   import { transformTimeSeriesData } from "./use-measure-time-series";
   import {
@@ -63,10 +61,13 @@
   import MeasureChartAnnotationPopover from "./MeasureChartAnnotationPopover.svelte";
   import { measureSelection } from "../measure-selection/measure-selection";
   import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
+  import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
+  import { snapIndex, dateToIndex } from "./utils";
 
   const Y_DASH_ARRAY = "1,1";
+  const DAY_GRAIN_ORDER = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY];
   const X_PAD = 8;
   const CLICK_THRESHOLD_PX = 4; // Max mouse movement to still count as a click
   const LINE_MODE_MIN_POINTS = 6; // Minimum data points to show line instead of bar
@@ -118,6 +119,7 @@
   export let onPanLeft: (() => void) | undefined = undefined;
   export let onPanRight: (() => void) | undefined = undefined;
   export let scrubController: ScrubController;
+  export let showAxis: boolean = false;
 
   let container: HTMLDivElement;
   let clientWidth = 425;
@@ -310,6 +312,72 @@
     ]);
   $: scales = { x: xScale, y: yScale };
   $: yTicks = yScale.ticks(3);
+  $: xTickIndices =
+    dataLastIndex >= 2
+      ? [0, Math.floor(dataLastIndex / 2), dataLastIndex]
+      : dataLastIndex >= 1
+        ? [0, dataLastIndex]
+        : [0];
+  // Sub-day grains (hour, minute, etc.) show time + date on separate lines
+  $: isSubDayGrain = timeGranularity
+    ? V1TimeGrainToOrder[timeGranularity] < DAY_GRAIN_ORDER
+    : false;
+  $: axisHeight = isSubDayGrain ? 26 : 16;
+  $: axisTicks = buildAxisTicks(xTickIndices, data, mode, isSubDayGrain);
+
+  function buildAxisTicks(
+    indices: number[],
+    d: TimeSeriesPoint[],
+    m: ChartMode,
+    subDay: boolean,
+  ) {
+    return indices.map((idx, i) => {
+      const dt = d[idx]?.ts;
+      const anchor =
+        m === "bar"
+          ? "middle"
+          : i === 0
+            ? "start"
+            : i === indices.length - 1
+              ? "end"
+              : "middle";
+
+      if (!dt) return { x: xScale(idx), anchor, timeLine: "", dateLine: "" };
+
+      if (subDay) {
+        const grainOrder = V1TimeGrainToOrder[timeGranularity!];
+        const fmt: Intl.DateTimeFormatOptions = {
+          hour: "numeric",
+          hour12: true,
+        };
+        if (grainOrder < 1) fmt.minute = "2-digit";
+        const timeLine = dt.toLocaleString(fmt);
+
+        const prevDt = i > 0 ? d[indices[i - 1]]?.ts : undefined;
+        const showDate =
+          !prevDt ||
+          dt.day !== prevDt.day ||
+          dt.month !== prevDt.month ||
+          dt.year !== prevDt.year;
+        const dateFmt: Intl.DateTimeFormatOptions = {
+          month: "short",
+          day: "numeric",
+        };
+        if (d[0]?.ts.year !== d[d.length - 1]?.ts.year)
+          dateFmt.year = "numeric";
+        const dateLine = showDate ? dt.toLocaleString(dateFmt) : "";
+
+        return { x: xScale(idx), anchor, timeLine, dateLine };
+      }
+
+      return {
+        x: xScale(idx),
+        anchor,
+        timeLine: formatDateTimeByGrain(dt, timeGranularity),
+        dateLine: "",
+      };
+    });
+  }
 
   // Keep scrub controller in sync with data length
   $: scrubController.setDataLength(data.length);
@@ -321,10 +389,10 @@
 
   // Scrub indices: use local (active) state while scrubbing, external (URL) state otherwise
   $: externalScrubStartIndex = scrubRange
-    ? dateToIndex(data, scrubRange.start)
+    ? dateToIndex(data, scrubRange.start.toMillis())
     : null;
   $: externalScrubEndIndex = scrubRange
-    ? dateToIndex(data, scrubRange.end)
+    ? dateToIndex(data, scrubRange.end.toMillis())
     : null;
   $: scrubStartIndex = currentScrubState.startIndex ?? externalScrubStartIndex;
   $: scrubEndIndex = currentScrubState.endIndex ?? externalScrubEndIndex;
@@ -332,9 +400,7 @@
 
   // Hover state - snap to nearest data index
   $: localHoveredIndex =
-    $hoverState.index !== null
-      ? Math.max(0, Math.min(data.length - 1, Math.round($hoverState.index)))
-      : -1;
+    $hoverState.index !== null ? snapIndex($hoverState.index, data.length) : -1;
   $: isLocallyHovered = $hoverState.isHovered && localHoveredIndex >= 0;
   $: cursorStyle = scrubController.getCursorStyle($hoverState.screenX, xScale);
   $: sharedHoverIndex.set(isLocallyHovered ? localHoveredIndex : undefined);
@@ -344,10 +410,7 @@
       : undefined,
   );
   $: tableHoverIndex = $tableHoverTime
-    ? dateToIndex(
-        data,
-        DateTime.fromJSDate($tableHoverTime, { zone: timeZone }),
-      )
+    ? dateToIndex(data, $tableHoverTime.getTime())
     : null;
   $: hoveredIndex = isLocallyHovered
     ? localHoveredIndex
@@ -407,7 +470,7 @@
   $: isThisMeasureSelected = $selMeasure === measureName;
   $: singleSelectIdx =
     isThisMeasureSelected && $selStart && !$selEnd
-      ? dateToIndex(data, DateTime.fromJSDate($selStart, { zone: timeZone }))
+      ? dateToIndex(data, $selStart.getTime())
       : null;
   $: singleSelectX =
     singleSelectIdx !== null ? scales.x(singleSelectIdx) : null;
@@ -472,46 +535,22 @@
 
   function determineMode(
     d: TimeSeriesPoint[],
-    dimData: DimensionSeriesData[],
+    _dimData: DimensionSeriesData[],
   ): ChartMode {
-    // Use line chart when we have enough data points and no dimension comparison
-    if (d.length >= LINE_MODE_MIN_POINTS && dimData.length === 0) return "line";
+    if (d.length >= LINE_MODE_MIN_POINTS) return "line";
     return "bar";
   }
 
   function indexToDateTime(idx: number | null): DateTime | null {
     if (idx === null || data.length === 0) return null;
-    const snapped = Math.max(0, Math.min(data.length - 1, Math.round(idx)));
-    const dt = data[snapped]?.ts;
+    const dt = data[snapIndex(idx, data.length)]?.ts;
     return dt?.isValid ? dt : null;
-  }
-
-  function dateToIndex(d: TimeSeriesPoint[], dt: DateTime): number | null {
-    if (d.length === 0 || !dt.isValid) return null;
-    const ms = dt.toMillis();
-    let best = 0;
-    let bestDist = Infinity;
-    for (let i = 0; i < d.length; i++) {
-      const dist = Math.abs(d[i].ts.toMillis() - ms);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = i;
-      }
-    }
-    return best;
-  }
-
-  function formatTime(dt: DateTime): string {
-    if (!timeGranularity) return dt.toLocaleString(DateTime.DATE_SHORT);
-    const grainConfig = TIME_GRAIN[timeGranularity as AvailableTimeGrain];
-    if (!grainConfig?.formatDate) return dt.toLocaleString(DateTime.DATE_SHORT);
-    return dt.toJSDate().toLocaleDateString(undefined, grainConfig.formatDate);
   }
 
   function formatScrubLabel(idx: number): string {
     const dt = indexToDateTime(idx);
     if (!dt) return "";
-    return formatTime(dt);
+    return formatDateTimeByGrain(dt, timeGranularity);
   }
 
   function handleReset() {
@@ -758,6 +797,30 @@
       />
     </div>
   {:else if data.length > 0}
+    {#if showAxis}
+      <svg class="w-full overflow-visible" height={axisHeight}>
+        {#each axisTicks as tick (tick.x)}
+          <text
+            class="fill-fg-secondary text-[11px]"
+            text-anchor={tick.anchor}
+            x={tick.x}
+            y={isSubDayGrain ? 11 : axisHeight - 3}
+          >
+            {tick.timeLine}
+          </text>
+          {#if tick.dateLine}
+            <text
+              class="fill-fg-muted text-[11px]"
+              text-anchor={tick.anchor}
+              x={tick.x}
+              y={23}
+            >
+              {tick.dateLine}
+            </text>
+          {/if}
+        {/each}
+      </svg>
+    {/if}
     <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
     <svg
       role="application"
@@ -827,6 +890,21 @@
         {/each}
       </g>
 
+      <!-- X-axis vertical tick lines -->
+      <g class="x-axis">
+        {#each xTickIndices as idx (idx)}
+          <line
+            class="stroke-border"
+            x1={xScale(idx)}
+            x2={xScale(idx)}
+            y1={config.plotBounds.top}
+            y2={config.plotBounds.top + config.plotBounds.height}
+            stroke-width="0.5"
+            stroke-dasharray={Y_DASH_ARRAY}
+          />
+        {/each}
+      </g>
+
       <!-- Zero line -->
       <line
         class="stroke-gray-300"
@@ -886,9 +964,7 @@
         <g class="data-readout">
           <!-- Date -->
           <text
-            class="fill-fg-muted stroke-surface-background text-[10px]"
-            style:paint-order="stroke"
-            stroke-width="3px"
+            class="fill-fg-muted text-outline text-[10px]"
             x={config.plotBounds.left + 6}
             y={config.plotBounds.top + 10}
           >
@@ -898,16 +974,13 @@
           <!-- Value (with comparison on same line if applicable) -->
           {#if showComparison}
             <text
-              class="stroke-surface-background text-[12px]"
-              style:paint-order="stroke"
-              stroke-width="3px"
+              class="text-outline text-[12px]"
               x={config.plotBounds.left + 6}
               y={config.plotBounds.top + 24}
             >
               <tspan class="fill-theme-700 font-semibold">
                 {valueFormatter(tooltipCurrentValue)}
               </tspan>
-              <!-- {#if showComparison} -->
               <tspan class="fill-fg-muted">
                 vs {valueFormatter(tooltipComparisonValue)}
               </tspan>

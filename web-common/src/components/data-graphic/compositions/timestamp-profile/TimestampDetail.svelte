@@ -1,297 +1,312 @@
+<!-- @component
+Diagnostic plot of count(*) over time for a timestamp column.
+Enables zoom (ctrl+drag), pan (drag when zoomed), and shift+click to copy.
+Uses index-based scales and TimeSeriesChart for rendering.
+-->
 <script lang="ts">
-  /**
-   * TimestampDetail.svelte
-   * ----------------------
-   * This component is a diagnostic plot of the count(*) over time of a timestamp column.
-   * The goal is to enable users to understand abnormalities and trends in the timestamp columns
-   * of a dataset. As such, this component can:
-   * - zoom into a specified scrub region – if the user ctrl + clicks + drags, the component
-   * will zoom into a specific region, enabling the user to better understand weird data.
-   * - panning – after zooming, the user may pan around to better situate the viewport.
-   * - shift + clicking – users can copy the timestamp value.
-   *
-   * The graph will contain an unsmoothed series (showing noise * abnormalities) by default, and
-   * a smoothed series (showing the trend) if the time series merits it.
-   */
+  import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import type {
+    ChartScales,
+    ChartSeries,
+  } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
+  import { snapIndex } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import {
+    datePortion,
+    formatInteger,
+    timePortion,
+  } from "@rilldata/web-common/lib/formatters";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
   import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { bisector, extent, max, min } from "d3-array";
-  import type { ScaleLinear } from "d3-scale";
+  import { max } from "d3-array";
   import { scaleLinear } from "d3-scale";
-  import { onMount, setContext } from "svelte";
-  import { cubicOut as easing } from "svelte/easing";
-  import { spring } from "svelte/motion";
-  import type { Writable } from "svelte/store";
-  import { writable } from "svelte/store";
+  import { curveLinear, line } from "d3-shape";
+  import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
-  import { outline } from "../../actions/outline";
-  import { createScrubAction } from "../../actions/scrub-action-factory";
-  import { DEFAULT_COORDINATES } from "../../constants";
-  import { createExtremumResolutionStore } from "../../state/extremum-resolution-store";
-  import type { PlotConfig } from "../../utils";
   import TimestampBound from "./TimestampBound.svelte";
-  import TimestampMouseoverAnnotation from "./TimestampMouseoverAnnotation.svelte";
-  import TimestampPaths from "./TimestampPaths.svelte";
   import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
   import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
-  import ZoomWindow from "./ZoomWindow.svelte";
+
+  interface TimestampDataPoint {
+    ts: Date;
+    count: number;
+    [key: string]: unknown;
+  }
 
   const id = guidGenerator();
+  const tooltipSparkWidth = 84;
+  const tooltipSparkHeight = 12;
 
-  export let data;
-  export let spark;
-
+  export let data: TimestampDataPoint[];
+  export let spark: TimestampDataPoint[];
   export let width = 360;
   export let height = 120;
-  export let curve = "curveLinear";
   export let mouseover = false;
   export let smooth = true;
-
   export let xAccessor: string;
   export let yAccessor: string;
-
-  // rowsize for table
   export let left = 1;
   export let right = 1;
   export let top = 12;
   export let bottom = 4;
   export let buffer = 0;
-
-  /** text elements */
   export let fontSize = 12;
-  // the gap b/t text nodes
   export let textGap = 4;
-
-  /** zoom elements */
-  export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
-
-  /** rollup grain, time range, etc. */
+  export let zoomWindowColor = "var(--surface-active)";
   export let rollupTimeGrain: V1TimeGrain;
   export let estimatedSmallestTimeGrain: V1TimeGrain;
 
   let devicePixelRatio = 1;
+  let zoomStartIdx = 0;
+  let zoomEndIdx: number;
+  let isZoomed = false;
+  let isDraggingZoom = false;
+  let isDraggingPan = false;
+  let dragStartX = 0;
+  let dragCurrentX = 0;
+  let hoveredIndex = -1;
+
   onMount(() => {
     devicePixelRatio = window.devicePixelRatio;
   });
 
-  /** These are our global scales, X and Y. */
-  const X: Writable<ScaleLinear<number, number>> = writable(undefined);
-  const Y: Writable<ScaleLinear<number, number>> = writable(undefined);
-  /** make them available to the children. */
-  setContext("rill:data-graphic:X", X);
-  setContext("rill:data-graphic:Y", Y);
+  // Layout
+  $: plotLeft = left + buffer;
+  $: plotRight = width - right - buffer;
+  $: plotTop = top + buffer;
+  $: plotBottom = height - bottom - buffer;
+  $: plotWidth = plotRight - plotLeft;
 
-  const coordinates = writable(DEFAULT_COORDINATES);
+  // Zoom resets when data changes
+  $: zoomEndIdx = data.length - 1;
 
-  const plotConfig: Writable<PlotConfig> = writable({
-    top,
-    bottom,
-    left,
-    right,
-    buffer,
-    width,
-    height,
-    devicePixelRatio,
-    plotTop: top + buffer,
-    plotBottom: height - buffer - bottom,
-    plotLeft: left + buffer,
-    plotRight: width - right - buffer,
-    fontSize: fontSize,
-    textGap: textGap,
-    id,
-  });
+  // Scales
+  $: xScale = scaleLinear()
+    .domain([zoomStartIdx, zoomEndIdx])
+    .range([plotLeft, plotRight]);
 
-  setContext("rill:data-graphic:plot-config", plotConfig);
+  $: yMaxVal = Math.max(5, max(data, (d: TimestampDataPoint) => val(d)) ?? 5);
+  $: yScale = scaleLinear().domain([0, yMaxVal]).range([plotBottom, plotTop]);
 
-  $: $plotConfig.devicePixelRatio = devicePixelRatio;
-  $: $plotConfig.width = width;
-  $: $plotConfig.height = height;
-  $: $plotConfig.top = top;
-  $: $plotConfig.bottom = bottom;
-  $: $plotConfig.left = left;
-  $: $plotConfig.right = right;
-  $: $plotConfig.buffer = buffer;
-  $: $plotConfig.plotTop = top + buffer;
-  $: $plotConfig.plotBottom = height - buffer - bottom;
-  $: $plotConfig.plotLeft = left + buffer;
-  $: $plotConfig.plotRight = width - right - buffer;
-  $: $plotConfig.fontSize = fontSize;
-  $: $plotConfig.textGap = textGap;
+  $: scales = { x: xScale, y: yScale } satisfies ChartScales;
 
-  /**
-   * The scrub action creates a scrubbing event that enables the user to
-   */
-  const {
-    coordinates: zoomCoords,
-    scrubAction,
-    isScrubbing: isZooming,
-    updatePlotBounds: updatePlotBoundsForScrubber,
-  } = createScrubAction({
-    plotLeft: $plotConfig.plotLeft,
-    plotRight: $plotConfig.plotRight,
-    plotTop: $plotConfig.plotTop,
-    plotBottom: $plotConfig.plotBottom,
-    startPredicate: (event: MouseEvent) => event.ctrlKey,
-    movePredicate: (event: MouseEvent) => event.ctrlKey,
-    endEventName: "scrub",
-  });
+  // Series
+  $: primaryValues = data.map((d: TimestampDataPoint): number | null => val(d));
 
-  /**
-   * This scroll action creates a scrolling event that will be used in the svg container.
-   * The main requirement is this event does not have the shiftKey in use.
-   */
-  const {
-    scrubAction: scrollAction,
-    isScrubbing: isScrolling,
-    updatePlotBounds: updatePlotBoundsForScrolling,
-  } = createScrubAction({
-    plotLeft: $plotConfig.plotLeft,
-    plotRight: $plotConfig.plotRight,
-    plotTop: $plotConfig.plotTop,
-    plotBottom: $plotConfig.plotBottom,
-    startPredicate: (event: MouseEvent) => !event.ctrlKey && !event.shiftKey,
-    movePredicate: (event: MouseEvent) => !event.ctrlKey && !event.shiftKey,
-    moveEventName: "scrolling",
-  });
+  // Adaptive line density
+  $: visibleStart = Math.max(0, Math.floor(zoomStartIdx));
+  $: visibleEnd = Math.min(data.length, Math.ceil(zoomEndIdx) + 1);
+  $: dataWindow = data.slice(visibleStart, visibleEnd);
 
-  /** update these plot bounds for scrolling and scrubbing, assuming they change. */
-  $: updatePlotBoundsForScrubber({
-    plotLeft: $plotConfig.plotLeft,
-    plotRight: $plotConfig.plotRight,
-    plotTop: $plotConfig.plotTop,
-    plotBottom: $plotConfig.plotBottom,
-  });
+  $: totalTravelDistance = dataWindow
+    .map((_: TimestampDataPoint, i: number) => {
+      if (i === dataWindow.length - 1) return 0;
+      return Math.abs(
+        yScale(val(dataWindow[i + 1])) - yScale(val(dataWindow[i])),
+      );
+    })
+    .reduce((acc: number, v: number) => acc + v, 0);
 
-  $: updatePlotBoundsForScrolling({
-    plotLeft: $plotConfig.plotLeft,
-    plotRight: $plotConfig.plotRight,
-    plotTop: $plotConfig.plotTop,
-    plotBottom: $plotConfig.plotBottom,
-  });
-
-  let isZoomed = false;
-
-  let zoomedXStart: Date | undefined;
-  let zoomedXEnd: Date | undefined;
-  // establish basis values
-  let xExtents = extent(data, (d) => d[xAccessor]);
-  $: xExtents = extent(data, (d) => d[xAccessor]);
-
-  const xMin = createExtremumResolutionStore(xExtents[0], {
-    duration: 300,
-    easing,
-    direction: "min",
-    alwaysOverrideInitialValue: true,
-  });
-  const xMax = createExtremumResolutionStore(xExtents[1], {
-    duration: 300,
-    easing,
-    direction: "max",
-    alwaysOverrideInitialValue: true,
-  });
-
-  $: xMin.setWithKey("x", zoomedXStart || xExtents[0]);
-  $: xMax.setWithKey("x", zoomedXEnd || xExtents[1]);
-
-  // this adaptive smoothing should be a function?
-
-  // Let's set the X Scale based on the $xMin and $xMax, or if the
-  $: X.set(
-    scaleLinear()
-      .domain([$xMin, $xMax])
-      .range([$plotConfig.plotLeft, $plotConfig.plotRight]),
+  $: lineDensity = Math.min(
+    1,
+    Math.max(
+      2 / (totalTravelDistance / (plotWidth * devicePixelRatio)),
+      (plotWidth * devicePixelRatio * 0.7) / dataWindow.length / 1.5,
+    ),
   );
 
-  // Generate the line density by dividing the total available pixels by the window length.
-  // We will scale by window.pixelDensityRatio.
-
-  // Generate our Y Scale.
-  let yExtents = extent(data, (d) => d[yAccessor]);
-  $: yExtents = extent(data, (d) => d[yAccessor]);
-  const yMax = createExtremumResolutionStore(Math.max(5, yExtents[1]));
-
-  // Set Y if there's a new yMax or the range changes.
-  $: Y.set(
-    scaleLinear()
-      .domain([0, $yMax])
-      .range([$plotConfig.plotBottom, $plotConfig.plotTop]),
+  $: opacity = Math.min(
+    1,
+    1 + (plotWidth * devicePixelRatio) / dataWindow.length / 2,
   );
 
-  // get the nearest point to where the cursor is.
+  $: chartSeries = [
+    {
+      id: "primary",
+      values: primaryValues,
+      color: "var(--fg-muted)",
+      strokeWidth: lineDensity,
+      opacity,
+      areaGradient: { dark: "var(--fg-muted)", light: "transparent" },
+    },
+  ] satisfies ChartSeries[];
 
-  const bisectDate = bisector((d) => d[xAccessor]).center;
-  $: nearestPoint = data[bisectDate(data, $X.invert($coordinates.x))];
+  // Smoothed line
+  $: windowWithoutZeros = dataWindow.filter(
+    (d: TimestampDataPoint) => val(d) !== 0,
+  );
+  $: windowSize =
+    dataWindow.length < 150 ? 30 : Math.trunc(dataWindow.length / 25);
 
-  function clearMouseMove() {
-    coordinates.set(DEFAULT_COORDINATES);
+  $: smoothedValues = data.map(
+    (_: TimestampDataPoint, i: number, arr: TimestampDataPoint[]) => {
+      const w = Math.max(3, Math.min(Math.trunc(windowSize), i));
+      const half = Math.trunc(w / 2);
+      const prev = arr.slice(i - half, i + half);
+      if (prev.length === 0) return val(arr[i]);
+      return (
+        prev.reduce((a: number, b: TimestampDataPoint) => a + val(b), 0) /
+        prev.length
+      );
+    },
+  );
+
+  $: showSmoothed =
+    smooth &&
+    windowWithoutZeros.length > 0 &&
+    windowWithoutZeros.length > width * devicePixelRatio;
+
+  $: smoothedLineGen = line<number>()
+    .x((_d, i) => xScale(i))
+    .y((d) => yScale(d ?? 0))
+    .curve(curveLinear);
+
+  $: smoothedPath = smoothedLineGen(smoothedValues) ?? "";
+
+  $: isDragging = isDraggingZoom || isDraggingPan;
+
+  // Cursor
+  $: cursor = isDraggingZoom ? "text" : isDraggingPan ? "grab" : "inherit";
+
+  // Date extents
+  $: xExtentStart = dateAt(data[0]);
+  $: xExtentEnd = dateAt(data[data.length - 1]);
+
+  // Zoom bounds as dates
+  $: zoomMinDate = isDraggingZoom
+    ? indexToDate(xScale.invert(Math.min(dragStartX, dragCurrentX)))
+    : indexToDate(zoomStartIdx);
+
+  $: zoomMaxDate = isDraggingZoom
+    ? indexToDate(xScale.invert(Math.max(dragStartX, dragCurrentX)))
+    : indexToDate(zoomEndIdx);
+
+  // Zoomed row count
+  $: zoomedRows = computeZoomedRows(
+    isDraggingZoom,
+    dragStartX,
+    dragCurrentX,
+    zoomStartIdx,
+    zoomEndIdx,
+  );
+
+  $: totalRows = Math.trunc(
+    data.reduce((a: number, b: TimestampDataPoint) => a + val(b), 0),
+  );
+
+  function val(d: TimestampDataPoint): number {
+    return d[yAccessor] as number;
   }
 
-  function handleMouseMove(event: MouseEvent) {
-    if (
-      event.offsetX > $plotConfig.plotLeft &&
-      event.offsetX < $plotConfig.plotRight
-    ) {
-      coordinates.set({ x: event.offsetX, y: event.offsetY });
+  function dateAt(d: TimestampDataPoint | undefined): Date {
+    return d?.[xAccessor] as Date;
+  }
+
+  function indexToDate(idx: number): Date {
+    return dateAt(data[snapIndex(idx, data.length)]);
+  }
+
+  function computeZoomedRows(
+    dragging: boolean,
+    startX: number,
+    currentX: number,
+    startIdx: number,
+    endIdx: number,
+  ): number {
+    const start = dragging
+      ? xScale.invert(Math.min(startX, currentX))
+      : startIdx;
+    const end = dragging ? xScale.invert(Math.max(startX, currentX)) : endIdx;
+    const s = Math.max(0, Math.round(start));
+    const e = Math.min(data.length - 1, Math.round(end));
+    let sum = 0;
+    for (let i = s; i <= e; i++) {
+      sum += val(data[i]);
+    }
+    return Math.trunc(sum);
+  }
+
+  function handleMouseDown(event: MouseEvent) {
+    if (event.button !== 0) return;
+    if (event.shiftKey) return;
+
+    const x = event.offsetX;
+    if (x < plotLeft || x > plotRight) return;
+
+    if (event.ctrlKey || event.metaKey) {
+      isDraggingZoom = true;
+      dragStartX = x;
+      dragCurrentX = x;
+    } else if (isZoomed) {
+      isDraggingPan = true;
+      dragStartX = x;
+      dragCurrentX = x;
     }
   }
 
-  function setCursor(isZooming: boolean, isScrolling: boolean) {
-    if (isZooming) return "text";
-    if (isScrolling) return "grab";
-    return "inherit";
+  function handleMouseMove(event: MouseEvent) {
+    const x = event.offsetX;
+
+    if (isDraggingZoom) {
+      dragCurrentX = x;
+    } else if (isDraggingPan) {
+      const dx = x - dragCurrentX;
+      const idxDelta = xScale.invert(0) - xScale.invert(dx);
+      const newStart = zoomStartIdx + idxDelta;
+      const newEnd = zoomEndIdx + idxDelta;
+      if (newStart >= 0 && newEnd <= data.length - 1) {
+        zoomStartIdx = newStart;
+        zoomEndIdx = newEnd;
+      }
+      dragCurrentX = x;
+    }
+
+    if (mouseover && x >= plotLeft && x <= plotRight) {
+      const fractionalIdx = xScale.invert(x);
+      hoveredIndex = Math.max(
+        0,
+        Math.min(data.length - 1, Math.round(fractionalIdx)),
+      );
+    }
   }
 
-  // when zooming / panning, get the total number of zoomed rows.
-  let zoomedRows;
-
-  // find the total number of rows currently visible in the zoom.
-  $: if ($zoomCoords.start.x && $zoomCoords.stop.x) {
-    const xStart = $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x));
-    const xEnd = $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x));
-    zoomedRows = Math.trunc(
-      data
-        .filter((di) => {
-          return di[xAccessor] >= xStart && di[xAccessor] <= xEnd;
-        })
-        .reduce((sum, di) => (sum += di[yAccessor]), 0),
-    );
-  } else if (zoomedXStart !== undefined && zoomedXEnd !== undefined) {
-    // these two local constants are needed to appease the compiler.
-    const localXStart = zoomedXStart;
-    const localXEnd = zoomedXEnd;
-    zoomedRows = Math.trunc(
-      data
-        .filter((di) => {
-          return di[xAccessor] >= localXStart && di[xAccessor] <= localXEnd;
-        })
-        .reduce((sum, di) => (sum += di[yAccessor]), 0),
-    );
+  function handleMouseUp() {
+    if (isDraggingZoom) {
+      const startIdx = xScale.invert(Math.min(dragStartX, dragCurrentX));
+      const endIdx = xScale.invert(Math.max(dragStartX, dragCurrentX));
+      if (Math.abs(dragCurrentX - dragStartX) > 4) {
+        zoomStartIdx = Math.max(0, startIdx);
+        zoomEndIdx = Math.min(data.length - 1, endIdx);
+        isZoomed = true;
+      }
+      isDraggingZoom = false;
+    }
+    if (isDraggingPan) {
+      isDraggingPan = false;
+    }
   }
 
-  // Tooltip & timestamp range variables.
-  const tooltipSparkWidth = 84;
-  const tooltipSparkHeight = 12;
-  const tooltipPanShakeAmount = spring(0, { stiffness: 0.1, damping: 0.9 });
-  let movementTimeout: ReturnType<typeof setTimeout>;
+  function handleMouseLeave() {
+    hoveredIndex = -1;
+    if (isDraggingZoom) isDraggingZoom = false;
+    if (isDraggingPan) isDraggingPan = false;
+  }
 
-  $: zoomMinBound =
-    ($zoomCoords.start.x && $zoomCoords.stop.x
-      ? $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x))
-      : min([zoomedXStart, zoomedXEnd])) || xExtents[0];
-
-  $: zoomMaxBound =
-    ($zoomCoords.start.x && $zoomCoords.stop.x
-      ? $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x))
-      : max([zoomedXStart, zoomedXEnd])) || xExtents[1];
+  function clearZoom() {
+    zoomStartIdx = 0;
+    zoomEndIdx = data.length - 1;
+    isZoomed = false;
+  }
 
   function shiftClick() {
+    if (hoveredIndex < 0) return;
+    const pt = data[hoveredIndex];
     const exportedValue = `TIMESTAMP '${removeLocalTimezoneOffset(
-      nearestPoint[xAccessor],
+      dateAt(pt),
       timeGrainToDuration(rollupTimeGrain),
     ).toISOString()}'`;
     copyToClipboard(exportedValue);
@@ -301,179 +316,210 @@
 <div
   role="presentation"
   style:max-width="{width}px"
-  on:click={modified({
-    shift: shiftClick,
-  })}
+  on:click={modified({ shift: shiftClick })}
 >
   <TimestampProfileSummary
-    start={xExtents[0]}
-    end={xExtents[1]}
+    start={xExtentStart}
+    end={xExtentEnd}
     {estimatedSmallestTimeGrain}
     {rollupTimeGrain}
   />
-  <Tooltip location="right" alignment="center" distance={32}>
+  <Tooltip location="right" alignment="middle" distance={32}>
+    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
     <svg
       role="img"
       {width}
       {height}
-      style:cursor={setCursor($isZooming, $isScrolling)}
-      use:scrubAction
-      use:scrollAction
-      on:scrolling={(event) => {
-        if (isZoomed && zoomedXStart && zoomedXEnd) {
-          // clear the tooltip shake effect zeroing timeout.
-          clearTimeout(movementTimeout);
-          // shake the word "pan" in the tooltip here.
-          tooltipPanShakeAmount.set(event.detail.movementX / 8);
-          // set this timeout to resolve back to 0 if the user stops dragging.
-          movementTimeout = setTimeout(() => {
-            tooltipPanShakeAmount.set(0);
-          }, 150);
-
-          const timeDistance =
-            $X.invert(event.detail.clientX + event.detail.movementX) -
-            $X.invert(event.detail.clientX);
-          const oldXStart = new Date(+zoomedXStart);
-          const oldXEnd = new Date(+zoomedXEnd);
-          zoomedXStart = new Date(+zoomedXStart - +timeDistance);
-          zoomedXEnd = new Date(+zoomedXEnd - +timeDistance);
-
-          if (zoomedXStart < xExtents[0] || zoomedXEnd >= xExtents[1]) {
-            zoomedXStart = oldXStart;
-            zoomedXEnd = oldXEnd;
-          }
-        }
-      }}
-      on:scrub={(event) => {
-        // set max and min here.
-        zoomedXStart = new Date(
-          $X.invert(Math.min(event.detail.start.x, event.detail.stop.x)),
-        );
-        zoomedXEnd = new Date(
-          $X.invert(Math.max(event.detail.start.x, event.detail.stop.x)),
-        );
-        // mark that this graphic has been scrubbed.
-        setTimeout(() => {
-          isZoomed = true;
-        }, 100);
-      }}
-      on:mousemove={mouseover ? handleMouseMove : undefined}
-      on:mouseleave={mouseover ? clearMouseMove : undefined}
+      style:cursor
+      on:mousedown={handleMouseDown}
+      on:mousemove={handleMouseMove}
+      on:mouseup={handleMouseUp}
+      on:mouseleave={handleMouseLeave}
       on:contextmenu|preventDefault|stopPropagation
     >
       <defs>
-        <linearGradient id="left-side">
-          <stop offset="0%" stop-color="white" />
-          <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+        <clipPath id="clip-{id}">
+          <rect
+            x={plotLeft}
+            y={plotTop}
+            width={plotRight - plotLeft}
+            height={plotBottom - plotTop}
+          />
+        </clipPath>
+        <linearGradient id="left-side-{id}">
+          <stop
+            offset="0%"
+            stop-color="var(--surface-background)"
+            stop-opacity="1"
+          />
+          <stop
+            offset="100%"
+            stop-color="var(--surface-background)"
+            stop-opacity="0"
+          />
         </linearGradient>
-        <linearGradient id="right-side">
-          <stop offset="0%" stop-color="rgba(255,255,255,0)" />
-          <stop offset="100%" stop-color="white" />
+        <linearGradient id="right-side-{id}">
+          <stop
+            offset="0%"
+            stop-color="var(--surface-background)"
+            stop-opacity="0"
+          />
+          <stop
+            offset="100%"
+            stop-color="var(--surface-background)"
+            stop-opacity="1"
+          />
         </linearGradient>
       </defs>
-      <clipPath id="data-graphic-{$plotConfig.id}">
-        <rect
-          x={$plotConfig.plotLeft}
-          y={$plotConfig.plotTop}
-          width={$plotConfig.plotRight - $plotConfig.plotLeft}
-          height={$plotConfig.plotBottom - $plotConfig.plotTop}
-        />
-      </clipPath>
-      <g clip-path="url(#data-graphic-{id})">
-        <!-- core geoms -->
-        <TimestampPaths {curve} {data} {xAccessor} {yAccessor} {smooth} />
+
+      <g clip-path="url(#clip-{id})">
+        <TimeSeriesChart series={chartSeries} {scales} />
+
+        {#if showSmoothed}
+          <path
+            d={smoothedPath}
+            class="stroke-fg-disabled"
+            fill="none"
+            stroke-width={3}
+            style:opacity={0.5}
+          />
+          <path
+            d={smoothedPath}
+            class="stroke-fg-muted"
+            fill="none"
+            stroke-width={1.5}
+            style:opacity={0.85}
+          />
+        {/if}
 
         {#if isZoomed}
-          <!-- fadeout gradients on each side? -->
           <rect
             transition:fade|global
-            x={$plotConfig.plotLeft}
-            y={$plotConfig.plotTop}
+            x={plotLeft}
+            y={plotTop}
             width={20}
-            height={$plotConfig.plotBottom - $plotConfig.plotTop}
-            fill="url(#left-side)"
+            height={plotBottom - plotTop}
+            fill="url(#left-side-{id})"
           />
           <rect
             transition:fade|global
-            x={$plotConfig.plotRight - 20}
-            y={$plotConfig.plotTop}
+            x={plotRight - 20}
+            y={plotTop}
             width={20}
-            height={$plotConfig.plotBottom - $plotConfig.plotTop}
-            fill="url(#right-side)"
+            height={plotBottom - plotTop}
+            fill="url(#right-side-{id})"
           />
         {/if}
-        <!-- add baseline -->
+
         <line
-          x1={$X?.range()[0]}
-          x2={$X?.range()[1]}
-          y1={$Y && $Y(0)}
-          y2={$Y && $Y(0)}
-          stroke="rgb(100,100,100)"
+          x1={plotLeft}
+          x2={plotRight}
+          y1={yScale(0)}
+          y2={yScale(0)}
+          class="stroke-fg-muted"
         />
       </g>
-      <g>
-        {#if $zoomCoords.start.x && $zoomCoords.stop.x}
-          <ZoomWindow
-            start={$zoomCoords.start.x}
-            stop={$zoomCoords.stop.x}
-            color={zoomWindowColor}
-          />
-        {/if}
-      </g>
-      <!-- mouseover annotation -->
-      {#if $coordinates.x}
-        <TimestampMouseoverAnnotation
-          point={nearestPoint}
-          grain={rollupTimeGrain}
-          {xAccessor}
-          {yAccessor}
+
+      {#if isDraggingZoom}
+        <rect
+          x={Math.min(dragStartX, dragCurrentX)}
+          y={plotTop}
+          width={Math.abs(dragCurrentX - dragStartX)}
+          height={plotBottom - plotTop}
+          fill={zoomWindowColor}
+          opacity={0.3}
+        />
+        <line
+          x1={dragStartX}
+          x2={dragStartX}
+          y1={plotTop}
+          y2={plotBottom}
+          class="stroke-fg-muted"
+        />
+        <line
+          x1={dragCurrentX}
+          x2={dragCurrentX}
+          y1={plotTop}
+          y2={plotBottom}
+          class="stroke-fg-muted"
         />
       {/if}
-      <!-- scrub-clearing click region -->
-      {#if zoomedXStart && zoomedXEnd}
+
+      {#if hoveredIndex >= 0 && !isDragging}
+        {@const pt = data[hoveredIndex]}
+        {@const cx = xScale(hoveredIndex)}
+        {@const cy = yScale(val(pt))}
+        {@const label = removeLocalTimezoneOffset(
+          dateAt(pt),
+          timeGrainToDuration(rollupTimeGrain),
+        )}
+        <line
+          x1={cx}
+          x2={cx}
+          y1={plotTop}
+          y2={plotBottom}
+          class="stroke-fg-muted"
+        />
+        <circle {cx} {cy} r={3} class="fill-fg-muted" />
+        <g
+          in:fly|global={{ duration: 200, x: -16 }}
+          out:fly|global={{ duration: 200, x: -16 }}
+          font-size={fontSize}
+          style:user-select="none"
+        >
+          <text
+            x={plotLeft}
+            y={fontSize}
+            class="fill-fg-secondary text-outline"
+          >
+            {datePortion(label)}
+          </text>
+          <text
+            x={plotLeft}
+            y={fontSize * 2 + textGap}
+            class="fill-fg-secondary text-outline"
+          >
+            {timePortion(label)}
+          </text>
+          <text
+            x={plotLeft}
+            y={fontSize * 3 + textGap * 2}
+            class="fill-fg-secondary text-outline"
+          >
+            {formatInteger(Math.trunc(val(pt)))} row{val(pt) !== 1 ? "s" : ""}
+          </text>
+        </g>
+      {/if}
+
+      {#if isZoomed}
         <text
           role="button"
           tabindex="0"
           font-size={fontSize}
-          x={$plotConfig.plotRight}
+          x={plotRight}
           y={fontSize}
           text-anchor="end"
           style:user-select="none"
           style:cursor="pointer"
-          class="transition-color fill-gray-500 hover:fill-black"
+          class="transition-color fill-fg-muted hover:fill-fg-primary text-outline"
           in:fly|global={{ duration: 200, x: 16, delay: 200 }}
           out:fly|global={{ duration: 200, x: 16 }}
-          use:outline
-          on:keydown={() => {
-            /** no-op */
-          }}
-          on:click={() => {
-            zoomedXStart = undefined;
-            zoomedXEnd = undefined;
-            isZoomed = false;
-          }}
+          on:keydown={() => {}}
+          on:click={clearZoom}
         >
-          clear zoom ✖
+          clear zoom &#x2716;
         </text>
       {/if}
     </svg>
-    <!--
-    Graph Tooltip Content
-    ---------------------
-    We slot in the tooltip content into an encompassing div.
-    Ideally, this tooltip would perfectly center in all cases, but we should use a MutationObserver within FloatingElement.svelte
-    to additionally listen to the child element mutations before placement.
-    This is a workaround, and given that the content does not really redraw the bounds,
-    it should work fine in practice.
-    -->
+
     <div
       slot="tooltip-content"
       in:fly|global={{ duration: 100, y: 4 }}
       out:fly|global={{ duration: 100, y: 4 }}
       style="
-            display: grid; 
-            justify-content: center; 
-            grid-template-columns: max-content;"
+        display: grid;
+        justify-content: center;
+        grid-template-columns: max-content;"
     >
       <TimestampTooltipContent
         data={spark}
@@ -481,34 +527,28 @@
         {yAccessor}
         width={tooltipSparkWidth}
         height={tooltipSparkHeight}
-        tooltipPanShakeAmount={// we will shake the tooltip pan word
-        $tooltipPanShakeAmount}
+        tooltipPanShakeAmount={0}
         {zoomedRows}
-        totalRows={Math.trunc(data.reduce((a, b) => a + b[yAccessor], 0))}
-        zoomed={$zoomCoords.start.x !== undefined || zoomedXStart !== undefined}
-        zooming={zoomedXStart && !$zoomCoords.start.x}
-        zoomWindowXMin={$zoomCoords.start.x && $zoomCoords.stop.x
-          ? $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x))
-          : min([zoomedXStart, zoomedXEnd])}
-        zoomWindowXMax={$zoomCoords.start.x && $zoomCoords.stop.x
-          ? $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x))
-          : max([zoomedXStart, zoomedXEnd])}
+        {totalRows}
+        zoomed={isDraggingZoom || isZoomed}
+        zooming={isZoomed && !isDraggingZoom}
+        zoomWindowXMin={isDraggingZoom || isZoomed ? zoomMinDate : undefined}
+        zoomWindowXMax={isDraggingZoom || isZoomed ? zoomMaxDate : undefined}
       />
     </div>
   </Tooltip>
 
-  <!-- Bottom time horizon labels -->
   <div class="select-none grid grid-cols-2 space-between">
     <TimestampBound
       grain={rollupTimeGrain}
       align="left"
-      value={zoomMinBound}
+      value={zoomMinDate}
       label="Min"
     />
     <TimestampBound
       grain={rollupTimeGrain}
       align="right"
-      value={zoomMaxBound}
+      value={zoomMaxDate}
       label="Max"
     />
   </div>

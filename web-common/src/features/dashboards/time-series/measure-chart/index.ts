@@ -15,9 +15,6 @@ export type {
   ChartMode,
   ScrubState,
   HoverState,
-  BisectedPoint,
-  InteractionState,
-  MeasureChartProps,
 } from "./types";
 
 // Utilities
@@ -25,17 +22,9 @@ export {
   computeChartConfig,
   computeNiceYExtent,
   computeYExtent,
-  computeXExtent,
-  createScales,
-  createXScale,
-  createYScale,
 } from "./scales";
 
-export {
-  createVisibilityObserver,
-  createHoverState,
-  getOrderedDates,
-} from "./interactions";
+export { createVisibilityObserver } from "./interactions";
 
 export { ScrubController } from "./ScrubController";
 

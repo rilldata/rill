@@ -23,8 +23,6 @@ web-admin/src/routes/[organization]/-/upgrade-callback/+page.ts: error TS2307
 web-admin/src/routes/[organization]/[project]/-/open-query/+page.ts: error TS2307
 web-admin/src/routes/[organization]/[project]/-/share/[token]/+page.ts: error TS2345
 web-common/src/components/data-graphic/actions/mouse-position-to-domain-action-factory.ts: error TS2322
-web-common/src/components/data-graphic/actions/outline.ts: error TS18047
-web-common/src/components/data-graphic/actions/outline.ts: error TS2345
 web-common/src/components/data-graphic/marks/segment.ts: error TS2345
 web-common/src/components/data-graphic/utils.ts: error TS2362
 web-common/src/components/data-graphic/utils.ts: error TS2363

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ChartSeries } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
+  import { computeBarSlotGeometry } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/utils";
   import type { ScaleLinear } from "d3-scale";
 
   export let series: ChartSeries[];
@@ -30,17 +31,15 @@
   }
 
   $: visibleCount = Math.max(1, visibleEnd - visibleStart + 1);
-  $: slotWidth = plotWidth / visibleCount;
-  $: gap = slotWidth * 0.2;
-  $: bandWidth = slotWidth - gap;
+  $: geo = computeBarSlotGeometry(plotWidth, visibleCount, series.length);
   $: zeroY = yScale(0);
 </script>
 
 {#if stacked}
   {#each { length: visibleCount } as _, slot (slot)}
     {@const ptIdx = visibleStart + slot}
-    {@const cx = plotLeft + (slot + 0.5) * slotWidth}
-    {@const bx = cx - bandWidth / 2}
+    {@const cx = plotLeft + (slot + 0.5) * geo.slotWidth}
+    {@const bx = cx - geo.bandWidth / 2}
     {@const stackValues = series.map((s) => ({
       value: s.values[ptIdx] ?? 0,
       color: s.color,
@@ -59,7 +58,7 @@
         <rect
           x={bx}
           y={Math.min(yBottom, yTop)}
-          width={bandWidth}
+          width={geo.bandWidth}
           height={Math.abs(yBottom - yTop)}
           fill={isInScrub(ptIdx) ? seg.color : "var(--color-gray-400)"}
           opacity={1}
@@ -69,36 +68,33 @@
     {/each}
   {/each}
 {:else}
-  {@const barCount = series.length}
-  {@const barGap = barCount > 1 ? 2 : 0}
-  {@const totalGaps = barGap * (barCount - 1)}
-  {@const singleBarWidth = (bandWidth - totalGaps) / barCount}
   {@const radius = 4}
   {#each { length: visibleCount } as _, slot (slot)}
     {@const ptIdx = visibleStart + slot}
-    {@const cx = plotLeft + (slot + 0.5) * slotWidth}
+    {@const cx = plotLeft + (slot + 0.5) * geo.slotWidth}
     {#each series as s, sIdx (s.id)}
       {@const v = s.values[ptIdx] ?? null}
       {#if v !== null}
-        {@const bx = cx - bandWidth / 2 + sIdx * (singleBarWidth + barGap)}
+        {@const bx =
+          cx - geo.bandWidth / 2 + sIdx * (geo.singleBarWidth + geo.barGap)}
         {@const by = Math.min(zeroY, yScale(v))}
         {@const bh = Math.abs(zeroY - yScale(v))}
-        {@const r = Math.min(radius, singleBarWidth / 2, bh / 2)}
+        {@const r = Math.min(radius, geo.singleBarWidth / 2, bh / 2)}
         {@const isPositive = v >= 0}
         <path
           d={isPositive
             ? `M${bx},${by + bh}
                V${by + r}
                Q${bx},${by} ${bx + r},${by}
-               H${bx + singleBarWidth - r}
-               Q${bx + singleBarWidth},${by} ${bx + singleBarWidth},${by + r}
+               H${bx + geo.singleBarWidth - r}
+               Q${bx + geo.singleBarWidth},${by} ${bx + geo.singleBarWidth},${by + r}
                V${by + bh}
                Z`
             : `M${bx},${by}
                V${by + bh - r}
                Q${bx},${by + bh} ${bx + r},${by + bh}
-               H${bx + singleBarWidth - r}
-               Q${bx + singleBarWidth},${by + bh} ${bx + singleBarWidth},${by + bh - r}
+               H${bx + geo.singleBarWidth - r}
+               Q${bx + geo.singleBarWidth},${by + bh} ${bx + geo.singleBarWidth},${by + bh - r}
                V${by}
                Z`}
           fill={isInScrub(ptIdx) ? s.color : "var(--color-gray-400)"}

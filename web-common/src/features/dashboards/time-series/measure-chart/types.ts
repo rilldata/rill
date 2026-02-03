@@ -1,5 +1,4 @@
 import type { ScaleLinear } from "d3-scale";
-import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import type { DateTime } from "luxon";
 
 /**
@@ -96,54 +95,6 @@ export interface HoverState {
   screenY: number | null;
   /** Is mouse currently over the chart */
   isHovered: boolean;
-}
-
-/**
- * Bisected point — just the snapped index.
- */
-export interface BisectedPoint {
-  /** Nearest data index */
-  index: number;
-}
-
-/**
- * Combined interaction state.
- */
-export interface InteractionState {
-  hover: HoverState;
-  scrub: ScrubState;
-  bisectedPoint: BisectedPoint;
-  cursorStyle: string;
-}
-
-/**
- * Event handlers for chart interactions.
- */
-export interface InteractionHandlers {
-  onMouseMove: (event: MouseEvent) => void;
-  onMouseLeave: () => void;
-  onMouseDown: (event: MouseEvent) => void;
-  onMouseUp: (event: MouseEvent) => void;
-  onClick: (event: MouseEvent) => void;
-}
-
-/**
- * Props for the new MeasureChart component.
- * Reduced from 41 to ~15 essential props.
- */
-export interface MeasureChartProps {
-  /** The measure specification */
-  measure: MetricsViewSpecMeasure;
-  /** Explorer name for state management */
-  exploreName: string;
-  /** Whether to show time comparison overlay */
-  showComparison?: boolean;
-  /** Whether showing expanded TDD view */
-  showTimeDimensionDetail?: boolean;
-  /** Chart width (auto-calculated if not provided) */
-  width?: number;
-  /** Chart height (auto-calculated if not provided) */
-  height?: number;
 }
 
 /**
