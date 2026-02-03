@@ -14299,6 +14299,98 @@ export class GetPaymentsPortalURLResponse extends Message<GetPaymentsPortalURLRe
 }
 
 /**
+ * @generated from message rill.admin.v1.CreatePaymentCheckoutSessionRequest
+ */
+export class CreatePaymentCheckoutSessionRequest extends Message<CreatePaymentCheckoutSessionRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string success_url = 2;
+   */
+  successUrl = "";
+
+  /**
+   * @generated from field: string cancel_url = 3;
+   */
+  cancelUrl = "";
+
+  /**
+   * @generated from field: bool superuser_force_access = 4;
+   */
+  superuserForceAccess = false;
+
+  constructor(data?: PartialMessage<CreatePaymentCheckoutSessionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreatePaymentCheckoutSessionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "success_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "cancel_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreatePaymentCheckoutSessionRequest {
+    return new CreatePaymentCheckoutSessionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreatePaymentCheckoutSessionRequest {
+    return new CreatePaymentCheckoutSessionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreatePaymentCheckoutSessionRequest {
+    return new CreatePaymentCheckoutSessionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreatePaymentCheckoutSessionRequest | PlainMessage<CreatePaymentCheckoutSessionRequest> | undefined, b: CreatePaymentCheckoutSessionRequest | PlainMessage<CreatePaymentCheckoutSessionRequest> | undefined): boolean {
+    return proto3.util.equals(CreatePaymentCheckoutSessionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreatePaymentCheckoutSessionResponse
+ */
+export class CreatePaymentCheckoutSessionResponse extends Message<CreatePaymentCheckoutSessionResponse> {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url = "";
+
+  constructor(data?: PartialMessage<CreatePaymentCheckoutSessionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreatePaymentCheckoutSessionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreatePaymentCheckoutSessionResponse {
+    return new CreatePaymentCheckoutSessionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreatePaymentCheckoutSessionResponse {
+    return new CreatePaymentCheckoutSessionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreatePaymentCheckoutSessionResponse {
+    return new CreatePaymentCheckoutSessionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreatePaymentCheckoutSessionResponse | PlainMessage<CreatePaymentCheckoutSessionResponse> | undefined, b: CreatePaymentCheckoutSessionResponse | PlainMessage<CreatePaymentCheckoutSessionResponse> | undefined): boolean {
+    return proto3.util.equals(CreatePaymentCheckoutSessionResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListPublicBillingPlansRequest
  */
 export class ListPublicBillingPlansRequest extends Message<ListPublicBillingPlansRequest> {

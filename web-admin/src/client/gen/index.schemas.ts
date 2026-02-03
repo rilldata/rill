@@ -327,6 +327,10 @@ export interface V1CreateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1CreatePaymentCheckoutSessionResponse {
+  url?: string;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -1720,6 +1724,12 @@ export type AdminServiceUpdateOrganizationBody = {
 };
 
 export type AdminServiceListOrganizationBillingIssuesParams = {
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceCreatePaymentCheckoutSessionBody = {
+  successUrl?: string;
+  cancelUrl?: string;
   superuserForceAccess?: boolean;
 };
 

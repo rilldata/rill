@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -495,6 +496,46 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 	}
 
 	return &adminv1.GetPaymentsPortalURLResponse{Url: url}, nil
+}
+
+func (s *Server) CreatePaymentCheckoutSession(ctx context.Context, req *adminv1.CreatePaymentCheckoutSessionRequest) (*adminv1.CreatePaymentCheckoutSessionResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
+	observability.AddRequestAttributes(ctx, attribute.String("args.success_url", req.SuccessUrl))
+	observability.AddRequestAttributes(ctx, attribute.String("args.cancel_url", req.CancelUrl))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to manage org billing")
+	}
+
+	if org.PaymentCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "payment customer not initialized yet for the organization")
+	}
+
+	// Default URLs if not provided
+	if req.SuccessUrl == "" {
+		req.SuccessUrl = s.admin.URLs.Billing(org.Name, false)
+	}
+	if req.CancelUrl == "" {
+		req.CancelUrl = s.admin.URLs.Billing(org.Name, false)
+	}
+
+	session, err := s.admin.PaymentProvider.CreateCheckoutSession(ctx, &payment.CheckoutSessionOptions{
+		CustomerID: org.PaymentCustomerID,
+		SuccessURL: req.SuccessUrl,
+		CancelURL:  req.CancelUrl,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create checkout session: %v", err))
+	}
+
+	return &adminv1.CreatePaymentCheckoutSessionResponse{Url: session.URL}, nil
 }
 
 // SudoUpdateOrganizationBillingCustomer updates the billing customer id for an organization. May be useful if customer is initialized manually in billing system

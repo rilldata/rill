@@ -7,7 +7,7 @@
   import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
-    fetchPaymentsPortalURL,
+    createPaymentCheckoutSessionURL,
     fetchTeamPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
@@ -91,46 +91,66 @@
   ]);
   async function handleUpgradePlan() {
     loading = true;
-    // only fetch when needed to avoid hitting orb for list of plans too often
-    const teamPlan = await fetchTeamPlan();
-    if (paymentIssues?.length) {
-      window.open(
-        await fetchPaymentsPortalURL(
+    try {
+      // only fetch when needed to avoid hitting orb for list of plans too often
+      const teamPlan = await fetchTeamPlan();
+      if (paymentIssues?.length) {
+        // Use Stripe Checkout for a better payment UX with multiple payment options
+        const upgradeUrl = getBillingUpgradeUrl($page, organization);
+        const cancelUrl = `${$page.url.protocol}//${$page.url.host}/${organization}/-/settings/billing`;
+        const checkoutUrl = await createPaymentCheckoutSessionURL(
           organization,
-          getBillingUpgradeUrl($page, organization),
-        ),
-        "_self",
-      );
-      return;
-    }
-    loading = false;
+          upgradeUrl,
+          cancelUrl,
+        );
+        if (checkoutUrl) {
+          window.open(checkoutUrl, "_self");
+          return;
+        }
+        // If no URL was returned, reset loading and show error
+        loading = false;
+        eventBus.emit("notification", {
+          type: "error",
+          message: "Failed to open payment page. Please try again.",
+        });
+        return;
+      }
+      loading = false;
 
-    if (type === "renew") {
-      await $planRenewer.mutateAsync({
-        org: organization,
-        data: {
-          planName: teamPlan.name,
-        },
-      });
+      if (type === "renew") {
+        await $planRenewer.mutateAsync({
+          org: organization,
+          data: {
+            planName: teamPlan.name,
+          },
+        });
+        eventBus.emit("notification", {
+          type: "success",
+          message: "Your Team plan was renewed",
+        });
+      } else {
+        await $planUpdater.mutateAsync({
+          org: organization,
+          data: {
+            planName: teamPlan.name,
+          },
+        });
+        showWelcomeToRillDialog.set(true);
+      }
+      void invalidateBillingInfo(organization);
+      open = false;
+      if (redirect) {
+        // redirect param could be on a different domain like the rill developer instance
+        // so using goto won't work
+        window.open(redirect, "_self");
+      }
+    } catch (e) {
+      console.error("Failed to upgrade plan:", e);
+      loading = false;
       eventBus.emit("notification", {
-        type: "success",
-        message: "Your Team plan was renewed",
+        type: "error",
+        message: "Failed to upgrade plan. Please try again.",
       });
-    } else {
-      await $planUpdater.mutateAsync({
-        org: organization,
-        data: {
-          planName: teamPlan.name,
-        },
-      });
-      showWelcomeToRillDialog.set(true);
-    }
-    void invalidateBillingInfo(organization);
-    open = false;
-    if (redirect) {
-      // redirect param could be on a different domain like the rill developer instance
-      // so using goto won't work
-      window.open(redirect, "_self");
     }
   }
 </script>

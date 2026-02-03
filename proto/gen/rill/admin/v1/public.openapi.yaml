@@ -443,6 +443,11 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1CreatePaymentCheckoutSessionResponse:
+            properties:
+                url:
+                    type: string
+            type: object
         v1CreateProjectResponse:
             properties:
                 project:
@@ -2478,6 +2483,7 @@ paths:
             summary: UpdateOrganization deletes an organizations
             x-visibility: public
     /v1/orgs/{org}/billing/issues: {}
+    /v1/orgs/{org}/billing/payments/checkout-session: {}
     /v1/orgs/{org}/billing/payments/portal-url: {}
     /v1/orgs/{org}/billing/subscriptions: {}
     /v1/orgs/{org}/billing/subscriptions/renew: {}

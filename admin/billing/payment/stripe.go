@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/billingportal/session"
+	checkoutsession "github.com/stripe/stripe-go/v79/checkout/session"
 	"github.com/stripe/stripe-go/v79/customer"
 	"go.uber.org/zap"
 )
@@ -105,6 +106,31 @@ func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL 
 	}
 
 	return sess.URL, nil
+}
+
+func (s *Stripe) CreateCheckoutSession(ctx context.Context, opts *CheckoutSessionOptions) (*CheckoutSession, error) {
+	params := &stripe.CheckoutSessionParams{
+		Customer: stripe.String(opts.CustomerID),
+		Mode:     stripe.String(string(stripe.CheckoutSessionModeSetup)),
+		// Setup mode allows collecting payment method without charging
+		// Payment method types are configured in Stripe Dashboard settings
+		SuccessURL: stripe.String(opts.SuccessURL),
+		CancelURL:  stripe.String(opts.CancelURL),
+		// Collect billing address
+		BillingAddressCollection: stripe.String(string(stripe.CheckoutSessionBillingAddressCollectionRequired)),
+		// Currency is required for setup mode to determine available payment methods
+		Currency: stripe.String(string(stripe.CurrencyUSD)),
+	}
+
+	sess, err := checkoutsession.New(params)
+	if err != nil {
+		s.logger.Error("failed to create checkout session", zap.Error(err), zap.String("customer_id", opts.CustomerID))
+		return nil, err
+	}
+
+	return &CheckoutSession{
+		URL: sess.URL,
+	}, nil
 }
 
 func (s *Stripe) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {

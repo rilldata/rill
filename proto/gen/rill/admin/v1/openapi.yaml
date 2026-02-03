@@ -443,6 +443,11 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1CreatePaymentCheckoutSessionResponse:
+            properties:
+                url:
+                    type: string
+            type: object
         v1CreateProjectResponse:
             properties:
                 project:
@@ -2941,6 +2946,45 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListOrganizationBillingIssues lists all the billing issues for the organization
+    /v1/orgs/{org}/billing/payments/checkout-session:
+        post:
+            operationId: AdminService_CreatePaymentCheckoutSession
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                cancelUrl:
+                                    type: string
+                                successUrl:
+                                    type: string
+                                superuserForceAccess:
+                                    type: boolean
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CreatePaymentCheckoutSessionResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                CreatePaymentCheckoutSession creates a Stripe Checkout session for collecting payment method and billing address
+                This provides a better UX with multiple payment method options (cards, Amazon Pay, Cash App Pay, etc.)
     /v1/orgs/{org}/billing/payments/portal-url:
         get:
             operationId: AdminService_GetPaymentsPortalURL

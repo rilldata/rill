@@ -1,5 +1,6 @@
 import { createQuery } from "@tanstack/svelte-query";
 import {
+  adminServiceCreatePaymentCheckoutSession,
   adminServiceGetPaymentsPortalURL,
   adminServiceListPublicBillingPlans,
   createAdminServiceGetBillingProjectCredentials,
@@ -52,6 +53,36 @@ export function getBillingUpgradeUrl(page: Page, organization: string) {
   const url = new URL(page.url);
   url.pathname = `/${organization}/-/upgrade-callback`;
   return url.toString();
+}
+
+/**
+ * Creates a Stripe Checkout session for collecting payment method and billing address.
+ * This provides a better UX than the billing portal with quick payment options.
+ * Falls back to the billing portal URL if checkout session creation fails.
+ */
+export async function createPaymentCheckoutSessionURL(
+  organization: string,
+  successUrl: string,
+  cancelUrl: string,
+): Promise<string> {
+  try {
+    const response = await adminServiceCreatePaymentCheckoutSession(
+      organization,
+      {
+        successUrl,
+        cancelUrl,
+      },
+    );
+
+    if (response.url) {
+      return response.url;
+    }
+  } catch (e) {
+    console.error("Failed to create checkout session, falling back to billing portal:", e);
+  }
+
+  // Fallback to billing portal if checkout fails
+  return fetchPaymentsPortalURL(organization, successUrl);
 }
 
 export function getNextBillingCycleDate(curEndDateRaw: string): string {

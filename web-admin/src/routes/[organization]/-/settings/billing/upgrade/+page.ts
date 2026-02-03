@@ -1,5 +1,5 @@
 import { getPaymentIssues } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
-import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
+import { createPaymentCheckoutSessionURL } from "@rilldata/web-admin/features/billing/plans/selectors";
 import { redirect } from "@sveltejs/kit";
 import type { PageLoad } from "./$types";
 
@@ -11,12 +11,12 @@ export const load: PageLoad = async ({
   const { issues } = await parent();
   const paymentIssues = getPaymentIssues(issues);
   if (paymentIssues.length) {
+    // Use Stripe Checkout for a better payment UX with multiple payment options
+    const successUrl = `${url.protocol}//${url.host}/${organization}/-/upgrade-callback`;
+    const cancelUrl = `${url.protocol}//${url.host}/${organization}/-/settings/billing`;
     throw redirect(
       307,
-      await fetchPaymentsPortalURL(
-        organization,
-        `${url.protocol}//${url.host}/${organization}/-/upgrade-callback`,
-      ),
+      await createPaymentCheckoutSessionURL(organization, successUrl, cancelUrl),
     );
   } else {
     throw redirect(307, `/${organization}/-/upgrade-callback`);
