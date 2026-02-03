@@ -20,7 +20,7 @@
   export let canvasName: string;
   export let otherFieldConfig: FieldConfig | undefined = undefined;
 
-  export let onChange: (updatedConfig: FieldConfig | undefined) => void;
+  export let onChange: (updatedConfig: FieldConfig) => void;
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -39,12 +39,6 @@
   $: hasMultipleMeasures = fieldConfig.fields && fieldConfig.fields.length;
 
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
-  $: isTimeSelectedInOtherField =
-    $timeDimension && otherFieldConfig?.field === $timeDimension;
-  $: shouldIncludeTime =
-    !chartFieldInput?.hideTimeDimension &&
-    !isTimeSelectedInOtherField &&
-    !isDimension;
 
   function updateFieldConfig(fieldName: string) {
     const isTime = $timeDimension && fieldName === $timeDimension;
@@ -133,29 +127,21 @@
 
   $: popoverKey = `${$selectedComponent}-${metricsView}-${fieldConfig.field}`;
   $: hasPopoverContent = shouldShowPopover(chartFieldInput);
-  $: isSizeField = key === "size";
-  $: hasSizeValue = isSizeField && fieldConfig?.field;
-
-  function clearSizeField() {
-    onChange(undefined);
-  }
 </script>
 
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
-    <div class="flex items-center gap-x-1">
-      {#key popoverKey}
-        {#if hasPopoverContent}
-          <FieldConfigPopover
-            {fieldConfig}
-            label={config.label ?? key}
-            onChange={updateFieldProperty}
-            {chartFieldInput}
-          />
-        {/if}
-      {/key}
-    </div>
+    {#key popoverKey}
+      {#if hasPopoverContent}
+        <FieldConfigPopover
+          {fieldConfig}
+          label={config.label ?? key}
+          onChange={updateFieldProperty}
+          {chartFieldInput}
+        />
+      {/if}
+    {/key}
   </div>
 
   <div class="flex flex-col gap-y-2">
@@ -165,11 +151,9 @@
         metricName={metricsView}
         id={`${key}-field`}
         type={isDimension ? "dimension" : "measure"}
-        includeTime={shouldIncludeTime}
+        includeTime={!chartFieldInput?.hideTimeDimension}
         excludedValues={chartFieldInput?.excludedValues}
         selectedItem={fieldConfig?.field}
-        showClearOption={isSizeField}
-        onClear={isSizeField ? clearSizeField : undefined}
         onSelect={async (field) => {
           updateFieldConfig(field);
         }}

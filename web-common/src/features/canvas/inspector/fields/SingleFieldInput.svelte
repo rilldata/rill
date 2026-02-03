@@ -18,8 +18,6 @@
   export let searchableItems: string[] | undefined = undefined;
   export let excludedValues: string[] | undefined = undefined;
   export let onSelect: (item: string, displayName: string) => void = () => {};
-  export let showClearOption = false;
-  export let onClear: (() => void) | undefined = undefined;
 
   let open = false;
   let searchValue = "";

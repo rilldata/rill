@@ -10,9 +10,9 @@ import { createInExpression } from "@rilldata/web-common/features/dashboards/sto
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   getQueryServiceMetricsViewAggregationQueryOptions,
+  type V1Expression,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
-  type V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";

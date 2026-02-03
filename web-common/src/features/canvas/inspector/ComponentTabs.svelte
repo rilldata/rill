@@ -22,10 +22,7 @@
     });
   }
 
-  $: if (
-    isChartComponentType(componentType) &&
-    componentType !== "scatter_plot"
-  ) {
+  $: if (isChartComponentType(componentType)) {
     tabs.push({
       tab: "config",
       label: "Config",
