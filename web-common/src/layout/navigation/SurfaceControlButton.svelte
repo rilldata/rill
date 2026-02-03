@@ -13,7 +13,7 @@
 </script>
 
 <span
-  class="text-gray-500"
+  class="text-fg-secondary"
   class:resizing
   class:opacity-0={!show}
   class:shift={!navOpen}
@@ -23,7 +23,6 @@
 >
   <Button
     type={navOpen ? "secondary" : "ghost"}
-    gray={!navOpen}
     selected={navOpen}
     square
     {onClick}
@@ -42,10 +41,6 @@
     @apply z-50;
     @apply w-6 h-6 mt-[10px];
     transition-property: left;
-  }
-
-  span:hover {
-    @apply bg-gray-300;
   }
 
   span:not(.resizing) {

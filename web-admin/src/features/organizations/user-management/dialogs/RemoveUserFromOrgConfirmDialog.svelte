@@ -39,14 +39,12 @@
     </AlertDialogHeader>
     <AlertDialogFooter>
       <Button
-        type="plain"
+        type="tertiary"
         onClick={() => {
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" status="error" onClick={handleRemove}
-        >Yes, remove</Button
-      >
+      <Button type="destructive" onClick={handleRemove}>Yes, remove</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
