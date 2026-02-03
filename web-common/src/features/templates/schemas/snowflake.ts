@@ -83,7 +83,6 @@ export const snowflakeSchema: MultiStepFormSchema = {
       type: "string",
       title: "Private key",
       description: "URL-safe base64 or PEM private key",
-      "x-display": "textarea",
       "x-placeholder": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----",
       "x-secret": true,
       "x-visible-if": { auth_method: "private_key" },
