@@ -6,11 +6,7 @@
   } from "@rilldata/web-admin/client/index.js";
   import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
-  import {
-    createPaymentCheckoutSessionURL,
-    fetchTeamPlan,
-    getBillingUpgradeUrl,
-  } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { fetchTeamPlan } from "@rilldata/web-admin/features/billing/plans/selectors";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
   import {
     getSubscriptionResumedText,
@@ -95,24 +91,8 @@
       // only fetch when needed to avoid hitting orb for list of plans too often
       const teamPlan = await fetchTeamPlan();
       if (paymentIssues?.length) {
-        // Use Stripe Checkout for a better payment UX with multiple payment options
-        const upgradeUrl = getBillingUpgradeUrl($page, organization);
-        const cancelUrl = `${$page.url.protocol}//${$page.url.host}/${organization}/-/settings/billing`;
-        const checkoutUrl = await createPaymentCheckoutSessionURL(
-          organization,
-          upgradeUrl,
-          cancelUrl,
-        );
-        if (checkoutUrl) {
-          window.open(checkoutUrl, "_self");
-          return;
-        }
-        // If no URL was returned, reset loading and show error
-        loading = false;
-        eventBus.emit("notification", {
-          type: "error",
-          message: "Failed to open payment page. Please try again.",
-        });
+        // Redirect to the payment page which shows pricing and then opens Stripe Checkout
+        window.open(`/${organization}/-/settings/billing/payment`, "_self");
         return;
       }
       loading = false;
