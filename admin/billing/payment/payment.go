@@ -18,9 +18,24 @@ type Provider interface {
 	DeleteCustomer(ctx context.Context, customerID string) error
 	// GetBillingPortalURL returns the payment portal URL to collect payment information from the customer.
 	GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error)
+	// CreateCheckoutSession creates a Stripe Checkout session for collecting payment method and billing information.
+	// This provides a better UX with multiple payment method options (cards, Amazon Pay, Cash App Pay, etc.)
+	CreateCheckoutSession(ctx context.Context, opts *CheckoutSessionOptions) (*CheckoutSession, error)
 
 	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers. jobs is used to enqueue jobs for processing the webhook events.
 	WebhookHandlerFunc(ctx context.Context, jobs jobs.Client) httputil.Handler
+}
+
+// CheckoutSessionOptions contains options for creating a Stripe Checkout session
+type CheckoutSessionOptions struct {
+	CustomerID string
+	SuccessURL string
+	CancelURL  string
+}
+
+// CheckoutSession represents a Stripe Checkout session
+type CheckoutSession struct {
+	URL string
 }
 
 type Customer struct {

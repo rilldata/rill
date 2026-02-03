@@ -1131,6 +1131,15 @@ service AdminService {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/payments/portal-url"};
   }
 
+  // CreatePaymentCheckoutSession creates a Stripe Checkout session for collecting payment method and billing address
+  // This provides a better UX with multiple payment method options (cards, Amazon Pay, Cash App Pay, etc.)
+  rpc CreatePaymentCheckoutSession(CreatePaymentCheckoutSessionRequest) returns (CreatePaymentCheckoutSessionResponse) {
+    option (google.api.http) = {
+      post: "/v1/orgs/{org}/billing/payments/checkout-session",
+      body: "*"
+    };
+  }
+
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
@@ -2909,6 +2918,17 @@ message GetPaymentsPortalURLRequest {
 }
 
 message GetPaymentsPortalURLResponse {
+  string url = 1;
+}
+
+message CreatePaymentCheckoutSessionRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string success_url = 2 [(validate.rules).string.min_len = 1];
+  string cancel_url = 3 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 4;
+}
+
+message CreatePaymentCheckoutSessionResponse {
   string url = 1;
 }
 

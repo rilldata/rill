@@ -39482,6 +39482,253 @@ var _ interface {
 	ErrorName() string
 } = GetPaymentsPortalURLResponseValidationError{}
 
+// Validate checks the field values on CreatePaymentCheckoutSessionRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *CreatePaymentCheckoutSessionRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreatePaymentCheckoutSessionRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// CreatePaymentCheckoutSessionRequestMultiError, or nil if none found.
+func (m *CreatePaymentCheckoutSessionRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreatePaymentCheckoutSessionRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := CreatePaymentCheckoutSessionRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetSuccessUrl()) < 1 {
+		err := CreatePaymentCheckoutSessionRequestValidationError{
+			field:  "SuccessUrl",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetCancelUrl()) < 1 {
+		err := CreatePaymentCheckoutSessionRequestValidationError{
+			field:  "CancelUrl",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for SuperuserForceAccess
+
+	if len(errors) > 0 {
+		return CreatePaymentCheckoutSessionRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreatePaymentCheckoutSessionRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// CreatePaymentCheckoutSessionRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CreatePaymentCheckoutSessionRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreatePaymentCheckoutSessionRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreatePaymentCheckoutSessionRequestMultiError) AllErrors() []error { return m }
+
+// CreatePaymentCheckoutSessionRequestValidationError is the validation error
+// returned by CreatePaymentCheckoutSessionRequest.Validate if the designated
+// constraints aren't met.
+type CreatePaymentCheckoutSessionRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreatePaymentCheckoutSessionRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreatePaymentCheckoutSessionRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreatePaymentCheckoutSessionRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreatePaymentCheckoutSessionRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreatePaymentCheckoutSessionRequestValidationError) ErrorName() string {
+	return "CreatePaymentCheckoutSessionRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreatePaymentCheckoutSessionRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreatePaymentCheckoutSessionRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreatePaymentCheckoutSessionRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreatePaymentCheckoutSessionRequestValidationError{}
+
+// Validate checks the field values on CreatePaymentCheckoutSessionResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *CreatePaymentCheckoutSessionResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreatePaymentCheckoutSessionResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// CreatePaymentCheckoutSessionResponseMultiError, or nil if none found.
+func (m *CreatePaymentCheckoutSessionResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreatePaymentCheckoutSessionResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Url
+
+	if len(errors) > 0 {
+		return CreatePaymentCheckoutSessionResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreatePaymentCheckoutSessionResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// CreatePaymentCheckoutSessionResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CreatePaymentCheckoutSessionResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreatePaymentCheckoutSessionResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreatePaymentCheckoutSessionResponseMultiError) AllErrors() []error { return m }
+
+// CreatePaymentCheckoutSessionResponseValidationError is the validation error
+// returned by CreatePaymentCheckoutSessionResponse.Validate if the designated
+// constraints aren't met.
+type CreatePaymentCheckoutSessionResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreatePaymentCheckoutSessionResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreatePaymentCheckoutSessionResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreatePaymentCheckoutSessionResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreatePaymentCheckoutSessionResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreatePaymentCheckoutSessionResponseValidationError) ErrorName() string {
+	return "CreatePaymentCheckoutSessionResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreatePaymentCheckoutSessionResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreatePaymentCheckoutSessionResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreatePaymentCheckoutSessionResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreatePaymentCheckoutSessionResponseValidationError{}
+
 // Validate checks the field values on ListPublicBillingPlansRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

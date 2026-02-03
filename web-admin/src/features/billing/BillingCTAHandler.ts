@@ -1,5 +1,5 @@
 import type { BillingIssueMessage } from "@rilldata/web-admin/features/billing/issues/useBillingIssueMessage";
-import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
+import { createPaymentCheckoutSessionURL } from "@rilldata/web-admin/features/billing/plans/selectors";
 import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
 import { wakeAllProjects } from "@rilldata/web-admin/features/organizations/hibernating/wakeAllProjects";
 import {
@@ -44,8 +44,13 @@ export class BillingCTAHandler {
         break;
 
       case "payment":
+        // Use Stripe Checkout for a better payment UX with multiple payment options
         window.open(
-          await fetchPaymentsPortalURL(this.organization, window.location.href),
+          await createPaymentCheckoutSessionURL(
+            this.organization,
+            window.location.href,
+            window.location.href,
+          ),
           "_self",
         );
         break;

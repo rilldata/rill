@@ -39,6 +39,19 @@ func (s *stripeWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) er
 
 	// Handle the event based on its type
 	switch event.Type {
+	case "checkout.session.completed":
+		var checkoutSession stripe.CheckoutSession
+		if err := json.Unmarshal(event.Data.Raw, &checkoutSession); err != nil {
+			return httputil.Errorf(http.StatusBadRequest, "error parsing checkout session data: %w", err)
+		}
+		if checkoutSession.Customer == nil {
+			s.stripe.logger.Warn("no customer info sent for checkout.session.completed event", zap.String("event_id", event.ID), zap.Time("event_time", time.UnixMilli(event.Created*1000)))
+		} else {
+			err = s.handleCheckoutSessionCompleted(r.Context(), event.ID, time.UnixMilli(event.Created*1000), &checkoutSession)
+			if err != nil {
+				return httputil.Errorf(http.StatusInternalServerError, "error handling checkout.session.completed event: %w", err)
+			}
+		}
 	case "payment_method.attached":
 		var paymentMethod stripe.PaymentMethod
 		if err := json.Unmarshal(event.Data.Raw, &paymentMethod); err != nil {
@@ -129,5 +142,45 @@ func (s *stripeWebhook) handleCustomerAddressUpdated(ctx context.Context, eventI
 		s.stripe.logger.Debug("duplicate customer.updated event", zap.String("event_d", eventID))
 		return nil
 	}
+	return nil
+}
+
+func (s *stripeWebhook) handleCheckoutSessionCompleted(ctx context.Context, eventID string, eventTime time.Time, session *stripe.CheckoutSession) error {
+	// When a checkout session is completed, the payment method is automatically attached to the customer
+	// and the billing address is collected. We need to trigger the same jobs as when payment method is added
+	// and customer address is updated.
+
+	s.stripe.logger.Info("checkout session completed",
+		zap.String("event_id", eventID),
+		zap.String("customer_id", session.Customer.ID),
+		zap.String("session_id", session.ID),
+		observability.ZapCtx(ctx),
+	)
+
+	// Handle payment method setup - the SetupIntent will have attached the payment method
+	if session.SetupIntent != nil && session.SetupIntent.PaymentMethod != nil {
+		pm := session.SetupIntent.PaymentMethod
+		res, err := s.jobs.PaymentMethodAdded(ctx, pm.ID, session.Customer.ID, string(pm.Type), eventTime)
+		if err != nil {
+			s.stripe.logger.Error("failed to add payment method added job from checkout session", zap.String("payment_customer_id", session.Customer.ID), zap.Error(err), observability.ZapCtx(ctx))
+			return err
+		}
+		if res.Duplicate {
+			s.stripe.logger.Debug("duplicate payment method from checkout session", zap.String("event_id", eventID))
+		}
+	}
+
+	// Handle customer address update - billing address is collected during checkout
+	if session.CustomerDetails != nil && session.CustomerDetails.Address != nil {
+		res, err := s.jobs.CustomerAddressUpdated(ctx, session.Customer.ID, eventTime)
+		if err != nil {
+			s.stripe.logger.Error("failed to add customer address updated job from checkout session", zap.String("payment_customer_id", session.Customer.ID), zap.Error(err), observability.ZapCtx(ctx))
+			return err
+		}
+		if res.Duplicate {
+			s.stripe.logger.Debug("duplicate customer address update from checkout session", zap.String("event_id", eventID))
+		}
+	}
+
 	return nil
 }

@@ -7,7 +7,7 @@
   import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import {
-    fetchPaymentsPortalURL,
+    createPaymentCheckoutSessionURL,
     fetchTeamPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
@@ -94,10 +94,14 @@
     // only fetch when needed to avoid hitting orb for list of plans too often
     const teamPlan = await fetchTeamPlan();
     if (paymentIssues?.length) {
+      // Use Stripe Checkout for a better payment UX with multiple payment options
+      const upgradeUrl = getBillingUpgradeUrl($page, organization);
+      const cancelUrl = `${$page.url.protocol}//${$page.url.host}/${organization}/-/settings/billing`;
       window.open(
-        await fetchPaymentsPortalURL(
+        await createPaymentCheckoutSessionURL(
           organization,
-          getBillingUpgradeUrl($page, organization),
+          upgradeUrl,
+          cancelUrl,
         ),
         "_self",
       );

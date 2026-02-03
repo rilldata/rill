@@ -8,7 +8,7 @@
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
   import {
-    fetchPaymentsPortalURL,
+    createPaymentCheckoutSessionURL,
     fetchTeamPlan,
     getBillingUpgradeUrl,
   } from "@rilldata/web-admin/features/billing/plans/selectors";
@@ -39,14 +39,17 @@
   async function upgrade() {
     // if there are still payment issues then do not upgrade
     if (paymentIssues.length) {
+      const upgradeUrl = getBillingUpgradeUrl($page, organization);
+      const cancelUrl = `${$page.url.protocol}//${$page.url.host}/${organization}/-/settings/billing`;
       eventBus.emit("notification", {
         type: "error",
         message: `Please fix payment issues: ${getPaymentIssueErrorText(paymentIssues)}`,
         link: {
           text: "Update payment",
-          href: await fetchPaymentsPortalURL(
+          href: await createPaymentCheckoutSessionURL(
             organization,
-            getBillingUpgradeUrl($page, organization),
+            upgradeUrl,
+            cancelUrl,
           ),
         },
         options: {

@@ -169,6 +169,7 @@ const (
 	AdminService_CancelBillingSubscription_FullMethodName              = "/rill.admin.v1.AdminService/CancelBillingSubscription"
 	AdminService_RenewBillingSubscription_FullMethodName               = "/rill.admin.v1.AdminService/RenewBillingSubscription"
 	AdminService_GetPaymentsPortalURL_FullMethodName                   = "/rill.admin.v1.AdminService/GetPaymentsPortalURL"
+	AdminService_CreatePaymentCheckoutSession_FullMethodName           = "/rill.admin.v1.AdminService/CreatePaymentCheckoutSession"
 	AdminService_ListPublicBillingPlans_FullMethodName                 = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
 	AdminService_GetBillingProjectCredentials_FullMethodName           = "/rill.admin.v1.AdminService/GetBillingProjectCredentials"
 	AdminService_RequestProjectAccess_FullMethodName                   = "/rill.admin.v1.AdminService/RequestProjectAccess"
@@ -505,6 +506,9 @@ type AdminServiceClient interface {
 	RenewBillingSubscription(ctx context.Context, in *RenewBillingSubscriptionRequest, opts ...grpc.CallOption) (*RenewBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error)
+	// CreatePaymentCheckoutSession creates a Stripe Checkout session for collecting payment method and billing address
+	// This provides a better UX with multiple payment method options (cards, Amazon Pay, Cash App Pay, etc.)
+	CreatePaymentCheckoutSession(ctx context.Context, in *CreatePaymentCheckoutSessionRequest, opts ...grpc.CallOption) (*CreatePaymentCheckoutSessionResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
@@ -2025,6 +2029,16 @@ func (c *adminServiceClient) GetPaymentsPortalURL(ctx context.Context, in *GetPa
 	return out, nil
 }
 
+func (c *adminServiceClient) CreatePaymentCheckoutSession(ctx context.Context, in *CreatePaymentCheckoutSessionRequest, opts ...grpc.CallOption) (*CreatePaymentCheckoutSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreatePaymentCheckoutSessionResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreatePaymentCheckoutSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPublicBillingPlansResponse)
@@ -2422,6 +2436,9 @@ type AdminServiceServer interface {
 	RenewBillingSubscription(context.Context, *RenewBillingSubscriptionRequest) (*RenewBillingSubscriptionResponse, error)
 	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
 	GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error)
+	// CreatePaymentCheckoutSession creates a Stripe Checkout session for collecting payment method and billing address
+	// This provides a better UX with multiple payment method options (cards, Amazon Pay, Cash App Pay, etc.)
+	CreatePaymentCheckoutSession(context.Context, *CreatePaymentCheckoutSessionRequest) (*CreatePaymentCheckoutSessionResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
 	// GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
@@ -2891,6 +2908,9 @@ func (UnimplementedAdminServiceServer) RenewBillingSubscription(context.Context,
 }
 func (UnimplementedAdminServiceServer) GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPaymentsPortalURL not implemented")
+}
+func (UnimplementedAdminServiceServer) CreatePaymentCheckoutSession(context.Context, *CreatePaymentCheckoutSessionRequest) (*CreatePaymentCheckoutSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePaymentCheckoutSession not implemented")
 }
 func (UnimplementedAdminServiceServer) ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPublicBillingPlans not implemented")
@@ -5634,6 +5654,24 @@ func _AdminService_GetPaymentsPortalURL_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_CreatePaymentCheckoutSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePaymentCheckoutSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreatePaymentCheckoutSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreatePaymentCheckoutSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreatePaymentCheckoutSession(ctx, req.(*CreatePaymentCheckoutSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListPublicBillingPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPublicBillingPlansRequest)
 	if err := dec(in); err != nil {
@@ -6366,6 +6404,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPaymentsPortalURL",
 			Handler:    _AdminService_GetPaymentsPortalURL_Handler,
+		},
+		{
+			MethodName: "CreatePaymentCheckoutSession",
+			Handler:    _AdminService_CreatePaymentCheckoutSession_Handler,
 		},
 		{
 			MethodName: "ListPublicBillingPlans",

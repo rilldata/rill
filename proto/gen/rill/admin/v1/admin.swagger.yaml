@@ -518,6 +518,38 @@ paths:
           in: query
           required: false
           type: boolean
+  /v1/orgs/{org}/billing/payments/checkout-session:
+    post:
+      summary: |-
+        CreatePaymentCheckoutSession creates a Stripe Checkout session for collecting payment method and billing address
+        This provides a better UX with multiple payment method options (cards, Amazon Pay, Cash App Pay, etc.)
+      operationId: AdminService_CreatePaymentCheckoutSession
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreatePaymentCheckoutSessionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              successUrl:
+                type: string
+              cancelUrl:
+                type: string
+              superuserForceAccess:
+                type: boolean
   /v1/orgs/{org}/billing/payments/portal-url:
     get:
       summary: GetPaymentsPortalURL returns the URL for the billing session to collect payment method
@@ -4851,6 +4883,11 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+  v1CreatePaymentCheckoutSessionResponse:
+    type: object
+    properties:
+      url:
+        type: string
   v1CreateProjectResponse:
     type: object
     properties:

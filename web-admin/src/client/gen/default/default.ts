@@ -34,6 +34,7 @@ import type {
   AdminServiceCreateAssetBody,
   AdminServiceCreateDeploymentBody,
   AdminServiceCreateManagedGitRepoBody,
+  AdminServiceCreatePaymentCheckoutSessionBody,
   AdminServiceCreateProjectBody,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
   AdminServiceCreateReportBodyBody,
@@ -118,6 +119,7 @@ import type {
   V1CreateManagedGitRepoResponse,
   V1CreateOrganizationRequest,
   V1CreateOrganizationResponse,
+  V1CreatePaymentCheckoutSessionResponse,
   V1CreateProjectResponse,
   V1CreateProjectWhitelistedDomainResponse,
   V1CreateReportResponse,
@@ -2345,6 +2347,97 @@ export function createAdminServiceListOrganizationBillingIssues<
   return query;
 }
 
+/**
+ * @summary CreatePaymentCheckoutSession creates a Stripe Checkout session for collecting payment method and billing address
+This provides a better UX with multiple payment method options (cards, Amazon Pay, Cash App Pay, etc.)
+ */
+export const adminServiceCreatePaymentCheckoutSession = (
+  org: string,
+  adminServiceCreatePaymentCheckoutSessionBody: AdminServiceCreatePaymentCheckoutSessionBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1CreatePaymentCheckoutSessionResponse>({
+    url: `/v1/orgs/${org}/billing/payments/checkout-session`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreatePaymentCheckoutSessionBody,
+    signal,
+  });
+};
+
+export const getAdminServiceCreatePaymentCheckoutSessionMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreatePaymentCheckoutSession>>,
+    TError,
+    { org: string; data: AdminServiceCreatePaymentCheckoutSessionBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreatePaymentCheckoutSession>>,
+  TError,
+  { org: string; data: AdminServiceCreatePaymentCheckoutSessionBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceCreatePaymentCheckoutSession"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreatePaymentCheckoutSession>>,
+    { org: string; data: AdminServiceCreatePaymentCheckoutSessionBody }
+  > = (props) => {
+    const { org, data } = props ?? {};
+
+    return adminServiceCreatePaymentCheckoutSession(org, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreatePaymentCheckoutSessionMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceCreatePaymentCheckoutSession>>
+  >;
+export type AdminServiceCreatePaymentCheckoutSessionMutationBody =
+  AdminServiceCreatePaymentCheckoutSessionBody;
+export type AdminServiceCreatePaymentCheckoutSessionMutationError = RpcStatus;
+
+/**
+ * @summary CreatePaymentCheckoutSession creates a Stripe Checkout session for collecting payment method and billing address
+This provides a better UX with multiple payment method options (cards, Amazon Pay, Cash App Pay, etc.)
+ */
+export const createAdminServiceCreatePaymentCheckoutSession = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceCreatePaymentCheckoutSession>>,
+      TError,
+      { org: string; data: AdminServiceCreatePaymentCheckoutSessionBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceCreatePaymentCheckoutSession>>,
+  TError,
+  { org: string; data: AdminServiceCreatePaymentCheckoutSessionBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceCreatePaymentCheckoutSessionMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary GetPaymentsPortalURL returns the URL for the billing session to collect payment method
  */
