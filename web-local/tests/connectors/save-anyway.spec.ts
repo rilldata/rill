@@ -17,6 +17,9 @@ test.describe("Save Anyway feature", () => {
     // Wait for the form to load
     await page.waitForSelector('form[id*="clickhouse"]');
 
+    // Ensure ClickHouse Cloud is selected (default) via the connection type dropdown
+    await expect(page.getByRole("dialog").getByRole("combobox")).toBeVisible();
+
     // Fill in connection details with invalid values
     await page.getByRole("textbox", { name: "Host" }).fill("asd");
     await page.getByRole("textbox", { name: "Password" }).fill("asd");
