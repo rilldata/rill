@@ -852,17 +852,14 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 func (d Dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
 	// handle date types especially otherwise they get send as time.Time args which will be treated as datetime/timestamp types in olap
 	if typ == runtimev1.Type_CODE_DATE {
-		if d == DialectClickHouse {
-			if t, ok := val.(time.Time); ok {
-				return "toDate(?)", t.Format(time.DateOnly), nil
-			}
-			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
-		} else {
-			if t, ok := val.(time.Time); ok {
-				return "CAST(? AS DATE)", t.Format(time.DateOnly), nil
-			}
+		t, ok := val.(time.Time)
+		if !ok {
 			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
 		}
+		if d == DialectClickHouse {
+			return "toDate(?)", t.Format(time.DateOnly), nil
+		}
+		return "CAST(? AS DATE)", t.Format(time.DateOnly), nil
 	}
 	return "?", val, nil
 }
