@@ -41330,6 +41330,8 @@ func (m *User) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for PylonEmailHash
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -41387,8 +41389,6 @@ func (m *User) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for PylonEmailHash
 
 	if len(errors) > 0 {
 		return UserMultiError(errors)

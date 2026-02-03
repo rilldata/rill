@@ -14950,6 +14950,11 @@ export class User extends Message<User> {
   quotas?: UserQuotas;
 
   /**
+   * @generated from field: string pylon_email_hash = 8;
+   */
+  pylonEmailHash = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 6;
    */
   createdOn?: Timestamp;
@@ -14958,11 +14963,6 @@ export class User extends Message<User> {
    * @generated from field: google.protobuf.Timestamp updated_on = 7;
    */
   updatedOn?: Timestamp;
-
-  /**
-   * @generated from field: string pylon_email_hash = 8;
-   */
-  pylonEmailHash = "";
 
   constructor(data?: PartialMessage<User>) {
     super();
@@ -14977,9 +14977,9 @@ export class User extends Message<User> {
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "quotas", kind: "message", T: UserQuotas },
+    { no: 8, name: "pylon_email_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "created_on", kind: "message", T: Timestamp },
     { no: 7, name: "updated_on", kind: "message", T: Timestamp },
-    { no: 8, name: "pylon_email_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): User {

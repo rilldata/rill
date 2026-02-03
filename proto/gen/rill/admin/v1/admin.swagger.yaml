@@ -6646,14 +6646,14 @@ definitions:
         type: string
       quotas:
         $ref: '#/definitions/v1UserQuotas'
+      pylonEmailHash:
+        type: string
       createdOn:
         type: string
         format: date-time
       updatedOn:
         type: string
         format: date-time
-      pylonEmailHash:
-        type: string
   v1UserAuthToken:
     type: object
     properties:
