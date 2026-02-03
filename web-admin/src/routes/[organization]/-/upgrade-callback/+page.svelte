@@ -7,11 +7,7 @@
   } from "@rilldata/web-admin/client";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
-  import {
-    fetchPaymentsPortalURL,
-    fetchTeamPlan,
-    getBillingUpgradeUrl,
-  } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { fetchTeamPlan } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -44,10 +40,7 @@
         message: `Please fix payment issues: ${getPaymentIssueErrorText(paymentIssues)}`,
         link: {
           text: "Update payment",
-          href: await fetchPaymentsPortalURL(
-            organization,
-            getBillingUpgradeUrl($page, organization),
-          ),
+          href: `/${organization}/-/settings/billing/payment`,
         },
         options: {
           persisted: true,

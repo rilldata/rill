@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     createAdminServiceRenewBillingSubscription,
@@ -6,11 +7,7 @@
   } from "@rilldata/web-admin/client/index.js";
   import { mergedQueryStatus } from "@rilldata/web-admin/client/utils";
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
-  import {
-    fetchPaymentsPortalURL,
-    fetchTeamPlan,
-    getBillingUpgradeUrl,
-  } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { fetchTeamPlan } from "@rilldata/web-admin/features/billing/plans/selectors";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
   import {
     getSubscriptionResumedText,
@@ -94,13 +91,8 @@
     // only fetch when needed to avoid hitting orb for list of plans too often
     const teamPlan = await fetchTeamPlan();
     if (paymentIssues?.length) {
-      window.open(
-        await fetchPaymentsPortalURL(
-          organization,
-          getBillingUpgradeUrl($page, organization),
-        ),
-        "_self",
-      );
+      // Redirect to payment page which shows plan details and requirements
+      goto(`/${organization}/-/settings/billing/payment`);
       return;
     }
     loading = false;
