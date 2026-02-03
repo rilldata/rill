@@ -221,25 +221,37 @@ export class ScatterPlotChartProvider {
 
   chartTitle(fields: ChartFieldsMap): string {
     const config = get(this.spec);
-    const xField = fields[config.x?.field || ""];
-    const yField = fields[config.y?.field || ""];
-    const dimensionField = fields[config.dimension?.field || ""];
-    const sizeField = fields[config.size?.field || ""];
 
-    const xTitle = xField?.displayName || config.x?.field || "X";
-    const yTitle = yField?.displayName || config.y?.field || "Y";
-    const dimensionTitle =
-      dimensionField?.displayName || config.dimension?.field || "";
-    const sizeTitle = sizeField?.displayName || config.size?.field || "";
+    const { x, y, dimension, color, size } = config;
+    const xLabel = x?.field ? fields[x.field]?.displayName || x.field : "";
+    const yLabel = y?.field ? fields[y.field]?.displayName || y.field : "";
 
-    let title = `${xTitle} vs ${yTitle}`;
+    const colorLabel =
+      isFieldConfig(color) && color?.field
+        ? fields[color.field]?.displayName || color.field
+        : "";
+    const sizeLabel =
+      isFieldConfig(size) && size?.field
+        ? fields[size.field]?.displayName || size.field
+        : "";
 
-    if (dimensionTitle) {
-      title += ` for ${dimensionTitle}`;
+    const dimensionLabel =
+      isFieldConfig(dimension) && dimension?.field
+        ? fields[dimension.field]?.displayName || dimension.field
+        : "";
+
+    let title = `${xLabel} vs ${yLabel}`;
+
+    if (dimensionLabel) {
+      title += ` for ${dimensionLabel}`;
     }
 
-    if (sizeTitle) {
-      title += ` sized by ${sizeTitle}`;
+    if (colorLabel) {
+      title += ` split by ${colorLabel}`;
+    }
+
+    if (sizeLabel) {
+      title += ` sized by ${sizeLabel}`;
     }
 
     return title;

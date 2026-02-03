@@ -14,7 +14,7 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { get, type Readable } from "svelte/store";
+import { type Readable } from "svelte/store";
 import type {
   CanvasEntity,
   ComponentPath,
@@ -123,12 +123,7 @@ export class ScatterPlotChartComponent extends BaseChart<ScatterPlotCanvasChartS
   }
 
   chartTitle(fields: ChartFieldsMap): string {
-    const config = get(this.specStore);
-    const xField = fields[config.x?.field || ""];
-    const yField = fields[config.y?.field || ""];
-    const xTitle = xField?.displayName || config.x?.field || "X";
-    const yTitle = yField?.displayName || config.y?.field || "Y";
-    return `${xTitle} vs ${yTitle}`;
+    return this.provider.chartTitle(fields);
   }
 
   getChartDomainValues() {
