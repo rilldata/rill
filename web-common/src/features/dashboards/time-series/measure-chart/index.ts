@@ -39,15 +39,4 @@ export {
 
 export { ScrubController } from "./ScrubController";
 
-// Data fetching hooks
-export {
-  useMeasureTimeSeries,
-  useMeasureTimeSeriesData,
-  transformTimeSeriesData,
-} from "./use-measure-time-series";
-
-export {
-  useMeasureTotals,
-  useMeasureTotalsData,
-  computeComparisonMetrics,
-} from "./use-measure-totals";
+export { transformTimeSeriesData } from "./use-measure-time-series";
