@@ -1,5 +1,5 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
-import type { FeedbackSentiment } from "../../feedback/types";
+import type { FeedbackSentiment } from "../../feedback/feedback-categories";
 
 /**
  * Text block representation.

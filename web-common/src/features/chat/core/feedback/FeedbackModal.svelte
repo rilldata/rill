@@ -4,16 +4,21 @@
   import Textarea from "@rilldata/web-common/components/forms/Textarea.svelte";
   import type { Conversation } from "../conversation";
   import CheckboxCard from "@rilldata/web-common/components/forms/CheckboxCard.svelte";
-  import { FEEDBACK_CATEGORIES, type FeedbackCategory } from "./types";
+  import {
+    type FeedbackCategory,
+    getCategoriesForAgent,
+  } from "./feedback-categories";
 
   export let open: boolean;
   export let messageId: string | null;
   export let conversation: Conversation;
+  export let agent: string;
   export let onClose: () => void;
 
   let selectedCategories: FeedbackCategory[] = [];
   let comment = "";
 
+  $: categories = getCategoriesForAgent(agent);
   $: isSubmitDisabled = selectedCategories.length === 0;
 
   function handleCategoryToggle(categoryId: FeedbackCategory) {
@@ -71,7 +76,7 @@
 
     <div class="feedback-form">
       <div class="categories">
-        {#each FEEDBACK_CATEGORIES as category}
+        {#each categories as category}
           <CheckboxCard
             checked={selectedCategories.includes(category.id)}
             label={category.label}

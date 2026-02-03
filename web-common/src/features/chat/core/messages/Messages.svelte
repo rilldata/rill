@@ -157,6 +157,7 @@
   open={feedbackModalOpen}
   messageId={pendingFeedbackMessageId}
   conversation={currentConversation}
+  agent={config.agent}
   onClose={handleFeedbackModalClose}
 />
 

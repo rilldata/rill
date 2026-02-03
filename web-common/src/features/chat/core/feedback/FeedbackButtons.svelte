@@ -10,8 +10,9 @@
   export let feedback: FeedbackData | undefined;
   export let onDownvote: (messageId: string) => void;
 
-  // Derive state from props (not stores)
-  $: currentSentiment = feedback?.sentiment ?? null;
+  // Derive state from props
+  $: hasPositiveFeedback = feedback?.sentiment === "positive";
+  $: hasNegativeFeedback = feedback?.sentiment === "negative";
   $: feedbackResponse = feedback?.response ?? null;
   $: isPending = feedback?.isPending ?? false;
   $: isStreaming = conversation.isStreaming;
@@ -33,15 +34,13 @@
     <IconButton
       size={24}
       disabled={isDisabled}
-      ariaPressed={currentSentiment === "positive"}
+      ariaPressed={hasPositiveFeedback}
       ariaLabel="Upvote response"
       on:click={handleUpvote}
     >
       <ThumbsUp
         size={14}
-        class={currentSentiment === "positive"
-          ? "text-primary-500"
-          : "text-gray-400"}
+        class={hasPositiveFeedback ? "text-primary-500" : "text-gray-400"}
       />
       <svelte:fragment slot="tooltip-content"
         >This response was helpful</svelte:fragment
@@ -50,15 +49,13 @@
     <IconButton
       size={24}
       disabled={isDisabled}
-      ariaPressed={currentSentiment === "negative"}
+      ariaPressed={hasNegativeFeedback}
       ariaLabel="Downvote response"
       on:click={handleDownvote}
     >
       <ThumbsDown
         size={14}
-        class={currentSentiment === "negative"
-          ? "text-primary-500"
-          : "text-gray-400"}
+        class={hasNegativeFeedback ? "text-primary-500" : "text-gray-400"}
       />
       <svelte:fragment slot="tooltip-content"
         >This response needs improvement</svelte:fragment

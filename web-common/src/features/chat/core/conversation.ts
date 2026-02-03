@@ -26,7 +26,10 @@ import {
   type Writable,
 } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import type { FeedbackCategory, FeedbackSentiment } from "./feedback/types";
+import type {
+  FeedbackCategory,
+  FeedbackSentiment,
+} from "./feedback/feedback-categories";
 import { transformToBlocks, type Block } from "./messages/block-transform";
 import { MessageContentType, MessageType, ToolName } from "./types";
 import {
@@ -261,7 +264,6 @@ export class Conversation {
 
     this.streamError.set(null);
     this.isStreaming.set(true);
-    this.hasReceivedFirstMessage = false;
 
     try {
       await this.startStreaming({
