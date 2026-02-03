@@ -5,17 +5,11 @@ import {
 import type {
   RuntimeServiceCompleteBody,
   V1AnalystAgentContext,
-  V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { getCanvasNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { derived, get, type Readable } from "svelte/store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
-import {
-  createInExpression,
-  createLikeExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 
 export const canvasChatConfig = {
   agent: ToolName.ANALYST_AGENT,
