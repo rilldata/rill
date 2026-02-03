@@ -62,7 +62,7 @@ class FeatureFlags {
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
-  dashboardChat = new FeatureFlag("user", false);
+  dashboardChat = new FeatureFlag("user", true);
   developerChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
   generateCanvas = new FeatureFlag("user", false);

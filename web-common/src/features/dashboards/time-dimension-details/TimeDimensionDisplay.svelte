@@ -15,7 +15,7 @@
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import {
-    chartInteractionColumn,
+    chartHoveredTime,
     tableInteractionStore,
     useTimeDimensionDataStore,
   } from "./time-dimension-data-store";
@@ -90,15 +90,14 @@
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
-  let highlitedRowIndex: number | undefined;
-  $: if (formattedData?.rowCount) {
-    highlitedRowIndex = undefined;
-    formattedData.rowHeaderData.forEach((row, index) => {
-      if (row[0]?.value === $chartInteractionColumn?.yHover) {
-        highlitedRowIndex = index;
-      }
-    });
-  }
+  $: highlightedCol = $chartHoveredTime && columnHeaders
+    ? (() => {
+        const idx = columnHeaders.findIndex(
+          (h) => h?.value && new Date(h.value).getTime() === $chartHoveredTime!.getTime(),
+        );
+        return idx >= 0 ? idx : undefined;
+      })()
+    : undefined;
 
   // Create a time formatter for the column headers
   $: timeFormatter = timeFormat(
@@ -237,13 +236,9 @@
       comparing={comparisonCopy}
       {timeFormatter}
       tableData={formattedData}
-      highlightedRow={highlitedRowIndex}
-      highlightedCol={$chartInteractionColumn?.xHover}
+      highlightedRow={undefined}
+      {highlightedCol}
       {pinIndex}
-      scrubPos={{
-        start: $chartInteractionColumn?.scrubStart,
-        end: $chartInteractionColumn?.scrubEnd,
-      }}
       onTogglePin={togglePin}
       onToggleFilter={toggleFilter}
       onToggleSort={(type) => {

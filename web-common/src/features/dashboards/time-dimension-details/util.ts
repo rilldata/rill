@@ -38,7 +38,7 @@ export function transposeArray(
 }
 
 export function getClassForCell(
-  palette: "fixed" | "scrubbed" | "default",
+  palette: "fixed" | "default",
   highlightedRow,
   highlightedCol,
   rowIdx,
@@ -49,11 +49,6 @@ export function getClassForCell(
       base: "bg-surface-background",
       highlighted: "bg-gray-100",
       doubleHighlighted: "bg-gray-200",
-    },
-    scrubbed: {
-      base: "bg-primary-50",
-      highlighted: "bg-primary-100",
-      doubleHighlighted: "bg-primary-200",
     },
     default: {
       base: "bg-surface-background",

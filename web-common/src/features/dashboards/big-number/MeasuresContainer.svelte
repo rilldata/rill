@@ -2,12 +2,11 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/DashboardVisibilityDropdown.svelte";
+  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 
   export let metricsViewName: string;
   export let exploreContainerWidth: number;
@@ -30,20 +29,20 @@
     MEASURES_PADDING_LEFT -
     LEADERBOARD_PADDING_RIGHT;
 
+  const ctx = getStateManagers();
   const {
     dashboardStore,
     selectors: {
       measures: { allMeasures, visibleMeasures },
-      activeMeasure: { selectedMeasureNames },
     },
     actions: {
       measures: { toggleMeasureVisibility, toggleAllMeasuresVisibility },
     },
-  } = getStateManagers();
+  } = ctx;
 
   $: ({ instanceId } = $runtime);
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const timeControlsStore = useTimeControlStore(ctx);
 
   let metricsContainerHeight: number;
   let measureNodes: HTMLDivElement[] = [];
@@ -130,34 +129,19 @@
 
   $: numColumns = 3;
 
-  $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
-    {
-      measures: $selectedMeasureNames.map((name) => ({ name })),
-      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
-    },
-    {
-      query: {
-        enabled:
-          $selectedMeasureNames?.length > 0 &&
-          $timeControlsStore.ready &&
-          !!$dashboardStore?.whereFilter,
-      },
-    },
+  // Query-context props for MeasureBigNumber
+  $: chartWhere = sanitiseExpression(
+    mergeDimensionAndMeasureFilters(
+      $dashboardStore?.whereFilter,
+      $dashboardStore?.dimensionThresholdFilters,
+    ),
+    undefined,
   );
-  $: totalsQueryResult = $totalsQuery;
+  $: chartReady = !!$timeControlsStore.ready;
 
   $: if (metricsContainerHeight && measureNodes.length) {
     calculateGridColumns();
   }
-
-  $: totalsQueryRow = totalsQueryResult.data?.data?.[0];
-  // Make this reactive to totalsQueryRow so that data is updated if query is refetched
-  $: getValue = (key: string | undefined): number | null => {
-    if (!key) return null;
-    return totalsQueryRow?.[key] as number | null;
-  };
 </script>
 
 <svelte:window on:resize={() => calculateGridColumns()} />
@@ -199,11 +183,12 @@
         <!-- FIXME: I can't select the big number by the measure id. -->
         <MeasureBigNumber
           {measure}
-          value={getValue(measure?.name)}
           withTimeseries={false}
-          status={totalsQueryResult.isFetching
-            ? EntityStatus.Running
-            : EntityStatus.Idle}
+          {instanceId}
+          {metricsViewName}
+          where={chartWhere}
+          ready={chartReady}
+          queryClient={ctx.queryClient}
         />
       </div>
     {/each}

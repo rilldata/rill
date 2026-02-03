@@ -9,6 +9,10 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import type {
+    TimeSeriesPoint,
+    DimensionSeriesData,
+  } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
   import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import {
@@ -30,8 +34,11 @@
   import { VegaSignalManager } from "./vega-signal-manager";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
 
-  export let totalsData: TimeSeriesDatum[];
-  export let dimensionData: DimensionDataItem[];
+  export let totalsData: TimeSeriesDatum[] | undefined = undefined;
+  export let dimensionData: DimensionDataItem[] | undefined = undefined;
+  /** MeasureChart native types — converted to TimeSeriesDatum/DimensionDataItem internally */
+  export let timeSeriesPoints: TimeSeriesPoint[] | undefined = undefined;
+  export let dimensionSeriesData: DimensionSeriesData[] | undefined = undefined;
   export let expandedMeasureName: string;
   export let chartType: TDDAlternateCharts;
   export let xMin: Date | undefined;
@@ -61,9 +68,34 @@
 
   $: themeMode = $current;
 
-  $: hasDimensionData = !!dimensionData?.length;
-  $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
-  $: selectedValues = hasDimensionData ? dimensionData.map((d) => d.value) : [];
+  // Convert MeasureChart types to TDD types when provided
+  $: effectiveTotalsData = totalsData ?? (timeSeriesPoints
+    ? timeSeriesPoints.map((pt): TimeSeriesDatum => ({
+        ts: pt.ts.toJSDate(),
+        [expandedMeasureName]: pt.value ?? undefined,
+        [`comparison.${expandedMeasureName}`]: pt.comparisonValue ?? undefined,
+        "comparison.ts": pt.comparisonTs?.toJSDate(),
+      }))
+    : []);
+
+  $: effectiveDimensionData = dimensionData ?? dimensionSeriesData?.map(
+    (dim): DimensionDataItem => ({
+      value: dim.dimensionValue,
+      color: dim.color,
+      isFetching: dim.isFetching,
+      total: dim.total,
+      data: dim.data.map((pt): TimeSeriesDatum => ({
+        ts: pt.ts.toJSDate(),
+        [expandedMeasureName]: pt.value ?? undefined,
+        [`comparison.${expandedMeasureName}`]: pt.comparisonValue ?? undefined,
+        "comparison.ts": pt.comparisonTs?.toJSDate(),
+      })),
+    }),
+  ) ?? [];
+
+  $: hasDimensionData = !!effectiveDimensionData?.length;
+  $: data = hasDimensionData ? reduceDimensionData(effectiveDimensionData) : effectiveTotalsData;
+  $: selectedValues = hasDimensionData ? effectiveDimensionData.map((d) => d.value) : [];
   $: expandedMeasureLabel = $measureLabel(expandedMeasureName);
   $: measure = $getMeasureByName(expandedMeasureName);
   $: comparedDimensionLabel =

@@ -6,14 +6,12 @@ import {
   filterExpressions,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
 import type {
   V1Expression,
   V1MetricsViewAggregationResponseDataItem,
   V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
-import { get } from "svelte/store";
 import {
   convertISOStringToJSDateWithSameTimeAsSelectedTimeZone,
   removeZoneOffset,
@@ -56,42 +54,6 @@ export function toComparisonKeys(d, offsetDuration: string, zone: string) {
     }
     return acc;
   }, {});
-}
-
-export function updateChartInteractionStore(
-  xHoverValue: undefined | number | Date,
-  yHoverValue: undefined | string | null,
-  isAllTime: boolean,
-  formattedData: TimeSeriesDatum[],
-) {
-  let xHoverColNum: number | undefined = undefined;
-
-  const slicedData = isAllTime
-    ? formattedData?.slice(1)
-    : formattedData?.slice(1, -1);
-
-  if (xHoverValue && xHoverValue instanceof Date) {
-    const { position } = bisectData(
-      xHoverValue,
-      "center",
-      "ts_position",
-      slicedData,
-    );
-    xHoverColNum = position;
-  }
-
-  const currentCol = get(chartInteractionColumn);
-
-  if (
-    currentCol?.xHover !== xHoverColNum ||
-    currentCol?.yHover !== yHoverValue
-  ) {
-    chartInteractionColumn.update((state) => ({
-      ...state,
-      yHover: yHoverValue,
-      xHover: xHoverColNum,
-    }));
-  }
 }
 
 export function prepareTimeSeries(

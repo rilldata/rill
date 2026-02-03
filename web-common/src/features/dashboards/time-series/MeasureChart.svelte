@@ -321,7 +321,9 @@
   >
     <Axis measureFormatter={axisFormat} side="right" />
     <Grid />
-    <MeasurePan onPan={(e) => updateRange(e.start, e.end)} hovering={hovered} />
+    {#if hovered}
+      <MeasurePan onPan={(e) => updateRange(e.start, e.end)} />
+    {/if}
     <Body>
       <ChartBody
         {data}

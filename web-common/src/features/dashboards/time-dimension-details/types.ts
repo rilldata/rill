@@ -45,13 +45,6 @@ export interface HighlightedCell {
   time: Date | undefined;
 }
 
-export interface ChartInteractionColumns {
-  xHover: number | undefined;
-  yHover: string | undefined | null;
-  scrubStart: number | undefined;
-  scrubEnd: number | undefined;
-}
-
 export type TDDComparison = "time" | "none" | "dimension";
 
 export interface TablePosition {

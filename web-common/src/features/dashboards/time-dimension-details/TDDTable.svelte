@@ -34,7 +34,6 @@
   export let measure: MetricsViewSpecMeasure;
   export let highlightedRow: number | undefined;
   export let highlightedCol: number | undefined;
-  export let scrubPos: { start?: number; end?: number };
   export let pinIndex: number;
   export let comparing: TDDComparison;
   export let tableData: TableData;
@@ -89,12 +88,6 @@
       "bg-surface-base",
       "bg-gray-100",
       "bg-gray-200",
-      "bg-primary-50",
-      "bg-primary-100",
-      "bg-primary-200",
-      "bg-surface-base",
-      "bg-gray-100",
-      "bg-gray-200",
     ];
 
     if (pinIndex > -1 && comparing === "dimension" && data.y === pinIndex + 1) {
@@ -105,17 +98,7 @@
       classesToAdd.push("border-b");
     }
 
-    const isScrubbed =
-      scrubPos?.start !== undefined &&
-      scrubPos?.end !== undefined &&
-      data.x >= scrubPos.start &&
-      data.x <= scrubPos.end - 1;
-
-    const palette = isScrubbed
-      ? "scrubbed"
-      : data.y === 0
-        ? "fixed"
-        : "default";
+    const palette = data.y === 0 ? "fixed" : "default";
 
     classesToAdd.push(
       getClassForCell(
@@ -139,7 +122,6 @@
 
   // Any time visible line list changes, redraw the table
   $: {
-    scrubPos;
     highlightedCol;
     highlightedRow;
     tableData?.selectedValues;

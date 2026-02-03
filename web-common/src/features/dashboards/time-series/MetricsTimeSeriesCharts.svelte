@@ -1,14 +1,9 @@
 <script lang="ts">
-  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
-  import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
-  import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
@@ -22,33 +17,23 @@
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
-  import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
-  import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
-  import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/annotations-selectors.ts";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
-  import {
-    useTimeSeriesDataStore,
-    type TimeSeriesDatum,
-  } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
     getAllowedGrains,
     isGrainAllowed,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
-  import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
-  import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
-  import { setJSDateTimeValueToTimeValueInSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
   import {
     TimeRangePreset,
+    TimeComparisonOption,
     type AvailableTimeGrain,
+    type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { Tooltip } from "bits-ui";
-  import { DateTime } from "luxon";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -56,63 +41,54 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import { featureFlags } from "../../feature-flags";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
+  import { MeasureChart } from "./measure-chart";
+  import { getAnnotationsForMeasure } from "./annotations-selectors";
   import ChartInteractions from "./ChartInteractions.svelte";
-  import MeasureChart from "./MeasureChart.svelte";
-  import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import type { DimensionDataItem } from "./multiple-dimension-queries";
-  import {
-    adjustTimeInterval,
-    getOrderedStartEnd,
-    updateChartInteractionStore,
-  } from "./utils";
+  import { chartHoveredTime } from "../time-dimension-details/time-dimension-data-store";
+  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import { derived, writable } from "svelte/store";
+  import { DateTime } from "luxon";
+  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+
+  // Derive a readable of the table-hovered time (Date | undefined)
+  const tableHoverTime = derived(tableInteractionStore, ($s) => $s.time);
 
   const { rillTime } = featureFlags;
 
+  // Shared hover index store — all MeasureChart instances read/write this
+  const sharedHoverIndex = writable<number | undefined>(undefined);
+
   export let exploreName: string;
-  export let workspaceWidth: number;
-  export let timeSeriesWidth: number;
   export let hideStartPivotButton = false;
 
+  const ctx = getStateManagers();
   const {
     selectors: {
-      measures: {
-        allMeasures,
-        visibleMeasures,
-        isMeasureValidPercentOfTotal,
-        getMeasureByName,
-      },
+      measures: { allMeasures, visibleMeasures, getMeasureByName },
       dimensionFilters: { includedDimensionValues },
+      charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     actions: {
       measures: { setMeasureVisibility },
     },
-    validSpecStore,
-  } = getStateManagers();
+  } = ctx;
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
-  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
+  const timeControlsStore = useTimeControlStore(ctx);
 
   $: ({
+    adjustedStart,
+    adjustedEnd,
     selectedTimeRange,
+    timeDimension,
+    ready,
+    comparisonAdjustedStart,
+    comparisonAdjustedEnd,
     minTimeGrain,
     showTimeComparison,
-    ready: timeControlsReady,
   } = $timeControlsStore);
 
-  $: ({ instanceId } = $runtime);
-
-  let scrubStart;
-  let scrubEnd;
-
-  let mouseoverValue: DomainCoordinates | undefined = undefined;
-  let startValue: Date | undefined;
-  let endValue: Date | undefined;
-
-  let dataCopy: TimeSeriesDatum[];
-  let dimensionDataCopy: DimensionDataItem[] = [];
-
   $: exploreState = useExploreState(exploreName);
-  $: selectedTimezone = $exploreState?.selectedTimezone;
 
   $: activePage = $exploreState?.activePage;
   $: showTimeDimensionDetail = Boolean(
@@ -124,18 +100,25 @@
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
 
-  $: timeString = selectedTimeRange?.name;
-
   $: activeTimeGrain = selectedTimeRange?.interval ?? minTimeGrain;
-  $: isScrubbing = $exploreState?.selectedScrubRange?.isScrubbing;
-  $: isAllTime = timeString === TimeRangePreset.ALL_TIME;
-  $: isPercOfTotalAsContextColumn =
-    $exploreState?.leaderboardContextColumn ===
-    LeaderboardContextColumn.PERCENT;
+
+  $: chartScrubRange = $exploreState?.lastDefinedScrubRange
+    ? {
+        start: DateTime.fromJSDate($exploreState.lastDefinedScrubRange.start, {
+          zone: chartTimeZone,
+        }),
+        end: DateTime.fromJSDate($exploreState.lastDefinedScrubRange.end, {
+          zone: chartTimeZone,
+        }),
+      }
+    : undefined;
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
   );
-  $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
+  $: chartDimensionValues = includedValuesForDimension.slice(
+    0,
+    showTimeDimensionDetail ? 11 : 7,
+  ) as (string | null)[];
 
   $: expandedMeasure = $getMeasureByName(expandedMeasureName);
   let renderedMeasures: MetricsViewSpecMeasure[];
@@ -146,120 +129,6 @@
         : $visibleMeasures;
   }
 
-  $: totals = $timeSeriesDataStore.total as { [key: string]: number };
-  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal as {
-    [key: string]: number;
-  };
-
-  // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
-  // temporarily undefined as results are fetched.
-  // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
-  // we make a copy of the data that avoids `undefined` transition states.
-  // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
-
-  $: if ($timeSeriesDataStore?.timeSeriesData) {
-    dataCopy = $timeSeriesDataStore.timeSeriesData;
-  }
-  $: formattedData = dataCopy;
-
-  $: if (
-    $timeSeriesDataStore?.dimensionChartData?.length ||
-    !comparisonDimension ||
-    includedValuesForDimension.length === 0
-  ) {
-    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData || [];
-  }
-  $: dimensionData = dimensionDataCopy;
-
-  // FIXME: move this logic to a function + write tests.
-  $: if (timeControlsReady && activeTimeGrain) {
-    const scrubRange = $exploreState?.selectedScrubRange;
-    const timeZone = $exploreState?.selectedTimezone;
-
-    // adjust scrub values for Javascript's timezone changes
-    scrubStart = setJSDateTimeValueToTimeValueInSelectedTimeZone(
-      scrubRange?.start,
-      timeZone,
-    );
-    scrubEnd = setJSDateTimeValueToTimeValueInSelectedTimeZone(
-      scrubRange?.end,
-      timeZone,
-    );
-
-    const slicedData = isAllTime
-      ? formattedData?.slice(1)
-      : formattedData?.slice(1, -1);
-
-    chartInteractionColumn.update((state) => {
-      const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-
-      let startDirection, endDirection;
-
-      if (
-        tddChartType === TDDChart.GROUPED_BAR ||
-        tddChartType === TDDChart.STACKED_BAR
-      ) {
-        startDirection = "left";
-        endDirection = "right";
-      } else {
-        startDirection = "center";
-        endDirection = "center";
-      }
-
-      const { position: startPos } = bisectData(
-        start,
-        startDirection,
-        "ts_position",
-        slicedData,
-      );
-
-      const { position: endPos } = bisectData(
-        end,
-        endDirection,
-        "ts_position",
-        slicedData,
-      );
-
-      return {
-        yHover: isScrubbing ? undefined : state.yHover,
-        xHover: isScrubbing ? undefined : state.xHover,
-        scrubStart: startPos,
-        scrubEnd: endPos,
-      };
-    });
-
-    const adjustedChartValue = getAdjustedChartTime(
-      selectedTimeRange?.start,
-      selectedTimeRange?.end,
-      $exploreState?.selectedTimezone,
-      activeTimeGrain,
-      timeString,
-      $validSpecStore.data?.explore?.defaultPreset?.timeRange,
-      $exploreState?.tdd.chartType,
-    );
-
-    if (adjustedChartValue?.start) {
-      startValue = adjustedChartValue?.start;
-    }
-    if (adjustedChartValue?.end) {
-      endValue = adjustedChartValue?.end;
-    }
-  }
-
-  $: if (
-    showTimeDimensionDetail &&
-    formattedData &&
-    selectedTimeRange &&
-    !isScrubbing
-  ) {
-    updateChartInteractionStore(
-      mouseoverValue?.x,
-      undefined,
-      isAllTime,
-      formattedData,
-    );
-  }
-
   $: visibleMeasureNames = $visibleMeasures
     .map(({ name }) => name)
     .filter(isDefined);
@@ -268,34 +137,71 @@
     return value !== undefined;
   }
 
-  $: hasTotalsError = Object.hasOwn($timeSeriesDataStore?.error, "totals");
-  $: hasTimeseriesError = Object.hasOwn(
-    $timeSeriesDataStore?.error,
-    "timeseries",
-  );
-
   $: timeGrainOptions = getAllowedGrains(minTimeGrain);
-
   $: grainAllowed = isGrainAllowed(activeTimeGrain, minTimeGrain);
 
-  $: annotationsForMeasures = renderedMeasures.map((measure) =>
-    getAnnotationsForMeasure({
-      instanceId,
-      exploreName,
-      measureName: measure.name!,
-      selectedTimeRange,
-      dashboardTimezone: selectedTimezone,
-    }),
+  let grainDropdownOpen = false;
+  $: effectiveGrain = grainAllowed ? activeTimeGrain : minTimeGrain;
+
+  // Props for MeasureChart (context-independent)
+  const runtimeStore = ctx.runtime;
+  const metricsViewNameStore = ctx.metricsViewName;
+  const dashboardStore = ctx.dashboardStore;
+  $: instanceId = $runtimeStore.instanceId;
+  $: chartMetricsViewName = $metricsViewNameStore;
+  $: chartWhere = sanitiseExpression(
+    mergeDimensionAndMeasureFilters(
+      $dashboardStore.whereFilter,
+      $dashboardStore.dimensionThresholdFilters,
+    ),
+    undefined,
   );
 
-  let grainDropdownOpen = false;
+  $: chartPrimaryTimeStart = selectedTimeRange?.start
+    ? DateTime.fromJSDate(selectedTimeRange.start, {
+        zone: chartTimeZone,
+      })
+    : undefined;
+  $: chartPrimaryTimeEnd = selectedTimeRange?.end
+    ? DateTime.fromJSDate(selectedTimeRange.end, {
+        zone: chartTimeZone,
+      })
+    : undefined;
 
-  $: effectiveGrain = grainAllowed ? activeTimeGrain : minTimeGrain;
+  $: chartTimeZone = $dashboardStore.selectedTimezone;
+  $: chartReady = !!ready;
+
+  // Annotation stores per measure — keyed by measure name
+  function getAnnotationsForMeasureStore(measureName: string) {
+    return getAnnotationsForMeasure({
+      instanceId,
+      exploreName,
+      measureName,
+      selectedTimeRange,
+      dashboardTimezone: chartTimeZone,
+    });
+  }
+
+  // Pan handler
+  function handlePan(direction: "left" | "right") {
+    const panRange = $getNewPanRange(direction);
+    if (!panRange) return;
+    const { start, end } = panRange;
+    const comparisonTimeRange = showComparison
+      ? ({ name: TimeComparisonOption.CONTIGUOUS } as DashboardTimeControls)
+      : undefined;
+    metricsExplorerStore.selectTimeRange(
+      exploreName,
+      { name: TimeRangePreset.CUSTOM, start, end },
+      effectiveGrain!,
+      comparisonTimeRange,
+      {},
+    );
+  }
 
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
     const pivot = $exploreState?.pivot;
-
     const pivotColumns = splitPivotChips(pivot.columns);
     if (
       pivot.rows.length ||
@@ -318,17 +224,13 @@
 
   function createPivot() {
     showReplacePivotModal = false;
-
     const measures = renderedMeasures
       .filter((m) => m.name !== undefined)
-      .map((m) => {
-        return {
-          id: m.name as string,
-          title: m.displayName || (m.name as string),
-          type: PivotChipType.Measure,
-        };
-      });
-
+      .map((m) => ({
+        id: m.name as string,
+        title: m.displayName || (m.name as string),
+        type: PivotChipType.Measure,
+      }));
     metricsExplorerStore.createPivot(
       exploreName,
       [getTimeDimension()],
@@ -336,8 +238,19 @@
     );
   }
 
+  function handleScrub(range: {
+    start: DateTime;
+    end: DateTime;
+    isScrubbing: boolean;
+  }) {
+    metricsExplorerStore.setSelectedScrubRange(exploreName, {
+      start: range.start.toJSDate(),
+      end: range.end.toJSDate(),
+      isScrubbing: range.isScrubbing,
+    });
+  }
+
   function maybeClearMeasureSelection() {
-    // Range selection should only clear when scrub range is cleared.
     if (!measureSelection.isRangeSelection()) {
       measureSelection.clear();
     }
@@ -346,15 +259,11 @@
 
 <svelte:window on:click={maybeClearMeasureSelection} />
 
-<TimeSeriesChartContainer
-  enableFullWidth={showTimeDimensionDetail}
-  end={endValue}
-  start={startValue}
-  {workspaceWidth}
-  {timeSeriesWidth}
-  bottom={showTimeDimensionDetail ? 25 : 10}
->
-  <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
+<div class="max-w-full h-fit flex flex-col max-h-full pr-2">
+  <div
+    class:mb-6={tddChartType !== TDDChart.DEFAULT}
+    class="flex items-center gap-x-1 px-2.5"
+  >
     {#if showTimeDimensionDetail}
       <BackToExplore />
       <ChartTypeSelector
@@ -440,159 +349,75 @@
     {/if}
   </div>
 
-  <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
-    <div class="relative w-full">
+  {#if renderedMeasures}
+    <div class="relative">
       <ChartInteractions
         {exploreName}
         {showComparison}
-        timeGrain={activeTimeGrain}
+        timeGrain={effectiveGrain}
       />
-      {#if tddChartType === TDDChart.DEFAULT}
-        <div class="translate-x-5">
-          {#if $exploreState?.selectedTimeRange && startValue && endValue}
-            <SimpleDataGraphic
-              height={26}
-              overflowHidden={false}
-              top={29}
-              bottom={0}
-              right={showTimeDimensionDetail ? 10 : 25}
-              xMin={startValue}
-              xMax={endValue}
-            >
-              <Axis superlabel side="top" placement="start" />
-            </SimpleDataGraphic>
-          {/if}
-        </div>
-      {/if}
     </div>
-  </div>
-
-  {#if renderedMeasures}
     <div
       class:pb-4={!showTimeDimensionDetail}
       class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
     >
-      <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-      {#each renderedMeasures as measure, i (measure.name)}
-        <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = measure.name ? totals?.[measure.name] : null}
-        {@const comparisonValue = measure.name
-          ? totalsComparisons?.[measure.name]
-          : undefined}
-        {@const isValidPercTotal = measure.name
-          ? $isMeasureValidPercentOfTotal(measure.name)
-          : false}
-
+      {#each renderedMeasures as measure (measure.name)}
         <div class="flex flex-row gap-x-4">
           <MeasureBigNumber
             {measure}
-            value={bigNum}
             isMeasureExpanded={showTimeDimensionDetail}
             {showComparison}
-            {comparisonValue}
-            errorMessage={$timeSeriesDataStore?.error?.totals}
-            status={hasTotalsError
-              ? EntityStatus.Error
-              : $timeSeriesDataStore?.isFetching
-                ? EntityStatus.Running
-                : EntityStatus.Idle}
+            {instanceId}
+            metricsViewName={chartMetricsViewName}
+            where={chartWhere}
+            {timeDimension}
+            timeStart={adjustedStart}
+            timeEnd={adjustedEnd}
+            comparisonTimeStart={comparisonAdjustedStart}
+            comparisonTimeEnd={comparisonAdjustedEnd}
+            ready={chartReady}
           />
 
-          {#if hasTimeseriesError}
-            <div
-              class="flex flex-col p-5 items-center justify-center text-xs text-fg-muted"
-            >
-              {#if $timeSeriesDataStore.error?.timeseries}
-                <span>
-                  Error: {$timeSeriesDataStore.error.timeseries}
-                </span>
-              {:else}
-                <span>Unable to fetch data from the API</span>
-              {/if}
-            </div>
-          {:else if showTimeDimensionDetail && expandedMeasureName && tddChartType != TDDChart.DEFAULT}
-            <TDDAlternateChart
-              timeGrain={activeTimeGrain}
-              chartType={tddChartType}
-              {expandedMeasureName}
-              totalsData={formattedData}
-              {dimensionData}
-              xMin={startValue}
-              xMax={endValue}
-              isTimeComparison={showComparison}
-              isScrubbing={Boolean(isScrubbing)}
-              onChartHover={(dimension, ts) => {
-                updateChartInteractionStore(
-                  ts,
-                  dimension,
-                  isAllTime,
-                  formattedData,
-                );
+          {#if effectiveGrain}
+            <MeasureChart
+              {measure}
+              {sharedHoverIndex}
+              tddChartType={showTimeDimensionDetail
+                ? (tddChartType ?? TDDChart.DEFAULT)
+                : TDDChart.DEFAULT}
+              {instanceId}
+              metricsViewName={chartMetricsViewName}
+              where={chartWhere}
+              {timeDimension}
+              adjustedTimeStart={adjustedStart}
+              adjustedTimeEnd={adjustedEnd}
+              primaryTimeStart={chartPrimaryTimeStart}
+              primaryTimeEnd={chartPrimaryTimeEnd}
+              comparisonTimeStart={comparisonAdjustedStart}
+              comparisonTimeEnd={comparisonAdjustedEnd}
+              timeGranularity={effectiveGrain}
+              timeZone={chartTimeZone}
+              ready={chartReady}
+              scrubRange={chartScrubRange}
+              {comparisonDimension}
+              dimensionValues={chartDimensionValues}
+              dimensionWhere={$dashboardStore.whereFilter}
+              annotations={getAnnotationsForMeasureStore(measure.name ?? "")}
+              canPanLeft={$canPanLeft}
+              canPanRight={$canPanRight}
+              onPanLeft={() => handlePan("left")}
+              onPanRight={() => handlePan("right")}
+              {showComparison}
+              {showTimeDimensionDetail}
+              {tableHoverTime}
+              onHover={(dt) => {
+                chartHoveredTime.set(dt?.toJSDate());
               }}
-              onChartBrush={(interval) => {
-                const { start, end } = adjustTimeInterval(
-                  interval,
-                  $exploreState?.selectedTimezone,
-                );
-
-                metricsExplorerStore.setSelectedScrubRange(exploreName, {
-                  start,
-                  end,
-                  isScrubbing: true,
-                });
-              }}
-              onChartBrushEnd={(interval) => {
-                const { start, end } = adjustTimeInterval(
-                  interval,
-                  $exploreState?.selectedTimezone,
-                );
-
-                metricsExplorerStore.setSelectedScrubRange(exploreName, {
-                  start,
-                  end,
-                  isScrubbing: false,
-                });
-              }}
-              onChartBrushClear={() => {
+              onScrub={handleScrub}
+              onScrubClear={() => {
                 metricsExplorerStore.setSelectedScrubRange(
                   exploreName,
                   undefined,
-                );
-              }}
-            />
-          {:else if formattedData && effectiveGrain}
-            <MeasureChart
-              bind:mouseoverValue
-              {measure}
-              {showTimeDimensionDetail}
-              {isScrubbing}
-              {scrubStart}
-              {scrubEnd}
-              {exploreName}
-              data={formattedData}
-              {dimensionData}
-              annotations={annotationsForMeasures[i]}
-              zone={$exploreState?.selectedTimezone}
-              xAccessor="ts_position"
-              labelAccessor="ts"
-              timeGrain={effectiveGrain}
-              yAccessor={measure.name}
-              xMin={startValue}
-              xMax={endValue}
-              {showComparison}
-              validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
-                ? bigNum
-                : null}
-              mouseoverTimeFormat={(value) => {
-                // This date comes back in the user's local timezone, but has the correct time value
-                // For rendering purposes, we can just switch the zone to the selected timezone while keeping the local time
-                // This is technically unnecessary since the time value is "correct", but it's safer in case any formatting logic depends on the zone
-                return formatDateTimeByGrain(
-                  DateTime.fromJSDate(value).setZone(
-                    $exploreState?.selectedTimezone || "UTC",
-                    { keepLocalTime: true },
-                  ),
-                  effectiveGrain,
                 );
               }}
             />
@@ -605,7 +430,7 @@
       {/each}
     </div>
   {/if}
-</TimeSeriesChartContainer>
+</div>
 
 <ReplacePivotDialog
   open={showReplacePivotModal}
