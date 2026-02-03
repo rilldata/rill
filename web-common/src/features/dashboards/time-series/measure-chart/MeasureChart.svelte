@@ -44,7 +44,7 @@
     MainAreaColorGradientLight,
     TimeComparisonLineColor,
   } from "../chart-colors";
-  import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+  import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
   import { DateTime } from "luxon";
@@ -68,7 +68,11 @@
 
   const Y_DASH_ARRAY = "1,1";
   const X_PAD = 8;
-  const { visible, observe } = createVisibilityObserver("120px");
+  const CLICK_THRESHOLD_PX = 4; // Max mouse movement to still count as a click
+  const LINE_MODE_MIN_POINTS = 6; // Minimum data points to show line instead of bar
+  const ANNOTATION_POPOVER_DELAY_MS = 150;
+  const VISIBILITY_ROOT_MARGIN = "120px";
+  const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
   const selMeasure = measureSelection.measure;
   const selStart = measureSelection.start;
   const selEnd = measureSelection.end;
@@ -121,6 +125,7 @@
   let tddIsScrubbing = false;
   let hoveredAnnotationGroup: AnnotationGroup | null = null;
   let annotationPopoverHovered = false;
+  let annotationPopoverTimeout: ReturnType<typeof setTimeout> | null = null;
   let mouseDownX: number | null = null;
   let mouseDownY: number | null = null;
   let mousePageX: number | null = null;
@@ -132,7 +137,10 @@
   onMount(() => {
     if (container) unobserve = observe(container);
   });
-  onDestroy(() => unobserve?.());
+  onDestroy(() => {
+    unobserve?.();
+    if (annotationPopoverTimeout) clearTimeout(annotationPopoverTimeout);
+  });
 
   $: measureName = measure.name ?? "";
   $: height = showTimeDimensionDetail ? 245 : 145;
@@ -428,7 +436,7 @@
       return dimData.map((dim, i) => ({
         id: `dim-${dim.dimensionValue ?? i}`,
         values: dim.data.map((pt) => pt.value),
-        color: dim.color || COMPARIONS_COLORS[i % COMPARIONS_COLORS.length],
+        color: dim.color || COMPARISON_COLORS[i % COMPARISON_COLORS.length],
         opacity: dim.isFetching ? 0.5 : 1,
         strokeWidth: 1.5,
       }));
@@ -466,8 +474,8 @@
     d: TimeSeriesPoint[],
     dimData: DimensionSeriesData[],
   ): ChartMode {
-    if (d.length >= 6) return "line";
-    if (dimData.length > 0) return "bar";
+    // Use line chart when we have enough data points and no dimension comparison
+    if (d.length >= LINE_MODE_MIN_POINTS && dimData.length === 0) return "line";
     return "bar";
   }
 
@@ -551,12 +559,17 @@
 
   function handleAnnotationPopoverHover(hovered: boolean) {
     annotationPopoverHovered = hovered;
+    if (annotationPopoverTimeout) {
+      clearTimeout(annotationPopoverTimeout);
+      annotationPopoverTimeout = null;
+    }
     if (!hovered) {
-      setTimeout(() => {
+      annotationPopoverTimeout = setTimeout(() => {
         if (!annotationPopoverHovered) {
           hoveredAnnotationGroup = null;
         }
-      }, 150);
+        annotationPopoverTimeout = null;
+      }, ANNOTATION_POPOVER_DELAY_MS);
     }
   }
 
@@ -600,8 +613,8 @@
     const wasClick =
       mouseDownX !== null &&
       mouseDownY !== null &&
-      Math.abs(e.clientX - mouseDownX) < 4 &&
-      Math.abs(e.clientY - mouseDownY) < 4;
+      Math.abs(e.clientX - mouseDownX) < CLICK_THRESHOLD_PX &&
+      Math.abs(e.clientY - mouseDownY) < CLICK_THRESHOLD_PX;
 
     // Track if this was a drag to prevent click handler from also firing
     wasDragging = !wasClick;

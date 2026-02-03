@@ -29,7 +29,9 @@
   // Bar count: dimension comparison uses dimensionData.length, time comparison uses 2
   $: barCount = isComparingDimension
     ? dimensionData.length
-    : (showComparison ? 2 : 1);
+    : showComparison
+      ? 2
+      : 1;
   $: barGap = barCount > 1 ? 2 : 0;
   $: totalGaps = barGap * (barCount - 1);
   $: singleBarWidth = (bandWidth - totalGaps) / barCount;
@@ -70,7 +72,10 @@
   <!-- Time comparison: primary point circle (right bar, index 1) -->
   {#if !isComparingDimension && showComparison && !currentPointIsNull}
     {@const primaryBarX = isBarMode
-      ? slotCenterX - bandWidth / 2 + (singleBarWidth + barGap) + singleBarWidth / 2
+      ? slotCenterX -
+        bandWidth / 2 +
+        (singleBarWidth + barGap) +
+        singleBarWidth / 2
       : $tweenedX}
     <circle
       cx={primaryBarX}
@@ -94,7 +99,10 @@
     {#each dimensionData as dim, i (i)}
       {@const pt = dim.data[hoveredIndex]}
       {@const barX = isBarMode
-        ? slotCenterX - bandWidth / 2 + i * (singleBarWidth + barGap) + singleBarWidth / 2
+        ? slotCenterX -
+          bandWidth / 2 +
+          i * (singleBarWidth + barGap) +
+          singleBarWidth / 2
         : $tweenedX}
       {#if pt?.value !== null && pt?.value !== undefined}
         <circle

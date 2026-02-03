@@ -15,10 +15,13 @@
 
   $: hasRange = hoveredGroup?.hasRange ?? false;
   $: rangeXStart = hoveredGroup?.left ?? 0;
-  $: rangeXEnd = Math.min(hoveredGroup?.right ?? 0, plotBounds.left + plotBounds.width);
-  $: rangeYEnd = (hoveredGroup?.top ?? 0);
+  $: rangeXEnd = Math.min(
+    hoveredGroup?.right ?? 0,
+    plotBounds.left + plotBounds.width,
+  );
+  $: rangeYEnd = hoveredGroup?.top ?? 0;
 
-  $: halfSize = AnnotationWidth / 2 * 0.7;
+  $: halfSize = (AnnotationWidth / 2) * 0.7;
 </script>
 
 {#each groups as group (group.left)}

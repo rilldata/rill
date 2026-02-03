@@ -69,33 +69,48 @@
   $: themeMode = $current;
 
   // Convert MeasureChart types to TDD types when provided
-  $: effectiveTotalsData = totalsData ?? (timeSeriesPoints
-    ? timeSeriesPoints.map((pt): TimeSeriesDatum => ({
-        ts: pt.ts.toJSDate(),
-        [expandedMeasureName]: pt.value ?? undefined,
-        [`comparison.${expandedMeasureName}`]: pt.comparisonValue ?? undefined,
-        "comparison.ts": pt.comparisonTs?.toJSDate(),
-      }))
-    : []);
+  $: effectiveTotalsData =
+    totalsData ??
+    (timeSeriesPoints
+      ? timeSeriesPoints.map(
+          (pt): TimeSeriesDatum => ({
+            ts: pt.ts.toJSDate(),
+            [expandedMeasureName]: pt.value ?? undefined,
+            [`comparison.${expandedMeasureName}`]:
+              pt.comparisonValue ?? undefined,
+            "comparison.ts": pt.comparisonTs?.toJSDate(),
+          }),
+        )
+      : []);
 
-  $: effectiveDimensionData = dimensionData ?? dimensionSeriesData?.map(
-    (dim): DimensionDataItem => ({
-      value: dim.dimensionValue,
-      color: dim.color,
-      isFetching: dim.isFetching,
-      total: dim.total,
-      data: dim.data.map((pt): TimeSeriesDatum => ({
-        ts: pt.ts.toJSDate(),
-        [expandedMeasureName]: pt.value ?? undefined,
-        [`comparison.${expandedMeasureName}`]: pt.comparisonValue ?? undefined,
-        "comparison.ts": pt.comparisonTs?.toJSDate(),
-      })),
-    }),
-  ) ?? [];
+  $: effectiveDimensionData =
+    dimensionData ??
+    dimensionSeriesData?.map(
+      (dim): DimensionDataItem => ({
+        value: dim.dimensionValue,
+        color: dim.color,
+        isFetching: dim.isFetching,
+        total: dim.total,
+        data: dim.data.map(
+          (pt): TimeSeriesDatum => ({
+            ts: pt.ts.toJSDate(),
+            [expandedMeasureName]: pt.value ?? undefined,
+            [`comparison.${expandedMeasureName}`]:
+              pt.comparisonValue ?? undefined,
+            "comparison.ts": pt.comparisonTs?.toJSDate(),
+          }),
+        ),
+      }),
+    ) ??
+    [];
 
   $: hasDimensionData = !!effectiveDimensionData?.length;
-  $: data = hasDimensionData ? reduceDimensionData(effectiveDimensionData) : effectiveTotalsData;
-  $: selectedValues = hasDimensionData ? effectiveDimensionData.map((d) => d.value) : [];
+  $: data = hasDimensionData
+    ? reduceDimensionData(effectiveDimensionData)
+    : effectiveTotalsData;
+  $: selectedValues = hasDimensionData
+    ? effectiveDimensionData.map((d) => d.value)
+    : [];
   $: expandedMeasureLabel = $measureLabel(expandedMeasureName);
   $: measure = $getMeasureByName(expandedMeasureName);
   $: comparedDimensionLabel =

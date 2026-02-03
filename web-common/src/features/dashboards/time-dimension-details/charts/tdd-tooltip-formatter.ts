@@ -1,4 +1,4 @@
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import {
   MainAreaColorGradientDark,
   MainLineColor,
@@ -18,7 +18,7 @@ function createColorMap(
 ): Record<string, string> {
   const colorMap: Record<string, string> = {};
   selectedDimensionValues.forEach((dimValue, i) => {
-    colorMap[String(dimValue)] = COMPARIONS_COLORS[i];
+    colorMap[String(dimValue)] = COMPARISON_COLORS[i];
   });
 
   colorMap[measureLabel] = MainLineColor;

@@ -16,11 +16,8 @@ import {
   keepPreviousData,
   type CreateQueryResult,
 } from "@tanstack/svelte-query";
-import {
-  transformAggregateDimensionData,
-  prepareTimeSeries,
-} from "../utils";
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { transformAggregateDimensionData, prepareTimeSeries } from "../utils";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { DateTime } from "luxon";
 import type { DimensionSeriesData, TimeSeriesPoint } from "./types";
@@ -159,7 +156,7 @@ export function buildDimensionSeriesData(
 
     results.push({
       dimensionValue: dimensionValues[i],
-      color: COMPARIONS_COLORS[i] || "",
+      color: COMPARISON_COLORS[i] || "",
       data,
       isFetching,
     });

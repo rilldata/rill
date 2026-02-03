@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    COMPARIONS_COLORS,
+    COMPARISON_COLORS,
     SELECTED_NOT_COMPARED_COLOR,
   } from "@rilldata/web-common/features/dashboards/config";
   import Pivot from "@rilldata/web-common/features/dashboards/pivot/RegularTable.svelte";
@@ -165,7 +165,7 @@
         return {
           icon: SelectedCheckmark(
             visibleIdx < 11
-              ? COMPARIONS_COLORS[visibleIdx]
+              ? COMPARISON_COLORS[visibleIdx]
               : SELECTED_NOT_COMPARED_COLOR,
           ),
           muted: false,

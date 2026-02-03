@@ -32,12 +32,14 @@
 
   $: hasSelection = startIndex !== null && endIndex !== null;
 
-  $: orderedStartIdx = startIndex !== null && endIndex !== null
-    ? Math.min(startIndex, endIndex)
-    : null;
-  $: orderedEndIdx = startIndex !== null && endIndex !== null
-    ? Math.max(startIndex, endIndex)
-    : null;
+  $: orderedStartIdx =
+    startIndex !== null && endIndex !== null
+      ? Math.min(startIndex, endIndex)
+      : null;
+  $: orderedEndIdx =
+    startIndex !== null && endIndex !== null
+      ? Math.max(startIndex, endIndex)
+      : null;
 
   $: xStart = orderedStartIdx !== null ? scales.x(orderedStartIdx) : 0;
   $: xEnd = orderedEndIdx !== null ? scales.x(orderedEndIdx) : 0;
@@ -50,7 +52,10 @@
 </script>
 
 <defs>
-  <linearGradient gradientUnits="userSpaceOnUse" id="scrubbing-gradient-{chartId}">
+  <linearGradient
+    gradientUnits="userSpaceOnUse"
+    id="scrubbing-gradient-{chartId}"
+  >
     <stop stop-color={ScrubArea0Color} />
     <stop offset="0.36" stop-color={ScrubArea1Color} />
     <stop offset="1" stop-color={ScrubArea2Color} />
@@ -58,11 +63,7 @@
 </defs>
 
 {#if hasSelection && orderedStartIdx !== null && orderedEndIdx !== null}
-  <g
-    class="scrub-group"
-    on:contextmenu={handleContextMenu}
-    role="presentation"
-  >
+  <g class="scrub-group" on:contextmenu={handleContextMenu} role="presentation">
     <rect
       class="selection-rect"
       class:scrubbing={isScrubbing}
@@ -74,8 +75,22 @@
       opacity={isScrubbing ? 0.4 : 0.2}
     />
 
-    <line x1={xStart} x2={xStart} {y1} {y2} stroke={ScrubBoxColor} stroke-width={strokeWidth} />
-    <line x1={xEnd} x2={xEnd} {y1} {y2} stroke={ScrubBoxColor} stroke-width={strokeWidth} />
+    <line
+      x1={xStart}
+      x2={xStart}
+      {y1}
+      {y2}
+      stroke={ScrubBoxColor}
+      stroke-width={strokeWidth}
+    />
+    <line
+      x1={xEnd}
+      x2={xEnd}
+      {y1}
+      {y2}
+      stroke={ScrubBoxColor}
+      stroke-width={strokeWidth}
+    />
 
     {#if showLabels}
       <text
@@ -115,8 +130,22 @@
       />
     {/if}
 
-    <rect class="resize-handle" x={xStart - 5} y={y1} width={10} height={y2 - y1} fill="transparent" />
-    <rect class="resize-handle" x={xEnd - 5} y={y1} width={10} height={y2 - y1} fill="transparent" />
+    <rect
+      class="resize-handle"
+      x={xStart - 5}
+      y={y1}
+      width={10}
+      height={y2 - y1}
+      fill="transparent"
+    />
+    <rect
+      class="resize-handle"
+      x={xEnd - 5}
+      y={y1}
+      width={10}
+      height={y2 - y1}
+      fill="transparent"
+    />
   </g>
 {/if}
 

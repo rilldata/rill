@@ -1,5 +1,5 @@
 import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import {
   MainAreaColorGradientDark,
   MainLineColor,
@@ -103,7 +103,7 @@ export function patchSpecForTDD(
   if (colorEncoding && selectedValuesLength) {
     colorEncoding.scale = {
       domain: selectedDimensionValues,
-      range: COMPARIONS_COLORS.slice(0, selectedValuesLength),
+      range: COMPARISON_COLORS.slice(0, selectedValuesLength),
     };
   }
 

@@ -23,10 +23,7 @@ export type AnnotationGroup = {
 export const AnnotationWidth = 10;
 export const AnnotationHeight = 10;
 
-function dateToIndex(
-  data: TimeSeriesPoint[],
-  date: Date,
-): number | null {
+function dateToIndex(data: TimeSeriesPoint[], date: Date): number | null {
   if (data.length === 0) return null;
   const ms = date.getTime();
   let best = 0;
@@ -68,7 +65,8 @@ export function groupAnnotations(
 
   for (const a of annotations) {
     const dt = DateTime.fromJSDate(a.startTime, { zone: timeZone });
-    const key = dt.startOf(unit).toISO() ?? dt.toISO() ?? String(a.startTime.getTime());
+    const key =
+      dt.startOf(unit).toISO() ?? dt.toISO() ?? String(a.startTime.getTime());
 
     let bucket = buckets.get(key);
     if (!bucket) {

@@ -90,14 +90,17 @@
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
-  $: highlightedCol = $chartHoveredTime && columnHeaders
-    ? (() => {
-        const idx = columnHeaders.findIndex(
-          (h) => h?.value && new Date(h.value).getTime() === $chartHoveredTime!.getTime(),
-        );
-        return idx >= 0 ? idx : undefined;
-      })()
-    : undefined;
+  $: highlightedCol =
+    $chartHoveredTime && columnHeaders
+      ? (() => {
+          const idx = columnHeaders.findIndex(
+            (h) =>
+              h?.value &&
+              new Date(h.value).getTime() === $chartHoveredTime!.getTime(),
+          );
+          return idx >= 0 ? idx : undefined;
+        })()
+      : undefined;
 
   // Create a time formatter for the column headers
   $: timeFormatter = timeFormat(

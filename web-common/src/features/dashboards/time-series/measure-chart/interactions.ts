@@ -5,9 +5,7 @@ import type { HoverState } from "./types";
  * Create an IntersectionObserver-based visibility store.
  * Used for lazy-loading chart data when the chart scrolls into view.
  */
-export function createVisibilityObserver(
-  rootMargin = "120px",
-): {
+export function createVisibilityObserver(rootMargin = "120px"): {
   visible: Writable<boolean>;
   observe: (element: HTMLElement, root?: HTMLElement | null) => () => void;
 } {
@@ -57,5 +55,7 @@ export function getOrderedDates(
   end: Date | null,
 ): { start: Date | null; end: Date | null } {
   if (!start || !end) return { start, end };
-  return start.getTime() > end.getTime() ? { start: end, end: start } : { start, end };
+  return start.getTime() > end.getTime()
+    ? { start: end, end: start }
+    : { start, end };
 }

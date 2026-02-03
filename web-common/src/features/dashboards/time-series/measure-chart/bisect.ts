@@ -15,9 +15,7 @@ import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 /**
  * D3 bisector for TimeSeriesPoint arrays, using the ts field.
  */
-export const timeSeriesBisector = bisector<TimeSeriesPoint, Date>(
-  (d) => d.ts,
-);
+export const timeSeriesBisector = bisector<TimeSeriesPoint, Date>((d) => d.ts);
 
 /**
  * Get the time grain label from V1TimeGrain.
@@ -69,7 +67,10 @@ export function bisectDimensionData(
   dimensionData: DimensionSeriesData[],
   date: Date,
   timeGrain: V1TimeGrain,
-): Map<string | null, { value: number | null; color: string; point: TimeSeriesPoint | null }> {
+): Map<
+  string | null,
+  { value: number | null; color: string; point: TimeSeriesPoint | null }
+> {
   const results = new Map<
     string | null,
     { value: number | null; color: string; point: TimeSeriesPoint | null }
@@ -165,7 +166,9 @@ export function computeLineSegments(
  * Find singleton points (segments with only one point).
  * These need to be rendered as circles instead of lines.
  */
-export function findSingletonPoints(data: TimeSeriesPoint[]): TimeSeriesPoint[] {
+export function findSingletonPoints(
+  data: TimeSeriesPoint[],
+): TimeSeriesPoint[] {
   const segments = computeLineSegments(data);
   return segments
     .filter((segment) => segment.length === 1)

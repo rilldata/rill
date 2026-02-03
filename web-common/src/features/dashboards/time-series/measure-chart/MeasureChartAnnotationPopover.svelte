@@ -59,10 +59,7 @@
 
 {#if hoveredGroup}
   <div class="relative">
-    <Popover.Root
-      bind:open
-      onOpenChange={() => (showingMore = false)}
-    >
+    <Popover.Root bind:open onOpenChange={() => (showingMore = false)}>
       <Popover.Trigger asChild let:builder>
         <button
           class="absolute bottom-2 w-0 h-0"
@@ -71,12 +68,7 @@
           use:builderActions={{ builders: [builder] }}
         ></button>
       </Popover.Trigger>
-      <Popover.Content
-        side="right"
-        sideOffset={12}
-        class="w-80"
-        padding="0"
-      >
+      <Popover.Content side="right" sideOffset={12} class="w-80" padding="0">
         <div
           class="flex flex-col gap-y-1 p-2 max-h-[600px] overflow-y-auto"
           on:mouseenter={() => onHover(true)}

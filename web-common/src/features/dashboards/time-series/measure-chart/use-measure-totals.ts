@@ -4,7 +4,10 @@ import {
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { keepPreviousData, type CreateQueryResult } from "@tanstack/svelte-query";
+import {
+  keepPreviousData,
+  type CreateQueryResult,
+} from "@tanstack/svelte-query";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";

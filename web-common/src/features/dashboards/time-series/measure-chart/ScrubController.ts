@@ -73,7 +73,10 @@ export class ScrubController {
 
     const minX = Math.min(startX, endX);
     const maxX = Math.max(startX, endX);
-    if (screenX > minX + EDGE_THRESHOLD_PX && screenX < maxX - EDGE_THRESHOLD_PX) {
+    if (
+      screenX > minX + EDGE_THRESHOLD_PX &&
+      screenX < maxX - EDGE_THRESHOLD_PX
+    ) {
       return "move";
     }
 
@@ -86,21 +89,30 @@ export class ScrubController {
 
     if (state.isScrubbing) return "cursor-ew-resize";
 
-    if (state.startIndex === null || state.endIndex === null || screenX === null) {
+    if (
+      state.startIndex === null ||
+      state.endIndex === null ||
+      screenX === null
+    ) {
       return "cursor-crosshair";
     }
 
     const startX = xScale(state.startIndex);
     const endX = xScale(state.endIndex);
 
-    if (Math.abs(screenX - startX) <= EDGE_THRESHOLD_PX ||
-        Math.abs(screenX - endX) <= EDGE_THRESHOLD_PX) {
+    if (
+      Math.abs(screenX - startX) <= EDGE_THRESHOLD_PX ||
+      Math.abs(screenX - endX) <= EDGE_THRESHOLD_PX
+    ) {
       return "cursor-ew-resize";
     }
 
     const minX = Math.min(startX, endX);
     const maxX = Math.max(startX, endX);
-    if (screenX > minX + EDGE_THRESHOLD_PX && screenX < maxX - EDGE_THRESHOLD_PX) {
+    if (
+      screenX > minX + EDGE_THRESHOLD_PX &&
+      screenX < maxX - EDGE_THRESHOLD_PX
+    ) {
       return "cursor-grab";
     }
 
@@ -118,11 +130,15 @@ export class ScrubController {
       this.moveStartX = screenX;
       this.moveStartIndices = {
         start: state.startIndex!,
-        end: state.endIndex!
+        end: state.endIndex!,
       };
       this._state.update((s) => ({ ...s, isScrubbing: true }));
     } else if (this.mode === "create") {
-      this._state.set({ startIndex: index, endIndex: index, isScrubbing: true });
+      this._state.set({
+        startIndex: index,
+        endIndex: index,
+        isScrubbing: true,
+      });
     } else {
       this._state.update((s) => ({ ...s, isScrubbing: true }));
     }
@@ -170,8 +186,11 @@ export class ScrubController {
     }
 
     // Clear if selection is too small (single point click)
-    if (state.startIndex !== null && state.endIndex !== null &&
-        Math.abs(state.startIndex - state.endIndex) < 0.5) {
+    if (
+      state.startIndex !== null &&
+      state.endIndex !== null &&
+      Math.abs(state.startIndex - state.endIndex) < 0.5
+    ) {
       this.reset();
       return false;
     }
@@ -187,9 +206,10 @@ export class ScrubController {
     if (state.startIndex === null || state.endIndex === null) return false;
 
     const clickIndex = xScale.invert(screenX);
-    const [min, max] = state.startIndex < state.endIndex
-      ? [state.startIndex, state.endIndex]
-      : [state.endIndex, state.startIndex];
+    const [min, max] =
+      state.startIndex < state.endIndex
+        ? [state.startIndex, state.endIndex]
+        : [state.endIndex, state.startIndex];
 
     return clickIndex < min || clickIndex > max;
   }
