@@ -164,7 +164,7 @@
   let isLoading = false;
   let previewHeight = 300;
   let resizerMax = 600;
-  let mainAreaEl: HTMLDivElement;
+  let mainAreaEl: HTMLDivElement | undefined;
 
   onMount(() => {
     if (mainAreaEl) {
@@ -177,7 +177,7 @@
   // Resource status fields
   let whereError = true;
 
-  // Connector field for sql and glob
+  // Connector field for sql type
   let connector = "";
 
   $: host = $runtime.host || "http://localhost:9009";
@@ -381,7 +381,7 @@
 
         <!-- API Type Selector -->
         <div class="section">
-          <InputLabel label="API Type" />
+          <InputLabel id="api-type" label="API Type" />
           <div class="grid grid-cols-3 gap-2">
             {#each apiTypes as apiType}
               <button
@@ -404,7 +404,7 @@
         <div class="section">
           {#if currentType === "metrics_sql"}
             <div class="flex items-center justify-between">
-              <InputLabel label="Metrics SQL Query" />
+              <InputLabel id="metrics-sql-query" label="Metrics SQL Query" />
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild let:builder>
                   <Button type="text" compact small builders={[builder]}>
@@ -472,7 +472,10 @@
               your project.
             </p>
           {:else if currentType === "resource_status"}
-            <InputLabel label="Resource Status Options" />
+            <InputLabel
+              id="resource-status-options"
+              label="Resource Status Options"
+            />
             <div class="flex items-center gap-x-2 mt-1">
               <Checkbox
                 checked={whereError}
@@ -512,7 +515,7 @@
 
         <!-- Endpoint URL -->
         <div class="section">
-          <InputLabel label="Endpoint URL" />
+          <InputLabel id="endpoint-url" label="Endpoint URL" />
           <div
             class="flex items-center gap-x-2 px-3 py-2 bg-surface-muted rounded-[2px] border text-sm font-mono"
           >
@@ -524,7 +527,7 @@
         <!-- Arguments -->
         <div class="section">
           <div class="flex items-center justify-between">
-            <InputLabel label="Arguments" />
+            <InputLabel id="test-arguments" label="Arguments" />
             <Button type="text" compact onClick={addArg}>
               <PlusIcon size="14px" />
               Add
