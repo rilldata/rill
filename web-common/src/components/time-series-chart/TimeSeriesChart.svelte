@@ -41,7 +41,8 @@
         segStart = -1;
       }
     }
-    if (segStart !== -1) segments.push({ startIndex: segStart, endIndex: values.length - 1 });
+    if (segStart !== -1)
+      segments.push({ startIndex: segStart, endIndex: values.length - 1 });
     return segments;
   }
 
@@ -55,14 +56,18 @@
 
   // Direct path computation — no tweening
   $: primaryLinePath = primarySeries
-    ? lineGen(primarySeries.values) ?? ""
+    ? (lineGen(primarySeries.values) ?? "")
     : "";
   $: primaryAreaPath = primarySeries
-    ? areaGen(primarySeries.values) ?? ""
+    ? (areaGen(primarySeries.values) ?? "")
     : "";
 
-  $: primarySegments = primarySeries ? computeSegments(primarySeries.values) : [];
-  $: primarySingletons = primarySeries ? findSingletonIndices(primarySeries.values) : [];
+  $: primarySegments = primarySeries
+    ? computeSegments(primarySeries.values)
+    : [];
+  $: primarySingletons = primarySeries
+    ? findSingletonIndices(primarySeries.values)
+    : [];
 
   // Scrub clip region (index-based)
   $: scrubClipX =
@@ -91,7 +96,6 @@
       ? "var(--color-gray-50)"
       : primarySeries.areaGradient.light
     : "transparent";
-
 </script>
 
 <defs>
@@ -137,80 +141,86 @@
 </defs>
 
 <!-- Area fill for primary series -->
-  {#if primarySeries?.areaGradient}
-    <path
-      d={primaryAreaPath}
-      fill="url(#area-grad-{chartId})"
-      style="clip-path: url(#seg-clip-{chartId})"
-    />
-  {/if}
+{#if primarySeries?.areaGradient}
+  <path
+    d={primaryAreaPath}
+    fill="url(#area-grad-{chartId})"
+    style="clip-path: url(#seg-clip-{chartId})"
+  />
+{/if}
 
-  <!-- Secondary series -->
-  {#each series.slice(1) as s (s.id)}
+<!-- Secondary series -->
+{#each series.slice(1) as s (s.id)}
+  <path
+    d={lineGen(s.values) ?? ""}
+    stroke={hasScrubSelection ? "var(--color-gray-400)" : s.color}
+    stroke-width={s.strokeWidth ?? 1}
+    stroke-dasharray={s.strokeDasharray ?? "none"}
+    fill="none"
+    opacity={s.opacity ?? 1}
+  />
+  {#if hasScrubSelection && scrubStartIndex !== null && scrubEndIndex !== null}
     <path
       d={lineGen(s.values) ?? ""}
-      stroke={hasScrubSelection ? "var(--color-gray-400)" : s.color}
-      stroke-width={1}
+      stroke={s.color}
+      stroke-width={s.strokeWidth ?? 1}
       stroke-dasharray={s.strokeDasharray ?? "none"}
       fill="none"
       opacity={s.opacity ?? 1}
-    />
-    {#if hasScrubSelection && scrubStartIndex !== null && scrubEndIndex !== null}
-      <path
-        d={lineGen(s.values) ?? ""}
-        stroke={s.color}
-        stroke-width={1}
-        stroke-dasharray={s.strokeDasharray ?? "none"}
-        fill="none"
-        opacity={s.opacity ?? 1}
-        style="clip-path: url(#scrub-clip-{chartId})"
-      />
-    {/if}
-  {/each}
-
-  <!-- Primary line -->
-  {#if primarySeries}
-    <path
-      d={primaryLinePath}
-      stroke={primaryLineColor}
-      stroke-width={1}
-      fill="none"
-      style="clip-path: url(#seg-clip-{chartId})"
-    />
-
-    <!-- Singleton points -->
-    {#each primarySingletons as idx (idx)}
-      {@const v = primarySeries.values[idx] ?? 0}
-      <circle
-        cx={scales.x(idx)}
-        cy={scales.y(v)}
-        r={1.5}
-        fill={primaryLineColor}
-      />
-      <rect
-        x={scales.x(idx) - 0.75}
-        y={Math.min(scales.y(0), scales.y(v))}
-        width={1.5}
-        height={Math.abs(scales.y(0) - scales.y(v))}
-        fill={primaryLineColor}
-      />
-    {/each}
-  {/if}
-
-  <!-- Highlighted scrub region -->
-  {#if hasScrubSelection && scrubStartIndex !== null && scrubEndIndex !== null && primarySeries}
-    {#if primarySeries.areaGradient}
-      <path
-        d={areaGen(primarySeries.values) ?? ""}
-        fill="url(#scrub-area-grad-{chartId})"
-        style="clip-path: url(#scrub-clip-{chartId})"
-      />
-    {/if}
-    <path
-      d={lineGen(primarySeries.values) ?? ""}
-      stroke={primarySeries.color}
-      stroke-width={1}
-      fill="none"
       style="clip-path: url(#scrub-clip-{chartId})"
     />
   {/if}
+{/each}
+
+<!-- Primary line -->
+{#if primarySeries}
+  <path
+    d={primaryLinePath}
+    stroke={primaryLineColor}
+    stroke-width={primarySeries.strokeWidth ?? 1}
+    fill="none"
+    style="clip-path: url(#seg-clip-{chartId})"
+  />
+
+  <!-- Singleton points -->
+  {#each primarySingletons as idx (idx)}
+    {@const v = primarySeries.values[idx] ?? 0}
+    <circle
+      cx={scales.x(idx)}
+      cy={scales.y(v)}
+      r={1.5}
+      fill={primaryLineColor}
+    />
+    <rect
+      x={scales.x(idx) - 0.75}
+      y={Math.min(scales.y(0), scales.y(v))}
+      width={1.5}
+      height={Math.abs(scales.y(0) - scales.y(v))}
+      fill={primaryLineColor}
+    />
+  {/each}
+{/if}
+
+<!-- Highlighted scrub region -->
+{#if hasScrubSelection && scrubStartIndex !== null && scrubEndIndex !== null && primarySeries}
+  {#if primarySeries.areaGradient}
+    <path
+      d={areaGen(primarySeries.values) ?? ""}
+      fill="url(#scrub-area-grad-{chartId})"
+      style="clip-path: url(#scrub-clip-{chartId})"
+    />
+  {/if}
+  <path
+    d={lineGen(primarySeries.values) ?? ""}
+    stroke={primarySeries.color}
+    stroke-width={1}
+    fill="none"
+    style="clip-path: url(#scrub-clip-{chartId})"
+  />
+{/if}
+
+<style lang="postcss">
+  * {
+    @apply pointer-events-none;
+  }
+</style>

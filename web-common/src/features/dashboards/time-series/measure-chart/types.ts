@@ -92,6 +92,8 @@ export interface HoverState {
   index: number | null;
   /** Screen x coordinate */
   screenX: number | null;
+  /** Screen y coordinate */
+  screenY: number | null;
   /** Is mouse currently over the chart */
   isHovered: boolean;
 }
@@ -155,15 +157,17 @@ export interface ChartSeries {
   values: (number | null)[];
   /** Stroke/fill color */
   color: string;
-  /** Dash pattern for the stroke, e.g. "4,4" for comparison lines */
+  /** Dash pattern for the stroke */
   strokeDasharray?: string;
   /** Opacity override (default 1) */
   opacity?: number;
   /** Area gradient colors — only the first/primary series typically gets this */
   areaGradient?: { dark: string; light: string };
+  /** Stroke width */
+  strokeWidth?: number;
 }
 
 /**
  * Rendering mode for TimeSeriesChart.
  */
-export type ChartMode = "line" | "bar" | "stacked-bar";
+export type ChartMode = "line" | "bar";

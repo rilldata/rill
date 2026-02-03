@@ -1,26 +1,24 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { writable, type Readable, type Writable } from "svelte/store";
+  import { writable, get, type Readable, type Writable } from "svelte/store";
   import type {
     TimeSeriesPoint,
     DimensionSeriesData,
-    ChartScales,
-    PlotBounds,
     ChartSeries,
     ChartMode,
+    HoverState,
   } from "./types";
   import {
     computeChartConfig,
     computeYExtent,
     computeNiceYExtent,
   } from "./scales";
-  import {
-    createChartInteractions,
-    createVisibilityObserver,
-  } from "./interactions";
+  import { createVisibilityObserver, EMPTY_HOVER } from "./interactions";
+  import { ScrubController } from "./ScrubController";
   import TimeSeriesChart from "@rilldata/web-common/components/time-series-chart/TimeSeriesChart.svelte";
   import BarChart from "@rilldata/web-common/components/time-series-chart/BarChart.svelte";
   import MeasureChartTooltip from "./MeasureChartTooltip.svelte";
+  import MeasureChartHoverTooltip from "./MeasureChartHoverTooltip.svelte";
   import MeasureChartScrub from "./MeasureChartScrub.svelte";
   import MeasurePan from "./MeasurePan.svelte";
   import ExplainButton from "./ExplainButton.svelte";
@@ -64,6 +62,9 @@
   import MeasureChartAnnotationMarkers from "./MeasureChartAnnotationMarkers.svelte";
   import MeasureChartAnnotationPopover from "./MeasureChartAnnotationPopover.svelte";
   import { measureSelection } from "../measure-selection/measure-selection";
+  import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
+  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
 
   const Y_DASH_ARRAY = "1,1";
   const X_PAD = 8;
@@ -77,10 +78,8 @@
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
-  export let adjustedTimeStart: string | undefined = undefined;
-  export let adjustedTimeEnd: string | undefined = undefined;
-  export let primaryTimeStart: DateTime | undefined = undefined;
-  export let primaryTimeEnd: DateTime | undefined = undefined;
+  export let timeStart: string | undefined = undefined;
+  export let timeEnd: string | undefined = undefined;
   export let comparisonTimeStart: string | undefined = undefined;
   export let comparisonTimeEnd: string | undefined = undefined;
   export let timeGranularity: V1TimeGrain | undefined = undefined;
@@ -114,31 +113,21 @@
     undefined;
   export let onPanLeft: (() => void) | undefined = undefined;
   export let onPanRight: (() => void) | undefined = undefined;
+  export let scrubController: ScrubController;
 
   let container: HTMLDivElement;
   let clientWidth = 425;
   let unobserve: (() => void) | undefined;
   let tddIsScrubbing = false;
-  let prevScrubbing = false;
   let hoveredAnnotationGroup: AnnotationGroup | null = null;
   let annotationPopoverHovered = false;
   let mouseDownX: number | null = null;
   let mouseDownY: number | null = null;
-  let suppressScrubClear = false;
+  let mousePageX: number | null = null;
+  let mousePageY: number | null = null;
+  let wasDragging = false; // Track if we just finished a drag (to skip click handler)
 
-  const visibleRangeStore = writable<[number, number]>([0, 0]);
-  const scalesStore = writable<ChartScales>({
-    x: scaleLinear(),
-    y: scaleLinear(),
-  });
-  const plotBoundsStore = writable<PlotBounds>({
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: 0,
-    height: 0,
-  });
+  const hoverState = writable<HoverState>(EMPTY_HOVER);
 
   onMount(() => {
     if (container) unobserve = observe(container);
@@ -157,14 +146,14 @@
       measureNames: [measureName],
       where,
       timeDimension,
-      timeStart: adjustedTimeStart,
-      timeEnd: adjustedTimeEnd,
+      timeStart,
+      timeEnd,
       timeGranularity,
       timeZone,
     },
     {
       query: {
-        enabled: $visible && ready && !!adjustedTimeStart,
+        enabled: $visible && ready && !!timeStart,
         placeholderData: keepPreviousData,
         refetchOnMount: false,
       },
@@ -224,11 +213,11 @@
         dimensionValues,
         dimensionWhere,
         timeDimension!,
-        adjustedTimeStart,
-        adjustedTimeEnd,
+        timeStart,
+        timeEnd,
         timeGranularity!,
         timeZone,
-        $visible && ready && !!adjustedTimeStart,
+        $visible && ready && !!timeStart,
       )
     : undefined;
 
@@ -278,27 +267,22 @@
     !!dimIsFetching;
 
   // Chart series & mode
+  $: mode = determineMode(data, dimensionData);
   $: chartSeries = buildChartSeries(data, dimensionData, showComparison);
 
-  $: {
-    if (mode === "bar" && chartSeries.length === 2) {
-      chartSeries[1] = { ...chartSeries[1], opacity: 0.4 };
-    }
-  }
-
-  $: mode = determineMode(data, dimensionData) as ChartMode;
+  // For bar mode with time comparison, reverse order so comparison bar is on left
+  $: barSeries =
+    mode === "bar" && showComparison && chartSeries.length === 2
+      ? [chartSeries[1], chartSeries[0]]
+      : chartSeries;
 
   // Y extent & scales
   $: yRawExtent = computeYExtent(data, dimensionData, showComparison);
   $: [yMin, yMax] = computeNiceYExtent(yRawExtent[0], yRawExtent[1]);
 
-  // Visible range
-  $: visibleStart = computeVisibleStart(data, primaryTimeStart);
-  $: visibleEnd = computeVisibleEnd(data, primaryTimeEnd);
-
-  // X/Y scales
-  $: barSlotWidth =
-    config.plotBounds.width / Math.max(1, visibleEnd - visibleStart + 1);
+  // X/Y scales - domain is always [0, dataLength-1]
+  $: dataLastIndex = Math.max(0, data.length - 1);
+  $: barSlotWidth = config.plotBounds.width / Math.max(1, data.length);
   $: xRangeStart =
     mode === "line"
       ? config.plotBounds.left + X_PAD
@@ -308,7 +292,7 @@
       ? config.plotBounds.left + config.plotBounds.width - X_PAD
       : config.plotBounds.left + config.plotBounds.width - barSlotWidth / 2;
   $: xScale = scaleLinear<number>()
-    .domain([visibleStart, visibleEnd])
+    .domain([0, dataLastIndex])
     .range([xRangeStart, xRangeEnd]);
   $: yScale = scaleLinear<number>()
     .domain([yMin, yMax])
@@ -319,62 +303,32 @@
   $: scales = { x: xScale, y: yScale };
   $: yTicks = yScale.ticks(3);
 
-  // Sync stores for interactions
-  $: visibleRangeStore.set([visibleStart, visibleEnd]);
-  $: scalesStore.set(scales);
-  $: plotBoundsStore.set(config.plotBounds);
+  // Keep scrub controller in sync with data length
+  $: scrubController.setDataLength(data.length);
 
-  $: ({
-    state: interactionState,
-    handlers,
-    resetScrub,
-  } = createChartInteractions(scalesStore, visibleRangeStore, plotBoundsStore));
+  // Subscribe to scrub state from controller for rendering
+  $: scrubStateStore = scrubController.state;
+  $: currentScrubState = $scrubStateStore;
+  $: isScrubbing = currentScrubState.isScrubbing;
 
-  // Scrub state
-  $: localScrubStartIndex = $interactionState.scrub.startIndex;
-  $: localScrubEndIndex = $interactionState.scrub.endIndex;
-  $: isScrubbing = $interactionState.scrub.isScrubbing;
+  // Scrub indices: use local (active) state while scrubbing, external (URL) state otherwise
   $: externalScrubStartIndex = scrubRange
     ? dateToIndex(data, scrubRange.start)
     : null;
   $: externalScrubEndIndex = scrubRange
     ? dateToIndex(data, scrubRange.end)
     : null;
-  $: scrubStartIndex = localScrubStartIndex ?? externalScrubStartIndex;
-  $: scrubEndIndex = localScrubEndIndex ?? externalScrubEndIndex;
+  $: scrubStartIndex = currentScrubState.startIndex ?? externalScrubStartIndex;
+  $: scrubEndIndex = currentScrubState.endIndex ?? externalScrubEndIndex;
   $: hasScrubSelection = scrubStartIndex !== null && scrubEndIndex !== null;
 
-  $: if (!scrubRange) {
-    resetScrub();
-  }
-
-  // Scrub end sync: fire onScrub only when scrubbing ends
-  $: {
-    const scrub = $interactionState.scrub;
-    if (prevScrubbing && !scrub.isScrubbing) {
-      const newStart = indexToDateTime(scrub.startIndex);
-      const newEnd = indexToDateTime(scrub.endIndex);
-      if (newStart && newEnd) {
-        onScrub?.({ start: newStart, end: newEnd, isScrubbing: false });
-        if (measureName) {
-          const s = newStart.toJSDate();
-          const e = newEnd.toJSDate();
-          const [start, end] = s < e ? [s, e] : [e, s];
-          measureSelection.setRange(measureName, start, end);
-        }
-      } else if (!suppressScrubClear) {
-        onScrubClear?.();
-      }
-      suppressScrubClear = false;
-    }
-    prevScrubbing = scrub.isScrubbing;
-  }
-
-  // Hover state
-  $: localHoveredIndex = $interactionState.bisectedPoint.index;
-  $: isLocallyHovered =
-    $interactionState.hover.isHovered && localHoveredIndex >= 0;
-  $: cursorStyle = $interactionState.cursorStyle;
+  // Hover state - snap to nearest data index
+  $: localHoveredIndex =
+    $hoverState.index !== null
+      ? Math.max(0, Math.min(data.length - 1, Math.round($hoverState.index)))
+      : -1;
+  $: isLocallyHovered = $hoverState.isHovered && localHoveredIndex >= 0;
+  $: cursorStyle = scrubController.getCursorStyle($hoverState.screenX, xScale);
   $: sharedHoverIndex.set(isLocallyHovered ? localHoveredIndex : undefined);
   $: onHover?.(
     isLocallyHovered
@@ -412,7 +366,7 @@
       )
     : [];
 
-  // Dimension tooltip
+  // Tooltip data
   $: isComparingDimension = dimensionData.length > 0;
   $: dimTooltipEntries =
     isComparingDimension && hoveredIndex >= 0
@@ -425,6 +379,21 @@
           .filter((e) => e.value !== null)
           .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
       : [];
+
+  // Time comparison delta
+  $: tooltipCurrentValue = hoveredPoint?.value ?? null;
+  $: tooltipComparisonValue = hoveredPoint?.comparisonValue ?? null;
+  $: tooltipDelta =
+    tooltipCurrentValue !== null &&
+    tooltipComparisonValue !== null &&
+    tooltipComparisonValue !== 0
+      ? (tooltipCurrentValue - tooltipComparisonValue) / tooltipComparisonValue
+      : null;
+  $: tooltipDeltaLabel =
+    tooltipDelta !== null
+      ? numberPartsToString(formatMeasurePercentageDifference(tooltipDelta))
+      : null;
+  $: tooltipDeltaPositive = tooltipDelta !== null && tooltipDelta >= 0;
 
   // Explain CTA positioning
   $: isThisMeasureSelected = $selMeasure === measureName;
@@ -461,11 +430,13 @@
         values: dim.data.map((pt) => pt.value),
         color: dim.color || COMPARIONS_COLORS[i % COMPARIONS_COLORS.length],
         opacity: dim.isFetching ? 0.5 : 1,
+        strokeWidth: 1.5,
       }));
     }
 
     const result: ChartSeries[] = [];
 
+    // Primary series first (gets area fill in line mode, right bar in grouped bar mode)
     if (d.length > 0) {
       result.push({
         id: "primary",
@@ -478,11 +449,13 @@
       });
     }
 
+    // Comparison series second (lighter line, left bar in grouped bar mode)
     if (comparison && d.length > 0) {
       result.push({
         id: "comparison",
         values: d.map((pt) => pt.comparisonValue ?? null),
         color: TimeComparisonLineColor,
+        opacity: 0.5,
       });
     }
 
@@ -493,33 +466,9 @@
     d: TimeSeriesPoint[],
     dimData: DimensionSeriesData[],
   ): ChartMode {
-    if (d.length >= 14) return "line";
-    if (dimData.length > 0) return "stacked-bar";
+    if (d.length >= 6) return "line";
+    if (dimData.length > 0) return "bar";
     return "bar";
-  }
-
-  function computeVisibleStart(
-    d: TimeSeriesPoint[],
-    start: DateTime | undefined,
-  ): number {
-    if (!start || d.length === 0) return 0;
-    const ms = start.toMillis();
-    for (let i = 0; i < d.length; i++) {
-      if (d[i].ts.toMillis() >= ms) return i;
-    }
-    return 0;
-  }
-
-  function computeVisibleEnd(
-    d: TimeSeriesPoint[],
-    end: DateTime | undefined,
-  ): number {
-    if (!end || d.length === 0) return Math.max(0, d.length - 1);
-    const ms = end.toMillis();
-    for (let i = d.length - 1; i >= 0; i--) {
-      if (d[i].ts.toMillis() < ms) return i;
-    }
-    return Math.max(0, d.length - 1);
   }
 
   function indexToDateTime(idx: number | null): DateTime | null {
@@ -559,7 +508,7 @@
 
   function handleReset() {
     onScrubClear?.();
-    resetScrub();
+    scrubController.reset();
   }
 
   function handleTddHover(
@@ -612,45 +561,89 @@
   }
 
   function handleSvgMouseLeave() {
-    handlers.onMouseLeave();
+    hoverState.set(EMPTY_HOVER);
+    mousePageX = null;
+    mousePageY = null;
     if (!annotationPopoverHovered) {
       hoveredAnnotationGroup = null;
     }
   }
 
   function handleMouseDown(e: MouseEvent) {
+    if (e.button !== 0) return;
     mouseDownX = e.clientX;
     mouseDownY = e.clientY;
-    handlers.onMouseDown(e);
+    const x = Math.max(
+      config.plotBounds.left,
+      Math.min(config.plotBounds.left + config.plotBounds.width, e.offsetX),
+    );
+    scrubController.start(x, xScale);
   }
 
   function handleMouseUp(e: MouseEvent) {
+    // Check if this was a click (minimal mouse movement) vs a drag
     const wasClick =
       mouseDownX !== null &&
       mouseDownY !== null &&
       Math.abs(e.clientX - mouseDownX) < 4 &&
       Math.abs(e.clientY - mouseDownY) < 4;
 
-    if (wasClick) suppressScrubClear = true;
+    // Track if this was a drag to prevent click handler from also firing
+    wasDragging = !wasClick;
 
-    handlers.onMouseUp(e);
+    // Get current scrub state BEFORE calling end() which might reset it
+    const scrubState = get(scrubController.state);
+    const startIndex = scrubState.startIndex;
+    const endIndex = scrubState.endIndex;
+
+    // Calculate clicked index for single-point selection
+    const clickedX = Math.max(
+      config.plotBounds.left,
+      Math.min(config.plotBounds.left + config.plotBounds.width, e.offsetX),
+    );
+    const clickedIndex = Math.max(
+      0,
+      Math.min(data.length - 1, Math.round(xScale.invert(clickedX))),
+    );
+
+    // Finalize the scrub interaction
+    const selectionKept = scrubController.end();
     mouseDownX = null;
     mouseDownY = null;
 
-    if (!wasClick || !measureName) return;
+    // If we weren't scrubbing, nothing to sync
+    if (!scrubState.isScrubbing) {
+      return;
+    }
 
-    const scrub = $interactionState.scrub;
-    const hasSubrangeSelected =
-      scrub.startIndex !== null && scrub.endIndex !== null;
-
-    if (!hasSubrangeSelected) {
-      if (hoveredIndex < 0) return;
-      const pt = data[hoveredIndex];
-      if (pt?.ts?.isValid) {
-        resetScrub();
-        onScrubClear?.();
-        measureSelection.setStart(measureName, pt.ts.toJSDate());
+    if (selectionKept && startIndex !== null && endIndex !== null) {
+      // Valid range selection - sync to parent
+      const startDt = indexToDateTime(startIndex);
+      const endDt = indexToDateTime(endIndex);
+      if (startDt && endDt) {
+        onScrub?.({ start: startDt, end: endDt, isScrubbing: false });
+        if (measureName) {
+          const s = startDt.toJSDate();
+          const e2 = endDt.toJSDate();
+          const [start, end] = s < e2 ? [s, e2] : [e2, s];
+          measureSelection.setRange(measureName, start, end);
+        }
+        // Clear controller's local state - the selection will now come from scrubRange prop
+        // This ensures external clearing (e.g., "Clear Filters") works properly
+        scrubController.reset();
       }
+    } else if (wasClick && measureName) {
+      // Single point click - set point selection
+      if (clickedIndex >= 0 && clickedIndex < data.length) {
+        const pt = data[clickedIndex];
+        if (pt?.ts?.isValid) {
+          onScrubClear?.();
+          measureSelection.setStart(measureName, pt.ts.toJSDate());
+        }
+      }
+    } else {
+      // Drag that ended at same point - just clear
+      onScrubClear?.();
     }
   }
 
@@ -658,25 +651,42 @@
     e.stopPropagation();
     e.preventDefault();
 
-    const scrub = $interactionState.scrub;
-    if (
-      scrub.startIndex !== null &&
-      scrub.endIndex !== null &&
-      !scrub.isScrubbing
-    ) {
-      handlers.onClick(e);
-      const updatedScrub = $interactionState.scrub;
-      if (updatedScrub.startIndex === null) {
-        measureSelection.clear();
-      } else if (measureName) {
-        const startDt = indexToDateTime(updatedScrub.startIndex);
-        const endDt = indexToDateTime(updatedScrub.endIndex);
-        if (startDt && endDt) {
-          const s = startDt.toJSDate();
-          const e2 = endDt.toJSDate();
-          const [start, end] = s < e2 ? [s, e2] : [e2, s];
-          measureSelection.setRange(measureName, start, end);
-        }
+    // Skip if we just finished a drag - only handle actual clicks
+    if (wasDragging) {
+      wasDragging = false;
+      return;
+    }
+
+    // Use visual scrub indices (which may come from controller OR external scrubRange)
+    if (scrubStartIndex === null || scrubEndIndex === null || isScrubbing) {
+      return;
+    }
+
+    const x = Math.max(
+      config.plotBounds.left,
+      Math.min(config.plotBounds.left + config.plotBounds.width, e.offsetX),
+    );
+    const clickIndex = xScale.invert(x);
+    const [minIdx, maxIdx] =
+      scrubStartIndex < scrubEndIndex
+        ? [scrubStartIndex, scrubEndIndex]
+        : [scrubEndIndex, scrubStartIndex];
+    const isOutside = clickIndex < minIdx || clickIndex > maxIdx;
+
+    if (isOutside) {
+      // Click outside selection clears it
+      scrubController.reset();
+      onScrubClear?.();
+      measureSelection.clear();
+    } else if (measureName) {
+      // Click inside - ensure measureSelection matches the scrub
+      const startDt = indexToDateTime(scrubStartIndex);
+      const endDt = indexToDateTime(scrubEndIndex);
+      if (startDt && endDt) {
+        const s = startDt.toJSDate();
+        const e2 = endDt.toJSDate();
+        const [start, end] = s < e2 ? [s, e2] : [e2, s];
+        measureSelection.setRange(measureName, start, end);
       }
     }
   }
@@ -725,8 +735,28 @@
       class="size w-full overflow-visible"
       height="{height}px"
       on:mousemove={(e) => {
-        handlers.onMouseMove(e);
+        // Clamp x to plot bounds
+        const x = Math.max(
+          config.plotBounds.left,
+          Math.min(config.plotBounds.left + config.plotBounds.width, e.offsetX),
+        );
+        const fractionalIndex = xScale.invert(x);
+
+        hoverState.set({
+          index: fractionalIndex,
+          screenX: x,
+          screenY: e.offsetY,
+          isHovered: true,
+        });
+
+        // Update scrub if dragging
+        if (get(scrubController.state).isScrubbing) {
+          scrubController.update(x, xScale);
+        }
+
         checkAnnotationHover(e);
+        mousePageX = e.pageX;
+        mousePageY = e.pageY;
       }}
       on:mouseleave={handleSvgMouseLeave}
       on:mousedown={handleMouseDown}
@@ -788,13 +818,13 @@
           />
         {:else}
           <BarChart
-            series={chartSeries}
+            series={barSeries}
             yScale={scales.y}
-            stacked={mode === "stacked-bar"}
+            stacked={false}
             plotLeft={config.plotBounds.left}
             plotWidth={config.plotBounds.width}
-            {visibleStart}
-            {visibleEnd}
+            visibleStart={0}
+            visibleEnd={dataLastIndex}
             {scrubStartIndex}
             {scrubEndIndex}
           />
@@ -807,12 +837,61 @@
           {config}
           {hoveredIndex}
           {hoveredPoint}
-          timeGrain={timeGranularity}
           {dimensionData}
           {showComparison}
           isComparingDimension={dimensionData.length > 0}
+          isBarMode={mode === "bar"}
+          visibleStart={0}
+          visibleEnd={dataLastIndex}
           formatter={valueFormatter}
         />
+      {/if}
+
+      <!-- Data readout in top-left corner (only for non-hovered charts, not in dimension comparison) -->
+      {#if !isScrubbing && hoveredPoint && !isLocallyHovered && !isComparingDimension}
+        {@const showDelta =
+          showComparison &&
+          tooltipComparisonValue !== null &&
+          tooltipDeltaLabel}
+        <g class="data-readout">
+          <!-- Date -->
+          <text
+            class="fill-fg-muted stroke-surface-background text-[10px]"
+            style:paint-order="stroke"
+            stroke-width="3px"
+            x={config.plotBounds.left + 6}
+            y={config.plotBounds.top + 10}
+          >
+            {formatDateTimeByGrain(hoveredPoint.ts, timeGranularity)}
+          </text>
+
+          <!-- Value (with comparison on same line if applicable) -->
+          <text
+            class="stroke-surface-background text-[12px]"
+            style:paint-order="stroke"
+            stroke-width="3px"
+            x={config.plotBounds.left + 6}
+            y={config.plotBounds.top + 24}
+          >
+            <tspan class="fill-theme-700 font-semibold"
+              >{valueFormatter(tooltipCurrentValue)}</tspan
+            >
+            {#if showComparison}
+              <tspan class="fill-fg-muted">
+                vs {valueFormatter(tooltipComparisonValue)}</tspan
+              >
+              {#if showDelta}
+                <tspan
+                  class={tooltipDeltaPositive
+                    ? "fill-green-600"
+                    : "fill-red-600"}
+                >
+                  ({tooltipDeltaPositive ? "+" : ""}{tooltipDeltaLabel})
+                </tspan>
+              {/if}
+            {/if}
+          </text>
+        </g>
       {/if}
 
       <!-- Single-point selection indicator -->
@@ -859,26 +938,22 @@
       {/if}
     </svg>
 
-    <!-- Floating dimension comparison tooltip (HTML, positioned inside chart container) -->
-    {#if !isScrubbing && isComparingDimension && isLocallyHovered && hoveredPoint && dimTooltipEntries.length > 0}
-      {@const tooltipX = scales.x(hoveredIndex) + 10}
-      {@const tooltipY = config.plotBounds.top + config.plotBounds.height / 2}
-      <div
-        class="w-fit text-[10px] font-semibold flex flex-col z-10 shadow-sm bg-surface-subtle text-fg-secondary -translate-y-1/2 py-0.5 border rounded-sm px-1 absolute pointer-events-none"
-        style:top="{tooltipY}px"
-        style:left="{tooltipX}px"
-      >
-        {#each dimTooltipEntries as entry (entry.label)}
-          <div class="flex gap-x-1 items-center">
-            <span
-              class="size-[6.5px] rounded-full"
-              style:background-color={entry.color}
-            />
-            <span>{entry.label}:</span>
-            <span>{valueFormatter(entry.value)}</span>
-          </div>
-        {/each}
-      </div>
+    <!-- Floating tooltip - only shown in comparison modes -->
+    {#if !isScrubbing && isLocallyHovered && hoveredPoint && mousePageX !== null && mousePageY !== null && (showComparison || isComparingDimension)}
+      <MeasureChartHoverTooltip
+        mouseX={mousePageX}
+        mouseY={mousePageY}
+        currentValue={tooltipCurrentValue}
+        comparisonValue={tooltipComparisonValue}
+        currentTs={hoveredPoint.ts}
+        comparisonTs={hoveredPoint.comparisonTs}
+        {timeGranularity}
+        {isComparingDimension}
+        {dimTooltipEntries}
+        deltaLabel={tooltipDeltaLabel}
+        deltaPositive={tooltipDeltaPositive}
+        formatter={valueFormatter}
+      />
     {/if}
 
     {#if annotationGroups.length > 0}

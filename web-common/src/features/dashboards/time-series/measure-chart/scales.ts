@@ -19,7 +19,7 @@ interface ExtentConfig {
  */
 const DEFAULT_EXTENT_CONFIG: ExtentConfig = {
   includeZero: true,
-  paddingFactor: 6 / 5, // 20% padding on the upper bound
+  paddingFactor: 1.3,
 };
 
 /**
@@ -170,7 +170,7 @@ export function computeChartConfig(
   isExpanded: boolean,
 ): ChartConfig {
   const margin = {
-    top: 4,
+    top: 4, // Space for data readout labels
     right: 40,
     bottom: isExpanded ? 25 : 10,
     left: 0,

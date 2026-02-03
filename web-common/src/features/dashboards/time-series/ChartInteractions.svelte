@@ -117,6 +117,7 @@
   }
 
   function zoomScrub() {
+    console.log("zoom");
     if (
       selectedScrubRange?.start instanceof Date &&
       selectedScrubRange?.end instanceof Date

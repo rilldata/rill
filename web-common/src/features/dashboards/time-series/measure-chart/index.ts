@@ -32,10 +32,12 @@ export {
 } from "./scales";
 
 export {
-  createChartInteractions,
   createVisibilityObserver,
+  createHoverState,
   getOrderedDates,
 } from "./interactions";
+
+export { ScrubController } from "./ScrubController";
 
 // Data fetching hooks
 export {

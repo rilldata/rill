@@ -1,17 +1,12 @@
 <script lang="ts">
   import { tweened } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
-  import { fly } from "svelte/transition";
   import type {
     TimeSeriesPoint,
     DimensionSeriesData,
     ChartScales,
     ChartConfig,
   } from "./types";
-  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
-  import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import MeasureChartPointIndicator from "./MeasureChartPointIndicator.svelte";
 
   export let scales: ChartScales;
@@ -21,32 +16,33 @@
   export let dimensionData: DimensionSeriesData[] = [];
   export let showComparison: boolean = false;
   export let isComparingDimension: boolean = false;
-  export let timeGrain: V1TimeGrain | undefined;
+  export let isBarMode: boolean = false;
+  export let visibleStart: number = 0;
+  export let visibleEnd: number = 0;
   export let formatter: (value: number | null) => string;
 
-  const arrowStrokeWidth = 2;
-  const arrowColorClass = "stroke-gray-400";
+  $: visibleCount = Math.max(1, visibleEnd - visibleStart + 1);
+  $: slotWidth = config.plotBounds.width / visibleCount;
+  $: gap = slotWidth * 0.2;
+  $: bandWidth = slotWidth - gap;
+
+  // Bar count: dimension comparison uses dimensionData.length, time comparison uses 2
+  $: barCount = isComparingDimension
+    ? dimensionData.length
+    : (showComparison ? 2 : 1);
+  $: barGap = barCount > 1 ? 2 : 0;
+  $: totalGaps = barGap * (barCount - 1);
+  $: singleBarWidth = (bandWidth - totalGaps) / barCount;
+
+  // Slot center for bar positioning
+  $: slot = hoveredIndex - visibleStart;
+  $: slotCenterX = config.plotBounds.left + (slot + 0.5) * slotWidth;
 
   $: y = hoveredPoint?.value ?? null;
   $: comparisonY = hoveredPoint?.comparisonValue ?? null;
-
+  $: currentPointIsNull = y === null;
   $: hasValidComparisonPoint =
     comparisonY !== undefined && comparisonY !== null;
-  $: diff =
-    y !== null &&
-    y !== undefined &&
-    comparisonY !== null &&
-    comparisonY !== undefined &&
-    comparisonY !== 0
-      ? (y - comparisonY) / comparisonY
-      : NaN;
-  $: comparisonIsPositive = diff >= 0;
-  $: isDiffValid = !isNaN(diff);
-  $: diffLabel =
-    isDiffValid && numberPartsToString(formatMeasurePercentageDifference(diff));
-
-  $: currentPointIsNull = y === null;
-  $: comparisonPointIsNull = comparisonY === null || comparisonY === undefined;
 
   // Tweened pixel positions
   const tweenedX = tweened(0, { duration: 25, easing: cubicOut });
@@ -58,57 +54,30 @@
   $: if (comparisonY !== null && comparisonY !== undefined) {
     tweenedComparisonY.set(scales.y(comparisonY));
   }
-
-  $: labelX = config.plotBounds.left + 6;
-  $: labelY = config.plotBounds.top + 10;
-
-  // Label spacing for comparison mode — push labels apart when they're too close
-  $: minLabelGap = 12;
-  $: rawPrimaryLabelY = $tweenedY + 4;
-  $: rawCompLabelY = $tweenedComparisonY + 4;
-  $: labelGap = Math.abs(rawPrimaryLabelY - rawCompLabelY);
-  $: needsSpacing = labelGap < minLabelGap;
-  $: midY = (rawPrimaryLabelY + rawCompLabelY) / 2;
-  $: primaryLabelY = needsSpacing
-    ? rawPrimaryLabelY <= rawCompLabelY
-      ? midY - minLabelGap / 2
-      : midY + minLabelGap / 2
-    : rawPrimaryLabelY;
-  $: compLabelY = needsSpacing
-    ? rawCompLabelY <= rawPrimaryLabelY
-      ? midY - minLabelGap / 2
-      : midY + minLabelGap / 2
-    : rawCompLabelY;
 </script>
 
 {#if hoveredPoint}
-  <!-- Time label -->
-  <g transition:fly={{ duration: 100, x: -4 }}>
-    <text
-      class="fill-fg-secondary stroke-surface-background text-xs"
-      style:paint-order="stroke"
-      stroke-width="3px"
-      x={labelX}
-      y={labelY}
-    >
-      {formatDateTimeByGrain(hoveredPoint.ts, timeGrain)}
-    </text>
-    {#if showComparison && hoveredPoint.comparisonTs}
-      <text
-        style:paint-order="stroke"
-        stroke-width="3px"
-        class="fill-fg-muted stroke-surface-background text-xs"
-        x={labelX}
-        y={labelY + 14}
-      >
-        {formatDateTimeByGrain(hoveredPoint.comparisonTs, timeGrain)} prev.
-      </text>
-    {/if}
-  </g>
+  <!-- Primary point indicator (hidden in comparison modes) -->
+  {#if !currentPointIsNull && !isComparingDimension && !showComparison}
+    <MeasureChartPointIndicator
+      x={$tweenedX}
+      y={$tweenedY}
+      zeroY={scales.y(0)}
+      value={formatter(y ?? null)}
+    />
+  {/if}
 
-  <!-- Vertical line from zero to point (hidden in dimension comparison mode) -->
-  {#if !currentPointIsNull && !isComparingDimension}
-    <MeasureChartPointIndicator x={$tweenedX} y={$tweenedY} zeroY={scales.y(0)} value={formatter(y ?? null)} />
+  <!-- Time comparison: primary point circle (right bar, index 1) -->
+  {#if !isComparingDimension && showComparison && !currentPointIsNull}
+    {@const primaryBarX = isBarMode
+      ? slotCenterX - bandWidth / 2 + (singleBarWidth + barGap) + singleBarWidth / 2
+      : $tweenedX}
+    <circle
+      cx={primaryBarX}
+      cy={$tweenedY}
+      r={4}
+      class="fill-theme-500 stroke-surface-background stroke-[1.5px]"
+    />
   {/if}
 
   <!-- Dimension comparison: guideline + per-series point circles -->
@@ -122,11 +91,14 @@
       stroke-width="1"
       stroke-dasharray="2,2"
     />
-    {#each dimensionData as dim}
+    {#each dimensionData as dim, i (i)}
       {@const pt = dim.data[hoveredIndex]}
+      {@const barX = isBarMode
+        ? slotCenterX - bandWidth / 2 + i * (singleBarWidth + barGap) + singleBarWidth / 2
+        : $tweenedX}
       {#if pt?.value !== null && pt?.value !== undefined}
         <circle
-          cx={$tweenedX}
+          cx={barX}
           cy={scales.y(pt.value)}
           r={4}
           fill={dim.color}
@@ -136,155 +108,22 @@
     {/each}
   {/if}
 
-  {#if !isComparingDimension}
-    <g>
-      <!-- Comparison: arrow between points -->
-      {#if showComparison && hasValidComparisonPoint && !comparisonPointIsNull && currentPointIsNull}
-        <!-- Null current value with valid comparison -->
-        <circle
-          cx={$tweenedX}
-          cy={$tweenedComparisonY}
-          r={3}
-          class="fill-theme-300"
-        />
-        <g class="text-xs">
-          <text
-            class="fill-fg-muted stroke-surface-background italic"
-            style:paint-order="stroke"
-            stroke-width="3px"
-            x={$tweenedX + 8}
-            y={$tweenedComparisonY - 8}
-          >
-            no current data
-          </text>
-          <text
-            class="fill-fg-muted stroke-surface-background"
-            style:paint-order="stroke"
-            stroke-width="3px"
-            x={$tweenedX + 8}
-            y={$tweenedComparisonY + 4}
-          >
-            {formatter(comparisonY ?? null)} prev.
-          </text>
-        </g>
-      {:else if showComparison && hasValidComparisonPoint && !currentPointIsNull && !comparisonPointIsNull}
-        {@const yDiff = Math.abs($tweenedY - $tweenedComparisonY)}
-        {#if yDiff > 8}
-          {@const bufferSize = yDiff > 16 ? 8 : 4}
-          {@const sign = comparisonIsPositive ? 1 : -1}
-          {@const yBuffer = sign * bufferSize}
-
-          <line
-            x1={$tweenedX}
-            x2={$tweenedX}
-            y1={$tweenedY + yBuffer}
-            y2={$tweenedComparisonY - yBuffer}
-            class="stroke-surface-background"
-            stroke-width={arrowStrokeWidth + 3}
-            stroke-linecap="round"
-          />
-          <!-- Arrow line -->
-          <line
-            x1={$tweenedX}
-            x2={$tweenedX}
-            y1={$tweenedY + yBuffer}
-            y2={$tweenedComparisonY - yBuffer}
-            class={arrowColorClass}
-            stroke-width={arrowStrokeWidth}
-            stroke-linecap="round"
-          />
-
-          <!-- Arrow head -->
-          {#if yDiff > 16}
-            {@const yLoc = $tweenedY + bufferSize * sign}
-            {@const dist = 3}
-            {@const signedDist = sign * dist}
-            <line
-              x1={$tweenedX}
-              x2={$tweenedX + dist}
-              y1={yLoc}
-              y2={yLoc + signedDist}
-              class={arrowColorClass}
-              stroke-width={arrowStrokeWidth}
-              stroke-linecap="round"
-            />
-            <line
-              x1={$tweenedX}
-              x2={$tweenedX - dist}
-              y1={yLoc}
-              y2={yLoc + signedDist}
-              class={arrowColorClass}
-              stroke-width={arrowStrokeWidth}
-              stroke-linecap="round"
-            />
-          {/if}
-        {/if}
-
-        <!-- Comparison point circle -->
-        <circle
-          cx={$tweenedX}
-          cy={$tweenedComparisonY}
-          r={3}
-          class="fill-theme-300"
-        />
-
-        <!-- Primary value + diff -->
-        <g class="text-xs">
-          {#if !currentPointIsNull && isDiffValid}
-            <text
-              class="fill-fg-secondary stroke-surface-background font-semibold"
-              style:paint-order="stroke"
-              stroke-width="3px"
-              x={$tweenedX + 8}
-              y={primaryLabelY}
-            >
-              {formatter(y ?? null)}
-              <tspan
-                class={comparisonIsPositive ? "fill-gray-600" : "fill-red-500"}
-              >
-                ({diffLabel})
-              </tspan>
-            </text>
-          {/if}
-
-          <!-- Comparison value -->
-          <text
-            class="fill-fg-muted stroke-surface-background"
-            style:paint-order="stroke"
-            stroke-width="3px"
-            x={$tweenedX + 8}
-            y={compLabelY}
-          >
-            {#if comparisonPointIsNull}
-              <tspan class="italic">no comparison data</tspan>
-            {:else}
-              {formatter(comparisonY ?? null)} prev.
-            {/if}
-          </text>
-        </g>
-      {:else if !currentPointIsNull}
-        <!-- No comparison: just show the primary value -->
-        <text
-          class="fill-fg-secondary stroke-surface-background text-xs font-semibold"
-          style:paint-order="stroke"
-          stroke-width="3px"
-          x={$tweenedX + 8}
-          y={$tweenedY + 4}
-        >
-          {formatter(y ?? null)}
-        </text>
-      {:else}
-        <!-- Null current value -->
-        <text
-          class="fill-fg-muted stroke-surface-background text-xs italic"
-          style:paint-order="stroke"
-          stroke-width="3px"
-          x={$tweenedX + 8}
-          y={scales.y(0) + 4}
-        >
-          no current data
-        </text>
-      {/if}
-    </g>
+  <!-- Time comparison: comparison point circle (left bar, index 0) -->
+  {#if !isComparingDimension && showComparison && hasValidComparisonPoint}
+    {@const compBarX = isBarMode
+      ? slotCenterX - bandWidth / 2 + singleBarWidth / 2
+      : $tweenedX}
+    <circle
+      cx={compBarX}
+      cy={$tweenedComparisonY}
+      r={4}
+      class="fill-gray-500 stroke-surface-background stroke-[1.5px]"
+    />
   {/if}
 {/if}
+
+<style lang="postcss">
+  * {
+    @apply pointer-events-none;
+  }
+</style>

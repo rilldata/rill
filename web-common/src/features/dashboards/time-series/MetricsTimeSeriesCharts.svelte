@@ -42,6 +42,7 @@
   import { featureFlags } from "../../feature-flags";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import { MeasureChart } from "./measure-chart";
+  import { ScrubController } from "./measure-chart/ScrubController";
   import { getAnnotationsForMeasure } from "./annotations-selectors";
   import ChartInteractions from "./ChartInteractions.svelte";
   import { chartHoveredTime } from "../time-dimension-details/time-dimension-data-store";
@@ -58,6 +59,9 @@
 
   // Shared hover index store — all MeasureChart instances read/write this
   const sharedHoverIndex = writable<number | undefined>(undefined);
+
+  // Singleton scrub controller — shared across all charts
+  const scrubController = new ScrubController();
 
   export let exploreName: string;
   export let hideStartPivotButton = false;
@@ -77,16 +81,23 @@
   const timeControlsStore = useTimeControlStore(ctx);
 
   $: ({
-    adjustedStart,
-    adjustedEnd,
     selectedTimeRange,
+    selectedComparisonTimeRange,
     timeDimension,
     ready,
-    comparisonAdjustedStart,
-    comparisonAdjustedEnd,
     minTimeGrain,
     showTimeComparison,
+    timeEnd,
+    timeStart,
+    comparisonTimeEnd,
+    comparisonTimeStart,
   } = $timeControlsStore);
+
+  // Use the full selected time range for chart data fetching (not modified by scrub)
+  $: chartTimeStart = selectedTimeRange?.start?.toISOString();
+  $: chartTimeEnd = selectedTimeRange?.end?.toISOString();
+  $: chartComparisonTimeStart = selectedComparisonTimeRange?.start?.toISOString();
+  $: chartComparisonTimeEnd = selectedComparisonTimeRange?.end?.toISOString();
 
   $: exploreState = useExploreState(exploreName);
 
@@ -157,16 +168,6 @@
     undefined,
   );
 
-  $: chartPrimaryTimeStart = selectedTimeRange?.start
-    ? DateTime.fromJSDate(selectedTimeRange.start, {
-        zone: chartTimeZone,
-      })
-    : undefined;
-  $: chartPrimaryTimeEnd = selectedTimeRange?.end
-    ? DateTime.fromJSDate(selectedTimeRange.end, {
-        zone: chartTimeZone,
-      })
-    : undefined;
 
   $: chartTimeZone = $dashboardStore.selectedTimezone;
   $: chartReady = !!ready;
@@ -371,16 +372,17 @@
             metricsViewName={chartMetricsViewName}
             where={chartWhere}
             {timeDimension}
-            timeStart={adjustedStart}
-            timeEnd={adjustedEnd}
-            comparisonTimeStart={comparisonAdjustedStart}
-            comparisonTimeEnd={comparisonAdjustedEnd}
+            {timeStart}
+            {timeEnd}
+            {comparisonTimeStart}
+            {comparisonTimeEnd}
             ready={chartReady}
           />
 
           {#if effectiveGrain}
             <MeasureChart
               {measure}
+              {scrubController}
               {sharedHoverIndex}
               tddChartType={showTimeDimensionDetail
                 ? (tddChartType ?? TDDChart.DEFAULT)
@@ -389,12 +391,10 @@
               metricsViewName={chartMetricsViewName}
               where={chartWhere}
               {timeDimension}
-              adjustedTimeStart={adjustedStart}
-              adjustedTimeEnd={adjustedEnd}
-              primaryTimeStart={chartPrimaryTimeStart}
-              primaryTimeEnd={chartPrimaryTimeEnd}
-              comparisonTimeStart={comparisonAdjustedStart}
-              comparisonTimeEnd={comparisonAdjustedEnd}
+              timeStart={chartTimeStart}
+              timeEnd={chartTimeEnd}
+              comparisonTimeStart={chartComparisonTimeStart}
+              comparisonTimeEnd={chartComparisonTimeEnd}
               timeGranularity={effectiveGrain}
               timeZone={chartTimeZone}
               ready={chartReady}
@@ -411,7 +411,14 @@
               {showTimeDimensionDetail}
               {tableHoverTime}
               onHover={(dt) => {
-                chartHoveredTime.set(dt?.toJSDate());
+                if (dt) {
+                  // Convert to JS Date matching table's timezone handling:
+                  // keepLocalTime: true preserves wall clock time when shifting to system zone
+                  const systemTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                  chartHoveredTime.set(dt.setZone(systemTimeZone, { keepLocalTime: true }).toJSDate());
+                } else {
+                  chartHoveredTime.set(undefined);
+                }
               }}
               onScrub={handleScrub}
               onScrubClear={() => {

@@ -7,25 +7,26 @@
 </script>
 
 <line
+  class="stroke-fg-muted"
+  class:stroke-theme-500={selected}
+  stroke-width={selected ? 2 : 1.5}
   x1={x}
   x2={x}
   y1={zeroY}
   y2={y}
-  class={selected ? "stroke-theme-500" : "stroke-fg-muted"}
-  stroke-width={selected ? 2 : 1.5}
 />
+
 <circle
+  class="stroke-[1.5px] fill-theme-600"
+  class:fill-theme-500={selected}
   cx={x}
   cy={y}
   r={4}
-  class="stroke-surface-background stroke-[1.5px] {selected
-    ? 'fill-theme-500'
-    : 'fill-theme-600'}"
 />
+
 <text
-  class="stroke-surface-background text-xs font-semibold {selected
-    ? 'fill-theme-500'
-    : 'fill-fg-secondary'}"
+  class="text-xs font-semibold fill-fg-secondary"
+  class:fill-theme-500={selected}
   style:paint-order="stroke"
   stroke-width="3px"
   x={x + 8}
@@ -33,3 +34,11 @@
 >
   {value}
 </text>
+
+<style lang="postcss">
+  circle,
+  text {
+    @apply stroke-surface-background;
+    paint-order: stroke;
+  }
+</style>

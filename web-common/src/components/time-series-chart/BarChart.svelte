@@ -70,24 +70,39 @@
   {/each}
 {:else}
   {@const barCount = series.length}
-  {@const singleBarWidth = bandWidth / barCount}
+  {@const barGap = barCount > 1 ? 2 : 0}
+  {@const totalGaps = barGap * (barCount - 1)}
+  {@const singleBarWidth = (bandWidth - totalGaps) / barCount}
+  {@const radius = 4}
   {#each { length: visibleCount } as _, slot (slot)}
     {@const ptIdx = visibleStart + slot}
     {@const cx = plotLeft + (slot + 0.5) * slotWidth}
     {#each series as s, sIdx (s.id)}
       {@const v = s.values[ptIdx] ?? null}
       {#if v !== null}
-        {@const bx = cx - bandWidth / 2 + sIdx * singleBarWidth}
+        {@const bx = cx - bandWidth / 2 + sIdx * (singleBarWidth + barGap)}
         {@const by = Math.min(zeroY, yScale(v))}
         {@const bh = Math.abs(zeroY - yScale(v))}
-        <rect
-          x={bx}
-          y={by}
-          width={singleBarWidth}
-          height={bh}
+        {@const r = Math.min(radius, singleBarWidth / 2, bh / 2)}
+        {@const isPositive = v >= 0}
+        <path
+          d={isPositive
+            ? `M${bx},${by + bh}
+               V${by + r}
+               Q${bx},${by} ${bx + r},${by}
+               H${bx + singleBarWidth - r}
+               Q${bx + singleBarWidth},${by} ${bx + singleBarWidth},${by + r}
+               V${by + bh}
+               Z`
+            : `M${bx},${by}
+               V${by + bh - r}
+               Q${bx},${by + bh} ${bx + r},${by + bh}
+               H${bx + singleBarWidth - r}
+               Q${bx + singleBarWidth},${by + bh} ${bx + singleBarWidth},${by + bh - r}
+               V${by}
+               Z`}
           fill={isInScrub(ptIdx) ? s.color : "var(--color-gray-400)"}
           opacity={isInScrub(ptIdx) ? (s.opacity ?? 1) : 0.5}
-          rx={1}
         />
       {/if}
     {/each}
