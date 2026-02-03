@@ -10,7 +10,6 @@
   export let apiName: string;
 
   $: columns = extractColumns(response);
-  $: rows = response ?? [];
 
   function extractColumns(data: unknown[] | null): VirtualizedTableColumns[] {
     if (!data || data.length === 0) return [];

@@ -22,7 +22,9 @@
   export let fileArtifact: FileArtifact;
   export let errors: LineStatus[];
   export let apiName: string;
-  export let switchView: () => void;
+  // Prop for parent to provide view switching callback (used externally)
+  export let switchView: (() => void) | undefined = undefined;
+  void switchView; // Silence unused warning - prop exists for external interface
 
   type APIType = "metrics_sql" | "sql" | "api" | "glob" | "resource_status";
 
@@ -214,11 +216,12 @@
   let isLoading = false;
   let previewHeight = 300;
   let resizerMax = 600;
-  let mainAreaEl: HTMLDivElement;
 
   onMount(() => {
-    if (mainAreaEl) {
-      const h = mainAreaEl.clientHeight;
+    // Calculate initial preview height based on available space
+    const mainArea = document.querySelector(".main-area");
+    if (mainArea) {
+      const h = mainArea.clientHeight;
       previewHeight = Math.max(100, Math.floor(h / 2));
       resizerMax = Math.max(400, Math.floor(h * 0.85));
     }
@@ -863,7 +866,7 @@
     >
       <Resizer
         absolute={false}
-        max={600}
+        max={resizerMax}
         direction="NS"
         side="top"
         bind:dimension={previewHeight}
