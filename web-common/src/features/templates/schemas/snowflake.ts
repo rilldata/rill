@@ -7,21 +7,37 @@ export const snowflakeSchema: MultiStepFormSchema = {
   "x-category": "warehouse",
   "x-form-height": "tall",
   properties: {
-    connection_mode: {
+    auth_method: {
       type: "string",
-      title: "Connection method",
-      enum: ["parameters", "dsn"],
-      default: "parameters",
-      "x-display": "tabs",
-      "x-enum-labels": ["Enter parameters", "Enter connection string"],
+      title: "Authentication method",
+      enum: ["password", "private_key", "dsn"],
+      default: "password",
+      "x-display": "radio",
+      "x-enum-labels": [
+        "Username/Password",
+        "Private Key",
+        "Connection String",
+      ],
+      "x-enum-descriptions": [
+        "Authenticate with your Snowflake username and password.",
+        "Authenticate using a private key with SNOWFLAKE_JWT authenticator.",
+        "Use a full Snowflake connection string (DSN).",
+      ],
       "x-ui-only": true,
-      "x-tab-group": {
-        parameters: [
+      "x-grouped-fields": {
+        password: [
           "account",
           "user",
           "password",
+          "database",
+          "schema",
+          "warehouse",
+          "role",
+        ],
+        private_key: [
+          "account",
+          "user",
           "privateKey",
-          "authenticator",
           "database",
           "schema",
           "warehouse",
@@ -32,14 +48,15 @@ export const snowflakeSchema: MultiStepFormSchema = {
     },
     dsn: {
       type: "string",
-      title: "Snowflake connection string",
+      title: "Connection string",
       description:
         "Full Snowflake DSN, e.g. <user>@<account>/<db>/<schema>?warehouse=<warehouse>&role=<role>",
       "x-placeholder":
         "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>",
       "x-secret": true,
       "x-hint":
-        "Use a full DSN or fill the fields below (not both). Include authenticator and privateKey for JWT if needed.",
+        "Include authenticator and privateKey query params for JWT if needed.",
+      "x-visible-if": { auth_method: "dsn" },
     },
     account: {
       type: "string",
@@ -57,25 +74,19 @@ export const snowflakeSchema: MultiStepFormSchema = {
     password: {
       type: "string",
       title: "Password",
-      description:
-        "Snowflake password (use JWT private key if password auth is disabled)",
+      description: "Snowflake password",
       "x-placeholder": "your_password",
       "x-secret": true,
+      "x-visible-if": { auth_method: "password" },
     },
     privateKey: {
       type: "string",
-      title: "Private key (JWT)",
-      description:
-        "URL-safe base64 or PEM private key for SNOWFLAKE_JWT authenticator",
+      title: "Private key",
+      description: "URL-safe base64 or PEM private key",
       "x-display": "textarea",
-      "x-placeholder": "your_private_key",
+      "x-placeholder": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----",
       "x-secret": true,
-    },
-    authenticator: {
-      type: "string",
-      title: "Authenticator",
-      description: "Override authenticator (e.g., SNOWFLAKE_JWT)",
-      "x-placeholder": "SNOWFLAKE_JWT",
+      "x-visible-if": { auth_method: "private_key" },
     },
     database: {
       type: "string",
@@ -120,9 +131,16 @@ export const snowflakeSchema: MultiStepFormSchema = {
   required: ["sql", "name"],
   allOf: [
     {
-      if: { properties: { connection_mode: { const: "dsn" } } },
+      if: { properties: { auth_method: { const: "password" } } },
+      then: { required: ["account", "user", "password", "database", "warehouse"] },
+    },
+    {
+      if: { properties: { auth_method: { const: "private_key" } } },
+      then: { required: ["account", "user", "privateKey", "database", "warehouse"] },
+    },
+    {
+      if: { properties: { auth_method: { const: "dsn" } } },
       then: { required: ["dsn"] },
-      else: { required: ["account", "user", "database", "warehouse"] },
     },
   ],
 };
