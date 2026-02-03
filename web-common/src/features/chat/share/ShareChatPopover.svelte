@@ -73,7 +73,7 @@
       {disabled}
       disableTooltip={isOpen}
     >
-      <Share class="text-gray-500" size="16px" />
+      <Share class="text-fg-muted" size="16px" />
       <svelte:fragment slot="tooltip-content">
         {disabled ? DISABLED_TOOLTIP : "Share conversation"}
       </svelte:fragment>
@@ -81,8 +81,8 @@
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[320px] p-4">
     <div class="flex flex-col gap-y-3">
-      <h3 class="text-sm font-medium text-gray-800">Share conversation</h3>
-      <p class="text-xs text-gray-600">
+      <h3 class="text-sm font-medium text-fg-primary">Share conversation</h3>
+      <p class="text-xs text-fg-secondary">
         Share this conversation with other project members. They can view and
         continue the conversation.
       </p>

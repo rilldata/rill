@@ -42,7 +42,7 @@
       bgGray
       on:click={handleNewConversation}
     >
-      <PlusIcon className="text-gray-500" />
+      <PlusIcon className="text-fg-muted" />
       <svelte:fragment slot="tooltip-content">New conversation</svelte:fragment>
     </IconButton>
 
@@ -61,7 +61,7 @@
     />
 
     <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
-      <Close className="text-gray-500" />
+      <Close className="text-fg-muted" />
       <svelte:fragment slot="tooltip-content">Close</svelte:fragment>
     </IconButton>
   </div>

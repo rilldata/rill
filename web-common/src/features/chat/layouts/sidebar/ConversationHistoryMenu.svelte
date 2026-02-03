@@ -35,7 +35,7 @@
       active={isOpen}
       disableTooltip={isOpen}
     >
-      <HistoryIcon size="16px" class="text-gray-500" />
+      <HistoryIcon size="16px" class="text-fg-muted" />
       <svelte:fragment slot="tooltip-content"
         >Conversation history</svelte:fragment
       >
