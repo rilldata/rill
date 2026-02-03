@@ -71,7 +71,8 @@ definitions:
       ### _Other_
       - [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-      - [**OpenAI**](#openai) - OpenAI data
+      - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
+      - [**Claude**](#claude) - Claude connector for chat with your own API key
       - [**Salesforce**](#salesforce) - Salesforce data
       - [**Slack**](#slack) - Slack data
 
@@ -646,10 +647,38 @@ definitions:
               base_url: "https://api.openai.com/v1"            # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
               api_type: "openai"                               # The type of OpenAI API to use  
               api_version: "2023-05-15"                        # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD  
-            
           required: 
             - api_key
-      
+        - type: object
+          title: Claude
+          properties:
+            driver:
+              type: string
+              description: The driver type, must be set to "claude"
+            api_key:
+              type: string
+              description: API key for connecting to Claude
+            model:
+              type: string
+              description: The Claude model to use (e.g., 'claude-opus-4-5')
+            max_tokens:
+              type: number
+              description: Maximum number of tokens in the response (e.g., 8192)
+            temperature:
+              type: number
+              description: Sampling temperature to use (e.g., 0.0)
+            base_url:
+              type: string
+              description: The base URL for the Claude API
+          examples:
+            - # Example: Claude connector configuration
+              type: connector
+              driver: claude
+
+              api_key: "{{ .env.claude_api_key }}"
+              model: claude-opus-4-5
+          required: 
+            - api_key      
         - type: object
           title: Pinot
           properties:
@@ -3286,13 +3315,13 @@ definitions:
   explore_time_range_properties:
     oneOf:
       - type: string
-        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/developers/build/metrics-view/time-series/time-syntax#extensions) extensions for the selection
+        description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection
       - type: object
         description: Object containing time range and comparison configuration
         properties:
           range:
             type: string
-            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/developers/build/metrics-view/time-series/time-syntax#extensions) extensions for the selection
+            description: a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection
           comparison_offsets:
             type: array
             description: list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)

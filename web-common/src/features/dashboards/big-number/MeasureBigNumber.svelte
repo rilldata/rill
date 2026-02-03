@@ -176,17 +176,11 @@
   $: useDiv = isMeasureExpanded || !withTimeseries;
 
   function handleMouseOver() {
-    if (value !== undefined && value !== null) {
-      // Always update the value in the store, but don't change visibility
-      cellInspectorStore.updateValue(value.toString());
-    }
+    cellInspectorStore.updateValue(value);
   }
 
   function handleFocus() {
-    if (value !== undefined && value !== null) {
-      // Always update the value in the store, but don't change visibility
-      cellInspectorStore.updateValue(value.toString());
-    }
+    cellInspectorStore.updateValue(value);
   }
 </script>
 
@@ -247,12 +241,18 @@
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis text-fg-secondary"
                 class:font-semibold={isComparisonPositive}
-                on:mouseenter={() =>
-                  (tooltipValue =
-                    measureValueFormatterTooltip(diff) ?? "no data")}
-                on:mouseleave={() =>
-                  (tooltipValue =
-                    measureValueFormatterTooltip(value) ?? "no data")}
+                on:mouseenter={() => {
+                  tooltipValue =
+                    measureValueFormatterTooltip(diff) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(diff) ?? "no data";
+                }}
+                on:mouseleave={() => {
+                  tooltipValue =
+                    measureValueFormatterTooltip(value) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                }}
               >
                 {#if !noChange}
                   {formattedDiff}
@@ -266,15 +266,22 @@
             {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
               <div
                 role="complementary"
-                on:mouseenter={() =>
-                  (tooltipValue = numberPartsToString(
+                on:mouseenter={() => {
+                  tooltipValue = numberPartsToString(
                     formatMeasurePercentageDifference(
                       comparisonPercChange ?? 0,
                     ),
-                  ))}
-                on:mouseleave={() =>
-                  (tooltipValue =
-                    measureValueFormatterUnabridged(value) ?? "no data")}
+                  );
+                  copyValue =
+                    measureValueFormatterUnabridged(comparisonPercChange) ??
+                    "no data";
+                }}
+                on:mouseleave={() => {
+                  tooltipValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                }}
                 class="w-fit text-fg-secondary"
                 class:text-red-500={!isComparisonPositive}
               >

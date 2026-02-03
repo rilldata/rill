@@ -191,7 +191,7 @@
 <svelte:window on:keydown={handleKeyDown} />
 
 <div
-  class="h-full w-full flex flex-col border-t bg-surface-background"
+  class="h-full w-full flex flex-col border-t bg-surface-base"
   aria-label="{expandedMeasureName} Time Dimension Display"
 >
   <TDDHeader
