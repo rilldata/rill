@@ -72,8 +72,9 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
       },
       // Custom masking function for granular control
       maskInputFn: (text, element) => {
+        const inputElement = element as HTMLInputElement | undefined;
         // Always mask passwords
-        if (element?.type === "password") {
+        if (inputElement?.type === "password") {
           return "*".repeat(text.length);
         }
         // Mask inputs marked as sensitive via data attribute
@@ -81,7 +82,7 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
           return "*".repeat(text.length);
         }
         // Mask email and phone inputs
-        if (element?.type === "email" || element?.type === "tel") {
+        if (inputElement?.type === "email" || inputElement?.type === "tel") {
           return "*".repeat(text.length);
         }
         // Show everything else (UI elements remain visible)
