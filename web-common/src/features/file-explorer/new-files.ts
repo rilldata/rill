@@ -372,8 +372,21 @@ dark:
       return `# Alert YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/alerts
 
-
 type: alert
+display_name: "My Alert"
+refresh:
+  ref_update: false
+  cron: 0 * * * *
+data:
+  metrics_sql: |-
+    SELECT measure FROM metrics_view
+notify:
+  slack:
+    channels:
+      - "#rill-cloud-alerts"
+  email:
+    recipients:
+      - "your-email@example.com"
 `;
     case ResourceKind.Report:
       return `# Report YAML
