@@ -81,6 +81,7 @@ export const mysqlSchema: MultiStepFormSchema = {
       type: "string",
       title: "SQL",
       description: "SQL query to run against your database",
+      "x-monospace": true,
       "x-placeholder": "SELECT * FROM my_table",
       "x-step": "explorer",
     },

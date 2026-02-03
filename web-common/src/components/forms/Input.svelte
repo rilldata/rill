@@ -334,7 +334,7 @@
 
   .multiline-input:empty::before {
     content: attr(data-placeholder);
-    @apply text-fg-muted;
+    @apply text-gray-400;
     pointer-events: none;
   }
 

@@ -152,7 +152,7 @@
   >
     <Dialog.Content
       class={cn(
-        "overflow-hidden max-w-4xl",
+        "overflow-hidden max-w-5xl",
         step === 2 ? "p-0 gap-0" : "p-6 gap-4",
       )}
       noClose={step === 1}
