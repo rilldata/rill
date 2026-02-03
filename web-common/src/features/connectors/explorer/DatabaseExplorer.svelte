@@ -36,9 +36,7 @@
 
 <div class="wrapper">
   {#if hasError}
-    <span class="message pl-6"
-      >Error: {connector.errorMessage}</span
-    >
+    <span class="message pl-6">Error: {connector.errorMessage}</span>
   {:else if isAwaitingConfig}
     <span class="message pl-6">Configure connector to browse tables</span>
   {:else if isLoading && queryEnabled}
