@@ -3,13 +3,8 @@ import posthog, { type Properties } from "posthog-js";
 const POSTHOG_API_KEY = import.meta.env.RILL_UI_PUBLIC_POSTHOG_API_KEY;
 
 export function initPosthog(rillVersion: string, sessionId?: string | null) {
-  console.log("[PostHog] initPosthog called, API key exists:", !!POSTHOG_API_KEY);
-
   // No need to proceed if PostHog is already initialized
-  if (posthog.__loaded) {
-    console.log("[PostHog] Already loaded, skipping init");
-    return;
-  }
+  if (posthog.__loaded) return;
 
   if (!POSTHOG_API_KEY) {
     console.warn("PostHog API Key not found");
@@ -67,7 +62,6 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
       posthog.register_for_session({
         "Rill version": rillVersion,
       });
-      console.log("[PostHog] Initialized, session recording:", posthog.sessionRecordingStarted());
     },
   });
 }
