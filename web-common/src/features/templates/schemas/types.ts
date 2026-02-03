@@ -20,7 +20,13 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "connection-type";
+  "x-display"?:
+    | "radio"
+    | "select"
+    | "textarea"
+    | "file"
+    | "tabs"
+    | "connection-type";
   /** Render the field value in a monospace font. */
   "x-monospace"?: boolean;
   /** Which modal step this field belongs to. */

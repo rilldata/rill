@@ -44,7 +44,10 @@
     <label class="text-sm font-medium text-gray-700 block mb-1">{label}</label>
   {/if}
 
-  <SelectPrimitive.Root selected={{ value }} onSelectedChange={(s) => handleChange(s?.value)}>
+  <SelectPrimitive.Root
+    selected={{ value }}
+    onSelectedChange={(s) => handleChange(s?.value)}
+  >
     <SelectPrimitive.Trigger
       class="flex h-auto w-full items-center justify-between rounded-[2px] border bg-transparent px-3 py-2.5 text-sm ring-offset-background focus:outline-none focus:border-primary-400"
     >
