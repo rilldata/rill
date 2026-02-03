@@ -4946,6 +4946,86 @@ export class ForkConversationRequest extends Message$1<ForkConversationRequest> 
 }
 
 /**
+ * @generated from message rill.runtime.v1.RevertWriteToolCallsRequest
+ */
+export class RevertWriteToolCallsRequest extends Message$1<RevertWriteToolCallsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * @generated from field: repeated string write_tool_calls = 3;
+   */
+  writeToolCalls: string[] = [];
+
+  constructor(data?: PartialMessage<RevertWriteToolCallsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RevertWriteToolCallsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "write_tool_calls", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevertWriteToolCallsRequest {
+    return new RevertWriteToolCallsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevertWriteToolCallsRequest {
+    return new RevertWriteToolCallsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevertWriteToolCallsRequest {
+    return new RevertWriteToolCallsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevertWriteToolCallsRequest | PlainMessage<RevertWriteToolCallsRequest> | undefined, b: RevertWriteToolCallsRequest | PlainMessage<RevertWriteToolCallsRequest> | undefined): boolean {
+    return proto3.util.equals(RevertWriteToolCallsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.RevertWriteToolCallsResponse
+ */
+export class RevertWriteToolCallsResponse extends Message$1<RevertWriteToolCallsResponse> {
+  constructor(data?: PartialMessage<RevertWriteToolCallsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RevertWriteToolCallsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevertWriteToolCallsResponse {
+    return new RevertWriteToolCallsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevertWriteToolCallsResponse {
+    return new RevertWriteToolCallsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevertWriteToolCallsResponse {
+    return new RevertWriteToolCallsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevertWriteToolCallsResponse | PlainMessage<RevertWriteToolCallsResponse> | undefined, b: RevertWriteToolCallsResponse | PlainMessage<RevertWriteToolCallsResponse> | undefined): boolean {
+    return proto3.util.equals(RevertWriteToolCallsResponse, a, b);
+  }
+}
+
+/**
  * Response message for RuntimeService.ForkConversation
  *
  * @generated from message rill.runtime.v1.ForkConversationResponse

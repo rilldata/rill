@@ -58,6 +58,7 @@ const (
 	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
 	RuntimeService_ShareConversation_FullMethodName       = "/rill.runtime.v1.RuntimeService/ShareConversation"
 	RuntimeService_ForkConversation_FullMethodName        = "/rill.runtime.v1.RuntimeService/ForkConversation"
+	RuntimeService_RevertWriteToolCalls_FullMethodName    = "/rill.runtime.v1.RuntimeService/RevertWriteToolCalls"
 	RuntimeService_ListTools_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListTools"
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
@@ -165,6 +166,7 @@ type RuntimeServiceClient interface {
 	// ForkConversation creates a new conversation by copying messages from an existing one.
 	// If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
 	ForkConversation(ctx context.Context, in *ForkConversationRequest, opts ...grpc.CallOption) (*ForkConversationResponse, error)
+	RevertWriteToolCalls(ctx context.Context, in *RevertWriteToolCallsRequest, opts ...grpc.CallOption) (*RevertWriteToolCallsResponse, error)
 	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 	// Note that it covers all registered tools, but the current user may not have access to all of them.
 	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
@@ -624,6 +626,16 @@ func (c *runtimeServiceClient) ForkConversation(ctx context.Context, in *ForkCon
 	return out, nil
 }
 
+func (c *runtimeServiceClient) RevertWriteToolCalls(ctx context.Context, in *RevertWriteToolCallsRequest, opts ...grpc.CallOption) (*RevertWriteToolCallsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevertWriteToolCallsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_RevertWriteToolCalls_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListToolsResponse)
@@ -864,6 +876,7 @@ type RuntimeServiceServer interface {
 	// ForkConversation creates a new conversation by copying messages from an existing one.
 	// If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
 	ForkConversation(context.Context, *ForkConversationRequest) (*ForkConversationResponse, error)
+	RevertWriteToolCalls(context.Context, *RevertWriteToolCallsRequest) (*RevertWriteToolCallsResponse, error)
 	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 	// Note that it covers all registered tools, but the current user may not have access to all of them.
 	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
@@ -1022,6 +1035,9 @@ func (UnimplementedRuntimeServiceServer) ShareConversation(context.Context, *Sha
 }
 func (UnimplementedRuntimeServiceServer) ForkConversation(context.Context, *ForkConversationRequest) (*ForkConversationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ForkConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) RevertWriteToolCalls(context.Context, *RevertWriteToolCallsRequest) (*RevertWriteToolCallsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevertWriteToolCalls not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTools not implemented")
@@ -1767,6 +1783,24 @@ func _RuntimeService_ForkConversation_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_RevertWriteToolCalls_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevertWriteToolCallsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).RevertWriteToolCalls(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_RevertWriteToolCalls_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).RevertWriteToolCalls(ctx, req.(*RevertWriteToolCallsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListTools_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListToolsRequest)
 	if err := dec(in); err != nil {
@@ -2162,6 +2196,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ForkConversation",
 			Handler:    _RuntimeService_ForkConversation_Handler,
+		},
+		{
+			MethodName: "RevertWriteToolCalls",
+			Handler:    _RuntimeService_RevertWriteToolCalls_Handler,
 		},
 		{
 			MethodName: "ListTools",

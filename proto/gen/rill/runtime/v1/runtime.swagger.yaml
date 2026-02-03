@@ -570,6 +570,39 @@ paths:
             title: Request message for RuntimeService.ForkConversation
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/revert-write-calls:
+    post:
+      operationId: RuntimeService_RevertWriteToolCalls
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevertWriteToolCallsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              writeToolCalls:
+                type: array
+                items:
+                  type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
     post:
       summary: ShareConversation enables sharing of the conversation by adding metadata.
@@ -7372,6 +7405,8 @@ definitions:
       newCommitSha:
         type: string
     title: Response message for RuntimeService.RestoreGitCommit
+  v1RevertWriteToolCallsResponse:
+    type: object
   v1Schedule:
     type: object
     properties:

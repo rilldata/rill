@@ -11970,6 +11970,236 @@ var _ interface {
 
 var _ForkConversationRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
+// Validate checks the field values on RevertWriteToolCallsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevertWriteToolCallsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevertWriteToolCallsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RevertWriteToolCallsRequestMultiError, or nil if none found.
+func (m *RevertWriteToolCallsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevertWriteToolCallsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_RevertWriteToolCallsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := RevertWriteToolCallsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetConversationId()) < 1 {
+		err := RevertWriteToolCallsRequestValidationError{
+			field:  "ConversationId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RevertWriteToolCallsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevertWriteToolCallsRequestMultiError is an error wrapping multiple
+// validation errors returned by RevertWriteToolCallsRequest.ValidateAll() if
+// the designated constraints aren't met.
+type RevertWriteToolCallsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevertWriteToolCallsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevertWriteToolCallsRequestMultiError) AllErrors() []error { return m }
+
+// RevertWriteToolCallsRequestValidationError is the validation error returned
+// by RevertWriteToolCallsRequest.Validate if the designated constraints
+// aren't met.
+type RevertWriteToolCallsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevertWriteToolCallsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevertWriteToolCallsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevertWriteToolCallsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevertWriteToolCallsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevertWriteToolCallsRequestValidationError) ErrorName() string {
+	return "RevertWriteToolCallsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevertWriteToolCallsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevertWriteToolCallsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevertWriteToolCallsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevertWriteToolCallsRequestValidationError{}
+
+var _RevertWriteToolCallsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on RevertWriteToolCallsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevertWriteToolCallsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevertWriteToolCallsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RevertWriteToolCallsResponseMultiError, or nil if none found.
+func (m *RevertWriteToolCallsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevertWriteToolCallsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RevertWriteToolCallsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevertWriteToolCallsResponseMultiError is an error wrapping multiple
+// validation errors returned by RevertWriteToolCallsResponse.ValidateAll() if
+// the designated constraints aren't met.
+type RevertWriteToolCallsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevertWriteToolCallsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevertWriteToolCallsResponseMultiError) AllErrors() []error { return m }
+
+// RevertWriteToolCallsResponseValidationError is the validation error returned
+// by RevertWriteToolCallsResponse.Validate if the designated constraints
+// aren't met.
+type RevertWriteToolCallsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevertWriteToolCallsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevertWriteToolCallsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevertWriteToolCallsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevertWriteToolCallsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevertWriteToolCallsResponseValidationError) ErrorName() string {
+	return "RevertWriteToolCallsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevertWriteToolCallsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevertWriteToolCallsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevertWriteToolCallsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevertWriteToolCallsResponseValidationError{}
+
 // Validate checks the field values on ForkConversationResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

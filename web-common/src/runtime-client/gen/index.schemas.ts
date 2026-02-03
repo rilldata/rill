@@ -2299,6 +2299,10 @@ export interface V1RestoreGitCommitResponse {
   newCommitSha?: string;
 }
 
+export interface V1RevertWriteToolCallsResponse {
+  [key: string]: unknown;
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2685,6 +2689,10 @@ export type RuntimeServiceListConversationsParams = {
 };
 
 export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
+
+export type RuntimeServiceRevertWriteToolCallsBody = {
+  writeToolCalls?: string[];
+};
 
 export type RuntimeServiceShareConversationBody = {
   /** optional message ID up to which to share otherwise share all current messages

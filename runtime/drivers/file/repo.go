@@ -22,6 +22,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
 	rtgitutil "github.com/rilldata/rill/runtime/pkg/gitutil"
 	"golang.org/x/exp/maps"
@@ -589,6 +590,23 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 	return hash, nil
 }
 
+func (c *connection) ApplyPatch(ctx context.Context, patch string) error {
+	// If its a Git repository, revert the specified commit.
+	if !c.isGitRepo() {
+		return errors.New("not a git repository")
+	}
+
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
+
+	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		return err
+	}
+
+	return applyPatch(ctx, gitPath, subpath, patch)
+}
+
 // CommitAndPush commits local changes to the remote repository and pushes them.
 func (c *connection) CommitAndPush(ctx context.Context, message string, force bool) error {
 	// If its a Git repository, commit and push the changes with the given message to the current branch.
@@ -784,4 +802,16 @@ func restoreToCommit(path, subpath, commithash string) error {
 		return fmt.Errorf("failed to restore to commit: %s, %w", string(output), err)
 	}
 	return nil
+}
+
+func applyPatch(ctx context.Context, path, subpath, patch string) error {
+	patchFile, _, err := fileutil.CopyToTempFile(strings.NewReader(patch), "rill-patch", ".patch")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(patchFile)
+
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "apply", "-R", patchFile)
+	_, err = cmd.CombinedOutput()
+	return err
 }

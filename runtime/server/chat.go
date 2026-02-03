@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -179,6 +180,58 @@ func (s *Server) ForkConversation(ctx context.Context, req *runtimev1.ForkConver
 	return &runtimev1.ForkConversationResponse{
 		ConversationId: id,
 	}, nil
+}
+
+func (s *Server) RevertWriteToolCalls(ctx context.Context, req *runtimev1.RevertWriteToolCallsRequest) (*runtimev1.RevertWriteToolCallsResponse, error) {
+	// Access check
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) || !claims.Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	matchingCalls := session.Messages(func(m *ai.Message) bool {
+		for _, call := range req.WriteToolCalls {
+			if call == m.ID {
+				return true
+			}
+		}
+		return false
+	})
+
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	for _, call := range matchingCalls {
+		rawRes, err := session.UnmarshalMessageContent(call)
+		if err != nil {
+			return nil, err
+		}
+		var res ai.WriteFileResult
+		err = mapstructureutil.WeakDecode(rawRes, &res)
+		if err != nil {
+			return nil, err
+		}
+		if res.Diff != "" {
+			err := repo.ApplyPatch(ctx, res.Diff)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return &runtimev1.RevertWriteToolCallsResponse{}, nil
 }
 
 func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest) (*runtimev1.ListToolsResponse, error) {

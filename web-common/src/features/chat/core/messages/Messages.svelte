@@ -125,7 +125,7 @@
       {:else if block.type === "file-diff"}
         <FileDiffBlock {block} {tools} />
       {:else if block.type === "develop"}
-        <DevelopBlock {block} />
+        <DevelopBlock {block} conversation={currentConversation} />
       {/if}
     {/each}
   {/if}

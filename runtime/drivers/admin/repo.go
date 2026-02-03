@@ -525,6 +525,10 @@ func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, err
 	return "", drivers.ErrNotImplemented
 }
 
+func (r *repo) ApplyPatch(ctx context.Context, patch string) error {
+	return drivers.ErrNotImplemented
+}
+
 // MergeToBranch implements drivers.RepoStore.
 func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
 	return drivers.ErrNotImplemented

@@ -8,32 +8,29 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { PenIcon } from "lucide-svelte";
-  import { createRuntimeServiceRestoreGitCommit } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceRevertWriteToolCalls } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import FileDiffBlock from "@rilldata/web-common/features/chat/core/messages/file-diff/FileDiffBlock.svelte";
   import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
-  import { getCommitExists } from "@rilldata/web-common/features/project/commit-utils.ts";
+  import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
 
   export let block: DevelopBlock;
+  export let conversation: Conversation;
 
   let isExpanded = true; // Make this expanded by default
 
   $: ({ instanceId } = $runtime);
   $: ctas = getGenerateCTAs(instanceId, block);
-  $: console.log($ctas);
   $: hasSomeCTA = $ctas.models.length > 0 || $ctas.metricsViews.length > 0;
 
-  // Check if the checkpoint commit exists. The tree might have changed since this chat.
-  $: checkpointCommitExistsQuery = getCommitExists(block.checkpointCommitHash);
-  $: checkpointCommitExists = !!$checkpointCommitExistsQuery.data;
-
-  const restoreCommit = createRuntimeServiceRestoreGitCommit();
+  const revertWriteToolCalls = createRuntimeServiceRevertWriteToolCalls();
   async function undoChanges() {
-    if (!block.checkpointCommitHash) return;
-    await $restoreCommit.mutateAsync({
+    await $revertWriteToolCalls.mutateAsync({
       instanceId,
-      commitSha: block.checkpointCommitHash,
-      data: {},
+      conversationId: conversation.conversationId,
+      data: {
+        writeToolCalls: block.diffs.map((d) => d.resultMessage.id!),
+      },
     });
   }
 
@@ -65,9 +62,7 @@
           Made {block.diffs.length} change(s)
         </div>
       </button>
-      {#if checkpointCommitExists}
-        <Button onClick={undoChanges} noStroke>Undo</Button>
-      {/if}
+      <Button onClick={undoChanges} noStroke>Undo</Button>
     </div>
   </Collapsible.Trigger>
 

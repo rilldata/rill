@@ -24,6 +24,7 @@
         }),
       )
     : "";
+  $: console.log(block.diff);
 
   let isExpanded = false;
 </script>

@@ -60,6 +60,7 @@ import type {
   RuntimeServiceReloadConfigBody,
   RuntimeServiceRenameFileBody,
   RuntimeServiceRestoreGitCommitBody,
+  RuntimeServiceRevertWriteToolCallsBody,
   RuntimeServiceShareConversationBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
@@ -117,6 +118,7 @@ import type {
   V1ReloadConfigResponse,
   V1RenameFileResponse,
   V1RestoreGitCommitResponse,
+  V1RevertWriteToolCallsResponse,
   V1ShareConversationResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
@@ -1523,6 +1525,110 @@ export const createRuntimeServiceForkConversation = <
 > => {
   const mutationOptions =
     getRuntimeServiceForkConversationMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+export const runtimeServiceRevertWriteToolCalls = (
+  instanceId: string,
+  conversationId: string,
+  runtimeServiceRevertWriteToolCallsBody: RuntimeServiceRevertWriteToolCallsBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1RevertWriteToolCallsResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/revert-write-calls`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceRevertWriteToolCallsBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceRevertWriteToolCallsMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+    TError,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceRevertWriteToolCallsBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceRevertWriteToolCallsBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceRevertWriteToolCalls"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceRevertWriteToolCallsBody;
+    }
+  > = (props) => {
+    const { instanceId, conversationId, data } = props ?? {};
+
+    return runtimeServiceRevertWriteToolCalls(instanceId, conversationId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceRevertWriteToolCallsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>
+>;
+export type RuntimeServiceRevertWriteToolCallsMutationBody =
+  RuntimeServiceRevertWriteToolCallsBody;
+export type RuntimeServiceRevertWriteToolCallsMutationError =
+  ErrorType<RpcStatus>;
+
+export const createRuntimeServiceRevertWriteToolCalls = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+      TError,
+      {
+        instanceId: string;
+        conversationId: string;
+        data: RuntimeServiceRevertWriteToolCallsBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceRevertWriteToolCallsBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceRevertWriteToolCallsMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
