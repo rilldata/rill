@@ -87,7 +87,11 @@
     {:else if viewMode === "json"}
       <pre class="json-view">{JSON.stringify(response, null, 2)}</pre>
     {:else}
-      <PreviewTable rows={normalizedRows} columnNames={columns} name={apiName} />
+      <PreviewTable
+        rows={normalizedRows}
+        columnNames={columns}
+        name={apiName}
+      />
     {/if}
   </div>
 </div>
