@@ -167,7 +167,6 @@
   let previewHeight = 300;
   let resizerMax = 600;
 
-  let mainAreaEl: HTMLDivElement | undefined;
   onMount(() => {
     // Calculate initial preview height based on available space
     const mainArea = document.querySelector(".main-area");
