@@ -13,6 +13,12 @@
 
   $: connectors = createRuntimeServiceAnalyzeConnectors(instanceId, {
     query: {
+      // Retry transient 500s during runtime resets (e.g. project initialization)
+      retry: (failureCount, error) =>
+        !!error?.response?.status &&
+        error.response.status >= 500 &&
+        failureCount < 3,
+      retryDelay: 1000,
       // sort alphabetically
       select: (data) => {
         if (!data?.connectors) return;
