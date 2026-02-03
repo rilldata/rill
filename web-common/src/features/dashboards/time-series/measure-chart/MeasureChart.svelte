@@ -277,7 +277,7 @@
     !!dimIsFetching;
 
   // Chart series & mode
-  $: mode = determineMode(data, dimensionData);
+  $: mode = determineMode(data);
   $: chartSeries = buildChartSeries(data, dimensionData, showComparison);
 
   // For bar mode with time comparison, reverse order so comparison bar is on left
@@ -533,10 +533,7 @@
     return result;
   }
 
-  function determineMode(
-    d: TimeSeriesPoint[],
-    _dimData: DimensionSeriesData[],
-  ): ChartMode {
+  function determineMode(d: TimeSeriesPoint[]): ChartMode {
     if (d.length >= LINE_MODE_MIN_POINTS) return "line";
     return "bar";
   }

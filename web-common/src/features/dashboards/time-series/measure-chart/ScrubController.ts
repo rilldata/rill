@@ -2,7 +2,6 @@ import { writable, get, type Readable, type Writable } from "svelte/store";
 import type { ScrubState } from "./types";
 import type { ScaleLinear } from "d3-scale";
 
-export type { ScrubState };
 
 type ScrubMode = "none" | "create" | "resize-start" | "resize-end" | "move";
 
@@ -198,20 +197,6 @@ export class ScrubController {
     this._state.update((s) => ({ ...s, isScrubbing: false }));
     this.clearMoveState();
     return true;
-  }
-
-  /** Check if a click is outside the current selection. */
-  isClickOutside(screenX: number, xScale: XScale): boolean {
-    const state = get(this._state);
-    if (state.startIndex === null || state.endIndex === null) return false;
-
-    const clickIndex = xScale.invert(screenX);
-    const [min, max] =
-      state.startIndex < state.endIndex
-        ? [state.startIndex, state.endIndex]
-        : [state.endIndex, state.startIndex];
-
-    return clickIndex < min || clickIndex > max;
   }
 
   /** Reset scrub state completely. */
