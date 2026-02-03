@@ -1,5 +1,6 @@
 <script lang="ts">
   import { HistoryIcon } from "lucide-svelte";
+  import IconButton from "../../../../components/button/IconButton.svelte";
   import * as DropdownMenu from "../../../../components/dropdown-menu";
   import type { V1Conversation } from "../../../../runtime-client";
   import ConversationHistoryItem from "./ConversationHistoryItem.svelte";
@@ -13,11 +14,13 @@
   export let onSelect: (conversation: V1Conversation) => void;
 
   let currentConversationIdSnapshot: string | undefined = currentConversationId;
+  let isOpen = false;
 
   $: groupedConversations = groupConversationsByDate(conversations);
 
-  function handleOpenChange(isOpen: boolean) {
-    if (isOpen) {
+  function handleOpenChange(open: boolean) {
+    isOpen = open;
+    if (open) {
       // Using this snapshot prevents the "Current chat" label from jumping during selection
       currentConversationIdSnapshot = currentConversationId;
     }
@@ -25,16 +28,18 @@
 </script>
 
 <DropdownMenu.Root onOpenChange={handleOpenChange}>
-  <DropdownMenu.Trigger asChild let:builder>
-    <button
-      use:builder.action
-      {...builder}
-      aria-label="Show conversations"
-      class="grid place-items-center text-fg-muted hover:bg-surface-hover w-6 h-6"
-      style="font-size: 18px;"
+  <DropdownMenu.Trigger>
+    <IconButton
+      ariaLabel="Conversation history"
+      bgGray
+      active={isOpen}
+      disableTooltip={isOpen}
     >
-      <HistoryIcon size="1em" />
-    </button>
+      <HistoryIcon size="16px" class="text-fg-muted" />
+      <svelte:fragment slot="tooltip-content"
+        >Conversation history</svelte:fragment
+      >
+    </IconButton>
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content

@@ -362,7 +362,6 @@ export class AddDataFormManager {
             submitValues,
             isPublicAuth,
             isMultiStep,
-            isExplorer,
           });
         } else if (this.formType === "source") {
           // Single-step source form
@@ -395,16 +394,9 @@ export class AddDataFormManager {
     submitValues: FormData;
     isPublicAuth: boolean;
     isMultiStep: boolean;
-    isExplorer: boolean;
   }) {
-    const {
-      queryClient,
-      values,
-      submitValues,
-      isPublicAuth,
-      isMultiStep,
-      isExplorer,
-    } = args;
+    const { queryClient, values, submitValues, isPublicAuth, isMultiStep } =
+      args;
     const nextStep = isMultiStep ? "source" : "explorer";
 
     if (isPublicAuth) {
