@@ -56,7 +56,7 @@
 
 <div class="w-full pb-4">
   {#if label}
-    <label class="text-sm font-medium text-gray-700 block mb-1">{label}</label>
+    <span class="text-sm font-medium text-gray-700 block mb-1">{label}</span>
   {/if}
 
   <SelectPrimitive.Root
