@@ -17,7 +17,9 @@
   export let canvasName: string;
   export let searchableItems: string[] | undefined = undefined;
   export let excludedValues: string[] | undefined = undefined;
+  export let isRemovable = false;
   export let onSelect: (item: string, displayName: string) => void = () => {};
+  export let onRemove: () => void = () => {};
 
   let open = false;
   let searchValue = "";
@@ -52,16 +54,22 @@
       <Chip
         fullWidth
         caret
+        removable={isRemovable && !!selectedItem}
+        {onRemove}
         type={isTimeSelected ? "time" : type}
         builders={[builder]}
       >
-        <span class="font-bold truncate" slot="body">
+        <span
+          class="font-bold truncate"
+          class:text-fg-tertiary={!selectedItem}
+          slot="body"
+        >
           {#if isTimeSelected}
             Time
           {:else if selectedItem}
             {$fieldData.displayMap[selectedItem]?.label || selectedItem}
           {:else}
-            Select a {type} field
+            Choose a field...
           {/if}
         </span>
       </Chip>

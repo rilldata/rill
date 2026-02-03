@@ -68,6 +68,7 @@ export class ScatterPlotChartComponent extends BaseChart<ScatterPlotCanvasChartS
       meta: {
         chartFieldInput: {
           type: "measure",
+          isRemovable: true,
         },
       },
     },
