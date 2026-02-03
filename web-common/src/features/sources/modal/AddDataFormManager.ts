@@ -467,6 +467,15 @@ export class AddDataFormManager {
 
   async handleFileUpload(file: File): Promise<string> {
     const content = await file.text();
+    const fileName = file.name.toLowerCase();
+
+    // Handle PEM/P8 private key files - base64 encode for .env compatibility
+    // The Snowflake backend accepts base64-encoded PEM content
+    if (fileName.endsWith(".pem") || fileName.endsWith(".p8")) {
+      return btoa(content);
+    }
+
+    // Handle JSON files - parse and validate
     try {
       const parsed = JSON.parse(content);
       const sanitized = JSON.stringify(parsed);
