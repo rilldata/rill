@@ -13,14 +13,25 @@
   $: connectorName = connector?.name as string;
   $: hasError = !!connector?.errorMessage;
 
+  // Managed connectors without host/dsn config aren't ready for queries yet
+  $: isAwaitingConfig =
+    connector?.provision === true &&
+    !connector?.config?.dsn &&
+    !connector?.config?.host;
+
+  $: queryEnabled = !hasError && !isAwaitingConfig;
+
   $: databaseSchemasQuery = useListDatabaseSchemas(
     instanceId,
     connectorName,
     undefined,
-    !hasError,
+    queryEnabled,
   );
 
-  $: ({ data, error, isLoading } = $databaseSchemasQuery);
+  $: ({ data: rawData, error, isLoading } = $databaseSchemasQuery);
+
+  // TanStack Query returns cached data even when disabled
+  $: data = queryEnabled ? rawData : undefined;
 </script>
 
 <div class="wrapper">
@@ -28,9 +39,11 @@
     <span class="message pl-6"
       >Error: {connector.errorMessage}</span
     >
-  {:else if isLoading}
+  {:else if isAwaitingConfig}
+    <span class="message pl-6">Configure connector to browse tables</span>
+  {:else if isLoading && queryEnabled}
     <span class="message pl-6">Loading tables...</span>
-  {:else if error}
+  {:else if error && queryEnabled}
     <span class="message pl-6"
       >Error: {error.message || error.response?.data?.message}</span
     >
