@@ -10,9 +10,6 @@ import type {
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import {
-  type MetricsViewSpecDimension,
-  MetricsViewSpecDimensionType,
-  type MetricsViewSpecMeasure,
   type V1ComponentSpec,
   type V1MetricsViewSpec,
   type V1ResolveCanvasResponseResolvedComponents,
@@ -39,8 +36,6 @@ import {
   type ChartMetadataConfig,
 } from "@rilldata/web-common/features/components/charts/config.ts";
 import { readable } from "svelte/store";
-import { getFieldsByType } from "@rilldata/web-common/features/components/charts/util.ts";
-import type { TimeDimensionDefinition } from "@rilldata/web-common/features/components/charts/types.ts";
 import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
 
 export const commonOptions: Record<

@@ -45,18 +45,18 @@ function getActiveCanvasContext(): Readable<
 
     const canvasFiltersStore = derived(
       [
-        canvasStore.canvasEntity.filterManager.activeUIFiltersStore,
+        canvasStore.canvasEntity.filterManager.filterMapStore,
         canvasStore.canvasEntity.timeManager.state.interval,
       ],
-      ([filters, selectedInterval]) => {
+      ([filtersMap, selectedInterval]) => {
         return {
-          filters,
+          filtersMap,
           selectedInterval,
         };
       },
     );
 
-    return canvasFiltersStore.subscribe(({ filters, selectedInterval }) => {
+    return canvasFiltersStore.subscribe(({ filtersMap, selectedInterval }) => {
       const analystAgentContext: V1AnalystAgentContext = {
         canvas: canvasName,
       };
@@ -66,32 +66,12 @@ function getActiveCanvasContext(): Readable<
         analystAgentContext.timeEnd = selectedInterval.end.toISO();
       }
 
-      if (filters.dimensionFilters.size) {
+      if (filtersMap.size) {
         analystAgentContext.wherePerMetricsView = {};
-        filters.dimensionFilters.forEach((dfi, mv) => {
-          mv = mv.split("::")[0];
-
-          if (!dfi.selectedValues) return;
-
-          let filter: V1Expression;
-          if (dfi.mode === DimensionFilterMode.Contains) {
-            const addNull = !dfi.inputText?.length || "null" === dfi.inputText;
-            filter = addNull
-              ? createInExpression(dfi.name, [null], !dfi.isInclude)
-              : createLikeExpression(
-                  dfi.name,
-                  dfi.inputText ?? "",
-                  !dfi.isInclude,
-                );
-          } else {
-            filter = createInExpression(
-              dfi.name,
-              dfi.selectedValues,
-              !dfi.isInclude,
-            );
+        filtersMap.forEach((expr, mv) => {
+          if (expr.cond?.exprs?.length) {
+            analystAgentContext.wherePerMetricsView![mv] = expr;
           }
-
-          analystAgentContext.wherePerMetricsView![mv] = filter;
         });
       }
 
