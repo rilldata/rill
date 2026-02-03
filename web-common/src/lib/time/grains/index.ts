@@ -4,10 +4,12 @@
  */
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import { Duration } from "luxon";
+import { Duration, Interval } from "luxon";
 import { TIME_GRAIN } from "../config";
-import { getTimeWidth } from "../transforms";
 import type { AvailableTimeGrain, TimeGrain } from "../types";
+import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
+import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains";
+import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -49,54 +51,12 @@ export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
 }
 
 // Return time grains that are allowed for a given time range.
+// This should be deprecated in favor of using allowedGrainsForInterval directly
 export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
-  const timeRangeDurationMs = getTimeWidth(start, end);
-  if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
-  ) {
-    return [TIME_GRAIN.TIME_GRAIN_MINUTE];
-  } else if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
-  ) {
-    return [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR];
-  } else if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_WEEK.duration)
-  ) {
-    return [TIME_GRAIN.TIME_GRAIN_HOUR, TIME_GRAIN.TIME_GRAIN_DAY];
-  } else if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_MONTH.duration)
-  ) {
-    return [
-      TIME_GRAIN.TIME_GRAIN_HOUR,
-      TIME_GRAIN.TIME_GRAIN_DAY,
-      TIME_GRAIN.TIME_GRAIN_WEEK,
-    ];
-  } else if (
-    timeRangeDurationMs <
-    durationToMillis(TIME_GRAIN.TIME_GRAIN_QUARTER.duration)
-  ) {
-    return [
-      TIME_GRAIN.TIME_GRAIN_DAY,
-      TIME_GRAIN.TIME_GRAIN_WEEK,
-      TIME_GRAIN.TIME_GRAIN_MONTH,
-    ];
-  } else if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
-  ) {
-    return [
-      TIME_GRAIN.TIME_GRAIN_DAY,
-      TIME_GRAIN.TIME_GRAIN_WEEK,
-      TIME_GRAIN.TIME_GRAIN_MONTH,
-      TIME_GRAIN.TIME_GRAIN_QUARTER,
-    ];
-  } else {
-    return [
-      TIME_GRAIN.TIME_GRAIN_WEEK,
-      TIME_GRAIN.TIME_GRAIN_MONTH,
-      TIME_GRAIN.TIME_GRAIN_QUARTER,
-      TIME_GRAIN.TIME_GRAIN_YEAR,
-    ];
-  }
+  const interval = Interval.fromDateTimes(start, end);
+  return allowedGrainsForInterval(interval.isValid ? interval : undefined).map(
+    (g) => TIME_GRAIN[g],
+  );
 }
 
 const APITimeGrainOrder: V1TimeGrain[] = [
@@ -134,53 +94,6 @@ export function getMinGrain(...grains: V1TimeGrain[]) {
   }
 
   return minGrain;
-}
-
-export function checkValidTimeGrain(
-  timeGrain: V1TimeGrain | undefined,
-  timeGrainOptions: TimeGrain[],
-  minTimeGrain: V1TimeGrain,
-): boolean {
-  if (!timeGrain) return false;
-  if (!timeGrainOptions.find((t) => t.grain === timeGrain)) return false;
-
-  // If minTimeGrain is not specified, then all available timeGrains are valid
-  if (minTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) return true;
-
-  const isGrainPossible = !isGrainBigger(minTimeGrain, timeGrain);
-  return isGrainPossible;
-}
-
-export function findValidTimeGrain(
-  timeGrain: V1TimeGrain,
-  timeGrainOptions: TimeGrain[],
-  minTimeGrain: V1TimeGrain,
-): V1TimeGrain {
-  const timeGrains = Object.values(TIME_GRAIN).map(
-    (timeGrain) => timeGrain.grain,
-  );
-
-  const defaultIndex = timeGrains.indexOf(timeGrain);
-
-  // Loop through the timeGrains starting from the default value
-  for (let i = defaultIndex; i < timeGrains.length; i++) {
-    const currentGrain = timeGrains[i];
-
-    if (checkValidTimeGrain(currentGrain, timeGrainOptions, minTimeGrain)) {
-      return currentGrain;
-    }
-  }
-  // If no valid timeGrain is found, loop from the beginning of the array
-  for (let i = 0; i < defaultIndex; i++) {
-    const currentGrain = timeGrains[i];
-
-    if (checkValidTimeGrain(currentGrain, timeGrainOptions, minTimeGrain)) {
-      return currentGrain;
-    }
-  }
-
-  // If no valid timeGrain is found, return the default timeGrain as fallback
-  return timeGrain;
 }
 
 export function mapDurationToGrain(duration: string): V1TimeGrain {
@@ -262,4 +175,35 @@ export function getNextSmallerGrain(
   }
 
   return availableGrains[0];
+}
+
+/**
+ * Validates and adjusts the time grain for a given interval based on allowed grains.
+ * Returns the validated grain, or undefined if validation cannot be performed.
+ */
+export function getValidatedTimeGrain(
+  interval: Interval | undefined,
+  minTimeGrain: V1TimeGrain,
+  requestedPrecision: V1TimeGrain | undefined,
+  parsed: RillTime | undefined,
+): V1TimeGrain | undefined {
+  if (!interval || !interval.isValid) {
+    return undefined;
+  }
+
+  const allowedGrains = allowedGrainsForInterval(
+    interval as Interval<true>,
+    minTimeGrain,
+  );
+
+  const rangePrecision = parsed && getRangePrecision(parsed);
+
+  const finalGrain =
+    requestedPrecision && allowedGrains.includes(requestedPrecision)
+      ? requestedPrecision
+      : rangePrecision && allowedGrains.includes(rangePrecision)
+        ? rangePrecision
+        : allowedGrains[0];
+
+  return finalGrain ?? minTimeGrain;
 }
