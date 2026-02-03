@@ -43,8 +43,8 @@
     includeArgs?: boolean;
   }
 
-  // Track whether current API config should include args
-  let includeArgsInApi = false;
+  // Build args for api and glob types (saved to YAML)
+  let buildArgs: Arg[] = [];
 
   const metricsSqlTemplates: TemplateOption[] = [
     {
@@ -233,6 +233,9 @@
   // Resource status fields
   let whereError = true;
 
+  // Connector field for sql and glob
+  let connector = "";
+
   $: host = $runtime.host || "http://localhost:9009";
   $: baseUrl = `${host}/v1/instances/${instanceId}/api/${apiName}`;
   $: fullUrl = buildFullUrl(baseUrl, args);
@@ -252,6 +255,32 @@
     doc: ReturnType<typeof parseDocument>,
     type: APIType,
   ): string {
+    // Extract connector for sql and glob types
+    if (type === "sql" || type === "glob") {
+      connector = String(doc.get("connector") ?? "");
+    }
+
+    // Extract buildArgs for api and glob types
+    if (type === "api" || type === "glob") {
+      const docJson = doc.toJSON() as Record<string, unknown> | null;
+      const argsFromYaml = docJson?.args;
+      if (
+        argsFromYaml &&
+        typeof argsFromYaml === "object" &&
+        !Array.isArray(argsFromYaml)
+      ) {
+        buildArgs = Object.entries(argsFromYaml as Record<string, unknown>).map(
+          ([key, value]) => ({
+            id: crypto.randomUUID(),
+            key,
+            value: String(value ?? ""),
+          }),
+        );
+      } else {
+        buildArgs = [];
+      }
+    }
+
     switch (type) {
       case "metrics_sql":
         return String(doc.get("metrics_sql") ?? "");
@@ -302,17 +331,41 @@
         break;
       case "sql":
         doc.set("sql", content);
+        if (connector) {
+          doc.set("connector", connector);
+        }
         break;
       case "api":
         doc.set("resolver", "api");
         doc.set("api", targetApiName);
-        if (includeArgsInApi) {
-          doc.set("args", null);
+        if (buildArgs.length > 0) {
+          const argsObj: Record<string, string> = {};
+          buildArgs.forEach((arg) => {
+            if (arg.key.trim()) {
+              argsObj[arg.key] = arg.value;
+            }
+          });
+          if (Object.keys(argsObj).length > 0) {
+            doc.set("args", argsObj);
+          }
         }
         break;
       case "glob":
         doc.set("glob", globPattern);
-        doc.set("args", null);
+        if (connector) {
+          doc.set("connector", connector);
+        }
+        if (buildArgs.length > 0) {
+          const argsObj: Record<string, string> = {};
+          buildArgs.forEach((arg) => {
+            if (arg.key.trim()) {
+              argsObj[arg.key] = arg.value;
+            }
+          });
+          if (Object.keys(argsObj).length > 0) {
+            doc.set("args", argsObj);
+          }
+        }
         break;
       case "resource_status":
         doc.set("resource_status", { where_error: whereError });
@@ -326,11 +379,17 @@
     // When switching types, use default template for the new type
     const defaults = defaultTemplates[newType];
 
+    // Reset connector when switching types
+    if (newType === "sql" || newType === "glob") {
+      connector = "";
+    }
+
     if (newType === "glob") {
       globPattern = defaults.globPattern ?? "s3://bucket/path/*.csv";
+      buildArgs = [];
     } else if (newType === "api") {
       targetApiName = defaults.api ?? "sample_api";
-      includeArgsInApi = false; // Default API template doesn't include args
+      buildArgs = [];
     } else if (newType === "resource_status") {
       whereError = defaults.whereError ?? true;
     }
@@ -355,6 +414,24 @@
   function handleWhereErrorChange(checked: boolean) {
     whereError = checked;
     updateYAML("resource_status", "");
+  }
+
+  function handleConnectorChange(value: string) {
+    connector = value;
+    updateYAML(currentType, currentContent);
+  }
+
+  function addBuildArg() {
+    buildArgs = [...buildArgs, { id: crypto.randomUUID(), key: "", value: "" }];
+  }
+
+  function removeBuildArg(id: string) {
+    buildArgs = buildArgs.filter((arg) => arg.id !== id);
+    updateYAML(currentType, currentContent);
+  }
+
+  function handleBuildArgChange() {
+    updateYAML(currentType, currentContent);
   }
 
   /** Returns the base query (select ... from X) without where/order by/limit/offset clauses. */
@@ -386,8 +463,7 @@
     ) {
       // Keep base SQL (select ... from X); remove any existing clauses and replace with template only
       const base =
-        getBaseQuery(currentContent) ||
-        defaultBaseQuery[currentType];
+        getBaseQuery(currentContent) || defaultBaseQuery[currentType];
       const suffix = template.suffix ?? "";
       const newContent = suffix ? `${base} ${suffix}`.trim() : base;
       updateYAML(currentType, newContent);
@@ -398,7 +474,7 @@
       updateYAML("glob", "");
     } else if (template.api !== undefined) {
       targetApiName = template.api;
-      includeArgsInApi = template.includeArgs ?? false;
+      buildArgs = [];
       updateYAML("api", "");
     }
   }
@@ -513,8 +589,18 @@
               view.
             </p>
           {:else if currentType === "sql"}
+            <div class="mb-3">
+              <InputLabel id="sql-connector" label="Connector (optional)" />
+              <Input
+                value={connector}
+                placeholder="duckdb"
+                size="md"
+                full
+                onInput={(value) => handleConnectorChange(value)}
+              />
+            </div>
             <div class="flex items-center justify-between">
-              <InputLabel label="SQL Query" />
+              <InputLabel id="sql-query" label="SQL Query" />
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild let:builder>
                   <Button type="text" compact small builders={[builder]}>
@@ -571,9 +657,61 @@
               Call another API endpoint by name. The target API must exist in
               your project.
             </p>
+            <!-- Args for API -->
+            <div class="mt-4">
+              <div class="flex items-center justify-between">
+                <InputLabel id="api-args" label="Args (optional)" />
+                <Button type="text" compact small onClick={addBuildArg}>
+                  <PlusIcon size="14px" />
+                  Add
+                </Button>
+              </div>
+              {#if buildArgs.length === 0}
+                <p class="hint">No args added.</p>
+              {:else}
+                <div class="flex flex-col gap-y-2 mt-2">
+                  {#each buildArgs as arg (arg.id)}
+                    <div class="flex items-center gap-x-2">
+                      <Input
+                        bind:value={arg.key}
+                        placeholder="Key"
+                        size="md"
+                        width="180px"
+                        onBlur={() => handleBuildArgChange()}
+                      />
+                      <Input
+                        bind:value={arg.value}
+                        placeholder="Value"
+                        size="md"
+                        full
+                        onBlur={() => handleBuildArgChange()}
+                      />
+                      <Button
+                        type="ghost"
+                        square
+                        compact
+                        onClick={() => removeBuildArg(arg.id)}
+                      >
+                        <Trash size="14px" />
+                      </Button>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
           {:else if currentType === "glob"}
+            <div class="mb-3">
+              <InputLabel id="glob-connector" label="Connector (optional)" />
+              <Input
+                value={connector}
+                placeholder="s3"
+                size="md"
+                full
+                onInput={(value) => handleConnectorChange(value)}
+              />
+            </div>
             <div class="flex items-center justify-between">
-              <InputLabel label="Glob Pattern" />
+              <InputLabel id="glob-pattern" label="Glob Pattern" />
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild let:builder>
                   <Button type="text" compact small builders={[builder]}>
