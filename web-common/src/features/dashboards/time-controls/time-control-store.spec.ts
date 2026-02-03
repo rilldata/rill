@@ -132,8 +132,8 @@ describe("time-control-store", () => {
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_EXPLORE_NAME, {
       name: TimeRangePreset.LAST_7_DAYS,
-      start: new Date("2021-01-01"),
-      end: new Date("2021-03-31"),
+      start: undefined,
+      end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
     });
     state = get(timeControlsStore);
