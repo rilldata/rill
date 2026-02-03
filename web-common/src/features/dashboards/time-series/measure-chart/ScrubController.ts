@@ -42,6 +42,15 @@ export class ScrubController {
     this.dataLength = length;
   }
 
+  /** Initialize controller state from external selection (e.g., from URL/props). */
+  initFromExternal(startIndex: number, endIndex: number): void {
+    this._state.set({
+      startIndex,
+      endIndex,
+      isScrubbing: false,
+    });
+  }
+
   /** Clamp index to valid range [0, dataLength-1]. */
   private clamp(index: number): number {
     if (this.dataLength === 0) return 0;

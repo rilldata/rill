@@ -577,6 +577,21 @@
       config.plotBounds.left,
       Math.min(config.plotBounds.left + config.plotBounds.width, e.offsetX),
     );
+
+    // If there's a visual selection from external scrubRange but controller is empty,
+    // initialize the controller so edge-resize and move detection work
+    const controllerState = get(scrubController.state);
+    if (
+      controllerState.startIndex === null &&
+      externalScrubStartIndex !== null &&
+      externalScrubEndIndex !== null
+    ) {
+      scrubController.initFromExternal(
+        externalScrubStartIndex,
+        externalScrubEndIndex,
+      );
+    }
+
     scrubController.start(x, xScale);
   }
 
@@ -848,7 +863,7 @@
       {/if}
 
       <!-- Data readout in top-left corner (only for non-hovered charts, not in dimension comparison) -->
-      {#if !isScrubbing && hoveredPoint && !isLocallyHovered && !isComparingDimension}
+      {#if !isScrubbing && hoveredPoint && (!showComparison || !isLocallyHovered) && !isComparingDimension}
         {@const showDelta =
           showComparison &&
           tooltipComparisonValue !== null &&
@@ -866,20 +881,21 @@
           </text>
 
           <!-- Value (with comparison on same line if applicable) -->
-          <text
-            class="stroke-surface-background text-[12px]"
-            style:paint-order="stroke"
-            stroke-width="3px"
-            x={config.plotBounds.left + 6}
-            y={config.plotBounds.top + 24}
-          >
-            <tspan class="fill-theme-700 font-semibold"
-              >{valueFormatter(tooltipCurrentValue)}</tspan
+          {#if showComparison}
+            <text
+              class="stroke-surface-background text-[12px]"
+              style:paint-order="stroke"
+              stroke-width="3px"
+              x={config.plotBounds.left + 6}
+              y={config.plotBounds.top + 24}
             >
-            {#if showComparison}
+              <tspan class="fill-theme-700 font-semibold">
+                {valueFormatter(tooltipCurrentValue)}
+              </tspan>
+              <!-- {#if showComparison} -->
               <tspan class="fill-fg-muted">
-                vs {valueFormatter(tooltipComparisonValue)}</tspan
-              >
+                vs {valueFormatter(tooltipComparisonValue)}
+              </tspan>
               {#if showDelta}
                 <tspan
                   class={tooltipDeltaPositive
@@ -889,8 +905,8 @@
                   ({tooltipDeltaPositive ? "+" : ""}{tooltipDeltaLabel})
                 </tspan>
               {/if}
-            {/if}
-          </text>
+            </text>
+          {/if}
         </g>
       {/if}
 
