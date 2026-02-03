@@ -796,11 +796,19 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			}
 
 			if d == DialectDuckDB {
-				prefix += "?"
-				args = append(args, v)
+				argExpr, argVal, err := d.GetArgExpr(v, result.Schema.Fields[i].Type.Code)
+				if err != nil {
+					return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
+				}
+				prefix += argExpr
+				args = append(args, argVal)
 			} else if d == DialectClickHouse {
-				suffix += "?"
-				args = append(args, v)
+				argExpr, argVal, err := d.GetArgExpr(v, result.Schema.Fields[i].Type.Code)
+				if err != nil {
+					return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
+				}
+				suffix += argExpr
+				args = append(args, argVal)
 			} else if d == DialectDruid || d == DialectPinot {
 				ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
 				if err != nil {
@@ -841,6 +849,24 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 	return prefix + suffix, args, dimVals, nil
 }
 
+func (d Dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	// handle date types especially otherwise they get send as time.Time args which will be treated as datetime/timestamp types in olap
+	if typ == runtimev1.Type_CODE_DATE {
+		if d == DialectClickHouse {
+			if t, ok := val.(time.Time); ok {
+				return "toDate(?)", t.Format(time.DateOnly), nil
+			}
+			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
+		} else {
+			if t, ok := val.(time.Time); ok {
+				return "CAST(? AS DATE)", t.Format(time.DateOnly), nil
+			}
+			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
+		}
+	}
+	return "?", val, nil
+}
+
 func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, error) {
 	if val == nil {
 		ok, expr := d.GetNullExpr(typ)
@@ -860,18 +886,25 @@ func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, err
 		if f, ok := val.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
 			return true, "NULL", nil
 		}
-
 		return true, fmt.Sprintf("%v", val), nil
 	case runtimev1.Type_CODE_BOOL:
 		return true, fmt.Sprintf("%v", val), nil
-	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_TIMESTAMP:
 		if t, ok := val.(time.Time); ok {
-			if ok, expr := d.GetTimeExpr(t); ok {
+			if ok, expr := d.GetDateTimeExpr(t); ok {
 				return true, expr, nil
 			}
 			return false, "", fmt.Errorf("cannot get time expr for dialect %q", d)
 		}
 		return false, "", fmt.Errorf("unsupported time type %q", typ)
+	case runtimev1.Type_CODE_DATE:
+		if t, ok := val.(time.Time); ok {
+			if ok, expr := d.GetDateExpr(t); ok {
+				return true, expr, nil
+			}
+			return false, "", fmt.Errorf("cannot get date expr for dialect %q", d)
+		}
+		return false, "", fmt.Errorf("unsupported date type %q", typ)
 	default:
 		return false, "", fmt.Errorf("unsupported type %q", typ)
 	}
@@ -897,7 +930,7 @@ func (d Dialect) GetNullExpr(typ runtimev1.Type_Code) (bool, string) {
 	return true, "NULL"
 }
 
-func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
+func (d Dialect) GetDateTimeExpr(t time.Time) (bool, string) {
 	switch d {
 	case DialectClickHouse:
 		return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
@@ -907,6 +940,19 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
 	case DialectStarRocks:
 		return true, fmt.Sprintf("CAST('%s' AS DATETIME)", t.Format(time.DateTime))
+	default:
+		return false, ""
+	}
+}
+
+func (d Dialect) GetDateExpr(t time.Time) (bool, string) {
+	switch d {
+	case DialectClickHouse:
+		return true, fmt.Sprintf("toDate('%s')", t.Format(time.DateOnly))
+	case DialectDuckDB, DialectDruid, DialectStarRocks:
+		return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
+	case DialectPinot:
+		return true, fmt.Sprintf("CAST(%d AS DATE)", t.UnixMilli())
 	default:
 		return false, ""
 	}
