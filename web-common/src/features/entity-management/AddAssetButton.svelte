@@ -293,23 +293,16 @@
           />
           Theme
         </DropdownMenu.Item>
-        <!-- Temporarily hide Report and Alert options -->
-        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(ResourceKind.Report)}>
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Report]}
-              className="text-fg-primary"
-              size="16px"
-            />
-            Report
-          </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={() => createResourceAndNavigate(ResourceKind.Alert)}>
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Alert]}
-              className="text-fg-primary"
-              size="16px"
-            />
-            Alert
-          </DropdownMenu.Item> -->
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={() => createResourceAndNavigate(ResourceKind.Alert)}
+        >
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Alert]}
+            size="16px"
+          />
+          Alert
+        </DropdownMenu.Item>
       </DropdownMenu.SubContent>
     </DropdownMenu.Sub>
   </DropdownMenu.Content>

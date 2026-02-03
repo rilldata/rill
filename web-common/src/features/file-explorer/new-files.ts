@@ -370,11 +370,10 @@ dark:
 `;
     case ResourceKind.Alert:
       return `# Alert YAML
-# Reference documentation: TODO
+# Reference documentation: https://docs.rilldata.com/reference/project-files/alerts
+
 
 type: alert
-
-...
 `;
     case ResourceKind.Report:
       return `# Report YAML
