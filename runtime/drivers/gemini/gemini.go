@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/mitchellh/mapstructure"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -40,7 +41,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			DisplayName: "Model",
-			Description: "The Gemini model to use (e.g., 'gemini-3-pro').",
+			Description: "The Gemini model to use (e.g., 'gemini-3-pro-preview').",
 			Placeholder: "",
 		},
 		{
@@ -132,7 +133,7 @@ func (c *configProperties) getModel() string {
 	if c.Model != "" {
 		return c.Model
 	}
-	return "gemini-3-pro"
+	return "gemini-3-pro-preview"
 }
 
 type handle struct {
@@ -281,6 +282,7 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	// Call Gemini API
 	res, err := h.client.Models.GenerateContent(ctx, h.config.getModel(), contents, genConfig)
 	if err != nil {
+		log.Printf("HERE?: %v", err)
 		return nil, err
 	}
 
@@ -300,14 +302,34 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 // convertTools converts Rill tools to Gemini tool format.
 func convertTools(tools []*aiv1.Tool) ([]*genai.Tool, error) {
 	var res []*genai.Tool
-	for _, tool := range tools {
+	for _, tool := range tools[0:1] {
+		var inputSchema map[string]any
+		if tool.InputSchema != "" {
+			if err := json.Unmarshal([]byte(tool.InputSchema), &inputSchema); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal input schema for tool %q: %w", tool.Name, err)
+			}
+		} else {
+			inputSchema = map[string]any{
+				"type":       "object",
+				"properties": map[string]any{},
+			}
+		}
+
+		var outputSchema map[string]any
+		if tool.OutputSchema != "" {
+			if err := json.Unmarshal([]byte(tool.OutputSchema), &outputSchema); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal output schema for tool %q: %w", tool.Name, err)
+			}
+		}
+		// Output schema is optional, so unlike for input schema, we don't need a fallback.
+
 		res = append(res, &genai.Tool{
 			FunctionDeclarations: []*genai.FunctionDeclaration{
 				{
 					Name:                 tool.Name,
 					Description:          tool.Description,
-					ParametersJsonSchema: tool.InputSchema,
-					ResponseJsonSchema:   tool.OutputSchema,
+					ParametersJsonSchema: inputSchema,
+					ResponseJsonSchema:   outputSchema,
 				},
 			},
 		})
@@ -320,6 +342,7 @@ func convertTools(tools []*aiv1.Tool) ([]*genai.Tool, error) {
 func convertMessages(msgs []*aiv1.CompletionMessage) (*genai.Content, []*genai.Content, error) {
 	var systemParts []*genai.Part
 	var contents []*genai.Content
+	callIDToName := make(map[string]string)
 	for _, msg := range msgs {
 		if msg.Role == "system" {
 			parts, err := convertSystemMessage(msg)
@@ -330,7 +353,7 @@ func convertMessages(msgs []*aiv1.CompletionMessage) (*genai.Content, []*genai.C
 			continue
 		}
 
-		converted, err := convertMessage(msg)
+		converted, err := convertMessage(msg, callIDToName)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -360,15 +383,14 @@ func convertSystemMessage(msg *aiv1.CompletionMessage) ([]*genai.Part, error) {
 }
 
 // convertMessage converts a single Rill message to Gemini Content(s).
-// Tool results require special handling and may produce separate Content entries.
-func convertMessage(msg *aiv1.CompletionMessage) ([]*genai.Content, error) {
+// The callIDToName map is populated with observed tool call IDs. The same map should be used in all calls to this function for a completion.
+func convertMessage(msg *aiv1.CompletionMessage, callIDToName map[string]string) ([]*genai.Content, error) {
 	role := genai.RoleUser
 	if msg.Role == "assistant" {
 		role = genai.RoleModel
 	}
 
 	var result []*genai.Content
-	callIDToName := make(map[string]string)
 	for _, block := range msg.Content {
 		switch b := block.BlockType.(type) {
 		case *aiv1.ContentBlock_Text:
