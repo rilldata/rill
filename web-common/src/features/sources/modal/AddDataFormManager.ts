@@ -544,9 +544,9 @@ export class AddDataFormManager {
       ) {
         const connectorPropertyKeys = new Set(
           schema
-            ? getSchemaFieldMetaList(schema, { step: "connector" })
-                .filter((field) => !field.internal)
-                .map((field) => field.key)
+            ? getSchemaFieldMetaList(schema, { step: "connector" }).map(
+                (field) => field.key,
+              )
             : [],
         );
         filteredValues = Object.fromEntries(
