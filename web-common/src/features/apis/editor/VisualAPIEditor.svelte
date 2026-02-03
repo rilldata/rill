@@ -26,7 +26,7 @@
   export let switchView: (() => void) | undefined = undefined;
   void switchView; // Silence unused warning - prop exists for external interface
 
-  type APIType = "metrics_sql" | "sql" | "api" | "glob" | "resource_status";
+  type APIType = "metrics_sql" | "sql" | "resource_status";
 
   interface Arg {
     id: string;
@@ -40,13 +40,7 @@
     label: string;
     content?: string;
     suffix?: string;
-    globPattern?: string;
-    api?: string;
-    includeArgs?: boolean;
   }
-
-  // Build args for api and glob types (saved to YAML)
-  let buildArgs: Arg[] = [];
 
   const metricsSqlTemplates: TemplateOption[] = [
     {
@@ -124,50 +118,16 @@
     },
   ];
 
-  const apiTemplates: TemplateOption[] = [
-    {
-      label: "Basic API Call",
-      api: "sample_api",
-    },
-  ];
-
-  const globTemplates: TemplateOption[] = [
-    {
-      label: "S3 CSV Files",
-      globPattern: "s3://bucket/path/*.csv",
-    },
-    {
-      label: "S3 Parquet Files",
-      globPattern: "s3://bucket/path/*.parquet",
-    },
-    {
-      label: "GCS Files",
-      globPattern: "gs://bucket/path/*.csv",
-    },
-    {
-      label: "Recursive Pattern",
-      globPattern: "s3://bucket/**/*.csv",
-    },
-    {
-      label: "Local Files",
-      globPattern: "data/*.csv",
-    },
-  ];
-
   // Default templates for each API type (first option from each list)
   const defaultTemplates: Record<
     APIType,
     {
       content?: string;
-      globPattern?: string;
-      api?: string;
       whereError?: boolean;
     }
   > = {
     metrics_sql: metricsSqlTemplates[0],
     sql: sqlTemplates[0],
-    api: apiTemplates[0],
-    glob: globTemplates[0],
     resource_status: { whereError: true },
   };
 
@@ -181,16 +141,6 @@
       value: "sql",
       label: "SQL",
       description: "Query models/sources using raw SQL",
-    },
-    {
-      value: "api",
-      label: "API",
-      description: "Call another API endpoint",
-    },
-    {
-      value: "glob",
-      label: "Glob",
-      description: "Match files using glob patterns",
     },
     {
       value: "resource_status",
@@ -217,6 +167,7 @@
   let previewHeight = 300;
   let resizerMax = 600;
 
+  let mainAreaEl: HTMLDivElement | undefined;
   onMount(() => {
     // Calculate initial preview height based on available space
     const mainArea = document.querySelector(".main-area");
@@ -227,16 +178,10 @@
     }
   });
 
-  // Glob-specific fields
-  let globPattern = "";
-
-  // API-specific fields
-  let targetApiName = "";
-
   // Resource status fields
   let whereError = true;
 
-  // Connector field for sql and glob
+  // Connector field for sql type
   let connector = "";
 
   $: host = $runtime.host || "http://localhost:9009";
@@ -247,10 +192,7 @@
   function detectAPIType(doc: ReturnType<typeof parseDocument>): APIType {
     if (doc.get("metrics_sql")) return "metrics_sql";
     if (doc.get("sql")) return "sql";
-    if (doc.get("glob")) return "glob";
     if (doc.get("resource_status")) return "resource_status";
-    const resolver = doc.get("resolver");
-    if (resolver === "api") return "api";
     return "metrics_sql"; // default
   }
 
@@ -258,30 +200,9 @@
     doc: ReturnType<typeof parseDocument>,
     type: APIType,
   ): string {
-    // Extract connector for sql and glob types
-    if (type === "sql" || type === "glob") {
+    // Extract connector for sql type
+    if (type === "sql") {
       connector = String(doc.get("connector") ?? "");
-    }
-
-    // Extract buildArgs for api and glob types
-    if (type === "api" || type === "glob") {
-      const docJson = doc.toJSON() as Record<string, unknown> | null;
-      const argsFromYaml = docJson?.args;
-      if (
-        argsFromYaml &&
-        typeof argsFromYaml === "object" &&
-        !Array.isArray(argsFromYaml)
-      ) {
-        buildArgs = Object.entries(argsFromYaml as Record<string, unknown>).map(
-          ([key, value]) => ({
-            id: crypto.randomUUID(),
-            key,
-            value: String(value ?? ""),
-          }),
-        );
-      } else {
-        buildArgs = [];
-      }
     }
 
     switch (type) {
@@ -289,14 +210,6 @@
         return String(doc.get("metrics_sql") ?? "");
       case "sql":
         return String(doc.get("sql") ?? "");
-      case "api": {
-        targetApiName = String(doc.get("api") ?? "");
-        return "";
-      }
-      case "glob": {
-        globPattern = String(doc.get("glob") ?? "");
-        return "";
-      }
       case "resource_status": {
         // Use getIn to get nested value from YAML document
         const whereErrorValue = doc.getIn(["resource_status", "where_error"]);
@@ -338,38 +251,6 @@
           doc.set("connector", connector);
         }
         break;
-      case "api":
-        doc.set("resolver", "api");
-        doc.set("api", targetApiName);
-        if (buildArgs.length > 0) {
-          const argsObj: Record<string, string> = {};
-          buildArgs.forEach((arg) => {
-            if (arg.key.trim()) {
-              argsObj[arg.key] = arg.value;
-            }
-          });
-          if (Object.keys(argsObj).length > 0) {
-            doc.set("args", argsObj);
-          }
-        }
-        break;
-      case "glob":
-        doc.set("glob", globPattern);
-        if (connector) {
-          doc.set("connector", connector);
-        }
-        if (buildArgs.length > 0) {
-          const argsObj: Record<string, string> = {};
-          buildArgs.forEach((arg) => {
-            if (arg.key.trim()) {
-              argsObj[arg.key] = arg.value;
-            }
-          });
-          if (Object.keys(argsObj).length > 0) {
-            doc.set("args", argsObj);
-          }
-        }
-        break;
       case "resource_status":
         doc.set("resource_status", { where_error: whereError });
         break;
@@ -383,17 +264,11 @@
     const defaults = defaultTemplates[newType];
 
     // Reset connector when switching types
-    if (newType === "sql" || newType === "glob") {
+    if (newType === "sql") {
       connector = "";
     }
 
-    if (newType === "glob") {
-      globPattern = defaults.globPattern ?? "s3://bucket/path/*.csv";
-      buildArgs = [];
-    } else if (newType === "api") {
-      targetApiName = defaults.api ?? "sample_api";
-      buildArgs = [];
-    } else if (newType === "resource_status") {
+    if (newType === "resource_status") {
       whereError = defaults.whereError ?? true;
     }
 
@@ -404,16 +279,6 @@
     updateYAML(currentType, content);
   }
 
-  function handleGlobPatternChange(value: string) {
-    globPattern = value;
-    updateYAML("glob", "");
-  }
-
-  function handleApiNameChange(value: string) {
-    targetApiName = value;
-    updateYAML("api", "");
-  }
-
   function handleWhereErrorChange(checked: boolean) {
     whereError = checked;
     updateYAML("resource_status", "");
@@ -421,19 +286,6 @@
 
   function handleConnectorChange(value: string) {
     connector = value;
-    updateYAML(currentType, currentContent);
-  }
-
-  function addBuildArg() {
-    buildArgs = [...buildArgs, { id: crypto.randomUUID(), key: "", value: "" }];
-  }
-
-  function removeBuildArg(id: string) {
-    buildArgs = buildArgs.filter((arg) => arg.id !== id);
-    updateYAML(currentType, currentContent);
-  }
-
-  function handleBuildArgChange() {
     updateYAML(currentType, currentContent);
   }
 
@@ -472,13 +324,6 @@
       updateYAML(currentType, newContent);
     } else if (template.content !== undefined) {
       updateYAML(currentType, template.content);
-    } else if (template.globPattern !== undefined) {
-      globPattern = template.globPattern;
-      updateYAML("glob", "");
-    } else if (template.api !== undefined) {
-      targetApiName = template.api;
-      buildArgs = [];
-      updateYAML("api", "");
     }
   }
 
@@ -540,8 +385,8 @@
 
         <!-- API Type Selector -->
         <div class="section">
-          <InputLabel label="API Type" />
-          <div class="grid grid-cols-5 gap-2">
+          <InputLabel id="api-type" label="API Type" />
+          <div class="grid grid-cols-3 gap-2">
             {#each apiTypes as apiType}
               <button
                 class="type-button"
@@ -563,7 +408,7 @@
         <div class="section">
           {#if currentType === "metrics_sql"}
             <div class="flex items-center justify-between">
-              <InputLabel label="Metrics SQL Query" />
+              <InputLabel id="metrics-sql-query" label="Metrics SQL Query" />
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild let:builder>
                   <Button type="text" compact small builders={[builder]}>
@@ -630,120 +475,11 @@
               Replace <code>table</code> with an actual model or source name from
               your project.
             </p>
-          {:else if currentType === "api"}
-            <div class="flex items-center justify-between">
-              <InputLabel label="Target API Name" />
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild let:builder>
-                  <Button type="text" compact small builders={[builder]}>
-                    Templates
-                    <ChevronDownIcon size="12px" />
-                  </Button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content align="end">
-                  {#each apiTemplates as template}
-                    <DropdownMenu.Item on:click={() => applyTemplate(template)}>
-                      {template.label}
-                    </DropdownMenu.Item>
-                  {/each}
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </div>
-            <Input
-              value={targetApiName}
-              placeholder="other_api_name"
-              size="lg"
-              full
-              onInput={(value) => handleApiNameChange(value)}
-            />
-            <p class="hint">
-              Call another API endpoint by name. The target API must exist in
-              your project.
-            </p>
-            <!-- Args for API -->
-            <div class="mt-4">
-              <div class="flex items-center justify-between">
-                <InputLabel id="api-args" label="Args (optional)" />
-                <Button type="text" compact small onClick={addBuildArg}>
-                  <PlusIcon size="14px" />
-                  Add
-                </Button>
-              </div>
-              {#if buildArgs.length === 0}
-                <p class="hint">No args added.</p>
-              {:else}
-                <div class="flex flex-col gap-y-2 mt-2">
-                  {#each buildArgs as arg (arg.id)}
-                    <div class="flex items-center gap-x-2">
-                      <Input
-                        bind:value={arg.key}
-                        placeholder="Key"
-                        size="md"
-                        width="180px"
-                        onBlur={() => handleBuildArgChange()}
-                      />
-                      <Input
-                        bind:value={arg.value}
-                        placeholder="Value"
-                        size="md"
-                        full
-                        onBlur={() => handleBuildArgChange()}
-                      />
-                      <Button
-                        type="ghost"
-                        square
-                        compact
-                        onClick={() => removeBuildArg(arg.id)}
-                      >
-                        <Trash size="14px" />
-                      </Button>
-                    </div>
-                  {/each}
-                </div>
-              {/if}
-            </div>
-          {:else if currentType === "glob"}
-            <div class="mb-3">
-              <InputLabel id="glob-connector" label="Connector (optional)" />
-              <Input
-                value={connector}
-                placeholder="s3"
-                size="md"
-                full
-                onInput={(value) => handleConnectorChange(value)}
-              />
-            </div>
-            <div class="flex items-center justify-between">
-              <InputLabel id="glob-pattern" label="Glob Pattern" />
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild let:builder>
-                  <Button type="text" compact small builders={[builder]}>
-                    Templates
-                    <ChevronDownIcon size="12px" />
-                  </Button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content align="end">
-                  {#each globTemplates as template}
-                    <DropdownMenu.Item on:click={() => applyTemplate(template)}>
-                      {template.label}
-                    </DropdownMenu.Item>
-                  {/each}
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-            </div>
-            <Input
-              value={globPattern}
-              placeholder="s3://bucket/path/*.csv"
-              size="lg"
-              full
-              onInput={(value) => handleGlobPatternChange(value)}
-            />
-            <p class="hint">
-              Match files using glob patterns. Examples: s3://bucket/path/*.csv,
-              gs://bucket/*.parquet, s3://bucket/**/*.csv
-            </p>
           {:else if currentType === "resource_status"}
-            <InputLabel label="Resource Status Options" />
+            <InputLabel
+              id="resource-status-options"
+              label="Resource Status Options"
+            />
             <div class="flex items-center gap-x-2 mt-1">
               <Checkbox
                 checked={whereError}
@@ -783,7 +519,7 @@
 
         <!-- Endpoint URL -->
         <div class="section">
-          <InputLabel label="Endpoint URL" />
+          <InputLabel id="endpoint-url" label="Endpoint URL" />
           <div
             class="flex items-center gap-x-2 px-3 py-2 bg-surface-muted rounded-[2px] border text-sm font-mono"
           >
@@ -795,7 +531,7 @@
         <!-- Arguments -->
         <div class="section">
           <div class="flex items-center justify-between">
-            <InputLabel label="Arguments" />
+            <InputLabel id="test-arguments" label="Arguments" />
             <Button type="text" compact onClick={addArg}>
               <PlusIcon size="14px" />
               Add
