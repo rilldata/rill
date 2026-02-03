@@ -157,10 +157,10 @@ type ListObjectsRequest struct {
 	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	Connector  string `protobuf:"bytes,2,opt,name=connector,proto3" json:"connector,omitempty"`
 	Bucket     string `protobuf:"bytes,3,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	// Lists objects within a folder-like level (using path prefix and delimiter).
+	// Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
 	Path      string `protobuf:"bytes,4,opt,name=path,proto3" json:"path,omitempty"`
 	Delimiter string `protobuf:"bytes,5,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
-	// Lists objects matching the glob pattern.
+	// Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
 	Glob      string `protobuf:"bytes,6,opt,name=glob,proto3" json:"glob,omitempty"`
 	PageSize  uint32 `protobuf:"varint,7,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	PageToken string `protobuf:"bytes,8,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`

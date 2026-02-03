@@ -125,7 +125,7 @@ export class ListObjectsRequest extends Message<ListObjectsRequest> {
   bucket = "";
 
   /**
-   * Lists objects within a folder-like level (using path prefix and delimiter).
+   * Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
    *
    * @generated from field: string path = 4;
    */
@@ -137,7 +137,7 @@ export class ListObjectsRequest extends Message<ListObjectsRequest> {
   delimiter = "";
 
   /**
-   * Lists objects matching the glob pattern.
+   * Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
    *
    * @generated from field: string glob = 6;
    */

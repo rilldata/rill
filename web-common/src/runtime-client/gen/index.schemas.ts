@@ -2696,12 +2696,12 @@ export type ConnectorServiceListBucketsParams = {
 
 export type ConnectorServiceListObjectsParams = {
   /**
-   * Lists objects within a folder-like level (using path prefix and delimiter).
+   * Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
    */
   path?: string;
   delimiter?: string;
   /**
-   * Lists objects matching the glob pattern.
+   * Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
    */
   glob?: string;
   pageSize?: number;
