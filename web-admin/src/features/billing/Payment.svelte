@@ -4,7 +4,10 @@
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import { getPaymentIssueErrorText } from "@rilldata/web-admin/features/billing/issues/getMessageForPaymentIssues";
-  import { fetchPaymentsPortalURL } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import {
+    createPaymentCheckoutSessionURL,
+    fetchPaymentsPortalURL,
+  } from "@rilldata/web-admin/features/billing/plans/selectors";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -27,10 +30,15 @@
     neverSubscribed || onTrial || onEnterprisePlan || onManagedPlan;
 
   async function handleManagePayment() {
-    // If there are payment issues, redirect to the payment page which shows pricing
+    // If there are payment issues, use Stripe Checkout for a better UX
     // Otherwise, use the billing portal for general management
     if (paymentIssues?.length) {
-      window.open(`/${organization}/-/settings/billing/payment`, "_self");
+      const successUrl = window.location.href;
+      const cancelUrl = window.location.href;
+      window.open(
+        await createPaymentCheckoutSessionURL(organization, successUrl, cancelUrl),
+        "_self",
+      );
     } else {
       window.open(
         await fetchPaymentsPortalURL(organization, window.location.href),
