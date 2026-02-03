@@ -375,9 +375,9 @@
 
 <div class="wrapper">
   <div class="main-area">
-    <div class="flex flex-col gap-y-4 flex-1 overflow-auto">
+    <div class="sections-container">
       <!-- BUILD SECTION -->
-      <div class="section-group">
+      <div class="section-group build-section">
         <div class="section-header">
           <span class="section-title">Build</span>
         </div>
@@ -590,28 +590,19 @@
           {/if}
         </div>
       </div>
-    </div>
 
-    <!-- Response Preview -->
-    <div
-      class="preview-area"
-      style:height="{previewHeight}px"
-      style:min-height="100px"
-      style:max-height="60%"
-    >
-      <Resizer
-        absolute={false}
-        max={resizerMax}
-        direction="NS"
-        side="top"
-        bind:dimension={previewHeight}
-      />
-      <div class="preview-header">
-        <span class="text-xs font-medium text-fg-secondary uppercase">
-          Response Preview
-        </span>
-      </div>
-      <div class="preview-content">
+      <!-- Response Preview -->
+      <div
+        class="preview-area"
+        style:height="{previewHeight}px"
+        style:min-height="100px"
+      >
+        <Resizer
+          max={resizerMax}
+          direction="NS"
+          side="top"
+          bind:dimension={previewHeight}
+        />
         <APIResponsePreview
           response={apiResponse}
           error={responseError}
@@ -631,16 +622,24 @@
   }
 
   .main-area {
-    @apply flex flex-col size-full p-4 bg-surface-background border;
-    @apply overflow-hidden rounded-[2px];
+    @apply flex flex-col size-full p-4 bg-surface-background;
+    @apply overflow-hidden;
+  }
+
+  .sections-container {
+    @apply flex flex-col flex-1 overflow-hidden gap-y-2;
   }
 
   .section-group {
-    @apply flex flex-col gap-y-4 p-4 rounded-[2px] border bg-surface-background;
+    @apply flex flex-col gap-y-4 p-4 bg-surface-background border rounded-[2px];
+  }
+
+  .section-group.build-section {
+    @apply flex-shrink-0 overflow-auto;
   }
 
   .section-group.test-section {
-    @apply bg-surface-background border-dashed;
+    @apply flex-shrink-0;
   }
 
   .section-header {
@@ -695,14 +694,6 @@
   }
 
   .preview-area {
-    @apply relative flex flex-col border-t mt-4 flex-shrink-0;
-  }
-
-  .preview-header {
-    @apply px-3 py-2 border-b bg-surface-subtle;
-  }
-
-  .preview-content {
-    @apply flex-1 overflow-auto;
+    @apply relative flex flex-col flex-shrink-0 overflow-hidden bg-surface-background border rounded-[2px];
   }
 </style>

@@ -88,8 +88,8 @@
   }
 </script>
 
-<div class="flex flex-col h-full overflow-hidden">
-  <div class="flex-1 overflow-hidden min-h-0">
+<div class="flex flex-col h-full overflow-hidden p-2">
+  <div class="editor-panel">
     <WorkspaceEditorContainer error={mainError}>
       <Editor
         bind:autoSave
@@ -106,18 +106,12 @@
   </div>
 
   <div
-    class="relative flex flex-col border-t bg-surface-background"
+    class="preview-panel"
     style:height="{previewHeight}px"
     style:min-height="100px"
     style:max-height="60%"
   >
-    <Resizer
-      absolute={false}
-      max={500}
-      direction="NS"
-      side="top"
-      bind:dimension={previewHeight}
-    />
+    <Resizer max={500} direction="NS" side="top" bind:dimension={previewHeight} />
 
     <div class="flex items-center gap-x-3 px-3 py-2 border-b">
       <div class="flex items-center gap-x-2 flex-1 min-w-0">
@@ -205,3 +199,13 @@
     </div>
   </div>
 </div>
+
+<style lang="postcss">
+  .editor-panel {
+    @apply flex-1 overflow-hidden min-h-0 border rounded-[2px] rounded-b-none border-b-0;
+  }
+
+  .preview-panel {
+    @apply relative flex flex-col bg-surface-background border rounded-[2px] rounded-t-none overflow-hidden;
+  }
+</style>
