@@ -27,8 +27,9 @@ type ReportYAML struct {
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
-	Timeout string `yaml:"timeout"`
-	Query   struct {
+	Timeout string    `yaml:"timeout"`
+	Data    *DataYAML `yaml:"data"` // Generic data resolver (preferred for new reports)
+	Query   struct {  // Legacy query-based report
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
@@ -112,46 +113,69 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	// Query name
-	if tmp.Query.Name == "" {
-		return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
-	}
+	// Determine if using new data resolver or legacy query
+	var resolver string
+	var resolverProps *structpb.Struct
+	isLegacyQuery := tmp.Data == nil
 
-	// Query args
-	if tmp.Query.ArgsJSON != "" {
-		// Validate JSON
-		if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
-			return errors.New(`failed to parse "query.args_json" as JSON`)
-		}
-	} else {
-		// Fall back to query.args if query.args_json is not set
-		data, err := json.Marshal(tmp.Query.Args)
+	if !isLegacyQuery {
+		// Parse the data resolver
+		var refs []ResourceName
+		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, node.Connector)
 		if err != nil {
-			return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
-		tmp.Query.ArgsJSON = string(data)
-	}
-	if tmp.Query.ArgsJSON == "" {
-		return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
+		if resolver != "ai" {
+			// supports ai resolver only as of now // TODO: support other resolvers
+			return fmt.Errorf("reports only support the AI resolver")
+		}
+		node.Refs = append(node.Refs, refs...)
 	}
 
-	// Parse export format
-	exportFormat, err := parseExportFormat(tmp.Export.Format)
-	if err != nil {
-		return err
-	}
-	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
-		return fmt.Errorf(`missing required property "export.format"`)
+	// Parse legacy query-based report config
+	var exportFormat runtimev1.ExportFormat
+	if isLegacyQuery {
+		// Query name
+		if tmp.Query.Name == "" {
+			return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
+		}
+
+		// Query args
+		if tmp.Query.ArgsJSON != "" {
+			// Validate JSON
+			if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
+				return errors.New(`failed to parse "query.args_json" as JSON`)
+			}
+		} else {
+			// Fall back to query.args if query.args_json is not set
+			data, err := json.Marshal(tmp.Query.Args)
+			if err != nil {
+				return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+			}
+			tmp.Query.ArgsJSON = string(data)
+		}
+		if tmp.Query.ArgsJSON == "" {
+			return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
+		}
+
+		// Parse export format
+		exportFormat, err = parseExportFormat(tmp.Export.Format)
+		if err != nil {
+			return err
+		}
+		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
+			return fmt.Errorf(`missing required property "export.format"`)
+		}
 	}
 
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
 		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
 
-	isLegacySyntax := len(tmp.Email.Recipients) > 0
+	isLegacyEmailSyntax := len(tmp.Email.Recipients) > 0
 
 	// Validate recipients
-	if isLegacySyntax {
+	if isLegacyEmailSyntax {
 		// Backward compatibility
 		for _, email := range tmp.Email.Recipients {
 			_, err := mail.ParseAddress(email)
@@ -178,6 +202,11 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
+	// AI resolver only supports email notifications (can't reliably get user attributes for slack)
+	if resolver == "ai" && (len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0) {
+		return errors.New(`AI reports only support email notifications`) // can't reliably fetch user attributes for slack webhooks/channels for enforcing access control
+	}
+
 	// Track report
 	r, err := p.insertResource(ResourceKindReport, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -199,13 +228,20 @@ func (p *Parser) parseReport(node *Node) error {
 	if timeout != 0 {
 		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
-	r.ReportSpec.QueryName = tmp.Query.Name
-	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
-	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
-	r.ReportSpec.ExportFormat = exportFormat
-	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
 
-	if isLegacySyntax {
+	// Set resolver or legacy query fields
+	if !isLegacyQuery {
+		r.ReportSpec.Resolver = resolver
+		r.ReportSpec.ResolverProperties = resolverProps // TODO validate properties
+	} else {
+		r.ReportSpec.QueryName = tmp.Query.Name
+		r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
+		r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
+		r.ReportSpec.ExportFormat = exportFormat
+		r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
+	}
+
+	if isLegacyEmailSyntax {
 		// Backwards compatibility
 		// Email settings
 		notifier, err := structpb.NewStruct(map[string]any{
