@@ -7,7 +7,9 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { V1LogLevel, type V1Log } from "@rilldata/web-common/runtime-client";
 
+  // Maximum number of logs to keep in memory to prevent excessive memory usage
   const MAX_LOGS = 500;
+  // Number of recent logs to fetch when initially connecting to get some history
   const REPLAY_LIMIT = 100;
 
   let logs: V1Log[] = [];
@@ -60,8 +62,11 @@
           });
         }
       }
-    } catch {
-      // Ignore parse errors
+    } catch (e) {
+      // Log parse errors in development for debugging
+      if (import.meta.env.DEV) {
+        console.warn("Failed to parse log message:", e);
+      }
     }
   }
 

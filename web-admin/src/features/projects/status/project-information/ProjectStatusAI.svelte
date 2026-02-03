@@ -5,7 +5,12 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { formatConnectorName } from "../display-utils";
 
+  // The admin connector is managed by Rill and should display as "Rill Managed"
+  const RILL_MANAGED_CONNECTOR_NAME = "admin";
+
   export let aiConnector: { name?: string; type?: string } | undefined;
+
+  $: isRillManaged = aiConnector?.name === RILL_MANAGED_CONNECTOR_NAME;
 </script>
 
 <div class="info-cell">
@@ -33,7 +38,7 @@
       </span>
       <div class="connector-details">
         <span class="detail-value">
-          {aiConnector.name === "admin" ? "Rill Managed" : aiConnector.type}
+          {isRillManaged ? "Rill Managed" : aiConnector.type}
         </span>
       </div>
     {:else}

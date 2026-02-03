@@ -33,7 +33,7 @@
 
 <!-- Info grid (inside the box) -->
 <div class="info-box">
-  <div class="info-grid">
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
     <ProjectStatusGitHub {organization} {project} />
     <ProjectStatusOlap {olapConnector} />
     <ProjectStatusAI {aiConnector} />
@@ -47,6 +47,18 @@
   }
 
   .info-grid {
-    @apply grid grid-cols-4 gap-6;
+    @apply grid grid-cols-1 gap-6;
+  }
+
+  @media (min-width: 768px) {
+    .info-grid {
+      @apply grid-cols-2;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .info-grid {
+      @apply grid-cols-4;
+    }
   }
 </style>

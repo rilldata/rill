@@ -64,16 +64,6 @@ export function formatConnectorName(connector: string | undefined): string {
   return connector.charAt(0).toUpperCase() + connector.slice(1);
 }
 
-export type StatusDisplay = {
-  icon: any; // SvelteComponent
-  iconProps?: {
-    [key: string]: unknown;
-  };
-  text?: string;
-  textClass?: string;
-  wrapperClass?: string;
-};
-
 export function getResourceKindTagColor(kind: string) {
   switch (kind) {
     case "rill.runtime.v1.MetricsView":

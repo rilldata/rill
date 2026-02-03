@@ -15,8 +15,8 @@
   $: proj = createAdminServiceGetProject(organization, project);
   $: gitRemote = $proj.data?.project?.gitRemote;
   $: managedGitId = $proj.data?.project?.managedGitId;
-  $: isGithubConnected = !!gitRemote && !managedGitId;
   $: githubUrl = gitRemote ? getGitUrlFromRemote(gitRemote) : "";
+  $: isGithubConnected = !!gitRemote && !managedGitId && !!githubUrl;
 
   // CLI commands
   $: cloneCommand = `rill project clone ${project}`;
