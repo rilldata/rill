@@ -18,14 +18,14 @@
     "flex items-center gap-2 p-3 border rounded-sm cursor-pointer transition-colors duration-150 w-[calc(50%-4px)]",
     checked
       ? "border-primary-400 bg-primary-50"
-      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50",
+      : "border hover:bg-surface-subtle",
   )}
   on:click={toggle}
 >
   <CheckboxPrimitive.Root
     {checked}
     class={cn(
-      "h-4 w-4 shrink-0 rounded border border-gray-300 bg-transparent pointer-events-none",
+      "h-4 w-4 shrink-0 rounded border bg-transparent pointer-events-none",
       "data-[state=checked]:bg-primary-500 data-[state=checked]:border-transparent",
     )}
     tabindex={-1}
@@ -37,5 +37,5 @@
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 
-  <span class="text-sm font-medium text-gray-900">{label}</span>
+  <span class="text-sm font-medium text-fg-primary">{label}</span>
 </button>

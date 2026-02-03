@@ -40,7 +40,7 @@
     >
       <ThumbsUp
         size={14}
-        class={hasPositiveFeedback ? "text-primary-500" : "text-gray-400"}
+        class={hasPositiveFeedback ? "text-icon-accent" : "text-icon-muted"}
       />
       <svelte:fragment slot="tooltip-content"
         >This response was helpful</svelte:fragment
@@ -55,7 +55,7 @@
     >
       <ThumbsDown
         size={14}
-        class={hasNegativeFeedback ? "text-primary-500" : "text-gray-400"}
+        class={hasNegativeFeedback ? "text-icon-accent" : "text-icon-muted"}
       />
       <svelte:fragment slot="tooltip-content"
         >This response needs improvement</svelte:fragment
@@ -84,12 +84,12 @@
   }
 
   .feedback-loading {
-    @apply text-xs text-gray-400 italic;
+    @apply text-xs text-fg-muted italic;
     @apply pl-1 py-1;
   }
 
   .feedback-response {
-    @apply text-xs text-gray-500 italic;
+    @apply text-xs text-fg-secondary italic;
     @apply pl-1 py-1;
   }
 </style>

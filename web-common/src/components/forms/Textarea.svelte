@@ -49,7 +49,7 @@
 
   .textarea {
     @apply w-full px-3 py-2;
-    @apply border border-gray-300 rounded-[2px];
+    @apply border rounded-[2px];
     @apply text-sm;
     @apply resize-none;
     @apply bg-surface;
@@ -62,18 +62,18 @@
   }
 
   .textarea:disabled {
-    @apply bg-gray-50 text-gray-500 cursor-not-allowed;
+    @apply bg-surface-muted text-fg-disabled cursor-not-allowed;
   }
 
   .textarea::placeholder {
-    @apply text-gray-400;
+    @apply text-fg-muted;
   }
 
   .textarea.error {
-    @apply border-red-600;
+    @apply border-destructive;
   }
 
   .error-text {
-    @apply text-red-500 text-xs;
+    @apply text-destructive text-xs;
   }
 </style>
