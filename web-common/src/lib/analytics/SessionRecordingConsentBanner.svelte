@@ -10,11 +10,37 @@
 
   // EU country codes (ISO 3166-1 alpha-2)
   const EU_COUNTRIES = new Set([
-    "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
-    "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
-    "PL", "PT", "RO", "SK", "SI", "ES", "SE",
+    "AT",
+    "BE",
+    "BG",
+    "HR",
+    "CY",
+    "CZ",
+    "DK",
+    "EE",
+    "FI",
+    "FR",
+    "DE",
+    "GR",
+    "HU",
+    "IE",
+    "IT",
+    "LV",
+    "LT",
+    "LU",
+    "MT",
+    "NL",
+    "PL",
+    "PT",
+    "RO",
+    "SK",
+    "SI",
+    "ES",
+    "SE",
     // EEA countries
-    "IS", "LI", "NO",
+    "IS",
+    "LI",
+    "NO",
     // UK (still follows similar privacy laws)
     "GB",
   ]);
@@ -26,7 +52,8 @@
       const data = await response.json();
 
       const isEU = EU_COUNTRIES.has(data.country_code);
-      const isCalifornia = data.country_code === "US" && data.region_code === "CA";
+      const isCalifornia =
+        data.country_code === "US" && data.region_code === "CA";
 
       return isEU || isCalifornia;
     } catch {
