@@ -18,7 +18,6 @@
   export let metricsView: string;
   export let fieldConfig: FieldConfig;
   export let canvasName: string;
-  export let otherFieldConfig: FieldConfig | undefined = undefined;
 
   export let onChange: (updatedConfig: FieldConfig) => void;
 

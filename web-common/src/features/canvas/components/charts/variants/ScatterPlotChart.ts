@@ -99,7 +99,20 @@ export class ScatterPlotChartComponent extends BaseChart<ScatterPlotCanvasChartS
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    return ScatterPlotChartComponent.chartInputParams;
+    const inputParams = { ...ScatterPlotChartComponent.chartInputParams };
+
+    inputParams.color.meta!.chartFieldInput = {
+      type: "dimension",
+      defaultLegendOrientation: "top",
+      limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
+      colorMappingSelector: {
+        enable: true,
+        values: this.provider.customColorValues,
+      },
+      nullSelector: true,
+    };
+
+    return inputParams;
   }
 
   createChartDataQuery(
