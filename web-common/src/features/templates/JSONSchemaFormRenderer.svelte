@@ -3,7 +3,12 @@
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import SchemaField from "./SchemaField.svelte";
-  import type { JSONSchemaField, MultiStepFormSchema } from "./schemas/types";
+  import TemplateSelector from "./TemplateSelector.svelte";
+  import type {
+    FormTemplate,
+    JSONSchemaField,
+    MultiStepFormSchema,
+  } from "./schemas/types";
   import {
     getConditionalValues,
     isStepMatch,
@@ -29,6 +34,22 @@
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
+
+  // Template support
+  $: templates = schema?.["x-templates"] ?? [];
+
+  function handleSelectTemplate(template: FormTemplate) {
+    form.update(
+      ($form) => {
+        // Apply template values to the form
+        for (const [key, value] of Object.entries(template.values)) {
+          $form[key] = value;
+        }
+        return $form;
+      },
+      { taint: true },
+    );
+  }
 
   $: stepFilter = step;
   $: groupedFields = schema
@@ -325,6 +346,8 @@
 </script>
 
 {#if schema}
+  <TemplateSelector {templates} onSelectTemplate={handleSelectTemplate} />
+
   {#each renderOrder as [key, prop] (key)}
     {#if isRadioEnum(prop)}
       <div class="py-1.5 first:pt-0 last:pb-0">

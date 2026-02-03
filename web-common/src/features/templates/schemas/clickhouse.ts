@@ -11,6 +11,23 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "rill-managed": { idle: "Connect", loading: "Connecting..." },
     },
   },
+  "x-templates": [
+    {
+      id: "playground",
+      label: "ClickHouse Playground",
+      description: "Free public ClickHouse instance for testing and demos",
+      values: {
+        connector_type: "self-hosted",
+        connection_mode: "parameters",
+        host: "play.clickhouse.com",
+        port: "9440",
+        username: "play",
+        password: "",
+        database: "default",
+        ssl: true,
+      },
+    },
+  ],
   properties: {
     connector_type: {
       type: "string",
