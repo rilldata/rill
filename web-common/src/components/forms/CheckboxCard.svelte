@@ -30,11 +30,13 @@
     )}
     tabindex={-1}
   >
-    <CheckboxPrimitive.Indicator
-      class="flex items-center justify-center text-white"
-    >
-      <Check class="h-3.5 w-3.5" />
-    </CheckboxPrimitive.Indicator>
+    {#if checked}
+      <CheckboxPrimitive.Indicator
+        class="flex items-center justify-center text-white"
+      >
+        <Check class="h-3.5 w-3.5" />
+      </CheckboxPrimitive.Indicator>
+    {/if}
   </CheckboxPrimitive.Root>
 
   <span class="text-sm font-medium text-fg-primary">{label}</span>
