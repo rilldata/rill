@@ -58,21 +58,31 @@ export function getBillingUpgradeUrl(page: Page, organization: string) {
 /**
  * Creates a Stripe Checkout session for collecting payment method and billing address.
  * This provides a better UX than the billing portal with quick payment options.
+ * Falls back to the billing portal URL if checkout session creation fails.
  */
 export async function createPaymentCheckoutSessionURL(
   organization: string,
   successUrl: string,
   cancelUrl: string,
 ): Promise<string> {
-  const response = await adminServiceCreatePaymentCheckoutSession(
-    organization,
-    {
-      successUrl,
-      cancelUrl,
-    },
-  );
+  try {
+    const response = await adminServiceCreatePaymentCheckoutSession(
+      organization,
+      {
+        successUrl,
+        cancelUrl,
+      },
+    );
 
-  return response.url ?? "";
+    if (response.url) {
+      return response.url;
+    }
+  } catch (e) {
+    console.error("Failed to create checkout session, falling back to billing portal:", e);
+  }
+
+  // Fallback to billing portal if checkout fails
+  return fetchPaymentsPortalURL(organization, successUrl);
 }
 
 export function getNextBillingCycleDate(curEndDateRaw: string): string {

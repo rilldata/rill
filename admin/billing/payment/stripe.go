@@ -113,19 +113,18 @@ func (s *Stripe) CreateCheckoutSession(ctx context.Context, opts *CheckoutSessio
 		Customer: stripe.String(opts.CustomerID),
 		Mode:     stripe.String(string(stripe.CheckoutSessionModeSetup)),
 		// Setup mode allows collecting payment method without charging
-		PaymentMethodTypes: stripe.StringSlice([]string{
-			"card",
-		}),
+		// Payment method types are configured in Stripe Dashboard settings
 		SuccessURL: stripe.String(opts.SuccessURL),
 		CancelURL:  stripe.String(opts.CancelURL),
 		// Collect billing address
 		BillingAddressCollection: stripe.String(string(stripe.CheckoutSessionBillingAddressCollectionRequired)),
-		// Update customer with the collected payment method
-		PaymentMethodCollection: stripe.String(string(stripe.CheckoutSessionPaymentMethodCollectionAlways)),
+		// Currency is required for setup mode to determine available payment methods
+		Currency: stripe.String(string(stripe.CurrencyUSD)),
 	}
 
 	sess, err := checkoutsession.New(params)
 	if err != nil {
+		s.logger.Error("failed to create checkout session", zap.Error(err), zap.String("customer_id", opts.CustomerID))
 		return nil, err
 	}
 
