@@ -67,14 +67,7 @@
       <APIEditor bind:autoSave={$autoSave} {fileArtifact} {errors} {apiName} />
     {:else}
       {#key fileArtifact}
-        <VisualAPIEditor
-          {errors}
-          {fileArtifact}
-          {apiName}
-          switchView={() => {
-            $selectedView = "code";
-          }}
-        />
+        <VisualAPIEditor {errors} {fileArtifact} {apiName} />
       {/key}
     {/if}
   </svelte:fragment>
