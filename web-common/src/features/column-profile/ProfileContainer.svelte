@@ -37,20 +37,20 @@
         flex
         space-between
         gap-2
-        hover:bg-gray-100
-        focus:bg-gray-100
+        hover:bg-surface-hover
+        focus:bg-surface-hover
         focus:ring-gray-500
         focus:outline-gray-300 flex-1
         justify-between w-full"
-    class:ui-copy-disabled-faint={isFetching}
-    class:bg-gray-50={active}
+    class:text-fg-muted={isFetching}
+    class:bg-surface-background={active}
     on:click={modified({
       shift: onShiftClick,
       click: onSelect,
     })}
   >
     <div class="flex gap-2 items-baseline flex-1" style:min-width="0px">
-      <div class="self-center flex items-center ui-copy-icon-muted">
+      <div class="self-center flex items-center text-fg-secondary-muted">
         <slot name="icon" />
       </div>
       <div

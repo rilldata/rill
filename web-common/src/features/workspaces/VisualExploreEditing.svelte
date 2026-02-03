@@ -19,12 +19,17 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type { V1Explore } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceGetInstance,
+    type V1Explore,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
+  import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
+  import { useTimeControlStore } from "../dashboards/time-controls/time-control-store";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
     ResourceKind,
@@ -34,8 +39,6 @@
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
-  import { getStateManagers } from "../dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "../dashboards/time-controls/time-control-store";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -164,6 +167,18 @@
   $: themeNames = ($themesQuery?.data ?? [])
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
+
+  $: defaultThemeQuery = createRuntimeServiceGetInstance(
+    instanceId,
+    undefined,
+    {
+      query: {
+        select: (data) => data?.instance?.theme,
+      },
+    },
+  );
+
+  $: projectDefaultTheme = $defaultThemeQuery?.data;
 
   $: theme = !rawTheme
     ? undefined
@@ -343,7 +358,7 @@
 <Inspector filePath={path}>
   <SidebarWrapper title="Edit dashboard">
     {#if autoSave}
-      <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
+      <p class="text-fg-secondary text-sm">Changes below will be auto-saved.</p>
     {/if}
 
     <Input
@@ -495,6 +510,7 @@
     <ThemeInput
       {theme}
       {themeNames}
+      {projectDefaultTheme}
       onThemeChange={(value) => {
         if (!value) {
           updateProperties({}, ["theme"]);
@@ -503,24 +519,30 @@
         }
       }}
       onColorChange={(primary, secondary, isDarkMode) => {
-        // TODO: Update to support dark mode - currently always sets light mode
-        // Use new theme structure: theme.light or theme.dark
         const modeKey = isDarkMode ? "dark" : "light";
-        updateProperties({
-          theme: {
-            [modeKey]: {
-              primary,
-              secondary,
-            },
-          },
-        });
+        const altMode = isDarkMode ? "light" : "dark";
+
+        // check if theme exists for alt mode
+        const setAltMode = !parsedDocument.hasIn(["theme", altMode]);
+
+        parsedDocument.setIn(["theme", modeKey, "primary"], primary);
+        parsedDocument.setIn(["theme", modeKey, "secondary"], secondary);
+
+        if (setAltMode) {
+          parsedDocument.setIn(["theme", altMode, "primary"], primary);
+          parsedDocument.setIn(["theme", altMode, "secondary"], secondary);
+        }
+
+        killState();
+
+        updateEditorContent(parsedDocument.toString(), false, autoSave);
       }}
     />
 
     <!-- <svelte:fragment slot="footer"> -->
     {#if viewingDashboard}
       <footer
-        class="flex flex-col gap-y-4 mt-auto border-t px-5 py-5 pb-6 w-full text-sm text-gray-500"
+        class="flex flex-col gap-y-4 mt-auto border-t py-5 pb-6 w-full text-sm text-fg-muted"
       >
         <p>
           For more options,
@@ -531,8 +553,7 @@
 
         <Button
           class="group"
-          type="subtle"
-          gray={viewingDefaults}
+          type={viewingDefaults ? "tertiary" : "secondary"}
           large
           onClick={() => {
             if (viewingDefaults) {
