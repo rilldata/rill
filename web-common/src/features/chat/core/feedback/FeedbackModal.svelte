@@ -68,7 +68,7 @@
   }}
   portal="#rill-portal"
 >
-  <Dialog.Content class="max-w-md">
+  <Dialog.Content class="max-w-lg">
     <Dialog.Header>
       <Dialog.Title>Give feedback</Dialog.Title>
       <Dialog.Description>Select all that apply.</Dialog.Description>
