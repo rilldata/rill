@@ -1,14 +1,21 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import Close from "../../../../components/icons/Close.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import { type V1Conversation } from "../../../../runtime-client";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import type { ConversationManager } from "../../core/conversation-manager";
+  import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
 
   export let conversationManager: ConversationManager;
   export let onNewConversation: () => void;
   export let onClose: () => void;
+
+  $: ({ instanceId } = $runtime);
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversationStore?.getConversationQuery();
@@ -36,7 +43,16 @@
       on:click={handleNewConversation}
     >
       <PlusIcon className="text-fg-muted" />
+      <svelte:fragment slot="tooltip-content">New conversation</svelte:fragment>
     </IconButton>
+
+    <ShareChatPopover
+      conversationId={currentConversationDto?.id}
+      {instanceId}
+      {organization}
+      {project}
+      disabled={!currentConversationDto?.id}
+    />
 
     <ConversationHistoryMenu
       {conversations}
@@ -46,6 +62,7 @@
 
     <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
       <Close className="text-fg-muted" />
+      <svelte:fragment slot="tooltip-content">Close</svelte:fragment>
     </IconButton>
   </div>
 </div>

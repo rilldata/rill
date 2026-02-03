@@ -13,7 +13,7 @@ import (
 func TestDeveloperShopify(t *testing.T) {
 	// Setup a basic empty project
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 		Files: map[string]string{
 			"rill.yaml": `
 olap_connector: duckdb
@@ -79,7 +79,7 @@ driver: duckdb
 func TestClickhousePlayground(t *testing.T) {
 	// Setup a basic empty project
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 		Files: map[string]string{
 			"rill.yaml": ``,
 		},
@@ -111,7 +111,7 @@ func TestClickhousePlayground(t *testing.T) {
 func TestS3Model(t *testing.T) {
 	// Setup a basic empty project
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM:      true,
+		AIConnector:    "openai",
 		TestConnectors: []string{"s3"}, // Add environment variables for the test S3 connector
 		Files: map[string]string{
 			"rill.yaml": `
@@ -161,7 +161,7 @@ managed: true
 func TestS3Introspection(t *testing.T) {
 	// Setup a project with the S3 connector
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM:      true,
+		AIConnector:    "openai",
 		TestConnectors: []string{"s3"}, // Add environment variables for the test S3 connector
 		Files: map[string]string{
 			"rill.yaml": `
@@ -203,7 +203,7 @@ path_prefixes: [s3://integration-test.rilldata.com]
 func TestFixMetricsViewBug(t *testing.T) {
 	// Setup a project with a reconcile error
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM:      true,
+		AIConnector:    "openai",
 		TestConnectors: []string{"s3"}, // Add environment variables for the test S3 connector
 		Files: map[string]string{
 			"rill.yaml": `olap_connector: duckdb`,

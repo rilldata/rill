@@ -30,6 +30,7 @@
   <button
     type="button"
     on:click
+    {disabled}
     aria-label={ariaLabel}
     aria-pressed={ariaPressed}
     class:cursor-auto={disabled}
