@@ -107,6 +107,7 @@ type Config struct {
 	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
+	PylonIdentitySecret               string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -350,6 +351,15 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				keyPairs[idx] = key
 			}
 
+			// Parse Pylon identity secret
+			var pylonIdentitySecret []byte
+			if conf.PylonIdentitySecret != "" {
+				pylonIdentitySecret, err = hex.DecodeString(conf.PylonIdentitySecret)
+				if err != nil {
+					logger.Fatal("failed to parse pylon identity secret from hex string to bytes")
+				}
+			}
+
 			// Make errgroup for running the processes
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
@@ -388,6 +398,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubClientSecret:     conf.GithubClientSecret,
 					GithubManagedAccount:   conf.GithubManagedAccount,
 					AssetsBucket:           conf.AssetsBucket,
+					PylonIdentitySecret:    pylonIdentitySecret,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
