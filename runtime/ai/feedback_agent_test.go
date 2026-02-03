@@ -38,7 +38,7 @@ func TestUserFeedbackPositive(t *testing.T) {
 func TestUserFeedbackAttribution(t *testing.T) {
 	// This test requires LLM for attribution prediction
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 	})
 
 	cases := []struct {
