@@ -22,9 +22,6 @@
   export let fileArtifact: FileArtifact;
   export let errors: LineStatus[];
   export let apiName: string;
-  // Prop for parent to provide view switching callback (used externally)
-  export let switchView: (() => void) | undefined = undefined;
-  void switchView; // Silence unused warning - prop exists for external interface
 
   type APIType = "metrics_sql" | "sql" | "resource_status";
 
@@ -680,8 +677,11 @@
   }
 
   .query-editor {
-    @apply w-full h-56 p-3 font-mono text-sm border rounded-[2px] bg-input resize-none;
-    @apply focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none;
+    @apply w-full h-56 p-3 font-mono text-sm border rounded-[2px] bg-input resize-none outline-none;
+  }
+
+  .query-editor:focus {
+    @apply ring-2 ring-primary-100 border-primary-500;
   }
 
   .hint {
