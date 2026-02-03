@@ -1,5 +1,5 @@
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { includedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createAndExpression,
   createInExpression,
@@ -8,7 +8,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
 import { type Readable, derived } from "svelte/store";
-
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
@@ -99,20 +98,23 @@ export function getDimensionValuesForComparison(
       // Values to be compared
       let comparisonValues: (string | null)[] = [];
       if (surface === "chart") {
-        const dimensionValues = includedDimensionValues({
-          dashboard: dashboardStore,
-        })(dimensionName);
-
-        if (dimensionValues?.length) {
-          // For TDD view max 11 allowed, for Explore max 7 allowed
-          comparisonValues = dimensionValues.slice(
-            0,
-            showTimeDimensionDetail ? 11 : 7,
-          ) as (string | null)[];
-        }
-        return set({
-          values: comparisonValues,
-          filter: dashboardStore?.whereFilter,
+        return selectedDimensionValues(
+          runtime.instanceId,
+          [name],
+          dashboardStore?.whereFilter,
+          dimensionName,
+        ).subscribe((values) => {
+          if (values.data?.length) {
+            // For TDD view max 11 allowed, for Explore max 7 allowed
+            comparisonValues = values.data.slice(
+              0,
+              showTimeDimensionDetail ? 11 : 7,
+            ) as (string | null)[];
+          }
+          return set({
+            values: comparisonValues,
+            filter: dashboardStore?.whereFilter,
+          });
         });
       } else if (surface === "table") {
         let sortBy = showTimeDimensionDetail
@@ -140,8 +142,11 @@ export function getDimensionValuesForComparison(
                 ),
                 undefined,
               ),
-              timeStart: timeControls.timeStart,
-              timeEnd: timeControls.timeEnd,
+              timeRange: {
+                start: timeControls.timeStart,
+                end: timeControls.timeEnd,
+                timeDimension: dashboardStore.selectedTimeDimension,
+              },
               sort: [
                 {
                   desc:
@@ -242,7 +247,8 @@ function getAggregationQueryForTopList(
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
       const timeZone = dashboardStore?.selectedTimezone;
-      const timeDimension = timeStore?.timeDimension;
+      const timeDimension =
+        dashboardStore.selectedTimeDimension || timeStore?.timeDimension;
       const topListValues = dimensionValues?.values || [];
 
       if (!topListValues.length || !dimensionName) return;
@@ -254,6 +260,18 @@ function getAggregationQueryForTopList(
         createInExpression(dimensionName, topListValues),
       );
 
+      // Use timeRange with timeDimension instead of timeStart/timeEnd
+      // to ensure filtering uses the correct time dimension
+      const timeRange = {
+        start: isTimeComparison
+          ? timeStore?.comparisonAdjustedStart
+          : timeStore?.adjustedStart,
+        end: isTimeComparison
+          ? timeStore?.comparisonAdjustedEnd
+          : timeStore?.adjustedEnd,
+        timeDimension: dashboardStore.selectedTimeDimension,
+      };
+
       return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
@@ -264,12 +282,7 @@ function getAggregationQueryForTopList(
             { name: timeDimension, timeGrain, timeZone },
           ],
           where: sanitiseExpression(updatedFilter, undefined),
-          timeStart: isTimeComparison
-            ? timeStore?.comparisonAdjustedStart
-            : timeStore?.adjustedStart,
-          timeEnd: isTimeComparison
-            ? timeStore?.comparisonAdjustedEnd
-            : timeStore?.adjustedEnd,
+          timeRange,
           sort: [
             {
               desc: dashboardStore.sortDirection === SortDirection.DESCENDING,
@@ -324,7 +337,8 @@ export function getDimensionValueTimeSeries(
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
       const timeZone = dashboardStore?.selectedTimezone;
-      const timeDimension = timeStore?.timeDimension;
+      const timeDimension =
+        dashboardStore.selectedTimeDimension || timeStore?.timeDimension;
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
       const includeTimeComparisonForDimension = Boolean(

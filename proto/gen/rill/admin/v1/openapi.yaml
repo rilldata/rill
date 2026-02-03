@@ -59,6 +59,7 @@ components:
                 - OPERATION_NIN
                 - OPERATION_LIKE
                 - OPERATION_NLIKE
+                - OPERATION_CAST
             type: string
         v1AddOrganizationMemberUserResponse:
             properties:
@@ -502,6 +503,8 @@ components:
                 createdOn:
                     format: date-time
                     type: string
+                editable:
+                    type: boolean
                 environment:
                     type: string
                 id:
@@ -635,7 +638,7 @@ components:
                 gitPasswordExpiresAt:
                     format: date-time
                     type: string
-                gitProdBranch:
+                gitPrimaryBranch:
                     type: string
                 gitRepoUrl:
                     type: string
@@ -655,6 +658,32 @@ components:
                     $ref: '#/components/schemas/v1UserPreferences'
                 user:
                     $ref: '#/components/schemas/v1User'
+            type: object
+        v1GetDeploymentConfigResponse:
+            properties:
+                annotations:
+                    additionalProperties:
+                        type: string
+                    title: Annotations for the deployment (org/project metadata, etc.)
+                    type: object
+                duckdbConnectorConfig:
+                    title: Duckdb connector config for the deployment
+                    type: object
+                frontendUrl:
+                    description: Frontend URL for the deployment.
+                    type: string
+                updatedOn:
+                    description: Timestamp when the deployment was last updated.
+                    format: date-time
+                    type: string
+                usesArchive:
+                    description: Whether the deployment is git based or archive based.
+                    type: boolean
+                variables:
+                    additionalProperties:
+                        type: string
+                    title: Variables for the deployment (connector credentials, etc.)
+                    type: object
             type: object
         v1GetDeploymentCredentialsResponse:
             properties:
@@ -757,12 +786,17 @@ components:
                 project:
                     $ref: '#/components/schemas/v1Project'
             type: object
+        v1GetProjectMemberUserResponse:
+            properties:
+                member:
+                    $ref: '#/components/schemas/v1ProjectMemberUser'
+            type: object
         v1GetProjectResponse:
             properties:
+                deployment:
+                    $ref: '#/components/schemas/v1Deployment'
                 jwt:
                     type: string
-                prodDeployment:
-                    $ref: '#/components/schemas/v1Deployment'
                 project:
                     $ref: '#/components/schemas/v1Project'
                 projectPermissions:
@@ -794,17 +828,15 @@ components:
                 archiveId:
                     description: A stable ID for the archive returned from archive_download_url.
                     type: string
+                editable:
+                    description: Whether editing is allowed. Set to true for dev deployments.
+                    type: boolean
                 expiresOn:
                     description: How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
                     format: date-time
                     type: string
                 gitBranch:
                     description: The branch to use for the deployment.
-                    type: string
-                gitEditBranch:
-                    description: |-
-                        A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-                        This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
                     type: string
                 gitSubpath:
                     description: Optional subpath within the Git repository to use as the project root.
@@ -817,6 +849,12 @@ components:
                 lastUpdatedOn:
                     description: When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
                     format: date-time
+                    type: string
+                managedGitRepo:
+                    description: Whether the git repo is managed by Rill.
+                    type: boolean
+                primaryBranch:
+                    description: Primary branch of the project.
                     type: string
             type: object
         v1GetReportMetaResponse:
@@ -1131,6 +1169,13 @@ components:
                         $ref: '#/components/schemas/v1Usergroup'
                     type: array
             type: object
+        v1ListUsergroupsForProjectAndUserResponse:
+            properties:
+                usergroups:
+                    items:
+                        $ref: '#/components/schemas/v1MemberUsergroup'
+                    type: array
+            type: object
         v1ListWhitelistedDomainsResponse:
             properties:
                 domains:
@@ -1158,10 +1203,12 @@ components:
                     items:
                         type: string
                     type: array
-                filter:
-                    $ref: '#/components/schemas/v1Expression'
                 id:
                     type: string
+                metricsViewFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    type: object
                 projectId:
                     type: string
                 resourceName:
@@ -1193,6 +1240,12 @@ components:
                     type: boolean
                 groupName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
                 updatedOn:
@@ -1226,6 +1279,8 @@ components:
                 faviconUrl:
                     type: string
                 id:
+                    type: string
+                logoDarkUrl:
                     type: string
                 logoUrl:
                     type: string
@@ -1400,9 +1455,9 @@ components:
                     type: string
                 orgName:
                     type: string
-                prodBranch:
+                primaryBranch:
                     type: string
-                prodDeploymentId:
+                primaryDeploymentId:
                     type: string
                 prodSlots:
                     format: int64
@@ -1430,6 +1485,12 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
             type: object
@@ -1467,6 +1528,12 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
                 updatedOn:
@@ -2238,7 +2305,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.76.2
+    version: v0.80.0
 openapi: 3.0.3
 paths:
     /v1/ai/complete:
@@ -2329,6 +2396,31 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: DeleteDeployment deletes a deployment.
+    /v1/deployments/{deploymentId}/config:
+        get:
+            operationId: AdminService_GetDeploymentConfig
+            parameters:
+                - in: path
+                  name: deploymentId
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetDeploymentConfigResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+                This is called by the runtime to pull its Variables and Annotations from the admin service.
     /v1/deployments/{deploymentId}/credentials:
         post:
             operationId: AdminService_GetDeployment
@@ -2797,6 +2889,8 @@ paths:
                                 faviconAssetId:
                                     type: string
                                 logoAssetId:
+                                    type: string
+                                logoDarkAssetId:
                                     type: string
                                 newName:
                                     type: string
@@ -3465,7 +3559,7 @@ paths:
                                         It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
                                         Either git_remote or archive_asset_id should be set.
                                     type: string
-                                prodBranch:
+                                primaryBranch:
                                     type: string
                                 prodSlots:
                                     format: int64
@@ -3580,6 +3674,11 @@ paths:
                   required: true
                   schema:
                     type: string
+                - description: Optional branch to get deployment for. If not set, then project's primary_branch is used.
+                  in: query
+                  name: branch
+                  schema:
+                    type: string
                 - in: query
                   name: accessTokenTtlSeconds
                   schema:
@@ -3636,7 +3735,7 @@ paths:
                                     type: string
                                 newName:
                                     type: string
-                                prodBranch:
+                                primaryBranch:
                                     type: string
                                 prodSlots:
                                     format: int64
@@ -4041,6 +4140,10 @@ paths:
                   schema:
                     type: string
                 - in: query
+                  name: branch
+                  schema:
+                    type: string
+                - in: query
                   name: userId
                   schema:
                     type: string
@@ -4076,6 +4179,14 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                branch:
+                                    description: "Branch to deploy from. \nMust not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.\nOptional for `dev` deployments."
+                                    type: string
+                                editable:
+                                    description: |-
+                                        Whether the deployment is editable and the edited changes are persisted back to the git repo.
+                                        Can't be set for `prod` deployments.
+                                    type: boolean
                                 environment:
                                     type: string
                             type: object
@@ -4174,6 +4285,9 @@ paths:
                                     type: string
                                 theme:
                                     description: Theme to use for the embedded resource.
+                                    type: string
+                                themeMode:
+                                    description: 'Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".'
                                     type: string
                                 ttlSeconds:
                                     description: TTL for the iframe's access token. If not set, defaults to 24 hours.
@@ -4308,6 +4422,12 @@ paths:
                             properties:
                                 email:
                                     type: string
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
                                 role:
                                     type: string
                             type: object
@@ -4360,6 +4480,38 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: RemoveProjectMemberUser removes member from the project
+        get:
+            operationId: AdminService_GetProjectMemberUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: email
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetProjectMemberUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetProjectMemberUser gets the member details
         put:
             operationId: AdminService_SetProjectMemberUserRole
             parameters:
@@ -4383,6 +4535,12 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
                                 role:
                                     type: string
                             type: object
@@ -4402,6 +4560,39 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SetProjectMemberUserRole sets the role for the member
+    /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
+        get:
+            operationId: AdminService_ListUsergroupsForProjectAndUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: email
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListUsergroupsForProjectAndUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
     /v1/orgs/{org}/projects/{project}/redeploy:
         post:
             operationId: AdminService_RedeployProject
@@ -4881,8 +5072,13 @@ paths:
                                     items:
                                         type: string
                                     type: array
-                                filter:
-                                    $ref: '#/components/schemas/v1Expression'
+                                metricsViewFilters:
+                                    additionalProperties:
+                                        $ref: '#/components/schemas/v1Expression'
+                                    description: |-
+                                        Optional metrics view to filter mapping to apply as row filters in queries.
+                                        This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
+                                    type: object
                                 resourceName:
                                     description: Name of the resource to grant access to.
                                     type: string
@@ -4974,6 +5170,12 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
                                 role:
                                     type: string
                             type: object
@@ -5016,6 +5218,12 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
                                 role:
                                     type: string
                             type: object

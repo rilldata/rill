@@ -69,6 +69,8 @@ type Instance struct {
 	AIInstructions string `db:"ai_instructions"`
 	// FrontendURL is the URL of the web interface.
 	FrontendURL string `db:"frontend_url"`
+	// Theme is the name of the theme resource to use for AI-generated charts.
+	Theme string `db:"theme"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.
@@ -90,6 +92,8 @@ type InstanceConfig struct {
 	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.models.materialize_delay_seconds"`
 	// ModelConcurrentExecutionLimit sets the maximum number of concurrent model executions.
 	ModelConcurrentExecutionLimit uint32 `mapstructure:"rill.models.concurrent_execution_limit"`
+	// ModelTimeoutOverride sets a timeout for model reconciliation in seconds (used in validation mode).
+	ModelTimeoutOverride uint32 `mapstructure:"rill.model.timeout_override"`
 	// MetricsComparisonsExact indicates whether to rewrite metrics comparison queries to approximately correct queries.
 	// Approximated comparison queries are faster but may not return comparison data points for all values.
 	MetricsApproximateComparisons bool `mapstructure:"rill.metrics.approximate_comparisons"`
@@ -109,6 +113,8 @@ type InstanceConfig struct {
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
 	// AlertsFastStreamingRefreshCron is similar to AlertsDefaultStreamingRefreshCron but is used for alerts that are based on always-on OLAP connectors (i.e. that have MayScaleToZero == false).
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
+	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
+	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -168,6 +174,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
+		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 	}

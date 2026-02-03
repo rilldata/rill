@@ -106,6 +106,7 @@ export type ChartDataResult = {
   theme: { primary: Color; secondary: Color };
   domainValues?: ChartDomainValues;
   isDarkMode: boolean;
+  hasComparison?: boolean;
 };
 
 export interface ChartDomainValues {

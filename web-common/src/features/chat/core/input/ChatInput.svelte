@@ -1,25 +1,26 @@
 <script lang="ts">
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
+  import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { Editor } from "@tiptap/core";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
-  import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
-  import { Editor } from "@tiptap/core";
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
-  import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
-
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { ArrowUp } from "lucide-svelte";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
   export let noMargin = false;
   export let height: string | undefined = undefined;
   export let config: ChatConfig;
+  export let inline = false;
 
   let value = "";
 
-  $: ({ placeholder, additionalContextStoreGetter, enableMention } = config);
+  $: ({ placeholder, additionalContextStoreGetter } = config);
   $: additionalContextStore = additionalContextStoreGetter();
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
@@ -71,16 +72,26 @@
     editor.commands.startMention();
   }
 
+  function startChat(prompt: string) {
+    editor.commands.setContent(prompt);
+    // Wait for `value` and `canSend` to update before sending the message.`
+    tick().then(sendMessage).catch(console.error);
+  }
+
   onMount(() => {
     editor = new Editor({
       element,
       extensions: getEditorPlugins({
-        enableMention,
         placeholder,
-        conversationManager,
         onSubmit: () => void sendMessage(),
       }),
       content: "",
+      editorProps: {
+        attributes: {
+          class: config.minChatHeight,
+          style: height ? `height: ${height};` : "",
+        },
+      },
       onTransaction: () => {
         // force re-render so `editor.isActive` works as expected
         editor = editor;
@@ -90,10 +101,7 @@
       },
     });
 
-    const unsubStartChatEvent = eventBus.on("start-chat", (prompt) => {
-      editor.commands.setContent(prompt);
-      editor.commands.focus();
-    });
+    const unsubStartChatEvent = eventBus.on("start-chat", startChat);
 
     chatMounted.set(true);
 
@@ -106,38 +114,42 @@
 </script>
 
 <form
+  class:inline
   class="chat-input-form"
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <div
-    class="chat-input-container"
-    bind:this={element}
-    class:fixed-height={!!height}
-    style:height
-  />
+  <div class="chat-input-container" bind:this={element} />
   <div class="chat-input-footer">
-    {#if enableMention}
-      <button class="text-base ml-1" type="button" on:click={startMention}>
-        @
-      </button>
-    {/if}
+    <button
+      class="text-base text-fg-muted"
+      type="button"
+      on:click={startMention}
+    >
+      @
+    </button>
     <div class="grow"></div>
     <div>
       {#if canCancel}
-        <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
+        <IconButton
+          ariaLabel="Cancel streaming"
+          disableHover
+          on:click={cancelStream}
+        >
           <span class="stop-icon">
             <StopCircle size="1.2em" />
           </span>
         </IconButton>
       {:else}
-        <IconButton
-          ariaLabel="Send message"
+        <Button
+          type="primary"
+          label="Send message"
           disabled={!canSend}
-          on:click={sendMessage}
+          square
+          onClick={sendMessage}
         >
-          <SendIcon size="1.3em" disabled={!canSend} />
-        </IconButton>
+          <ArrowUp size="16px" />
+        </Button>
       {/if}
     </div>
   </div>
@@ -145,13 +157,13 @@
 
 <style lang="postcss">
   .chat-input-form {
-    @apply flex flex-col gap-1 p-1 m-4;
-    @apply bg-background border rounded-md;
+    @apply flex flex-col gap-1 p-3 mx-4 mb-4;
+    @apply border rounded-md bg-input;
     transition: border-color 0.2s;
   }
 
   .chat-input-form:focus-within {
-    @apply border-primary-400;
+    @apply border-ring-focus;
   }
 
   .chat-input-form.no-margin {
@@ -159,23 +171,17 @@
   }
 
   :global(.tiptap) {
-    @apply p-2 min-h-[2.5rem] outline-none;
+    @apply outline-none;
     @apply text-sm leading-relaxed;
   }
 
   .chat-input-container {
-    @apply w-full;
-  }
-
-  .chat-input-container.fixed-height {
-    min-height: unset;
-    max-height: unset;
-    @apply overflow-auto;
+    @apply w-full max-h-32 overflow-auto;
   }
 
   :global(.tiptap p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
-    @apply text-gray-400 pointer-events-none absolute;
+    @apply text-fg-muted pointer-events-none absolute;
   }
 
   .stop-icon {

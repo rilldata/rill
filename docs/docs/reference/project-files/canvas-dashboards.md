@@ -96,11 +96,11 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
   ```
  
 
-  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+  - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection
 
   - **option 2** - _[object]_ - Object containing time range and comparison configuration
 
-    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
+    - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
     - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 
@@ -210,13 +210,23 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/build/metrics-view/security) for dashboards (without row filtering) 
+_[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
     - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
 
     - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
+
+### `variables`
+
+_[array of object]_ - Variables that can be used in the canvas 
+
+  - **`name`** - _[string]_ - Unique identifier for the variable _(required)_
+
+  - **`type`** - _[string]_ - Data type of the variable (e.g., string, number, boolean) _(required)_
+
+  - **`value`** - _[string, number, boolean, object, array]_ - Default value for the variable. Can be any valid JSON value type 
 
 ## Common Properties
 

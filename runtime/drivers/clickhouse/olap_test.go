@@ -38,6 +38,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
+	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -65,6 +66,7 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
+	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 }
 
 func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
@@ -233,23 +235,17 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 	err = c.optimizeTable(context.Background(), "merge_tbl")
 	require.NoError(t, err)
 
-	var result []struct {
-		ID    int
-		Value string
-	}
-
-	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM merge_tbl ORDER BY id"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM merge_tbl FINAL ORDER BY id"})
 	require.NoError(t, err)
 
+	resultSet := make(map[int]string)
 	for res.Next() {
-		var r struct {
-			ID    int
-			Value string
-		}
-		require.NoError(t, res.Scan(&r.ID, &r.Value))
-		result = append(result, r)
+		var id int
+		var value string
+		require.NoError(t, res.Scan(&id, &value))
+		resultSet[id] = value
 	}
-	require.NoError(t, err)
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
 
 	expected := map[int]string{
@@ -258,26 +254,14 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 		2: "merge",
 		3: "merge",
 		4: "merge",
-	}
-
-	// Convert the result set to a map to represent the set
-	resultSet := make(map[int]string)
-	for _, r := range result {
-		if v, ok := resultSet[r.ID]; !ok {
-			resultSet[r.ID] = r.Value
-		} else {
-			if v == "merge" {
-				resultSet[r.ID] = v
-			}
-		}
-
+		5: "merge",
 	}
 
 	// Check if the expected values are present in the result set
-	for id, expected := range expected {
+	for id, expectedValue := range expected {
 		actual, exists := resultSet[id]
 		require.True(t, exists, "Expected ID %d to be present in the result set", id)
-		require.Equal(t, expected, actual, "Expected value for ID %d to be %s, but got %s", id, expected, actual)
+		require.Equal(t, expectedValue, actual, "Expected value for ID %d to be %s, but got %s", id, expectedValue, actual)
 	}
 }
 
@@ -500,6 +484,7 @@ func testOptimizeTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	})
 	require.NoError(t, err)
 
+	// Run OPTIMIZE
 	err = c.optimizeTable(ctx, tempTableName)
 	require.NoError(t, err)
 
@@ -587,8 +572,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 		require.Nil(t, executor)
 
 		// Should not be able to get model manager in read-only mode
-		manager, ok := conn.AsModelManager("default")
-		require.False(t, ok, "Model manager should not be available in read-only mode")
+		manager, err := conn.AsModelManager("default")
+		require.ErrorContains(t, err, "model execution is disabled")
 		require.Nil(t, manager)
 	})
 
@@ -613,8 +598,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 		require.Nil(t, executor)
 
 		// Should not be able to get model manager
-		manager, ok := conn.AsModelManager("default")
-		require.False(t, ok, "Model manager should not be available in explicit read-only mode")
+		manager, err := conn.AsModelManager("default")
+		require.ErrorContains(t, err, "model execution is disabled")
 		require.Nil(t, manager)
 	})
 
@@ -639,8 +624,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 		require.NotNil(t, executor)
 
 		// Should be able to get model manager in readwrite mode
-		manager, ok := conn.AsModelManager("default")
-		require.True(t, ok, "Model manager should be available in readwrite mode")
+		manager, err := conn.AsModelManager("default")
+		require.NoError(t, err)
 		require.NotNil(t, manager)
 	})
 }
@@ -868,4 +853,118 @@ func testDualDSNModelOperations(t *testing.T, c *Connection, olap drivers.OLAPSt
 	require.Equal(t, "initial", results[0].Status)
 	require.Equal(t, 2, results[1].ID)
 	require.Equal(t, "added", results[1].Status)
+}
+
+func testQueryAttributesAsSettings(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+
+	t.Run("SingleQueryAttribute", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('max_threads') as max_threads",
+			QueryAttributes: map[string]string{
+				"max_threads": "1",
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var maxThreads int
+		require.NoError(t, res.Scan(&maxThreads))
+		require.Equal(t, 1, maxThreads)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("MultipleQueryAttributes", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('max_threads') as max_threads, getSetting('max_memory_usage') as max_memory, getSetting('max_execution_time') as max_exec_time",
+			QueryAttributes: map[string]string{
+				"max_threads":        "1",
+				"max_memory_usage":   "1000000",
+				"max_execution_time": "10",
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var maxThreads int
+		var maxMemory int64
+		var maxExecTime int
+		require.NoError(t, res.Scan(&maxThreads, &maxMemory, &maxExecTime))
+		require.Equal(t, 1, maxThreads)
+		require.Equal(t, int64(1000000), maxMemory)
+		require.Equal(t, 10, maxExecTime)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("EmptyQueryAttributes", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query:           "SELECT 1",
+			QueryAttributes: map[string]string{},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("NilQueryAttributes", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query:           "SELECT 1",
+			QueryAttributes: nil,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("QueryAttributeWithExistingPrefix", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('max_threads') as max_threads, getSetting('max_memory_usage') as max_memory",
+			QueryAttributes: map[string]string{
+				"max_threads":      "1",
+				"max_memory_usage": "1000000",
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var maxThreads int
+		var maxMemory int64
+		require.NoError(t, res.Scan(&maxThreads, &maxMemory))
+		require.Equal(t, 1, maxThreads)
+		require.Equal(t, int64(1000000), maxMemory)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("CustomWithPrefix", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('custom_test')",
+			QueryAttributes: map[string]string{
+				"custom_test": "value", // The testclickhouse has `custom_` configured as a valid custom setting prefix
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var customSetting string
+		require.NoError(t, res.Scan(&customSetting))
+		require.Equal(t, "value", customSetting)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("CustomWithoutPrefix", func(t *testing.T) {
+		_, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('foo')",
+			QueryAttributes: map[string]string{
+				"foo": "value",
+			},
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "neither a builtin setting nor")
+	})
 }

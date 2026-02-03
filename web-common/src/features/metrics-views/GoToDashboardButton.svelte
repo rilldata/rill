@@ -10,15 +10,13 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
-  import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
-  import { ResourceKind } from "../entity-management/resource-selectors";
   import { createCanvasDashboardFromMetricsView } from "./ai-generation/generateMetricsView";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import NavigateOrDropdown from "./NavigateOrDropdown.svelte";
 
   export let resource: V1Resource | undefined;
 
-  const { generateCanvas } = featureFlags;
+  const { ai, generateCanvas } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: dashboardsQuery = useGetExploresForMetricsView(
@@ -42,7 +40,7 @@
             );
         }}
       >
-        Create Canvas dashboard
+        Generate Canvas Dashboard{$ai ? " with AI" : ""}
       </Button>
     {/if}
     <Button
@@ -53,7 +51,7 @@
           await createAndPreviewExplore(queryClient, instanceId, resource);
       }}
     >
-      Create Explore dashboard
+      Generate Explore Dashboard{$ai ? " with AI" : ""}
     </Button>
   </div>
 {:else}
@@ -70,7 +68,7 @@
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}
             <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
-              <ExploreIcon color={resourceColorMapping[ResourceKind.Explore]} />
+              <ExploreIcon />
               {label}
             </DropdownMenu.Item>
           {/if}
@@ -87,7 +85,7 @@
             }}
           >
             <Add />
-            Create Canvas dashboard
+            Generate Canvas Dashboard{$ai ? " with AI" : ""}
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Item
@@ -97,7 +95,7 @@
           }}
         >
           <Add />
-          Create Explore dashboard
+          Generate Explore Dashboard{$ai ? " with AI" : ""}
         </DropdownMenu.Item>
       </DropdownMenu.Group>
     </DropdownMenu.Content>

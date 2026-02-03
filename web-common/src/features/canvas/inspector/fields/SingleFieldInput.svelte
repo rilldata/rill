@@ -69,39 +69,12 @@
       </Chip>
     </DropdownMenu.Trigger>
 
-    <DropdownMenu.Content sameWidth class="p-0">
+    <DropdownMenu.Content class="p-0" sameWidth>
       <div class="p-3 pb-1">
         <Search bind:value={searchValue} autofocus={false} />
       </div>
-      <div class="max-h-64 overflow-y-auto">
-        {#if selectedItem && showClearOption && onClear && $fieldData.displayMap[selectedItem]}
-          <DropdownMenu.Item
-            class="pl-8 mx-1"
-            on:click={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <div class="flex items-center justify-between w-full">
-              <span
-                >{$fieldData.displayMap[selectedItem]?.label ||
-                  selectedItem}</span
-              >
-              <button
-                class="ml-2 text-gray-500 hover:text-gray-700"
-                aria-label="Clear"
-                on:click|stopPropagation={() => {
-                  onClear();
-                  open = false;
-                }}
-                type="button"
-              >
-                <CancelCircle size="16px" />
-              </button>
-            </div>
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-        {/if}
-        {#if includeTime && $timeDimension}
+      <div class="max-h-64 overflow-y-auto pb-2">
+        {#if type == "dimension" && includeTime && $timeDimension}
           <DropdownMenu.Item
             class="pl-8 mx-1"
             on:click={() => {
@@ -129,7 +102,7 @@
           {/if}
         {:else}
           {#if searchValue}
-            <div class="ui-copy-disabled text-center p-2 w-full">
+            <div class="text-fg-disabled text-center p-2 w-full">
               no results
             </div>
           {/if}

@@ -69,7 +69,7 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 		Username:          resp.GitUsername,
 		Password:          resp.GitPassword,
 		PasswordExpiresAt: resp.GitPasswordExpiresAt.AsTime(),
-		DefaultBranch:     resp.GitProdBranch,
+		DefaultBranch:     resp.GitPrimaryBranch,
 		Subpath:           resp.GitSubpath,
 		ManagedRepo:       resp.GitManagedRepo,
 	}

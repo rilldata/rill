@@ -63,7 +63,10 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
   const query: V1Query = {
     metricsViewAggregationRequest: getPivotAggregationRequest({
       metricsViewName,
-      timeDimension: metricsViewSpec.timeDimension ?? "",
+      timeDimension:
+        exploreState.selectedTimeDimension ||
+        metricsViewSpec.timeDimension ||
+        "",
       exploreState,
       timeRange,
       rows,

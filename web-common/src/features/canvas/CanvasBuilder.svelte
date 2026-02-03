@@ -55,7 +55,7 @@
     canvasEntity: {
       setSelectedComponent,
       selectedComponent,
-      components,
+      componentsStore,
       processRows,
       specStore,
       unsubscribe,
@@ -67,6 +67,8 @@
   $: layoutRows = $_rows;
 
   $: ({ instanceId } = $runtime);
+
+  $: components = $componentsStore;
 
   $: canvasData = $specStore.data;
   $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
@@ -435,6 +437,7 @@
   {filtersEnabled}
   showGrabCursor={activelyDragging}
   onClick={resetSelection}
+  builder
   bind:clientWidth
 >
   {#each layoutRows as row, rowIndex (rowIndex)}
@@ -479,7 +482,7 @@
       onComponentMouseDown={({ event, id }) => {
         if (event.button !== 0) return;
         if (event.shiftKey) return;
-        const component = components.get(id);
+        const component = componentsStore.getNonReactive(id);
         if (!component) return;
 
         initialMousePosition = $mousePosition;
@@ -590,11 +593,12 @@
           <Button
             large
             builders={[builder]}
-            type="primary"
-            danger
+            type="destructive"
             onClick={() => {
               if (!pendingComponentDelete) return;
-              const component = components.get(pendingComponentDelete);
+              const component = componentsStore.getNonReactive(
+                pendingComponentDelete,
+              );
               if (!component) return;
               deleteComponent(component);
               pendingComponentDelete = undefined;

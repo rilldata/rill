@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -38,6 +39,7 @@ type MetricsViewYAML struct {
 		DisplayName             string `yaml:"display_name"`
 		Label                   string // Deprecated: use display_name
 		Description             string
+		Type                    string
 		Column                  string
 		Expression              string
 		Property                string // For backwards compatibility
@@ -49,6 +51,7 @@ type MetricsViewYAML struct {
 		LookupValueColumn       string `yaml:"lookup_value_column"`
 		LookupDefaultExpression string `yaml:"lookup_default_expression"`
 		SmallestTimeGrain       string `yaml:"smallest_time_grain"`
+		Tags                    []string
 	}
 	Measures []*struct {
 		Name                string
@@ -66,6 +69,7 @@ type MetricsViewYAML struct {
 		Ignore              bool           `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
+		Tags                []string
 	}
 	ParentDimensions *FieldSelectorYAML `yaml:"parent_dimensions"` // used when Parent is set
 	ParentMeasures   *FieldSelectorYAML `yaml:"parent_measures"`   // used when Parent is set
@@ -78,8 +82,9 @@ type MetricsViewYAML struct {
 		Connector      string             `yaml:"connector"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
-	Security *SecurityPolicyYAML
-	Cache    struct {
+	Security        *SecurityPolicyYAML
+	QueryAttributes map[string]string `yaml:"query_attributes"`
+	Cache           struct {
 		Enabled *bool  `yaml:"enabled"`
 		KeySQL  string `yaml:"key_sql"`
 		KeyTTL  string `yaml:"key_ttl"`
@@ -300,6 +305,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	if err := validateQueryAttributes(tmp.QueryAttributes); err != nil {
+		return fmt.Errorf("invalid query_attributes: %w", err)
+	}
+
 	if tmp.Parent != "" {
 		if len(tmp.Dimensions) > 0 || len(tmp.Measures) > 0 {
 			return fmt.Errorf("cannot define dimensions or measures in a derived metrics view, use parent_dimensions and parent_measures to select from parent %q", tmp.Parent)
@@ -397,6 +406,20 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf(`invalid "smallest_time_grain" for dimension %q: must be at least "second"`, dim.Name)
 		}
 
+		var typ runtimev1.MetricsViewSpec_DimensionType
+		switch strings.ToLower(dim.Type) {
+		case "":
+			// Leave unspecified as default
+		case "geo":
+			typ = runtimev1.MetricsViewSpec_DIMENSION_TYPE_GEOSPATIAL
+		case "time":
+			typ = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		case "categorical":
+			typ = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
+		default:
+			return fmt.Errorf(`invalid dimension type %q (allowed values: geo, time, categorical)`, dim.Type)
+		}
+
 		// Dimension is valid, add to the list
 		dimensions = append(dimensions, &runtimev1.MetricsViewSpec_Dimension{
 			Name:                    dim.Name,
@@ -404,6 +427,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Description:             dim.Description,
 			Column:                  dim.Column,
 			Expression:              dim.Expression,
+			Type:                    typ,
 			Unnest:                  dim.Unnest,
 			Uri:                     dim.URI,
 			LookupTable:             dim.LookupTable,
@@ -411,6 +435,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			LookupValueColumn:       dim.LookupValueColumn,
 			LookupDefaultExpression: dim.LookupDefaultExpression,
 			SmallestTimeGrain:       smallestTimeGrain,
+			Tags:                    dim.Tags,
 		})
 	}
 
@@ -574,6 +599,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			FormatD3Locale:      formatD3Locale,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 			TreatNullsAs:        measure.TreatNullsAs,
+			Tags:                measure.Tags,
 		})
 	}
 	if len(measures) == 0 && tmp.Parent == "" {
@@ -796,6 +822,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.CacheEnabled = tmp.Cache.Enabled
 	spec.CacheKeySql = tmp.Cache.KeySQL
 	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
+	spec.QueryAttributes = tmp.QueryAttributes
 
 	// When version is greater than 0 or inline explore is defined or skip explore set to true, we skip creating a default explore resource. Application should set version to 0 now to enable automatic explore emission.
 	if node.Version > 0 || skipExplore {
@@ -1107,3 +1134,15 @@ func inferRefsFromSecurityRules(rules []*runtimev1.SecurityRule) ([]ResourceName
 	// No need to deduplicate because that's done upstream when the resource is inserted.
 	return refs, nil
 }
+
+// validateQueryAttributes validates query attribute keys
+func validateQueryAttributes(attrs map[string]string) error {
+	for key := range attrs {
+		if !queryAttributeKeyRegex.MatchString(key) {
+			return fmt.Errorf("query attribute key %q contains invalid characters (must be alphanumeric with underscores, hyphens, or dots only)", key)
+		}
+	}
+	return nil
+}
+
+var queryAttributeKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)

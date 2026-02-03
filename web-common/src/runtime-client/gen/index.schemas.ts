@@ -53,6 +53,7 @@ export interface MetricsViewSpecDimension {
   type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
+  tags?: string[];
   column?: string;
   expression?: string;
   unnest?: boolean;
@@ -79,6 +80,7 @@ export const MetricsViewSpecDimensionType = {
   DIMENSION_TYPE_UNSPECIFIED: "DIMENSION_TYPE_UNSPECIFIED",
   DIMENSION_TYPE_CATEGORICAL: "DIMENSION_TYPE_CATEGORICAL",
   DIMENSION_TYPE_TIME: "DIMENSION_TYPE_TIME",
+  DIMENSION_TYPE_GEOSPATIAL: "DIMENSION_TYPE_GEOSPATIAL",
 } as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
@@ -87,6 +89,7 @@ export interface MetricsViewSpecMeasure {
   name?: string;
   displayName?: string;
   description?: string;
+  tags?: string[];
   expression?: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
@@ -177,6 +180,8 @@ export const TypeCode = {
   CODE_DECIMAL: "CODE_DECIMAL",
   CODE_JSON: "CODE_JSON",
   CODE_UUID: "CODE_UUID",
+  CODE_POINT: "CODE_POINT",
+  CODE_POLYGON: "CODE_POLYGON",
 } as const;
 
 export interface ProtobufAny {
@@ -402,6 +407,10 @@ export interface V1CanvasItem {
   widthUnit?: string;
 }
 
+export type V1CanvasPresetFilterExpr = {
+  [key: string]: V1DefaultMetricsSQLFilter;
+};
+
 export interface V1CanvasPreset {
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
@@ -410,6 +419,7 @@ If not found in `time_ranges`, it should be added to the list. */
   comparisonMode?: V1ExploreComparisonMode;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
+  filterExpr?: V1CanvasPresetFilterExpr;
 }
 
 export interface V1CanvasRow {
@@ -452,6 +462,7 @@ The values should be valid IANA location identifiers. */
   rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+  pinnedFilters?: string[];
 }
 
 export interface V1CanvasState {
@@ -747,6 +758,11 @@ export interface V1Conversation {
   messages?: V1Message[];
 }
 
+export interface V1ConvertExpressionToMetricsSQLResponse {
+  /** The SQL filter string representation of the expression. */
+  sql?: string;
+}
+
 export interface V1CreateDirectoryResponse {
   [key: string]: unknown;
 }
@@ -783,6 +799,10 @@ export interface V1CreateTriggerResponse {
 export interface V1DatabaseSchemaInfo {
   database?: string;
   databaseSchema?: string;
+}
+
+export interface V1DefaultMetricsSQLFilter {
+  expression?: V1Expression;
 }
 
 export interface V1DeleteFileResponse {
@@ -864,6 +884,7 @@ If not found in `time_ranges`, it should be added to the list. */
   timezone?: string;
   timeGrain?: string;
   selectTimeRange?: string;
+  timeDimension?: string;
   comparisonMode?: V1ExploreComparisonMode;
   compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
@@ -884,6 +905,7 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortBy?: string;
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
+  pivotRowLimit?: number;
 }
 
 export type V1ExploreSortType =
@@ -1010,6 +1032,10 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
+export interface V1ForkConversationResponse {
+  conversationId?: string;
+}
+
 export interface V1GenerateCanvasFileResponse {
   /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
@@ -1041,6 +1067,7 @@ export interface V1GenerateResolverResponse {
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
+  isOwner?: boolean;
 }
 
 export interface V1GetExploreResponse {
@@ -1074,6 +1101,57 @@ export type V1GetTableResponseSchema = { [key: string]: string };
 
 export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
+}
+
+export interface V1GitBranch {
+  name?: string;
+  hasDeployment?: boolean;
+  editableDeployment?: boolean;
+}
+
+export interface V1GitCommit {
+  commitSha?: string;
+  authorName?: string;
+  authorEmail?: string;
+  committedOn?: string;
+  message?: string;
+}
+
+export interface V1GitCommitResponse {
+  commitSha?: string;
+}
+
+export interface V1GitMergeToBranchResponse {
+  /** The output of the git merge command. Only set for unsuccessful merges. */
+  output?: string;
+}
+
+export interface V1GitPullResponse {
+  /** The output of the git pull command. Only set for unsuccessful pulls. */
+  output?: string;
+}
+
+export interface V1GitPushResponse {
+  [key: string]: unknown;
+}
+
+export interface V1GitStatusResponse {
+  /** The current branch of the git repo. */
+  branch?: string;
+  /** The remote url of the git repo. */
+  githubUrl?: string;
+  /** If the repo is managed by Rill. */
+  managedGit?: boolean;
+  /** local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo. */
+  localChanges?: boolean;
+  /** local_commits returns number of local commits that are not pushed to the remote git repo. */
+  localCommits?: number;
+  /** remote_commits returns number of remote commits not pulled yet. */
+  remoteCommits?: number;
+}
+
+export interface V1GitSwitchBranchResponse {
+  [key: string]: unknown;
 }
 
 export type V1HealthResponseInstancesHealth = {
@@ -1132,6 +1210,7 @@ export interface V1Instance {
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
   frontendUrl?: string;
+  theme?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1193,6 +1272,16 @@ export interface V1ListExamplesResponse {
 
 export interface V1ListFilesResponse {
   files?: V1DirEntry[];
+}
+
+export interface V1ListGitBranchesResponse {
+  currentBranch?: string;
+  branches?: V1GitBranch[];
+}
+
+export interface V1ListGitCommitsResponse {
+  commits?: V1GitCommit[];
+  nextPageToken?: string;
 }
 
 export interface V1ListInstancesResponse {
@@ -1521,6 +1610,12 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+/**
+ * Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+Keys and values are stored as templates and will be resolved at query time.
+ */
+export type V1MetricsViewSpecQueryAttributes = { [key: string]: string };
+
 export interface V1MetricsViewSpec {
   /** name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`. */
   parent?: string;
@@ -1552,6 +1647,9 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+  /** Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+Keys and values are stored as templates and will be resolved at query time. */
+  queryAttributes?: V1MetricsViewSpecQueryAttributes;
 }
 
 /**
@@ -1894,6 +1992,7 @@ export const V1Operation = {
   OPERATION_NIN: "OPERATION_NIN",
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
+  OPERATION_CAST: "OPERATION_CAST",
 } as const;
 
 export interface V1ParseError {
@@ -2038,6 +2137,10 @@ If a model is specified, a normal incremental refresh is triggered. Use the "mod
 }
 
 export interface V1RefreshTriggerState {
+  [key: string]: unknown;
+}
+
+export interface V1ReloadConfigResponse {
   [key: string]: unknown;
 }
 
@@ -2190,6 +2293,10 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RestoreGitCommitResponse {
+  newCommitSha?: string;
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2251,6 +2358,10 @@ It is ORed together with the condition_kinds. */
 
 export interface V1SecurityRuleTransitiveAccess {
   resource?: V1ResourceName;
+}
+
+export interface V1ShareConversationResponse {
+  [key: string]: unknown;
 }
 
 export interface V1Source {
@@ -2522,12 +2633,6 @@ export type RuntimeServiceGetInstanceParams = {
 
 export type RuntimeServiceDeleteInstanceBody = { [key: string]: unknown };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
-export type RuntimeServiceEditInstanceBodyAnnotations = {
-  [key: string]: string;
-};
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -2539,9 +2644,6 @@ export type RuntimeServiceEditInstanceBody = {
   adminConnector?: string;
   aiConnector?: string;
   connectors?: V1Connector[];
-  variables?: RuntimeServiceEditInstanceBodyVariables;
-  annotations?: RuntimeServiceEditInstanceBodyAnnotations;
-  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
@@ -2578,6 +2680,15 @@ export type RuntimeServiceListConversationsParams = {
    * Optional search pattern for filtering by user agent.
    */
   userAgentPattern?: string;
+};
+
+export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
+
+export type RuntimeServiceShareConversationBody = {
+  /** optional message ID up to which to share otherwise share all current messages
+only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+It supports a special value of "none" to unshare the conversation. */
+  untilMessageId?: string;
 };
 
 export type ConnectorServiceListBucketsParams = {
@@ -2649,6 +2760,8 @@ If you set this, do NOT set model. */
   /** If true, the AI will be used to generate the metrics view file.
 Otherwise, it falls back to a simpler heuristic approach. */
   useAi?: boolean;
+  /** Optional prompt to guide AI generation. */
+  prompt?: string;
 };
 
 export type RuntimeServiceRenameFileBody = {
@@ -2694,6 +2807,38 @@ export type RuntimeServiceGenerateResolverBody = {
   /** table and connector should not be provided if metrics_view is provided. */
   metricsView?: string;
 };
+
+export type RuntimeServiceGitSwitchBranchBody = {
+  branch?: string;
+  create?: boolean;
+  ignoreLocalChanges?: boolean;
+};
+
+export type RuntimeServiceGitCommitBody = {
+  commitMessage?: string;
+};
+
+export type RuntimeServiceListGitCommitsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type RuntimeServiceGitMergeToBranchBody = {
+  branch?: string;
+  /** In case of merge conflicts, prefer current changes. */
+  force?: boolean;
+};
+
+export type RuntimeServiceGitPullBody = {
+  discardLocal?: boolean;
+};
+
+export type RuntimeServiceGitPushBody = {
+  commitMessage?: string;
+  force?: boolean;
+};
+
+export type RuntimeServiceRestoreGitCommitBody = { [key: string]: unknown };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;
@@ -2801,6 +2946,10 @@ Only used if include_header is true. */
   originUrl?: string;
   /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
   executionTime?: string;
+};
+
+export type QueryServiceConvertExpressionToMetricsSQLBody = {
+  expression?: V1Expression;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -3097,6 +3246,8 @@ export type RuntimeServiceQueryResolverBody = {
   limit?: number;
 };
 
+export type RuntimeServiceReloadConfigBody = { [key: string]: unknown };
+
 export type QueryServiceExportReportBody = {
   /** The execution time to evaluate the report relative to.
 This is provided by the report implementation when sending a report. */
@@ -3130,7 +3281,6 @@ export type RuntimeServiceListResourcesParams = {
 export type RuntimeServiceWatchResourcesParams = {
   kind?: string;
   replay?: boolean;
-  level?: string;
 };
 
 export type RuntimeServiceWatchResources200 = {

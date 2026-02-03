@@ -22,6 +22,7 @@ export enum ExploreStateURLParams {
   SortDirection = "sort_dir",
 
   LeaderboardMeasures = "leaderboard_measures",
+  LeaderboardShowContextForAllMeasures = "lb_ctx",
   ExpandedMeasure = "measure",
   ChartType = "chart_type",
   Pin = "pin",
@@ -29,9 +30,13 @@ export enum ExploreStateURLParams {
   PivotRows = "rows",
   PivotColumns = "cols",
   PivotTableMode = "table_mode",
+  PivotRowLimit = "row_limit",
 
   GzippedParams = "gzipped_state",
   TemporaryFilters = "temp",
+  TimeDimension = "td",
+
+  IgnoreErrors = "ignore_errors",
 }
 
 export const ExploreStateKeyToURLParamMap: Partial<
@@ -47,4 +52,6 @@ export const ExploreStateKeyToURLParamMap: Partial<
   dashboardSortType: ExploreStateURLParams.SortType,
   sortDirection: ExploreStateURLParams.SortDirection,
   leaderboardMeasureNames: ExploreStateURLParams.LeaderboardMeasures,
+  leaderboardShowContextForAllMeasures:
+    ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
 };

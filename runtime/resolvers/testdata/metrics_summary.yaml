@@ -1,5 +1,6 @@
 connectors:
   - clickhouse
+  - druid
 project_files:
   clickhouse_metrics_view.yaml:
     type: metrics_view
@@ -112,6 +113,18 @@ project_files:
       select '2024-01-06T00:00:00Z'::TIMESTAMP as event_time, 'US' as country, 'Home' as category, 'Lamp' as product, 45.00 as revenue, 1 as quantity, null as is_active, 'online' as channel union all
       select '2024-01-07T00:00:00Z'::TIMESTAMP as event_time, 'CA' as country, 'Electronics' as category, null as product, 199.99 as revenue, 1 as quantity, true as is_active, null as channel union all
       select '2024-01-08T00:00:00Z'::TIMESTAMP as event_time, null as country, 'Clothing' as category, 'Hoodie' as product, 89.99 as revenue, 1 as quantity, false as is_active, 'online' as channel
+  druid_metrics.yaml:
+    type: metrics_view
+    connector: druid
+    model: AdBids
+    timeseries: __time
+    dimensions:
+      - column: publisher
+      - column: domain
+    measures:
+      - name: count
+        expression: count(*)
+        treat_nulls_as: -123
 tests:
   - name: duckdb_basic_summary
     resolver: metrics_summary
@@ -244,3 +257,29 @@ tests:
         time_range:
           data_type: ""
           name: ""
+  - name: druid_basic_summary
+    resolver: metrics_summary
+    properties:
+      metrics_view: druid_metrics
+    result:
+      - dimensions:
+          - data_type: CODE_TIMESTAMP
+            max_value: "2022-03-30T23:59:43.2Z"
+            min_value: "2022-01-01T00:00:23.046Z"
+            name: __time
+          - data_type: CODE_STRING
+            example_value: Facebook
+            has_nulls: true
+            max_value: Facebook
+            min_value: Facebook
+            name: publisher
+          - data_type: CODE_STRING
+            example_value: instagram.com
+            max_value: facebook.com
+            min_value: instagram.com
+            name: domain
+        time_range:
+          data_type: CODE_TIMESTAMP
+          max_value: "2022-03-30T23:59:43.2Z"
+          min_value: "2022-01-01T00:00:23.046Z"
+          name: __time

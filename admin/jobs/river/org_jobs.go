@@ -212,7 +212,7 @@ func (w *HibernateInactiveOrgsWorker) Work(ctx context.Context, job *river.Job[H
 			return fmt.Errorf("failed to find projects for organization %s: %w", org.Name, err)
 		}
 		for _, proj := range projects {
-			if proj.ProdDeploymentID == nil {
+			if proj.PrimaryDeploymentID == nil {
 				continue
 			}
 

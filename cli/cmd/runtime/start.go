@@ -33,6 +33,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/athena"
 	_ "github.com/rilldata/rill/runtime/drivers/azure"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
+	_ "github.com/rilldata/rill/runtime/drivers/claude"
 	_ "github.com/rilldata/rill/runtime/drivers/clickhouse"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -50,6 +51,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/slack"
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	_ "github.com/rilldata/rill/runtime/drivers/starrocks"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
@@ -246,7 +248,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 						Config: metastoreConfig,
 					},
 				},
-				Version: ch.Version,
+				Version:              ch.Version,
+				EnableConfigReloader: true,
 			}
 			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {
@@ -276,7 +279,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
 			}
-			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
+			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient, nil)
 			if err != nil {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}

@@ -1,15 +1,31 @@
 <script lang="ts">
+  import { createQuery } from "@tanstack/svelte-query";
   import { afterUpdate } from "svelte";
-  import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
+  import { derived } from "svelte/store";
+  import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
-  import { type ChatConfig, MessageType, ToolName } from "../types";
+  import { type ChatConfig } from "../types";
+  import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
-  import Message from "./Message.svelte";
+  import FileDiffBlock from "./file-diff/FileDiffBlock.svelte";
+  import AssistantMessage from "./text/AssistantMessage.svelte";
+  import UserMessage from "./text/UserMessage.svelte";
+  import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
+  import WorkingBlock from "./working/WorkingBlock.svelte";
+  import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
   export let config: ChatConfig;
+
+  // Prefetch tools metadata for tool call display names
+  const listToolsQueryOptionsStore = derived(runtime, ($runtime) =>
+    getRuntimeServiceListToolsQueryOptions($runtime.instanceId),
+  );
+  const listToolsQuery = createQuery(listToolsQueryOptionsStore);
+  $: tools = $listToolsQuery.data?.tools;
 
   let messagesContainer: HTMLDivElement;
 
@@ -17,46 +33,55 @@
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
 
-  // Loading states - access the store from the conversation instance
-  $: isStreamingStore = currentConversation.isStreaming;
-  $: isStreaming = $isStreamingStore;
-  $: isConversationLoading = !!$getConversationQuery.isLoading;
-
   // Error handling
-  $: streamErrorStore = currentConversation.streamError;
   $: conversationQueryError = currentConversation.getConversationQueryError();
   $: hasConversationLoadError = !!$conversationQueryError;
+  $: streamErrorStore = currentConversation.streamError;
   $: hasStreamError = !!$streamErrorStore;
 
-  // Data
-  $: messages = $getConversationQuery.data?.messages ?? [];
+  // Message blocks for display
+  $: blocksStore = currentConversation.getBlocks();
+  $: blocks = $blocksStore;
 
-  // Build a map of result messages by parent ID for correlation with calls (excluding router_agent)
-  $: resultMessagesByParentId = new Map(
-    messages
-      .filter(
-        (msg) =>
-          msg.type === MessageType.RESULT && msg.tool !== ToolName.ROUTER_AGENT,
-      )
-      .map((msg) => [msg.parentId, msg]),
-  );
+  // Check if conversation is empty (for empty state display)
+  $: isConversationEmpty =
+    ($getConversationQuery.data?.messages?.length ?? 0) === 0;
 
-  // Filter out tool result messages (but keep router_agent results which are assistant responses)
-  $: displayMessages = messages.filter(
-    (msg) =>
-      msg.type !== MessageType.RESULT || msg.tool === ToolName.ROUTER_AGENT,
-  );
+  // Track previous block count to detect new content and previous block type to detect block changing.
+  // This is used to determine whether to scroll to bottom of messages container or not.
+  let previousBlockCount = 0;
+  let previousBlockType = "";
 
-  // Auto-scroll to bottom when messages change or loading state changes
+  // Check if user is near the bottom of a scroll container
+  function isNearBottom(element: Element, threshold = 100): boolean {
+    const { scrollTop, scrollHeight, clientHeight } = element;
+    return scrollHeight - scrollTop - clientHeight <= threshold;
+  }
+
+  function scrollToBottom(element: Element) {
+    element.scrollTop = element.scrollHeight;
+  }
+
+  // Auto-scroll behavior:
+  // - Always scroll when new blocks are added or if the last block changes (new message sent or response started)
+  // - Only scroll during streaming if user is near the bottom (respect scroll position)
   afterUpdate(() => {
+    const currentBlockCount = blocks.length;
+    const currentBlockType = blocks[currentBlockCount - 1]?.type ?? "";
+    const hasBlockChanged =
+      currentBlockCount > previousBlockCount ||
+      currentBlockType !== previousBlockType;
+    previousBlockCount = currentBlockCount;
+    previousBlockType = currentBlockType;
+
     if (messagesContainer && layout === "sidebar") {
-      // For sidebar layout, scroll the messages container
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      if (hasBlockChanged || isNearBottom(messagesContainer)) {
+        scrollToBottom(messagesContainer);
+      }
     } else if (layout === "fullpage") {
-      // For fullpage layout, scroll the parent wrapper
       const parentWrapper = messagesContainer.closest(".chat-messages-wrapper");
-      if (parentWrapper) {
-        parentWrapper.scrollTop = parentWrapper.scrollHeight;
+      if (parentWrapper && (hasBlockChanged || isNearBottom(parentWrapper))) {
+        scrollToBottom(parentWrapper);
       }
     }
   });
@@ -68,16 +93,16 @@
   class:fullpage={layout === "fullpage"}
   bind:this={messagesContainer}
 >
-  {#if isConversationLoading}
+  {#if $getConversationQuery.isLoading}
     <div class="chat-loading">
-      <DelayedSpinner isLoading={isConversationLoading} size="24px" />
+      <DelayedSpinner isLoading={$getConversationQuery.isLoading} size="24px" />
     </div>
   {:else if hasConversationLoadError}
     <Error
       headline="Unable to load conversation"
       error={$conversationQueryError}
     />
-  {:else if messages.length === 0}
+  {:else if isConversationEmpty}
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
       <div class="chat-empty-title">How can I help you today?</div>
@@ -86,108 +111,91 @@
       </div>
     </div>
   {:else}
-    {#each displayMessages as msg (msg.id)}
-      <Message
-        message={msg}
-        resultMessage={resultMessagesByParentId.get(msg.id)}
-      />
+    {#each blocks as block (block.id)}
+      {#if block.type === "text" && block.message.role === "user"}
+        <UserMessage message={block.message} />
+      {:else if block.type === "text" && block.message.role === "assistant"}
+        <AssistantMessage message={block.message} />
+      {:else if block.type === "thinking"}
+        <ThinkingBlock {block} {tools} />
+      {:else if block.type === "working"}
+        <WorkingBlock />
+      {:else if block.type === "chart"}
+        <ChartBlock {block} {tools} />
+      {:else if block.type === "file-diff"}
+        <FileDiffBlock {block} {tools} />
+      {:else if block.type === "simple-tool-call-block"}
+        <SimpleToolCallBlock {block} {tools} />
+      {/if}
     {/each}
   {/if}
-  {#if isStreaming}
-    <div class="response-loading">
-      <LoadingSpinner size="1.2em" />
-      Thinking...
-    </div>
-  {:else if hasStreamError}
+  {#if hasStreamError}
     <Error headline="Failed to generate response" error={$streamErrorStore} />
   {/if}
 </div>
 
 <style lang="postcss">
   .chat-messages {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    background: var(--surface);
+    @apply flex-1;
+    @apply flex flex-col gap-2 py-3 pb-12;
   }
 
-  /* Sidebar layout: messages container scrolls */
   .chat-messages.sidebar {
-    overflow-y: auto;
-    padding: 0rem 1rem 0rem 1rem;
+    @apply overflow-y-auto;
+    @apply px-4;
   }
 
-  /* Fullpage layout: parent scrolls, content centered */
   .chat-messages.fullpage {
-    padding: 1rem 1rem;
-    max-width: 48rem;
-    margin: 0 auto;
-    width: 100%;
-    min-height: 100%;
+    @apply p-4;
+    @apply max-w-3xl mx-auto w-full;
+    @apply min-h-full;
   }
 
   .chat-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    text-align: center;
-    color: #6b7280;
+    @apply flex flex-col;
+    @apply items-center justify-center;
+    @apply h-full text-center;
+    @apply text-fg-secondary;
   }
 
-  /* Fullpage layout: enhanced empty state */
   .chat-messages.fullpage .chat-empty {
-    padding: 4rem 2rem;
+    @apply py-16 px-8;
   }
 
   .chat-empty-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.25rem;
+    @apply text-base font-semibold;
+    @apply text-fg-secondary mb-1;
   }
 
   .chat-messages.fullpage .chat-empty-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 0.5rem;
+    @apply text-2xl font-semibold;
+    @apply text-fg-primary mb-2;
   }
 
   .chat-empty-subtitle {
-    font-size: 0.75rem;
-    color: #6b7280;
+    @apply text-xs text-fg-secondary;
   }
 
   .chat-messages.fullpage .chat-empty-subtitle {
-    font-size: 1rem;
-    color: #6b7280;
+    @apply text-base text-fg-secondary;
   }
 
-  /* Responsive: adjust fullpage empty state for mobile */
   @media (max-width: 640px) {
     .chat-messages.fullpage .chat-empty {
-      padding: 2rem 1rem;
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
 
     .chat-messages.fullpage .chat-empty-title {
       font-size: 1.25rem;
+      line-height: 1.75rem;
     }
 
     .chat-messages.fullpage .chat-empty-subtitle {
       font-size: 0.875rem;
+      line-height: 1.25rem;
     }
-  }
-
-  .response-loading {
-    display: flex;
-    align-items: center;
-    justify-content: start;
-    color: #3b82f6;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    font-size: 0.875rem;
   }
 </style>
