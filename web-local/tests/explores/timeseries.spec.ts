@@ -10,6 +10,7 @@ import { DateTime } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
 const HOVER_STEP_PX = 5;
 
@@ -111,11 +112,23 @@ for (const timezone of TIMEZONES) {
       ).toBeVisible({ timeout: 5000 });
 
       for (const testCase of TIME_RANGE_TEST_CASES) {
-        const timeseriesPromise = interceptTimeseriesResponse(page);
-
         await interactWithTimeRangeMenu(page, async () => {
           await page.getByRole("menuitem", { name: testCase.menuItem }).click();
         });
+
+        await page
+          .getByRole("button", {
+            name: "Select aggregation grain",
+          })
+          .click();
+
+        const timeseriesPromise = interceptTimeseriesResponse(page);
+        await page
+          .getByRole("menuitem", {
+            name: V1TimeGrainToDateTimeUnit[testCase.grain],
+            exact: true,
+          })
+          .click();
 
         // Wait for chart to update with new data
         await page.waitForTimeout(500);

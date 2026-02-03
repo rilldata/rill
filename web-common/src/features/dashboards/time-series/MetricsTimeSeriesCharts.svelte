@@ -1,9 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
@@ -21,11 +19,7 @@
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    getAllowedGrains,
-    isGrainAllowed,
-    V1TimeGrainToDateTimeUnit,
-  } from "@rilldata/web-common/lib/time/new-grains";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import {
     TimeRangePreset,
     TimeComparisonOption,
@@ -33,7 +27,6 @@
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { Tooltip } from "bits-ui";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -51,6 +44,7 @@
   import { derived, writable } from "svelte/store";
   import { DateTime } from "luxon";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   // Derive a readable of the table-hovered time (Date | undefined)
   const tableHoverTime = derived(tableInteractionStore, ($s) => $s.time);
@@ -66,8 +60,11 @@
   export let exploreName: string;
   export let hideStartPivotButton = false;
 
-  const ctx = getStateManagers();
+  const StateManagers = getStateManagers();
+
   const {
+    metricsViewName,
+    dashboardStore,
     selectors: {
       measures: { allMeasures, visibleMeasures, getMeasureByName },
       dimensionFilters: { includedDimensionValues },
@@ -76,27 +73,33 @@
     actions: {
       measures: { setMeasureVisibility },
     },
-  } = ctx;
+  } = StateManagers;
 
-  const timeControlsStore = useTimeControlStore(ctx);
+  const timeControlsStore = useTimeControlStore(StateManagers);
+
+  let grainDropdownOpen = false;
+
+  $: ({ instanceId } = $runtime);
 
   $: ({
     selectedTimeRange,
     selectedComparisonTimeRange,
     timeDimension,
     ready,
-    minTimeGrain,
+
     showTimeComparison,
     timeEnd,
     timeStart,
     comparisonTimeEnd,
     comparisonTimeStart,
+    aggregationOptions,
   } = $timeControlsStore);
 
   // Use the full selected time range for chart data fetching (not modified by scrub)
   $: chartTimeStart = selectedTimeRange?.start?.toISOString();
   $: chartTimeEnd = selectedTimeRange?.end?.toISOString();
-  $: chartComparisonTimeStart = selectedComparisonTimeRange?.start?.toISOString();
+  $: chartComparisonTimeStart =
+    selectedComparisonTimeRange?.start?.toISOString();
   $: chartComparisonTimeEnd = selectedComparisonTimeRange?.end?.toISOString();
 
   $: exploreState = useExploreState(exploreName);
@@ -111,7 +114,7 @@
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
 
-  $: activeTimeGrain = selectedTimeRange?.interval ?? minTimeGrain;
+  $: activeTimeGrain = selectedTimeRange?.interval;
 
   $: chartScrubRange = $exploreState?.lastDefinedScrubRange
     ? {
@@ -148,18 +151,7 @@
     return value !== undefined;
   }
 
-  $: timeGrainOptions = getAllowedGrains(minTimeGrain);
-  $: grainAllowed = isGrainAllowed(activeTimeGrain, minTimeGrain);
-
-  let grainDropdownOpen = false;
-  $: effectiveGrain = grainAllowed ? activeTimeGrain : minTimeGrain;
-
-  // Props for MeasureChart (context-independent)
-  const runtimeStore = ctx.runtime;
-  const metricsViewNameStore = ctx.metricsViewName;
-  const dashboardStore = ctx.dashboardStore;
-  $: instanceId = $runtimeStore.instanceId;
-  $: chartMetricsViewName = $metricsViewNameStore;
+  $: chartMetricsViewName = $metricsViewName;
   $: chartWhere = sanitiseExpression(
     mergeDimensionAndMeasureFilters(
       $dashboardStore.whereFilter,
@@ -167,7 +159,6 @@
     ),
     undefined,
   );
-
 
   $: chartTimeZone = $dashboardStore.selectedTimezone;
   $: chartReady = !!ready;
@@ -186,7 +177,7 @@
   // Pan handler
   function handlePan(direction: "left" | "right") {
     const panRange = $getNewPanRange(direction);
-    if (!panRange) return;
+    if (!panRange || !activeTimeGrain) return;
     const { start, end } = panRange;
     const comparisonTimeRange = showComparison
       ? ({ name: TimeComparisonOption.CONTIGUOUS } as DashboardTimeControls)
@@ -194,7 +185,7 @@
     metricsExplorerStore.selectTimeRange(
       exploreName,
       { name: TimeRangePreset.CUSTOM, start, end },
-      effectiveGrain!,
+      activeTimeGrain,
       comparisonTimeRange,
       {},
     );
@@ -283,16 +274,17 @@
         selectedItems={visibleMeasureNames}
       />
 
-      {#if $rillTime && effectiveGrain}
+      {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
           <DropdownMenu.Trigger asChild let:builder>
             <button
               {...builder}
               use:builder.action
+              aria-label="Select aggregation grain"
               class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
             >
               by <b>
-                {V1TimeGrainToDateTimeUnit[effectiveGrain]}
+                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
               </b>
               <span
                 class:-rotate-90={grainDropdownOpen}
@@ -300,25 +292,11 @@
               >
                 <CaretDownIcon />
               </span>
-              {#if !grainAllowed && minTimeGrain && activeTimeGrain}
-                <Tooltip.Root portal="body">
-                  <Tooltip.Trigger>
-                    <AlertCircleOutline className="size-3.5 " />
-                  </Tooltip.Trigger>
-                  <Tooltip.Content side="top" class="z-50 w-64" sideOffset={8}>
-                    <TooltipContent>
-                      <i>{V1TimeGrainToDateTimeUnit[activeTimeGrain]}</i>
-                      aggregation not supported on this dashboard. Displaying by
-                      <i>{V1TimeGrainToDateTimeUnit[minTimeGrain]}</i> instead.
-                    </TooltipContent>
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              {/if}
             </button>
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Content align="start" class="w-48">
-            {#each timeGrainOptions as option (option)}
+            {#each aggregationOptions ?? [] as option (option)}
               <DropdownMenu.CheckboxItem
                 checkRight
                 role="menuitem"
@@ -355,7 +333,7 @@
       <ChartInteractions
         {exploreName}
         {showComparison}
-        timeGrain={effectiveGrain}
+        timeGrain={activeTimeGrain}
       />
     </div>
     <div
@@ -379,7 +357,7 @@
             ready={chartReady}
           />
 
-          {#if effectiveGrain}
+          {#if activeTimeGrain}
             <MeasureChart
               {measure}
               {scrubController}
@@ -395,7 +373,7 @@
               timeEnd={chartTimeEnd}
               comparisonTimeStart={chartComparisonTimeStart}
               comparisonTimeEnd={chartComparisonTimeEnd}
-              timeGranularity={effectiveGrain}
+              timeGranularity={activeTimeGrain}
               timeZone={chartTimeZone}
               ready={chartReady}
               scrubRange={chartScrubRange}
@@ -414,8 +392,13 @@
                 if (dt) {
                   // Convert to JS Date matching table's timezone handling:
                   // keepLocalTime: true preserves wall clock time when shifting to system zone
-                  const systemTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                  chartHoveredTime.set(dt.setZone(systemTimeZone, { keepLocalTime: true }).toJSDate());
+                  const systemTimeZone =
+                    Intl.DateTimeFormat().resolvedOptions().timeZone;
+                  chartHoveredTime.set(
+                    dt
+                      .setZone(systemTimeZone, { keepLocalTime: true })
+                      .toJSDate(),
+                  );
                 } else {
                   chartHoveredTime.set(undefined);
                 }
