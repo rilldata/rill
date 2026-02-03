@@ -36,7 +36,7 @@
   $: ({ instanceId } = $runtime);
   $: if (editor) setLineStatuses(errors, editor);
   $: mainError = errors?.at(0);
-  $: host = $runtime.host || "http://localhost:3001";
+  $: host = $runtime.host || "http://localhost:9009";
   $: baseUrl = `${host}/v1/instances/${instanceId}/api/${apiName}`;
   $: fullUrl = buildFullUrl(baseUrl, args);
   $: hasErrors = errors.length > 0;

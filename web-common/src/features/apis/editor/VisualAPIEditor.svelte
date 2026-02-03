@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -32,9 +33,11 @@
   }
 
   // Template options for dropdown menus
+  // For metrics_sql/sql: use suffix to append to current base query (select ... from X); content is fallback when empty.
   interface TemplateOption {
     label: string;
     content?: string;
+    suffix?: string;
     globPattern?: string;
     api?: string;
     includeArgs?: boolean;
@@ -47,31 +50,38 @@
     {
       label: "Basic Query",
       content: "select measure, dimension from metrics_view",
+      suffix: "",
     },
     {
       label: "Query with Filter",
       content:
         "select measure, dimension from metrics_view where dimension = '{{ .args.filter }}'",
+      suffix: "where dimension = '{{ .args.filter }}'",
     },
     {
       label: "Query with Limit",
       content:
         "select measure, dimension from metrics_view limit {{ .args.limit }}",
+      suffix: "limit {{ .args.limit }}",
     },
     {
       label: "Query with Offset",
       content:
         "select measure, dimension from metrics_view limit {{ .args.limit }} offset {{ .args.offset }}",
+      suffix: "limit {{ .args.limit }} offset {{ .args.offset }}",
     },
     {
       label: "Query with Sort",
       content:
         "select measure, dimension from metrics_view order by {{ .args.sort }} {{ .args.order }}",
+      suffix: "order by {{ .args.sort }} {{ .args.order }}",
     },
     {
       label: "Full Query",
       content:
         "select measure, dimension from metrics_view where dimension = '{{ .args.filter }}' order by {{ .args.sort }} {{ .args.order }} limit {{ .args.limit }} offset {{ .args.offset }}",
+      suffix:
+        "where dimension = '{{ .args.filter }}' order by {{ .args.sort }} {{ .args.order }} limit {{ .args.limit }} offset {{ .args.offset }}",
     },
   ];
 
@@ -79,29 +89,36 @@
     {
       label: "Basic Query",
       content: "select * from model_name",
+      suffix: "",
     },
     {
       label: "Query with Filter",
       content: "select * from model_name where column = '{{ .args.filter }}'",
+      suffix: "where column = '{{ .args.filter }}'",
     },
     {
       label: "Query with Limit",
       content: "select * from model_name limit {{ .args.limit }}",
+      suffix: "limit {{ .args.limit }}",
     },
     {
       label: "Query with Offset",
       content:
         "select * from model_name limit {{ .args.limit }} offset {{ .args.offset }}",
+      suffix: "limit {{ .args.limit }} offset {{ .args.offset }}",
     },
     {
       label: "Query with Sort",
       content:
         "select * from model_name order by {{ .args.sort }} {{ .args.order }}",
+      suffix: "order by {{ .args.sort }} {{ .args.order }}",
     },
     {
       label: "Full Query",
       content:
         "select * from model_name where column = '{{ .args.filter }}' order by {{ .args.sort }} {{ .args.order }} limit {{ .args.limit }} offset {{ .args.offset }}",
+      suffix:
+        "where column = '{{ .args.filter }}' order by {{ .args.sort }} {{ .args.order }} limit {{ .args.limit }} offset {{ .args.offset }}",
     },
   ];
 
@@ -196,6 +213,16 @@
   let responseError: string | null = null;
   let isLoading = false;
   let previewHeight = 300;
+  let resizerMax = 600;
+  let mainAreaEl: HTMLDivElement;
+
+  onMount(() => {
+    if (mainAreaEl) {
+      const h = mainAreaEl.clientHeight;
+      previewHeight = Math.max(100, Math.floor(h / 2));
+      resizerMax = Math.max(400, Math.floor(h * 0.85));
+    }
+  });
 
   // Glob-specific fields
   let globPattern = "";
@@ -206,7 +233,7 @@
   // Resource status fields
   let whereError = true;
 
-  $: host = $runtime.host || "http://localhost:3001";
+  $: host = $runtime.host || "http://localhost:9009";
   $: baseUrl = `${host}/v1/instances/${instanceId}/api/${apiName}`;
   $: fullUrl = buildFullUrl(baseUrl, args);
   $: hasErrors = errors.length > 0;
@@ -330,8 +357,41 @@
     updateYAML("resource_status", "");
   }
 
+  /** Returns the base query (select ... from X) without where/order by/limit/offset clauses. */
+  function getBaseQuery(content: string): string {
+    const trimmed = content.trim();
+    if (!trimmed) return "";
+    const lower = trimmed.toLowerCase();
+    const indices = [
+      lower.indexOf(" where "),
+      lower.indexOf(" order by "),
+      lower.indexOf(" limit "),
+      lower.indexOf(" offset "),
+    ]
+      .filter((i) => i >= 0)
+      .sort((a, b) => a - b);
+    const end = indices.length > 0 ? indices[0] : trimmed.length;
+    return trimmed.slice(0, end).trim();
+  }
+
+  const defaultBaseQuery: Record<"metrics_sql" | "sql", string> = {
+    metrics_sql: "select measure, dimension from metrics_view",
+    sql: "select * from model_name",
+  };
+
   function applyTemplate(template: TemplateOption) {
-    if (template.content !== undefined) {
+    if (
+      (currentType === "metrics_sql" || currentType === "sql") &&
+      (template.suffix !== undefined || template.content !== undefined)
+    ) {
+      // Keep base SQL (select ... from X); remove any existing clauses and replace with template only
+      const base =
+        getBaseQuery(currentContent) ||
+        defaultBaseQuery[currentType];
+      const suffix = template.suffix ?? "";
+      const newContent = suffix ? `${base} ${suffix}`.trim() : base;
+      updateYAML(currentType, newContent);
+    } else if (template.content !== undefined) {
       updateYAML(currentType, template.content);
     } else if (template.globPattern !== undefined) {
       globPattern = template.globPattern;
@@ -745,7 +805,7 @@
   }
 
   .query-editor {
-    @apply w-full h-32 p-3 font-mono text-sm border rounded-[2px] bg-input resize-y;
+    @apply w-full h-56 p-3 font-mono text-sm border rounded-[2px] bg-input resize-none;
     @apply focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none;
   }
 
