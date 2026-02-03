@@ -758,8 +758,10 @@
       />
     </div>
   {:else if data.length > 0}
+    <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
     <svg
-      role="presentation"
+      role="application"
+      aria-label="Measure Chart for {measureName}"
       class="size w-full overflow-visible"
       height="{height}px"
       on:mousemove={(e) => {

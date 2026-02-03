@@ -23,12 +23,12 @@ interface TimeRangeTestCase {
 const TIME_RANGE_TEST_CASES: TimeRangeTestCase[] = [
   {
     menuItem: "Last 7 days",
-    expectedDataPoints: 9,
+    expectedDataPoints: 7,
     grain: V1TimeGrain.TIME_GRAIN_DAY,
   },
   {
     menuItem: "Last 24 hours",
-    expectedDataPoints: 26,
+    expectedDataPoints: 24,
     grain: V1TimeGrain.TIME_GRAIN_HOUR,
   },
 ];
@@ -50,8 +50,8 @@ async function verifyChartTooltipData(
   const centerY = box.y + box.height / 2;
   let verifiedPoints = 0;
   let lastDateText: string | undefined;
-  // Exclude first and last data points as they're not rendered
-  const expectedPoints = apiData.data.length - 2;
+
+  const expectedPoints = apiData.data.length;
 
   for (let x = box.x; x < box.x + box.width; x += HOVER_STEP_PX) {
     await page.mouse.move(x, centerY);
@@ -63,8 +63,8 @@ async function verifyChartTooltipData(
     if (!dateText || dateText === lastDateText) continue;
 
     lastDateText = dateText;
-    // Skip the first data point (index 0) as chart starts from second point
-    const point = apiData.data[verifiedPoints + 1];
+
+    const point = apiData.data[verifiedPoints];
     const dateTime = DateTime.fromISO(point.ts, { zone: "UTC" });
     const pattern = formatDateTimeByGrain(dateTime, grain);
 
