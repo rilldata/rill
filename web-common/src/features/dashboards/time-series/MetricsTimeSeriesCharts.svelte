@@ -18,7 +18,6 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import {
     TimeRangePreset,
@@ -31,10 +30,12 @@
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { featureFlags } from "../../feature-flags";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import { MeasureChart } from "./measure-chart";
+  import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
   import { ScrubController } from "./measure-chart/ScrubController";
   import { getAnnotationsForMeasure } from "./annotations-selectors";
   import ChartInteractions from "./ChartInteractions.svelte";
@@ -194,6 +195,7 @@
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
     const pivot = $exploreState?.pivot;
+    if (!pivot) return;
     const pivotColumns = splitPivotChips(pivot.columns);
     if (
       pivot.rows.length ||
@@ -329,95 +331,104 @@
   </div>
 
   {#if renderedMeasures}
-    <div class="relative">
-      <ChartInteractions
-        {exploreName}
-        {showComparison}
-        timeGrain={activeTimeGrain}
-      />
-    </div>
     <div
       class:pb-4={!showTimeDimensionDetail}
-      class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
+      class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 overflow-y-scroll h-full max-h-fit"
     >
-      {#each renderedMeasures as measure, i (measure.name)}
-        <div class="flex flex-row gap-x-4">
-          <MeasureBigNumber
+      {#if activeTimeGrain}
+        <div
+          class="sticky top-0 z-10 bg-surface-background col-span-2 grid grid-cols-subgrid"
+        >
+          <div />
+          <div class="relative">
+            <MeasureChartXAxis
+              timeStart={chartTimeStart}
+              timeEnd={chartTimeEnd}
+              timeGranularity={activeTimeGrain}
+              timeZone={chartTimeZone}
+            />
+            <ChartInteractions
+              {exploreName}
+              {showComparison}
+              timeGrain={activeTimeGrain}
+            />
+          </div>
+        </div>
+      {/if}
+
+      {#each renderedMeasures as measure (measure.name)}
+        <MeasureBigNumber
+          {measure}
+          isMeasureExpanded={showTimeDimensionDetail}
+          {showComparison}
+          {instanceId}
+          metricsViewName={chartMetricsViewName}
+          where={chartWhere}
+          {timeDimension}
+          {timeStart}
+          {timeEnd}
+          {comparisonTimeStart}
+          {comparisonTimeEnd}
+          ready={chartReady}
+        />
+
+        {#if activeTimeGrain}
+          <MeasureChart
             {measure}
-            isMeasureExpanded={showTimeDimensionDetail}
-            {showComparison}
+            {scrubController}
+            {sharedHoverIndex}
+            tddChartType={showTimeDimensionDetail
+              ? (tddChartType ?? TDDChart.DEFAULT)
+              : TDDChart.DEFAULT}
             {instanceId}
             metricsViewName={chartMetricsViewName}
             where={chartWhere}
             {timeDimension}
-            {timeStart}
-            {timeEnd}
-            {comparisonTimeStart}
-            {comparisonTimeEnd}
+            timeStart={chartTimeStart}
+            timeEnd={chartTimeEnd}
+            comparisonTimeStart={chartComparisonTimeStart}
+            comparisonTimeEnd={chartComparisonTimeEnd}
+            timeGranularity={activeTimeGrain}
+            timeZone={chartTimeZone}
             ready={chartReady}
-          />
-
-          {#if activeTimeGrain}
-            <MeasureChart
-              showAxis={i === 0}
-              {measure}
-              {scrubController}
-              {sharedHoverIndex}
-              tddChartType={showTimeDimensionDetail
-                ? (tddChartType ?? TDDChart.DEFAULT)
-                : TDDChart.DEFAULT}
-              {instanceId}
-              metricsViewName={chartMetricsViewName}
-              where={chartWhere}
-              {timeDimension}
-              timeStart={chartTimeStart}
-              timeEnd={chartTimeEnd}
-              comparisonTimeStart={chartComparisonTimeStart}
-              comparisonTimeEnd={chartComparisonTimeEnd}
-              timeGranularity={activeTimeGrain}
-              timeZone={chartTimeZone}
-              ready={chartReady}
-              scrubRange={chartScrubRange}
-              {comparisonDimension}
-              dimensionValues={chartDimensionValues}
-              dimensionWhere={$dashboardStore.whereFilter}
-              annotations={getAnnotationsForMeasureStore(measure.name ?? "")}
-              canPanLeft={$canPanLeft}
-              canPanRight={$canPanRight}
-              onPanLeft={() => handlePan("left")}
-              onPanRight={() => handlePan("right")}
-              {showComparison}
-              {showTimeDimensionDetail}
-              {tableHoverTime}
-              onHover={(dt) => {
-                if (dt) {
-                  // Convert to JS Date matching table's timezone handling:
-                  // keepLocalTime: true preserves wall clock time when shifting to system zone
-                  const systemTimeZone =
-                    Intl.DateTimeFormat().resolvedOptions().timeZone;
-                  chartHoveredTime.set(
-                    dt
-                      .setZone(systemTimeZone, { keepLocalTime: true })
-                      .toJSDate(),
-                  );
-                } else {
-                  chartHoveredTime.set(undefined);
-                }
-              }}
-              onScrub={handleScrub}
-              onScrubClear={() => {
-                metricsExplorerStore.setSelectedScrubRange(
-                  exploreName,
-                  undefined,
+            scrubRange={chartScrubRange}
+            {comparisonDimension}
+            dimensionValues={chartDimensionValues}
+            dimensionWhere={$dashboardStore.whereFilter}
+            annotations={getAnnotationsForMeasureStore(measure.name ?? "")}
+            canPanLeft={$canPanLeft}
+            canPanRight={$canPanRight}
+            onPanLeft={() => handlePan("left")}
+            onPanRight={() => handlePan("right")}
+            {showComparison}
+            {showTimeDimensionDetail}
+            {tableHoverTime}
+            onHover={(dt) => {
+              if (dt) {
+                const systemTimeZone =
+                  Intl.DateTimeFormat().resolvedOptions().timeZone;
+                chartHoveredTime.set(
+                  dt
+                    .setZone(systemTimeZone, { keepLocalTime: true })
+                    .toJSDate(),
                 );
-              }}
-            />
-          {:else}
-            <div class="flex items-center justify-center w-24">
-              <Spinner status={EntityStatus.Running} />
-            </div>
-          {/if}
-        </div>
+              } else {
+                chartHoveredTime.set(undefined);
+              }
+            }}
+            onScrub={handleScrub}
+            onScrubClear={() => {
+              metricsExplorerStore.setSelectedScrubRange(
+                exploreName,
+                undefined,
+              );
+            }}
+          />
+        {:else}
+          <div class="flex items-center justify-center w-24">
+            <Spinner status={EntityStatus.Running} />
+          </div>
+        {/if}
       {/each}
     </div>
   {/if}

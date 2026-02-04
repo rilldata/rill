@@ -119,6 +119,16 @@ export interface ChartSeries {
 }
 
 /**
+ * A single tick on the x-axis.
+ */
+export interface AxisTick {
+  x: number;
+  anchor: string;
+  timeLine: string;
+  dateLine: string;
+}
+
+/**
  * Rendering mode for TimeSeriesChart.
  */
 export type ChartMode = "line" | "bar";

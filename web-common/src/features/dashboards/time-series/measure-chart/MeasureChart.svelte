@@ -61,14 +61,13 @@
   import MeasureChartAnnotationPopover from "./MeasureChartAnnotationPopover.svelte";
   import { measureSelection } from "../measure-selection/measure-selection";
   import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
-  import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { snapIndex, dateToIndex } from "./utils";
+  import ComparisonTooltip from "./ComparisonTooltip.svelte";
 
   const chartId = Math.random().toString(36).slice(2, 11);
-  const Y_DASH_ARRAY = "1,1";
-  const DAY_GRAIN_ORDER = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY];
+  const Y_DASH_ARRAY = "1,1.5";
   const X_PAD = 8;
   const CLICK_THRESHOLD_PX = 4; // Max mouse movement to still count as a click
   const LINE_MODE_MIN_POINTS = 6; // Minimum data points to show line instead of bar
@@ -120,7 +119,6 @@
   export let onPanLeft: (() => void) | undefined = undefined;
   export let onPanRight: (() => void) | undefined = undefined;
   export let scrubController: ScrubController;
-  export let showAxis: boolean = false;
 
   let container: HTMLDivElement;
   let clientWidth = 425;
@@ -319,67 +317,6 @@
       : dataLastIndex >= 1
         ? [0, dataLastIndex]
         : [0];
-  // Sub-day grains (hour, minute, etc.) show time + date on separate lines
-  $: isSubDayGrain = timeGranularity
-    ? V1TimeGrainToOrder[timeGranularity] < DAY_GRAIN_ORDER
-    : false;
-  $: axisHeight = isSubDayGrain ? 26 : 16;
-  $: axisTicks = buildAxisTicks(xTickIndices, data, mode, isSubDayGrain);
-
-  function buildAxisTicks(
-    indices: number[],
-    d: TimeSeriesPoint[],
-    m: ChartMode,
-    subDay: boolean,
-  ) {
-    return indices.map((idx, i) => {
-      const dt = d[idx]?.ts;
-      const anchor =
-        m === "bar"
-          ? "middle"
-          : i === 0
-            ? "start"
-            : i === indices.length - 1
-              ? "end"
-              : "middle";
-
-      if (!dt) return { x: xScale(idx), anchor, timeLine: "", dateLine: "" };
-
-      if (subDay) {
-        const grainOrder = V1TimeGrainToOrder[timeGranularity!];
-        const fmt: Intl.DateTimeFormatOptions = {
-          hour: "numeric",
-          hour12: true,
-        };
-        if (grainOrder < 1) fmt.minute = "2-digit";
-        const timeLine = dt.toLocaleString(fmt);
-
-        const prevDt = i > 0 ? d[indices[i - 1]]?.ts : undefined;
-        const showDate =
-          !prevDt ||
-          dt.day !== prevDt.day ||
-          dt.month !== prevDt.month ||
-          dt.year !== prevDt.year;
-        const dateFmt: Intl.DateTimeFormatOptions = {
-          month: "short",
-          day: "numeric",
-        };
-        if (d[0]?.ts.year !== d[d.length - 1]?.ts.year)
-          dateFmt.year = "numeric";
-        const dateLine = showDate ? dt.toLocaleString(dateFmt) : "";
-
-        return { x: xScale(idx), anchor, timeLine, dateLine };
-      }
-
-      return {
-        x: xScale(idx),
-        anchor,
-        timeLine: formatDateTimeByGrain(dt, timeGranularity),
-        dateLine: "",
-      };
-    });
-  }
-
   // Keep scrub controller in sync with data length
   $: scrubController.setDataLength(data.length);
 
@@ -584,14 +521,35 @@
 
   function checkAnnotationHover(e: MouseEvent) {
     if (isScrubbing || annotationGroups.length === 0) {
-      hoveredAnnotationGroup = null;
+      scheduleAnnotationClear();
       return;
     }
     const svg = e.currentTarget as SVGSVGElement;
     const rect = svg.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-    hoveredAnnotationGroup = findHoveredGroup(annotationGroups, mouseX, mouseY);
+    const hit = findHoveredGroup(annotationGroups, mouseX, mouseY);
+    if (hit) {
+      // Direct hit on a diamond — show immediately, cancel any pending clear
+      if (annotationPopoverTimeout) {
+        clearTimeout(annotationPopoverTimeout);
+        annotationPopoverTimeout = null;
+      }
+      hoveredAnnotationGroup = hit;
+    } else if (hoveredAnnotationGroup && !annotationPopoverHovered) {
+      // Mouse moved off diamond but popover isn't hovered — schedule clear
+      scheduleAnnotationClear();
+    }
+  }
+
+  function scheduleAnnotationClear() {
+    if (annotationPopoverHovered || annotationPopoverTimeout) return;
+    annotationPopoverTimeout = setTimeout(() => {
+      if (!annotationPopoverHovered) {
+        hoveredAnnotationGroup = null;
+      }
+      annotationPopoverTimeout = null;
+    }, ANNOTATION_POPOVER_DELAY_MS);
   }
 
   function handleAnnotationPopoverHover(hovered: boolean) {
@@ -601,12 +559,7 @@
       annotationPopoverTimeout = null;
     }
     if (!hovered) {
-      annotationPopoverTimeout = setTimeout(() => {
-        if (!annotationPopoverHovered) {
-          hoveredAnnotationGroup = null;
-        }
-        annotationPopoverTimeout = null;
-      }, ANNOTATION_POPOVER_DELAY_MS);
+      scheduleAnnotationClear();
     }
   }
 
@@ -614,9 +567,8 @@
     hoverState.set(EMPTY_HOVER);
     mousePageX = null;
     mousePageY = null;
-    if (!annotationPopoverHovered) {
-      hoveredAnnotationGroup = null;
-    }
+    // Don't immediately clear — give time to reach the popover
+    scheduleAnnotationClear();
   }
 
   function handleMouseDown(e: MouseEvent) {
@@ -795,33 +747,8 @@
       />
     </div>
   {:else if data.length > 0}
-    {#if showAxis}
-      <svg class="w-full overflow-visible" height={axisHeight}>
-        {#each axisTicks as tick, tickIdx (tickIdx)}
-          <text
-            class="fill-fg-secondary text-[11px]"
-            text-anchor={tick.anchor}
-            x={tick.x}
-            y={isSubDayGrain ? 11 : axisHeight - 3}
-          >
-            {tick.timeLine}
-          </text>
-          {#if tick.dateLine}
-            <text
-              class="fill-fg-muted text-[11px]"
-              text-anchor={tick.anchor}
-              x={tick.x}
-              y={23}
-            >
-              {tick.dateLine}
-            </text>
-          {/if}
-        {/each}
-      </svg>
-    {/if}
-    <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
     <svg
-      role="application"
+      role="presentation"
       aria-label="Measure Chart for {measureName}"
       class="size w-full overflow-visible"
       height="{height}px"
@@ -882,7 +809,7 @@
             x2={config.plotBounds.left + config.plotBounds.width}
             y1={yScale(tick)}
             y2={yScale(tick)}
-            stroke-width="0.5"
+            stroke-width="0.75"
             stroke-dasharray={Y_DASH_ARRAY}
           />
         {/each}
@@ -897,7 +824,7 @@
             x2={xScale(idx)}
             y1={config.plotBounds.top}
             y2={config.plotBounds.top + config.plotBounds.height}
-            stroke-width="0.5"
+            stroke-width="0.75"
             stroke-dasharray={Y_DASH_ARRAY}
           />
         {/each}
@@ -958,7 +885,7 @@
         {@const showDelta =
           showComparison &&
           tooltipComparisonValue !== null &&
-          tooltipDeltaLabel}
+          !!tooltipDeltaLabel}
         <g class="data-readout">
           <!-- Date -->
           <text
@@ -969,29 +896,17 @@
             {formatDateTimeByGrain(hoveredPoint.ts, timeGranularity)}
           </text>
 
-          <!-- Value (with comparison on same line if applicable) -->
           {#if showComparison}
-            <text
-              class="text-outline text-[12px]"
+            <ComparisonTooltip
               x={config.plotBounds.left + 6}
-              y={config.plotBounds.top + 24}
-            >
-              <tspan class="fill-theme-700 font-semibold">
-                {valueFormatter(tooltipCurrentValue)}
-              </tspan>
-              <tspan class="fill-fg-muted">
-                vs {valueFormatter(tooltipComparisonValue)}
-              </tspan>
-              {#if showDelta}
-                <tspan
-                  class={tooltipDeltaPositive
-                    ? "fill-green-600"
-                    : "fill-red-600"}
-                >
-                  ({tooltipDeltaPositive ? "+" : ""}{tooltipDeltaLabel})
-                </tspan>
-              {/if}
-            </text>
+              y={config.plotBounds.top + 22}
+              {tooltipCurrentValue}
+              {tooltipComparisonValue}
+              {tooltipDeltaLabel}
+              {tooltipDeltaPositive}
+              {showDelta}
+              {valueFormatter}
+            />
           {/if}
         </g>
       {/if}

@@ -24,7 +24,7 @@
   $: halfSize = (AnnotationWidth / 2) * 0.7;
 </script>
 
-{#each groups as group (group.index)}
+{#each groups as group (group.key)}
   {@const hovered = hoveredGroup === group}
   {@const cx = group.left}
   {@const cy = group.top + AnnotationHeight / 2}
@@ -34,7 +34,9 @@
     width={halfSize * 2}
     height={halfSize * 2}
     fill={AnnotationDiamondColor}
-    opacity={hovered ? 1 : 0.4}
+    stroke="white"
+    stroke-width={1}
+    opacity={hovered ? 1 : 0.7}
     transform="rotate(45 {cx} {cy})"
   />
 {/each}

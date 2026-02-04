@@ -42,12 +42,13 @@ export function createDimensionAggregationQuery(
   timeZone: string,
   enabled: boolean,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  const updatedFilter = where
+  const baseFilter = where
     ? (filterExpressions(where, () => true) ?? createAndExpression([]))
     : createAndExpression([]);
-  updatedFilter.cond?.exprs?.push(
+  const updatedFilter = createAndExpression([
+    ...(baseFilter.cond?.exprs ?? []),
     createInExpression(dimensionName, dimensionValues),
-  );
+  ]);
 
   return createQueryServiceMetricsViewAggregation(
     instanceId,

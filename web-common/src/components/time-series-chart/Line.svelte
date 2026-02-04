@@ -18,6 +18,8 @@
   export let strokeWidth = 4;
   export let fill: boolean | undefined;
 
+  const gradientId = `chart-gradient-${Math.random().toString(36).slice(2, 11)}`;
+
   $: lineFunction = createLineGenerator<ChartDataPoint>({
     x: (d) => xScale(d.index),
     y: (d) => yScale(d.value as number),
@@ -26,8 +28,8 @@
 
   $: areaFunction = createAreaGenerator<ChartDataPoint>({
     x: (d) => xScale(d.index),
-    y0: (d) => yScale(d.value as number),
-    y1: yScale.range()[0],
+    y0: yScale.range()[0],
+    y1: (d) => yScale(d.value as number),
     defined: (d) => d.value !== null && d.value !== undefined,
   });
 
@@ -37,10 +39,10 @@
 </script>
 
 {#if fill}
-  <path d={areaPath} fill="url(#chart-gradient)" class="pointer-events-none" />
+  <path d={areaPath} fill="url(#{gradientId})" class="pointer-events-none" />
 
   <defs>
-    <linearGradient id="chart-gradient" x1="0" x2="0" y1="0" y2="1">
+    <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
       <stop
         offset="5%"
         stop-color={MainAreaColorGradientDark}

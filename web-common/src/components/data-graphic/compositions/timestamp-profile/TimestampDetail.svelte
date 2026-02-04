@@ -75,7 +75,11 @@ Uses index-based scales and TimeSeriesChart for rendering.
   $: plotWidth = plotRight - plotLeft;
 
   // Zoom resets when data changes
-  $: zoomEndIdx = data.length - 1;
+  $: if (data) {
+    zoomStartIdx = 0;
+    zoomEndIdx = data.length - 1;
+    isZoomed = false;
+  }
 
   // Scales
   $: xScale = scaleLinear()
@@ -114,7 +118,7 @@ Uses index-based scales and TimeSeriesChart for rendering.
 
   $: opacity = Math.min(
     1,
-    1 + (plotWidth * devicePixelRatio) / dataWindow.length / 2,
+    (plotWidth * devicePixelRatio) / dataWindow.length / 2,
   );
 
   $: chartSeries = [

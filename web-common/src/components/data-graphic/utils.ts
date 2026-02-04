@@ -35,6 +35,8 @@ export function createAreaGenerator<T>(args: {
   const gen = area<T>()
     .x(args.x)
     .curve(args.curve ?? curveLinear);
+  // The typeof narrowing is required: d3's .y0()/.y1() have separate overloads
+  // for number vs function, and TypeScript won't accept the union directly.
   if (typeof args.y0 === "number") gen.y0(args.y0);
   else gen.y0(args.y0);
   if (typeof args.y1 === "number") gen.y1(args.y1);

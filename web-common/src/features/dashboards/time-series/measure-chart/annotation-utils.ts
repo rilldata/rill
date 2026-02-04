@@ -7,6 +7,8 @@ import { dateToIndex } from "./utils";
 
 export type AnnotationGroup = {
   items: Annotation[];
+  /** Unique key for this group (grain-truncated ISO string) */
+  key: string;
   /** Data index this group maps to */
   index: number;
   /** Pixel x of the group diamond */
@@ -66,12 +68,18 @@ export function groupAnnotations(
   // Convert buckets to groups with pixel positions
   const groups: AnnotationGroup[] = [];
 
-  for (const [, bucket] of buckets) {
+  // Data time range — annotations outside this are not visible
+  const dataStartMs = data[0].ts.toMillis();
+  const dataEndMs = data[data.length - 1].ts.toMillis();
+
+  for (const [bucketKey, bucket] of buckets) {
     // Use the first annotation's startTime for positioning
-    const startIdx = dateToIndex(
-      data,
-      bucket.annotations[0].startTime.getTime(),
-    );
+    const annotationMs = bucket.annotations[0].startTime.getTime();
+
+    // Skip annotations whose start falls outside the data range
+    if (annotationMs < dataStartMs || annotationMs > dataEndMs) continue;
+
+    const startIdx = dateToIndex(data, annotationMs);
     if (startIdx === null) continue;
 
     const left = scales.x(startIdx);
@@ -97,6 +105,7 @@ export function groupAnnotations(
 
     groups.push({
       items: bucket.annotations,
+      key: bucketKey,
       index: startIdx,
       left,
       right: Math.min(right, config.plotBounds.left + config.plotBounds.width),

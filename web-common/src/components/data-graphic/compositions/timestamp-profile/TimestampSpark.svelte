@@ -81,9 +81,8 @@
       duration,
       easing,
       css: (_t: number, u: number) => {
-        const yScaleDown = ` scaleY(${1 - sd * u})`;
         return `
-    transform: ${transform} scaleY(${1 - sd * u}) ${yScaleDown};
+    transform: ${transform} scaleY(${1 - sd * u});
     transform-origin: 100% calc(100% - ${0}px);
     opacity: ${target_opacity - od * u}
   `;
@@ -114,7 +113,7 @@
           x={xScale(zoomWindowXMin)}
           y={plotTop}
           width={xScale(zoomWindowXMax) - xScale(zoomWindowXMin)}
-          {height}
+          height={plotBottom - plotTop}
           fill={zoomWindowColor}
           opacity=".9"
           style:mix-blend-mode="lighten"
