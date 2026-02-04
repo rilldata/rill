@@ -11,7 +11,6 @@ export const salesforceSchema: MultiStepFormSchema = {
       type: "string",
       title: "SOQL",
       description: "SOQL query to extract data",
-      "x-monospace": true,
       "x-placeholder": "SELECT Id, Name FROM Opportunity",
       "x-step": "source",
     },

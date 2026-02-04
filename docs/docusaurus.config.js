@@ -155,18 +155,31 @@ const config = {
             activeBaseRegex: "^/guide.*", // Keep Docs active for all doc pages
           },
           {
-            to: "/reference/project-files",
+            type: "dropdown",
             label: "Reference",
             position: "left",
-            className: "navbar-reference-link",
-            activeBasePath: "/reference/project-files",
-          },
-          {
-            to: "/api/admin/",
-            label: "API",
-            position: "left",
-            className: "navbar-api-link",
-            activeBasePath: "/api/admin/",
+            to: "/reference/project-files",
+            className: 'my-custom-dropdown',
+            activeBaseRegex: "^(/reference|/api/admin)",
+            items: [
+              {
+                to: "/reference/project-files",
+                label: "Project Files",
+              },
+              {
+                to: "/reference/cli",
+                label: "CLI",
+              },
+              {
+                to: "/reference/time-syntax/rill-iso-extensions",
+                label: "Rill ISO 8601",
+              },
+              {
+                to: "/api/admin/",
+                label: "REST API",
+              },
+
+            ],
           },
 
           // {
@@ -185,8 +198,7 @@ const config = {
             to: "/contact",
             label: "Contact Us",
             position: "left",
-            className: "navbar-contact-link",
-            activeBasePath: "/contact",
+            activeBaseRegex: "^/contact",
           },
 
 
@@ -682,7 +694,7 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/openai',
-            to: '/developers/build/connectors/data-source/openai',
+            to: '/developers/build/connectors/services/openai',
           },
           {
             from: '/build/connectors/data-source/postgres',
@@ -702,7 +714,7 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/slack',
-            to: '/developers/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/services/slack',
           },
           {
             from: '/build/connectors/data-source/snowflake',
@@ -876,7 +888,7 @@ const config = {
           },
           {
             from: '/build/connect/data-source/slack',
-            to: '/developers/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/services/slack',
           },
           {
             from: '/build/connect/data-source/local-file',
@@ -892,7 +904,7 @@ const config = {
           },
           {
             from: '/build/connect/data-source/openai',
-            to: '/developers/build/connectors/data-source/openai',
+            to: '/developers/build/connectors/services/openai',
           },
           // ============================================
           // /connect/* → /developers/build/connectors/*
@@ -995,7 +1007,7 @@ const config = {
           },
           {
             from: '/connect/data-source/slack',
-            to: '/developers/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/services/slack',
           },
           {
             from: '/connect/data-source/local-file',
@@ -1011,7 +1023,7 @@ const config = {
           },
           {
             from: '/connect/data-source/openai',
-            to: '/developers/build/connectors/data-source/openai',
+            to: '/developers/build/connectors/services/openai',
           },
           // ============================================
           // /deploy/* → /developers/deploy/*
@@ -1471,7 +1483,7 @@ const config = {
           },
           {
             from: '/reference/rill-iso-extensions',
-            to: '/developers/build/metrics-view/time-series/time-syntax',
+            to: '/reference/time-syntax/rill-iso-extensions',
           },
           {
             from: '/reference/olap-engines/',
@@ -1551,7 +1563,7 @@ const config = {
           },
           {
             from: '/reference/connectors/slack',
-            to: '/developers/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/services/slack',
           },
           {
             from: '/reference/connectors/local-file',

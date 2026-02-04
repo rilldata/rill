@@ -97,13 +97,11 @@ export function isMultiStepConnector(
 
 /**
  * Determine if a connector supports explorer mode (SQL query interface).
- * SQL stores and warehouses can browse tables and write custom queries.
+ * SQL stores, warehouses, and OLAP engines can browse tables and write custom queries.
  */
-export function hasExplorerStep(
-  schema: MultiStepFormSchema | null,
-): boolean {
+export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
   const category = schema?.["x-category"];
-  return category === "sqlStore" || category === "warehouse";
+  return category === "sqlStore" || category === "warehouse" || category === "olap";
 }
 
 /**

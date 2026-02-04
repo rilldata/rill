@@ -37,6 +37,7 @@ import type { Config } from "vega-lite";
 import type {
   ColorDef,
   Field,
+  MarkPropDef,
   PositionFieldDef,
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
@@ -99,6 +100,23 @@ export function createPositionEncoding(
       }),
       ...(metaData && "format" in metaData && { format: metaData.format }),
       ...(!field.showAxisTitle && { title: null }),
+    },
+  };
+}
+
+export function createSizeEncoding(
+  field: FieldConfig | undefined,
+  data: ChartDataResult,
+): MarkPropDef<Field, number> {
+  if (!field) return {};
+  const metaData = data.fields[field.field];
+  return {
+    field: sanitizeValueForVega(field.field),
+    title: metaData?.displayName || field.field,
+    type: "quantitative",
+    scale: {
+      zero: false,
+      range: [40, 400], // Set minimum size to 40 (increased from default ~30)
     },
   };
 }

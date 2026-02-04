@@ -58,7 +58,7 @@
     errors={normalizeErrors(errors)}
     bind:value
     multiline={prop["x-display"] === "textarea"}
-    fontFamily={prop["x-monospace"] ? "monospace" : "inherit"}
+    fontFamily="inherit"
     onInput={(_, e) => onStringInputChange(e)}
     alwaysShowError
   />

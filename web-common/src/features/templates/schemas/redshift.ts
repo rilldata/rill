@@ -49,7 +49,6 @@ export const redshiftSchema: MultiStepFormSchema = {
       type: "string",
       title: "SQL",
       description: "SQL query to run against your warehouse",
-      "x-monospace": true,
       "x-placeholder": "Input SQL",
       "x-step": "explorer",
     },

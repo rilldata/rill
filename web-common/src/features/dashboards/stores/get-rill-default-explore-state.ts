@@ -29,11 +29,11 @@ import {
 import { createAndExpression } from "./filter-utils";
 import { TDDChart } from "../time-dimension-details/types";
 import {
-  getAggregationGrain,
   isGrainAllowed,
   V1TimeGrainToAlias,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains";
+import { getAggregationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
 import { parseRillTime } from "../url-state/time-ranges/parser";
 
 export function getRillDefaultExploreState(

@@ -31,3 +31,8 @@ export const connectorIconMapping = {
   snowflake: SnowflakeIcon,
   starrocks: StarRocksIcon,
 };
+
+export const connectorLabelMapping = {
+  duckdb: "DuckDB",
+  clickhouse: "ClickHouse",
+};

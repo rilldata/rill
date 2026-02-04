@@ -312,7 +312,7 @@
   .multiline-input {
     @apply p-0;
     @apply size-full;
-    @apply outline-none border-0 placeholder-fg-secondary;
+    @apply outline-none border-0 placeholder-fg-muted;
     @apply cursor-text;
     vertical-align: middle;
   }
@@ -334,7 +334,7 @@
 
   .multiline-input:empty::before {
     content: attr(data-placeholder);
-    @apply text-gray-400;
+    @apply text-fg-muted;
     pointer-events: none;
   }
 
