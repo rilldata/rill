@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { AddDataFormManager } from "./AddDataFormManager";
-import { resetConnectorStep, setStep, connectorStepStore, get } from "./connectorStepStore";
+import {
+  resetConnectorStep,
+  setStep,
+  connectorStepStore,
+} from "./connectorStepStore";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 describe("AddDataFormManager", () => {
   beforeEach(() => {
@@ -34,7 +38,7 @@ describe("AddDataFormManager", () => {
       // Set to connector step first
       setStep("connector");
       expect(get(connectorStepStore).step).toBe("connector");
-      
+
       // Call handleSkip
       manager.handleSkip();
 
@@ -67,7 +71,7 @@ describe("AddDataFormManager", () => {
       // Set to connector step first
       setStep("connector");
       expect(get(connectorStepStore).step).toBe("connector");
-      
+
       // Call handleSkip
       manager.handleSkip();
 
@@ -100,7 +104,7 @@ describe("AddDataFormManager", () => {
       // Set to source step
       setStep("source");
       expect(get(connectorStepStore).step).toBe("source");
-      
+
       // Call handleSkip - should not change step
       manager.handleSkip();
 

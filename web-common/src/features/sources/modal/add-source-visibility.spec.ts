@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { addSourceModal } from "./add-source-visibility";
-import { resetConnectorStep, connectorStepStore, get } from "./connectorStepStore";
+import { resetConnectorStep, connectorStepStore } from "./connectorStepStore";
+import { get } from "svelte/store";
 
 describe("addSourceModal", () => {
   beforeEach(() => {

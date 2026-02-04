@@ -27,9 +27,7 @@ test.describe("Save Anyway feature", () => {
       .click();
 
     // Wait for "Save" button to appear
-    await expect(
-      page.getByRole("button", { name: "Save" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
 
     // Click "Save" button
     await page.getByRole("button", { name: "Save" }).click();
