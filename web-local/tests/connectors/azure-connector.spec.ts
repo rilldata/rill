@@ -26,9 +26,7 @@ test.describe("Azure connector form reset", () => {
     await submit.click();
 
     // Save (expected for failed test) to close the modal, then wait for form unmount.
-    const save = page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Save" });
+    const save = page.getByRole("dialog").getByRole("button", { name: "Save" });
     await expect(save).toBeVisible();
     await save.click();
     await page.waitForSelector('form[id*="azure"]', { state: "detached" });
