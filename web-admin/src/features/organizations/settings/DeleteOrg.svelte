@@ -4,7 +4,7 @@
     createAdminServiceDeleteOrganization,
     getAdminServiceGetOrganizationQueryKey,
   } from "@rilldata/web-admin/client";
-  import DangerZoneItem from "@rilldata/web-admin/features/organizations/settings/DangerZoneItem.svelte";
+  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -31,10 +31,12 @@
   }
 </script>
 
-<DangerZoneItem
-  title="Delete this organization"
-  description="Once you delete an organization, there is no going back. Please be certain."
->
+<SettingsContainer title="Delete this organization">
+  <svelte:fragment slot="body">
+    Permanently delete this organization and all of its contents from the Rill
+    platform. This action is not reversible — please continue with caution.
+  </svelte:fragment>
+
   <AlertDialogGuardedConfirmation
     slot="action"
     title="Delete this organization?"
@@ -50,4 +52,4 @@
       </Button>
     </svelte:fragment>
   </AlertDialogGuardedConfirmation>
-</DangerZoneItem>
+</SettingsContainer>
