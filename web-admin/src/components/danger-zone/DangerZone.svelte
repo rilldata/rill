@@ -10,7 +10,7 @@
 <style lang="postcss">
   .danger-zone {
     @apply w-full rounded-sm overflow-hidden;
-    border: 1px solid var(--color-red-300);
+    border: 1px solid var(--color-red-200);
   }
 
   /* Override the default styling for settings containers inside danger zone */
@@ -21,7 +21,7 @@
   /* Style the footer with a red-tinted background */
   .danger-zone :global(.settings-container .settings-footer) {
     @apply border-t;
-    border-color: var(--color-red-300);
+    border-color: var(--color-red-200);
     background-color: color-mix(
       in oklab,
       var(--color-red-100) 40%,
