@@ -14,6 +14,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
 - [**MotherDuck**](#motherduck) - MotherDuck cloud database
 - [**Pinot**](#pinot) - Apache Pinot
+- [**StarRocks**](#starrocks) - StarRocks analytical database
 
 ### _Data Warehouses_
 - [**Athena**](#athena) - Amazon Athena
@@ -34,12 +35,13 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 ### _Other_
 - [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**OpenAI**](#openai) - OpenAI data
+- [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
+- [**Claude**](#claude) - Claude connector for chat with your own API key
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
 
 :::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{ env "KEY_NAME" }}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{ env "KEY_NAME" }}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
 :::
 
 
@@ -666,6 +668,40 @@ api_type: "openai" # The type of OpenAI API to use
 api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
 ```
 
+## Claude
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "claude" 
+
+### `api_key`
+
+_[string]_ - API key for connecting to Claude _(required)_
+
+### `model`
+
+_[string]_ - The Claude model to use (e.g., 'claude-opus-4-5') 
+
+### `max_tokens`
+
+_[number]_ - Maximum number of tokens in the response (e.g., 8192) 
+
+### `temperature`
+
+_[number]_ - Sampling temperature to use (e.g., 0.0) 
+
+### `base_url`
+
+_[string]_ - The base URL for the Claude API 
+
+```yaml
+# Example: Claude connector configuration
+type: connector
+driver: claude
+api_key: "{{ .env.claude_api_key }}"
+model: claude-opus-4-5
+```
+
 ## Pinot
 
 ### `driver`
@@ -730,6 +766,57 @@ ssl: true # Enable SSL connection to Pinot
 log_queries: true # Log raw SQL queries executed through Pinot
 max_open_conns: 100 # Maximum number of open connections to the Pinot database
 timeout_ms: 30000 # Query timeout in milliseconds
+```
+
+## StarRocks
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `starrocks` _(required)_
+
+### `dsn`
+
+_[string]_ - DSN (Data Source Name) for the StarRocks connection. Follows MySQL protocol format. 
+
+### `host`
+
+_[string]_ - StarRocks FE (Frontend) server hostname 
+
+### `port`
+
+_[integer]_ - MySQL protocol port of StarRocks FE 
+
+### `username`
+
+_[string]_ - Username for authentication 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+### `catalog`
+
+_[string]_ - StarRocks catalog name (for external catalogs like Iceberg, Hive) 
+
+### `database`
+
+_[string]_ - StarRocks database name 
+
+### `ssl`
+
+_[boolean]_ - Enable SSL/TLS encryption 
+
+```yaml
+# Example: StarRocks connector configuration
+type: connector # Must be `connector` (required)
+driver: starrocks # Must be `starrocks` _(required)_
+host: "starrocks-fe.example.com" # Hostname of the StarRocks FE server  
+port: 9030 # MySQL protocol port of StarRocks FE  
+username: "analyst" # Username for authentication  
+password: "{{ .env.connector.starrocks.password }}" # Password for authentication  
+catalog: "default_catalog" # StarRocks catalog name  
+database: "my_database" # StarRocks database name  
+ssl: false # Enable SSL/TLS encryption
 ```
 
 ## Postgres
@@ -1007,7 +1094,7 @@ openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
 # Convert URL safe format for Snowflake
 cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
 ```
-See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+See: https://docs.snowflake.com/en/guide/key-pair-auth
 :::
  
 

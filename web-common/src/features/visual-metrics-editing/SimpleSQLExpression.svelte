@@ -78,7 +78,7 @@
             expression = props.expression;
           }
         }}
-        class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
+        class="-ml-[1px] first-of-type:-ml-0 px-2 border bg-input text-fg-primary first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
         class:selected={(viewingSimple && field === "Simple") ||
           (!viewingSimple && field === "Advanced")}
       >
@@ -158,7 +158,7 @@
   }
 
   label {
-    @apply text-sm font-medium text-gray-800;
+    @apply text-sm font-medium text-fg-secondary;
   }
 
   .option-wrapper > .selected {

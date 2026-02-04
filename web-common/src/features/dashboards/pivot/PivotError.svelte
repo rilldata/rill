@@ -47,11 +47,11 @@
 <div class="flex flex-col items-center w-full h-full">
   <span class="text-3xl font-normal m-2">Sorry, unexpected query error!</span>
   {#if traceIds.length > 0}
-    <div class="text-sm ui-copy mt-1">
+    <div class="text-sm text-fg-primary mt-1">
       <b>Trace ID{traceIds.length !== 1 ? "s" : ""}</b>: {traceIds.join(", ")}
     </div>
   {/if}
-  <div class="text-base text-gray-600 mt-4">
+  <div class="text-base text-fg-secondary mt-4">
     One or more APIs failed with the following error{uniqueErrors.length !== 1
       ? "s"
       : ""}:
@@ -62,11 +62,11 @@
       <span class="text-red-600 font-semibold whitespace-nowrap"
         >{error.statusCode}:</span
       >
-      <span class="text-gray-800 flex-1 break-words">
+      <span class="text-fg-primary flex-1 break-words">
         {truncateMessage(error.message ?? "")}
       </span>
       <button
-        class="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+        class="flex-shrink-0 p-1 hover:bg-surface-hover rounded transition-colors cursor-pointer"
         on:click={() => handleCopyError(error)}
         title="Copy full error message"
         aria-label="Copy error message to clipboard"

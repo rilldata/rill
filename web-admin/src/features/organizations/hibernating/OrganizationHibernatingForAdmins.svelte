@@ -55,7 +55,7 @@
 {#if $wakingProjects}
   <div class="flex flex-col justify-center items-center gap-y-6 my-20">
     <div class="flex flex-col gap-y-2">
-      <LoadingCircleOutline size="104px" className="text-slate-300" />
+      <LoadingCircleOutline size="104px" className="text-gray-300" />
       <CTAHeader>Hang tight! We're waking up your projects...</CTAHeader>
       <CTANeedHelp />
     </div>
@@ -68,7 +68,7 @@
         <svelte:component
           this={IconMap[issueForHibernation.iconType]}
           size="104px"
-          className="text-slate-300"
+          className="text-gray-300"
           gradientStopColor="slate-200"
         />
       {/if}

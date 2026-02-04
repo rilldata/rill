@@ -132,10 +132,10 @@ export function getDeployOrGithubRouteGetter() {
 
 /**
  * Returns a readable for the deploy route for the open project.
- * 1. If the project is not a github repo it returns the create project route (/deploy/project/create) directly.
+ * 1. If the project is not a github repo it returns the create project route (/developers/deploy/project/create) directly.
  *    Right now this is just a safeguard. We check upfront for git repo
  * 2. If the project is a github repo and we already have access to the repo then,
- *    it returns the create project route with github option (/deploy/project/create?use_git=true).
+ *    it returns the create project route with github option (/developers/deploy/project/create?use_git=true).
  * 3. If the project is a github repo and we do not have access to the repo then it returns github access route (<admin_server>/github/connect)
  */
 export function getDeployRouteForProject(orgName: string) {
