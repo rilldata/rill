@@ -40,12 +40,14 @@
 <ContentContainer title="Manage users" maxWidth={1100}>
   <div class="container flex-col md:flex-row">
     <LeftNav {basePage} baseRoute="/[organization]/-/users" {navItems} />
-    <slot />
+    <div class="flex flex-col w-full min-w-0">
+      <slot />
+    </div>
   </div>
 </ContentContainer>
 
 <style lang="postcss">
   .container {
-    @apply flex pt-6 gap-6 max-w-full overflow-hidden items-start;
+    @apply flex pt-6 gap-6 max-w-full items-start flex-1;
   }
 </style>

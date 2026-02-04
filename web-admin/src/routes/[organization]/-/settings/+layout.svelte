@@ -41,7 +41,7 @@
       {navItems}
       minWidth="180px"
     />
-    <div class="flex flex-col gap-y-6 w-full">
+    <div class="flex flex-col gap-y-6 w-full min-w-0">
       <slot />
     </div>
   </div>
@@ -49,6 +49,6 @@
 
 <style lang="postcss">
   .container {
-    @apply flex pt-6 gap-6 max-w-full overflow-hidden items-start;
+    @apply flex pt-6 gap-6 max-w-full items-start flex-1;
   }
 </style>
