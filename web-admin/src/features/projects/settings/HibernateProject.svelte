@@ -103,7 +103,7 @@
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button type="secondary" onClick={() => (dialogOpen = false)}>
+            <Button type="tertiary" onClick={() => (dialogOpen = false)}>
               Cancel
             </Button>
             <Button
