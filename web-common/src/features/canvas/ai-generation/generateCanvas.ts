@@ -87,6 +87,7 @@ async function createMetricsViewFromTable(
 
 /**
  * Creates a Canvas dashboard from a metrics view using AI.
+ * TODO: Delete after remvoing developerChat feature flag
  */
 export async function createCanvasDashboardFromMetricsView(
   instanceId: string,
@@ -184,11 +185,21 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
     // Start a new conversation instead of continuing existing one
     conversationManager.enterNewConversationMode();
 
+    const currentConversation = get(
+      conversationManager.getCurrentConversation(),
+    );
+
     // Set generating state
     generatingCanvas.set(true);
 
     // 4. Start the chat with the generation prompt
     sidebarActions.startChat(prompt);
+
+    // Wait for the stream to start async through the sidebar action.
+    await waitUntil(() => get(currentConversation.isStreaming));
+
+    // Then wait for the stream to end before checking for file creation
+    await waitUntil(() => !get(currentConversation.isStreaming), -1);
   } catch (err) {
     console.error("Error generating canvas with agent:", err);
     eventBus.emit("notification", {

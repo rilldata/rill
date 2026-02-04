@@ -1,5 +1,6 @@
 <script lang="ts">
   import { GeneratingMessage } from "@rilldata/web-common/components/generating-message";
+  import { generatingCanvas } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
   import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import OnboardingWorkspace from "@rilldata/web-common/features/onboarding/OnboardingWorkspace.svelte";
   import { generatingSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
@@ -20,6 +21,8 @@
     {#if data.initialized}
       {#if $generatingSampleData}
         <GeneratingMessage title="Generating your sample data..." />
+      {:else if $generatingCanvas}
+        <GeneratingMessage title="Generating your Canvas dashboard..." />
       {:else}
         <OnboardingWorkspace />
       {/if}
