@@ -27,28 +27,24 @@ For a complete overview of all available components, see our [**Canvas component
 
 To modify any single widget, click to select it and use the right-hand panel to change its associated properties. Click outside the widget to view global properties associated with the overall Canvas.
 
-<img src = '/img/build/dashboard/canvas/selected-widget.png' class='rounded-gif' />
-<br/>
+![Selected Widget](/img/build/dashboard/canvas/selected-widget.png)
 
 
 ### Filters
 Optionally toggle on the **global filter bar** under Canvas properties to give dashboard viewers access to the same time and dimension filters available on Explore dashboards.
 
-<img src = '/img/build/dashboard/canvas/global-filter-bar.png' class='rounded-gif' />
-<br/>
+![Global Filter Bar](/img/build/dashboard/canvas/global-filter-bar.png)
 
 **Local filters** for a single KPI, Chart, or Table can be separated from the global filters via the "Filters" tab in the properties panel, where you can set filters that are local to just that widget.
 
 
-<img src = '/img/build/dashboard/canvas/local-filters.png' class='rounded-gif' />
-<br/>
+![Local Filters](/img/build/dashboard/canvas/local-filters.png)
 
 ### Making changes to the YAML 
 While we encourage creating Canvas dashboards via the visual editing experience described above, you can always edit the YAML file directly using the code view by toggling the switch next to the filename at the top of the page. Please see our [customization page](/developers/build/dashboards/customization) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
 
 
-<img src = '/img/build/dashboard/canvas/code-toggle.png' class='rounded-gif' />
-<br/>
+![Code Toggle](/img/build/dashboard/canvas/code-toggle.png)
 
 :::tip Customize default time ranges
 Set project-wide default time ranges and available options for all canvas dashboards.
@@ -62,8 +58,7 @@ Dashboard creators can configure default dimension and measure filters to establ
 
 ### Dimension Filters
 
-<img src = '/img/build/dashboard/canvas/dimension-default-filters.png' class='rounded-gif' /> <br/>
-
+![Dimension Default Filters](/img/build/dashboard/canvas/dimension-default-filters.png)
 Additional parameters can be configured to control filter behavior, including locking filters, hiding values, and setting default selections.
 
 ```yaml
@@ -110,8 +105,7 @@ defaults:
           - "10"
 ```
 
-<img src = '/img/build/dashboard/canvas/measure-default-filters.png' class='rounded-gif' /> <br/> 
-
+![Measure Default Filters](/img/build/dashboard/canvas/measure-default-filters.png)
 For detailed YAML configurations, see the [`filters`](/reference/project-files/canvas-dashboards#defaults) section in our reference documentation.-->
 
 ## Example Canvas Dashboards

@@ -29,8 +29,7 @@ curl https://rill.sh | sh
 Depending on whether your project is synced to GitHub or not, select the correct clone method. If you are unsure, please see the Status page in the project.
 
 ### From GitHub
-<img src = '/img/tutorials/rill-advanced/github-pushed-changes.png' class='rounded-gif' />
-<br />
+![Github Pushed Changes](/img/tutorials/rill-advanced/github-pushed-changes.png)
 
 ```bash
 # Clone the repository
@@ -40,8 +39,7 @@ cd <project-name>
 
 ### Using Rill CLI
 
-<img src = '/img/tutorials/rill-advanced/status.png' class='rounded-gif' />
-<br />
+![Status](/img/tutorials/rill-advanced/status.png)
 ```bash
 # Clone from Rill
 rill project clone <project-name>
@@ -93,8 +91,7 @@ We want to check to see if any `{{if dev}} ... {{end}}` parameters have been set
 ## Step 5: Start Rill Developer
 
 ### Start the Development Server
-<img src = '/img/tutorials/quickstart/clone-project.png' class='rounded-gif' />
-<br />
+![Clone Project](/img/tutorials/quickstart/clone-project.png)
 
 ```bash
 # Start Rill Developer

@@ -10,16 +10,14 @@ The credentials in a deployed Rill Cloud projects can be managed on the Settings
 ## Modifying Variables and Credentials via the Settings Page
 Upon deployment via Rill Developer, if you have populated your .env file, the contents will be visible as seen below. If there are no environmental variables defined, please run `rill env push` from your local CLI and Rill will automatically push the credentials in your project's `.env` file to Rill Cloud. If you'd like to manually add the credentials, please see [our naming convention](#credentials-naming-schema) to get started. 
 
-<img src = '/img/tutorials/admin/env-var-ui.png' class='rounded-gif' />
-<br />
+![Environment Variable UI](/img/tutorials/admin/env-var-ui.png)
 
 
 ### Adding and Editing Environmental Variables / Importing a `.env` file
 Once your environmental variables are added to Rill Cloud, they can be modified as needed.
 
 
-<img src = '/img/manage/var-and-creds/add-variable.png' class='rounded-gif' />
-<br />
+![Add Variableiable](/img/manage/var-and-creds/add-variable.png)
 
 :::tip Can't find the .env file?
 By default, the hidden files will not be visible in the finder window. In order to view hidden files, you will need to enable "show hidden files".  

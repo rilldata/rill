@@ -53,7 +53,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   />
 
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Clickhouse.svg" alt="ClickHouse" />}
+    icon={<img src="/img/build/connectors/icons/Logo-ClickHouse.svg" alt="ClickHouse" />}
     content="High-performance columnar database for real-time analytics and data warehousing."
     link="/developers/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
@@ -61,7 +61,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   />
 
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Motherduck.svg" alt="MotherDuck" />}
+    icon={<img src="/img/build/connectors/icons/Logo-MotherDuck.svg" alt="MotherDuck" />}
     content="Cloud-native DuckDB service for scalable analytics and data processing."
     link="/developers/build/connectors/olap/motherduck"
     linkLabel="Learn more"
@@ -132,8 +132,7 @@ Check [here](https://www.rilldata.com/case-studies) to see examples of use cases
 
 Rill supports creating and powering dashboards using existing tables from alternative [OLAP engines](/developers/build/connectors/olap) that have been configured in a particular project. These tables are not managed by Rill—hence, external—but allow users to bring in separate tables or datasets that might already exist in another preferred OLAP database of choice. This prevents the need to unnecessarily ingest this data into Rill, especially if the table is already optimized for use by this other OLAP engine, and allows Rill to connect to the data directly (and submit analytical queries).
 
-<img src = '/img/build/connectors/external-tables/external-olap-db.png' class='rounded-gif' />
-<br />
+![External Olap Db](/img/build/connectors/external-tables/external-olap-db.png)
 
 ## Performance Tips
 

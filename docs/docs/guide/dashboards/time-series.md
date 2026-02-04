@@ -53,8 +53,7 @@ Controls the reference point for your time calculations. This determines whether
 ### 4. Comparing
 Enables time comparison functionality, allowing you to compare current data against previous periods (e.g., "vs. previous period" or "vs. same period last year").
 
-<img src='/img/build/metrics-view/time-series/time-pill.png' class='rounded-gif' />
-<br />
+![Time Pill](/img/build/metrics-view/time-series/time-pill.png)
 
 ## Key Concepts
 
@@ -209,12 +208,10 @@ Along with setting time ranges, you have the ability to set a comparison period 
 
 Once comparison is enabled, you'll see slightly different information in your dashboard. Along with the current value, you'll see both change in value as well as % change over periods. This gives you a quick glance at how your metrics are performing compared to the previous period.
 
-<img src = '/img/explore/filters/comparison.png' class='rounded-gif' />
-<br />
+![Comparison](/img/explore/filters/comparison.png)
 
 ## Filter by Scrubbing 
 
 For a specific view into your time series graph, you can interactively scrub directly on the time series graph. This feature allows you to zoom into specific time periods by clicking and dragging across the chart.
 
-<img src = '/img/explore/filters/scrub.png' class='rounded-gif' />
-<br />
+![Scrub](/img/explore/filters/scrub.png)

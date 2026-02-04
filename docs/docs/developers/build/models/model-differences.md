@@ -30,8 +30,7 @@ For most users working with DuckDB-backed Rill projects, SQL models provide ever
 
 When using the UI to create a new model, you'll see something similar to the below screenshot. You can also create a model directly from the connector UI in the bottom left by selecting the "...". This will create a `select * from underlying_table` as SQL model file.
 
-<img src='/img/build/model/model.png' class='rounded-gif' />
-<br />
+![Model](/img/build/model/model.png)
 
 ## YAML Models
 

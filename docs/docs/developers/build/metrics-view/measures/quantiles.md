@@ -7,8 +7,7 @@ sidebar_position: 30
 
 In addition to common aggregates, you may wish to look at the value of a measure within a certain band or quantile. In the example below, we can measure the P95 of a given measure using `QUANTILE_CONT`.
 
-<img src = '/img/build/metrics-view/examples/percentile-visual.png' class='rounded-gif' />
-<br />
+![Percentile Visual](/img/build/metrics-view/examples/percentile-visual.png)
 
 
 Using [DuckDB aggregate function](https://duckdb.org/docs/stable/sql/functions/aggregates.html#quantile_contx-pos), you can easily calculate various quantiles.
@@ -22,8 +21,7 @@ Please review the reference documentation, [here.](/reference/project-files/metr
 
 ## Examples
 
-<img src = '/img/build/metrics-view/examples/percentile-example.png' class='rounded-gif' />
-<br />
+![Percentile Example](/img/build/metrics-view/examples/percentile-example.png)
 
 In this example we see the values of P95 and P99 are calculated using the following expressions:
 

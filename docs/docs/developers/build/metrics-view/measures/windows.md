@@ -13,8 +13,7 @@ Please review the reference documentation, [here.](/reference/project-files/metr
 ## Example
 In the example below, bids is another measure defined in the metrics view, and we are getting the previous week and current date's values and averaging them. This allows us to remove any short-term trends to detect real patterns. You'll need to add the [`requires`](./referencing) array parameter to reference another measure.
 
-<img src = '/img/build/metrics-view/examples/explore-percent.png' class='rounded-gif' />
-<br />  
+![Explore Percent](/img/build/metrics-view/examples/explore-percent.png)  
 
 ```yaml
   - name: bids_7day_rolling_avg
@@ -29,8 +28,7 @@ In the example below, bids is another measure defined in the metrics view, and w
 
 Another example is using a rolling sum with no bounding preceding rows, also known as your whole data. This will be a cumulative sum of all of your measure's data; in this case, it is the average voltage measure.
 
-<img src = '/img/build/metrics-view/examples/window-example.png' class='rounded-gif' />
-<br /> 
+![Window Example](/img/build/metrics-view/examples/window-example.png) 
 
 ```yaml
   - name: rolling_sum_avg_voltage_all_time

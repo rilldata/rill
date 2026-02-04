@@ -43,8 +43,7 @@ Underneath the expanded time series chart, you will see two sets of dropdowns - 
 Similar to the filters, the Search and Exclude options from the expanded Leadersboards are available on the top right of the TDD table. Lastly, you can also take the TDD table directly to the Pivot view for multi-dimensional analysis - more details on [Pivot here](/guide/dashboards/explore/pivot).
 
     
-<img src = '/img/explore/tdd/tdd.gif' class='rounded-gif' />
-<br />
+![TDD](/img/explore/tdd/tdd.gif)
  
 :::tip Adjusting Time Grains
 The TDD screen will carry the time dimension from your previous filters, which may be more granular than needed (displaying too many columns). Change the ```Metric Trends by``` filter on the top right to switch to alternate ranges like days, weeks, etc.

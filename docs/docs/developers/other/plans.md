@@ -16,23 +16,20 @@ Rill Data does not use a user-based license system. Instead, we calculate your d
 
 Get started with Rill Cloud with our 30 day free trial! Upon deployment of your first project, your trial will automatically start.  On a free trial, you will be allowed 1 project up to 10GB of data storage.  Like all plans in Rill Data, this also comes with unlimited seats. As an admin, you'll notice banners at the top of the UI indicating the remaining time left on your trial. Once your time has run out, your projects in Rill Cloud will hibernate. While your project wont be accessible on Rill Cloud, the files will still be available if your choose to upgrade to a Team plan.
 
-<img src = '/img/manage/billing/deploy-project.png' class='rounded-gif' />
-<br />
+![Deploy Project](/img/manage/billing/deploy-project.png)
 
 
 ### Upgrading to Team Plan
 Once you are ready to upgrade to a Team Plan, you can do so via the organization billing page, or select `Upgrade` in the top banner. Only organization administrators can upgrade the plan.
 
-<img src = '/img/manage/billing/team-plan.png' class='rounded-gif' />
-<br />
+![Team Plan](/img/manage/billing/team-plan.png)
 
 
 ### Managing Payment Information
 
 Please add a payment method and billing information that is accepted by Stripe. For more information please visit Stripe's website, [here.](https://docs.stripe.com/payments/payment-methods/overview)
 
-<img src = '/img/manage/billing/stripe.png' class='rounded-gif' />
-<br />
+![Stripe](/img/manage/billing/stripe.png)
 
 
 ## Team Plan
@@ -42,8 +39,7 @@ Your project will not be accessible while hibernating. You will need to renew yo
 
 To calculate your current usage and pricing, see our [pricing page](https://www.rilldata.com/pricing). 
 
-<img src = '/img/manage/billing/team-plan2.png' class='rounded-gif' />
-<br />
+![Team Plan2](/img/manage/billing/team-plan2.png)
 
 
 

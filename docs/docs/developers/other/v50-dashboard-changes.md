@@ -9,8 +9,7 @@ As we continue to develop more features within Rill, it became clear that we nee
 2. Dashboard configuration
 
 ### Historically, in Rill...
-<img src = '/img/concepts/metrics-view/old-dashboard.png' class='rounded-gif' />
-<br />
+![Old Dashboard](/img/concepts/metrics-view/old-dashboard.png)
 
 Historically in Rill, the metrics layer and dashboard configuration were a single file. As seen above, the metrics would be defined **inside** a dashboard YAML file along with the dashboard components and dashboard customizations. We found that this was not the best approach as we continued development. In order to create a metrics layer in Rill as a first class resource and not a consequence of dashboards, we found it necessary to split the two resources into their own files. Thus, the metrics view was born.
 
@@ -19,16 +18,14 @@ Splitting the metrics view into its own component allows us more freedom to cont
 
 ### New Metrics View as an independent object in Rill 
 
-<img src = '/img/concepts/metrics-view/metrics-view-components.png' class='rounded-gif' />
-<br />
+![Metrics View Components](/img/concepts/metrics-view/metrics-view-components.png)
 
 
 ### (Explore) Dashboard
 
 With the split of metrics view, dashboard configurations experienced an overhaul. Instead of defining measure and dimensions, you will now reference the object into your dashboard. What this allows is creating customized dashboards for specific viewers and reusability of a single metrics view in multiple dashboards!
 
-<img src = '/img/concepts/metrics-view/explore-dashboard.png' class='rounded-gif' />
-<br />
+![Explore Dashboard](/img/concepts/metrics-view/explore-dashboard.png)
 
 
 ## How to migrate your current Dashboards

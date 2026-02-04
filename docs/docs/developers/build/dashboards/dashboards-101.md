@@ -18,8 +18,7 @@ Rill offers two distinct dashboard experiences, each optimized for different use
 - [Time Dimension Detail](/guide/dashboards/explore/tdd)
 - [Leaderboards](/guide/dashboards/explore/multi-metrics)
 
-<img src = '/img/build/dashboard/explore.png' class='rounded-gif' /> <br/>
-
+![Explore](/img/build/dashboard/explore.png)
 ### Live Demo
 
 See both dashboard types in action with our interactive demos:
@@ -35,8 +34,7 @@ See both dashboard types in action with our interactive demos:
 **[Canvas dashboards](/developers/build/dashboards/canvas)** provide a traditional dashboard experience where you can combine multiple metrics views and create custom layouts. See our [list of components](/developers/build/dashboards/canvas-widgets) to start creating your custom dashboard.
 
 
-<img src = '/img/build/dashboard/canvas/RTBAds-Canvas-2.png' class='rounded-gif' /> <br/>
-
+![RTBads Canvas 2](/img/build/dashboard/canvas/RTBAds-Canvas-2.png)
 ### Live Demo
 
 See both dashboard types in action with our interactive demos:

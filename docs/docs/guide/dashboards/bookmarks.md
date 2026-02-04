@@ -52,8 +52,7 @@ On the bookmark screen, you'll then be able to set the options related to the sa
 - **Save Filters Only:** this option will save only the filter combination to be re-used later without restricting the measures and dimensions
 - **Absolute Dates:** use this option if you have a saved time period and return exactly to that period versus using the time period filter  
 
-<img src = '/img/explore/bookmarks/setbookmark.png' class='centered' />
-<br />
+![Setbookmark](/img/explore/bookmarks/setbookmark.png)
 
 
 

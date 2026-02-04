@@ -7,8 +7,7 @@ sidebar_position: 20
 
 Annotations allow you to enrich your metrics view with external data sources or context that isn't directly part of the primary model. This is often used to overlay events, holidays, or deployment markers onto your time series charts.
 
-<img src = '/img/build/metrics-view/annotations.png' class='rounded-gif' />
-<br />
+![Annotations](/img/build/metrics-view/annotations.png)
 
 ## Requirements
 

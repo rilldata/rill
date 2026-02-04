@@ -7,8 +7,7 @@ sidebar_position: 00
 
 Rill Developer provides a built-in trace viewer, enabling users to visually inspect operations performed when reconciling resources or fetching data for dashboards. This helps in diagnosing performance and operational issues.
 
-<img src = '/img/build/debugging/trace-viewer-overview.png' class='rounded-gif' />
-
+![Trace Viewer Overview](/img/build/debugging/trace-viewer-overview.png)
 ## How to Use the Trace Viewer
 
 ### Step 1: Start Rill Developer with Debug Mode
@@ -53,8 +52,7 @@ To find the Trace ID associated with fetching data for a dashboard:
 3. **Find `X-trace-id`:** Check the response headers to locate the `X-trace-id`.
 4. **Use Trace ID:** Enter this Trace ID into the trace viewer to inspect the operation details.
 
-<img src = '/img/build/debugging/capture-trace-id.png' class='rounded-gif' />
-
+![Capture Trace Id](/img/build/debugging/capture-trace-id.png)
 ## Inner Workings
 
 - The Trace Viewer UI uses OpenTelemetry (OTEL) traces.

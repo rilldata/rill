@@ -8,8 +8,7 @@ sidebar_position: 25
 Within a metrics view, it is possible for a measure to reference another by using the `requires` array parameter. By doing this, you can easily aggregate already existing measures to simplify the expressions. For example, get a percentage of two already summed values. 
 
 
-<img src = '/img/build/metrics-view/examples/requires-example.png' class='rounded-gif' />
-<br />
+![Requires Example](/img/build/metrics-view/examples/requires-example.png)
 
 Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 
@@ -17,8 +16,7 @@ Please review the reference documentation, [here.](/reference/project-files/metr
 
 ### Simple Aggregation
 In the following example, `percentage_reactive_to_active_measure` uses the already defined measures `total_global_active_power_measure` and `total_global_reactive_power_measure` to calculate the percentage without having to recalculate the sum of the respective columns.
-<img src = '/img/build/metrics-view/examples/explore-percent.png' class='rounded-gif' />
-<br />
+![Explore Percent](/img/build/metrics-view/examples/explore-percent.png)
 
 ```yaml
   - name: percentage_reactive_to_active_measure
@@ -32,8 +30,7 @@ In the following example, `percentage_reactive_to_active_measure` uses the alrea
 ### Window Function
 If you are using a [window function](./windows), you'll need to define the measure that you are building the window for. In this example, we are getting the rolling sum of average voltage measurements for all time— that's a lot of volts! You can modify the frame to include fewer rows based on the order column. 
 
-<img src = '/img/build/metrics-view/examples/window-example.png' class='rounded-gif' />
-<br /> 
+![Window Example](/img/build/metrics-view/examples/window-example.png) 
 
 ```yaml
   - name: rolling_sum_avg_voltage_all_time

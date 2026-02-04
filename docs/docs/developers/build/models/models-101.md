@@ -53,8 +53,7 @@ The right panel displays comprehensive information about your dataset and column
 
 This information helps you validate your model configuration and ensure data quality before proceeding with the full data ingestion.
 
-<img src='/img/build/model/preview.png' class='rounded-gif' />
-<br />
+![Preview](/img/build/model/preview.png)
 
 ## One Big Table and Dashboarding
 

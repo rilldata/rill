@@ -38,9 +38,7 @@ This will:
 - Create a new project directory
 - Launch the Rill interface in your browser
 
-<img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
-
-<br/>
+![New Rill Project](/img/tutorials/rill-basics/new-rill-project.png)
 :::note Rill Developer vs Rill Cloud
 Rill Developer is your local development environment where you build and test your analytics projects. Once ready, you can deploy to Rill Cloud for team collaboration and production use. For more details, see our [Developer vs Cloud comparison](/developers/deploy/cloud-vs-developer).
 :::

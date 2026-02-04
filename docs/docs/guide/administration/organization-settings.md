@@ -9,8 +9,7 @@ Before a project can be deployed onto Rill Cloud, an organization must be create
 
 ## Organization
 
-<img src = '/img/manage/project-management/rill-org.png' class='rounded-gif' />
-<br />
+![Rill Org](/img/manage/project-management/rill-org.png)
 
 
 An Organization in Rill is the parent management object and encompasses how your team  interfaces with Rill Cloud. Organizations are designed to hold the different components of your Rill project. Organizations consists of projects that each consist of their own source, models, metrics view, dashboards, user management, and general settings.
@@ -45,8 +44,7 @@ From the User page, you can view and manage your users with organizational. Note
 
 In the organization setting page, depending on your plan type, you can view the general information, billing and current usage. The Billing tab is only available for those on a `Team Plan`. You can use this page to add, or modify your current payment type. For more information, please review our [Billing Information documentation](/developers/other/plans).
 
-<img src = '/img/manage/project-management/rill-org-settings.png' class='rounded-gif' />
-<br />
+![Rill Org Settings](/img/manage/project-management/rill-org-settings.png)
 
 ### Logo and Favicon
 

@@ -22,16 +22,13 @@ In our case, as we have generated this with AI, so we can look through the descr
 2. In 2023, What was the average price of detached properties sold in London? How many? [2.5M, 981]
 
 
-<img src = '/img/tutorials/ch/2023-london.png' class='rounded-gif' />
-<br />
+![2023 London](/img/tutorials/ch/2023-london.png)
 
 If we wanted to go further into details, we can even compare detached vs flat vs terraced properties using our compare feature. Based on the x-axis, we can drill down futher from the 2023 year into a specific month, week, or even day.
 
 
-<img src = '/img/tutorials/ch/2023-london-compare.png' class='rounded-gif' />
-<br />
+![2023 London Compare](/img/tutorials/ch/2023-london-compare.png)
 
 Or, if you want to compare time periods 2022 to 2023's total transactions. In the below screenshot, we selected the Total Transactions metric and enable the time-compare feature to see the delta, delta percent of change from two time periods.
 
-<img src = '/img/tutorials/ch/time-compare.png' class='rounded-gif' />
-<br />
+![Time Compare](/img/tutorials/ch/time-compare.png)

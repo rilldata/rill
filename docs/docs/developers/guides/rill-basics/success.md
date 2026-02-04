@@ -13,8 +13,7 @@ tags:
 
 You have successfully deployed your project from Rill Developer to Rill Cloud in six steps!
 
-<img src = '/img/tutorials/rill-basics/rill-cloud-success.png' class='rounded-gif' />
-<br />
+![Rill Cloud Success](/img/tutorials/rill-basics/rill-cloud-success.png)
 
 
 

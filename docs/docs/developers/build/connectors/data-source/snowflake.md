@@ -42,8 +42,7 @@ Use the following syntax when defining a connection string using a private key:
 ```
 See the full documentation to set up [private key authentication](#using-keypair-authentication).
 
-<img src='/img/build/connectors/data-sources/snowflake_conn_strings.png' class='rounded-gif' />
-<br />
+![Snowflake Connection Strings](/img/build/connectors/data-sources/snowflake_conn_strings.png)
 
 :::info Finding the Snowflake account identifier
 
