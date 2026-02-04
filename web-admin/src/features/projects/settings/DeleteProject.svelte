@@ -38,7 +38,7 @@
   }
 </script>
 
-<SettingsContainer title="Delete this project">
+<SettingsContainer title="Delete Project">
   <svelte:fragment slot="body">
     Permanently delete this project and all of its contents from the Rill
     platform. This action is not reversible — please continue with caution.
@@ -46,7 +46,7 @@
 
   <AlertDialogGuardedConfirmation
     slot="action"
-    title="Delete this project?"
+    title="Delete Project?"
     description={`The project "${project}" will be permanently deleted along with all its dashboards, data, and settings. This action cannot be undone.`}
     confirmText={`delete ${project}`}
     confirmButtonText="Delete"
@@ -56,9 +56,7 @@
     onConfirm={deleteProject}
   >
     <svelte:fragment let:builder>
-      <Button builders={[builder]} type="destructive">
-        Delete this project
-      </Button>
+      <Button builders={[builder]} type="destructive">Delete Project</Button>
     </svelte:fragment>
   </AlertDialogGuardedConfirmation>
 </SettingsContainer>

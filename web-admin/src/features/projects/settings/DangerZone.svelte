@@ -1,6 +1,6 @@
 <script lang="ts">
   // Container component for dangerous/destructive actions
-  // Styled with red border similar to GitHub/Vercel danger zones
+  // Styled with red border and red-tinted footer similar to Vercel danger zones
 </script>
 
 <div class="danger-zone">
@@ -21,5 +21,6 @@
   .danger-zone > :global(.settings-container .settings-footer) {
     @apply border-t;
     border-color: var(--color-red-400);
+    background-color: color-mix(in srgb, var(--color-red-400) 10%, transparent);
   }
 </style>
