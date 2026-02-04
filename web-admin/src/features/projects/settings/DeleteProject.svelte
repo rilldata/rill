@@ -29,7 +29,8 @@
       queryKey: getAdminServiceGetProjectQueryKey(organization, project),
     });
     await queryClient.invalidateQueries({
-      queryKey: getAdminServiceListProjectsForOrganizationQueryKey(organization),
+      queryKey:
+        getAdminServiceListProjectsForOrganizationQueryKey(organization),
     });
     eventBus.emit("notification", {
       message: "Deleted project",

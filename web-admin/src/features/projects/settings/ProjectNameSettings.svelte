@@ -61,12 +61,13 @@
           });
 
           await queryClient.invalidateQueries({
-            queryKey: getAdminServiceListProjectsForOrganizationQueryKey(
-              organization,
-            ),
+            queryKey:
+              getAdminServiceListProjectsForOrganizationQueryKey(organization),
           });
         } catch (err) {
-          const parsedErr = parseUpdateProjectError(err as AxiosError<RpcStatus>);
+          const parsedErr = parseUpdateProjectError(
+            err as AxiosError<RpcStatus>,
+          );
           if (parsedErr.duplicateProject) {
             form.errors.name = [`The name ${newProject} is already taken`];
           }
