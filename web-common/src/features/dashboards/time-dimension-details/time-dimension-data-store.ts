@@ -475,6 +475,4 @@ export const tableInteractionStore = writable<HighlightedCell>({
   time: undefined,
 });
 
-export const chartHoveredTime = writable<Date | undefined>(undefined);
-
 export const lastKnownPosition = writable<TablePosition>(undefined);

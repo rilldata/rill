@@ -7,19 +7,12 @@ import { dateToIndex } from "./utils";
 
 export type AnnotationGroup = {
   items: Annotation[];
-  /** Unique key for this group (grain-truncated ISO string) */
   key: string;
-  /** Data index this group maps to */
   index: number;
-  /** Pixel x of the group diamond */
   left: number;
-  /** Pixel x of rightmost annotation end (for range annotations) */
   right: number;
-  /** Pixel y top of diamond area */
   top: number;
-  /** Pixel y bottom of diamond area */
   bottom: number;
-  /** Whether any item in the group has a range (endTime) */
   hasRange: boolean;
 };
 

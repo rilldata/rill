@@ -29,8 +29,6 @@
   export let measure: MetricsViewSpecMeasure;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
-
-  // Query-context props
   export let instanceId: string;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;

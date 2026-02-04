@@ -34,26 +34,17 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import { featureFlags } from "../../feature-flags";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
-  import { MeasureChart } from "./measure-chart";
+  import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
   import { ScrubController } from "./measure-chart/ScrubController";
   import { getAnnotationsForMeasure } from "./annotations-selectors";
   import ChartInteractions from "./ChartInteractions.svelte";
-  import { chartHoveredTime } from "../time-dimension-details/time-dimension-data-store";
   import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import { derived, writable } from "svelte/store";
-  import { DateTime } from "luxon";
-  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import { DateTime, Interval } from "luxon";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  // Derive a readable of the table-hovered time (Date | undefined)
-  const tableHoverTime = derived(tableInteractionStore, ($s) => $s.time);
-
   const { rillTime } = featureFlags;
-
-  // Shared hover index store — all MeasureChart instances read/write this
-  const sharedHoverIndex = writable<number | undefined>(undefined);
 
   // Singleton scrub controller — shared across all charts
   const scrubController = new ScrubController();
@@ -97,11 +88,26 @@
   } = $timeControlsStore);
 
   // Use the full selected time range for chart data fetching (not modified by scrub)
-  $: chartTimeStart = selectedTimeRange?.start?.toISOString();
-  $: chartTimeEnd = selectedTimeRange?.end?.toISOString();
-  $: chartComparisonTimeStart =
-    selectedComparisonTimeRange?.start?.toISOString();
-  $: chartComparisonTimeEnd = selectedComparisonTimeRange?.end?.toISOString();
+  $: chartTimeRange =
+    selectedTimeRange?.start && selectedTimeRange?.end
+      ? Interval.fromDateTimes(
+          DateTime.fromJSDate(selectedTimeRange.start, {
+            zone: chartTimeZone,
+          }),
+          DateTime.fromJSDate(selectedTimeRange.end, { zone: chartTimeZone }),
+        )
+      : undefined;
+  $: chartComparisonTimeRange =
+    selectedComparisonTimeRange?.start && selectedComparisonTimeRange?.end
+      ? Interval.fromDateTimes(
+          DateTime.fromJSDate(selectedComparisonTimeRange.start, {
+            zone: chartTimeZone,
+          }),
+          DateTime.fromJSDate(selectedComparisonTimeRange.end, {
+            zone: chartTimeZone,
+          }),
+        )
+      : undefined;
 
   $: exploreState = useExploreState(exploreName);
 
@@ -342,8 +348,8 @@
           <div />
           <div class="relative">
             <MeasureChartXAxis
-              timeStart={chartTimeStart}
-              timeEnd={chartTimeEnd}
+              timeStart={chartTimeRange?.start?.toISO() ?? undefined}
+              timeEnd={chartTimeRange?.end?.toISO() ?? undefined}
               timeGranularity={activeTimeGrain}
               timeZone={chartTimeZone}
             />
@@ -376,7 +382,6 @@
           <MeasureChart
             {measure}
             {scrubController}
-            {sharedHoverIndex}
             tddChartType={showTimeDimensionDetail
               ? (tddChartType ?? TDDChart.DEFAULT)
               : TDDChart.DEFAULT}
@@ -384,10 +389,8 @@
             metricsViewName={chartMetricsViewName}
             where={chartWhere}
             {timeDimension}
-            timeStart={chartTimeStart}
-            timeEnd={chartTimeEnd}
-            comparisonTimeStart={chartComparisonTimeStart}
-            comparisonTimeEnd={chartComparisonTimeEnd}
+            timeRange={chartTimeRange}
+            comparisonTimeRange={chartComparisonTimeRange}
             timeGranularity={activeTimeGrain}
             timeZone={chartTimeZone}
             ready={chartReady}
@@ -402,20 +405,6 @@
             onPanRight={() => handlePan("right")}
             {showComparison}
             {showTimeDimensionDetail}
-            {tableHoverTime}
-            onHover={(dt) => {
-              if (dt) {
-                const systemTimeZone =
-                  Intl.DateTimeFormat().resolvedOptions().timeZone;
-                chartHoveredTime.set(
-                  dt
-                    .setZone(systemTimeZone, { keepLocalTime: true })
-                    .toJSDate(),
-                );
-              } else {
-                chartHoveredTime.set(undefined);
-              }
-            }}
             onScrub={handleScrub}
             onScrubClear={() => {
               metricsExplorerStore.setSelectedScrubRange(

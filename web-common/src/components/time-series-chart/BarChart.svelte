@@ -3,6 +3,8 @@
   import { computeBarSlotGeometry } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/utils";
   import type { ScaleLinear } from "d3-scale";
 
+  const BAR_RADIUS = 3;
+
   export let series: ChartSeries[];
   export let yScale: ScaleLinear<number, number>;
   export let stacked: boolean = false;
@@ -60,7 +62,6 @@
     {/each}
   {/each}
 {:else}
-  {@const radius = 4}
   {#each { length: visibleCount } as _, slot (slot)}
     {@const ptIdx = visibleStart + slot}
     {@const cx = plotLeft + (slot + 0.5) * geo.slotWidth}
@@ -71,7 +72,7 @@
           cx - geo.bandWidth / 2 + sIdx * (geo.singleBarWidth + geo.barGap)}
         {@const by = Math.min(zeroY, yScale(v))}
         {@const bh = Math.abs(zeroY - yScale(v))}
-        {@const r = Math.min(radius, geo.singleBarWidth / 2, bh / 2)}
+        {@const r = Math.min(BAR_RADIUS, geo.singleBarWidth / 2, bh / 2)}
         {@const isPositive = v >= 0}
         <path
           d={isPositive
