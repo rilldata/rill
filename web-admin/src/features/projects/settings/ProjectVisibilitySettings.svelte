@@ -64,7 +64,7 @@
   <Button
     slot="action"
     onClick={toggleVisibility}
-    type="destructive"
+    type="secondary"
     loading={$updateProjectMutation.isPending}
   >
     {isPublic ? "Make private" : "Make public"}
