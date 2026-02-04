@@ -38,22 +38,27 @@
 </script>
 
 <ContentContainer title="Manage users" maxWidth={1100}>
-  <div class="container flex-col md:flex-row">
-    <div class="nav-wrapper">
+  <div class="settings-layout">
+    <aside class="nav-sidebar">
       <LeftNav {basePage} baseRoute="/[organization]/-/users" {navItems} />
-    </div>
-    <div class="flex flex-col w-full min-w-0">
+    </aside>
+    <div class="content-area">
       <slot />
     </div>
   </div>
 </ContentContainer>
 
 <style lang="postcss">
-  .container {
-    @apply flex pt-6 gap-6 max-w-full items-start flex-1;
+  .settings-layout {
+    @apply flex flex-col md:flex-row pt-6 gap-6 max-w-full flex-1;
   }
 
-  .nav-wrapper {
-    @apply md:sticky md:top-0 shrink-0;
+  .nav-sidebar {
+    @apply shrink-0;
+    @apply md:sticky md:top-0 md:self-start;
+  }
+
+  .content-area {
+    @apply flex flex-col w-full min-w-0;
   }
 </style>
