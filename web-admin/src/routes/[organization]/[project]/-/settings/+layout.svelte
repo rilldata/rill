@@ -10,6 +10,7 @@
   $: basePage = `/${organization}/${project}/-/settings`;
 
   const navItems = [
+    { label: "General", route: "", hasPermission: true },
     {
       label: "Environment Variables",
       route: "/environment-variables",
@@ -31,7 +32,9 @@
       {navItems}
       minWidth="180px"
     />
-    <slot />
+    <div class="flex flex-col gap-y-6 w-full">
+      <slot />
+    </div>
   </div>
 </ContentContainer>
 
