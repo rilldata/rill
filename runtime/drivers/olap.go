@@ -850,7 +850,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 }
 
 func (d Dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
-	// handle date types especially otherwise they get send as time.Time args which will be treated as datetime/timestamp types in olap
+	// handle date types especially otherwise they get sent as time.Time args which will be treated as datetime/timestamp types in olap
 	if typ == runtimev1.Type_CODE_DATE {
 		t, ok := val.(time.Time)
 		if !ok {
