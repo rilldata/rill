@@ -4,6 +4,7 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
 
@@ -18,12 +19,14 @@
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get } from "svelte/store";
+  import { onMount } from "svelte";
   import { getConnectorSchema } from "./connector-schemas";
   import {
     getRequiredFieldsForValues,
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
+  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -95,6 +98,21 @@
   let paramsErrorDetails: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
+
+  // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
+  // This prevents the preview from updating when Test and Connect writes to .env.
+  let existingEnvBlob = "";
+  onMount(async () => {
+    try {
+      const envFile = await runtimeServiceGetFile($runtime.instanceId, {
+        path: ".env",
+      });
+      existingEnvBlob = envFile.blob ?? "";
+    } catch {
+      // .env doesn't exist yet
+      existingEnvBlob = "";
+    }
+  });
 
   // Hide Save Anyway once we advance to the model step in step flow connectors.
   $: if (
@@ -190,6 +208,7 @@
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
     formValues: $form,
+    existingEnvBlob,
   });
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
   $: saveAnywayLoading = submitting && saveAnyway;

@@ -188,14 +188,15 @@ async function saveConnectorAnyway(
   savedAnywayPaths.add(newConnectorFilePath);
 
   // Update .env file with secrets (keep ordering consistent with Test and Connect)
-  const newEnvBlob = await updateDotEnvWithSecrets(
-    queryClient,
-    connector,
-    formValues,
-    "connector",
-    newConnectorName,
-    { secretKeys: schemaSecretKeys, schema: schema ?? undefined },
-  );
+  const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
+    await updateDotEnvWithSecrets(
+      queryClient,
+      connector,
+      formValues,
+      "connector",
+      newConnectorName,
+      { secretKeys: schemaSecretKeys, schema: schema ?? undefined },
+    );
 
   await runtimeServicePutFile(resolvedInstanceId, {
     path: ".env",
@@ -213,6 +214,7 @@ async function saveConnectorAnyway(
       secretKeys: schemaSecretKeys,
       stringKeys: schemaStringKeys,
       schema: schema ?? undefined,
+      existingEnvBlob: envBlobForYaml,
       fieldFilter: schemaFields
         ? (property) => !("internal" in property && property.internal)
         : undefined,
@@ -314,8 +316,8 @@ export async function submitAddConnectorForm(
       }
 
       // Capture original .env and compute updated contents up front
-      originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
-      const newEnvBlob = await updateDotEnvWithSecrets(
+      // Use originalBlob from updateDotEnvWithSecrets for consistent conflict detection
+      const envResult = await updateDotEnvWithSecrets(
         queryClient,
         connector,
         formValues,
@@ -323,6 +325,8 @@ export async function submitAddConnectorForm(
         newConnectorName,
         { secretKeys: schemaSecretKeys, schema: schema ?? undefined },
       );
+      const newEnvBlob = envResult.newBlob;
+      originalEnvBlob = envResult.originalBlob;
 
       if (saveAnyway) {
         // Save Anyway: bypass reconciliation entirely via centralized helper
@@ -360,6 +364,7 @@ export async function submitAddConnectorForm(
             secretKeys: schemaSecretKeys,
             stringKeys: schemaStringKeys,
             schema: schema ?? undefined,
+            existingEnvBlob: originalEnvBlob,
             fieldFilter: schemaFields
               ? (property) => !("internal" in property && property.internal)
               : undefined,
@@ -496,17 +501,16 @@ export async function submitAddSourceForm(
     createOnly: false,
   });
 
-  const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
-
   // Create or update the `.env` file
-  const newEnvBlob = await updateDotEnvWithSecrets(
-    queryClient,
-    rewrittenConnector,
-    rewrittenFormValues,
-    "source",
-    undefined,
-    { secretKeys: schemaSecretKeys },
-  );
+  const { newBlob: newEnvBlob, originalBlob: originalEnvBlob } =
+    await updateDotEnvWithSecrets(
+      queryClient,
+      rewrittenConnector,
+      rewrittenFormValues,
+      "source",
+      undefined,
+      { secretKeys: schemaSecretKeys },
+    );
 
   // Make sure the file has reconciled before testing the connection
   await runtimeServicePutFileAndWaitForReconciliation(instanceId, {

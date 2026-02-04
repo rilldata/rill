@@ -56,6 +56,7 @@ export function compileConnectorYAML(
     secretKeys?: string[];
     stringKeys?: string[];
     schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+    existingEnvBlob?: string;
   },
 ) {
   // Add instructions to the top of the file
@@ -105,13 +106,13 @@ driver: ${driverName}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        const placeholder = `{{ .env.${makeDotEnvConnectorKey(
+        const envVarName = makeDotEnvConnectorKey(
           connector.name as string,
           key,
-          undefined, // No conflict detection for YAML generation
+          options?.existingEnvBlob,
           options?.schema,
-        )} }}`;
-        return `${key}: "${placeholder}"`;
+        );
+        return `${key}: '{{ env "${envVarName}" }}'`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -137,7 +138,7 @@ export async function updateDotEnvWithSecrets(
     secretKeys?: string[];
     schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
   },
-): Promise<string> {
+): Promise<{ newBlob: string; originalBlob: string }> {
   const instanceId = get(runtime).instanceId;
 
   // Invalidate the cache to ensure we get fresh .env content
@@ -171,7 +172,7 @@ export async function updateDotEnvWithSecrets(
 
   // In reality, all connectors have secret keys, but this is a safeguard
   if (!secretKeys) {
-    return blob;
+    return { newBlob: blob, originalBlob };
   }
 
   // Update the blob with the new secrets
@@ -195,7 +196,7 @@ export async function updateDotEnvWithSecrets(
     );
   });
 
-  return blob;
+  return { newBlob: blob, originalBlob };
 }
 
 export function replaceOrAddEnvVariable(
