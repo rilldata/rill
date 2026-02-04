@@ -65,7 +65,12 @@
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter class="mt-5">
-      <Button type="secondary" onClick={close}>Cancel</Button>
+      <Button
+        type={confirmButtonType === "destructive" ? "tertiary" : "secondary"}
+        onClick={close}
+      >
+        Cancel
+      </Button>
       <Button
         type={confirmButtonType}
         onClick={handleContinue}
