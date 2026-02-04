@@ -9,6 +9,8 @@ import type {
   FunnelChartSpec,
   HeatmapChartProvider,
   HeatmapChartSpec,
+  ScatterPlotChartProvider,
+  ScatterPlotChartSpec,
 } from "@rilldata/web-common/features/components/charts";
 import type {
   V1Expression,
@@ -33,14 +35,16 @@ export type ChartProvider =
   | CircularChartProvider
   | ComboChartProvider
   | FunnelChartProvider
-  | HeatmapChartProvider;
+  | HeatmapChartProvider
+  | ScatterPlotChartProvider;
 
 export type ChartSpecBase =
   | CartesianChartSpec
   | CircularChartSpec
   | FunnelChartSpec
   | HeatmapChartSpec
-  | ComboChartSpec;
+  | ComboChartSpec
+  | ScatterPlotChartSpec;
 
 export type ChartSpec = ChartSpecBase & {
   vl_config?: string;
@@ -66,7 +70,8 @@ export type ChartSpecAI =
   | { chart_type: "pie_chart"; spec: CircularChartSpec & TimeRange }
   | { chart_type: "funnel_chart"; spec: FunnelChartSpec & TimeRange }
   | { chart_type: "heatmap"; spec: HeatmapChartSpec & TimeRange }
-  | { chart_type: "combo_chart"; spec: ComboChartSpec & TimeRange };
+  | { chart_type: "combo_chart"; spec: ComboChartSpec & TimeRange }
+  | { chart_type: "scatter_plot"; spec: ScatterPlotChartSpec & TimeRange };
 
 export type ChartType =
   | "bar_chart"
@@ -78,7 +83,8 @@ export type ChartType =
   | "pie_chart"
   | "heatmap"
   | "funnel_chart"
-  | "combo_chart";
+  | "combo_chart"
+  | "scatter_plot";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
@@ -100,6 +106,7 @@ export type ChartDataResult = {
   theme: { primary: Color; secondary: Color };
   domainValues?: ChartDomainValues;
   isDarkMode: boolean;
+  hasComparison?: boolean;
 };
 
 export interface ChartDomainValues {

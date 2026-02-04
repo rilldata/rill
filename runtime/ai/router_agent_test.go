@@ -11,7 +11,7 @@ import (
 func TestRouterAgent(t *testing.T) {
 	// Setup empty project
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 	})
 
 	// NOTE: We use a single eval session, so each subsequent prompt will have the context of the previous ones.
@@ -22,28 +22,40 @@ func TestRouterAgent(t *testing.T) {
 	}{
 		{
 			prompt: "What country has the highest revenue?",
-			agent:  "analyst_agent",
+			agent:  ai.AnalystAgentName,
 		},
 		{
 			prompt: "Repeat the answer you gave to my last question",
-			agent:  "analyst_agent",
+			agent:  ai.AnalystAgentName,
 		},
 		{
 			prompt: "Create a model called 'sales_data' that selects all columns from the 'orders' table.",
-			agent:  "developer_agent",
+			agent:  ai.DeveloperAgentName,
 		},
 		{
 			prompt: "Do another one for the 'customers' table.",
-			agent:  "developer_agent",
+			agent:  ai.DeveloperAgentName,
 		},
 		{
 			prompt: "What is 2 + 2?",
-			agent:  "analyst_agent",
+			agent:  ai.AnalystAgentName,
+		},
+		{
+			prompt: "developer: Add the metric code_churn",
+			agent:  ai.DeveloperAgentName,
+		},
+		{
+			prompt: "developer_agent: Add a new metric code_churn",
+			agent:  ai.DeveloperAgentName,
+		},
+		{
+			prompt: "Add a new metric code_churn. Use the developer agent.",
+			agent:  ai.DeveloperAgentName,
 		},
 	}
 	for _, c := range cases {
 		var res *ai.RouterAgentResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
 			Prompt:      c.prompt,
 			SkipHandoff: true,
 		})

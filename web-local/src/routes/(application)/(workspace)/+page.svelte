@@ -4,6 +4,9 @@
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import { fly } from "svelte/transition";
   import type { LayoutData } from "../$types";
+  import GeneratingSampleDataMessage from "@rilldata/web-common/features/sample-data/GeneratingSampleDataMessage.svelte";
+  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
+  import { generatingSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
 
   export let data: LayoutData;
 </script>
@@ -12,18 +15,27 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-{#if data.initialized}
-  <OnboardingWorkspace />
-{:else}
-  <div class="scroll" in:fly={{ duration: 1600, delay: 400, y: 8 }}>
-    <div class="wrapper column p-10 2xl:py-16">
-      <TitleContent />
-      <div class="column" in:fly={{ duration: 1600, delay: 1200, y: 4 }}>
-        <ProjectCards />
+<div class="flex size-full overflow-hidden">
+  <div class="flex size-full overflow-hidden">
+    {#if data.initialized}
+      {#if $generatingSampleData}
+        <GeneratingSampleDataMessage />
+      {:else}
+        <OnboardingWorkspace />
+      {/if}
+    {:else}
+      <div class="scroll" in:fly={{ duration: 1600, delay: 400, y: 8 }}>
+        <div class="wrapper column p-10 2xl:py-16">
+          <TitleContent />
+          <div class="column" in:fly={{ duration: 1600, delay: 1200, y: 4 }}>
+            <ProjectCards />
+          </div>
+        </div>
       </div>
-    </div>
+    {/if}
   </div>
-{/if}
+  <DeveloperChat />
+</div>
 
 <style lang="postcss">
   .scroll {
@@ -32,7 +44,11 @@
 
   .wrapper {
     @apply w-full h-fit min-h-screen bg-no-repeat bg-cover;
-    background-image: url("/img/welcome-bg-art.png");
+    background-image: url("/img/welcome-bg-art.jpg");
+  }
+
+  :global(.dark) .wrapper {
+    background-image: url("/img/welcome-bg-art-dark.jpg");
   }
 
   .column {

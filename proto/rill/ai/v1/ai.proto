@@ -7,10 +7,16 @@ import "google/protobuf/struct.proto";
 message Tool {
   // The name of the tool
   string name = 1;
+  // The display name of the tool
+  string display_name = 4;
   // A human-readable description of the tool
   string description = 2;
+  // Metadata about the tool
+  google.protobuf.Struct meta = 5;
   // JSON Schema defining the expected parameters for the tool (as JSON string)
   string input_schema = 3;
+  // JSON Schema defining the expected output of the tool (as JSON string)
+  string output_schema = 6;
 }
 
 // Tool call specification

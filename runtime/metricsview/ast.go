@@ -504,9 +504,16 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
+		// StarRocks returns DECIMAL for division, which gets mapped to string.
+		// Cast to DOUBLE for consistent numeric handling across all dialects.
+		expr := fmt.Sprintf("%s/%#f", a.Dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total)
+		if a.Dialect == drivers.DialectStarRocks {
+			expr = fmt.Sprintf("CAST(%s AS DOUBLE)", expr)
+		}
+
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("%s/%#f", a.Dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total),
+			Expression:         expr,
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 			ReferencedMeasures: []string{qm.Compute.PercentOfTotal.Measure},
 			DisplayName:        fmt.Sprintf("%s (Σ%%)", m.DisplayName),
@@ -1069,6 +1076,10 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		return nil, nil
 	}
 
+	if spine.Where != nil && spine.TimeRange != nil {
+		return nil, errors.New("spine cannot have both 'where' and 'time_range'")
+	}
+
 	if spine.Where != nil {
 		// Using buildWhereForUnderlyingTable to include security filters.
 		// Note that buildWhereForUnderlyingTable handles nil expressions gracefully.
@@ -1094,10 +1105,10 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.TimeRange != nil {
-		// if spine generates more than 1000 values then return an error
+		// if spine generates more than 1500 values then return an error
 		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
-		if bins > 1000 {
-			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
+		if bins > 1500 {
+			return nil, fmt.Errorf("failed to apply time spine: time range has more than 1500 bins for %q grain, move to a larger grain", spine.TimeRange.Grain)
 		}
 
 		timeDim := a.MetricsView.TimeDimension
@@ -1119,9 +1130,6 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			newDims = append(newDims, f)
 		}
 
-		start := spine.TimeRange.Start
-		end := spine.TimeRange.End
-		grain := spine.TimeRange.Grain
 		tz := time.UTC
 		if a.Query.TimeZone != "" {
 			var err error
@@ -1130,7 +1138,8 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 				return nil, fmt.Errorf("invalid time zone %q: %w", a.Query.TimeZone, err)
 			}
 		}
-		sel, args, err := a.Dialect.SelectTimeRangeBins(start, end, grain.ToProto(), timeAlias, tz)
+
+		sel, args, err := a.Dialect.SelectTimeRangeBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToProto(), timeAlias, tz, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}

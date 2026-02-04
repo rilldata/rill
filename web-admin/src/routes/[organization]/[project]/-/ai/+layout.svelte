@@ -4,7 +4,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
-  import MCPConfigDialog from "@rilldata/web-admin/features/ai/MCPConfigDialog.svelte";
+  import MCPConnectDialog from "@rilldata/web-admin/features/ai/mcp/MCPConnectDialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import APIIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
   import ProjectChat from "@rilldata/web-common/features/chat/ProjectChat.svelte";
@@ -23,17 +23,16 @@
     <svelte:fragment slot="sidebar-footer">
       <Button
         type="secondary"
-        gray
         onClick={() => (mcpDialogOpen = true)}
         class="w-full"
       >
-        <APIIcon size="14px" />
+        <APIIcon size="14px" className="!fill-current" />
         Connect your own client
       </Button>
     </svelte:fragment>
   </ProjectChat>
 
-  <MCPConfigDialog
+  <MCPConnectDialog
     bind:open={mcpDialogOpen}
     {organization}
     {project}
@@ -46,11 +45,12 @@
 
 <style lang="postcss">
   .chat-page-wrapper {
+    @apply bg-surface-background;
     flex: 1;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    background: #ffffff;
+
     min-height: 0;
   }
 </style>

@@ -9,9 +9,9 @@ import type {
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type {
   V1MetricsViewSpec,
+  V1ResolveCanvasResponseResolvedComponents,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
@@ -81,6 +81,7 @@ const CHART_TYPES = [
   "heatmap",
   "funnel_chart",
   "combo_chart",
+  "scatter_plot",
 ] as const;
 const NON_CHART_TYPES = [
   "markdown",
@@ -195,10 +196,10 @@ export function getHeaderForComponent(
 
 export function getComponentMetricsViewFromSpec(
   componentName: string | undefined,
-  spec: CanvasResponse | undefined,
+  components: V1ResolveCanvasResponseResolvedComponents | undefined,
 ): string | undefined {
   if (!componentName) return undefined;
-  const resource = spec?.components?.[componentName]?.component;
+  const resource = components?.[componentName]?.component;
 
   if (resource) {
     return resource?.state?.validSpec?.rendererProperties?.metrics_view as

@@ -1,10 +1,12 @@
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { DateTimeUnit } from "luxon";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import type { DateTimeUnit, Interval } from "luxon";
+
+const MAX_BUCKETS = 1500;
 
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
 
-type TimeGrainAlias =
+export type TimeGrainAlias =
   | "ms"
   | "MS"
   | "s"
@@ -98,6 +100,7 @@ export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_QUARTER]: "quarter",
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
+
 export const DateTimeUnitToV1TimeGrain = reverseMap(V1TimeGrainToDateTimeUnit);
 
 export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
@@ -109,7 +112,7 @@ export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
 }
 
 // We prevent users from aggregating by second or millisecond
-const allowedAggregationGrains = [
+export const allowedAggregationGrains = [
   V1TimeGrain.TIME_GRAIN_MINUTE,
   V1TimeGrain.TIME_GRAIN_HOUR,
   V1TimeGrain.TIME_GRAIN_DAY,
@@ -118,6 +121,9 @@ const allowedAggregationGrains = [
   V1TimeGrain.TIME_GRAIN_QUARTER,
   V1TimeGrain.TIME_GRAIN_YEAR,
 ];
+
+const ALLOWABLE_AGGREGATION_UNITS: DateTimeUnit[] =
+  allowedAggregationGrains.map((grain) => V1TimeGrainToDateTimeUnit[grain]);
 
 export const GrainAliasToOrder: Record<TimeGrainAlias, Order> = {
   ms: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
@@ -287,7 +293,7 @@ export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {
     case V1TimeGrain.TIME_GRAIN_SECOND:
       return V1TimeGrain.TIME_GRAIN_MILLISECOND;
     case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return V1TimeGrain.TIME_GRAIN_SECOND;
+      return V1TimeGrain.TIME_GRAIN_MINUTE;
     case V1TimeGrain.TIME_GRAIN_HOUR:
       return V1TimeGrain.TIME_GRAIN_MINUTE;
     case V1TimeGrain.TIME_GRAIN_DAY:
@@ -299,7 +305,7 @@ export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {
     case V1TimeGrain.TIME_GRAIN_QUARTER:
       return V1TimeGrain.TIME_GRAIN_MONTH;
     case V1TimeGrain.TIME_GRAIN_YEAR:
-      return V1TimeGrain.TIME_GRAIN_QUARTER;
+      return V1TimeGrain.TIME_GRAIN_MONTH;
     default:
       return V1TimeGrain.TIME_GRAIN_MINUTE;
   }
@@ -331,4 +337,64 @@ export function getSmallestGrainFromISODuration(
       ? current
       : smallest;
   });
+}
+
+export const minTimeGrainToDefaultTimeRange: Record<V1TimeGrain, string> = {
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_HOUR]: "24h as of latest/h",
+  [V1TimeGrain.TIME_GRAIN_DAY]: "7d as of latest/d",
+  [V1TimeGrain.TIME_GRAIN_WEEK]: "4w as of latest/w",
+  [V1TimeGrain.TIME_GRAIN_MONTH]: "3M as of latest/M",
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: "4Q as of latest/Q",
+  [V1TimeGrain.TIME_GRAIN_YEAR]: "5y as of latest/Y",
+};
+
+export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
+  if (grains.length === 0) {
+    return undefined;
+  }
+
+  return grains.reduce(
+    (smallest, current) => {
+      if (!current) return smallest;
+      if (!smallest) return current;
+      return V1TimeGrainToOrder[current] < V1TimeGrainToOrder[smallest]
+        ? current
+        : smallest;
+    },
+    undefined as V1TimeGrain | undefined,
+  );
+}
+
+export function allowedGrainsForInterval(
+  interval: Interval<true> | undefined,
+  minTimeGrain?: V1TimeGrain,
+): V1TimeGrain[] {
+  minTimeGrain = minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
+  if (!interval) return [];
+
+  const validGrains = ALLOWABLE_AGGREGATION_UNITS.filter((unit) => {
+    return isGrainAllowed(unit, minTimeGrain);
+  });
+
+  const allowedGrains = validGrains
+    .filter((unit) => {
+      const grain = DateTimeUnitToV1TimeGrain[unit];
+      if (!grain) return false;
+      const bucketCount = interval.length(unit);
+
+      return (
+        bucketCount >= 1 && (bucketCount <= MAX_BUCKETS || unit === "year")
+      );
+    })
+    .map((unit) => DateTimeUnitToV1TimeGrain[unit]!);
+
+  if (allowedGrains.length) {
+    return allowedGrains;
+  } else {
+    return [minTimeGrain];
+  }
 }

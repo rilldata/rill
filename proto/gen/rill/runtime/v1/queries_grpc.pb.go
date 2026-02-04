@@ -19,36 +19,38 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	QueryService_Query_FullMethodName                       = "/rill.runtime.v1.QueryService/Query"
-	QueryService_QueryBatch_FullMethodName                  = "/rill.runtime.v1.QueryService/QueryBatch"
-	QueryService_Export_FullMethodName                      = "/rill.runtime.v1.QueryService/Export"
-	QueryService_ExportReport_FullMethodName                = "/rill.runtime.v1.QueryService/ExportReport"
-	QueryService_MetricsViewAggregation_FullMethodName      = "/rill.runtime.v1.QueryService/MetricsViewAggregation"
-	QueryService_MetricsViewToplist_FullMethodName          = "/rill.runtime.v1.QueryService/MetricsViewToplist"
-	QueryService_MetricsViewComparison_FullMethodName       = "/rill.runtime.v1.QueryService/MetricsViewComparison"
-	QueryService_MetricsViewTimeSeries_FullMethodName       = "/rill.runtime.v1.QueryService/MetricsViewTimeSeries"
-	QueryService_MetricsViewTotals_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewTotals"
-	QueryService_MetricsViewRows_FullMethodName             = "/rill.runtime.v1.QueryService/MetricsViewRows"
-	QueryService_MetricsViewTimeRange_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewTimeRange"
-	QueryService_MetricsViewSchema_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewSchema"
-	QueryService_MetricsViewSearch_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewSearch"
-	QueryService_MetricsViewTimeRanges_FullMethodName       = "/rill.runtime.v1.QueryService/MetricsViewTimeRanges"
-	QueryService_MetricsViewAnnotations_FullMethodName      = "/rill.runtime.v1.QueryService/MetricsViewAnnotations"
-	QueryService_ResolveCanvas_FullMethodName               = "/rill.runtime.v1.QueryService/ResolveCanvas"
-	QueryService_ResolveComponent_FullMethodName            = "/rill.runtime.v1.QueryService/ResolveComponent"
-	QueryService_ColumnRollupInterval_FullMethodName        = "/rill.runtime.v1.QueryService/ColumnRollupInterval"
-	QueryService_ColumnTopK_FullMethodName                  = "/rill.runtime.v1.QueryService/ColumnTopK"
-	QueryService_ColumnNullCount_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnNullCount"
-	QueryService_ColumnDescriptiveStatistics_FullMethodName = "/rill.runtime.v1.QueryService/ColumnDescriptiveStatistics"
-	QueryService_ColumnTimeGrain_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnTimeGrain"
-	QueryService_ColumnNumericHistogram_FullMethodName      = "/rill.runtime.v1.QueryService/ColumnNumericHistogram"
-	QueryService_ColumnRugHistogram_FullMethodName          = "/rill.runtime.v1.QueryService/ColumnRugHistogram"
-	QueryService_ColumnTimeRange_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnTimeRange"
-	QueryService_ColumnCardinality_FullMethodName           = "/rill.runtime.v1.QueryService/ColumnCardinality"
-	QueryService_ColumnTimeSeries_FullMethodName            = "/rill.runtime.v1.QueryService/ColumnTimeSeries"
-	QueryService_TableCardinality_FullMethodName            = "/rill.runtime.v1.QueryService/TableCardinality"
-	QueryService_TableColumns_FullMethodName                = "/rill.runtime.v1.QueryService/TableColumns"
-	QueryService_TableRows_FullMethodName                   = "/rill.runtime.v1.QueryService/TableRows"
+	QueryService_Query_FullMethodName                         = "/rill.runtime.v1.QueryService/Query"
+	QueryService_QueryBatch_FullMethodName                    = "/rill.runtime.v1.QueryService/QueryBatch"
+	QueryService_Export_FullMethodName                        = "/rill.runtime.v1.QueryService/Export"
+	QueryService_ExportReport_FullMethodName                  = "/rill.runtime.v1.QueryService/ExportReport"
+	QueryService_MetricsViewAggregation_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewAggregation"
+	QueryService_MetricsViewToplist_FullMethodName            = "/rill.runtime.v1.QueryService/MetricsViewToplist"
+	QueryService_MetricsViewComparison_FullMethodName         = "/rill.runtime.v1.QueryService/MetricsViewComparison"
+	QueryService_MetricsViewTimeSeries_FullMethodName         = "/rill.runtime.v1.QueryService/MetricsViewTimeSeries"
+	QueryService_MetricsViewTotals_FullMethodName             = "/rill.runtime.v1.QueryService/MetricsViewTotals"
+	QueryService_MetricsViewRows_FullMethodName               = "/rill.runtime.v1.QueryService/MetricsViewRows"
+	QueryService_MetricsViewTimeRange_FullMethodName          = "/rill.runtime.v1.QueryService/MetricsViewTimeRange"
+	QueryService_MetricsViewSchema_FullMethodName             = "/rill.runtime.v1.QueryService/MetricsViewSchema"
+	QueryService_MetricsViewSearch_FullMethodName             = "/rill.runtime.v1.QueryService/MetricsViewSearch"
+	QueryService_MetricsViewTimeRanges_FullMethodName         = "/rill.runtime.v1.QueryService/MetricsViewTimeRanges"
+	QueryService_MetricsViewAnnotations_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewAnnotations"
+	QueryService_ConvertExpressionToMetricsSQL_FullMethodName = "/rill.runtime.v1.QueryService/ConvertExpressionToMetricsSQL"
+	QueryService_ResolveCanvas_FullMethodName                 = "/rill.runtime.v1.QueryService/ResolveCanvas"
+	QueryService_ResolveComponent_FullMethodName              = "/rill.runtime.v1.QueryService/ResolveComponent"
+	QueryService_ResolveTemplatedString_FullMethodName        = "/rill.runtime.v1.QueryService/ResolveTemplatedString"
+	QueryService_ColumnRollupInterval_FullMethodName          = "/rill.runtime.v1.QueryService/ColumnRollupInterval"
+	QueryService_ColumnTopK_FullMethodName                    = "/rill.runtime.v1.QueryService/ColumnTopK"
+	QueryService_ColumnNullCount_FullMethodName               = "/rill.runtime.v1.QueryService/ColumnNullCount"
+	QueryService_ColumnDescriptiveStatistics_FullMethodName   = "/rill.runtime.v1.QueryService/ColumnDescriptiveStatistics"
+	QueryService_ColumnTimeGrain_FullMethodName               = "/rill.runtime.v1.QueryService/ColumnTimeGrain"
+	QueryService_ColumnNumericHistogram_FullMethodName        = "/rill.runtime.v1.QueryService/ColumnNumericHistogram"
+	QueryService_ColumnRugHistogram_FullMethodName            = "/rill.runtime.v1.QueryService/ColumnRugHistogram"
+	QueryService_ColumnTimeRange_FullMethodName               = "/rill.runtime.v1.QueryService/ColumnTimeRange"
+	QueryService_ColumnCardinality_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnCardinality"
+	QueryService_ColumnTimeSeries_FullMethodName              = "/rill.runtime.v1.QueryService/ColumnTimeSeries"
+	QueryService_TableCardinality_FullMethodName              = "/rill.runtime.v1.QueryService/TableCardinality"
+	QueryService_TableColumns_FullMethodName                  = "/rill.runtime.v1.QueryService/TableColumns"
+	QueryService_TableRows_FullMethodName                     = "/rill.runtime.v1.QueryService/TableRows"
 )
 
 // QueryServiceClient is the client API for QueryService service.
@@ -118,10 +120,14 @@ type QueryServiceClient interface {
 	// MetricsViewTimeRanges resolves time ranges for a metrics view.
 	MetricsViewTimeRanges(ctx context.Context, in *MetricsViewTimeRangesRequest, opts ...grpc.CallOption) (*MetricsViewTimeRangesResponse, error)
 	MetricsViewAnnotations(ctx context.Context, in *MetricsViewAnnotationsRequest, opts ...grpc.CallOption) (*MetricsViewAnnotationsResponse, error)
+	// ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+	ConvertExpressionToMetricsSQL(ctx context.Context, in *ConvertExpressionToMetricsSQLRequest, opts ...grpc.CallOption) (*ConvertExpressionToMetricsSQLResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
 	ResolveCanvas(ctx context.Context, in *ResolveCanvasRequest, opts ...grpc.CallOption) (*ResolveCanvasResponse, error)
 	// ResolveComponent resolves renderer for a Component resource.
 	ResolveComponent(ctx context.Context, in *ResolveComponentRequest, opts ...grpc.CallOption) (*ResolveComponentResponse, error)
+	// ResolveTemplatedString resolves a templated strings.
+	ResolveTemplatedString(ctx context.Context, in *ResolveTemplatedStringRequest, opts ...grpc.CallOption) (*ResolveTemplatedStringResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(ctx context.Context, in *ColumnRollupIntervalRequest, opts ...grpc.CallOption) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
@@ -318,6 +324,16 @@ func (c *queryServiceClient) MetricsViewAnnotations(ctx context.Context, in *Met
 	return out, nil
 }
 
+func (c *queryServiceClient) ConvertExpressionToMetricsSQL(ctx context.Context, in *ConvertExpressionToMetricsSQLRequest, opts ...grpc.CallOption) (*ConvertExpressionToMetricsSQLResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConvertExpressionToMetricsSQLResponse)
+	err := c.cc.Invoke(ctx, QueryService_ConvertExpressionToMetricsSQL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryServiceClient) ResolveCanvas(ctx context.Context, in *ResolveCanvasRequest, opts ...grpc.CallOption) (*ResolveCanvasResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ResolveCanvasResponse)
@@ -332,6 +348,16 @@ func (c *queryServiceClient) ResolveComponent(ctx context.Context, in *ResolveCo
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ResolveComponentResponse)
 	err := c.cc.Invoke(ctx, QueryService_ResolveComponent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryServiceClient) ResolveTemplatedString(ctx context.Context, in *ResolveTemplatedStringRequest, opts ...grpc.CallOption) (*ResolveTemplatedStringResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveTemplatedStringResponse)
+	err := c.cc.Invoke(ctx, QueryService_ResolveTemplatedString_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -535,10 +561,14 @@ type QueryServiceServer interface {
 	// MetricsViewTimeRanges resolves time ranges for a metrics view.
 	MetricsViewTimeRanges(context.Context, *MetricsViewTimeRangesRequest) (*MetricsViewTimeRangesResponse, error)
 	MetricsViewAnnotations(context.Context, *MetricsViewAnnotationsRequest) (*MetricsViewAnnotationsResponse, error)
+	// ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+	ConvertExpressionToMetricsSQL(context.Context, *ConvertExpressionToMetricsSQLRequest) (*ConvertExpressionToMetricsSQLResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
 	ResolveCanvas(context.Context, *ResolveCanvasRequest) (*ResolveCanvasResponse, error)
 	// ResolveComponent resolves renderer for a Component resource.
 	ResolveComponent(context.Context, *ResolveComponentRequest) (*ResolveComponentResponse, error)
+	// ResolveTemplatedString resolves a templated strings.
+	ResolveTemplatedString(context.Context, *ResolveTemplatedStringRequest) (*ResolveTemplatedStringResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
@@ -621,11 +651,17 @@ func (UnimplementedQueryServiceServer) MetricsViewTimeRanges(context.Context, *M
 func (UnimplementedQueryServiceServer) MetricsViewAnnotations(context.Context, *MetricsViewAnnotationsRequest) (*MetricsViewAnnotationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewAnnotations not implemented")
 }
+func (UnimplementedQueryServiceServer) ConvertExpressionToMetricsSQL(context.Context, *ConvertExpressionToMetricsSQLRequest) (*ConvertExpressionToMetricsSQLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConvertExpressionToMetricsSQL not implemented")
+}
 func (UnimplementedQueryServiceServer) ResolveCanvas(context.Context, *ResolveCanvasRequest) (*ResolveCanvasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveCanvas not implemented")
 }
 func (UnimplementedQueryServiceServer) ResolveComponent(context.Context, *ResolveComponentRequest) (*ResolveComponentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveComponent not implemented")
+}
+func (UnimplementedQueryServiceServer) ResolveTemplatedString(context.Context, *ResolveTemplatedStringRequest) (*ResolveTemplatedStringResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveTemplatedString not implemented")
 }
 func (UnimplementedQueryServiceServer) ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ColumnRollupInterval not implemented")
@@ -950,6 +986,24 @@ func _QueryService_MetricsViewAnnotations_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QueryService_ConvertExpressionToMetricsSQL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConvertExpressionToMetricsSQLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).ConvertExpressionToMetricsSQL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_ConvertExpressionToMetricsSQL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).ConvertExpressionToMetricsSQL(ctx, req.(*ConvertExpressionToMetricsSQLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _QueryService_ResolveCanvas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ResolveCanvasRequest)
 	if err := dec(in); err != nil {
@@ -982,6 +1036,24 @@ func _QueryService_ResolveComponent_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).ResolveComponent(ctx, req.(*ResolveComponentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_ResolveTemplatedString_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveTemplatedStringRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).ResolveTemplatedString(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_ResolveTemplatedString_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).ResolveTemplatedString(ctx, req.(*ResolveTemplatedStringRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1284,12 +1356,20 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _QueryService_MetricsViewAnnotations_Handler,
 		},
 		{
+			MethodName: "ConvertExpressionToMetricsSQL",
+			Handler:    _QueryService_ConvertExpressionToMetricsSQL_Handler,
+		},
+		{
 			MethodName: "ResolveCanvas",
 			Handler:    _QueryService_ResolveCanvas_Handler,
 		},
 		{
 			MethodName: "ResolveComponent",
 			Handler:    _QueryService_ResolveComponent_Handler,
+		},
+		{
+			MethodName: "ResolveTemplatedString",
+			Handler:    _QueryService_ResolveTemplatedString_Handler,
 		},
 		{
 			MethodName: "ColumnRollupInterval",

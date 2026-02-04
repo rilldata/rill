@@ -436,3 +436,77 @@ metrics_view: mv1
 	refreshedOn2 := getAndCheckRefreshedOn()
 	require.Greater(t, refreshedOn2, refreshedOn1)
 }
+
+func TestExploreTimeDimensions(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"models/m1.sql": `SELECT '2025-11-20T00:00:00Z'::TIMESTAMP as t1, '2025-11-20T00:00:00Z'::TIMESTAMP as t2, 'foo' as foo, 1 as x`,
+		"metrics_views/mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+timeseries: t1
+dimensions:
+- column: t1
+- column: t2
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"explores/e1.yaml": `
+type: explore
+display_name: Hello
+metrics_view: mv1
+dimensions: '*'
+measures: '*'
+defaults:
+  dimensions:
+    - t2
+    - foo
+`,
+	})
+
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: "e1"},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "mv1"}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/explores/e1.yaml"},
+		},
+		Resource: &runtimev1.Resource_Explore{
+			Explore: &runtimev1.Explore{
+				Spec: &runtimev1.ExploreSpec{
+					DisplayName:          "Hello",
+					MetricsView:          "mv1",
+					Dimensions:           nil,
+					DimensionsSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					Measures:             nil,
+					MeasuresSelector:     &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					AllowCustomTimeRange: true,
+					DefaultPreset: &runtimev1.ExplorePreset{
+						Dimensions:       []string{"t2", "foo"},
+						MeasuresSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+						ComparisonMode:   runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
+					},
+				},
+				State: &runtimev1.ExploreState{
+					ValidSpec: &runtimev1.ExploreSpec{
+						DisplayName:          "Hello",
+						MetricsView:          "mv1",
+						Dimensions:           []string{"t1", "t2", "foo"},
+						Measures:             []string{"x"},
+						AllowCustomTimeRange: true,
+						DefaultPreset: &runtimev1.ExplorePreset{
+							Dimensions:     []string{"t2", "foo"},
+							Measures:       []string{"x"},
+							ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
+						},
+					},
+				},
+			},
+		},
+	})
+}

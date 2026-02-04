@@ -21,6 +21,7 @@ import {
   resolveCSSVariable,
   sanitizeSortFieldForVega,
 } from "@rilldata/web-common/features/components/charts/util";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   BarHighlightColorDark,
   BarHighlightColorLight,
@@ -36,6 +37,7 @@ import type { Config } from "vega-lite";
 import type {
   ColorDef,
   Field,
+  MarkPropDef,
   PositionFieldDef,
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
@@ -79,12 +81,11 @@ export function createPositionEncoding(
     title: metaData?.displayName || field.field,
     type: field.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
-    ...(field.sort &&
-      field.type !== "temporal" && {
-        sort:
-          data.domainValues?.[field.field] ??
-          sanitizeSortFieldForVega(field.sort),
-      }),
+    ...(field.type !== "temporal" && {
+      sort:
+        data.domainValues?.[field.field] ??
+        sanitizeSortFieldForVega(field.sort),
+    }),
     ...(field.type === "quantitative" && {
       scale: {
         ...(field.zeroBasedOrigin !== true && { zero: false }),
@@ -99,6 +100,23 @@ export function createPositionEncoding(
       }),
       ...(metaData && "format" in metaData && { format: metaData.format }),
       ...(!field.showAxisTitle && { title: null }),
+    },
+  };
+}
+
+export function createSizeEncoding(
+  field: FieldConfig | undefined,
+  data: ChartDataResult,
+): MarkPropDef<Field, number> {
+  if (!field) return {};
+  const metaData = data.fields[field.field];
+  return {
+    field: sanitizeValueForVega(field.field),
+    title: metaData?.displayName || field.field,
+    type: "quantitative",
+    scale: {
+      zero: false,
+      range: [40, 400], // Set minimum size to 40 (increased from default ~30)
     },
   };
 }
@@ -335,27 +353,77 @@ export function buildHoverPointOverlay(): UnitSpec<Field> {
 /**
  * Creates a multiValueTooltipChannel for cartesian charts (area, line, bar, stacked-bar)
  * Maps data values based on colorField and includes x-field information
+ * In comparison mode, includes both current and previous period values
  */
 export function createCartesianMultiValueTooltipChannel(
-  config: { x?: FieldConfig; colorField?: string; yField?: string },
+  config: { x?: FieldConfig; colorField?: string | undefined; yField?: string },
   data: ChartDataResult,
 ): TooltipValue[] | undefined {
   const { x: xConfig, colorField, yField } = config;
 
-  if (!colorField || !xConfig || !yField) {
+  if (!xConfig || !yField) {
     return undefined;
   }
 
   const xField = sanitizeValueForVega(xConfig.field);
   const sanitizedYField = sanitizeValueForVega(yField);
+  const yFormatType = sanitizeFieldName(yField);
 
   let multiValueTooltipChannel: TooltipValue[] | undefined;
 
-  multiValueTooltipChannel = data.domainValues?.[colorField]?.map((value) => ({
-    field: sanitizeValueForVega(value as string),
-    type: "quantitative" as const,
-    formatType: sanitizeFieldName(sanitizedYField),
-  }));
+  // In comparison mode, we need to include both current and previous values
+  // The pivot will create fields like "CategoryA", "CategoryA_prev", "CategoryB", "CategoryB_prev"
+  if (data.hasComparison && colorField) {
+    const tooltipFields: TooltipValue[] = [];
+    const domainValues = data.domainValues?.[colorField] as
+      | string[]
+      | undefined;
+
+    if (domainValues) {
+      for (const value of domainValues) {
+        // Add current period value
+        tooltipFields.push({
+          field: sanitizeValueForVega(value),
+          type: "quantitative" as const,
+          formatType: yFormatType,
+        });
+
+        // Add previous period value
+        tooltipFields.push({
+          field: sanitizeValueForVega(value) + ComparisonDeltaPreviousSuffix,
+          type: "quantitative" as const,
+          formatType: yFormatType,
+        });
+      }
+    }
+
+    multiValueTooltipChannel = tooltipFields;
+  } else if (data.hasComparison) {
+    const yTitle = data.fields[yField]?.displayName || yField;
+    multiValueTooltipChannel = [
+      {
+        field: sanitizedYField,
+        title: yTitle,
+        type: "quantitative" as const,
+        formatType: yFormatType,
+      },
+      {
+        field: sanitizedYField + ComparisonDeltaPreviousSuffix,
+        title: yTitle + ComparisonDeltaPreviousSuffix,
+        type: "quantitative" as const,
+        formatType: yFormatType,
+      },
+    ];
+  } else if (colorField) {
+    // Normal mode without comparison
+    multiValueTooltipChannel = data.domainValues?.[colorField]?.map(
+      (value) => ({
+        field: sanitizeValueForVega(value as string),
+        type: "quantitative" as const,
+        formatType: yFormatType,
+      }),
+    );
+  }
 
   if (multiValueTooltipChannel) {
     multiValueTooltipChannel.unshift({

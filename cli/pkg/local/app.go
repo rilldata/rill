@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
@@ -63,11 +64,13 @@ type App struct {
 type AppOptions struct {
 	Ch             *cmdutil.Helper
 	Verbose        bool
+	Silent         bool
 	Debug          bool
 	Reset          bool
+	PullEnv        bool
 	Environment    string
 	ProjectPath    string
-	LogFormat      LogFormat
+	LogFormat      string
 	Variables      map[string]string
 	LocalURL       string
 	AllowedOrigins []string
@@ -75,12 +78,43 @@ type AppOptions struct {
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
+	// Check that projectPath doesn't have an excessive number of files.
+	// Note: Relies on ListGlob enforcing drivers.RepoListLimit.
+	if _, err := os.Stat(opts.ProjectPath); err == nil {
+		repo, _, err := cmdutil.RepoForProjectPath(opts.ProjectPath)
+		if err != nil {
+			return nil, err
+		}
+		_, err = repo.ListGlob(ctx, "**", false)
+		if err != nil {
+			if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
+				opts.Ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
+				return nil, nil
+			}
+			return nil, fmt.Errorf("failed to list project files: %w", err)
+		}
+	}
+
+	// Always attempt to pull env for any valid Rill project (after projectPath is set)
+	if opts.PullEnv && opts.Ch.IsAuthenticated() && IsProjectInit(opts.ProjectPath) {
+		err := env.PullVars(ctx, opts.Ch, opts.ProjectPath, "", opts.Environment, false)
+		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+			opts.Ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+		}
+	}
+
+	// Parse log format
+	parsedLogFormat, ok := ParseLogFormat(opts.LogFormat)
+	if !ok {
+		return nil, fmt.Errorf("invalid log format %q", opts.LogFormat)
+	}
+
 	// Setup logger
 	logPath, err := opts.Ch.DotRill.ResolveFilename("rill.log", true)
 	if err != nil {
 		return nil, err
 	}
-	logger, cleanupFn := initLogger(opts.Verbose, opts.LogFormat, logPath)
+	logger, cleanupFn := initLogger(opts.Verbose, opts.Silent, parsedLogFormat, logPath)
 	sugarLogger := logger.Sugar()
 
 	var tracesExporter observability.Exporter
@@ -215,7 +249,12 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	connectors = append(connectors, olapConnector)
 
 	// The repo connector is the local project directory
-	repoConfig, err := structpb.NewStruct(map[string]any{"dsn": projectPath})
+	repoConfig, err := structpb.NewStruct(map[string]any{
+		"dsn":                   projectPath,
+		"admin_url_override":    opts.Ch.AdminURLOverride,
+		"access_token_override": opts.Ch.AdminTokenOverride,
+		"home_dir":              opts.Ch.HomeDir,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +423,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		AllowedOrigins:  a.allowedOrigins,
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx))
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx), newLocalAdminService(a.ch, a.ProjectPath))
 	if err != nil {
 		return err
 	}

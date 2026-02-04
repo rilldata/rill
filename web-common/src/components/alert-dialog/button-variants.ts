@@ -10,10 +10,10 @@ export const buttonVariants = tv({
       destructive:
         "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
       outline:
-        "border border-input bg-surface shadow-sm hover:bg-accent hover:text-accent-foreground",
+        "border border-input bg-surface-subtle shadow-sm hover:bg-popover-accent hover:text-fg-accent",
       secondary:
         "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-      ghost: "hover:bg-accent hover:text-accent-foreground",
+      ghost: "hover:bg-popover-accent hover:text-fg-accent",
       link: "text-primary underline-offset-4 hover:underline",
     },
     size: {

@@ -136,7 +136,7 @@
         }}
       >
         <div
-          class="flex items-center gap-x-0.5 px-1 text-gray-700 hover:text-inherit"
+          class="flex items-center gap-x-0.5 px-1 text-fg-muted hover:text-inherit"
         >
           Showing <strong> {showingMeasuresText}</strong>
           <span
@@ -184,14 +184,14 @@
               </DropdownMenu.CheckboxItem>
             {/each}
           {:else}
-            <div class="ui-copy-disabled p-2 w-full">
+            <div class="text-fg-disabled p-2 w-full">
               No matching leaderboard measures shown
             </div>
           {/if}
         </div>
 
         {#if visibleMeasures.length > 1}
-          <footer>
+          <footer class="bg-popover-footer">
             <div class="flex items-center space-x-2">
               <Switch
                 theme
@@ -225,7 +225,6 @@
   footer {
     height: 42px;
     @apply border-t;
-    @apply bg-slate-100;
     @apply flex flex-row flex-none items-center justify-start;
     @apply gap-x-2 p-2 px-3.5;
   }

@@ -61,7 +61,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	if e.metricsView.TimeDimension != "" {
 		var found bool
 		for _, dim := range timeDimensions {
-			if dim.Name == e.metricsView.TimeDimension {
+			if strings.EqualFold(dim.Name, e.metricsView.TimeDimension) {
 				found = true
 				break
 			}
@@ -106,7 +106,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 			summary.MaxValue = timeRange.Max
 		}
 		summaries = append(summaries, summary)
-		if dim.Name == e.metricsView.TimeDimension {
+		if strings.EqualFold(dim.Name, e.metricsView.TimeDimension) {
 			defaultTimeDimensionSummary = summary
 		}
 	}
@@ -130,8 +130,8 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		// Add select clauses for min, max, has_nulls, and sample value
 		dialect := e.olap.Dialect()
 		selectClauses = append(selectClauses,
-			fmt.Sprintf("MIN(%s) AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__min")),
-			fmt.Sprintf("MAX(%s) AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__max")),
+			fmt.Sprintf("%s AS %s", dialect.MinDimensionExpression(expr), dialect.EscapeIdentifier(dim.Name+"__min")),
+			fmt.Sprintf("%s AS %s", dialect.MaxDimensionExpression(expr), dialect.EscapeIdentifier(dim.Name+"__max")),
 			fmt.Sprintf("COUNT(*) - COUNT(%s) > 0 AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__has_nulls")),
 			fmt.Sprintf("ANY_VALUE(%s) AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__example")),
 		)
@@ -140,7 +140,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	// Determine the default time dimension expression
 	var timeDimExpr string
 	for _, dim := range timeDimensions {
-		if dim.Name == e.metricsView.TimeDimension {
+		if strings.EqualFold(dim.Name, e.metricsView.TimeDimension) {
 			expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
 			if err == nil {
 				timeDimExpr = expr
@@ -179,6 +179,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		Args:             args,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
+		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute dimension summary query: %w", err)

@@ -30,7 +30,7 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <h2 class="text-lg font-medium">Parse errors</h2>
+  <h2 class="text-lg text-fg-tertiary font-medium">Parse errors</h2>
 
   {#if isLoading}
     <Spinner status={EntityStatus.Running} size={"16px"} />
@@ -61,7 +61,7 @@
         {parserReconcileError}
       </div>
     {:else}
-      <div class="text-gray-600">None!</div>
+      <div class="text-fg-secondary">None!</div>
     {/if}
   {/if}
 </section>

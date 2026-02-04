@@ -24,15 +24,18 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+  import MeasureSelection from "@rilldata/web-common/features/dashboards/time-series/measure-selection/MeasureSelection.svelte";
   import MeasurePan from "@rilldata/web-common/features/dashboards/time-series/MeasurePan.svelte";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { roundDownToTimeUnit } from "@rilldata/web-common/features/dashboards/time-series/round-to-nearest-time-unit.ts";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type {
     MetricsViewSpecMeasure,
     V1TimeGrain,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { extent } from "d3-array";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
@@ -52,6 +55,7 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
+  import ExplainButton from "@rilldata/web-common/features/dashboards/time-series/measure-selection/ExplainButton.svelte";
 
   export let measure: MetricsViewSpecMeasure;
   export let exploreName: string;
@@ -81,10 +85,11 @@
   export let scrubStart;
   export let scrubEnd;
 
-  const { validSpecStore } = getStateManagers();
+  const { validSpecStore, metricsViewName } = getStateManagers();
+  const measureSelectionEnabledStore = measureSelection.getEnabledStore();
+  $: measureSelectionEnabled = $measureSelectionEnabledStore;
 
-  export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
-    v.toString();
+  export let mouseoverTimeFormat: (d: Date) => string = (v) => v.toString();
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: axisFormat = createMeasureValueFormatter<null | undefined>(
@@ -110,8 +115,6 @@
     (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
     $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
-
-  $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
@@ -213,6 +216,11 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
+    const shouldUpdateSelectedRange = measureSelectionEnabled && !isScrubbing;
+    if (shouldUpdateSelectedRange) {
+      measureSelection.setRange(measure.name!, start, end);
+    }
+
     metricsExplorerStore.setSelectedScrubRange(exploreName, {
       start: adjustedStart,
       end: adjustedEnd,
@@ -242,24 +250,49 @@
     );
   }
 
-  function onMouseClick() {
-    // skip if still scrubbing
+  function onMouseClick(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    // skip if still scrubbing, avoid any click interactions with the chart
     if (preventScrubReset) return;
+
+    const hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
+
     // skip if no scrub range selected
-    if (!hasSubrangeSelected) return;
+    if (!hasSubrangeSelected) {
+      maybeSelectMeasureHoverTime();
+      return;
+    }
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
-    if (
+    const mouseOutsideOfScrubRange =
       mouseoverValue?.x &&
-      (mouseoverValue?.x < start || mouseoverValue?.x > end)
-    ) {
+      (mouseoverValue?.x < start || mouseoverValue?.x > end);
+    if (mouseOutsideOfScrubRange) {
       resetScrub();
+      measureSelection.clear();
+    } else if (measure.name && measureSelectionEnabled) {
+      measureSelection.setRange(measure.name, scrubStart, scrubEnd);
     }
+  }
+
+  function maybeSelectMeasureHoverTime() {
+    if (!measureSelectionEnabled) return;
+    const hasValidMeasureSelectionTarget =
+      hoveredTime && measure.name && TIME_GRAIN[timeGrain];
+    if (!hasValidMeasureSelectionTarget) return;
+    const ts = roundDownToTimeUnit(hoveredTime, TIME_GRAIN[timeGrain].label);
+    measureSelection.setStart(measure.name!, ts);
   }
 </script>
 
-<div class={`${cursorClass} select-none`}>
+<div
+  role="presentation"
+  class="{cursorClass} select-none"
+  aria-label="Measure Chart for {measure.name}"
+>
   <SimpleDataGraphic
     bind:hovered
     let:mouseOverThisChart
@@ -268,7 +301,7 @@
     left={0}
     let:config
     let:yScale
-    on:click={() => onMouseClick()}
+    on:click={onMouseClick}
     on:scrub-end={() => scrub?.endScrub()}
     on:scrub-move={(e) => scrub?.moveScrub(e)}
     on:scrub-start={(e) => scrub?.startScrub(e)}
@@ -328,7 +361,8 @@
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
             <g transition:fly={{ duration: 100, x: -4 }}>
               <text
-                class="fill-gray-700 stroke-surface"
+                aria-label="{measure.name} primary time label"
+                class="fill-fg-secondary stroke-surface-background"
                 style:paint-order="stroke"
                 stroke-width="3px"
                 x={config.plotLeft + config.bodyBuffer + 6}
@@ -338,9 +372,10 @@
               </text>
               {#if showComparison && point[`comparison.${labelAccessor}`]}
                 <text
+                  aria-label="{measure.name} comparison time label"
                   style:paint-order="stroke"
                   stroke-width="3px"
-                  class="fill-gray-500 stroke-surface"
+                  class="fill-fg-secondary stroke-surface-background"
                   x={config.plotLeft + config.bodyBuffer + 6}
                   y={config.plotTop + 24 + config.bodyBuffer}
                 >
@@ -369,6 +404,7 @@
                   {showComparison}
                   {mouseoverFormat}
                   {numberKind}
+                  colorClass="stroke-fg-muted"
                 />
               {/if}
             </g>
@@ -399,8 +435,29 @@
     {#if annotations && $annotations}
       <Annotations {annotationsStore} {mouseoverValue} {mouseOverThisChart} />
     {/if}
+
+    {#if measureSelectionEnabled}
+      <MeasureSelection
+        {data}
+        measureName={measure.name ?? ""}
+        {xAccessor}
+        {yAccessor}
+        {internalXMin}
+        {internalXMax}
+        {mouseoverFormat}
+        {numberKind}
+        {inBounds}
+      />
+    {/if}
   </SimpleDataGraphic>
 
   <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->
   <AnnotationGroupPopover {annotationsStore} />
+
+  {#if measureSelectionEnabled}
+    <ExplainButton
+      measureName={measure.name ?? ""}
+      metricsViewName={$metricsViewName}
+    />
+  {/if}
 </div>

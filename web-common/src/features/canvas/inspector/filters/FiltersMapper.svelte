@@ -14,6 +14,7 @@
     localFilters,
     localTimeControls,
     parent: { name: canvasName },
+    timeAndFilterStore,
   } = component);
 
   $: localParamValues = $specStore;
@@ -25,31 +26,39 @@
 
   $: excludedDimensions =
     type === "leaderboard"
-      ? (localParamValues as LeaderboardSpec).dimensions
-      : [];
+      ? new Set((localParamValues as LeaderboardSpec).dimensions)
+      : new Set<string>();
 
   $: entries = Object.entries(inputParams) as [
     AllKeys<ComponentSpec>,
     FilterInputParam,
   ][];
+
+  $: ({ hasTimeSeries } = $timeAndFilterStore);
 </script>
 
 <div>
   {#each entries as [key, config] (key)}
     <div class="component-param">
       {#if config.type === "time_filters"}
-        <TimeFiltersInput
-          {canvasName}
-          id={key}
-          {localTimeControls}
-          showComparison={config?.meta?.hasComparison}
-          showGrain={config?.meta?.hasGrain}
-        />
+        {#if hasTimeSeries}
+          <TimeFiltersInput
+            {canvasName}
+            id={key}
+            {metricsView}
+            {localTimeControls}
+            showComparison={config?.meta?.hasComparison}
+            showGrain={config?.meta?.hasGrain}
+          />
+        {/if}
       {:else if config.type == "dimension_filters" && metricsView}
         <DimensionFiltersInput
+          {localFilters}
           {canvasName}
           {metricsView}
-          {localFilters}
+          updateLocalFilterString={(newString) => {
+            component.updateProperty("dimension_filters", newString);
+          }}
           {excludedDimensions}
           id={key}
         />

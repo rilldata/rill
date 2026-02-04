@@ -24,11 +24,9 @@
   } from "../../../url-state/time-ranges/RillTime";
   import {
     getGrainOrder,
-    getLowerOrderGrain,
-    getSmallestGrainFromISODuration,
-    GrainAliasToV1TimeGrain,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
+  import { getTruncationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
   import RangeDisplay from "../components/RangeDisplay.svelte";
@@ -45,15 +43,16 @@
     constructNewString,
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
+  import { Clock, Check } from "lucide-svelte";
 
   export let timeString: string | undefined;
-  export let interval: Interval<true>;
+  export let interval: Interval<true> | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
-  export let minDate: DateTime;
-  export let maxDate: DateTime;
+  export let minDate: DateTime<true> | undefined;
+  export let maxDate: DateTime<true> | undefined;
   export let rangeBuckets: RangeBuckets;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
@@ -62,6 +61,11 @@
   export let availableTimeZones: string[];
   export let lockTimeZone = false;
   export let showFullRange = true;
+  export let timeDimensions: { value: string; label: string }[];
+  export let primaryTimeDimension: string | undefined;
+  export let selectedTimeDimension: string | undefined;
+  export let onTimeDimensionSelect: ((dimension: string) => void) | undefined =
+    undefined;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
 
@@ -71,8 +75,8 @@
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
   let showCalendarPicker = false;
-  let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
+  let timeAxisPickerOpen = false;
   let searchValue: string | undefined = timeString;
 
   $: if (timeString) {
@@ -96,19 +100,13 @@
     ? RillTimeLabel.Latest
     : parsedTime?.asOfLabel?.label;
 
-  $: truncationGrain = usingLegacyTime
-    ? timeString?.startsWith("rill") && !timeString.endsWith("C")
-      ? V1TimeGrain.TIME_GRAIN_DAY
-      : getSmallestGrainFromISODuration(timeString ?? "PT1M")
-    : parsedTime?.asOfLabel?.snap
-      ? GrainAliasToV1TimeGrain[parsedTime.asOfLabel?.snap]
-      : undefined;
+  $: truncationGrain = getTruncationGrain(parsedTime);
 
   $: dateTimeAnchor = returnAnchor(ref, zone);
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
+  $: zoneAbbreviation = getAbbreviationForIANA(maxDate ?? DateTime.now(), zone);
 
   $: smallestTimeGrainOrder = getGrainOrder(
     smallestTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE,
@@ -130,9 +128,7 @@
         !parsed.asOfLabel && !(parsed.interval instanceof RillIsoInterval);
 
       if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
-        truncationGrain = isPeriodToDate
-          ? getLowerOrderGrain(parsed.rangeGrain)
-          : parsed.rangeGrain;
+        truncationGrain = parsed.rangeGrain;
       }
 
       if (shouldAppendAsOfString) {
@@ -174,7 +170,7 @@
   }
 
   function onSelectAsOfOption(
-    ref: RillTimeLabel | undefined,
+    ref: RillTimeLabel | string | undefined,
     inclusive: boolean,
   ) {
     if (!timeString) return;
@@ -193,11 +189,12 @@
     asOf: string | undefined,
     zone: string,
   ): DateTime | undefined {
+    if (!maxDate) return DateTime.now().setZone(zone);
     if (asOf === "latest") {
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
       return watermark.setZone(zone);
-    } else if (asOf === "now") {
+    } else if (asOf === "now" || !asOf) {
       return DateTime.now().setZone(zone);
     }
   }
@@ -251,7 +248,7 @@
             <RangeDisplay {interval} {timeGrain} />
 
             <div
-              class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
+              class="font-bold bg-surface-muted rounded-[2px] p-1 py-0 text-fg-secondary text-[11px]"
             >
               {zoneAbbreviation}
             </div>
@@ -264,7 +261,9 @@
       </Tooltip.Trigger>
 
       <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-        <PrimaryRangeTooltip {timeString} {interval} />
+        {#if interval}
+          <PrimaryRangeTooltip {timeString} {interval} />
+        {/if}
       </Tooltip.Content>
     </Tooltip.Root>
   </Popover.Trigger>
@@ -282,6 +281,7 @@
       bind:searchValue
       onSelectRange={(range) => {
         open = false;
+
         handleRangeSelect(range);
       }}
     />
@@ -339,7 +339,7 @@
               <button
                 type="button"
                 role="menuitem"
-                class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
+                class="group truncate h-7 p-2 text-popover-foreground justify-between overflow-hidden hover:bg-popover-accent rounded-sm w-full select-none flex items-center"
                 on:click={() => {
                   handleRangeSelect("inf");
                 }}
@@ -354,7 +354,7 @@
 
         {#if allowCustomTimeRange}
           <div class="w-full h-fit px-1">
-            <div class="h-px w-full bg-gray-200 my-1" />
+            <div class="h-px w-full bg-border my-1" />
             <button
               type="button"
               role="menuitem"
@@ -362,19 +362,22 @@
               on:click={() => {
                 showCalendarPicker = !showCalendarPicker;
               }}
-              class="truncate w-full text-left gap-x-1 pr-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
+              class="truncate text-fg-primary w-full text-left gap-x-1 pr-1 hover:bg-popover-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
             >
               <Calendar size="14px" />
               <div class="mr-auto">Custom</div>
 
-              <CaretDownIcon className="-rotate-90" size="14px" />
+              <CaretDownIcon
+                className="-rotate-90 text-fg-secondary"
+                size="14px"
+              />
             </button>
           </div>
         {/if}
 
         {#if !lockTimeZone}
           <div class="w-full h-fit px-1">
-            <div class="h-px w-full bg-gray-200 my-1" />
+            <div class="h-px w-full bg-border my-1" />
 
             <Popover.Root portal="#rill-portal" bind:open={timeZonePickerOpen}>
               <Popover.Trigger asChild let:builder>
@@ -385,19 +388,24 @@
                     showCalendarPicker = false;
                   }}
                   role="presentation"
-                  class="group h-7 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
+                  class="group h-7 overflow-hidden hover:bg-popover-accent flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
                     type="button"
                     class:font-bold={false}
                     class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
                   >
-                    <Globe size="14px" />
-                    <div class="mr-auto">Time zone</div>
+                    <div class="flex-none">
+                      <Globe size="14px" className="text-fg-primary" />
+                    </div>
+                    <div class="mr-auto text-fg-primary">Time zone</div>
                     <div class="sr-only group-hover:not-sr-only">
                       <SyntaxElement range={zoneAbbreviation} />
                     </div>
-                    <CaretDownIcon className="-rotate-90" size="14px" />
+                    <CaretDownIcon
+                      className="-rotate-90 text-fg-secondary"
+                      size="14px"
+                    />
                   </button>
                 </div>
               </Popover.Trigger>
@@ -413,7 +421,7 @@
                   {availableTimeZones}
                   activeTimeZone={zone}
                   referencePoint={dateTimeAnchor ??
-                    interval.end ??
+                    interval?.end ??
                     DateTime.now()}
                   onSelectTimeZone={(z) => {
                     onSelectTimeZone(z);
@@ -425,10 +433,75 @@
             </Popover.Root>
           </div>
         {/if}
+
+        {#if timeDimensions.length && onTimeDimensionSelect}
+          <div class="w-full h-fit px-1">
+            <div class="h-px w-full bg-gray-200 my-1" />
+
+            <Popover.Root portal="#rill-portal" bind:open={timeAxisPickerOpen}>
+              <Popover.Trigger
+                asChild
+                let:builder
+                id="time-axis-trigger-{context}"
+              >
+                <div
+                  {...builder}
+                  use:builder.action
+                  on:click={() => {
+                    showCalendarPicker = false;
+                  }}
+                  role="presentation"
+                  class="group h-7 overflow-hidden hover:bg-surface-hover flex-none rounded-sm w-full select-none flex items-center"
+                >
+                  <button
+                    class:font-bold={false}
+                    class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
+                    aria-label="Select time axis"
+                  >
+                    <div class="flex-none">
+                      <Clock size="14px" />
+                    </div>
+                    <div class="mr-auto">Time axis</div>
+                    <div class="sr-only group-hover:not-sr-only">
+                      <SyntaxElement
+                        range={selectedTimeDimension || primaryTimeDimension}
+                      />
+                    </div>
+                    <CaretDownIcon className="-rotate-90" size="14px" />
+                  </button>
+                </div>
+              </Popover.Trigger>
+
+              <Popover.Content
+                align="center"
+                side="right"
+                sideOffset={12}
+                class="p-1 z-50"
+              >
+                {#each timeDimensions as { value, label } (value)}
+                  <button
+                    class="item"
+                    aria-label="Select {label} time dimension"
+                    on:click={() => {
+                      onTimeDimensionSelect(value);
+                      closeMenu();
+                      timeAxisPickerOpen = false;
+                    }}
+                  >
+                    {label}
+                    {#if value === (selectedTimeDimension || primaryTimeDimension)}
+                      <Check class="size-4" color="var(--color-gray-800)" />
+                    {/if}
+                  </button>
+                {/each}
+              </Popover.Content>
+            </Popover.Root>
+          </div>
+        {/if}
       </div>
 
       {#if showCalendarPicker}
-        <div class="bg-slate-50 border-l p-3 size-full">
+        <div class="bg-surface-overlay border-l p-3 size-full">
           <CalendarPlusDateInput
             {interval}
             {zone}
@@ -472,3 +545,17 @@
     }}
   />
 {/if}
+
+<style lang="postcss">
+  .item {
+    @apply w-full relative justify-between flex cursor-pointer select-none items-start rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none;
+  }
+
+  .item:hover {
+    @apply bg-surface-hover text-fg-primary;
+  }
+
+  .separator {
+    @apply h-px w-full bg-gray-200 my-1;
+  }
+</style>

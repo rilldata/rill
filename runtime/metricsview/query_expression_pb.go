@@ -7,6 +7,27 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+func NewTimeRangeFromProto(tr *runtimev1.TimeRange) *TimeRange {
+	if tr == nil {
+		return nil
+	}
+
+	res := &TimeRange{}
+	if tr.Start != nil {
+		res.Start = tr.Start.AsTime()
+	}
+	if tr.End != nil {
+		res.End = tr.End.AsTime()
+	}
+	res.Expression = tr.Expression
+	res.IsoDuration = tr.IsoDuration
+	res.IsoOffset = tr.IsoOffset
+	res.RoundToGrain = TimeGrainFromProto(tr.RoundToGrain)
+	res.TimeDimension = tr.TimeDimension
+
+	return res
+}
+
 func NewExpressionFromProto(expr *runtimev1.Expression) *Expression {
 	if expr == nil {
 		return nil

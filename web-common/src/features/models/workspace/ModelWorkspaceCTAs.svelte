@@ -12,8 +12,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
-  import { resourceColorMapping } from "../../entity-management/resource-icon-mapping";
-  import { ResourceKind } from "../../entity-management/resource-selectors";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import NavigateOrDropdown from "../../metrics-views/NavigateOrDropdown.svelte";
@@ -22,7 +20,7 @@
 
   export let resource: V1Resource | undefined;
   export let modelName: string;
-  export let modelHasError = false;
+  export let hasResultTable = false;
   export let collapse = false;
   export let hasUnsavedChanges: boolean;
   export let connector: string;
@@ -51,7 +49,7 @@
 
 <ExportMenu
   label="Export model data"
-  disabled={modelHasError || !isModelIdle}
+  disabled={!hasResultTable || !isModelIdle}
   workspace
   getQuery={() => {
     return {
@@ -65,7 +63,7 @@
 />
 
 {#if availableMetricsViews?.length === 0}
-  <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
+  <CreateDashboardButton {collapse} {hasResultTable} {modelName} />
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
@@ -84,18 +82,17 @@
               }
             }}
           >
-            <MetricsViewIcon
-              size="16"
-              color={resourceColorMapping[ResourceKind.MetricsView]}
-            />
+            <MetricsViewIcon size="16" />
             {resource?.meta?.name?.name ?? "Loading..."}
           </DropdownMenu.Item>
         {/each}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           on:click={async () => {
+            if (!hasResultTable) return;
             await createMetricsViewFromTable();
           }}
+          disabled={!hasResultTable}
         >
           <Add />
           Create metrics view

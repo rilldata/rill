@@ -1769,6 +1769,80 @@ paths:
             properties:
               role:
                 type: string
+  /v1/orgs/{org}/projects/{project}/members/{email}/resources:
+    post:
+      summary: AddProjectMemberUserResources grants resource-scoped access to an existing or invited user (viewer role implied).
+      operationId: AdminService_AddProjectMemberUserResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddProjectMemberUserResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+  /v1/orgs/{org}/projects/{project}/members/{email}/resources:remove:
+    post:
+      summary: RemoveProjectMemberUserResources revokes resource-scoped access for a project member.
+      operationId: AdminService_RemoveProjectMemberUserResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberUserResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -2281,6 +2355,80 @@ paths:
             properties:
               role:
                 type: string
+  /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources:
+    post:
+      summary: AddProjectMemberUsergroupResources grants resource-scoped access to an existing project user group.
+      operationId: AdminService_AddProjectMemberUsergroupResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddProjectMemberUsergroupResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+  /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources:remove:
+    post:
+      summary: RemoveProjectMemberUsergroupResources revokes resource-scoped access for a project user group.
+      operationId: AdminService_RemoveProjectMemberUsergroupResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberUsergroupResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -3876,7 +4024,9 @@ paths:
           type: boolean
   /v1/users/-/tokens/representing/{email}:
     delete:
-      summary: "RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. \nThis is primarily used for \"unassume\" flows."
+      summary: |-
+        RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
+        This is primarily used for "unassume" flows.
       operationId: AdminService_RevokeRepresentativeAuthTokens
       responses:
         "200":
@@ -3946,6 +4096,38 @@ paths:
           description: Page token for pagination. If set, the first page of results will be returned.
           in: query
           required: false
+          type: string
+        - name: superuserForceAccess
+          description: Flag for superusers to override normal access checks.
+          in: query
+          required: false
+          type: boolean
+        - name: refresh
+          description: Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+          in: query
+          required: false
+          type: boolean
+    delete:
+      summary: |-
+        RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+        You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+      operationId: AdminService_RevokeAllUserAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeAllUserAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: userId
+          description: |-
+            User ID to revoke all tokens for.
+            Set to "current" to revoke all tokens for the current user.
+          in: path
+          required: true
           type: string
         - name: superuserForceAccess
           description: Flag for superusers to override normal access checks.
@@ -4223,11 +4405,18 @@ definitions:
         type: boolean
   v1AddOrganizationMemberUsergroupResponse:
     type: object
+  v1AddProjectMemberUserResourcesResponse:
+    type: object
+    properties:
+      pendingSignup:
+        type: boolean
   v1AddProjectMemberUserResponse:
     type: object
     properties:
       pendingSignup:
         type: boolean
+  v1AddProjectMemberUsergroupResourcesResponse:
+    type: object
   v1AddProjectMemberUsergroupResponse:
     type: object
   v1AddUsergroupMemberUserResponse:
@@ -5384,6 +5573,11 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1Organization:
     type: object
     properties:
@@ -5615,6 +5809,11 @@ definitions:
         type: string
       invitedBy:
         type: string
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectMemberService:
     type: object
     properties:
@@ -5663,6 +5862,11 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectPermissions:
     type: object
     properties:
@@ -5815,7 +6019,11 @@ definitions:
     type: object
   v1RemoveProjectMemberServiceResponse:
     type: object
+  v1RemoveProjectMemberUserResourcesResponse:
+    type: object
   v1RemoveProjectMemberUserResponse:
+    type: object
+  v1RemoveProjectMemberUsergroupResourcesResponse:
     type: object
   v1RemoveProjectMemberUsergroupResponse:
     type: object
@@ -5903,6 +6111,13 @@ definitions:
         type: string
       name:
         type: string
+  v1RevokeAllUserAuthTokensResponse:
+    type: object
+    properties:
+      tokensRevoked:
+        type: integer
+        format: int32
+        description: Number of tokens revoked.
   v1RevokeCurrentAuthTokenResponse:
     type: object
   v1RevokeMagicAuthTokenResponse:
@@ -6322,8 +6537,13 @@ definitions:
         type: string
       prefix:
         type: string
+<<<<<<< HEAD
+      refresh:
+        type: boolean
+=======
       attributes:
         type: object
+>>>>>>> main
       createdOn:
         type: string
         format: date-time

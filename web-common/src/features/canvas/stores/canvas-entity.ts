@@ -7,10 +7,15 @@ import {
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  queryServiceConvertExpressionToMetricsSQL,
+  V1ExploreComparisonMode,
+  type V1CanvasPreset,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
+  type V1MetricsView,
   type V1MetricsViewSpec,
   type V1Resource,
+  type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
 import {
   derived,
@@ -19,7 +24,7 @@ import {
   type Readable,
   type Unsubscriber,
 } from "svelte/store";
-import { parseDocument } from "yaml";
+import { parseDocument, YAMLMap, isMap, Pair } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
@@ -32,12 +37,16 @@ import {
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import { Filters } from "./filters";
+import { FilterManager, flattenExpression } from "./filter-manager";
+import { getFilterParam } from "./filter-state";
 import { Grid } from "./grid";
-import { TimeControls } from "./time-control";
+import { getComparisonTypeFromRangeString } from "./time-state";
+import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
-import { redirect } from "@sveltejs/kit";
+import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
+import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -47,82 +56,90 @@ export const lastVisitedState = new Map<string, string>();
 export type SearchParamsStore = {
   subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
   set: (
-    key: string,
-    value?: string,
+    map: Map<string, string | undefined>,
     checkIfSet?: boolean,
     replaceState?: boolean,
+    prefixes?: string[],
   ) => boolean;
   clearAll: () => void;
 };
 
 export class CanvasEntity {
-  components = new Map<string, BaseCanvasComponent>();
-
+  componentsStore = createCustomMapStore<BaseCanvasComponent>();
   _rows: Grid = new Grid(this);
 
   // Time state controls
-  timeControls: TimeControls;
+  timeManager: TimeManager;
 
   // Dimension and measure filter state
-  filters: Filters;
+  filterManager: FilterManager;
 
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
 
-  // Canvas resource infered from YAML spec
-  spec: Readable<V1CanvasSpec | undefined>;
-  selectedComponent = writable<string | null>(null);
   fileArtifact: FileArtifact | undefined;
+
+  selectedComponent = writable<string | null>(null);
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
-  specStore: CanvasSpecResponseStore;
+  public specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = writable(true);
   themeName = writable<string | undefined>(undefined);
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
+  // This may sometimes be false due to discrepancy between two different ways
+  // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
+  defaultUrlParamsStore = writable<URLSearchParams>(new URLSearchParams());
+  viewingDefaultsStore: Readable<boolean>;
+  filtersEnabledStore = writable<boolean>(true);
+  _embeddedTheme = writable<V1ThemeSpec | undefined>(undefined);
+  _metricsViews = writable<Record<string, V1MetricsView | undefined>>({});
+  bannerStore = writable<string | undefined>(undefined);
+  _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
+  titleStore = writable<string>("");
+
+  // This is to skip processing the spec the first time the store updates with a value
+  // We've already called it as part of the constructor
+  firstTimeLoad = true;
 
   constructor(
     public name: string,
-    private instanceId: string,
+    public instanceId: string,
+    private spec: CanvasResponse,
   ) {
-    this.specStore = useCanvas(
-      this.instanceId,
-      name,
-      {
-        retry: 3,
-        retryDelay: (attemptIndex) =>
-          Math.min(1000 + 1000 * attemptIndex, 5000),
-      },
-      queryClient,
-    );
+    this.specStore = useCanvas(instanceId, name, {}, queryClient);
 
+    // This will be deprecated soon - bgh
     const searchParamsStore: SearchParamsStore = (() => {
       return {
         subscribe: this.searchParams.subscribe,
         set: (
-          key: string,
-          value: string | undefined,
+          map: Map<string, string>,
           checkIfSet = false,
           replaceState = false,
         ) => {
-          const url = get(page).url;
+          const existingParams = new URLSearchParams(window.location.search);
 
-          if (checkIfSet && url.searchParams.has(key)) return false;
+          map.forEach((value, key) => {
+            if (checkIfSet && existingParams.has(key)) return false;
 
-          if (value === undefined || value === null || value === "") {
-            url.searchParams.delete(key);
-          } else {
-            url.searchParams.set(key, value);
-          }
+            if (value === undefined || value === null || value === "") {
+              existingParams.delete(key);
+            } else {
+              existingParams.set(key, value);
+            }
+          });
 
-          goto(url.toString(), { replaceState }).catch(console.error);
+          goto(`?${existingParams.toString()}`, { replaceState }).catch(
+            console.error,
+          );
           return true;
         },
         clearAll: () => {
           const url = get(page).url;
-          url.searchParams.forEach((_, key) => {
-            url.searchParams.delete(key);
+          url.searchParams.forEach((_, effectiveKey) => {
+            url.searchParams.delete(effectiveKey);
           });
 
           goto(url.toString(), { replaceState: true }).catch(console.error);
@@ -130,82 +147,350 @@ export class CanvasEntity {
       };
     })();
 
-    this.spec = derived(this.specStore, ($specStore) => {
-      return $specStore.data?.canvas;
-    });
-
-    this.metricsView = new MetricsViewSelectors(
-      this.instanceId,
-      derived(this.specStore, ($specStore) => {
-        return $specStore.data?.metricsViews || {};
-      }),
-    );
-
-    this.timeControls = new TimeControls(
-      this.specStore,
-      searchParamsStore,
-      undefined,
-      this.name,
-    );
-    this.filters = new Filters(this.metricsView, searchParamsStore);
-
-    this.unsubscriber = this.specStore.subscribe((spec) => {
-      const filePath = spec.data?.filePath;
-
-      if (!filePath) {
-        return;
-      }
-
-      if (!this.fileArtifact) {
-        const fileArtifact = fileArtifacts.getFileArtifact(filePath);
-
-        if (!fileArtifact) {
-          return;
-        }
-
-        this.fileArtifact = fileArtifact;
-
-        if (!this.parsedContent) {
-          this.parsedContent = derived(
-            fileArtifact.editorContent,
-            (editorContent) => {
-              const parsed = parseDocument(editorContent ?? "");
-              return parsed;
-            },
-          );
-        }
-      }
-
-      if (spec.data) {
-        this.processRows(spec.data);
-      }
-    });
-
     this.theme = createResolvedThemeStore(
       this.themeName,
       this.specStore,
       this.instanceId,
     );
+
+    this.timeManager = new TimeManager(searchParamsStore, this);
+
+    // Let the embed layer (CanvasDashboardEmbed) drive themeName;
+    // initialise with no override here so createResolvedThemeStore falls
+    // back to the dashboard's own theme from the spec unless an embed
+    // override is applied.
+    this.themeName.set(undefined);
+
+    this.processSpec(this.spec);
+
+    this.metricsView = new MetricsViewSelectors(
+      this.instanceId,
+      this._metricsViews,
+    );
+
+    this.unsubscriber = this.specStore.subscribe(({ data }) => {
+      if (this.firstTimeLoad) {
+        this.firstTimeLoad = false;
+        return;
+      }
+      if (data) {
+        this.processSpec(data);
+      }
+    });
+
+    this.viewingDefaultsStore = derived(
+      [
+        this.searchParams,
+        this.defaultUrlParamsStore,
+        this.filterManager.pinnedFilterKeysStore,
+        this.filterManager.defaultPinnedFilterKeysStore,
+      ],
+      ([
+        $searchParams,
+        $defaultUrlParams,
+        pinnedFilters,
+        defaultPinnedFilterKeys,
+      ]) => {
+        if (
+          defaultPinnedFilterKeys.symmetricDifference(pinnedFilters).size > 0
+        ) {
+          return false;
+        }
+        if ($defaultUrlParams.size === 0) {
+          return false;
+        }
+
+        for (const [key, value] of $defaultUrlParams.entries()) {
+          if ($searchParams.get(key) !== value) {
+            // Ignore time range if not set
+            if (
+              $searchParams.get(key) === null &&
+              key === ExploreStateURLParams.TimeRange
+            ) {
+              continue;
+            }
+            return false;
+          }
+        }
+        for (const [key, value] of $searchParams.entries()) {
+          if ($defaultUrlParams.get(key) !== value) {
+            return false;
+          }
+        }
+        return true;
+      },
+    );
   }
 
-  onUrlParamsChange = async (
-    urlParams: URLSearchParams,
-    builderContext?: boolean,
-  ) => {
-    if (builderContext) {
-      const redirected = await CanvasEntity.handleCanvasRedirect({
-        canvasName: this.name,
-        searchParams: urlParams,
-        pathname: window.location.pathname,
-        builderContext: true,
-      });
+  checkAndSetMaxWidth = ({ maxWidth }: V1CanvasSpec) => {
+    const currentValue = get(this._maxWidth);
 
-      if (redirected) return;
+    if (maxWidth && maxWidth !== currentValue) {
+      this._maxWidth.set(maxWidth);
+    }
+  };
+
+  checkAndSetHasBanner = ({ banner }: V1CanvasSpec) => {
+    const currentValue = get(this.bannerStore);
+    if (banner !== currentValue) {
+      this.bannerStore.set(banner);
+    }
+  };
+
+  checkAndSetDefaultParams = (defaultPreset: V1CanvasPreset) => {
+    const defaultSearchParams = getDefaults(defaultPreset);
+    const currentDefaultParams = get(this.defaultUrlParamsStore);
+    if (defaultSearchParams.toString() !== currentDefaultParams.toString()) {
+      this.defaultUrlParamsStore.set(defaultSearchParams);
+    }
+  };
+
+  checkAndSetFilterEnabled = ({ filtersEnabled }: V1CanvasSpec) => {
+    if (filtersEnabled === undefined) {
+      filtersEnabled = true;
     }
 
-    this.searchParams.set(urlParams);
-    this.themeName.set(urlParams.get("theme") ?? undefined);
-    this.saveSnapshot(urlParams.toString());
+    const currentValue = get(this.filtersEnabledStore);
+    if (filtersEnabled !== currentValue) {
+      this.filtersEnabledStore.set(filtersEnabled);
+    }
+  };
+
+  checkAndSetEmbeddedTheme = ({ embeddedTheme }: V1CanvasSpec) => {
+    const currentValue = get(this._embeddedTheme);
+    if (embeddedTheme !== currentValue) {
+      this._embeddedTheme.set(embeddedTheme);
+    }
+  };
+
+  checkAndSetFileArtifact = (filePath: string | undefined) => {
+    if (!filePath) return;
+    if (!this.fileArtifact) {
+      const fileArtifact = fileArtifacts.getFileArtifact(filePath);
+
+      if (!fileArtifact) {
+        return;
+      }
+
+      this.fileArtifact = fileArtifact;
+
+      if (!this.parsedContent) {
+        this.parsedContent = derived(
+          fileArtifact.editorContent,
+          (editorContent) => {
+            const parsed = parseDocument(editorContent ?? "");
+            return parsed;
+          },
+        );
+      }
+    }
+  };
+
+  processSpec = (response: CanvasResponse) => {
+    const { canvas, components, metricsViews, filePath } = response;
+    const validSpec = canvas;
+    if (!validSpec) return;
+
+    if (metricsViews) this._metricsViews.set(metricsViews);
+
+    this.checkAndSetFilterEnabled(validSpec);
+    this.checkAndSetFileArtifact(filePath);
+    this.checkAndSetDefaultParams(validSpec.defaultPreset ?? {});
+    this.checkAndSetEmbeddedTheme(validSpec);
+    this.checkAndSetHasBanner(validSpec);
+    this.checkAndSetMaxWidth(validSpec);
+
+    this.timeManager.onSpecChange(response);
+
+    this.titleStore.set(validSpec.displayName ?? "");
+
+    const defaultPreset = validSpec?.defaultPreset ?? {};
+    const filterExpressions = defaultPreset.filterExpr ?? {};
+    const pinnedFilters = validSpec?.pinnedFilters ?? [];
+
+    if (metricsViews) {
+      if (this.filterManager) {
+        this.filterManager.updateConfig(
+          metricsViews,
+          pinnedFilters,
+          filterExpressions,
+        );
+      } else {
+        this.filterManager = new FilterManager(
+          metricsViews,
+          this.instanceId,
+          pinnedFilters,
+          filterExpressions,
+        );
+      }
+    } else {
+      // need to find a better way to initialize this in certain contextx - bgh
+      this.filterManager = new FilterManager({}, "", [], {});
+    }
+
+    this.processRows({ canvas, components, metricsViews, filePath });
+  };
+
+  saveDefaultFilters = async () => {
+    // Temporary solution to wait for any pending filter updates to propagate
+    // This happens when a user has changed a filter but not yet
+    // clicked out of the filter input box to save the values
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    const yaml = get(this.parsedContent);
+    const filterMap = new YAMLMap();
+
+    const pinnedFilters = get(this.filterManager.pinnedFilterKeysStore);
+
+    const genericPinnedKeys = Array.from(pinnedFilters).map(
+      (f) => f.split("::")[1],
+    );
+
+    if (genericPinnedKeys.length > 0) {
+      yaml.setIn(["filters", "pinned"], genericPinnedKeys);
+    } else {
+      try {
+        yaml.deleteIn(["filters", "pinned"]);
+      } catch {
+        // no-op
+      }
+
+      if (
+        yaml.get("filters") instanceof YAMLMap &&
+        yaml.get("filters").items.length === 0
+      ) {
+        try {
+          yaml.deleteIn(["filters"]);
+        } catch {
+          // no-op
+        }
+      }
+    }
+
+    const timeRange = get(this.timeManager.state.rangeStore);
+    const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
+
+    if (timeRange) {
+      yaml.setIn(["defaults", "time_range"], timeRange);
+    }
+
+    if (comparisonOn) {
+      yaml.setIn(["defaults", "comparison_mode"], "time");
+    } else {
+      try {
+        yaml.deleteIn(["defaults", "comparison_mode"]);
+      } catch {
+        // no-op
+      }
+    }
+
+    const promises = get(this.filterManager.metricsViewFilters)
+      .entries()
+      .map(([_, filters]) => {
+        const parsed = get(filters.parsed);
+
+        return queryClient.fetchQuery({
+          queryKey: [
+            "resolve-metrics-view-filter-expression",
+            this.instanceId,
+            parsed.where,
+          ],
+          queryFn: () =>
+            queryServiceConvertExpressionToMetricsSQL(this.instanceId, {
+              expression: parsed.where,
+            }),
+        });
+      });
+
+    const responses = await Promise.all(promises);
+
+    responses.forEach((response, index) => {
+      const name = Array.from(
+        get(this.filterManager.metricsViewFilters).keys(),
+      )[index];
+      if (!response.sql) return;
+      filterMap.add({
+        key: name,
+        value: response.sql,
+      });
+    });
+
+    yaml.setIn(["defaults", "filters"], filterMap);
+
+    if (yaml.contents && isMap(yaml.contents)) {
+      yaml.contents.items.sort(customKeySort);
+    }
+
+    const newContent = yaml.toString();
+
+    this.fileArtifact?.updateEditorContent(newContent, false, true);
+
+    // Navigate to new URL after update
+    let firstUpdate = true;
+    const unsub = this.defaultUrlParamsStore.subscribe((newParam) => {
+      if (firstUpdate) {
+        firstUpdate = false;
+        return;
+      }
+      goto(`?${newParam.toString()}`).catch(console.error);
+      unsub();
+    });
+  };
+
+  clearDefaultFilters = () => {
+    const yaml = get(this.parsedContent);
+
+    try {
+      yaml.deleteIn(["defaults", "filters"]);
+      yaml.deleteIn(["defaults", "time_range"]);
+      yaml.deleteIn(["defaults", "comparison_mode"]);
+    } catch {
+      // no-op
+    }
+
+    const defaultSize = yaml.get("defaults").items.length;
+    if (defaultSize === 0) {
+      try {
+        yaml.delete("defaults");
+      } catch {
+        // no-op
+      }
+    }
+
+    try {
+      yaml.delete("filters");
+    } catch {
+      // no-op
+    }
+
+    const newContent = yaml.toString();
+
+    this.fileArtifact?.updateEditorContent(newContent, false, true);
+  };
+
+  onUrlChange = async ({
+    url: { searchParams, pathname },
+    projectId,
+  }: {
+    url: URL;
+    projectId?: string;
+  }) => {
+    const redirected = await this.handleCanvasRedirect({
+      canvasName: this.name,
+      searchParams,
+      pathname,
+
+      projectId,
+    });
+
+    if (redirected) return;
+
+    this.filterManager.onUrlChange(searchParams);
+    this.searchParams.set(searchParams);
+    this.saveSnapshot(searchParams.toString());
+    this.timeManager.state.onUrlChange(searchParams);
   };
 
   // Not currently being used
@@ -213,33 +498,32 @@ export class CanvasEntity {
     // this.unsubscriber();
   };
 
-  static handleCanvasRedirect = async ({
+  handleCanvasRedirect = async ({
     canvasName,
     searchParams,
     pathname,
     projectId,
-    builderContext,
   }: {
     canvasName: string;
     searchParams: URLSearchParams;
     pathname: string;
+
     projectId?: string;
-    builderContext?: true;
   }) => {
     // If there are no URL params, check for last visited state or home bookmark
     if (searchParams.size === 0) {
       const snapshotSearchParams = lastVisitedState.get(canvasName);
 
+      // First priority
       if (snapshotSearchParams) {
-        if (builderContext) {
-          await goto(`?${snapshotSearchParams}`, { replaceState: true });
-          return true;
-        } else {
-          throw redirect(307, `?${snapshotSearchParams}`);
-        }
+        await goto(`?${snapshotSearchParams}`, { replaceState: true });
+        return true;
       }
 
-      if (projectId && !builderContext) {
+      // Second priority
+      const deployed = projectId;
+
+      if (deployed) {
         let homeBookmarkUrlSearch: string | undefined = undefined;
         try {
           // Only gets imported in admin context
@@ -265,18 +549,26 @@ export class CanvasEntity {
         }
 
         if (homeBookmarkUrlSearch) {
-          throw redirect(307, homeBookmarkUrlSearch);
+          await goto(homeBookmarkUrlSearch, { replaceState: true });
+          return true;
         }
+      }
+
+      // Third priority
+      const defaultParamsString = get(this.defaultUrlParamsStore).toString();
+
+      if (defaultParamsString) {
+        await goto(`?${defaultParamsString}`, {
+          replaceState: true,
+        });
+        return true;
       }
     } else if (searchParams.get("default")) {
       // If the default parameter exists, we clear last visited state and redirect to clean URL
       lastVisitedState.set(canvasName, "");
-      if (builderContext) {
-        await goto(pathname, { replaceState: true });
-        return true;
-      } else {
-        throw redirect(307, pathname);
-      }
+
+      await goto(pathname, { replaceState: true });
+      return true;
     }
   };
 
@@ -285,7 +577,7 @@ export class CanvasEntity {
   };
 
   duplicateItem = (id: string) => {
-    const component = this.components.get(id);
+    const component = this.componentsStore.getNonReactive(id);
     if (!component) return;
     const { pathInYAML, type, resource } = component;
     const [, rowIndex, , columnIndex] = pathInYAML;
@@ -321,10 +613,10 @@ export class CanvasEntity {
   };
 
   // Once we have stable IDs, this can be simplified
-  processRows = (canvasData: Partial<CanvasResponse>) => {
-    const newComponents = canvasData.components;
-    const existingKeys = new Set(this.components.keys());
-    const rows = canvasData.canvas?.rows;
+  processRows = (response: Partial<CanvasResponse>) => {
+    const newComponents = response.components;
+    const existingKeys = new Set(this.componentsStore.read().keys());
+    const rows = response.canvas?.rows;
 
     if (!rows) return;
 
@@ -350,14 +642,15 @@ export class CanvasEntity {
 
         const newType = newResource.component?.state?.validSpec
           ?.renderer as CanvasComponentType;
-        const existingClass = this.components.get(componentName);
+        const existingClass =
+          this.componentsStore.getNonReactive(componentName);
         const path = constructPath(rowIndex, columnIndex, newType);
 
         if (existingClass && areSameType(newType, existingClass.type)) {
           existingClass.update(newResource, path);
         } else {
           createdNewComponent = true;
-          this.components.set(
+          this.componentsStore.set(
             componentName,
             createComponent(newResource, this, path),
           );
@@ -368,9 +661,9 @@ export class CanvasEntity {
     const didUpdateRowCount = this._rows.updateFromCanvasRows(rows);
 
     existingKeys.difference(set).forEach((componentName) => {
-      const component = this.components.get(componentName);
+      const component = this.componentsStore.getNonReactive(componentName);
       if (component) {
-        this.components.delete(componentName);
+        this.componentsStore.delete(componentName);
       }
     });
 
@@ -380,6 +673,8 @@ export class CanvasEntity {
       this._rows.refresh();
       this.firstLoad.set(false);
     }
+
+    this.selectedComponent.update(($) => $);
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {
@@ -432,7 +727,7 @@ export class CanvasEntity {
   };
 
   removeComponent = (componentName: string) => {
-    this.components.delete(componentName);
+    this.componentsStore.delete(componentName);
   };
 }
 
@@ -481,3 +776,63 @@ function areSameType(
 
   return isTableComponentType(existingType) && isTableComponentType(newType);
 }
+
+function getDefaults(defaultPreset: V1CanvasPreset) {
+  const defaultSearchParams = new URLSearchParams();
+
+  const resolvedRange = defaultPreset.timeRange;
+
+  if (resolvedRange) {
+    defaultSearchParams.set(ExploreStateURLParams.TimeRange, resolvedRange);
+  }
+
+  if (
+    defaultPreset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    defaultSearchParams.set(
+      ExploreStateURLParams.ComparisonTimeRange,
+      getComparisonTypeFromRangeString(defaultPreset.timeRange),
+    );
+  }
+
+  Object.entries(defaultPreset?.filterExpr ?? {}).forEach(
+    ([metricsViewName, { expression }]) => {
+      if (expression) {
+        const flattened = flattenExpression(expression);
+        const urlFormat = getFilterParam(flattened, [], []);
+
+        if (urlFormat) {
+          defaultSearchParams.set(
+            `${ExploreStateURLParams.Filters}.${metricsViewName}`,
+            urlFormat,
+          );
+        }
+      }
+    },
+  );
+
+  return defaultSearchParams;
+}
+
+const customKeySort = (
+  a: Pair<unknown, unknown>,
+  b: Pair<unknown, unknown>,
+) => {
+  const priorityKeys = ["type", "display_name", "defaults", "filters"];
+  const keyA = a.key?.toString();
+  const keyB = b.key?.toString();
+  const indexA = priorityKeys.indexOf(keyA ?? "");
+  const indexB = priorityKeys.indexOf(keyB ?? "");
+
+  if (indexA > -1 && indexB > -1) {
+    return indexA - indexB;
+  }
+  if (indexA > -1) {
+    return -1;
+  }
+  if (indexB > -1) {
+    return 1;
+  }
+  return 0;
+};

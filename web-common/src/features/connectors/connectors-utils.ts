@@ -109,13 +109,28 @@ export function makeTablePreviewHref(
 
 /**
  * Determines the correct icon key for a connector based on its configuration.
- * Special case: MotherDuck connectors use "motherduck" icon even though they have driver: duckdb
+ * Special cases:
+ * - MotherDuck connectors use "motherduck" icon even though they have driver: duckdb
+ * - ClickHouse Cloud connectors use "clickhousecloud" icon even though they have driver: clickhouse
  */
 export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
   // Special case: MotherDuck connectors use md: path prefix
   const path = connector.config?.path;
   if (typeof path === "string" && path.startsWith("md:")) {
     return "motherduck";
+  }
+
+  // Special case: ClickHouse Cloud connectors have "clickhouse.cloud" in host or dsn
+  if (connector.driver?.name === "clickhouse") {
+    const host = connector.config?.host;
+    const dsn = connector.config?.dsn;
+
+    if (
+      (typeof host === "string" && host.includes("clickhouse.cloud")) ||
+      (typeof dsn === "string" && dsn.includes("clickhouse.cloud"))
+    ) {
+      return "clickhousecloud";
+    }
   }
 
   // Default: use the driver name

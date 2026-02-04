@@ -12,7 +12,7 @@ import (
 )
 
 func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, path string
+	var name, path, branch string
 	var local bool
 
 	statusCmd := &cobra.Command{
@@ -46,6 +46,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
 					Org:     ch.Org,
 					Project: name,
+					Branch:  branch,
 				})
 				if err != nil {
 					return err
@@ -65,7 +66,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				fmt.Printf("  Created: %s\n", proj.Project.CreatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Updated: %s\n", proj.Project.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 
-				depl := proj.ProdDeployment
+				depl := proj.Deployment
 				if depl == nil {
 					return nil
 				}
@@ -82,7 +83,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				fmt.Printf("  Created: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
-				if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
+				if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
 					fmt.Printf("  Status: %s\n", depl.Status.String())
 					fmt.Printf("  Status Message: %s\n", depl.StatusMessage)
 
@@ -93,7 +94,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// 3. Print parser and resources info
-			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, name, local)
+			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, name, branch, local)
 			if err != nil {
 				return err
 			}
@@ -155,6 +156,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 	statusCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	statusCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
+	statusCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 
 	return statusCmd
 }

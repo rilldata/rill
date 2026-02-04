@@ -1,13 +1,8 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceGetConversationQueryKey,
-  getRuntimeServiceListConversationsQueryKey,
   getRuntimeServiceListConversationsQueryOptions,
   type RpcStatus,
-  type V1Conversation,
-  type V1GetConversationResponse,
   type V1ListConversationsResponse,
-  type V1Message,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
@@ -17,7 +12,7 @@ import {
   URLConversationSelector,
   type ConversationSelector,
 } from "./conversation-selector";
-import { extractMessageText, NEW_CONVERSATION_ID } from "./utils";
+import { invalidateConversationsList, NEW_CONVERSATION_ID } from "./utils";
 
 export type ConversationStateType = "url" | "browserStorage";
 
@@ -28,6 +23,10 @@ export interface ConversationManagerOptions {
    * - "browserStorage": Use session storage (for sidebar chat)
    */
   conversationState: ConversationStateType;
+  /**
+   * The agent to use for conversations (e.g., "analyst_agent", "developer_agent")
+   */
+  agent?: string;
 }
 
 /**
@@ -47,23 +46,17 @@ export class ConversationManager {
   private static readonly MAX_CONCURRENT_STREAMS = 3;
 
   private newConversation: Conversation;
+  private newConversationUnsub: (() => void) | null = null;
   private conversations = new Map<string, Conversation>();
   private conversationSelector: ConversationSelector;
+  private readonly agent?: string;
 
   constructor(
-    private instanceId: string,
+    public readonly instanceId: string,
     options: ConversationManagerOptions,
   ) {
-    this.newConversation = new Conversation(
-      this.instanceId,
-      NEW_CONVERSATION_ID,
-      {
-        onStreamStart: () => this.enforceMaxConcurrentStreams(),
-        onConversationCreated: (conversationId: string) => {
-          this.handleConversationCreated(conversationId);
-        },
-      },
-    );
+    this.agent = options.agent;
+    this.createNewConversation();
 
     switch (options.conversationState) {
       case "url":
@@ -89,7 +82,10 @@ export class ConversationManager {
     RpcStatus
   > {
     return createQuery(
-      getRuntimeServiceListConversationsQueryOptions(this.instanceId),
+      getRuntimeServiceListConversationsQueryOptions(this.instanceId, {
+        // Filter to only show Rill client conversations, excluding MCP conversations
+        userAgentPattern: "rill%",
+      }),
       queryClient,
     );
   }
@@ -116,9 +112,13 @@ export class ConversationManager {
         const conversation = new Conversation(
           this.instanceId,
           $conversationId,
-          {
-            onStreamStart: () => this.enforceMaxConcurrentStreams(),
-          },
+          this.agent,
+        );
+        conversation.on("stream-start", () =>
+          this.enforceMaxConcurrentStreams(),
+        );
+        conversation.on("conversation-forked", (newConversationId) =>
+          this.handleConversationForked($conversationId, newConversationId),
         );
         this.conversations.set($conversationId, conversation);
         return conversation;
@@ -155,6 +155,26 @@ export class ConversationManager {
   }
 
   // ===== PRIVATE IMPLEMENTATION =====
+
+  private createNewConversation() {
+    this.newConversationUnsub?.();
+    this.newConversation = new Conversation(
+      this.instanceId,
+      NEW_CONVERSATION_ID,
+      this.agent,
+    );
+    const streamStartUnsub = this.newConversation.on("stream-start", () =>
+      this.enforceMaxConcurrentStreams(),
+    );
+    const conversationStartedUnsub = this.newConversation.on(
+      "conversation-created",
+      (conversationId) => this.handleConversationCreated(conversationId),
+    );
+    this.newConversationUnsub = () => {
+      streamStartUnsub();
+      conversationStartedUnsub();
+    };
+  }
 
   // ----- Stream Management -----
 
@@ -202,8 +222,28 @@ export class ConversationManager {
    */
   private handleConversationCreated(conversationId: string): void {
     this.rotateNewConversation(conversationId);
-    this.updateConversationListCache(conversationId);
     this.conversationSelector.selectConversation(conversationId);
+    void invalidateConversationsList(this.instanceId);
+  }
+
+  /**
+   * Handle conversation forking - updates state to navigate to the forked conversation
+   * Called when a non-owner sends a message and the conversation is forked
+   */
+  private handleConversationForked(
+    originalConversationId: string,
+    newConversationId: string,
+  ): void {
+    // Get the forked conversation (which is the updated instance)
+    const forkedConversation = this.conversations.get(originalConversationId);
+    if (forkedConversation) {
+      // Move the conversation to the new ID in our map
+      this.conversations.delete(originalConversationId);
+      this.conversations.set(newConversationId, forkedConversation);
+    }
+
+    // Navigate to the new forked conversation
+    this.conversationSelector.selectConversation(newConversationId);
   }
 
   /**
@@ -215,142 +255,47 @@ export class ConversationManager {
     this.conversations.set(conversationId, this.newConversation);
 
     // Create a fresh "new" conversation instance
-    this.newConversation = new Conversation(
-      this.instanceId,
-      NEW_CONVERSATION_ID,
-      {
-        onStreamStart: () => this.enforceMaxConcurrentStreams(),
-        onConversationCreated: (conversationId: string) => {
-          this.handleConversationCreated(conversationId);
-        },
-      },
-    );
-  }
-
-  // ----- Cache Management -----
-
-  /**
-   * Update the conversation list cache by adding the new conversation
-   */
-  private updateConversationListCache(conversationId: string): void {
-    const listConversationsKey = getRuntimeServiceListConversationsQueryKey(
-      this.instanceId,
-    );
-
-    // Check if we have existing cached data
-    const existingData =
-      queryClient.getQueryData<V1ListConversationsResponse>(
-        listConversationsKey,
-      );
-
-    // If no cached data exists, invalidate to fetch fresh data instead of creating an empty list
-    if (!existingData) {
-      queryClient.invalidateQueries({ queryKey: listConversationsKey });
-      return;
-    }
-
-    queryClient.setQueryData<V1ListConversationsResponse>(
-      listConversationsKey,
-      (old) => {
-        const conversations = old?.conversations ?? [];
-
-        // Check if conversation already exists in the list
-        const existingIndex = conversations.findIndex(
-          (c) => c.id === conversationId,
-        );
-        if (existingIndex >= 0) {
-          // Conversation already exists, no need to add it again
-          return old;
-        }
-
-        // Fetch conversation data from the GetConversation query cache
-        const conversationCacheKey = getRuntimeServiceGetConversationQueryKey(
-          this.instanceId,
-          conversationId,
-        );
-        const cachedGetConversationResponse =
-          queryClient.getQueryData<V1GetConversationResponse>(
-            conversationCacheKey,
-          ) as V1GetConversationResponse | undefined;
-        const conversation = cachedGetConversationResponse?.conversation;
-
-        // Create conversation object for the list
-        const newConversation: V1Conversation = {
-          id: conversationId,
-          title: this.generateConversationTitle(
-            cachedGetConversationResponse?.messages,
-          ),
-          createdOn: conversation?.createdOn || new Date().toISOString(),
-          updatedOn: conversation?.updatedOn || new Date().toISOString(),
-        };
-
-        // Add the new conversation to the front of the list
-        conversations.unshift(newConversation);
-        return { ...old, conversations };
-      },
-    );
-  }
-
-  /**
-   * Generate a conversation title from messages
-   *
-   * Note: This replicates the server-side title generation logic client-side
-   * to avoid making an additional network request for something we can compute
-   * trivially from the conversation data we already have in cache.
-   */
-  private generateConversationTitle(messages?: V1Message[]): string {
-    // If we have messages, generate title from first user message
-    if (messages) {
-      for (const message of messages) {
-        if (message.role === "user") {
-          let title = extractMessageText(message);
-
-          if (!title) continue;
-
-          // Truncate to 50 characters and add ellipsis if needed
-          if (title.length > 50) {
-            title = title.substring(0, 50) + "...";
-          }
-
-          // Replace newlines with spaces and collapse multiple spaces
-          title = title.replace(/[\r\n]/g, " ").replace(/\s+/g, " ");
-
-          return title;
-        }
-      }
-    }
-
-    // Fallback title
-    return "New conversation";
+    this.createNewConversation();
   }
 }
 
 // ===== CONVERSATION MANAGER SINGLETON MANAGEMENT =====
 
 /**
- * Global registry of ConversationManager instances, one per instanceId (project)
- * Ensures consistent state across components within the same project
+ * Global registry of ConversationManager instances, one per instanceId+agent combination
+ * Ensures consistent state across components within the same project and agent
  */
 const conversationManagerInstances = new Map<string, ConversationManager>();
 
 /**
- * Get or create a ConversationManager instance for the given instanceId
+ * Generate a unique key for conversation manager instances
+ * @param instanceId - The project/instance identifier
+ * @param agent - The agent type (e.g., "analyst_agent", "developer_agent")
+ * @returns A unique key for the conversation manager
+ */
+function getConversationManagerKey(instanceId: string, agent?: string): string {
+  return `${instanceId}:${agent || "default"}`;
+}
+
+/**
+ * Get or create a ConversationManager instance for the given instanceId and agent
  *
  * @param instanceId - The project/instance identifier
  * @param options - Configuration options for the conversation manager instance
- * @returns The ConversationManager instance for this project
+ * @returns The ConversationManager instance for this project and agent
  */
 export function getConversationManager(
   instanceId: string,
   options: ConversationManagerOptions,
 ): ConversationManager {
-  if (!conversationManagerInstances.has(instanceId)) {
+  const key = getConversationManagerKey(instanceId, options.agent);
+  if (!conversationManagerInstances.has(key)) {
     conversationManagerInstances.set(
-      instanceId,
+      key,
       new ConversationManager(instanceId, options),
     );
   }
-  return conversationManagerInstances.get(instanceId)!;
+  return conversationManagerInstances.get(key)!;
 }
 
 /**
@@ -360,9 +305,16 @@ export function getConversationManager(
  * @param instanceId - The project/instance identifier to clean up
  */
 export function cleanupConversationManager(instanceId: string): void {
-  const conversationManager = conversationManagerInstances.get(instanceId);
-  if (conversationManager) {
-    conversationManager.cleanup();
-    conversationManagerInstances.delete(instanceId);
+  // Clean up all conversation managers for this instance (all agents)
+  const keysToDelete: string[] = [];
+  for (const key of conversationManagerInstances.keys()) {
+    if (key.startsWith(`${instanceId}:`)) {
+      const conversationManager = conversationManagerInstances.get(key);
+      if (conversationManager) {
+        conversationManager.cleanup();
+      }
+      keysToDelete.push(key);
+    }
   }
+  keysToDelete.forEach((key) => conversationManagerInstances.delete(key));
 }
