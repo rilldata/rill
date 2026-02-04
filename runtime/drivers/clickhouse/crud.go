@@ -389,7 +389,7 @@ func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluste
 			return errors.Join(err, res.Close())
 		}
 	}
-	if err = res.Err(); err != nil {
+	if err := res.Err(); err != nil {
 		return err
 	}
 	if err := res.Close(); err != nil {
