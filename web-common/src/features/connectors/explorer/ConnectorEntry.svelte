@@ -11,7 +11,7 @@
   import { connectorIconMapping } from "../connector-icon-mapping";
   import { getConnectorIconKey } from "../connectors-utils";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
-  import { addSourceModal } from "../../sources/modal/add-source-visibility";
+  import { dataExplorerStore } from "./data-explorer-store";
 
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
@@ -68,12 +68,7 @@
             class="add-button"
             aria-label="Add data"
             on:click|stopPropagation={() => {
-              const driverName = connector.driver?.name ?? "";
-              addSourceModal.openForConnector(driverName, {
-                name: driverName,
-                displayName: connector.driver?.displayName ?? driverName,
-                implementsOlap: true,
-              });
+              dataExplorerStore.open(connector);
             }}
           >
             <Plus size="14px" />

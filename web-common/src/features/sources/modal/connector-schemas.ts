@@ -104,13 +104,15 @@ export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
   return category === "sqlStore" || category === "warehouse" || category === "olap";
 }
 
+// Form height CSS classes for modals
+export const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";
+export const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
+
 /**
  * Get the form height CSS class for a connector's add data modal.
  * Some connectors with more fields use a taller form.
  */
 export function getFormHeight(schema: MultiStepFormSchema | null): string {
-  const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";
-  const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
   return schema?.["x-form-height"] === "tall"
     ? FORM_HEIGHT_TALL
     : FORM_HEIGHT_DEFAULT;

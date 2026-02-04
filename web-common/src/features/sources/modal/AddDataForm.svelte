@@ -24,6 +24,7 @@
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
+  import { dataExplorerStore } from "../../connectors/explorer/data-explorer-store";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -204,6 +205,13 @@ $: formId = isStepFlowConnector ? multiStepFormId || baseFormId : baseFormId;
     },
     setShowSaveAnyway: (value: boolean) => {
       showSaveAnyway = value;
+    },
+    onOpenDataExplorer: () => {
+      // Open the DataExplorer with the connector's driver info
+      dataExplorerStore.open({
+        name: "", // Will be populated by the modal's query
+        driver: connector,
+      });
     },
   });
 
