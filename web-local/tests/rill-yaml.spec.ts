@@ -64,7 +64,7 @@ test.describe("Default olap_connector behavior", () => {
     await page
       .getByRole("dialog", { name: "ClickHouse" })
       .getByRole("button", {
-        name: "Test and Connect",
+        name: "Connect",
         exact: true,
       })
       .click();
