@@ -51,15 +51,26 @@
 
 <style lang="postcss">
   .settings-layout {
-    @apply flex flex-col md:flex-row pt-6 gap-6 max-w-full flex-1;
+    @apply flex flex-col pt-6 gap-6 max-w-full flex-1;
   }
 
   .nav-sidebar {
     @apply shrink-0;
-    @apply md:sticky md:top-0 md:self-start;
   }
 
   .content-area {
     @apply flex flex-col gap-y-6 w-full min-w-0;
+  }
+
+  @media (min-width: 768px) {
+    .settings-layout {
+      @apply flex-row;
+    }
+
+    .nav-sidebar {
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
+    }
   }
 </style>
