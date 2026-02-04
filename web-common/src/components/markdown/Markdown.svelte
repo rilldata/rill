@@ -118,7 +118,7 @@
   }
 
   :global(.chat-markdown pre) {
-    @apply bg-gray-100 text-xs;
+    @apply bg-surface-muted border text-xs;
     padding: 0.5rem;
     border-radius: 0.25rem;
     margin-bottom: 0.5rem;
@@ -170,5 +170,10 @@
 
   :global(.chat-markdown tr:nth-child(even)) {
     @apply bg-surface-background;
+  }
+
+  :global(code[class*="language-"], pre[class*="language-"]) {
+    @apply text-fg-primary;
+    text-shadow: none;
   }
 </style>
