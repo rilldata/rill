@@ -30,6 +30,8 @@
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let selectedSchemaName: string | null = null;
+  let pendingConnectorName: string | null = null;
+  let connectorInstanceName: string | null = null;
   let requestConnector = false;
   let isSubmittingForm = false;
 
@@ -60,10 +62,33 @@
 
   onMount(() => {
     function listen(e: PopStateEvent) {
-      step = e.state?.step ?? 0;
+      const stateStep = e.state?.step ?? 0;
       requestConnector = e.state?.requestConnector ?? false;
-      selectedConnector = e.state?.selectedConnector ?? null;
-      selectedSchemaName = e.state?.schemaName ?? null;
+      connectorInstanceName = e.state?.connectorInstanceName ?? null;
+
+      // Handle both full connector object and connector name string
+      if (e.state?.selectedConnector) {
+        selectedConnector = e.state.selectedConnector;
+        selectedSchemaName = e.state?.schemaName ?? null;
+        pendingConnectorName = null;
+        step = stateStep;
+      } else if (e.state?.connector) {
+        // Store the connector name to look up when connectors are loaded
+        pendingConnectorName = e.state.connector;
+        selectedSchemaName = e.state.connector;
+        step = 2;
+        // Try to resolve immediately if connectors are already loaded
+        const found = connectors.find((c) => c.name === e.state.connector);
+        if (found) {
+          selectedConnector = toConnectorDriver(found);
+          pendingConnectorName = null;
+        }
+      } else {
+        selectedConnector = null;
+        selectedSchemaName = null;
+        pendingConnectorName = null;
+        step = stateStep;
+      }
     }
     window.addEventListener("popstate", listen);
 
@@ -71,6 +96,17 @@
       window.removeEventListener("popstate", listen);
     };
   });
+
+  // Handle pending connector name when connectors finish loading
+  $: if (pendingConnectorName && connectors.length > 0) {
+    const found = connectors.find((c) => c.name === pendingConnectorName);
+    if (found) {
+      selectedConnector = toConnectorDriver(found);
+      selectedSchemaName = pendingConnectorName;
+      pendingConnectorName = null;
+      step = 2;
+    }
+  }
 
   function goToConnectorForm(connectorInfo: ConnectorInfo) {
     // Reset multi-step state (auth selection, connector config) when switching connectors.
@@ -80,16 +116,17 @@
       step: 2,
       selectedConnector: toConnectorDriver(connectorInfo),
       schemaName: connectorInfo.name,
+      connectorInstanceName: null,
       requestConnector: false,
     };
     window.history.pushState(state, "", "");
-    dispatchEvent(new PopStateEvent("popstate", { state }));
+    window.dispatchEvent(new PopStateEvent("popstate", { state }));
   }
 
   function goToRequestConnector() {
     const state = { step: 2, requestConnector: true };
     window.history.pushState(state, "", "");
-    dispatchEvent(new PopStateEvent("popstate", { state }));
+    window.dispatchEvent(new PopStateEvent("popstate", { state }));
   }
 
   function back() {
@@ -107,10 +144,11 @@
       step: 0,
       selectedConnector: null,
       schemaName: null,
+      connectorInstanceName: null,
       requestConnector: false,
     };
     window.history.pushState(state, "", "");
-    dispatchEvent(new PopStateEvent("popstate", { state: state }));
+    window.dispatchEvent(new PopStateEvent("popstate", { state: state }));
     isSubmittingForm = false;
     resetConnectorStep();
   }
@@ -210,7 +248,12 @@
         </div>
       {/if}
 
-      {#if step === 2 && selectedConnector && selectedSchemaName}
+      {#if step === 2 && pendingConnectorName && !selectedConnector}
+        <!-- Loading state while waiting for connector to be resolved -->
+        <div class="p-6 flex items-center justify-center">
+          <span class="text-fg-secondary">Loading...</span>
+        </div>
+      {:else if step === 2 && selectedConnector && selectedSchemaName}
         {@const schema = getConnectorSchema(selectedSchemaName)}
         {@const displayIcon =
           connectorIconMapping[selectedSchemaName] ??
@@ -242,6 +285,7 @@
             connector={selectedConnector}
             schemaName={selectedSchemaName}
             formType={isConnectorType ? "connector" : "source"}
+            {connectorInstanceName}
             onClose={resetModal}
             onBack={back}
             bind:isSubmitting={isSubmittingForm}

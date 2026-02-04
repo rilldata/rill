@@ -81,20 +81,14 @@
         const filtered = data.connectors
           .filter(
             (c) =>
-              c?.driver?.implementsOlap ||
-              c?.driver?.implementsSqlStore ||
-              c?.driver?.implementsWarehouse,
+              // Only show connectors that are successfully reconciled (no error)
+              // Exclude OLAP-only connectors (only show SqlStore or Warehouse)
+              !c?.errorMessage &&
+              !c?.driver?.implementsOlap &&
+              (c?.driver?.implementsSqlStore || c?.driver?.implementsWarehouse),
           )
           .sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
-        // Deduplicate by driver name to show unique drivers only
-        const seen = new Set<string>();
-        const unique = filtered.filter((c) => {
-          const driverName = c?.driver?.name;
-          if (!driverName || seen.has(driverName)) return false;
-          seen.add(driverName);
-          return true;
-        });
-        return { connectors: unique };
+        return { connectors: filtered };
       },
     },
   });
@@ -235,27 +229,23 @@
             <DropdownMenu.Item
               class="flex gap-x-2"
               on:click={() => {
-                addSourceModal.openWithConnector(
-                  {
-                    name: connector.driver?.name,
-                    displayName: connector.driver?.displayName ?? connector.driver?.name,
-                    implementsOlap: connector.driver?.implementsOlap,
-                    implementsSqlStore: connector.driver?.implementsSqlStore,
-                    implementsWarehouse: connector.driver?.implementsWarehouse,
-                  },
-                  connector.driver?.name ?? "",
-                );
+                // Use driver name as schema name, connector name as instance name
+                const schemaName = connector.driver?.name ?? "";
+                const connectorInstanceName = connector.name ?? "";
+                addSourceModal.open(schemaName, connectorInstanceName);
               }}
             >
               <svelte:component
                 this={connectorIconMapping[getConnectorIconKey(connector)]}
                 size="16px"
               />
-              {connector.driver?.displayName ?? connector.name}
+              {connector.name}
             </DropdownMenu.Item>
           {/if}
         {/each}
-        <DropdownMenu.Separator />
+        {#if connectorsData.length > 0}
+          <DropdownMenu.Separator />
+        {/if}
         <DropdownMenu.Item
           aria-label="Blank SQL file"
           class="flex gap-x-2"
