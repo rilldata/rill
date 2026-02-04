@@ -16,7 +16,11 @@ export function processFileContent(
 
   switch (encoding) {
     case "base64":
-      encodedContent = btoa(content);
+      try {
+        encodedContent = btoa(content);
+      } catch {
+        throw new Error("Invalid file encoding: contains non-Latin-1 characters");
+      }
       break;
 
     case "json":
