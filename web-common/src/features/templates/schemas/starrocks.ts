@@ -84,7 +84,6 @@ export const starrocksSchema: MultiStepFormSchema = {
       type: "boolean",
       title: "SSL",
       description: "Enable SSL/TLS encryption for the connection",
-      default: false,
     },
   },
   required: [],
