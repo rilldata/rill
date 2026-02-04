@@ -10,33 +10,40 @@ export const snowflakeSchema: MultiStepFormSchema = {
     auth_method: {
       type: "string",
       title: "Authentication method",
-      enum: ["password", "private_key", "dsn"],
+      enum: ["password", "private_key"],
       default: "password",
       "x-display": "radio",
-      "x-enum-labels": [
-        "Username/Password",
-        "Private Key",
-        "Connection String",
-      ],
+      "x-enum-labels": ["Username/Password", "Private Key"],
       "x-enum-descriptions": [
         "Authenticate with your Snowflake username and password.",
         "Authenticate using a private key with SNOWFLAKE_JWT authenticator.",
-        "Use a full Snowflake connection string (DSN).",
       ],
       "x-ui-only": true,
       "x-grouped-fields": {
-        password: [
+        password: ["connection_mode"],
+        private_key: [
           "account",
           "user",
-          "password",
+          "privateKey",
           "database",
           "schema",
           "warehouse",
           "role",
         ],
-        private_key: [
+      },
+    },
+    connection_mode: {
+      type: "string",
+      enum: ["parameters", "dsn"],
+      default: "parameters",
+      "x-display": "tabs",
+      "x-enum-labels": ["Enter parameters", "Enter connection string"],
+      "x-ui-only": true,
+      "x-tab-group": {
+        parameters: [
           "account",
           "user",
+          "password",
           "privateKey",
           "database",
           "schema",
@@ -56,7 +63,6 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-secret": true,
       "x-hint":
         "Include authenticator and privateKey query params for JWT if needed.",
-      "x-visible-if": { auth_method: "dsn" },
     },
     account: {
       type: "string",
@@ -133,19 +139,31 @@ export const snowflakeSchema: MultiStepFormSchema = {
   required: ["sql", "name"],
   allOf: [
     {
-      if: { properties: { auth_method: { const: "password" } } },
+      if: {
+        properties: {
+          auth_method: { const: "password" },
+          connection_mode: { const: "parameters" },
+        },
+      },
       then: {
         required: ["account", "user", "password", "database", "warehouse"],
       },
     },
     {
-      if: { properties: { auth_method: { const: "private_key" } } },
+      if: {
+        properties: { auth_method: { const: "private_key" } },
+      },
       then: {
         required: ["account", "user", "privateKey", "database", "warehouse"],
       },
     },
     {
-      if: { properties: { auth_method: { const: "dsn" } } },
+      if: {
+        properties: {
+          auth_method: { const: "password" },
+          connection_mode: { const: "dsn" },
+        },
+      },
       then: { required: ["dsn"] },
     },
   ],
