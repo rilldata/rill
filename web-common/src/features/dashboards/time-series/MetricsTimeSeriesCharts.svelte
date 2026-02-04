@@ -78,7 +78,6 @@
     selectedComparisonTimeRange,
     timeDimension,
     ready,
-
     showTimeComparison,
     timeEnd,
     timeStart,
@@ -87,26 +86,31 @@
     aggregationOptions,
   } = $timeControlsStore);
 
+  $: ({ whereFilter, dimensionThresholdFilters, selectedTimezone } =
+    $dashboardStore);
+
   // Use the full selected time range for chart data fetching (not modified by scrub)
-  $: chartTimeRange =
+  $: chartInterval =
     selectedTimeRange?.start && selectedTimeRange?.end
-      ? Interval.fromDateTimes(
+      ? (Interval.fromDateTimes(
           DateTime.fromJSDate(selectedTimeRange.start, {
-            zone: chartTimeZone,
+            zone: selectedTimezone,
           }),
-          DateTime.fromJSDate(selectedTimeRange.end, { zone: chartTimeZone }),
-        )
+          DateTime.fromJSDate(selectedTimeRange.end, {
+            zone: selectedTimezone,
+          }),
+        ) as Interval<true>)
       : undefined;
-  $: chartComparisonTimeRange =
+  $: chartComparisonInterval =
     selectedComparisonTimeRange?.start && selectedComparisonTimeRange?.end
-      ? Interval.fromDateTimes(
+      ? (Interval.fromDateTimes(
           DateTime.fromJSDate(selectedComparisonTimeRange.start, {
-            zone: chartTimeZone,
+            zone: selectedTimezone,
           }),
           DateTime.fromJSDate(selectedComparisonTimeRange.end, {
-            zone: chartTimeZone,
+            zone: selectedTimezone,
           }),
-        )
+        ) as Interval<true>)
       : undefined;
 
   $: exploreState = useExploreState(exploreName);
@@ -123,15 +127,15 @@
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
-  $: chartScrubRange = $exploreState?.lastDefinedScrubRange
-    ? {
-        start: DateTime.fromJSDate($exploreState.lastDefinedScrubRange.start, {
-          zone: chartTimeZone,
+  $: chartScrubInterval = $exploreState?.lastDefinedScrubRange
+    ? (Interval.fromDateTimes(
+        DateTime.fromJSDate($exploreState.lastDefinedScrubRange.start, {
+          zone: selectedTimezone,
         }),
-        end: DateTime.fromJSDate($exploreState.lastDefinedScrubRange.end, {
-          zone: chartTimeZone,
+        DateTime.fromJSDate($exploreState.lastDefinedScrubRange.end, {
+          zone: selectedTimezone,
         }),
-      }
+      ) as Interval<true>)
     : undefined;
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
@@ -160,14 +164,10 @@
 
   $: chartMetricsViewName = $metricsViewName;
   $: chartWhere = sanitiseExpression(
-    mergeDimensionAndMeasureFilters(
-      $dashboardStore.whereFilter,
-      $dashboardStore.dimensionThresholdFilters,
-    ),
+    mergeDimensionAndMeasureFilters(whereFilter, dimensionThresholdFilters),
     undefined,
   );
 
-  $: chartTimeZone = $dashboardStore.selectedTimezone;
   $: chartReady = !!ready;
 
   // Annotation stores per measure — keyed by measure name
@@ -177,7 +177,7 @@
       exploreName,
       measureName,
       selectedTimeRange,
-      dashboardTimezone: chartTimeZone,
+      dashboardTimezone: selectedTimezone,
     });
   }
 
@@ -348,10 +348,8 @@
           <div />
           <div class="relative">
             <MeasureChartXAxis
-              timeStart={chartTimeRange?.start?.toISO() ?? undefined}
-              timeEnd={chartTimeRange?.end?.toISO() ?? undefined}
+              interval={chartInterval}
               timeGranularity={activeTimeGrain}
-              timeZone={chartTimeZone}
             />
             <ChartInteractions
               {exploreName}
@@ -389,15 +387,15 @@
             metricsViewName={chartMetricsViewName}
             where={chartWhere}
             {timeDimension}
-            timeRange={chartTimeRange}
-            comparisonTimeRange={chartComparisonTimeRange}
+            interval={chartInterval}
+            comparisonInterval={chartComparisonInterval}
             timeGranularity={activeTimeGrain}
-            timeZone={chartTimeZone}
+            timeZone={selectedTimezone}
             ready={chartReady}
-            scrubRange={chartScrubRange}
+            {chartScrubInterval}
             {comparisonDimension}
             dimensionValues={chartDimensionValues}
-            dimensionWhere={$dashboardStore.whereFilter}
+            dimensionWhere={whereFilter}
             annotations={getAnnotationsForMeasureStore(measure.name ?? "")}
             canPanLeft={$canPanLeft}
             canPanRight={$canPanRight}

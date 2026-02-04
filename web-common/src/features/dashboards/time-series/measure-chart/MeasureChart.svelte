@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { writable, get, type Readable } from "svelte/store";
+  import { get, type Readable } from "svelte/store";
   import type { TimeSeriesPoint, HoverState } from "./types";
   import {
     computeChartConfig,
@@ -59,18 +59,14 @@
   const X_PAD = 8;
   const CLICK_THRESHOLD_PX = 4;
   const VISIBILITY_ROOT_MARGIN = "120px";
-  const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
-  const selMeasure = measureSelection.measure;
-  const selStart = measureSelection.start;
-  const selEnd = measureSelection.end;
 
   export let measure: MetricsViewSpecMeasure;
   export let instanceId: string;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
-  export let timeRange: Interval | undefined = undefined;
-  export let comparisonTimeRange: Interval | undefined = undefined;
+  export let interval: Interval<true> | undefined = undefined;
+  export let comparisonInterval: Interval<true> | undefined = undefined;
   export let timeGranularity: V1TimeGrain | undefined = undefined;
   export let timeZone: string = "UTC";
   export let comparisonDimension: string | undefined = undefined;
@@ -80,8 +76,7 @@
   export let showComparison: boolean = false;
   export let showTimeDimensionDetail: boolean = false;
   export let ready: boolean = true;
-  export let scrubRange: { start: DateTime; end: DateTime } | undefined =
-    undefined;
+  export let chartScrubInterval: Interval<true> | undefined = undefined;
   export let canPanLeft: boolean = false;
   export let canPanRight: boolean = false;
   export let tddChartType: TDDChart = TDDChart.DEFAULT;
@@ -97,23 +92,28 @@
   export let onPanRight: (() => void) | undefined = undefined;
   export let scrubController: ScrubController;
 
+  const annotationPopover = new AnnotationPopoverController();
+  const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
+  const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
+  const selMeasure = measureSelection.measure;
+  const selStart = measureSelection.start;
+  const selEnd = measureSelection.end;
+
   let container: HTMLDivElement;
   let clientWidth = 425;
   let unobserve: (() => void) | undefined;
   let tddIsScrubbing = false;
-  const annotationPopover = new AnnotationPopoverController();
-  const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
   let mouseDownX: number | null = null;
   let mouseDownY: number | null = null;
   let mousePageX: number | null = null;
   let mousePageY: number | null = null;
   let wasDragging = false; // Track if we just finished a drag (to skip click handler)
-
-  const hoverState = writable<HoverState>(EMPTY_HOVER);
+  let hoverState: HoverState = EMPTY_HOVER;
 
   onMount(() => {
     if (container) unobserve = observe(container);
   });
+
   onDestroy(() => {
     unobserve?.();
     hoverIndex.clear(chartId);
@@ -126,10 +126,10 @@
   $: pb = config.plotBounds;
 
   // Extract ISO strings for API calls
-  $: timeStart = timeRange?.start?.toISO() ?? undefined;
-  $: timeEnd = timeRange?.end?.toISO() ?? undefined;
-  $: comparisonTimeStart = comparisonTimeRange?.start?.toISO() ?? undefined;
-  $: comparisonTimeEnd = comparisonTimeRange?.end?.toISO() ?? undefined;
+  $: timeStart = interval?.start?.toISO() ?? undefined;
+  $: timeEnd = interval?.end?.toISO() ?? undefined;
+  $: comparisonTimeStart = comparisonInterval?.start?.toISO() ?? undefined;
+  $: comparisonTimeEnd = comparisonInterval?.end?.toISO() ?? undefined;
 
   // Time series queries
   $: timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
@@ -306,11 +306,11 @@
   $: isScrubbing = currentScrubState.isScrubbing;
 
   // Scrub indices: use local (active) state while scrubbing, external (URL) state otherwise
-  $: externalScrubStartIndex = scrubRange
-    ? dateToIndex(data, scrubRange.start.toMillis())
+  $: externalScrubStartIndex = chartScrubInterval
+    ? dateToIndex(data, chartScrubInterval.start.toMillis())
     : null;
-  $: externalScrubEndIndex = scrubRange
-    ? dateToIndex(data, scrubRange.end.toMillis())
+  $: externalScrubEndIndex = chartScrubInterval
+    ? dateToIndex(data, chartScrubInterval.end.toMillis())
     : null;
   $: scrubStartIndex = currentScrubState.startIndex ?? externalScrubStartIndex;
   $: scrubEndIndex = currentScrubState.endIndex ?? externalScrubEndIndex;
@@ -319,15 +319,15 @@
   // Hover state
   $: hoverIndex.registerScale(xScale);
   $: isLocallyHovered =
-    $hoverState.isHovered && $hoverState.index !== null && data.length > 0;
+    hoverState.isHovered && hoverState.index !== null && data.length > 0;
   $: if (isLocallyHovered) {
-    hoverIndex.set(snapIndex($hoverState.index!, data.length), chartId);
+    hoverIndex.set(snapIndex(hoverState.index!, data.length), chartId);
   } else {
     hoverIndex.clear(chartId);
   }
   $: hoveredIndex = $hoverIndex ?? -1;
   $: hoveredPoint = data[hoveredIndex] ?? null;
-  $: cursorStyle = scrubController.getCursorStyle($hoverState.screenX, xScale);
+  $: cursorStyle = scrubController.getCursorStyle(hoverState.screenX, xScale);
 
   // Formatters
   $: measureFormatter = createMeasureValueFormatter(measure);
@@ -449,7 +449,7 @@
   }
 
   function handleSvgMouseLeave() {
-    hoverState.set(EMPTY_HOVER);
+    hoverState = EMPTY_HOVER;
     mousePageX = null;
     mousePageY = null;
     annotationPopover.scheduleClear();
@@ -620,12 +620,12 @@
         const x = clampX(e.offsetX);
         const fractionalIndex = xScale.invert(x);
 
-        hoverState.set({
+        hoverState = {
           index: fractionalIndex,
           screenX: x,
           screenY: e.offsetY,
           isHovered: true,
-        });
+        };
 
         // Update scrub if dragging
         if (get(scrubController.state).isScrubbing) {

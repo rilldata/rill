@@ -1,6 +1,6 @@
 <script lang="ts">
   import { scaleLinear } from "d3-scale";
-  import { DateTime, Interval } from "luxon";
+  import { type DateTime, type Interval } from "luxon";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import {
     V1TimeGrainToOrder,
@@ -12,15 +12,13 @@
   const LINE_MODE_MIN_POINTS = 6;
   const DAY_GRAIN_ORDER = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY];
 
-  export let timeStart: string | undefined = undefined;
-  export let timeEnd: string | undefined = undefined;
+  export let interval: Interval<true> | undefined = undefined;
   export let timeGranularity: V1TimeGrain | undefined = undefined;
-  export let timeZone: string = "UTC";
 
   let clientWidth = 0;
 
-  // Compute time bins from range + grain
-  $: bins = computeBins(timeStart, timeEnd, timeGranularity, timeZone);
+  // Compute time bins from interval + grain
+  $: bins = computeBins(interval, timeGranularity);
 
   $: isSubDay = timeGranularity
     ? V1TimeGrainToOrder[timeGranularity] < DAY_GRAIN_ORDER
@@ -52,24 +50,18 @@
   $: ticks = buildTicks(tickIndices, bins, xScale);
 
   function computeBins(
-    start: string | undefined,
-    end: string | undefined,
+    iv: Interval<true> | undefined,
     grain: V1TimeGrain | undefined,
-    tz: string,
   ): DateTime[] {
-    if (!start || !end || !grain) return [];
+    if (!iv || !grain) return [];
     const unit = V1TimeGrainToDateTimeUnit[grain];
     if (!unit) return [];
-    const s = DateTime.fromISO(start, { zone: tz });
-    const e = DateTime.fromISO(end, { zone: tz });
-    if (!s.isValid || !e.isValid || s >= e) return [];
 
     // Truncate start to grain boundary (e.g. Wednesday → Monday for week grain)
-    const alignedStart = s.startOf(unit);
-    const interval = Interval.fromDateTimes(alignedStart, e);
-    if (!interval.isValid) return [];
+    const aligned = iv.start.startOf(unit).until(iv.end);
+    if (!aligned.isValid) return [];
 
-    return interval
+    return aligned
       .splitBy({ [unit + "s"]: 1 })
       .map((i) => i.start!)
       .filter((dt): dt is DateTime => dt !== null);
