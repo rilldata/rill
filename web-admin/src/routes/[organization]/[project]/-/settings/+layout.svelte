@@ -37,6 +37,6 @@
 
 <style lang="postcss">
   .container {
-    @apply flex pt-6 gap-6 max-w-full overflow-hidden;
+    @apply flex pt-6 gap-6 max-w-full overflow-hidden items-start;
   }
 </style>

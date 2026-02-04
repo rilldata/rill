@@ -28,5 +28,6 @@
 <style lang="postcss">
   .nav-items {
     @apply flex flex-col gap-y-2;
+    @apply sticky top-0 self-start;
   }
 </style>
