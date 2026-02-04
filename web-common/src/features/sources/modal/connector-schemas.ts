@@ -86,6 +86,29 @@ export function getBackendConnectorName(schemaName: string): string {
 }
 
 /**
+ * Get the schema name for a given backend driver name.
+ * Reverse lookup: finds the schema name that maps to the given driver name.
+ * For most connectors, driver name = schema name, but some have x-driver override.
+ */
+export function getSchemaNameFromDriver(driverName: string): string | null {
+  // First, check if driver name matches a schema name directly
+  if (driverName in multiStepFormSchemas) {
+    return driverName;
+  }
+
+  // If not, search for schema with matching x-driver
+  for (const [schemaName, schema] of Object.entries(multiStepFormSchemas)) {
+    const backendName = schema?.["x-driver"] ?? schemaName;
+    if (backendName === driverName) {
+      return schemaName;
+    }
+  }
+
+  // Fallback: return driver name (assumes it's the schema name)
+  return driverName;
+}
+
+/**
  * Determine if a connector has multi-step form flow (connector → source).
  * Object store connectors (S3, GCS, Azure) require separate auth and source steps.
  */

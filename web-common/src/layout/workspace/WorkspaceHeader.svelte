@@ -14,6 +14,8 @@
   import { navigationOpen } from "../navigation/Navigation.svelte";
   import { workspaces } from "./workspace-stores";
   import ConnectorRefreshButton from "@rilldata/web-common/features/connectors/ConnectorRefreshButton.svelte";
+  import ConnectorAddModelButton from "@rilldata/web-common/features/connectors/ConnectorAddModelButton.svelte";
+  import { OLAP_ENGINES } from "@rilldata/web-common/features/sources/modal/constants";
 
   export let resourceKind: ResourceKind | undefined;
   export let titleInput: string;
@@ -35,7 +37,19 @@
   $: tableVisible = workspaceLayout.table.visible;
   $: view = workspaceLayout.view;
 
-  $: isConnector = resourceKind === ResourceKind.Connector;
+  // Check if it's a connector by resourceKind or by file path (for when reconcile fails)
+  $: isConnector =
+    resourceKind === ResourceKind.Connector ||
+    (filePath &&
+      (filePath.startsWith("/connectors/") ||
+        filePath.includes("/connectors/")));
+
+  // Check if it's an OLAP connector (exclude these from showing connector buttons)
+  $: driverName = resource?.connector?.spec?.driver;
+  $: isOlapConnector = driverName ? OLAP_ENGINES.includes(driverName) : false;
+
+  // Only show connector buttons for non-OLAP connectors
+  $: shouldShowConnectorButtons = isConnector && !isOlapConnector;
 </script>
 
 <header bind:clientWidth={width}>
@@ -71,16 +85,16 @@
       />
     </div>
 
-    {#if isConnector}
-      <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
-    {/if}
-
     <div class="flex items-center gap-x-2 w-fit flex-none">
-      <slot name="workspace-controls" {width} />
+      {#if isConnector}
+        <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
+      {/if}
+      {#if shouldShowConnectorButtons}
+        <ConnectorAddModelButton {resource} {hasUnsavedChanges} />
+      {/if}
 
-      <div class="flex-none">
-        <slot name="cta" {width} />
-      </div>
+      <slot name="workspace-controls" {width} />
+      <slot name="cta" {width} />
 
       {#if showTableToggle}
         <Tooltip distance={8}>

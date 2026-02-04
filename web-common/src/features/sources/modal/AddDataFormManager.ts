@@ -143,44 +143,23 @@ export class AddDataFormManager {
     return hasExplorerStepSchema(schema);
   }
 
-  /**
-   * Determines whether the "Save Anyway" button should be shown for the current submission.
-   */
-  private shouldShowSaveAnywayButton(args: {
-    isConnectorForm: boolean;
-    event?:
-      | {
-          result?: Extract<ActionResult, { type: "success" | "failure" }>;
-        }
-      | undefined;
-    stepState: ConnectorStepState | undefined;
-    selectedAuthMethod?: string;
-  }): boolean {
-    const { isConnectorForm, event, stepState, selectedAuthMethod } = args;
-
-    // Only show for connector forms (not sources)
-    if (!isConnectorForm) return false;
-
-    // Need a submission result to show the button
-    if (!event?.result) return false;
-
-    // Multi-step connectors: don't show on source/explorer step (final step)
-    if (stepState?.step === "source" || stepState?.step === "explorer")
-      return false;
-
-    // Public auth bypasses connection test, so no "Save Anyway" needed
-    if (stepState?.step === "connector" && selectedAuthMethod === "public")
-      return false;
-
-    return true;
-  }
-
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
-    if (!this.isMultiStepConnector || stepState.step !== "connector") return;
-    setConnectorConfig({});
-    setConnectorInstanceName(null);
-    setStep("source");
+    // Only allow skipping when on connector step
+    if (stepState.step !== "connector") return;
+
+    // For multi-step connectors, skip to source step
+    if (this.isMultiStepConnector) {
+      setConnectorConfig({});
+      setConnectorInstanceName(null);
+      setStep("source");
+    }
+    // For connectors with explorer step (warehouses/databases), skip to explorer step
+    else if (this.hasExplorerStep) {
+      setConnectorConfig({});
+      setConnectorInstanceName(null);
+      setStep("explorer");
+    }
   }
 
   handleBack(onBack: () => void): void {
@@ -248,15 +227,9 @@ export class AddDataFormManager {
     queryClient: QueryClient;
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
-    setShowSaveAnyway?: (value: boolean) => void;
   }) {
-    const {
-      onClose,
-      queryClient,
-      getSelectedAuthMethod,
-      setParamsError,
-      setShowSaveAnyway,
-    } = args;
+    const { onClose, queryClient, getSelectedAuthMethod, setParamsError } =
+      args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
     const isMultiStep = isMultiStepConnectorSchema(schema);
@@ -328,19 +301,6 @@ export class AddDataFormManager {
         this.errorsStore.set({});
       } else if (!event.form.valid) {
         return;
-      }
-
-      // Show "Save Anyway" when a connector test fails
-      if (
-        typeof setShowSaveAnyway === "function" &&
-        this.shouldShowSaveAnywayButton({
-          isConnectorForm,
-          event,
-          stepState,
-          selectedAuthMethod,
-        })
-      ) {
-        setShowSaveAnyway(true);
       }
 
       // --- Submission ---
@@ -578,6 +538,7 @@ export class AddDataFormManager {
           secretKeys: rewrittenSecretKeys,
           stringKeys: rewrittenStringKeys,
           originalDriverName: connector.name || undefined,
+          connectorInstanceName: stepState?.connectorInstanceName || undefined,
         });
       }
       return getConnectorYamlPreview(rewrittenFormValues);

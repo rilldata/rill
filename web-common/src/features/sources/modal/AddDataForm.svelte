@@ -29,11 +29,11 @@
   export let schemaName: string;
   export let formType: AddDataFormType;
   export let isSubmitting: boolean;
+  export let connectorInstanceName: string | null = null;
   export let onBack: () => void;
   export let onClose: () => void;
 
   let saveAnyway = false;
-  let showSaveAnyway = false;
 
   // Wire manager-provided onUpdate after declaration below
   let handleOnUpdate: (event: {
@@ -77,12 +77,17 @@
   const isSourceForm = formManager.isSourceForm;
   const isConnectorForm = formManager.isConnectorForm;
   let activeAuthMethod: string | null = null;
-  let prevAuthMethod: string | null = null;
-  let stepState = $connectorStepStore;
   let multiStepSubmitDisabled = false;
   let multiStepButtonLabel = "";
   let multiStepLoadingCopy = "";
-  let shouldShowSkipLink = false;
+  // Show skip link only on connector step (step 1 of multi-step flow)
+  // Don't show on source/explorer step (step 2) or if connectorInstanceName is set (Import Data button was clicked)
+  $: excludedConnectors = ["salesforce", "sqlite", "https"];
+  $: shouldShowSkipLink =
+    stepState.step === "connector" &&
+    !connectorInstanceName &&
+    !connector?.implementsOlap &&
+    !excludedConnectors.includes(connector?.name ?? "");
   let primaryButtonLabel = "";
   let primaryLoadingCopy = "";
 
@@ -95,14 +100,6 @@
   let paramsErrorDetails: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
-
-  // Hide Save Anyway once we advance to the model step in step flow connectors.
-  $: if (
-    isStepFlowConnector &&
-    (stepState.step === "source" || stepState.step === "explorer")
-  ) {
-    showSaveAnyway = false;
-  }
 
   $: isSubmitDisabled = (() => {
     if (isStepFlowConnector) {
@@ -153,13 +150,6 @@
       : "Testing connection...";
   })();
 
-  // Clear Save Anyway state whenever auth method changes (any direction).
-  $: if (activeAuthMethod !== prevAuthMethod) {
-    prevAuthMethod = activeAuthMethod;
-    showSaveAnyway = false;
-    saveAnyway = false;
-  }
-
   $: isSubmitting = submitting;
 
   // Reset errors when form is modified
@@ -191,8 +181,16 @@
     isConnectorForm,
     formValues: $form,
   });
-  $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
+  // Always show Save Anyway for connector forms on the connector step (not for public auth which skips connection test)
+  $: shouldShowSaveAnywayButton =
+    isConnectorForm &&
+    stepState.step === "connector" &&
+    activeAuthMethod !== "public";
   $: saveAnywayLoading = submitting && saveAnyway;
+
+  // Save button uses the same disabled logic as Test/Connect buttons
+  // (checks if required fields are filled and form is valid)
+  $: isSaveDisabled = isSubmitDisabled;
 
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
@@ -201,9 +199,6 @@
     setParamsError: (message: string | null, details?: string) => {
       paramsError = message;
       paramsErrorDetails = details;
-    },
-    setShowSaveAnyway: (value: boolean) => {
-      showSaveAnyway = value;
     },
   });
 
@@ -239,6 +234,7 @@
           {onStringInputChange}
           {handleFileUpload}
           submitting={$paramsSubmitting}
+          {connectorInstanceName}
           bind:activeAuthMethod
           bind:isSubmitDisabled={multiStepSubmitDisabled}
           bind:primaryButtonLabel={multiStepButtonLabel}
@@ -283,13 +279,13 @@
       <div class="flex gap-2">
         {#if shouldShowSaveAnywayButton}
           <Button
-            disabled={false}
+            disabled={isSaveDisabled}
             loading={saveAnywayLoading}
             loadingCopy="Saving..."
             onClick={handleSaveAnyway}
             type="secondary"
           >
-            Save Anyway
+            Save
           </Button>
         {/if}
 
