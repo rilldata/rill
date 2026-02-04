@@ -11,8 +11,7 @@ import TileIcon from '@site/src/components/TileIcon';
 
 Rill Cloud is a fully-managed platform that brings powerful, interactive analytics directly to your fingertips. Explore your data through instant dashboards, ask questions in plain English with AI Chat, and share insights with your team—all without writing SQL or waiting for custom reports. Your data team has already set up the metrics and dashboards you need; you simply explore, analyze, and collaborate.
 
-<img src='/img/guide/home/project-home.png' class='rounded-gif' />
-<br />
+![Project Home](/img/guide/home/project-home.png)
 
 
 <div className="tile-icon-grid">

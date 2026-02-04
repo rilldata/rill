@@ -7,8 +7,7 @@ tags:
     - OLAP:ClickHouse
 ---
 
-<img src = '/img/tutorials/ch/clickhouse-rill.png' class='rounded-gif' />
-<br />
+![ClickHouse Rill](/img/tutorials/ch/clickhouse-rill.png)
 
 
 In this tutorial, we will discuss how to use ClickHouse as the default OLAP database with Rill to visualize your ClickHouse tables in as little as a few clicks. 

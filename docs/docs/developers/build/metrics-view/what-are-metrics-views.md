@@ -12,7 +12,7 @@ Rill metrics views are analogous to the **semantic layer** and **metrics layer**
 
 
 <div style={{ textAlign: 'center' }}>
-  <img src="/img/concepts/metrics-view/metrics-view-components.png" width="100%" style={{ borderRadius: '15px', padding: '20px' }} />
+  ![Metrics View Components](/img/concepts/metrics-view/metrics-view-components.png)
 </div>
 
 
@@ -61,8 +61,7 @@ Configure default time modifiers like first day of week and smallest time grain 
 
 When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default.
 
-<img src='/img/build/metrics-view/visual-metrics-editor.png' class='rounded-gif' />
-<br />
+![Visual Metrics Editor](/img/build/metrics-view/visual-metrics-editor.png)
 
 
 
@@ -71,16 +70,14 @@ When you add a metrics definition using the UI, a code definition will automatic
 
 In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measures and dimensions to get started with Rill.
 
-<img src='/img/build/metrics-view/create-with-ai.png' class='rounded-gif' />
-<br />
+![Create With AI](/img/build/metrics-view/create-with-ai.png)
 
 
 :::tip Skipped creating a model?
 
 You can now create dashboards directly for the connector panel. This will create a model, metrics view and dashboard all in one step.
 
-<img src='/img/build/dashboard/explorable-metrics.png' class='rounded-gif' />
-<br />
+![Explorable Metrics](/img/build/dashboard/explorable-metrics.png)
 
 :::
 

@@ -38,15 +38,13 @@ graph LR;
 ## Deploying a project from Rill Developer
 Starting from **v0.48**, we have introduced the possibility to push dashboards _directly from Rill Developer to Rill Cloud_. On the dashboard page, you can select the `Deploy` button and follow the steps to deploy to Rill Cloud.
 
-<img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
-<br />
+![Deploy UI](/img/deploy/existing-project/deploy-ui.gif)
 
 Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](/guide/administration/users-and-access/user-management) section. 
 
 If you make changes locally on Rill Developer, you will need to push the contents to Rill Cloud by selecting the `Update` button.
 
-<img src = '/img/deploy/existing-project/redeploy.gif' class='rounded-gif' />
-<br />
+![Redeploy](/img/deploy/existing-project/redeploy.gif)
 
 :::tip On an older version of Rill?
 
@@ -81,19 +79,16 @@ If you're not the admin of your GitHub organization, they will likely need to fi
 
 
 
-<img src = '/img/deploy/existing-project/install-rill-cloud.png' class='rounded-gif' />
-<br />
+![Install Rill Cloud](/img/deploy/existing-project/install-rill-cloud.png)
 
 
 Once the permissions to the repository have been confirmed and set, you can continue to select the repository in the dropdown.
-<img src = '/img/deploy/existing-project/select-repo.png' class='rounded-gif' />
-<br />
+![Select Repo](/img/deploy/existing-project/select-repo.png)
 
 
 Once completed, you'll see the newly updated repository on the UI of your status page!
 
-<img src = '/img/deploy/existing-project/finished.png' class='rounded-gif' />
-<br />
+![Finished](/img/deploy/existing-project/finished.png)
 
 
 :::warning Still unable to connect?
@@ -130,8 +125,7 @@ If you have not already [configured your connections' credentials](https://docs.
 
 If this is your first deployment to Rill Cloud, you will get prompted to either sign up or log in (if you have an existing account on [Rill Cloud](https://ui.rilldata.com/)). Proceed with the sign up and email verification process for new users or authorization process for existing users. As a new user, you can expect to see the following page:
 
-<img src = '/img/deploy/existing-project/rill-cloud-sign-in.png' class='rounded-gif' />
-<br />
+![Rill Cloud Sign In](/img/deploy/existing-project/rill-cloud-sign-in.png)
 
 
 
@@ -139,8 +133,7 @@ If this is your first deployment to Rill Cloud, you will get prompted to either 
 
 Once the project has been uploaded to Rill Cloud, you should be able to see the following page: 
 
-<img src = '/img/deploy/existing-project/status.png' class='rounded-gif' />
-<br />
+![Status](/img/deploy/existing-project/status.png)
 
 
 
@@ -180,8 +173,7 @@ Opening project in browser...
 
 Once completed, you will see the following the in the status page. Note that the GitHub repository is already setup!
 
-<img src = '/img/deploy/existing-project/cli-upload.png' class='rounded-gif' />
-<br />
+![Cli Upload](/img/deploy/existing-project/cli-upload.png)
 
 
 

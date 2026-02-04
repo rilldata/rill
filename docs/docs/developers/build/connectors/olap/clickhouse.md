@@ -81,8 +81,7 @@ For more information about available DSN properties and setting an appropriate c
 
 If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve connection details about your instance by clicking on the `Connect` tab from within the admin settings navigation page. This will provide relevant information, such as the hostname, port, and username being used for your instance that you can then use to construct your DSN.
 
-<img src='/img/build/connectors/olap-engines/clickhouse/clickhouse-cloud.png' class='rounded-gif' />
-<br />
+![ClickHouse Cloud](/img/build/connectors/olap-engines/clickhouse/clickhouse-cloud.png)
 
 Using the information in the ClickHouse UI, populate the parameters of your connection. 
 
