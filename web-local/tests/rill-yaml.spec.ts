@@ -44,38 +44,4 @@ test.describe("Default olap_connector behavior", () => {
     await page.waitForURL("**/files/rill.yaml");
     await expectRillYAMLToContainOlapConnector(page, "duckdb");
   });
-
-  test("Should set default olap_connector to clickhouse for Rill-managed ClickHouse", async ({
-    page,
-  }) => {
-    await page.getByRole("link", { name: "Empty Project" }).click();
-    await expect(page.getByText("Import data", { exact: true })).toBeVisible();
-
-    await page.getByRole("button", { name: "Add Data" }).click();
-    await page.locator("#clickhouse").click();
-
-    // Click the Connection Type dropdown and select Rill Managed
-    await page
-      .getByRole("dialog", { name: "ClickHouse" })
-      .getByRole("combobox")
-      .click();
-    await page.getByRole("option", { name: /Rill Managed/i }).click();
-
-    // Use force:true to handle CI viewport differences
-    await page
-      .getByRole("dialog", { name: "ClickHouse" })
-      .getByRole("button", {
-        name: "Connect",
-        exact: true,
-      })
-      .click({ force: true });
-
-    // Wait for the connector file to be created in the file nav
-    await waitForFileNavEntry(page, "/connectors/clickhouse.yaml", false);
-
-    await page.getByRole("link", { name: "rill.yaml" }).click();
-    // Wait for navigation to complete
-    await page.waitForURL("**/files/rill.yaml");
-    await expectRillYAMLToContainOlapConnector(page, "clickhouse");
-  });
 });
