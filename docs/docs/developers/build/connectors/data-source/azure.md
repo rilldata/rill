@@ -45,8 +45,6 @@ When you add an Azure Blob Storage data model through the Rill UI, you'll see fo
 Azure CLI authentication is only available through manual configuration. See [Method 5: Azure CLI Authentication](#method-5-azure-cli-authentication-local-development-only) for setup instructions.
 :::
 
----
-
 ## Method 1: Storage Account Key (Recommended)
 
 Storage Account Key credentials provide reliable authentication for Azure Blob Storage. This method works for both local development and Rill Cloud deployments.
@@ -59,13 +57,10 @@ Storage Account Key credentials provide reliable authentication for Azure Blob S
    - Choose **Storage Account Key**
    - Enter your Storage Account name
    - Enter your Storage Account Key
-   - Name your connector (e.g., `my_azure`)
-4. In the data model configuration step:
-   - Enter your container name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will automatically create both the connector file and model file for you.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -106,8 +101,6 @@ connector.azure.azure_storage_key=your_storage_account_key
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your storage account keys.
 
----
-
 ## Method 2: Connection String
 
 Connection String provides an alternative authentication method for Azure Blob Storage.
@@ -119,11 +112,10 @@ Connection String provides an alternative authentication method for Azure Blob S
 3. In the authentication step:
    - Choose **Connection String**
    - Enter your Connection String
-   - Name your connector (e.g., `my_azure_conn`)
-4. In the data model configuration step:
-   - Enter your container name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -161,8 +153,6 @@ connector.azure.azure_storage_connection_string=your_connection_string
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your connection string.
 
----
-
 ## Method 3: Shared Access Signature (SAS) Token
 
 SAS tokens provide fine-grained access control with specific permissions and expiration times for secure access to your storage resources.
@@ -175,11 +165,10 @@ SAS tokens provide fine-grained access control with specific permissions and exp
    - Choose **SAS Token**
    - Enter your Storage Account name
    - Enter your SAS Token
-   - Name your connector (e.g., `my_azure_sas`)
-4. In the data model configuration step:
-   - Enter your container name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -218,8 +207,6 @@ connector.azure.azure_storage_sas_token=your_sas_token
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers) to create your Azure SAS token.
 
----
-
 ## Method 4: Public Containers
 
 For publicly accessible Azure Blob Storage containers, you don't need to create a connector. Simply use the Azure URI directly in your model configuration.
@@ -231,12 +218,10 @@ For publicly accessible Azure Blob Storage containers, you don't need to create 
 3. In the authentication step:
    - Choose **Public**
    - The UI will skip connector creation and proceed directly to data model configuration
-4. In the data model configuration step:
-   - Enter your container name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will only create the model file (no connector file is created).
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -253,8 +238,6 @@ sql: SELECT * FROM read_parquet('azure://publicaccount.blob.core.windows.net/my-
 refresh:
   cron: "0 */6 * * *"
 ```
-
----
 
 ## Method 5: Azure CLI Authentication (Local Development Only)
 
@@ -340,8 +323,6 @@ SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data
 -- Files matching a pattern
 SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data/2024-*.parquet')
 ```
-
----
 
 ## Deploy to Rill Cloud
 

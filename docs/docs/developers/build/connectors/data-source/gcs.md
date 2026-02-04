@@ -36,8 +36,6 @@ When you add a GCS data model through the Rill UI, you'll see three authenticati
   1. **Configure Data Model** - Define which bucket and objects to ingest
   The UI will only create the model file (no connector file is needed).
 
----
-
 ## Method 1: Service Account JSON (Recommended)
 
 Service Account JSON credentials provide the most secure and reliable authentication for GCS. This method works for both local development and Rill Cloud deployments.
@@ -49,13 +47,10 @@ Service Account JSON credentials provide the most secure and reliable authentica
 3. In the authentication step:
    - Choose **Service Account JSON**
    - Upload your JSON key file or paste its contents
-   - Name your connector (e.g., `my_gcs`)
-4. In the data model configuration step:
-   - Enter your bucket name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will automatically create both the connector file and model file for you.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -94,8 +89,6 @@ refresh:
 connector.gcs.google_application_credentials=<json_credentials>
 ```
 
----
-
 ## Method 2: HMAC Keys
 
 HMAC keys provide S3-compatible authentication for GCS. This method is useful when you need compatibility with S3-style access patterns.
@@ -108,11 +101,10 @@ HMAC keys provide S3-compatible authentication for GCS. This method is useful wh
    - Choose **HMAC Keys**
    - Enter your Access Key ID
    - Enter your Secret Access Key
-   - Name your connector (e.g., `my_gcs_hmac`)
-4. In the data model configuration step:
-   - Enter your bucket name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -155,8 +147,6 @@ connector.gcs.secret=your-secret-access-key
 Notice that the connector uses `key_id` and `secret`. HMAC keys use S3-compatible authentication with GCS.
 :::
 
----
-
 ## Method 3: Public Buckets
 
 For publicly accessible GCS buckets, you don't need to create a connector. Simply use the GCS URI directly in your model configuration.
@@ -168,12 +158,10 @@ For publicly accessible GCS buckets, you don't need to create a connector. Simpl
 3. In the authentication step:
    - Choose **Public**
    - The UI will skip connector creation and proceed directly to data model configuration
-4. In the data model configuration step:
-   - Enter your bucket name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will only create the model file (no connector file is created).
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -191,8 +179,6 @@ sql: SELECT * FROM read_parquet('gs://my-public-bucket/path/to/data/*.parquet')
 refresh:
   cron: "0 */6 * * *"
 ```
-
----
 
 ## Method 4: Local Google Cloud CLI Credentials
 
@@ -227,8 +213,6 @@ Rill will automatically detect and use your local Google Cloud CLI credentials w
 :::warning
 This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Service Account JSON or HMAC keys for production deployments.
 :::
-
----
 
 ## Using GCS Data in Models
 
@@ -297,8 +281,6 @@ SELECT * FROM read_parquet('gs://my-bucket/data/**/*.parquet')
 SELECT * FROM read_parquet('gs://my-bucket/data/2024-*.parquet')
 ```
 
----
-
 ## Deploy to Rill Cloud
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide Service Account JSON or HMAC Keys for Google Cloud Storage used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#gcs) for more information.
@@ -307,8 +289,6 @@ If you subsequently add sources that require new credentials (or if you simply e
 ```
 rill env push
 ```
-
----
 
 ## Appendix
 
