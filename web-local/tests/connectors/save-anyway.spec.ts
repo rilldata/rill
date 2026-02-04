@@ -25,10 +25,11 @@ test.describe("Save Anyway feature", () => {
     await page.getByRole("textbox", { name: "Password" }).fill("asd");
 
     // Click "Test and Connect" - this should fail connection test and show "Save Anyway" button
-    // Use force:true to handle CI viewport differences
-    await page
-      .getByRole("button", { name: /^(Test and Connect|Connect)$/ })
-      .click({ force: true });
+    const submitButton = page.getByRole("button", {
+      name: /^(Test and Connect|Connect)$/,
+    });
+    await submitButton.scrollIntoViewIfNeeded();
+    await submitButton.click();
 
     // Wait for "Save Anyway" button to appear
     await expect(
