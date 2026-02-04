@@ -5,15 +5,8 @@ import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sideb
 import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-import {
-  MetricsEventScreenName,
-  MetricsEventSpace,
-} from "@rilldata/web-common/metrics/service/MetricsTypes";
 import {
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
@@ -191,45 +184,11 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
     // Start a new conversation instead of continuing existing one
     conversationManager.enterNewConversationMode();
 
-    const currentConversation = get(
-      conversationManager.getCurrentConversation(),
-    );
-
     // Set generating state
     generatingCanvas.set(true);
 
     // 4. Start the chat with the generation prompt
     sidebarActions.startChat(prompt);
-
-    // Wait for the stream to start async through the sidebar action.
-    await waitUntil(() => get(currentConversation.isStreaming));
-
-    // Then wait for the stream to end before checking for file creation
-    await waitUntil(() => !get(currentConversation.isStreaming), -1);
-
-    // After streaming completes, verify the file was created
-    const fileArtifact = fileArtifacts.getFileArtifact(canvasFilePath);
-    const fileExists = await waitUntil(() => {
-      const resource = get(fileArtifact.getResource(queryClient, instanceId));
-      return resource.data !== undefined;
-    }, 5000).catch(() => false);
-
-    if (fileExists) {
-      // Navigate to the created canvas
-      void goto(`/files${canvasFilePath}`);
-      void behaviourEvent?.fireNavigationEvent(
-        metricsViewName,
-        BehaviourEventMedium.Menu,
-        MetricsEventSpace.LeftPanel,
-        getScreenNameFromPage(),
-        MetricsEventScreenName.Canvas,
-      );
-    } else {
-      eventBus.emit("notification", {
-        message: "Canvas file was not created",
-        detail: "Check the chat sidebar for errors",
-      });
-    }
   } catch (err) {
     console.error("Error generating canvas with agent:", err);
     eventBus.emit("notification", {
