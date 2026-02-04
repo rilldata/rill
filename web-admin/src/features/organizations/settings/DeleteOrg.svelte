@@ -4,7 +4,7 @@
     createAdminServiceDeleteOrganization,
     getAdminServiceGetOrganizationQueryKey,
   } from "@rilldata/web-admin/client";
-  import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
+  import DangerZoneItem from "@rilldata/web-admin/features/organizations/settings/DangerZoneItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -31,22 +31,23 @@
   }
 </script>
 
-<SettingsContainer title="Delete org">
-  <svelte:fragment slot="body">
-    Permanently remove all contents of this org.
-  </svelte:fragment>
-
+<DangerZoneItem
+  title="Delete this organization"
+  description="Once you delete an organization, there is no going back. Please be certain."
+>
   <AlertDialogGuardedConfirmation
     slot="action"
-    title="Delete this org?"
-    description={`The org ${organization} will be deleted permanently. This action cannot be undone.`}
+    title="Delete this organization?"
+    description={`The organization "${organization}" will be permanently deleted along with all its projects, data, and settings. This action cannot be undone.`}
     confirmText={`delete ${organization}`}
     loading={deleteOrgResult.isPending}
     error={deleteOrgResult.error?.message}
     onConfirm={deleteOrg}
   >
     <svelte:fragment let:builder>
-      <Button builders={[builder]} type="primary">Delete org</Button>
+      <Button builders={[builder]} type="destructive">
+        Delete this organization
+      </Button>
     </svelte:fragment>
   </AlertDialogGuardedConfirmation>
-</SettingsContainer>
+</DangerZoneItem>
