@@ -223,6 +223,8 @@ For a specific view into your time series graph, you can interactively scrub dir
 
 Your dashboard may have multiple time dimensions available for filtering, beyond the primary time series. These appear as additional filter options and allow you to analyze data across different temporal perspectives.
 
+![Multiple Time Dimensions](/img/build/metrics-view/time-series/mulitple-time-series.png)
+
 ### Common Use Cases
 
 - **Order vs. Ship Date**: Filter by when orders were placed or when they were fulfilled
@@ -251,4 +253,4 @@ To find orders placed last month that haven't shipped yet:
 
 This combination lets you identify orders that are still pending fulfillment.
 
-For information on how to configure time dimensions in your metrics view, see [Time Dimensions](/developers/build/metrics-view/dimensions/time-dimensions).
+For more details on configuring time dimensions, see the [Time Dimensions](/developers/build/metrics-view/dimensions/time-dimensions) developer documentation.
