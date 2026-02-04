@@ -48,7 +48,7 @@ For example, to use the `AWS_ACCESS_KEY_ID` environment variable:
 rill start --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 ```
 
-This will pull in the value of AWS_ACCESS_KEY_ID from your environment and make it available to your Rill project without exposing the credential value in your command or .env file. In Rill, you would reference it using: `"{{ .env.AWS_ACCESS_KEY_ID }}"`.
+This will pull in the value of AWS_ACCESS_KEY_ID from your environment and make it available to your Rill project without exposing the credential value in your command or .env file. In Rill, you would reference it using: `'{{ env "AWS_ACCESS_KEY_ID" }}'`.
 
 :::warning Development Only
 

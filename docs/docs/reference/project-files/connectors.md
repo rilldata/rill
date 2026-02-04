@@ -500,7 +500,7 @@ _[boolean]_ - Allow access to host environment configuration
 # Example: GCS connector configuration
 type: connector # Must be `connector` (required)
 driver: gcs # Must be `gcs` _(required)_
-google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}" # Google Cloud credentials JSON string
+google_application_credentials: '{{ env "GOOGLE_APPLICATION_CREDENTIALS" }}' # Google Cloud credentials JSON string
 ```
 
 ## HTTPS
@@ -700,7 +700,7 @@ _[string]_ - The base URL for the Claude API
 # Example: Claude connector configuration
 type: connector
 driver: claude
-api_key: "{{ .env.claude_api_key }}"
+api_key: '{{ env "CLAUDE_API_KEY" }}'
 model: claude-opus-4-5
 ```
 
@@ -815,7 +815,7 @@ driver: starrocks # Must be `starrocks` _(required)_
 host: "starrocks-fe.example.com" # Hostname of the StarRocks FE server  
 port: 9030 # MySQL protocol port of StarRocks FE  
 username: "analyst" # Username for authentication  
-password: "{{ .env.connector.starrocks.password }}" # Password for authentication  
+password: '{{ env "STARROCKS_PASSWORD" }}' # Password for authentication  
 catalog: "default_catalog" # StarRocks catalog name  
 database: "my_database" # StarRocks database name  
 ssl: false # Enable SSL/TLS encryption
