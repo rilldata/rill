@@ -23,6 +23,9 @@ export const addSourceModal = (() => {
         if (connectorInstanceName) {
           setConnectorInstanceName(connectorInstanceName);
         }
+      } else {
+        // Reset to connector step when opening without a pre-selected connector
+        resetConnectorStep();
       }
 
       const state = {

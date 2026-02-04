@@ -235,7 +235,6 @@ export class AddDataFormManager {
     const isMultiStep = isMultiStepConnectorSchema(schema);
     const isExplorer = hasExplorerStepSchema(schema);
     const isStepFlowConnector = isMultiStep || isExplorer;
-    const isConnectorForm = this.formType === "connector";
 
     return async (event: {
       form: SuperValidated<FormData, string, FormData>;
