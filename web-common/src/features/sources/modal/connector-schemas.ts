@@ -21,7 +21,8 @@ import { motherduckSchema } from "../../templates/schemas/motherduck";
 import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
 import { s3Schema } from "../../templates/schemas/s3";
-import { SOURCES, OLAP_ENGINES } from "./constants";
+import { publicSchema } from "../../templates/schemas/public";
+import { SOURCES, OLAP_ENGINES, MODEL_CONNECTORS } from "./constants";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
@@ -43,6 +44,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   s3: s3Schema,
   gcs: gcsSchema,
   azure: azureSchema,
+  public: publicSchema,
 };
 
 /**
@@ -58,6 +60,20 @@ export interface ConnectorInfo {
  * All connectors enumerated from JSON schemas, sorted by display order.
  */
 export const connectors: ConnectorInfo[] = [...SOURCES, ...OLAP_ENGINES]
+  .filter((name) => multiStepFormSchemas[name]?.["x-category"])
+  .map((name) => {
+    const schema = multiStepFormSchemas[name];
+    return {
+      name,
+      displayName: schema.title ?? name,
+      category: schema["x-category"] as ConnectorCategory,
+    };
+  });
+
+/**
+ * Model connectors for the "Add a model" section.
+ */
+export const modelConnectors: ConnectorInfo[] = MODEL_CONNECTORS
   .filter((name) => multiStepFormSchemas[name]?.["x-category"])
   .map((name) => {
     const schema = multiStepFormSchemas[name];

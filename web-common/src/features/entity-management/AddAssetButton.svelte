@@ -35,8 +35,9 @@
   import { connectorIconMapping } from "../connectors/connector-icon-mapping";
   import { getConnectorIconKey } from "../connectors/connectors-utils";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
-  import { Wand } from "lucide-svelte";
+  import { Wand, Globe, Upload } from "lucide-svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { modelConnectors } from "../sources/modal/connector-schemas";
 
   let active = false;
   let showExploreDialog = false;
@@ -195,12 +196,12 @@
     }]`}
   >
     <DropdownMenu.Item
-      aria-label="Add Data"
+      aria-label="Add Connector"
       class="flex gap-x-2"
       on:click={handleAddData}
     >
       <svelte:component this={Database} color="#C026D3" size="16px" />
-      Data
+      Connector
     </DropdownMenu.Item>
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger
@@ -237,21 +238,57 @@
             </DropdownMenu.Item>
           {/if}
         {/each}
+        <DropdownMenu.Separator />
         <DropdownMenu.Item
-          aria-label="Blank file"
+          aria-label="Blank SQL file"
           class="flex gap-x-2"
           disabled={!isModelingSupported}
           on:click={() => createResourceAndNavigate(ResourceKind.Model)}
         >
           <File size="16px" />
-          <div class="flex flex-col items-start">
-            Blank file
-            {#if !isModelingSupported}
-              <span class="text-fg-secondary text-xs">
-                Requires a supported OLAP driver
-              </span>
-            {/if}
-          </div>
+          Blank SQL
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          aria-label="Public URL"
+          class="flex gap-x-2"
+          disabled={!isModelingSupported}
+          on:click={() => {
+            const connector = modelConnectors.find(c => c.name === "public");
+            if (connector) {
+              addSourceModal.openWithConnector(
+                {
+                  name: "https",
+                  displayName: connector.displayName,
+                  implementsFileStore: true,
+                },
+                "public",
+              );
+            }
+          }}
+        >
+          <Globe size="16px" />
+          Public
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          aria-label="Local File"
+          class="flex gap-x-2"
+          disabled={!isModelingSupported}
+          on:click={() => {
+            const connector = modelConnectors.find(c => c.name === "local_file");
+            if (connector) {
+              addSourceModal.openWithConnector(
+                {
+                  name: "local_file",
+                  displayName: connector.displayName,
+                  implementsFileStore: true,
+                },
+                "local_file",
+              );
+            }
+          }}
+        >
+          <Upload size="16px" />
+          Local File
         </DropdownMenu.Item>
       </DropdownMenu.SubContent>
     </DropdownMenu.Sub>

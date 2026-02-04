@@ -18,6 +18,7 @@ import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
 import SQLite from "../../../components/icons/connectors/SQLite.svelte";
 import ClickHouseCloud from "../../../components/icons/connectors/ClickHouseCloud.svelte";
 import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
+import Public from "../../../components/icons/connectors/Public.svelte";
 
 export const ICONS = {
   gcs: GoogleCloudStorage,
@@ -40,4 +41,5 @@ export const ICONS = {
   druid: ApacheDruid,
   pinot: ApachePinot,
   starrocks: StarRocks,
+  public: Public,
 };

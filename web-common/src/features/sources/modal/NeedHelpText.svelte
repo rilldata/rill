@@ -32,8 +32,20 @@
 
       <div class="text-sm leading-normal font-medium text-fg-muted mb-2">
         External {connector.displayName} files are meant for local development only.
-        They may run fine on your machine, but aren’t reliably supported in production
+        They may run fine on your machine, but aren't reliably supported in production
         deployments—especially if the file is large (100MB) or outside the data directory.
+      </div>
+    </div>
+  {/if}
+  {#if connector.displayName === "Public URL"}
+    <div class="mt-8">
+      <div class="text-sm leading-none font-medium text-fg-secondary mb-4">
+        Supported Sources
+      </div>
+
+      <div class="text-sm leading-normal font-medium text-fg-muted mb-2">
+        Connect to any publicly accessible dataset via HTTP/HTTPS URLs, including
+        public files from GCS, S3, and Azure blob storage.
       </div>
     </div>
   {/if}

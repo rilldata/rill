@@ -130,13 +130,11 @@
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
-  // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
     selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
-    (selectedConnector?.implementsWarehouse &&
-      selectedConnector?.name !== "salesforce");
+    selectedConnector?.implementsWarehouse;
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -159,7 +157,7 @@
     >
       {#if step === 1}
         {#if isModelingSupported}
-          <Dialog.Title>Add a source</Dialog.Title>
+          <Dialog.Title>Data Source</Dialog.Title>
           <section class="mb-1">
             <div
               class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
