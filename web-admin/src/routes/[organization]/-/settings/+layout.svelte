@@ -35,12 +35,14 @@
 
 <ContentContainer title="Organization settings" maxWidth={1100}>
   <div class="container flex-col md:flex-row">
-    <LeftNav
-      {basePage}
-      baseRoute="/[organization]/-/settings"
-      {navItems}
-      minWidth="180px"
-    />
+    <div class="nav-wrapper">
+      <LeftNav
+        {basePage}
+        baseRoute="/[organization]/-/settings"
+        {navItems}
+        minWidth="180px"
+      />
+    </div>
     <div class="flex flex-col gap-y-6 w-full min-w-0">
       <slot />
     </div>
@@ -50,5 +52,9 @@
 <style lang="postcss">
   .container {
     @apply flex pt-6 gap-6 max-w-full items-start flex-1;
+  }
+
+  .nav-wrapper {
+    @apply md:sticky md:top-0 shrink-0;
   }
 </style>

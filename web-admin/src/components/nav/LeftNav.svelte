@@ -28,7 +28,5 @@
 <style lang="postcss">
   .nav-items {
     @apply flex flex-col gap-y-2;
-    /* On medium screens and up, make the nav sticky so it stays fixed while content scrolls */
-    @apply md:sticky md:top-0 md:self-start;
   }
 </style>
