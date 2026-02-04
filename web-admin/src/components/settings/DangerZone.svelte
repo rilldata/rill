@@ -18,6 +18,11 @@
     @apply border-0 rounded-none;
   }
 
+  /* Add top border between multiple settings containers */
+  .danger-zone > :global(.settings-container + .settings-container) {
+    border-top: 1px solid var(--color-red-200);
+  }
+
   .danger-zone > :global(.settings-container .settings-footer) {
     @apply border-t;
     border-color: var(--color-red-200);
