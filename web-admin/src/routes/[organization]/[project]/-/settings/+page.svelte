@@ -16,18 +16,14 @@
   <h3 class="danger-zone-title">Danger Zone</h3>
   <DangerZone>
     <ProjectVisibilitySettings {organization} {project} />
-  </DangerZone>
-  <DangerZone>
     <HibernateProject {organization} {project} />
-  </DangerZone>
-  <DangerZone>
     <DeleteProject {organization} {project} />
   </DangerZone>
 </div>
 
 <style lang="postcss">
   .danger-zone-section {
-    @apply flex flex-col gap-4;
+    @apply flex flex-col gap-3;
   }
 
   .danger-zone-title {
