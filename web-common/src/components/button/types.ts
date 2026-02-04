@@ -1,6 +1,7 @@
 export type ButtonType =
   | "primary"
   | "secondary"
+  | "secondary-destructive"
   | "tertiary"
   | "neutral"
   | "destructive"

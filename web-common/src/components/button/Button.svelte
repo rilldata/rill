@@ -158,6 +158,26 @@
     @apply opacity-50;
   }
 
+  /* SECONDARY DESTRUCTIVE STYLES */
+
+  .secondary-destructive {
+    --focus-color: var(--color-red-600);
+    @apply bg-transparent border text-red-600;
+    border-color: var(--color-red-400);
+  }
+
+  .secondary-destructive:hover:not(:disabled) {
+    @apply bg-red-50 text-red-700;
+  }
+
+  :global(.dark) .secondary-destructive:hover:not(:disabled) {
+    @apply bg-red-950;
+  }
+
+  .secondary-destructive:disabled {
+    @apply opacity-50;
+  }
+
   /* GHOST STYLES */
 
   .ghost {

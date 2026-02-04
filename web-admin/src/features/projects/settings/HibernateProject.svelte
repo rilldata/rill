@@ -82,7 +82,7 @@
     {#if isHibernated}
       <Button
         onClick={wakeProject}
-        type="secondary"
+        type="secondary-destructive"
         loading={redeployResult.isPending}
       >
         Wake project
@@ -90,7 +90,7 @@
     {:else}
       <AlertDialog bind:open={dialogOpen}>
         <AlertDialogTrigger asChild let:builder>
-          <Button builders={[builder]} type="secondary">
+          <Button builders={[builder]} type="secondary-destructive">
             Hibernate project
           </Button>
         </AlertDialogTrigger>
