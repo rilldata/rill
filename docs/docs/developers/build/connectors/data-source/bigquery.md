@@ -47,7 +47,7 @@ Service Account JSON credentials provide the most secure and reliable authentica
 4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -190,7 +190,7 @@ refresh:
 
 When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
 
-For more details, see our [Dev/Prod setup docs](/build/connectors/templating).
+For more details, see our [Dev/Prod setup docs](/developers/build/connectors/templating).
 
 ---
 

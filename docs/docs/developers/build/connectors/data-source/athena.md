@@ -49,7 +49,7 @@ Access Key and Secret Key credentials provide the most reliable authentication f
 4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 

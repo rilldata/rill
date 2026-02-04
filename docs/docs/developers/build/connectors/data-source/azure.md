@@ -62,7 +62,7 @@ Storage Account Key credentials provide reliable authentication for Azure Blob S
 4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -119,7 +119,7 @@ Connection String provides an alternative authentication method for Azure Blob S
 4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -174,7 +174,7 @@ SAS tokens provide fine-grained access control with specific permissions and exp
 4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -229,7 +229,7 @@ For publicly accessible Azure Blob Storage containers, you don't need to create 
 4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 

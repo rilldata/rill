@@ -71,7 +71,7 @@ To determine your [Snowflake account identifier](https://docs.snowflake.com/en/u
 4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
