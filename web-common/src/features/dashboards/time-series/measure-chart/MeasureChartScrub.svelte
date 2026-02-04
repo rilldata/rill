@@ -106,8 +106,7 @@
         cy={y1}
         r={3}
         paint-order="stroke"
-        class="fill-primary-700"
-        stroke="white"
+        class="fill-primary-700 stroke-surface-background"
         stroke-width="3"
       />
 
@@ -124,8 +123,7 @@
         cy={y1}
         r={3}
         paint-order="stroke"
-        class="fill-primary-700"
-        stroke="white"
+        class="fill-primary-700 stroke-surface-background"
         stroke-width="3"
       />
     {/if}
