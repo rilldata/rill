@@ -9,6 +9,7 @@
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
+  export let searchPattern: string = "";
 
   $: connectorName = connector?.name as string;
   $: hasError = !!connector?.errorMessage;
@@ -51,7 +52,7 @@
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
-          <DatabaseEntry {instanceId} {connector} {database} {store} />
+          <DatabaseEntry {instanceId} {connector} {database} {store} {searchPattern} />
         {/each}
       </ol>
     {/if}

@@ -150,6 +150,7 @@ export function useListDatabaseSchemas(
 
 /**
  * Infinite tables loader using pageToken cursor
+ * Note: searchPattern is filtered client-side since the backend doesn't support it
  */
 export function useInfiniteListTables(
   instanceId: string,
@@ -158,11 +159,12 @@ export function useInfiniteListTables(
   databaseSchema: string,
   pageSize = 5,
   enabled: boolean = true,
+  searchPattern: string = "",
 ) {
   return createInfiniteQuery({
     queryKey: [
       "/v1/connectors/tables",
-      { instanceId, connector, database, databaseSchema, pageSize },
+      { instanceId, connector, database, databaseSchema, pageSize, searchPattern },
     ],
     enabled:
       enabled &&
@@ -185,15 +187,26 @@ export function useInfiniteListTables(
         },
         signal,
       ),
-    select: (data: any) => ({
-      tables: data.pages.flatMap(
+    select: (data: any) => {
+      const allTables = data.pages.flatMap(
         (p: { tables?: V1TableInfo[] }) => p.tables ?? [],
-      ),
-      nextPageToken:
-        data.pages.length > 0
-          ? data.pages[data.pages.length - 1].nextPageToken
-          : undefined,
-    }),
+      );
+
+      // Client-side filtering by search pattern (case-insensitive)
+      const filteredTables = searchPattern
+        ? allTables.filter((table: V1TableInfo) =>
+            table.name?.toLowerCase().includes(searchPattern.toLowerCase()),
+          )
+        : allTables;
+
+      return {
+        tables: filteredTables,
+        nextPageToken:
+          data.pages.length > 0
+            ? data.pages[data.pages.length - 1].nextPageToken
+            : undefined,
+      };
+    },
   });
 }
 
