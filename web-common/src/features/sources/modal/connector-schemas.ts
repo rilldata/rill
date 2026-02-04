@@ -73,16 +73,16 @@ export const connectors: ConnectorInfo[] = [...SOURCES, ...OLAP_ENGINES]
 /**
  * Model connectors for the "Add a model" section.
  */
-export const modelConnectors: ConnectorInfo[] = MODEL_CONNECTORS
-  .filter((name) => multiStepFormSchemas[name]?.["x-category"])
-  .map((name) => {
-    const schema = multiStepFormSchemas[name];
-    return {
-      name,
-      displayName: schema.title ?? name,
-      category: schema["x-category"] as ConnectorCategory,
-    };
-  });
+export const modelConnectors: ConnectorInfo[] = MODEL_CONNECTORS.filter(
+  (name) => multiStepFormSchemas[name]?.["x-category"],
+).map((name) => {
+  const schema = multiStepFormSchemas[name];
+  return {
+    name,
+    displayName: schema.title ?? name,
+    category: schema["x-category"] as ConnectorCategory,
+  };
+});
 
 export function getConnectorSchema(
   connectorName: string,

@@ -32,10 +32,7 @@ export const addSourceModal = (() => {
       window.history.pushState(state, "", "");
       window.dispatchEvent(new PopStateEvent("popstate", { state: state }));
     },
-    openWithConnector: (
-      connector: V1ConnectorDriver,
-      schemaName: string,
-    ) => {
+    openWithConnector: (connector: V1ConnectorDriver, schemaName: string) => {
       resetConnectorStep();
       const state = {
         step: 2,

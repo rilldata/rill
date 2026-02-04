@@ -260,7 +260,7 @@
           class="flex gap-x-2"
           disabled={!isModelingSupported}
           on:click={() => {
-            const connector = modelConnectors.find(c => c.name === "public");
+            const connector = modelConnectors.find((c) => c.name === "public");
             if (connector) {
               addSourceModal.openWithConnector(
                 {
@@ -281,7 +281,9 @@
           class="flex gap-x-2"
           disabled={!isModelingSupported}
           on:click={() => {
-            const connector = modelConnectors.find(c => c.name === "local_file");
+            const connector = modelConnectors.find(
+              (c) => c.name === "local_file",
+            );
             if (connector) {
               addSourceModal.openWithConnector(
                 {
