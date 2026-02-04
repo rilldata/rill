@@ -18,6 +18,7 @@ materialize: true`;
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
 ) {
   // Get the secret property keys
   const secretPropertyKeys =
@@ -53,6 +54,8 @@ export function compileSourceYAML(
         return `${key}: '{{ env "${makeDotEnvConnectorKey(
           connector.name as string,
           key,
+          undefined, // existingEnvBlob
+          schema,
         )}" }}'`;
       }
 

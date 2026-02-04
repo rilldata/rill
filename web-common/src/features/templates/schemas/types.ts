@@ -33,6 +33,11 @@ export type JSONSchemaField = {
    * child field keys that should render beneath that option.
    */
   "x-grouped-fields"?: Record<string, string[]>;
+  /**
+   * Explicit environment variable name for secret fields.
+   * When set, this name is used instead of computing it from driver + property key.
+   */
+  "x-env-var-name"?: string;
   // Allow custom keywords such as errorMessage or future x-extensions.
   [key: string]: unknown;
 };

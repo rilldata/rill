@@ -40,6 +40,7 @@ export function compileConnectorYAML(
     fieldFilter?: (property: ConnectorDriverProperty) => boolean;
     orderedProperties?: ConnectorDriverProperty[];
     existingEnvBlob?: string;
+    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
   },
 ) {
   // Add instructions to the top of the file
@@ -104,6 +105,7 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
           connector.name as string,
           key,
           options?.existingEnvBlob,
+          options?.schema,
         )}" }}'`;
       }
 
@@ -125,6 +127,7 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
+  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -173,6 +176,7 @@ export async function updateDotEnvWithSecrets(
       connector.name as string,
       key,
       originalBlob,
+      schema,
     );
 
     blob = replaceOrAddEnvVariable(
@@ -229,33 +233,22 @@ export function deleteEnvVariable(
 
 /**
  * Get a generic ALL_CAPS environment variable name
- * Generic properties (AWS, Google, etc.) use no prefix
+ * If schema provides x-env-var-name, use it directly.
+ * Otherwise: Generic properties (AWS, Google, etc.) use no prefix
  * Driver-specific properties use DriverName_PropertyKey format
  */
 export function getGenericEnvVarName(
   driverName: string,
   propertyKey: string,
+  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
 ): string {
-  // Special mappings for specific driver + property combinations
-  // GCS uses key_id/secret for backwards compatibility but env vars should be GCP_ACCESS_KEY_ID/GCP_SECRET_ACCESS_KEY
-  const specialMappings: Record<string, Record<string, string>> = {
-    gcs: {
-      key_id: "GCP_ACCESS_KEY_ID",
-      secret: "GCP_SECRET_ACCESS_KEY",
-    },
-    gs: {
-      key_id: "GCP_ACCESS_KEY_ID",
-      secret: "GCP_SECRET_ACCESS_KEY",
-    },
-  };
-
-  // Check for special mappings first
-  const driverMappings = specialMappings[driverName.toLowerCase()];
-  if (driverMappings && driverMappings[propertyKey.toLowerCase()]) {
-    return driverMappings[propertyKey.toLowerCase()];
+  // If schema provides explicit env var name, use it
+  const field = schema?.properties?.[propertyKey];
+  if (field?.["x-env-var-name"]) {
+    return field["x-env-var-name"];
   }
 
-  // Generic properties that don't need a driver prefix
+  // Fallback: Generic properties that don't need a driver prefix
   const genericProperties = new Set([
     // Google Cloud credentials
     "google_application_credentials",
@@ -320,9 +313,10 @@ export function makeDotEnvConnectorKey(
   driverName: string,
   key: string,
   existingEnvBlob?: string,
+  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
 ) {
   // Generate generic ALL_CAPS environment variable name
-  const baseGenericName = getGenericEnvVarName(driverName, key);
+  const baseGenericName = getGenericEnvVarName(driverName, key, schema);
 
   // If no existing env blob is provided, just return the base generic name
   if (!existingEnvBlob) {

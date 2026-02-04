@@ -169,25 +169,25 @@ describe("getGenericEnvVarName", () => {
     });
   });
 
-  describe("GCS special mappings - backwards compatible keys with GS_ env vars", () => {
-    it("should return GCP_ACCESS_KEY_ID for gcs key_id", () => {
+  describe("GCS fallback behavior - uses driver prefix without schema", () => {
+    it("should return GCS_KEY_ID for gcs key_id without schema", () => {
       const result = getGenericEnvVarName("gcs", "key_id");
-      expect(result).toBe("GCP_ACCESS_KEY_ID");
+      expect(result).toBe("GCS_KEY_ID");
     });
 
-    it("should return GCP_SECRET_ACCESS_KEY for gcs secret", () => {
+    it("should return GCS_SECRET for gcs secret without schema", () => {
       const result = getGenericEnvVarName("gcs", "secret");
-      expect(result).toBe("GCP_SECRET_ACCESS_KEY");
+      expect(result).toBe("GCS_SECRET");
     });
 
-    it("should return GCP_ACCESS_KEY_ID for gs key_id (alternate driver name)", () => {
+    it("should return GS_KEY_ID for gs key_id without schema", () => {
       const result = getGenericEnvVarName("gs", "key_id");
-      expect(result).toBe("GCP_ACCESS_KEY_ID");
+      expect(result).toBe("GS_KEY_ID");
     });
 
-    it("should return GCP_SECRET_ACCESS_KEY for gs secret (alternate driver name)", () => {
+    it("should return GS_SECRET for gs secret without schema", () => {
       const result = getGenericEnvVarName("gs", "secret");
-      expect(result).toBe("GCP_SECRET_ACCESS_KEY");
+      expect(result).toBe("GS_SECRET");
     });
   });
 
@@ -208,6 +208,54 @@ describe("getGenericEnvVarName", () => {
         "property.with-mixed.separators",
       );
       expect(result).toBe("CUSTOM_PROPERTY_WITH_MIXED_SEPARATORS");
+    });
+  });
+
+  describe("Schema-driven x-env-var-name", () => {
+    it("should use x-env-var-name from schema when provided", () => {
+      const schema = {
+        properties: {
+          key_id: { "x-env-var-name": "GCS_ACCESS_KEY_ID" },
+        },
+      };
+      const result = getGenericEnvVarName("gcs", "key_id", schema);
+      expect(result).toBe("GCS_ACCESS_KEY_ID");
+    });
+
+    it("should fall back to default behavior when x-env-var-name is not in schema", () => {
+      const schema = {
+        properties: {
+          other_field: { "x-env-var-name": "OTHER_VAR" },
+        },
+      };
+      const result = getGenericEnvVarName("gcs", "key_id", schema);
+      expect(result).toBe("GCS_KEY_ID");
+    });
+
+    it("should fall back to default behavior when schema is undefined", () => {
+      const result = getGenericEnvVarName("motherduck", "token", undefined);
+      expect(result).toBe("MOTHERDUCK_TOKEN");
+    });
+
+    it("should fall back when schema has no properties", () => {
+      const schema = { properties: {} };
+      const result = getGenericEnvVarName("motherduck", "token", schema);
+      expect(result).toBe("MOTHERDUCK_TOKEN");
+    });
+
+    it("should use x-env-var-name for AWS credentials in S3 schema", () => {
+      const schema = {
+        properties: {
+          aws_access_key_id: { "x-env-var-name": "AWS_ACCESS_KEY_ID" },
+          aws_secret_access_key: { "x-env-var-name": "AWS_SECRET_ACCESS_KEY" },
+        },
+      };
+      expect(getGenericEnvVarName("s3", "aws_access_key_id", schema)).toBe(
+        "AWS_ACCESS_KEY_ID",
+      );
+      expect(getGenericEnvVarName("s3", "aws_secret_access_key", schema)).toBe(
+        "AWS_SECRET_ACCESS_KEY",
+      );
     });
   });
 });
