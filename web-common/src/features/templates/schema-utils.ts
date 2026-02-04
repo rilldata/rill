@@ -321,6 +321,7 @@ function filterValuesByTabGroups(
   for (const [key, prop] of Object.entries(properties)) {
     if (!isStepMatch(schema, key, opts?.step)) continue;
     if (prop["x-display"] !== "tabs") continue;
+    if (!isVisibleForValues(schema, key, values)) continue;
     const tabGroups = prop["x-tab-group"];
     if (!tabGroups) continue;
     const selected = String(values?.[key] ?? "");

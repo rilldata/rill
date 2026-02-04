@@ -39,6 +39,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-display": "tabs",
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-ui-only": true,
+      "x-visible-if": { auth_method: "password" },
       "x-tab-group": {
         parameters: [
           "account",
