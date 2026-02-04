@@ -86,7 +86,15 @@
               c?.driver?.implementsWarehouse,
           )
           .sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
-        return { connectors: filtered };
+        // Deduplicate by driver name to show unique drivers only
+        const seen = new Set<string>();
+        const unique = filtered.filter((c) => {
+          const driverName = c?.driver?.name;
+          if (!driverName || seen.has(driverName)) return false;
+          seen.add(driverName);
+          return true;
+        });
+        return { connectors: unique };
       },
     },
   });
@@ -223,11 +231,20 @@
       </DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
         {#each connectorsData as connector (connector.name)}
-          {#if connector?.name}
+          {#if connector?.driver?.name}
             <DropdownMenu.Item
               class="flex gap-x-2"
               on:click={() => {
-                console.log("selectedConnector", connector);
+                addSourceModal.openWithConnector(
+                  {
+                    name: connector.driver?.name,
+                    displayName: connector.driver?.displayName ?? connector.driver?.name,
+                    implementsOlap: connector.driver?.implementsOlap,
+                    implementsSqlStore: connector.driver?.implementsSqlStore,
+                    implementsWarehouse: connector.driver?.implementsWarehouse,
+                  },
+                  connector.driver?.name ?? "",
+                );
               }}
             >
               <svelte:component
