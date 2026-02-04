@@ -15,7 +15,7 @@ export const duckdbSchema: MultiStepFormSchema = {
       type: "string",
       title: "Connection type",
       enum: ["rill-managed", "self-hosted"],
-      default: "self-hosted",
+      default: "rill-managed",
       "x-display": "radio",
       "x-enum-labels": ["Rill-managed DuckDB", "Self-hosted DuckDB"],
       "x-ui-only": true,
