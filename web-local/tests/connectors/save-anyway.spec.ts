@@ -25,19 +25,21 @@ test.describe("Save Anyway feature", () => {
     await page.getByRole("textbox", { name: "Password" }).fill("asd");
 
     // Click "Test and Connect" - this should fail connection test and show "Save Anyway" button
-    const submitButton = page.getByRole("button", {
-      name: /^(Test and Connect|Connect)$/,
-    });
-    await submitButton.scrollIntoViewIfNeeded();
-    await submitButton.click();
+    // Note: ClickHouse form is tall (x-form-height: tall = 720px) which can exceed viewport.
+    // Scope to dialog and use force:true to handle viewport overflow in CI environments.
+    const submitButton = page
+      .getByRole("dialog")
+      .getByRole("button", { name: /^(Test and Connect|Connect)$/ });
+    await submitButton.click({ force: true });
 
     // Wait for "Save Anyway" button to appear
-    await expect(
-      page.getByRole("button", { name: "Save Anyway" }),
-    ).toBeVisible();
+    const saveAnywayButton = page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Save Anyway" });
+    await expect(saveAnywayButton).toBeVisible();
 
-    // Click "Save Anyway" button
-    await page.getByRole("button", { name: "Save Anyway" }).click();
+    // Click "Save Anyway" button (force:true for same viewport overflow reason)
+    await saveAnywayButton.click({ force: true });
 
     // Wait for navigation to connector file, then for the editor to appear
     await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/, {
