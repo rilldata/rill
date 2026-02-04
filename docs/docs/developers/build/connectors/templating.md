@@ -33,6 +33,8 @@ aws_access_key_id: '{{ env "AWS_ACCESS_KEY_ID" }}'
 
 :::tip Case-Insensitive Lookups
 The `{{ env "VAR_NAME" }}` function provides case-insensitive variable lookups, so `{{ env "my_var" }}` will match `MY_VAR` in your `.env` file.
+
+**Note:** If your `.env` file contains multiple variables that differ only by case (e.g., both `my_var` and `MY_VAR`), the behavior is undefined. Avoid defining variables with the same name in different cases.
 :::
 
 ## Environment-Specific Connectors
