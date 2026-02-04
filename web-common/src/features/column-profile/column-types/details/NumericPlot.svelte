@@ -8,11 +8,8 @@ Otherwise, the page will jump around as the data is fetched.
 -->
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
-  import { barplotPolyline } from "@rilldata/web-common/components/data-graphic/utils";
-  import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
   import TopKIcon from "@rilldata/web-common/components/icons/TopK.svelte";
-  import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     formatInteger,
     justEnoughPrecision,
@@ -23,8 +20,9 @@ Otherwise, the page will jump around as the data is fetched.
     TopKEntry,
     V1NumericStatistics,
   } from "@rilldata/web-common/runtime-client";
-  import { extent, bisector, max, min } from "d3-array";
+  import { bisector } from "d3-array";
   import { scaleLinear } from "d3-scale";
+  import { createHistogramScales } from "../histogram-utils";
   import { interpolateBlues } from "d3-scale-chromatic";
   import { tweened } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
@@ -57,24 +55,17 @@ Otherwise, the page will jump around as the data is fetched.
   $: plotTop = margins.top;
   $: plotBottom = histHeight - margins.bottom;
 
-  // Histogram scales
-  $: xMin = min(data, (d) => d.low);
-  $: xMax = max(data, (d) => d.high);
-  $: [, yMax] = extent(data, (d) => d.count);
-
-  $: xScale = scaleLinear()
-    .domain([xMin ?? 0, xMax ?? 1])
-    .range([plotLeft, plotRight]);
-  $: yScale = scaleLinear()
-    .domain([0, yMax ?? 1])
-    .range([plotBottom, plotTop]);
-
-  // Histogram path
-  $: separator = data?.length < 30 && INTEGERS.has(type) ? 1 : 0;
-  const histGradientId = `hist-gradient-${guidGenerator()}`;
-  $: histPath = data
-    ? barplotPolyline(data, xScale, yScale, separator, false, 1)
-    : "";
+  // Histogram scales & path
+  $: ({
+    xScale,
+    yScale,
+    path: histPath,
+  } = createHistogramScales(
+    data,
+    type,
+    { left: plotLeft, right: plotRight, top: plotTop, bottom: plotBottom },
+    { threshold: 30, size: 1 },
+  ));
 
   // Bisection for hover
   const bisectLeft = bisector(
@@ -186,17 +177,6 @@ Otherwise, the page will jump around as the data is fetched.
         mouseX = undefined;
       }}
     >
-      <defs>
-        <linearGradient id={histGradientId} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="5%" stop-color="var(--color-primary-600)" />
-          <stop
-            offset="95%"
-            stop-color="var(--surface-background)"
-            stop-opacity={0.4}
-          />
-        </linearGradient>
-      </defs>
-
       {#if data}
         <!-- baseline -->
         <line
@@ -210,7 +190,7 @@ Otherwise, the page will jump around as the data is fetched.
 
         <!-- histogram bars -->
         {#if histPath?.length}
-          <path d={histPath} fill="url(#{histGradientId})" />
+          <path d={histPath} class="fill-primary-400/40" />
           <path
             d={histPath}
             class="stroke-primary-400"
@@ -347,7 +327,11 @@ Otherwise, the page will jump around as the data is fetched.
 
     <!-- Rug plot -->
     {#if rug}
-      <svg class="overflow-visible" width={containerWidth} height={rugHeight}>
+      <svg
+        class="overflow-visible mt-1"
+        width={containerWidth}
+        height={rugHeight}
+      >
         <g transform="translate(0, 0)">
           {#each rugBuckets as bucket, i (i)}
             {#if bucket.length > 0}

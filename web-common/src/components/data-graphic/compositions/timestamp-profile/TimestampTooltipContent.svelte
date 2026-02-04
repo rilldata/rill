@@ -83,9 +83,7 @@
           right={0}
           top={0}
           bottom={0}
-          color="hsla(217,1%,99%, .5)"
-          zoomWindowColor="hsla(217, 70%, 60%, .6)"
-          zoomWindowBoundaryColor="hsla(217, 10%, 90%, .9)"
+          color="var(--color-teal-300)"
           {zoomWindowXMin}
           {zoomWindowXMax}
         />

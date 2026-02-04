@@ -13,7 +13,10 @@ import {
   type V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+import {
+  getPriority,
+  getPriorityForColumn,
+} from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
 import {
   keepPreviousData,
   type QueryObserverResult,
@@ -334,7 +337,6 @@ export function getNumericHistogram(
   columnName: string,
   histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
   enabled = true,
-  active = false,
 ) {
   return createQueryServiceColumnNumericHistogram(
     instanceId,
@@ -345,7 +347,7 @@ export function getNumericHistogram(
       databaseSchema,
       columnName,
       histogramMethod,
-      priority: getPriorityForColumn("numeric-histogram", active),
+      priority: getPriority("numeric-histogram"),
     },
     {
       query: {

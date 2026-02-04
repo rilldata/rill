@@ -82,11 +82,9 @@
   <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />
   <div slot="left">{columnName}</div>
 
-  <!-- wrap in div to get size of grid item -->
   <div class={TIMESTAMP_TOKENS.textClass} slot="summary" bind:clientWidth>
     <TimestampSpark
       bottom={4}
-      color="currentColor"
       data={spark}
       height={18}
       top={4}

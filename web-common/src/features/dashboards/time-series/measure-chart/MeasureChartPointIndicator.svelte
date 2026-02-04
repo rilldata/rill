@@ -17,7 +17,7 @@
 />
 
 <circle
-  class="stroke-[1.5px] fill-theme-600"
+  class="stroke-[3px] fill-theme-600"
   class:fill-theme-500={selected}
   cx={x}
   cy={y}

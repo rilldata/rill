@@ -8,20 +8,16 @@
     createAreaGenerator,
     pathDoesNotDropToZero,
   } from "../../utils";
-  import { cubicOut } from "svelte/easing";
-  import { fade } from "svelte/transition";
   import type { TimestampDataPoint } from "@rilldata/web-common/features/column-profile/queries";
 
   const gradientId = `spark-gradient-${guidGenerator()}`;
 
   export let data: TimestampDataPoint[];
-  export let width = 360;
-  export let height = 120;
-  export let color = "hsl(217, 10%, 50%)";
-  export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
-  export let zoomWindowBoundaryColor = "rgb(100,100,100)";
+  export let color = "var(--color-teal-700)";
   export let zoomWindowXMin: Date | undefined = undefined;
   export let zoomWindowXMax: Date | undefined = undefined;
+  export let width = 360;
+  export let height = 120;
   export let left = 0;
   export let right = 0;
   export let top = 12;
@@ -58,37 +54,6 @@
 
   $: linePath = lineGen(data);
   $: areaPath = areaGen(data);
-
-  function scaleVertical(
-    node: Element,
-    {
-      delay = 0,
-      duration = 400,
-      easing = cubicOut,
-      start = 0,
-      opacity = 0,
-    } = {},
-  ) {
-    const style = getComputedStyle(node);
-    const target_opacity = +style.opacity;
-    const transform = style.transform === "none" ? "" : style.transform;
-
-    const sd = 1 - start;
-    const od = target_opacity * (1 - opacity);
-
-    return {
-      delay,
-      duration,
-      easing,
-      css: (_t: number, u: number) => {
-        return `
-    transform: ${transform} scaleY(${1 - sd * u});
-    transform-origin: 100% calc(100% - ${0}px);
-    opacity: ${target_opacity - od * u}
-  `;
-      },
-    };
-  }
 </script>
 
 {#if data.length}
@@ -99,7 +64,7 @@
         <stop offset="95%" stop-color={color} stop-opacity={0.3} />
       </linearGradient>
     </defs>
-    <g transition:scaleVertical={{ duration: 400, start: 0.3 }}>
+    <g>
       {#if linePath}
         <path d={linePath} stroke={color} stroke-width={0.5} fill="none" />
       {/if}
@@ -108,13 +73,13 @@
       {/if}
     </g>
     {#if zoomWindowXMin && zoomWindowXMax}
-      <g transition:fade={{ duration: 100 }}>
+      <g>
         <rect
           x={xScale(zoomWindowXMin)}
           y={plotTop}
           width={xScale(zoomWindowXMax) - xScale(zoomWindowXMin)}
           height={plotBottom - plotTop}
-          fill={zoomWindowColor}
+          class="fill-gray-200/50"
           opacity=".9"
           style:mix-blend-mode="lighten"
         />
@@ -123,14 +88,14 @@
           x2={xScale(zoomWindowXMin)}
           y1={plotTop}
           y2={plotBottom}
-          stroke={zoomWindowBoundaryColor}
+          class="stroke-gray-300"
         />
         <line
           x1={xScale(zoomWindowXMax)}
           x2={xScale(zoomWindowXMax)}
           y1={plotTop}
           y2={plotBottom}
-          stroke={zoomWindowBoundaryColor}
+          class="stroke-gray-300"
         />
       </g>
     {/if}
