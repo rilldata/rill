@@ -1,12 +1,12 @@
 <script lang="ts">
+  import { GeneratingMessage } from "@rilldata/web-common/components/generating-message";
+  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import OnboardingWorkspace from "@rilldata/web-common/features/onboarding/OnboardingWorkspace.svelte";
+  import { generatingSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
   import ProjectCards from "@rilldata/web-common/features/welcome/ProjectCards.svelte";
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import { fly } from "svelte/transition";
   import type { LayoutData } from "../$types";
-  import GeneratingSampleDataMessage from "@rilldata/web-common/features/sample-data/GeneratingSampleDataMessage.svelte";
-  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
-  import { generatingSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
 
   export let data: LayoutData;
 </script>
@@ -19,7 +19,7 @@
   <div class="flex size-full overflow-hidden">
     {#if data.initialized}
       {#if $generatingSampleData}
-        <GeneratingSampleDataMessage />
+        <GeneratingMessage title="Generating your sample data..." />
       {:else}
         <OnboardingWorkspace />
       {/if}

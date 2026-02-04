@@ -2,8 +2,8 @@
   import { afterNavigate } from "$app/navigation";
   import type { EditorView } from "@codemirror/view";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
+  import { GeneratingMessage } from "@rilldata/web-common/components/generating-message";
   import { generatingCanvas } from "@rilldata/web-common/features/canvas/ai-generation/generateCanvas";
-  import GeneratingCanvasMessage from "@rilldata/web-common/features/canvas/ai-generation/GeneratingCanvasMessage.svelte";
   import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
@@ -96,7 +96,7 @@
 <div class="flex h-full overflow-hidden">
   <div class="flex-1 overflow-hidden">
     {#if $generatingCanvas}
-      <GeneratingCanvasMessage />
+      <GeneratingMessage title="Generating your Canvas dashboard..." />
     {:else if workspace}
       <svelte:component this={workspace} {fileArtifact} />
     {:else}
