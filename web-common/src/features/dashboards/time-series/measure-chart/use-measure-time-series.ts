@@ -24,7 +24,7 @@ export function transformTimeSeriesData(
 
     const ts = DateTime.fromISO(originalPt.ts, { zone: timezone });
 
-    if (!ts || typeof ts === "string") {
+    if (!ts.isValid) {
       return { ts: DateTime.invalid("Invalid timestamp"), value: null };
     }
 

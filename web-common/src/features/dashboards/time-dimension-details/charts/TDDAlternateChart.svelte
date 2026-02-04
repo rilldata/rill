@@ -179,7 +179,7 @@
     timeGrain,
   );
 
-  function updateAdaptiveScrubRange(interval) {
+  const updateAdaptiveScrubRange = (() => {
     let rafId: number | null = null;
     let lastUpdateTime = 0;
     let currentInterval = 1000 / 60; // Start with 60fps
@@ -188,40 +188,40 @@
     const MAX_INTERVAL = 1000 / 30; // Min 30fps
     const ADJUSTMENT_FACTOR = 1.2; // Adjust interval based on performance
 
-    if (rafId) {
-      cancelAnimationFrame(rafId);
-    }
-
-    rafId = requestAnimationFrame((timestamp) => {
-      const elapsed = timestamp - lastUpdateTime;
-      if (elapsed >= currentInterval) {
-        onChartBrush(interval);
-        lastUpdateTime = timestamp;
-
-        // Adjust interval based on performance
-        if (elapsed > currentInterval * ADJUSTMENT_FACTOR) {
-          currentInterval = Math.min(
-            currentInterval * ADJUSTMENT_FACTOR,
-            MAX_INTERVAL,
-          );
-        } else {
-          currentInterval = Math.max(
-            currentInterval / ADJUSTMENT_FACTOR,
-            MIN_INTERVAL,
-          );
-        }
-      }
-      rafId = null;
-    });
-
     onDestroy(() => {
       if (rafId) {
         cancelAnimationFrame(rafId);
       }
     });
 
-    return updateAdaptiveScrubRange;
-  }
+    return (interval: { start: Date; end: Date }) => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+
+      rafId = requestAnimationFrame((timestamp) => {
+        const elapsed = timestamp - lastUpdateTime;
+        if (elapsed >= currentInterval) {
+          onChartBrush(interval);
+          lastUpdateTime = timestamp;
+
+          // Adjust interval based on performance
+          if (elapsed > currentInterval * ADJUSTMENT_FACTOR) {
+            currentInterval = Math.min(
+              currentInterval * ADJUSTMENT_FACTOR,
+              MAX_INTERVAL,
+            );
+          } else {
+            currentInterval = Math.max(
+              currentInterval / ADJUSTMENT_FACTOR,
+              MIN_INTERVAL,
+            );
+          }
+        }
+        rafId = null;
+      });
+    };
+  })();
 
   const signalListeners = {
     hover: (_name: string, value) => {
@@ -234,11 +234,11 @@
       const interval = resolveSignalIntervalField(value);
 
       // Update view to prevent race condition
-      viewVL.runAsync();
+      void viewVL.runAsync();
 
-      updateAdaptiveScrubRange(interval);
+      if (interval) updateAdaptiveScrubRange(interval);
     },
-    brush_end: (_name: string, value: boolean) => {
+    brush_end: (_name: string, value) => {
       const interval = resolveSignalIntervalField(value);
 
       if (interval) onChartBrushEnd(interval);

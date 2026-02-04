@@ -69,6 +69,10 @@ export function createDimensionAggregationQuery(
         { desc: true, name: measureName },
         { desc: false, name: timeDimension },
       ],
+      // Upper bound: dimensions × time-grain buckets. Matches the limit
+      // used in multiple-dimension-queries.ts. Results exceeding this are
+      // silently truncated, which is acceptable since the leaderboard caps
+      // visible dimensions well below this threshold.
       limit: "10000",
       offset: "0",
     },

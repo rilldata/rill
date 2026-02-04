@@ -32,7 +32,7 @@
     createQueryServiceMetricsViewTimeSeries,
     type V1Expression,
   } from "@rilldata/web-common/runtime-client";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { keepPreviousData } from "@tanstack/svelte-query";
   import { scaleLinear } from "d3-scale";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -207,7 +207,9 @@
         );
 
   $: isError = $timeSeriesQuery.isError;
-  $: error = ($timeSeriesQuery.error as HTTPError)?.response?.data?.message;
+  $: error = isHTTPError($timeSeriesQuery.error)
+    ? $timeSeriesQuery.error.response.data.message
+    : $timeSeriesQuery.error?.message;
 
   // Dimension comparison data
   $: hasDimensionComparison =

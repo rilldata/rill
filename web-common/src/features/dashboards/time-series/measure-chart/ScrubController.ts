@@ -124,11 +124,15 @@ export class ScrubController {
 
     this.mode = this.detectMode(screenX, xScale);
 
-    if (this.mode === "move") {
+    if (
+      this.mode === "move" &&
+      state.startIndex !== null &&
+      state.endIndex !== null
+    ) {
       this.moveStartX = screenX;
       this.moveStartIndices = {
-        start: state.startIndex!,
-        end: state.endIndex!,
+        start: state.startIndex,
+        end: state.endIndex,
       };
       this._state.update((s) => ({ ...s, isScrubbing: true }));
     } else if (this.mode === "create") {
