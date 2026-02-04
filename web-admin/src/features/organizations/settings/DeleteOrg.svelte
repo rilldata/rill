@@ -42,6 +42,8 @@
     title="Delete this organization?"
     description={`The organization "${organization}" will be permanently deleted along with all its projects, data, and settings. This action cannot be undone.`}
     confirmText={`delete ${organization}`}
+    confirmButtonText="Delete"
+    confirmButtonType="destructive"
     loading={deleteOrgResult.isPending}
     error={deleteOrgResult.error?.message}
     onConfirm={deleteOrg}
