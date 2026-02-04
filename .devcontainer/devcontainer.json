@@ -6,6 +6,9 @@
       "version": "lts"
     }
   },
+  "containerEnv": {
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  },
   "postCreateCommand": "make cli",
   "postStartCommand": "./rill start --no-open",
   "forwardPorts": [9009],
