@@ -12,6 +12,7 @@ export const athenaSchema: MultiStepFormSchema = {
       description: "AWS access key ID used to authenticate to Athena",
       "x-placeholder": "your_access_key_id",
       "x-secret": true,
+      "x-env-var-name": "AWS_ACCESS_KEY_ID",
     },
     aws_secret_access_key: {
       type: "string",
@@ -19,6 +20,7 @@ export const athenaSchema: MultiStepFormSchema = {
       description: "AWS secret access key paired with the access key ID",
       "x-placeholder": "your_secret_access_key",
       "x-secret": true,
+      "x-env-var-name": "AWS_SECRET_ACCESS_KEY",
     },
     output_location: {
       type: "string",

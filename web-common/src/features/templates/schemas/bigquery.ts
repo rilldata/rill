@@ -14,6 +14,7 @@ export const bigquerySchema: MultiStepFormSchema = {
       "x-display": "file",
       "x-accept": ".json",
       "x-secret": true,
+      "x-env-var-name": "GOOGLE_APPLICATION_CREDENTIALS",
     },
     project_id: {
       type: "string",

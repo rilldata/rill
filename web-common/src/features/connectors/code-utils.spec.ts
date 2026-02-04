@@ -119,99 +119,7 @@ describe("replaceOlapConnectorInYAML", () => {
 });
 
 describe("getGenericEnvVarName", () => {
-  describe("Generic properties - no driver prefix", () => {
-    it("should return GOOGLE_APPLICATION_CREDENTIALS for google_application_credentials", () => {
-      const result = getGenericEnvVarName(
-        "bigquery",
-        "google_application_credentials",
-      );
-      expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS");
-    });
-
-    it("should return AWS_ACCESS_KEY_ID for aws_access_key_id", () => {
-      const result = getGenericEnvVarName("s3", "aws_access_key_id");
-      expect(result).toBe("AWS_ACCESS_KEY_ID");
-    });
-
-    it("should return AWS_SECRET_ACCESS_KEY for aws_secret_access_key", () => {
-      const result = getGenericEnvVarName("athena", "aws_secret_access_key");
-      expect(result).toBe("AWS_SECRET_ACCESS_KEY");
-    });
-
-    it("should return AZURE_STORAGE_CONNECTION_STRING for azure_storage_connection_string", () => {
-      const result = getGenericEnvVarName(
-        "adx",
-        "azure_storage_connection_string",
-      );
-      expect(result).toBe("AZURE_STORAGE_CONNECTION_STRING");
-    });
-
-    it("should handle generic properties with different drivers", () => {
-      const result = getGenericEnvVarName("redshift", "aws_access_token");
-      expect(result).toBe("AWS_ACCESS_TOKEN");
-    });
-  });
-
-  describe("Driver-specific properties - with driver prefix", () => {
-    it("should return MOTHERDUCK_TOKEN for motherduck driver", () => {
-      const result = getGenericEnvVarName("motherduck", "token");
-      expect(result).toBe("MOTHERDUCK_TOKEN");
-    });
-
-    it("should return SNOWFLAKE_ACCOUNT for snowflake driver", () => {
-      const result = getGenericEnvVarName("snowflake", "account");
-      expect(result).toBe("SNOWFLAKE_ACCOUNT");
-    });
-
-    it("should return CLICKHOUSE_DSN for clickhouse driver", () => {
-      const result = getGenericEnvVarName("clickhouse", "dsn");
-      expect(result).toBe("CLICKHOUSE_DSN");
-    });
-  });
-
-  describe("GCS fallback behavior - uses driver prefix without schema", () => {
-    it("should return GCS_KEY_ID for gcs key_id without schema", () => {
-      const result = getGenericEnvVarName("gcs", "key_id");
-      expect(result).toBe("GCS_KEY_ID");
-    });
-
-    it("should return GCS_SECRET for gcs secret without schema", () => {
-      const result = getGenericEnvVarName("gcs", "secret");
-      expect(result).toBe("GCS_SECRET");
-    });
-
-    it("should return GS_KEY_ID for gs key_id without schema", () => {
-      const result = getGenericEnvVarName("gs", "key_id");
-      expect(result).toBe("GS_KEY_ID");
-    });
-
-    it("should return GS_SECRET for gs secret without schema", () => {
-      const result = getGenericEnvVarName("gs", "secret");
-      expect(result).toBe("GS_SECRET");
-    });
-  });
-
-  describe("Case conversion - camelCase to SCREAMING_SNAKE_CASE", () => {
-    it("should convert camelCase property names", () => {
-      const result = getGenericEnvVarName("bigquery", "projectId");
-      expect(result).toBe("BIGQUERY_PROJECT_ID");
-    });
-
-    it("should convert multiple transitions in camelCase", () => {
-      const result = getGenericEnvVarName("postgres", "sslCertificatePath");
-      expect(result).toBe("POSTGRES_SSL_CERTIFICATE_PATH");
-    });
-
-    it("should handle dots and hyphens by converting to underscores", () => {
-      const result = getGenericEnvVarName(
-        "custom",
-        "property.with-mixed.separators",
-      );
-      expect(result).toBe("CUSTOM_PROPERTY_WITH_MIXED_SEPARATORS");
-    });
-  });
-
-  describe("Schema-driven x-env-var-name", () => {
+  describe("Schema-driven x-env-var-name (production behavior)", () => {
     it("should use x-env-var-name from schema when provided", () => {
       const schema = {
         properties: {
@@ -222,28 +130,7 @@ describe("getGenericEnvVarName", () => {
       expect(result).toBe("GCS_ACCESS_KEY_ID");
     });
 
-    it("should fall back to default behavior when x-env-var-name is not in schema", () => {
-      const schema = {
-        properties: {
-          other_field: { "x-env-var-name": "OTHER_VAR" },
-        },
-      };
-      const result = getGenericEnvVarName("gcs", "key_id", schema);
-      expect(result).toBe("GCS_KEY_ID");
-    });
-
-    it("should fall back to default behavior when schema is undefined", () => {
-      const result = getGenericEnvVarName("motherduck", "token", undefined);
-      expect(result).toBe("MOTHERDUCK_TOKEN");
-    });
-
-    it("should fall back when schema has no properties", () => {
-      const schema = { properties: {} };
-      const result = getGenericEnvVarName("motherduck", "token", schema);
-      expect(result).toBe("MOTHERDUCK_TOKEN");
-    });
-
-    it("should use x-env-var-name for AWS credentials in S3 schema", () => {
+    it("should use x-env-var-name for AWS credentials", () => {
       const schema = {
         properties: {
           aws_access_key_id: { "x-env-var-name": "AWS_ACCESS_KEY_ID" },
@@ -256,6 +143,83 @@ describe("getGenericEnvVarName", () => {
       expect(getGenericEnvVarName("s3", "aws_secret_access_key", schema)).toBe(
         "AWS_SECRET_ACCESS_KEY",
       );
+    });
+
+    it("should use x-env-var-name for Google credentials", () => {
+      const schema = {
+        properties: {
+          google_application_credentials: {
+            "x-env-var-name": "GOOGLE_APPLICATION_CREDENTIALS",
+          },
+        },
+      };
+      expect(
+        getGenericEnvVarName(
+          "bigquery",
+          "google_application_credentials",
+          schema,
+        ),
+      ).toBe("GOOGLE_APPLICATION_CREDENTIALS");
+    });
+
+    it("should use x-env-var-name for driver-specific secrets", () => {
+      const motherduckSchema = {
+        properties: {
+          token: { "x-env-var-name": "MOTHERDUCK_TOKEN" },
+        },
+      };
+      expect(
+        getGenericEnvVarName("motherduck", "token", motherduckSchema),
+      ).toBe("MOTHERDUCK_TOKEN");
+
+      const clickhouseSchema = {
+        properties: {
+          dsn: { "x-env-var-name": "CLICKHOUSE_DSN" },
+          password: { "x-env-var-name": "CLICKHOUSE_PASSWORD" },
+        },
+      };
+      expect(getGenericEnvVarName("clickhouse", "dsn", clickhouseSchema)).toBe(
+        "CLICKHOUSE_DSN",
+      );
+      expect(
+        getGenericEnvVarName("clickhouse", "password", clickhouseSchema),
+      ).toBe("CLICKHOUSE_PASSWORD");
+    });
+  });
+
+  describe("Fallback behavior (DRIVERNAME_PROPERTYKEY format)", () => {
+    it("should use DRIVERNAME_PROPERTYKEY when schema has no x-env-var-name", () => {
+      const schema = {
+        properties: {
+          other_field: { "x-env-var-name": "OTHER_VAR" },
+        },
+      };
+      const result = getGenericEnvVarName("gcs", "key_id", schema);
+      expect(result).toBe("GCS_KEY_ID");
+    });
+
+    it("should use DRIVERNAME_PROPERTYKEY when schema is undefined", () => {
+      const result = getGenericEnvVarName("motherduck", "token", undefined);
+      expect(result).toBe("MOTHERDUCK_TOKEN");
+    });
+
+    it("should use DRIVERNAME_PROPERTYKEY when schema has no properties", () => {
+      const schema = { properties: {} };
+      const result = getGenericEnvVarName("motherduck", "token", schema);
+      expect(result).toBe("MOTHERDUCK_TOKEN");
+    });
+
+    it("should convert camelCase to SCREAMING_SNAKE_CASE", () => {
+      const result = getGenericEnvVarName("bigquery", "projectId");
+      expect(result).toBe("BIGQUERY_PROJECT_ID");
+    });
+
+    it("should handle dots and hyphens by converting to underscores", () => {
+      const result = getGenericEnvVarName(
+        "custom",
+        "property.with-mixed.separators",
+      );
+      expect(result).toBe("CUSTOM_PROPERTY_WITH_MIXED_SEPARATORS");
     });
   });
 });
@@ -348,38 +312,74 @@ describe("findAvailableEnvVarName", () => {
 });
 
 describe("makeDotEnvConnectorKey", () => {
-  describe("Without existing env blob - returns base generic name", () => {
-    it("should return generic name for google_application_credentials", () => {
+  // Mock schemas matching production x-env-var-name definitions
+  const bigquerySchema = {
+    properties: {
+      google_application_credentials: {
+        "x-env-var-name": "GOOGLE_APPLICATION_CREDENTIALS",
+      },
+    },
+  };
+
+  const s3Schema = {
+    properties: {
+      aws_access_key_id: { "x-env-var-name": "AWS_ACCESS_KEY_ID" },
+      aws_secret_access_key: { "x-env-var-name": "AWS_SECRET_ACCESS_KEY" },
+    },
+  };
+
+  const motherduckSchema = {
+    properties: {
+      token: { "x-env-var-name": "MOTHERDUCK_TOKEN" },
+    },
+  };
+
+  const postgresSchema = {
+    properties: {
+      password: { "x-env-var-name": "POSTGRES_PASSWORD" },
+    },
+  };
+
+  describe("Without existing env blob - returns schema-defined name", () => {
+    it("should return GOOGLE_APPLICATION_CREDENTIALS for bigquery", () => {
       const result = makeDotEnvConnectorKey(
         "bigquery",
         "google_application_credentials",
+        undefined,
+        bigquerySchema,
       );
       expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS");
     });
 
-    it("should return driver-prefixed name for motherduck token", () => {
-      const result = makeDotEnvConnectorKey("motherduck", "token");
+    it("should return MOTHERDUCK_TOKEN for motherduck", () => {
+      const result = makeDotEnvConnectorKey(
+        "motherduck",
+        "token",
+        undefined,
+        motherduckSchema,
+      );
       expect(result).toBe("MOTHERDUCK_TOKEN");
     });
 
-    it("should handle undefined existingEnvBlob", () => {
-      const result = makeDotEnvConnectorKey("snowflake", "account", undefined);
-      expect(result).toBe("SNOWFLAKE_ACCOUNT");
-    });
-
-    it("should handle null existingEnvBlob", () => {
-      const result = makeDotEnvConnectorKey("postgres", "password", "");
+    it("should return POSTGRES_PASSWORD for postgres", () => {
+      const result = makeDotEnvConnectorKey(
+        "postgres",
+        "password",
+        "",
+        postgresSchema,
+      );
       expect(result).toBe("POSTGRES_PASSWORD");
     });
   });
 
-  describe("With existing env blob - handles conflicts", () => {
+  describe("With existing env blob - handles conflicts with _# suffix", () => {
     it("should append _1 when variable already exists", () => {
       const envBlob = `GOOGLE_APPLICATION_CREDENTIALS=existing_value`;
       const result = makeDotEnvConnectorKey(
         "bigquery",
         "google_application_credentials",
         envBlob,
+        bigquerySchema,
       );
       expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS_1");
     });
@@ -390,6 +390,7 @@ describe("makeDotEnvConnectorKey", () => {
         "bigquery",
         "google_application_credentials",
         envBlob,
+        bigquerySchema,
       );
       expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS");
     });
@@ -400,6 +401,7 @@ describe("makeDotEnvConnectorKey", () => {
         "bigquery",
         "google_application_credentials",
         envBlob,
+        bigquerySchema,
       );
       expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS_3");
     });
@@ -407,16 +409,22 @@ describe("makeDotEnvConnectorKey", () => {
     it("should handle multiple different properties", () => {
       const envBlob = `AWS_ACCESS_KEY_ID=key1\nAWS_SECRET_ACCESS_KEY=secret1`;
       const result = makeDotEnvConnectorKey(
-        "athena",
+        "s3",
         "aws_access_key_id",
         envBlob,
+        s3Schema,
       );
       expect(result).toBe("AWS_ACCESS_KEY_ID_1");
     });
 
     it("should handle driver-specific properties with conflicts", () => {
       const envBlob = `MOTHERDUCK_TOKEN=token1\nMOTHERDUCK_TOKEN_1=token2`;
-      const result = makeDotEnvConnectorKey("motherduck", "token", envBlob);
+      const result = makeDotEnvConnectorKey(
+        "motherduck",
+        "token",
+        envBlob,
+        motherduckSchema,
+      );
       expect(result).toBe("MOTHERDUCK_TOKEN_2");
     });
 
@@ -427,18 +435,24 @@ MOTHERDUCK_TOKEN=token1
 MOTHERDUCK_TOKEN_1=token2
 # Another comment
 DATABASE_URL=something`;
-      const result = makeDotEnvConnectorKey("motherduck", "token", envBlob);
+      const result = makeDotEnvConnectorKey(
+        "motherduck",
+        "token",
+        envBlob,
+        motherduckSchema,
+      );
       expect(result).toBe("MOTHERDUCK_TOKEN_2");
     });
   });
 
-  describe("Integration - full workflows", () => {
+  describe("Integration - full workflows with schemas", () => {
     it("should support adding first BigQuery connector", () => {
       const emptyEnv = "";
       const result = makeDotEnvConnectorKey(
         "bigquery",
         "google_application_credentials",
         emptyEnv,
+        bigquerySchema,
       );
       expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS");
     });
@@ -449,6 +463,7 @@ DATABASE_URL=something`;
         "bigquery",
         "google_application_credentials",
         envAfterFirst,
+        bigquerySchema,
       );
       expect(result).toBe("GOOGLE_APPLICATION_CREDENTIALS_1");
     });
@@ -456,9 +471,10 @@ DATABASE_URL=something`;
     it("should support adding AWS credentials to existing non-AWS variables", () => {
       const envBlob = `MOTHERDUCK_TOKEN=token1\nGOOGLE_APPLICATION_CREDENTIALS=creds1`;
       const result = makeDotEnvConnectorKey(
-        "athena",
+        "s3",
         "aws_access_key_id",
         envBlob,
+        s3Schema,
       );
       expect(result).toBe("AWS_ACCESS_KEY_ID");
     });
@@ -469,14 +485,16 @@ DATABASE_URL=something`;
         "s3",
         "aws_access_key_id",
         envBlob,
+        s3Schema,
       );
       expect(result1).toBe("AWS_ACCESS_KEY_ID_1");
 
       const updatedEnv = `${envBlob}\nAWS_ACCESS_KEY_ID_1=key2`;
       const result2 = makeDotEnvConnectorKey(
-        "athena",
+        "s3",
         "aws_secret_access_key",
         updatedEnv,
+        s3Schema,
       );
       expect(result2).toBe("AWS_SECRET_ACCESS_KEY_1");
     });

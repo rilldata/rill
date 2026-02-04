@@ -257,31 +257,11 @@ export function getGenericEnvVarName(
     return field["x-env-var-name"];
   }
 
-  // Fallback: Generic properties that don't need a driver prefix
-  const genericProperties = new Set([
-    // Google Cloud credentials
-    "google_application_credentials",
-    // AWS credentials (used by S3, Athena, Redshift, etc.)
-    "aws_access_key_id",
-    "aws_secret_access_key",
-    "aws_access_token",
-    // Azure
-    "azure_storage_connection_string",
-    "azure_storage_key",
-    "azure_storage_sas_token",
-    "azure_storage_account",
-  ]);
-
   // Convert property key to SCREAMING_SNAKE_CASE
   const propertyKeyUpper = propertyKey
     .replace(/([a-z])([A-Z])/g, "$1_$2")
     .replace(/[._-]+/g, "_")
     .toUpperCase();
-
-  // If it's a generic property, return just the property name
-  if (genericProperties.has(propertyKey.toLowerCase())) {
-    return propertyKeyUpper;
-  }
 
   // Otherwise, use DriverName_PropertyKey format
   const driverNameUpper = driverName
