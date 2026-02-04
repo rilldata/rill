@@ -111,7 +111,7 @@
           onSave={onSaveLight}
           onRemove={onRemoveLight}
         >
-          <Rill width="64" height="40" />
+          <Rill width="64" height="40" mode="light" />
         </UploadImagePopover>
         {#if organizationLogoUrl}
           <Button
@@ -136,6 +136,7 @@
           {/if}
         </div>
         <UploadImagePopover
+          dark
           imageUrl={organizationLogoDarkUrl}
           accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
           label="dark logo"
@@ -145,7 +146,7 @@
           onSave={onSaveDark}
           onRemove={onRemoveDark}
         >
-          <Rill width="64" height="40" />
+          <Rill width="64" height="40" mode="dark" />
         </UploadImagePopover>
         {#if organizationLogoDarkUrl}
           <Button
