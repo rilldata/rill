@@ -16,10 +16,11 @@ export function getNewAlertInitialFormValues(
   exploreState: Partial<ExploreState>,
   user: V1User | undefined,
 ): AlertFormValues {
-  const dimension =
-    exploreState.selectedComparisonDimension ||
-    exploreState.selectedDimensionName ||
-    "";
+  // Use comparison dimension only when in TDD view (where it's visually relevant).
+  // Otherwise use the expanded dimension table dimension.
+  const dimension = exploreState.tdd?.expandedMeasureName
+    ? (exploreState.selectedComparisonDimension ?? "")
+    : (exploreState.selectedDimensionName ?? "");
 
   return {
     name: "",
