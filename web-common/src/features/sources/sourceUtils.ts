@@ -72,7 +72,7 @@ export function compileSourceYAML(
           connector.name as string,
           key,
           opts?.existingEnvBlob,
-          schema,
+          schema ?? undefined,
         )}" }}'`;
       }
 
