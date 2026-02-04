@@ -77,19 +77,19 @@
   button {
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
-    @apply bg-surface;
+    @apply bg-surface-subtle;
   }
 
   button.addBorder {
-    @apply border border-dashed border-slate-300;
+    @apply border border-dashed border-gray-300;
   }
 
   button:hover {
-    @apply bg-slate-100;
+    @apply bg-gray-100;
   }
 
   button:active,
   .active {
-    @apply bg-slate-200;
+    @apply bg-gray-200;
   }
 </style>

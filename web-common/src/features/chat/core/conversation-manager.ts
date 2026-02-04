@@ -117,6 +117,9 @@ export class ConversationManager {
         conversation.on("stream-start", () =>
           this.enforceMaxConcurrentStreams(),
         );
+        conversation.on("conversation-forked", (newConversationId) =>
+          this.handleConversationForked($conversationId, newConversationId),
+        );
         this.conversations.set($conversationId, conversation);
         return conversation;
       },
@@ -221,6 +224,26 @@ export class ConversationManager {
     this.rotateNewConversation(conversationId);
     this.conversationSelector.selectConversation(conversationId);
     void invalidateConversationsList(this.instanceId);
+  }
+
+  /**
+   * Handle conversation forking - updates state to navigate to the forked conversation
+   * Called when a non-owner sends a message and the conversation is forked
+   */
+  private handleConversationForked(
+    originalConversationId: string,
+    newConversationId: string,
+  ): void {
+    // Get the forked conversation (which is the updated instance)
+    const forkedConversation = this.conversations.get(originalConversationId);
+    if (forkedConversation) {
+      // Move the conversation to the new ID in our map
+      this.conversations.delete(originalConversationId);
+      this.conversations.set(newConversationId, forkedConversation);
+    }
+
+    // Navigate to the new forked conversation
+    this.conversationSelector.selectConversation(newConversationId);
   }
 
   /**

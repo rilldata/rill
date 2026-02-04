@@ -13,7 +13,7 @@
     <h1 class="text-lg font-semibold">
       Sorry, your dashboard isn't working right now!
     </h1>
-    <p class="text-gray-500 text-base">
+    <p class="text-fg-secondary text-base">
       <ProjectAccessControls {organization} {project}>
         <svelte:fragment slot="manage-project">
           View project status for errors that may help you find a fix.
@@ -38,7 +38,7 @@
       </CtaButton>
     </svelte:fragment>
   </ProjectAccessControls>
-  <p class="text-gray-500">
+  <p class="text-fg-secondary">
     Need help? Reach out to us on <a href="https://discord.gg/2ubRfjC7Rh"
       >Discord</a
     >

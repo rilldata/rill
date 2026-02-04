@@ -2,10 +2,7 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { cn } from "@rilldata/web-common/lib/shadcn";
-  import {
-    createRuntimeServiceListConnectorDrivers,
-    type V1ConnectorDriver,
-  } from "@rilldata/web-common/runtime-client";
+  import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
@@ -21,47 +18,52 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
+  import {
+    connectors,
+    getBackendConnectorName,
+    getConnectorSchema,
+    type ConnectorInfo,
+  } from "./connector-schemas";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
+  let selectedSchemaName: string | null = null;
   let requestConnector = false;
   let isSubmittingForm = false;
 
-  const connectorsQuery = createRuntimeServiceListConnectorDrivers({
-    query: {
-      // arrange connectors in the way we would like to display them
-      select: (data) => {
-        data.connectors =
-          data.connectors &&
-          data.connectors
-            .filter(
-              // Only show connectors in SOURCES or OLAP_ENGINES
-              (a) =>
-                a.name &&
-                (SOURCES.includes(a.name) || OLAP_ENGINES.includes(a.name)),
-            )
-            .sort(
-              // CAST SAFETY: we have filtered out any connectors that
-              // don't have a `name` in the previous filter
-              (a, b) =>
-                ALL_CONNECTORS.indexOf(a.name as string) -
-                ALL_CONNECTORS.indexOf(b.name as string),
-            );
-        return data;
-      },
-    },
-  });
+  // Filter connectors by category from JSON schemas
+  $: sourceConnectors = connectors.filter((c) => c.category !== "olap");
+  $: olapConnectors = connectors.filter((c) => c.category === "olap");
 
-  $: connectors = $connectorsQuery.data?.connectors ?? [];
+  /**
+   * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
+   * Derives implements* flags from the schema's x-category.
+   * Uses x-driver for the name when specified.
+   */
+  function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
+    const schema = getConnectorSchema(info.name);
+    const category = schema?.["x-category"];
+    const backendName = getBackendConnectorName(info.name);
+
+    return {
+      name: backendName,
+      displayName: info.displayName,
+      implementsObjectStore: category === "objectStore",
+      implementsOlap: category === "olap",
+      implementsSqlStore: category === "sqlStore",
+      implementsWarehouse: category === "warehouse",
+      implementsFileStore: category === "fileStore",
+    };
+  }
 
   onMount(() => {
     function listen(e: PopStateEvent) {
       step = e.state?.step ?? 0;
       requestConnector = e.state?.requestConnector ?? false;
       selectedConnector = e.state?.selectedConnector ?? null;
+      selectedSchemaName = e.state?.schemaName ?? null;
     }
     window.addEventListener("popstate", listen);
 
@@ -70,13 +72,14 @@
     };
   });
 
-  function goToConnectorForm(connector: V1ConnectorDriver) {
+  function goToConnectorForm(connectorInfo: ConnectorInfo) {
     // Reset multi-step state (auth selection, connector config) when switching connectors.
     resetConnectorStep();
 
     const state = {
       step: 2,
-      selectedConnector: connector,
+      selectedConnector: toConnectorDriver(connectorInfo),
+      schemaName: connectorInfo.name,
       requestConnector: false,
     };
     window.history.pushState(state, "", "");
@@ -100,7 +103,12 @@
   }
 
   function resetModal() {
-    const state = { step: 0, selectedConnector: null, requestConnector: false };
+    const state = {
+      step: 0,
+      selectedConnector: null,
+      schemaName: null,
+      requestConnector: false,
+    };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
     isSubmittingForm = false;
@@ -156,18 +164,16 @@
             <div
               class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
             >
-              {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
-                {#if connector.name}
-                  <button
-                    id={connector.name}
-                    on:click={() => goToConnectorForm(connector)}
-                    class="connector-tile-button size-full"
-                  >
-                    <div class="connector-wrapper px-6 py-4">
-                      <svelte:component this={ICONS[connector.name]} />
-                    </div>
-                  </button>
-                {/if}
+              {#each sourceConnectors as connector (connector.name)}
+                <button
+                  id={connector.name}
+                  on:click={() => goToConnectorForm(connector)}
+                  class="connector-tile-button size-full"
+                >
+                  <div class="connector-wrapper px-6 py-4">
+                    <svelte:component this={ICONS[connector.name]} />
+                  </div>
+                </button>
               {/each}
             </div>
           </section>
@@ -181,23 +187,21 @@
           <div
             class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
           >
-            {#each connectors?.filter((c) => c.name && OLAP_ENGINES.includes(c.name)) as connector (connector.name)}
-              {#if connector.name}
-                <button
-                  id={connector.name}
-                  class="connector-tile-button size-full"
-                  on:click={() => goToConnectorForm(connector)}
-                >
-                  <div class="connector-wrapper px-6 py-4">
-                    <svelte:component this={ICONS[connector.name]} />
-                  </div>
-                </button>
-              {/if}
+            {#each olapConnectors as connector (connector.name)}
+              <button
+                id={connector.name}
+                class="connector-tile-button size-full"
+                on:click={() => goToConnectorForm(connector)}
+              >
+                <div class="connector-wrapper px-6 py-4">
+                  <svelte:component this={ICONS[connector.name]} />
+                </div>
+              </button>
             {/each}
           </div>
         </section>
 
-        <div class="text-slate-500">
+        <div class="text-fg-secondary">
           Don't see what you're looking for?
           <button
             class="text-primary-500 hover:text-primary-600 font-medium"
@@ -208,20 +212,22 @@
         </div>
       {/if}
 
-      {#if step === 2 && selectedConnector}
+      {#if step === 2 && selectedConnector && selectedSchemaName}
+        {@const schema = getConnectorSchema(selectedSchemaName)}
+        {@const displayIcon =
+          connectorIconMapping[selectedSchemaName] ??
+          connectorIconMapping[selectedConnector.name ?? ""]}
+        {@const displayName = schema?.title ?? selectedConnector.displayName}
         <Dialog.Title class="p-4 border-b border-gray-200">
           {#if $duplicateSourceName !== null}
             Duplicate source
           {:else}
             <div class="flex items-center gap-[6px]">
-              {#if selectedConnector?.name}
-                <svelte:component
-                  this={connectorIconMapping[selectedConnector.name]}
-                  size="18px"
-                />
+              {#if displayIcon}
+                <svelte:component this={displayIcon} size="18px" />
               {/if}
               <span class="text-lg leading-none font-semibold"
-                >{selectedConnector.displayName}</span
+                >{displayName}</span
               >
             </div>
           {/if}
@@ -236,6 +242,7 @@
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
+            schemaName={selectedSchemaName}
             formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}

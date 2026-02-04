@@ -3,7 +3,6 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
-
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     getAllowedTimeGrains,
@@ -123,19 +122,19 @@
   button {
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
-    @apply bg-surface;
+    @apply bg-input border;
   }
 
   button.addBorder {
-    @apply border border-dashed border-slate-300;
+    @apply border border-dashed border-gray-300;
   }
 
   button:hover {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   button:active,
   .active {
-    @apply bg-slate-200;
+    @apply bg-surface-active;
   }
 </style>

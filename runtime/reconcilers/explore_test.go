@@ -496,11 +496,11 @@ defaults:
 					ValidSpec: &runtimev1.ExploreSpec{
 						DisplayName:          "Hello",
 						MetricsView:          "mv1",
-						Dimensions:           []string{"foo"}, // NOTE: filtered out the time dimensions
+						Dimensions:           []string{"t1", "t2", "foo"},
 						Measures:             []string{"x"},
 						AllowCustomTimeRange: true,
 						DefaultPreset: &runtimev1.ExplorePreset{
-							Dimensions:     []string{"foo"}, // NOTE: filtered out the time dimensions
+							Dimensions:     []string{"t2", "foo"},
 							Measures:       []string{"x"},
 							ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
 						},
