@@ -2,7 +2,6 @@ import { writable, get, type Readable, type Writable } from "svelte/store";
 import type { ScrubState } from "./types";
 import type { ScaleLinear } from "d3-scale";
 
-
 type ScrubMode = "none" | "create" | "resize-start" | "resize-end" | "move";
 
 const EMPTY_SCRUB: ScrubState = {

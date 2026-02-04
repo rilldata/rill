@@ -4,35 +4,27 @@
   import type { ScaleLinear } from "d3-scale";
 
   export let series: ChartSeries[];
-  /** Y scale (value → pixel) */
   export let yScale: ScaleLinear<number, number>;
-  /** Whether bars are stacked (dimension comparison) or grouped (time comparison) */
   export let stacked: boolean = false;
-  /** Left edge of the plot area in pixels */
   export let plotLeft: number;
-  /** Width of the plot area in pixels */
   export let plotWidth: number;
-  /** First visible data index */
   export let visibleStart: number;
-  /** Last visible data index */
   export let visibleEnd: number;
-  /** Scrub highlight start index */
   export let scrubStartIndex: number | null = null;
-  /** Scrub highlight end index */
   export let scrubEndIndex: number | null = null;
 
   $: hasScrub = scrubStartIndex !== null && scrubEndIndex !== null;
   $: scrubMin = hasScrub ? Math.min(scrubStartIndex!, scrubEndIndex!) : 0;
   $: scrubMax = hasScrub ? Math.max(scrubStartIndex!, scrubEndIndex!) : 0;
 
+  $: visibleCount = Math.max(1, visibleEnd - visibleStart + 1);
+  $: geo = computeBarSlotGeometry(plotWidth, visibleCount, series.length);
+  $: zeroY = yScale(0);
+
   function isInScrub(ptIdx: number): boolean {
     if (!hasScrub) return true;
     return ptIdx >= Math.round(scrubMin) && ptIdx <= Math.round(scrubMax);
   }
-
-  $: visibleCount = Math.max(1, visibleEnd - visibleStart + 1);
-  $: geo = computeBarSlotGeometry(plotWidth, visibleCount, series.length);
-  $: zeroY = yScale(0);
 </script>
 
 {#if stacked}
