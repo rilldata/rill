@@ -24,7 +24,7 @@
   $: halfSize = (AnnotationWidth / 2) * 0.7;
 </script>
 
-{#each groups as group (group.left)}
+{#each groups as group (group.index)}
   {@const hovered = hoveredGroup === group}
   {@const cx = group.left}
   {@const cy = group.top + AnnotationHeight / 2}
@@ -44,7 +44,7 @@
     <line
       x1={rangeXStart}
       x2={rangeXStart}
-      y1={0}
+      y1={plotBounds.top}
       y2={rangeYEnd}
       stroke={ScrubBoxColor}
       stroke-width={1}
@@ -52,7 +52,7 @@
     <line
       x1={rangeXEnd}
       x2={rangeXEnd}
-      y1={0}
+      y1={plotBounds.top}
       y2={rangeYEnd}
       stroke={ScrubBoxColor}
       stroke-width={1}
@@ -69,9 +69,9 @@
   <g role="presentation" opacity="0.1">
     <rect
       x={Math.min(rangeXStart, rangeXEnd)}
-      y={0}
+      y={plotBounds.top}
       width={Math.abs(rangeXStart - rangeXEnd)}
-      height={rangeYEnd}
+      height={rangeYEnd - plotBounds.top}
       fill={AnnotationHighlightColor}
     />
   </g>

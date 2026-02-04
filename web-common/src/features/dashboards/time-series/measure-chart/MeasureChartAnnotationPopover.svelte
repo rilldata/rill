@@ -24,6 +24,7 @@
       : hoveredGroup?.items.slice(0, MaxAnnotationCount)) ?? [];
 
   let lastGroup: AnnotationGroup | null = null;
+  let openTimer: ReturnType<typeof setTimeout> | null = null;
   $: handleGroupChange(hoveredGroup);
 
   function handleGroupChange(group: AnnotationGroup | null) {
@@ -32,9 +33,14 @@
     showingMore = false;
     textHiddenCount = 0;
     open = false;
+    if (openTimer) {
+      clearTimeout(openTimer);
+      openTimer = null;
+    }
     if (group) {
-      setTimeout(() => {
+      openTimer = setTimeout(() => {
         open = true;
+        openTimer = null;
       }, PopoverOpenTimeout);
     }
   }

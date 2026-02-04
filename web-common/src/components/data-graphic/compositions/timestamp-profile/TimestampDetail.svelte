@@ -22,20 +22,15 @@ Uses index-based scales and TimeSeriesChart for rendering.
   import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
   import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { createLineGenerator } from "@rilldata/web-common/components/data-graphic/utils";
   import { max } from "d3-array";
   import { scaleLinear } from "d3-scale";
-  import { curveLinear, line } from "d3-shape";
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
   import TimestampBound from "./TimestampBound.svelte";
   import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
   import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
-
-  interface TimestampDataPoint {
-    ts: Date;
-    count: number;
-    [key: string]: unknown;
-  }
+  import type { TimestampDataPoint } from "@rilldata/web-common/features/column-profile/queries";
 
   const id = guidGenerator();
   const tooltipSparkWidth = 84;
@@ -47,8 +42,6 @@ Uses index-based scales and TimeSeriesChart for rendering.
   export let height = 120;
   export let mouseover = false;
   export let smooth = true;
-  export let xAccessor: string;
-  export let yAccessor: string;
   export let left = 1;
   export let right = 1;
   export let top = 12;
@@ -160,10 +153,10 @@ Uses index-based scales and TimeSeriesChart for rendering.
     windowWithoutZeros.length > 0 &&
     windowWithoutZeros.length > width * devicePixelRatio;
 
-  $: smoothedLineGen = line<number>()
-    .x((_d, i) => xScale(i))
-    .y((d) => yScale(d ?? 0))
-    .curve(curveLinear);
+  $: smoothedLineGen = createLineGenerator<number>({
+    x: (_d, i) => xScale(i),
+    y: (d) => yScale(d ?? 0),
+  });
 
   $: smoothedPath = smoothedLineGen(smoothedValues) ?? "";
 
@@ -199,15 +192,15 @@ Uses index-based scales and TimeSeriesChart for rendering.
   );
 
   function val(d: TimestampDataPoint): number {
-    return d[yAccessor] as number;
+    return d.count;
   }
 
-  function dateAt(d: TimestampDataPoint | undefined): Date {
-    return d?.[xAccessor] as Date;
+  function dateAt(d: TimestampDataPoint) {
+    return d.ts;
   }
 
   function indexToDate(idx: number): Date {
-    return dateAt(data[snapIndex(idx, data.length)]);
+    return dateAt(data[snapIndex(idx, data.length)]) ?? new Date();
   }
 
   function computeZoomedRows(
@@ -523,8 +516,6 @@ Uses index-based scales and TimeSeriesChart for rendering.
     >
       <TimestampTooltipContent
         data={spark}
-        {xAccessor}
-        {yAccessor}
         width={tooltipSparkWidth}
         height={tooltipSparkHeight}
         tooltipPanShakeAmount={0}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import WithTween from "@rilldata/web-common/components/data-graphic/functional-components/WithTween.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";

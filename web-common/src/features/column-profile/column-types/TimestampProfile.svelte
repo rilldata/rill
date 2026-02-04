@@ -58,6 +58,8 @@
 
   $: fetchingSummaries = isFetching($timeSeries, $nullPercentage);
 
+  $: ({ data, spark } = $timeSeries);
+
   function toggleColumnProfile() {
     active = !active;
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
@@ -84,13 +86,11 @@
   <div class={TIMESTAMP_TOKENS.textClass} slot="summary" bind:clientWidth>
     <TimestampSpark
       bottom={4}
-      color={"currentColor"}
-      data={$timeSeries?.spark}
+      color="currentColor"
+      data={spark}
       height={18}
       top={4}
       width={clientWidth || 400}
-      xAccessor="ts"
-      yAccessor="count"
     />
   </div>
   <NullPercentageSpark
@@ -111,12 +111,10 @@
           width={secondWidth - 56 || 400}
           mouseover={true}
           height={timestampDetailHeight}
-          data={$timeSeries?.data}
-          spark={$timeSeries?.spark}
+          {data}
+          {spark}
           rollupTimeGrain={$timeSeries?.estimatedRollupInterval?.interval}
           estimatedSmallestTimeGrain={$timeSeries?.smallestTimegrain}
-          xAccessor="ts"
-          yAccessor="count"
         />
       {/if}
     </div>

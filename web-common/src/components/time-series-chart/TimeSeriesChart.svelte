@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { line, area, curveLinear } from "d3-shape";
+  import {
+    createLineGenerator,
+    createAreaGenerator,
+  } from "@rilldata/web-common/components/data-graphic/utils";
   import type {
     ChartSeries,
     ChartScales,
@@ -14,18 +17,18 @@
   const chartId = Math.random().toString(36).slice(2, 11);
 
   // Index-based line/area generators — x is just the index
-  $: lineGen = line<number | null>()
-    .x((_d, i) => scales.x(i))
-    .y((d) => scales.y(d ?? 0))
-    .curve(curveLinear)
-    .defined((d) => d !== null);
+  $: lineGen = createLineGenerator<number | null>({
+    x: (_d, i) => scales.x(i),
+    y: (d) => scales.y(d ?? 0),
+    defined: (d) => d !== null,
+  });
 
-  $: areaGen = area<number | null>()
-    .x((_d, i) => scales.x(i))
-    .y0(scales.y(0))
-    .y1((d) => scales.y(d ?? 0))
-    .curve(curveLinear)
-    .defined((d) => d !== null);
+  $: areaGen = createAreaGenerator<number | null>({
+    x: (_d, i) => scales.x(i),
+    y0: scales.y(0),
+    y1: (d) => scales.y(d ?? 0),
+    defined: (d) => d !== null,
+  });
 
   // Contiguous non-null segments as {startIndex, endIndex} pairs
   function computeSegments(

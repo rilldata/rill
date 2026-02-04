@@ -1,11 +1,14 @@
 <script lang="ts">
   import {
+    createLineGenerator,
+    createAreaGenerator,
+  } from "@rilldata/web-common/components/data-graphic/utils";
+  import {
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
     MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import type { ScaleLinear } from "d3-scale";
-  import { area, curveLinear, line } from "d3-shape";
   import type { ChartDataPoint } from "./types";
 
   export let data: ChartDataPoint[];
@@ -15,38 +18,22 @@
   export let strokeWidth = 4;
   export let fill: boolean | undefined;
 
-  $: curveFunction = curveLinear;
+  $: lineFunction = createLineGenerator<ChartDataPoint>({
+    x: (d) => xScale(d.index),
+    y: (d) => yScale(d.value as number),
+    defined: (d) => d.value !== null && d.value !== undefined,
+  });
 
-  $: lineFunction = line<ChartDataPoint>()
-    .defined(isDefined)
-    .x(indexAccessor)
-    .y(valueAccessor)
-    .curve(curveFunction);
-
-  $: areaFunction = area<ChartDataPoint>()
-    .defined(isDefined)
-    .x(indexAccessor)
-    .y0(valueAccessor)
-    .y1(yScale.range()[0])
-    .curve(curveFunction);
+  $: areaFunction = createAreaGenerator<ChartDataPoint>({
+    x: (d) => xScale(d.index),
+    y0: (d) => yScale(d.value as number),
+    y1: yScale.range()[0],
+    defined: (d) => d.value !== null && d.value !== undefined,
+  });
 
   $: areaPath = areaFunction(data);
 
   $: path = lineFunction(data);
-
-  function isDefined(d: ChartDataPoint) {
-    return d.value !== null && d.value !== undefined;
-  }
-
-  function indexAccessor(d: ChartDataPoint) {
-    return xScale(d.index);
-  }
-
-  function valueAccessor(d: ChartDataPoint): number {
-    // We can safely assert this will be a number because we're using .defined()
-    // to filter out null/undefined values before this accessor is called
-    return yScale(d.value as number);
-  }
 </script>
 
 {#if fill}

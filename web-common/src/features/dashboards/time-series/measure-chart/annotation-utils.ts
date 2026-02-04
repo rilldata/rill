@@ -120,6 +120,7 @@ export function findHoveredGroup(
   for (const group of groups) {
     if (
       mouseY >= group.top - 2 &&
+      mouseY <= group.bottom + 2 &&
       mouseX >= group.left - AnnotationWidth / 2 &&
       mouseX <= group.left + AnnotationWidth / 2 + 2
     ) {

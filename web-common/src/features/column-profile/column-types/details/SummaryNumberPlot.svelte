@@ -76,7 +76,7 @@
           cx={px}
           cy={rowHeight / 2}
           r="2.5"
-          class="fill-destructive"
+          class="fill-primary-400"
           opacity={0.8}
         />
         <line
@@ -84,7 +84,7 @@
           x2={px}
           y1={rowHeight / 2 - 1}
           y2={-rowY}
-          class="stroke-destructive"
+          class="stroke-primary-400"
           opacity={0.5}
         />
         <g>

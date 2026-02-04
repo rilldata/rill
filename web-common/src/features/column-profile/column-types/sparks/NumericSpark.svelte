@@ -37,17 +37,7 @@
 
   $: separator = data.length < 20 && INTEGERS.has(type) ? 0.25 : 0;
 
-  $: d = barplotPolyline(
-    data,
-    "low",
-    "high",
-    "count",
-    xScale,
-    yScale,
-    separator,
-    false,
-    1,
-  );
+  $: d = barplotPolyline(data, xScale, yScale, separator, false, 1);
 </script>
 
 {#if data}
@@ -55,17 +45,21 @@
     <svg class="overflow-visible" {width} {height}>
       <defs>
         <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="5%" stop-color="currentColor" />
-          <stop offset="95%" stop-color="currentColor" stop-opacity={0.5} />
+          <stop offset="5%" stop-color="var(--color-primary-600" />
+          <stop
+            offset="95%"
+            stop-color="var(--surface-background)"
+            stop-opacity={0.4}
+          />
         </linearGradient>
       </defs>
-      <g class="text-red-300">
+      <g class="text-primary-300">
         <line
           x1={plotLeft}
           x2={plotRight}
           y1={plotBottom}
           y2={plotBottom}
-          class="text-red-200"
+          class="text-primary-200"
           stroke="currentColor"
           stroke-width={0.5}
         />

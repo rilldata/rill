@@ -66,6 +66,7 @@
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { snapIndex, dateToIndex } from "./utils";
 
+  const chartId = Math.random().toString(36).slice(2, 11);
   const Y_DASH_ARRAY = "1,1";
   const DAY_GRAIN_ORDER = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY];
   const X_PAD = 8;
@@ -796,7 +797,7 @@
   {:else if data.length > 0}
     {#if showAxis}
       <svg class="w-full overflow-visible" height={axisHeight}>
-        {#each axisTicks as tick (tick.x)}
+        {#each axisTicks as tick, tickIdx (tickIdx)}
           <text
             class="fill-fg-secondary text-[11px]"
             text-anchor={tick.anchor}
@@ -855,7 +856,7 @@
     >
       <!-- Clip chart body to plot area so lines/bars don't bleed into margins when overplotting -->
       <defs>
-        <clipPath id="chart-body-{measure.name}">
+        <clipPath id="chart-body-{chartId}">
           <rect
             x={config.plotBounds.left}
             y={config.plotBounds.top}
@@ -912,7 +913,7 @@
       />
 
       <!-- Chart body -->
-      <g clip-path="url(#chart-body-{measure.name})">
+      <g clip-path="url(#chart-body-{chartId})">
         {#if mode === "line"}
           <TimeSeriesChart
             series={chartSeries}

@@ -3,42 +3,37 @@
   import { scaleLinear } from "d3-scale";
   import { scaleTime } from "d3-scale";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
-  import { lineFactory, areaFactory } from "../../utils";
+  import {
+    createLineGenerator,
+    createAreaGenerator,
+    pathDoesNotDropToZero,
+  } from "../../utils";
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
+  import type { TimestampDataPoint } from "@rilldata/web-common/features/column-profile/queries";
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  export let data: any[];
+  const gradientId = `spark-gradient-${guidGenerator()}`;
 
+  export let data: TimestampDataPoint[];
   export let width = 360;
   export let height = 120;
   export let color = "hsl(217, 10%, 50%)";
-
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
   export let zoomWindowBoundaryColor = "rgb(100,100,100)";
   export let zoomWindowXMin: Date | undefined = undefined;
   export let zoomWindowXMax: Date | undefined = undefined;
-
-  export let xAccessor: string | undefined = undefined;
-  export let yAccessor: string | undefined = undefined;
-
   export let left = 0;
   export let right = 0;
   export let top = 12;
   export let bottom = 4;
-
-  const gradientId = `spark-gradient-${guidGenerator()}`;
 
   $: plotLeft = left;
   $: plotRight = width - right;
   $: plotTop = top;
   $: plotBottom = height - bottom;
 
-  $: xAcc = xAccessor ?? "x";
-  $: yAcc = yAccessor ?? "y";
-
-  $: [xMinVal, xMaxVal] = extent(data, (d) => d[xAcc] as Date);
-  $: [, yMaxVal] = extent(data, (d) => d[yAcc] as number);
+  $: [xMinVal, xMaxVal] = extent(data, (d) => d.ts);
+  $: [, yMaxVal] = extent(data, (d) => d.count);
 
   $: xScale = scaleTime()
     .domain([xMinVal ?? new Date(), xMaxVal ?? new Date()])
@@ -48,13 +43,23 @@
     .domain([0, yMaxVal ?? 1])
     .range([plotBottom, plotTop]);
 
-  $: lineFn = lineFactory({ xScale, yScale, xAccessor: xAcc });
-  $: areaFn = areaFactory({ xScale, yScale, xAccessor: xAcc });
+  $: lineGen = createLineGenerator<TimestampDataPoint>({
+    x: (d) => xScale(d.ts ?? 0),
+    y: (d) => yScale(d.count),
+    defined: pathDoesNotDropToZero("count"),
+  });
 
-  $: linePath = lineFn(yAcc)(data);
-  $: areaPath = areaFn(yAcc)(data);
+  $: areaGen = createAreaGenerator<TimestampDataPoint>({
+    x: (d) => xScale(d.ts ?? 0),
+    y0: yScale(0),
+    y1: (d) => yScale(d.count),
+    defined: pathDoesNotDropToZero("count"),
+  });
 
-  export function scaleVertical(
+  $: linePath = lineGen(data);
+  $: areaPath = areaGen(data);
+
+  function scaleVertical(
     node: Element,
     {
       delay = 0,

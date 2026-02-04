@@ -25,12 +25,17 @@ Otherwise, the page will jump around as the data is fetched.
   } from "@rilldata/web-common/runtime-client";
   import { extent, bisector, max, min } from "d3-array";
   import { scaleLinear } from "d3-scale";
-  import { interpolateReds } from "d3-scale-chromatic";
+  import { interpolateBlues } from "d3-scale-chromatic";
   import { tweened } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
   import TopK from "./TopK.svelte";
+
+  // Layout constants
+  const histHeight = 64;
+  const rugHeight = 16;
+  const margins = { top: 1, right: 4, bottom: 0, left: 4 };
 
   export let data: NumericHistogramBinsBin[];
   export let rug: NumericOutliersOutlier[];
@@ -40,20 +45,12 @@ Otherwise, the page will jump around as the data is fetched.
   export let type: string;
 
   let summaryMode: "summary" | "topk" = "summary";
-
   let topKLimit = 15;
   let rowHeight = 24;
-
-  let focusPoint: TopKEntry | undefined = undefined;
-  $: if (summaryMode !== "summary") focusPoint = undefined;
-
-  // Responsive width
   let containerWidth = 400;
+  let focusPoint: TopKEntry | undefined = undefined;
 
-  // Layout constants
-  const histHeight = 64;
-  const rugHeight = 16;
-  const margins = { top: 1, right: 4, bottom: 0, left: 4 };
+  $: if (summaryMode !== "summary") focusPoint = undefined;
 
   $: plotLeft = margins.left;
   $: plotRight = containerWidth - margins.right;
@@ -76,17 +73,7 @@ Otherwise, the page will jump around as the data is fetched.
   $: separator = data?.length < 30 && INTEGERS.has(type) ? 1 : 0;
   const histGradientId = `hist-gradient-${guidGenerator()}`;
   $: histPath = data
-    ? barplotPolyline(
-        data,
-        "low",
-        "high",
-        "count",
-        xScale,
-        yScale,
-        separator,
-        false,
-        1,
-      )
+    ? barplotPolyline(data, xScale, yScale, separator, false, 1)
     : "";
 
   // Bisection for hover
@@ -186,8 +173,9 @@ Otherwise, the page will jump around as the data is fetched.
   </div>
   <div bind:clientWidth={containerWidth}>
     <!-- Histogram -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
+
     <svg
+      role="presentation"
       class="overflow-visible"
       width={containerWidth}
       height={histHeight}
@@ -200,10 +188,10 @@ Otherwise, the page will jump around as the data is fetched.
     >
       <defs>
         <linearGradient id={histGradientId} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="5%" stop-color="hsla(1,70%, 80%, .5)" />
+          <stop offset="5%" stop-color="var(--color-primary-600" />
           <stop
             offset="95%"
-            stop-color="hsla(1,70%, 80%, .5)"
+            stop-color="var(--surface-background)"
             stop-opacity={0.4}
           />
         </linearGradient>
@@ -216,7 +204,7 @@ Otherwise, the page will jump around as the data is fetched.
           x2={plotRight}
           y1={plotBottom}
           y2={plotBottom}
-          class="stroke-red-400"
+          class="stroke-primary-400"
           stroke-width={1}
         />
 
@@ -225,7 +213,7 @@ Otherwise, the page will jump around as the data is fetched.
           <path d={histPath} fill="url(#{histGradientId})" />
           <path
             d={histPath}
-            stroke="hsla(1,90%, 60%, .7)"
+            class="stroke-primary-400"
             fill="none"
             stroke-width={1}
           />
@@ -265,14 +253,14 @@ Otherwise, the page will jump around as the data is fetched.
                 xScale(hoveredBin.high ?? 0) - xScale(hoveredBin.low ?? 0),
               )}
               height={plotBottom - yScale(hoveredBin.count ?? 0)}
-              class="fill-red-200"
+              class="fill-primary-200"
             />
             <line
               x1={xScale(hoveredBin.low ?? 0)}
               x2={xScale(hoveredBin.low ?? 0)}
               y1={yScale(0)}
               y2={yScale(hoveredBin.count ?? 0)}
-              class="stroke-red-500"
+              class="stroke-primary-500"
               stroke-width="2"
             />
             <line
@@ -280,7 +268,7 @@ Otherwise, the page will jump around as the data is fetched.
               x2={xScale(hoveredBin.high ?? 0)}
               y1={yScale(0)}
               y2={yScale(hoveredBin.count ?? 0)}
-              class="stroke-red-500"
+              class="stroke-primary-500"
               stroke-width="2"
             />
             <line
@@ -288,7 +276,7 @@ Otherwise, the page will jump around as the data is fetched.
               x2={xScale(hoveredBin.high ?? 0)}
               y1={yScale(hoveredBin.count ?? 0)}
               y2={yScale(hoveredBin.count ?? 0)}
-              class="stroke-red-500"
+              class="stroke-primary-500"
               stroke-width="2"
             />
             <line
@@ -296,7 +284,7 @@ Otherwise, the page will jump around as the data is fetched.
               x2={xScale(hoveredBin.high ?? 0)}
               y1={yScale(0) - 0.5}
               y2={yScale(0) - 0.5}
-              class="stroke-red-500"
+              class="stroke-primary-500"
               stroke-width={1}
             />
           </g>
@@ -366,7 +354,7 @@ Otherwise, the page will jump around as the data is fetched.
               <path
                 d={drawRugSegments(bucket, xScale)}
                 stroke-width={1}
-                stroke={interpolateReds(rugColorScale(i / rugTiers))}
+                stroke={interpolateBlues(rugColorScale(i / rugTiers))}
               />
             {/if}
           {/each}
@@ -399,7 +387,7 @@ Otherwise, the page will jump around as the data is fetched.
             k={topKLimit}
             {topK}
             {totalRows}
-            colorClass="bg-red-200"
+            colorClass="bg-primary-200"
             {type}
           />
         </div>

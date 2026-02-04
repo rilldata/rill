@@ -156,7 +156,7 @@ export function buildDimensionSeriesData(
 
     results.push({
       dimensionValue: dimensionValues[i],
-      color: COMPARISON_COLORS[i] || "",
+      color: COMPARISON_COLORS[i % COMPARISON_COLORS.length] || "",
       data,
       isFetching,
     });
