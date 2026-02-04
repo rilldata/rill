@@ -31,7 +31,7 @@
   }
 </script>
 
-<SettingsContainer title="Delete this organization">
+<SettingsContainer title="Delete Organization">
   <svelte:fragment slot="body">
     Permanently delete this organization and all of its contents from the Rill
     platform. This action is not reversible — please continue with caution.
@@ -49,9 +49,9 @@
     onConfirm={deleteOrg}
   >
     <svelte:fragment let:builder>
-      <Button builders={[builder]} type="destructive">
-        Delete this organization
-      </Button>
+      <Button builders={[builder]} type="destructive"
+        >Delete Organization</Button
+      >
     </svelte:fragment>
   </AlertDialogGuardedConfirmation>
 </SettingsContainer>
