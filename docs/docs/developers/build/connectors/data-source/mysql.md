@@ -35,8 +35,6 @@ When you add a MySQL data model through the Rill UI, the process follows two ste
 
 This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
 
----
-
 ## Connect to MySQL
 
 ### Using the UI
@@ -94,8 +92,6 @@ refresh:
 connector.mysql.password=your-secure-password
 ```
 
----
-
 ## Using MySQL Data in Models
 
 Once your connector is configured, you can reference MySQL tables and run queries in your model configurations.
@@ -132,15 +128,11 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
----
-
 ## Separating Dev and Prod Environments
 
 When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
 
 For more details, see our [Dev/Prod setup docs](/developers/build/connectors/templating).
-
----
 
 ## Deploy to Rill Cloud
 

@@ -28,7 +28,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Google Cloud Storage",
 	Description: "Connect to Google Cloud Storage.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/gcs",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/gcs",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "google_application_credentials",

@@ -31,8 +31,6 @@ When you add a PostgreSQL data model through the Rill UI, the process follows tw
 
 This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
 
----
-
 ## Method 1: Individual Parameters (Recommended)
 
 Using individual parameters provides clear, readable configuration for your PostgreSQL connection.
@@ -96,8 +94,6 @@ connector.postgres.password=your_password_here
 If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/developers/build/connectors/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 :::
 
----
-
 ## Method 2: Connection String/URI
 
 You can also use a connection string or URI format to configure your PostgreSQL connection.
@@ -148,8 +144,6 @@ refresh:
 connector.postgres.database_url=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 ```
 
----
-
 ## Using PostgreSQL Data in Models
 
 Once your connector is configured, you can reference PostgreSQL tables and run queries in your model configurations.
@@ -186,15 +180,11 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
----
-
 ## Separating Dev and Prod Environments
 
 When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
 
 For more details, see our [Dev/Prod setup docs](/developers/build/connectors/templating).
-
----
 
 ## Deploy to Rill Cloud
 

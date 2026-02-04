@@ -45,8 +45,6 @@ When you add an Azure Blob Storage data model through the Rill UI, you'll see fo
 Azure CLI authentication is only available through manual configuration. See [Method 5: Azure CLI Authentication](#method-5-azure-cli-authentication-local-development-only) for setup instructions.
 :::
 
----
-
 ## Method 1: Storage Account Key (Recommended)
 
 Storage Account Key credentials provide reliable authentication for Azure Blob Storage. This method works for both local development and Rill Cloud deployments.
@@ -103,8 +101,6 @@ connector.azure.azure_storage_key=your_storage_account_key
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your storage account keys.
 
----
-
 ## Method 2: Connection String
 
 Connection String provides an alternative authentication method for Azure Blob Storage.
@@ -156,8 +152,6 @@ connector.azure.azure_storage_connection_string=your_connection_string
 ```
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your connection string.
-
----
 
 ## Method 3: Shared Access Signature (SAS) Token
 
@@ -213,8 +207,6 @@ connector.azure.azure_storage_sas_token=your_sas_token
 
 Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers) to create your Azure SAS token.
 
----
-
 ## Method 4: Public Containers
 
 For publicly accessible Azure Blob Storage containers, you don't need to create a connector. Simply use the Azure URI directly in your model configuration.
@@ -246,8 +238,6 @@ sql: SELECT * FROM read_parquet('azure://publicaccount.blob.core.windows.net/my-
 refresh:
   cron: "0 */6 * * *"
 ```
-
----
 
 ## Method 5: Azure CLI Authentication (Local Development Only)
 
@@ -333,8 +323,6 @@ SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data
 -- Files matching a pattern
 SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data/2024-*.parquet')
 ```
-
----
 
 ## Deploy to Rill Cloud
 

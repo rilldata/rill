@@ -15,7 +15,7 @@
   </div>
   <span class="flex flex-row items-center gap-2 group">
     <a
-      href={connector.docsUrl || "https://docs.rilldata.com/build/connectors/"}
+      href={connector.docsUrl || "https://docs.rilldata.com/developers/build/connectors/"}
       rel="noreferrer noopener"
       target="_blank"
       class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium group-hover:underline break-all"

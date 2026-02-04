@@ -55,7 +55,7 @@ In this example:
 
 Some connectors will reference two unique databases and require two unique credentials for development and production. In this case, you can either define a unique environmental variable for both and reference them separately in the connector.
 
-IE:
+For example:
 ```
 "{{ .env.connector.dev_clickhouse.username }}"
 "{{ .env.connector.prod_clickhouse.username }}"

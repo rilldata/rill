@@ -37,8 +37,6 @@ When you add a Snowflake data model through the Rill UI, the process follows two
 
 This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
 
----
-
 ## Method 1: Keypair Authentication (Recommended)
 
 Keypair authentication provides enhanced security and is the recommended method for connecting to Snowflake. This method works for both local development and Rill Cloud deployments.
@@ -113,8 +111,6 @@ connector.snowflake.dsn=myuser@myaccount/mydb/myschema?warehouse=mywh&role=myrol
 If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/developers/build/connectors/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 :::
 
----
-
 ## Method 2: Password Authentication (Deprecated)
 
 :::warning Deprecated by Snowflake
@@ -161,8 +157,6 @@ refresh:
 connector.snowflake.dsn=myuser:mypassword@myaccount/mydb/myschema?warehouse=mywh&role=myrole
 ```
 
----
-
 ## Using Snowflake Data in Models
 
 Once your connector is configured, you can reference Snowflake tables and run queries in your model configurations.
@@ -199,15 +193,11 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
----
-
 ## Separating Dev and Prod Environments
 
 When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
 
 For more details, see our [Dev/Prod setup docs](/developers/build/connectors/templating).
-
----
 
 ## Deploy to Rill Cloud
 

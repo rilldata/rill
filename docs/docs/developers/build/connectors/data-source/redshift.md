@@ -31,8 +31,6 @@ When you add a Redshift data model through the Rill UI, the process follows two 
 
 This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
 
----
-
 ## Method 1: Access Key and Secret Key (Recommended)
 
 Access Key and Secret Key credentials provide the most reliable authentication for Redshift. This method works for both local development and Rill Cloud deployments.
@@ -94,8 +92,6 @@ connector.redshift.aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKE
 If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/developers/build/connectors/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 :::
 
----
-
 ## Method 2: Local AWS Credentials
 
 For local development, you can use credentials from the AWS CLI. This method is **not suitable for production** or Rill Cloud deployments.
@@ -143,8 +139,6 @@ refresh:
 
 When no explicit credentials are provided in the connector, Rill will automatically use your local AWS CLI credentials.
 
----
-
 ## Using Redshift Data in Models
 
 Once your connector is configured, you can reference Redshift tables and run queries in your model configurations.
@@ -181,15 +175,11 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
----
-
 ## Separating Dev and Prod Environments
 
 When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
 
 For more details, see our [Dev/Prod setup docs](/developers/build/connectors/templating).
-
----
 
 ## Deploy to Rill Cloud
 
@@ -203,8 +193,6 @@ rill env push
 :::tip Did you know?
 If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/developers/build/connectors/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
 :::
-
----
 
 ## Appendix
 
