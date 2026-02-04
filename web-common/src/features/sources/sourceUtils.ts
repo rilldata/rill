@@ -1,38 +1,54 @@
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
-import {
-  ConnectorDriverPropertyType,
-  type ConnectorDriverProperty,
-  type V1ConnectorDriver,
-  type V1Source,
+import type {
+  V1ConnectorDriver,
+  V1Source,
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
+import { getConnectorSchema } from "./modal/connector-schemas";
+import {
+  getSchemaFieldMetaList,
+  getSchemaSecretKeys,
+  getSchemaStringKeys,
+} from "../templates/schema-utils";
 
 // Helper text that we put at the top of every Model YAML file
-const SOURCE_MODEL_FILE_TOP = `# Model YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+function sourceModelFileTop(driverName: string) {
+  return `# Model YAML
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
 
 type: model
 materialize: true`;
+}
 
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
-  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
+  opts?: {
+    secretKeys?: string[];
+    stringKeys?: string[];
+    connectorInstanceName?: string;
+    originalDriverName?: string;
+  },
 ) {
+  const schema = getConnectorSchema(connector.name ?? "");
+
   // Get the secret property keys
   const secretPropertyKeys =
-    connector.sourceProperties
-      ?.filter((property) => property.secret)
-      .map((property) => property.key) || [];
+    opts?.secretKeys ??
+    (schema ? getSchemaSecretKeys(schema, { step: "source" }) : []);
 
   // Get the string property keys
   const stringPropertyKeys =
-    connector.sourceProperties
-      ?.filter(
-        (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
-      )
-      .map((property) => property.key) || [];
+    opts?.stringKeys ??
+    (schema ? getSchemaStringKeys(schema, { step: "source" }) : []);
+
+  const formatSqlBlock = (sql: string, indent: string) =>
+    `sql: |\n${sql
+      .split("\n")
+      .map((line) => `${indent}${line}`)
+      .join("\n")}`;
+  const trimSqlForDev = (sql: string) => sql.trim().replace(/;+\s*$/, "");
 
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
@@ -61,10 +77,7 @@ export function compileSourceYAML(
 
       if (key === "sql") {
         // For SQL, we want to use a multi-line string
-        return `${key}: |\n  ${value
-          .split("\n")
-          .map((line) => `${line}`)
-          .join("\n")}`;
+        return formatSqlBlock(value, "  ");
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -76,14 +89,30 @@ export function compileSourceYAML(
     })
     .join("\n");
 
+  const devSection =
+    connector.implementsWarehouse &&
+    connector.name !== "redshift" &&
+    typeof formValues.sql === "string" &&
+    formValues.sql.trim()
+      ? `\n\ndev:\n  ${formatSqlBlock(
+          `${trimSqlForDev(formValues.sql)} limit 10000`,
+          "    ",
+        )}`
+      : "";
+
+  // Use connector instance name if provided, otherwise fall back to driver name
+  const connectorName = opts?.connectorInstanceName || connector.name;
+
+  const driverName = opts?.originalDriverName || connector.name || "duckdb";
   return (
-    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}\n\n` +
-    compiledKeyValues
+    `${sourceModelFileTop(driverName)}\n\nconnector: ${connectorName}\n\n` +
+    compiledKeyValues +
+    devSection
   );
 }
 
 export function compileLocalFileSourceYAML(path: string) {
-  return `${SOURCE_MODEL_FILE_TOP}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
+  return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
 function buildDuckDbQuery(path: string | undefined): string {
@@ -139,6 +168,19 @@ export function inferSourceName(connector: V1ConnectorDriver, path: string) {
   return sanitizeEntityName(fileName);
 }
 
+export function inferModelNameFromSQL(sql: string): string | undefined {
+  if (!sql) return;
+  const match = sql.match(/\bFROM\s+([^\s;,()]+)/i);
+  if (!match) return;
+  // Take the last segment if schema-qualified (e.g. schema.table)
+  const raw = match[1]
+    .replace(/[`"[\]]/g, "")
+    .split(".")
+    .pop();
+  if (!raw) return;
+  return sanitizeEntityName(raw);
+}
+
 export function getFileTypeFromPath(fileName) {
   if (!fileName.includes(".")) return "";
   const fileType = fileName.split(/[#?]/)[0].split(".").pop();
@@ -159,18 +201,37 @@ export function getFileTypeFromPath(fileName) {
 export function maybeRewriteToDuckDb(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  options?: { connectorInstanceName?: string },
 ): [V1ConnectorDriver, Record<string, unknown>] {
   // Create a copy of the connector, so that we don't overwrite the original
   const connectorCopy = { ...connector };
+  const connectorInstanceName =
+    options?.connectorInstanceName?.trim() || undefined;
+  const secretConnectorName = connectorInstanceName || connector.name || "";
 
   switch (connector.name) {
     case "s3":
     case "gcs":
-    case "https":
     case "azure":
-      // Ensure DuckDB creates a temporary secret for the original connector
-      if (!formValues.create_secrets_from_connectors) {
-        formValues.create_secrets_from_connectors = connector.name;
+      // Ensure DuckDB creates a temporary secret for the original connector.
+      if (secretConnectorName) {
+        if (connectorInstanceName) {
+          if (!formValues.create_secrets_from_connectors) {
+            formValues.create_secrets_from_connectors = secretConnectorName;
+          }
+        } else {
+          // When skipping connector creation, force the default driver name.
+          formValues.create_secrets_from_connectors = secretConnectorName;
+        }
+      }
+    // falls through to rewrite as DuckDB
+    case "https":
+      // HTTP sources are typically public; avoid surfacing secret wiring unless
+      // the user is explicitly targeting a configured connector instance.
+      if (connectorInstanceName && secretConnectorName) {
+        if (!formValues.create_secrets_from_connectors) {
+          formValues.create_secrets_from_connectors = secretConnectorName;
+        }
       }
     // falls through to rewrite as DuckDB
     case "local_file":
@@ -178,13 +239,6 @@ export function maybeRewriteToDuckDb(
 
       formValues.sql = buildDuckDbQuery(formValues.path as string);
       delete formValues.path;
-
-      connectorCopy.sourceProperties = [
-        {
-          key: "sql",
-          type: ConnectorDriverPropertyType.TYPE_STRING,
-        },
-      ];
 
       break;
     case "sqlite":
@@ -195,13 +249,6 @@ export function maybeRewriteToDuckDb(
       }');`;
       delete formValues.db;
       delete formValues.table;
-
-      connectorCopy.sourceProperties = [
-        {
-          key: "sql",
-          type: ConnectorDriverPropertyType.TYPE_STRING,
-        },
-      ];
 
       break;
   }
@@ -216,6 +263,7 @@ export function maybeRewriteToDuckDb(
 export function prepareSourceFormData(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  options?: { connectorInstanceName?: string },
 ): [V1ConnectorDriver, Record<string, unknown>] {
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
@@ -225,23 +273,30 @@ export function prepareSourceFormData(
 
   // Strip connector configuration keys from the source form values to prevent
   // leaking connector-level fields (e.g., credentials) into the model file.
-  if (connector.configProperties) {
-    const connectorPropertyKeys = new Set(
-      connector.configProperties.map((p) => p.key).filter(Boolean),
-    );
-    for (const key of Object.keys(processedValues)) {
-      if (connectorPropertyKeys.has(key)) {
-        delete processedValues[key];
-      }
+  const schema = getConnectorSchema(connector.name ?? "");
+  const connectorPropertyKeys = new Set<string>();
+  if (schema) {
+    const connectorFields = getSchemaFieldMetaList(schema, {
+      step: "connector",
+    })
+      .filter((field) => !field.internal)
+      .map((field) => field.key);
+    for (const key of connectorFields) {
+      connectorPropertyKeys.add(key);
+      delete processedValues[key];
     }
   }
 
   // Handle placeholder values for required source properties
-  if (connector.sourceProperties) {
-    for (const prop of connector.sourceProperties) {
-      if (prop.key && prop.required && !(prop.key in processedValues)) {
-        if (prop.placeholder) {
-          processedValues[prop.key] = prop.placeholder;
+  // Skip connector fields - they're handled by the connector, not the model
+  if (schema) {
+    const sourceFields = getSchemaFieldMetaList(schema, { step: "source" });
+    for (const field of sourceFields) {
+      // Don't fill placeholders for connector fields (even if they match source step)
+      if (connectorPropertyKeys.has(field.key)) continue;
+      if (field.required && !(field.key in processedValues)) {
+        if (field.placeholder) {
+          processedValues[field.key] = field.placeholder;
         }
       }
     }
@@ -251,6 +306,7 @@ export function prepareSourceFormData(
   const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
     connector,
     processedValues,
+    options,
   );
 
   return [rewrittenConnector, rewrittenFormValues];
@@ -278,35 +334,4 @@ export function formatConnectorType(source: V1Source) {
     default:
       return source?.state?.connector ?? "";
   }
-}
-
-/**
- * Extracts initial form values from connector property specs, using the Default field if present.
- * @param properties Array of property specs (e.g., connector.configProperties)
- * @returns Object mapping property keys to their default values
- */
-export function getInitialFormValuesFromProperties(
-  properties: Array<ConnectorDriverProperty>,
-) {
-  const initialValues: Record<string, any> = {};
-  for (const prop of properties) {
-    // Only set if default is not undefined/null/empty string
-    if (
-      prop.key &&
-      prop.default !== undefined &&
-      prop.default !== null &&
-      prop.default !== ""
-    ) {
-      let value: any = prop.default;
-      if (prop.type === ConnectorDriverPropertyType.TYPE_NUMBER) {
-        // NOTE: store number type prop as String, not Number, so that we can use the same form for both number and string properties
-        // See `yupSchemas.ts` for more details
-        value = String(value);
-      } else if (prop.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
-        value = value === "true" || value === true;
-      }
-      initialValues[prop.key] = value;
-    }
-  }
-  return initialValues;
 }
