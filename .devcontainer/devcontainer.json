@@ -1,0 +1,18 @@
+{
+  "name": "Rill Development",
+  "image": "mcr.microsoft.com/devcontainers/go:1.24",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+  "postCreateCommand": "make cli",
+  "postStartCommand": "./rill start --no-open",
+  "forwardPorts": [9009],
+  "portsAttributes": {
+    "9009": {
+      "label": "Rill Developer",
+      "onAutoForward": "openBrowser"
+    }
+  }
+}
