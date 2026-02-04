@@ -7,12 +7,22 @@
   } from "@rilldata/web-admin/client";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+  import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@rilldata/web-common/components/alert-dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import AlertDialogGuardedConfirmation from "@rilldata/web-common/components/alert-dialog/alert-dialog-guarded-confirmation.svelte";
 
   export let organization: string;
   export let project: string;
+
+  let dialogOpen = false;
 
   const hibernateProjectMutation = createAdminServiceHibernateProject();
   const redeployProjectMutation = createAdminServiceRedeployProject();
@@ -29,6 +39,8 @@
       org: organization,
       project: project,
     });
+
+    dialogOpen = false;
 
     await queryClient.refetchQueries({
       queryKey: getAdminServiceGetProjectQueryKey(organization, project),
@@ -70,26 +82,40 @@
     {#if isHibernated}
       <Button
         onClick={wakeProject}
-        type="secondary"
+        type="destructive"
         loading={redeployResult.isPending}
       >
         Wake project
       </Button>
     {:else}
-      <AlertDialogGuardedConfirmation
-        title="Hibernate this project?"
-        description={`The project "${project}" will be put into hibernation mode. It can be reactivated by accessing it again.`}
-        confirmText={`hibernate ${project}`}
-        loading={hibernateResult.isPending}
-        error={hibernateResult.error?.message}
-        onConfirm={hibernateProject}
-      >
-        <svelte:fragment let:builder>
-          <Button builders={[builder]} type="secondary"
-            >Hibernate project</Button
-          >
-        </svelte:fragment>
-      </AlertDialogGuardedConfirmation>
+      <AlertDialog bind:open={dialogOpen}>
+        <AlertDialogTrigger asChild let:builder>
+          <Button builders={[builder]} type="destructive">
+            Hibernate project
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hibernate this project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The project will be put into hibernation mode. It can be
+              reactivated by accessing it again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button type="secondary" onClick={() => (dialogOpen = false)}>
+              Cancel
+            </Button>
+            <Button
+              type="destructive"
+              onClick={hibernateProject}
+              loading={hibernateResult.isPending}
+            >
+              Hibernate
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     {/if}
   </svelte:fragment>
 </SettingsContainer>

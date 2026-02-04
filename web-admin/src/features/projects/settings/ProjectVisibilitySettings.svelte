@@ -9,7 +9,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import AlertDialogGuardedConfirmation from "@rilldata/web-common/components/alert-dialog/alert-dialog-guarded-confirmation.svelte";
   import type { AxiosError } from "axios";
 
   export let organization: string;
@@ -20,16 +19,14 @@
   $: projectResp = createAdminServiceGetProject(organization, project);
   $: isPublic = $projectResp.data?.project?.public ?? false;
 
-  let error: string | undefined = undefined;
-
-  async function makePublic() {
-    error = undefined;
+  async function toggleVisibility() {
+    const newVisibility = !isPublic;
     try {
       await $updateProjectMutation.mutateAsync({
         org: organization,
         project: project,
         data: {
-          public: true,
+          public: newVisibility,
         },
       });
 
@@ -38,37 +35,17 @@
       });
 
       eventBus.emit("notification", {
-        message: "Project is now public",
+        message: newVisibility
+          ? "Project is now public"
+          : "Project is now private",
       });
     } catch (err) {
       const axiosError = err as AxiosError<RpcStatus>;
-      error =
-        axiosError.response?.data?.message ?? "Failed to update visibility";
-    }
-  }
-
-  async function makePrivate() {
-    error = undefined;
-    try {
-      await $updateProjectMutation.mutateAsync({
-        org: organization,
-        project: project,
-        data: {
-          public: false,
-        },
-      });
-
-      await queryClient.refetchQueries({
-        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
-      });
-
       eventBus.emit("notification", {
-        message: "Project is now private",
+        message:
+          axiosError.response?.data?.message ?? "Failed to update visibility",
+        type: "error",
       });
-    } catch (err) {
-      const axiosError = err as AxiosError<RpcStatus>;
-      error =
-        axiosError.response?.data?.message ?? "Failed to update visibility";
     }
   }
 </script>
@@ -84,28 +61,12 @@
     {/if}
   </svelte:fragment>
 
-  <svelte:fragment slot="action">
-    {#if isPublic}
-      <Button
-        onClick={makePrivate}
-        type="secondary"
-        loading={$updateProjectMutation.isPending}
-      >
-        Make private
-      </Button>
-    {:else}
-      <AlertDialogGuardedConfirmation
-        title="Make this project public?"
-        description={`The project "${project}" will be publicly accessible. Anyone with the URL will be able to view this project.`}
-        confirmText={`make ${project} public`}
-        loading={$updateProjectMutation.isPending}
-        {error}
-        onConfirm={makePublic}
-      >
-        <svelte:fragment let:builder>
-          <Button builders={[builder]} type="secondary">Make public</Button>
-        </svelte:fragment>
-      </AlertDialogGuardedConfirmation>
-    {/if}
-  </svelte:fragment>
+  <Button
+    slot="action"
+    onClick={toggleVisibility}
+    type="destructive"
+    loading={$updateProjectMutation.isPending}
+  >
+    {isPublic ? "Make private" : "Make public"}
+  </Button>
 </SettingsContainer>
