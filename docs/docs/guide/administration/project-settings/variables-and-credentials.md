@@ -63,42 +63,45 @@ Please note when you run `rill env pull`, Rill will *automatically override any 
 
 :::
 
-### Credentials Naming Schema 
+### Credentials Naming Schema
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/developers/build/connectors/olap/druid) and [ClickHouse](/developers/build/connectors/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)! 
+Connector credentials use a standardized naming convention. Generic credentials (shared across connectors like cloud providers) use standard names without a driver prefix, while driver-specific credentials use the `DRIVER_PROPERTY` format. Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](../../contact)!
 
-
+:::note Legacy Naming Convention
+Older projects may use the `connector.<connector_name>.<property>` syntax (e.g., `connector.druid.dsn`, `connector.clickhouse.dsn`). This format is still supported for backwards compatibility.
+:::
 
 <div
     style={{
     width: '100%',
     margin: 'auto',
     padding: '20px',
-    textAlign: 'center', 
-    display: 'flex', 
+    textAlign: 'center',
+    display: 'flex',
     justifyContent: 'center',
     alignItems: 'center'
     }}
 >
-| **Source Name** |             Property             | Example                                             |
-| :-------------: | :------------------------------: | :-------------------------------------------------- |
-|     **GCS**     | `GOOGLE_APPLICATION_CREDENTIALS` | `connector.gcs.google_application_credentials`      |
-|                 |        `GCS_BUCKET_NAME`         | `connector.gcs.gcs_bucket_name`                     |
-|   **AWS S3**    |       `AWS_ACCESS_KEY_ID`        | `connector.s3.aws_access_key_id`                    |
-|                 |     `AWS_SECRET_ACCESS_KEY`      | `connector.s3.aws_secret_access_key`                |
-|    **Azure**    |     `AZURE_STORAGE_ACCOUNT`      | `connector.azure.azure_storage_account`             |
-|                 |       `AZURE_STORAGE_KEY`        | `connector.azure.azure_storage_key`                 |
-|                 |        `AZURE_CLIENT_ID`         | `connector.azure.azure_client_id`                   |
-|                 |      `AZURE_CLIENT_SECRET`       | `connector.azure.azure_client_secret`               |
-|                 |        `AZURE_TENANT_ID`         | `connector.azure.azure_tenant_id`                   |
-|  **Big Query**  | `GOOGLE_APPLICATION_CREDENTIALS` | `connector.bigquery.google_application_credentials` |
-|  **Snowflake**  |              `DSN`               | `connector.snowflake.dsn`                           |
-| **ClickHouse**  |              `HOST`              | `connector.clickhouse.host `                        |
-|                 |              `PORT`              | `connector.clickhouse.port `                        |
-|                 |            `USERNAME`            | `connector.clickhouse.username `                    |
-|                 |            `PASSWORD`            | `connector.clickhouse.password `                    |
-|                 |              `SSL`               | `connector.clickhouse.ssl `                         |
-|                 |            `DATABASE`            | `connector.clickhouse.database `                    |
-...
+| **Source Name** |             Property             | Environment Variable                |
+| :-------------: | :------------------------------: | :---------------------------------- |
+|     **GCS**     | `google_application_credentials` | `GOOGLE_APPLICATION_CREDENTIALS`    |
+|                 |             `key_id`             | `GS_ACCESS_KEY_ID`                  |
+|                 |             `secret`             | `GS_SECRET_ACCESS_KEY`              |
+|   **AWS S3**    |       `aws_access_key_id`        | `AWS_ACCESS_KEY_ID`                 |
+|                 |     `aws_secret_access_key`      | `AWS_SECRET_ACCESS_KEY`             |
+|    **Azure**    |     `azure_storage_account`      | `AZURE_STORAGE_ACCOUNT`             |
+|                 |       `azure_storage_key`        | `AZURE_STORAGE_KEY`                 |
+|                 | `azure_storage_connection_string`| `AZURE_STORAGE_CONNECTION_STRING`   |
+|                 |     `azure_storage_sas_token`    | `AZURE_STORAGE_SAS_TOKEN`           |
+|  **Big Query**  | `google_application_credentials` | `GOOGLE_APPLICATION_CREDENTIALS`    |
+|  **Snowflake**  |              `dsn`               | `SNOWFLAKE_DSN`                     |
+|                 |           `password`             | `SNOWFLAKE_PASSWORD`                |
+| **ClickHouse**  |              `host`              | `CLICKHOUSE_HOST`                   |
+|                 |              `port`              | `CLICKHOUSE_PORT`                   |
+|                 |            `username`            | `CLICKHOUSE_USERNAME`               |
+|                 |            `password`            | `CLICKHOUSE_PASSWORD`               |
+|                 |              `ssl`               | `CLICKHOUSE_SSL`                    |
+|                 |            `database`            | `CLICKHOUSE_DATABASE`               |
+|                 |              `dsn`               | `CLICKHOUSE_DSN`                    |
 
 </div>
