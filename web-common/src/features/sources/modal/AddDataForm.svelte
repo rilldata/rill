@@ -101,7 +101,8 @@
 
   // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
   // This prevents the preview from updating when Test and Connect writes to .env.
-  let existingEnvBlob = "";
+  // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
+  let existingEnvBlob: string | null = null;
   onMount(async () => {
     try {
       const envFile = await runtimeServiceGetFile($runtime.instanceId, {
@@ -203,12 +204,13 @@
     saveAnyway = false;
   }
 
+  // Re-compute preview when existingEnvBlob is loaded (changes from null to string)
   $: yamlPreview = formManager.computeYamlPreview({
     stepState,
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
     formValues: $form,
-    existingEnvBlob,
+    existingEnvBlob: existingEnvBlob ?? "",
   });
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
   $: saveAnywayLoading = submitting && saveAnyway;
