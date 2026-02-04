@@ -18,6 +18,7 @@
   export let organization: string;
   export let loading: boolean;
   export let error: string;
+  export let dark = false;
   export let onSave: (assetId: string) => Promise<void>;
   export let onRemove: () => Promise<void>;
 
@@ -76,6 +77,7 @@
 >
   <PopoverTrigger asChild let:builder>
     <button
+      class:dark
       class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit"
       {...getAttrs([builder])}
       use:builderActions={{ builders: [builder] }}
@@ -136,3 +138,9 @@
     </div>
   </PopoverContent>
 </Popover>
+
+<style lang="postcss">
+  .dark {
+    background-color: var(--color-rill-gray-dark-50);
+  }
+</style>

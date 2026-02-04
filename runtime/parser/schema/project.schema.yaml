@@ -48,6 +48,7 @@ definitions:
       - [**ClickHouse**](#clickhouse) - ClickHouse analytical database
       - [**Druid**](#druid) - Apache Druid
       - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
+      - [**External DuckDB**](#external-duckdb) - External DuckDB database
       - [**MotherDuck**](#motherduck) - MotherDuck cloud database
       - [**Pinot**](#pinot) - Apache Pinot
       - [**StarRocks**](#starrocks) - StarRocks analytical database
@@ -63,18 +64,19 @@ definitions:
       - [**PostgreSQL**](#postgres) - PostgreSQL databases
       - [**SQLite**](#sqlite) - SQLite databases
 
-      ### _Cloud Storage_
+      ### _Object Storage_
       - [**Azure**](#azure) - Azure Blob Storage
       - [**GCS**](#gcs) - Google Cloud Storage
       - [**S3**](#s3) - Amazon S3 storage
 
-      ### _Other_
-      - [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
-      - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-      - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
+      ### Service Integrations
       - [**Claude**](#claude) - Claude connector for chat with your own API key
-      - [**Salesforce**](#salesforce) - Salesforce data
+      - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
       - [**Slack**](#slack) - Slack data
+
+      ### _Other_
+      - [**HTTPS**](#https) - Public files via HTTP/HTTPS
+      - [**Salesforce**](#salesforce) - Salesforce data
 
       :::warning Security Recommendation
       For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
