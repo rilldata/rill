@@ -55,7 +55,6 @@
     await $redeployProjectMutation.mutateAsync({
       org: organization,
       project: project,
-      data: {},
     });
 
     await queryClient.refetchQueries({
