@@ -76,7 +76,7 @@ Example with all options:
 ```yaml
 type: connector
 driver: claude
-api_key: "{{ .env.connector.claude.api_key }}"
+api_key: "{{ .env.claude_api_key }}"
 model: claude-sonnet-4-20250514
 max_tokens: 8192
 temperature: 0.0
