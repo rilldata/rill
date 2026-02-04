@@ -26,13 +26,13 @@ test.describe("Save Anyway feature", () => {
       .getByRole("button", { name: /^(Test and Connect|Connect)$/ })
       .click();
 
-    // Wait for "Save Anyway" button to appear
+    // Wait for "Save" button to appear
     await expect(
-      page.getByRole("button", { name: "Save Anyway" }),
+      page.getByRole("button", { name: "Save" }),
     ).toBeVisible();
 
-    // Click "Save Anyway" button
-    await page.getByRole("button", { name: "Save Anyway" }).click();
+    // Click "Save" button
+    await page.getByRole("button", { name: "Save" }).click();
 
     // Wait for navigation to connector file, then for the editor to appear
     await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/, {
