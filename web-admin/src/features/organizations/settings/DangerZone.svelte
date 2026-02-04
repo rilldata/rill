@@ -18,7 +18,7 @@
     @apply border-0 rounded-none;
   }
 
-  .danger-zone > :global(.settings-container .settings-footer) {
+  .danger-zone :global(.settings-container .settings-footer) {
     @apply border-t;
     border-color: var(--color-red-400);
   }
