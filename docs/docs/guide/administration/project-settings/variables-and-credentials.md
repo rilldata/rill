@@ -65,7 +65,7 @@ Please note when you run `rill env pull`, Rill will *automatically override any 
 
 ### Credentials Naming Schema
 
-Connector credentials use a standardized naming convention. Generic credentials (shared across connectors like cloud providers) use standard names without a driver prefix, while driver-specific credentials use the `DRIVER_PROPERTY` format. Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](../../contact)!
+Connector credentials use a standardized naming convention. Generic credentials (shared across connectors like cloud providers) use standard names without a driver prefix, while driver-specific credentials use the `DRIVER_PROPERTY` format. Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)!
 
 :::note Legacy Naming Convention
 Older projects may use the `connector.<connector_name>.<property>` syntax (e.g., `connector.druid.dsn`, `connector.clickhouse.dsn`). This format is still supported for backwards compatibility.
