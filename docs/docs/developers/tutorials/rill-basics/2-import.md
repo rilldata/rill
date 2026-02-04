@@ -24,7 +24,7 @@ In Rill, a source model represents your raw data. See our list of [connectors](/
 By default, Rill uses DuckDB as the underlying OLAP engine (see <a href='https://docs.rilldata.com/build/olap/' target="_blank">Connect OLAP engines</a>).
 Please see our docs for the <a href="https://docs.rilldata.com/build/connectors/source/" target="_blank">supported list</a> of connectors.
 
-We support various OLAP engines. If you have a different OLAP engine that you're interested in using, please let us know! Looking for a ClickHouse tutorial? Click [here!](/developers/guides/rill-clickhouse/r_ch_launch)
+We support various OLAP engines. If you have a different OLAP engine that you're interested in using, please let us know! Looking for a ClickHouse tutorial? Click [here!](/developers/tutorials/rill-clickhouse/r_ch_launch)
 :::
 
 ### Add a Data Source
