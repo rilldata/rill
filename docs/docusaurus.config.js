@@ -1563,7 +1563,7 @@ const config = {
           },
           {
             from: '/reference/connectors/slack',
-            to: '/reference/project-files/connectors#slack',
+            to: '/developers/build/connectors/services/slack',
           },
           {
             from: '/reference/connectors/local-file',

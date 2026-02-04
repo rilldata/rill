@@ -2,7 +2,7 @@
 title: Claude
 description: Use Claude for AI features with your own API key
 sidebar_label: Claude
-sidebar_position: 43
+sidebar_position: 41
 ---
 
 [Claude](https://www.anthropic.com/claude) is Anthropic's AI assistant, designed to be helpful, harmless, and honest. Rill supports connecting to Claude using your own API key and configuration parameters to enable AI-powered conversations and data analysis features.
@@ -27,12 +27,12 @@ To configure Claude access, you'll need to obtain an API key from your Anthropic
    ```yaml
    type: connector
    driver: claude
-   api_key: "{{ .env.connector.claude.api_key }}"
+   api_key: "{{ .env.claude_api_key }}"
    ```
 
 :::tip Security Best Practice
 
-Never commit your Claude API key directly to your connector YAML files or version control. Always use environment variables with the `{{ .env.connector.claude.api_key }}` syntax to keep sensitive credentials secure.
+Never commit your Claude API key directly to your connector YAML files or version control. Always use environment variables with the `{{ .env.claude_api_key }}` syntax to keep sensitive credentials secure.
 
 :::
 
@@ -41,7 +41,7 @@ Never commit your Claude API key directly to your connector YAML files or versio
    Configure the API key in your `.env` file:
 
    ```env
-   connector.claude.api_key=sk-ant-...
+   claude_api_key=sk-ant-...
    ```
 
 4. **Configure Claude as the default AI connector (optional):**

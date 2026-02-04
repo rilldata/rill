@@ -1,5 +1,5 @@
 ---
-title: "Set Up Service Integrations"
+title: "Service Integrations"
 description: Connect Rill to external services like OpenAI and Slack
 sidebar_position: 7
 ---
