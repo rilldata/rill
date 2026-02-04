@@ -15,6 +15,7 @@ export const bigquerySchema: MultiStepFormSchema = {
       "x-accept": ".json",
       "x-secret": true,
       "x-env-var-name": "GOOGLE_APPLICATION_CREDENTIALS",
+      "x-step": "connector",
     },
     project_id: {
       type: "string",
@@ -23,6 +24,7 @@ export const bigquerySchema: MultiStepFormSchema = {
       "x-placeholder": "my-project",
       "x-hint":
         "If empty, Rill will use the project ID from your credentials when available.",
+      "x-step": "connector",
     },
     sql: {
       type: "string",

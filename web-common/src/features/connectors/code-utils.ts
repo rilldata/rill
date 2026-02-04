@@ -242,10 +242,18 @@ export function deleteEnvVariable(
 }
 
 /**
- * Get a generic ALL_CAPS environment variable name
+ * Get a generic ALL_CAPS environment variable name for a connector property.
  * If schema provides x-env-var-name, use it directly.
- * Otherwise: Generic properties (AWS, Google, etc.) use no prefix
- * Driver-specific properties use DriverName_PropertyKey format
+ * Otherwise uses DRIVER_NAME_PROPERTY_KEY format.
+ *
+ * @param driverName - The connector driver name (e.g., "clickhouse", "s3")
+ * @param propertyKey - The property key (e.g., "password", "aws_access_key_id")
+ * @param schema - Optional schema with x-env-var-name annotations
+ * @returns The environment variable name in SCREAMING_SNAKE_CASE
+ *
+ * @example
+ * getGenericEnvVarName("clickhouse", "password") // "CLICKHOUSE_PASSWORD"
+ * getGenericEnvVarName("s3", "aws_access_key_id", s3Schema) // "AWS_ACCESS_KEY_ID" (from x-env-var-name)
  */
 export function getGenericEnvVarName(
   driverName: string,
@@ -274,7 +282,11 @@ export function getGenericEnvVarName(
 }
 
 /**
- * Check if an environment variable exists in the env blob
+ * Check if an environment variable exists in the env blob.
+ *
+ * @param envBlob - The contents of the .env file as a string
+ * @param varName - The environment variable name to check for
+ * @returns true if the variable exists, false otherwise
  */
 export function envVarExists(envBlob: string, varName: string): boolean {
   const lines = envBlob.split("\n");
@@ -283,6 +295,15 @@ export function envVarExists(envBlob: string, varName: string): boolean {
 
 /**
  * Find the next available environment variable name by appending _1, _2, etc.
+ * Used to avoid conflicts when creating multiple connectors of the same type.
+ *
+ * @param envBlob - The contents of the .env file as a string
+ * @param baseName - The base environment variable name to check
+ * @returns The first available name (baseName, baseName_1, baseName_2, etc.)
+ *
+ * @example
+ * // If .env contains "AWS_ACCESS_KEY_ID=xxx"
+ * findAvailableEnvVarName(envBlob, "AWS_ACCESS_KEY_ID") // "AWS_ACCESS_KEY_ID_1"
  */
 export function findAvailableEnvVarName(
   envBlob: string,
@@ -299,12 +320,23 @@ export function findAvailableEnvVarName(
   return varName;
 }
 
+/**
+ * Generate an environment variable key for a connector property.
+ * Uses schema-defined x-env-var-name when available, otherwise generates
+ * DRIVER_NAME_PROPERTY_KEY format. Handles conflicts by appending _1, _2, etc.
+ *
+ * @param driverName - The connector driver name (e.g., "clickhouse", "s3")
+ * @param key - The property key (e.g., "password", "dsn")
+ * @param existingEnvBlob - Optional existing .env content for conflict detection
+ * @param schema - Optional schema with x-env-var-name annotations
+ * @returns The environment variable name, with suffix if needed to avoid conflicts
+ */
 export function makeDotEnvConnectorKey(
   driverName: string,
   key: string,
   existingEnvBlob?: string,
   schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
-) {
+): string {
   // Generate generic ALL_CAPS environment variable name
   const baseGenericName = getGenericEnvVarName(driverName, key, schema);
 

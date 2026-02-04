@@ -29,6 +29,7 @@ export function compileSourceYAML(
     stringKeys?: string[];
     connectorInstanceName?: string;
     originalDriverName?: string;
+    existingEnvBlob?: string;
   },
 ) {
   const schema = getConnectorSchema(connector.name ?? "");
@@ -70,7 +71,7 @@ export function compileSourceYAML(
         return `${key}: '{{ env "${makeDotEnvConnectorKey(
           connector.name as string,
           key,
-          undefined, // existingEnvBlob
+          opts?.existingEnvBlob,
           schema,
         )}" }}'`;
       }

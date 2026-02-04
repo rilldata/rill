@@ -13,6 +13,7 @@ export const athenaSchema: MultiStepFormSchema = {
       "x-placeholder": "your_access_key_id",
       "x-secret": true,
       "x-env-var-name": "AWS_ACCESS_KEY_ID",
+      "x-step": "connector",
     },
     aws_secret_access_key: {
       type: "string",
@@ -21,6 +22,7 @@ export const athenaSchema: MultiStepFormSchema = {
       "x-placeholder": "your_secret_access_key",
       "x-secret": true,
       "x-env-var-name": "AWS_SECRET_ACCESS_KEY",
+      "x-step": "connector",
     },
     output_location: {
       type: "string",
@@ -32,6 +34,7 @@ export const athenaSchema: MultiStepFormSchema = {
         pattern: "Must be an S3 URI (e.g., s3://bucket/path/)",
       },
       "x-placeholder": "s3://bucket-name/path/",
+      "x-step": "connector",
     },
     sql: {
       type: "string",
