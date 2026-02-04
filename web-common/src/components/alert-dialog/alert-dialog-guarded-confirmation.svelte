@@ -8,7 +8,10 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
-  import { Button, type ButtonType } from "@rilldata/web-common/components/button/index.js";
+  import {
+    Button,
+    type ButtonType,
+  } from "@rilldata/web-common/components/button/index.js";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
 
