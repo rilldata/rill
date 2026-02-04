@@ -23,7 +23,6 @@
   $: uploading = {};
   $: uploadErrors = {};
 
-  // File validation function based on accept prop
   function validateFile(file: File): string | null {
     if (!accept) return null;
 

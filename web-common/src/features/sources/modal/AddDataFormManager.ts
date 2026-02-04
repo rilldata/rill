@@ -35,6 +35,7 @@ import {
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
 import type { ButtonLabels } from "../../templates/schemas/types";
+import { processFileContent } from "../../templates/file-encoding";
 
 type FormData = Record<string, unknown>;
 // Use unknown to be compatible with superforms' complex ValidationErrors type
@@ -465,23 +466,44 @@ export class AddDataFormManager {
     }
   };
 
-  async handleFileUpload(file: File): Promise<string> {
+  async handleFileUpload(file: File, fieldKey?: string): Promise<string> {
     const content = await file.text();
-    const fileName = file.name.toLowerCase();
 
-    // Handle PEM/P8 private key files - base64 encode for .env compatibility
-    // The Snowflake backend accepts base64-encoded PEM content
+    if (fieldKey) {
+      const schema = getConnectorSchema(this.schemaName);
+      const field = schema?.properties?.[fieldKey];
+      if (field?.["x-file-encoding"]) {
+        const result = processFileContent(content, field);
+
+        if (Object.keys(result.extractedValues).length > 0) {
+          this.formStore.update(
+            ($form) => {
+              for (const [key, value] of Object.entries(
+                result.extractedValues,
+              )) {
+                $form[key] = value;
+              }
+              return $form;
+            },
+            { taint: false },
+          );
+        }
+
+        return result.encodedContent;
+      }
+    }
+
+    // Legacy fallback for fields without x-file-encoding
+    const fileName = file.name.toLowerCase();
     if (fileName.endsWith(".pem") || fileName.endsWith(".p8")) {
       return btoa(content);
     }
 
-    // Handle JSON files - parse and validate
     try {
       const parsed = JSON.parse(content);
       const sanitized = JSON.stringify(parsed);
       if (this.connector.name === "bigquery" && parsed.project_id) {
-        const formStore = this.formStore;
-        formStore.update(
+        this.formStore.update(
           ($form) => {
             $form.project_id = parsed.project_id;
             return $form;
