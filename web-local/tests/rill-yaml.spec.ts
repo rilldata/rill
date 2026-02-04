@@ -18,7 +18,7 @@ test.describe("Default olap_connector behavior", () => {
     page,
   }) => {
     await page.getByRole("link", { name: "Empty Project" }).click();
-    await expect(page.getByText("Import data", { exact: true })).toBeVisible();
+    await expect(page.getByText("Connect to your data", { exact: true })).toBeVisible();
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
     // Wait for navigation to complete
@@ -30,7 +30,7 @@ test.describe("Default olap_connector behavior", () => {
     page,
   }) => {
     await page.getByRole("link", { name: "Empty Project" }).click();
-    await expect(page.getByText("Import data", { exact: true })).toBeVisible();
+    await expect(page.getByText("Connect to your data", { exact: true })).toBeVisible();
 
     await uploadFile(page, "AdBids.csv");
 
@@ -49,9 +49,9 @@ test.describe("Default olap_connector behavior", () => {
     page,
   }) => {
     await page.getByRole("link", { name: "Empty Project" }).click();
-    await expect(page.getByText("Import data", { exact: true })).toBeVisible();
+    await expect(page.getByText("Connect to your data", { exact: true })).toBeVisible();
 
-    await page.getByRole("button", { name: "Add Data" }).click();
+    await page.getByRole("button", { name: "Connect Data" }).click();
     await page.locator("#clickhouse").click();
     await page.getByRole("radio", { name: "Rill-managed ClickHouse" }).check();
     await page

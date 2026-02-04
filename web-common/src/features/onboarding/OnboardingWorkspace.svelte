@@ -56,15 +56,15 @@
   <div class="cta-container">
     <div class="import-data-container cta-item">
       <div class="flex flex-col gap-y-1">
-        <div class="font-semibold text-base">Import data</div>
+        <div class="font-semibold text-base">Connect to your data</div>
         <div class="text-xs">
-          Add or drag a file here (Parquet, NDJSON, CSV).
+          Query OLAP engines or ingest files
         </div>
       </div>
       <div class="mx-auto">
         <ImportData />
       </div>
-      <Button type="primary" onClick={addSourceModal.open}>+ Add Data</Button>
+      <Button type="primary" onClick={addSourceModal.open} large forcedStyle="height: 3rem;">+ Connect Data</Button>
     </div>
 
     <div class="my-auto text-gray-400 text-base">or</div>
@@ -127,7 +127,7 @@
   <div class="flex flex-col mx-auto w-fit gap-y-2 text-xs text-slate-500">
     <div class="font-semibold text-center">Tips for data workflow in rill</div>
     <ul class="list-decimal">
-      <li>Import data – Add or drag files (Parquet, NDJSON, CSV).</li>
+      <li>Connect to your data – Query OLAP engines or ingest files.</li>
       <li>Model sources – Combine and shape data with SQL.</li>
       <li>Define metrics – Create metrics and dimensions.</li>
       <li>Explore insights – Visualize data in interactive dashboards.</li>
