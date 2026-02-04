@@ -19,7 +19,9 @@ export function processFileContent(
       try {
         encodedContent = btoa(content);
       } catch {
-        throw new Error("Invalid file encoding: contains non-Latin-1 characters");
+        throw new Error(
+          "Invalid file encoding: contains non-Latin-1 characters",
+        );
       }
       break;
 

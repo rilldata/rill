@@ -13,7 +13,10 @@
   export let optional: boolean;
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
-  export let handleFileUpload: (file: File, fieldKey: string) => Promise<string>;
+  export let handleFileUpload: (
+    file: File,
+    fieldKey: string,
+  ) => Promise<string>;
   export let value: any;
   export let checked: boolean | undefined;
   export let options:
