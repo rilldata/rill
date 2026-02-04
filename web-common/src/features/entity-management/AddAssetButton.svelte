@@ -16,6 +16,7 @@
   import {
     createRuntimeServiceCreateDirectory,
     createRuntimeServicePutFile,
+    createRuntimeServiceAnalyzeConnectors,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
@@ -31,9 +32,12 @@
   import { getName } from "./name-utils";
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
+  import { connectorIconMapping } from "../connectors/connector-icon-mapping";
+  import { getConnectorIconKey } from "../connectors/connectors-utils";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
-  import { Wand } from "lucide-svelte";
+  import { Wand, Globe, Upload } from "lucide-svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { modelConnectors } from "../sources/modal/connector-schemas";
 
   let active = false;
   let showExploreDialog = false;
@@ -69,6 +73,38 @@
   );
 
   $: metricsViews = $metricsViewQuery?.data ?? [];
+
+  $: connectors = createRuntimeServiceAnalyzeConnectors(instanceId, {
+    query: {
+      select: (data) => {
+        if (!data?.connectors) return;
+        const filtered = data.connectors
+          .filter(
+            (c) =>
+              // Only show connectors that are successfully reconciled (no error)
+              // Exclude OLAP-only connectors (only show SqlStore or Warehouse)
+              !c?.errorMessage &&
+              !c?.driver?.implementsOlap &&
+              (c?.driver?.implementsSqlStore || c?.driver?.implementsWarehouse),
+          )
+          .sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+        return { connectors: filtered };
+      },
+    },
+  });
+  $: connectorsData = $connectors.data?.connectors ?? [];
+
+  async function wrapNavigation(toPath: string | undefined) {
+    if (!toPath) return;
+    const previousScreenName = getScreenNameFromPage();
+    await goto(`/files${toPath}`);
+    await behaviourEvent?.fireSourceTriggerEvent(
+      BehaviourEventAction.Navigate,
+      BehaviourEventMedium.Button,
+      previousScreenName,
+      MetricsEventSpace.LeftPanel,
+    );
+  }
 
   /**
    * Open the Add Data modal
@@ -162,32 +198,109 @@
     }]`}
   >
     <DropdownMenu.Item
-      aria-label="Add Data"
+      aria-label="Add Connector"
       class="flex gap-x-2"
       on:click={handleAddData}
     >
       <svelte:component this={Database} color="#C026D3" size="16px" />
-      Data
+      Connector
     </DropdownMenu.Item>
-    <DropdownMenu.Item
-      aria-label="Add Model"
-      class="flex gap-x-2"
-      disabled={!isModelingSupported}
-      on:click={() => createResourceAndNavigate(ResourceKind.Model)}
-    >
-      <svelte:component
-        this={resourceIconMapping[ResourceKind.Model]}
-        size="16px"
-      />
-      <div class="flex flex-col items-start">
-        Model
-        {#if !isModelingSupported}
-          <span class="text-fg-secondary text-xs">
-            Requires a supported OLAP driver
-          </span>
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger
+        class="flex gap-x-2"
+        disabled={!isModelingSupported}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Model]}
+          size="16px"
+        />
+        <div class="flex flex-col items-start">
+          Model
+          {#if !isModelingSupported}
+            <span class="text-fg-secondary text-xs">
+              Requires a supported OLAP driver
+            </span>
+          {/if}
+        </div>
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
+        {#each connectorsData as connector (connector.name)}
+          {#if connector?.driver?.name}
+            <DropdownMenu.Item
+              class="flex gap-x-2"
+              on:click={() => {
+                // Use driver name as schema name, connector name as instance name
+                const schemaName = connector.driver?.name ?? "";
+                const connectorInstanceName = connector.name ?? "";
+                addSourceModal.open(schemaName, connectorInstanceName);
+              }}
+            >
+              <svelte:component
+                this={connectorIconMapping[getConnectorIconKey(connector)]}
+                size="16px"
+              />
+              {connector.name}
+            </DropdownMenu.Item>
+          {/if}
+        {/each}
+        {#if connectorsData.length > 0}
+          <DropdownMenu.Separator />
         {/if}
-      </div>
-    </DropdownMenu.Item>
+        <DropdownMenu.Item
+          aria-label="Blank SQL file"
+          class="flex gap-x-2"
+          disabled={!isModelingSupported}
+          on:click={() => createResourceAndNavigate(ResourceKind.Model)}
+        >
+          <File size="16px" />
+          Blank SQL
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          aria-label="Public URL"
+          class="flex gap-x-2"
+          disabled={!isModelingSupported}
+          on:click={() => {
+            const connector = modelConnectors.find((c) => c.name === "public");
+            if (connector) {
+              addSourceModal.openWithConnector(
+                {
+                  name: "https",
+                  displayName: connector.displayName,
+                  implementsFileStore: true,
+                },
+                "public",
+              );
+            }
+          }}
+        >
+          <Globe size="16px" />
+          Public
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          aria-label="Local File"
+          class="flex gap-x-2"
+          disabled={!isModelingSupported}
+          on:click={() => {
+            const connector = modelConnectors.find(
+              (c) => c.name === "local_file",
+            );
+            if (connector) {
+              addSourceModal.openWithConnector(
+                {
+                  name: "local_file",
+                  displayName: connector.displayName,
+                  implementsFileStore: true,
+                },
+                "local_file",
+              );
+            }
+          }}
+        >
+          <Upload size="16px" />
+          Local File
+        </DropdownMenu.Item>
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
@@ -254,7 +367,7 @@
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent class="w-[240px]">
+      <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
           <Folder size="14px" class="stroke-icon-muted" /> Folder
         </DropdownMenu.Item>
