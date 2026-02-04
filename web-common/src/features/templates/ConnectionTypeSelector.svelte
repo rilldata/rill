@@ -54,7 +54,7 @@
   }
 </script>
 
-<div class="w-full pb-4">
+<div class="w-full pb-2">
   {#if label}
     <span class="text-sm font-medium text-gray-700 block mb-1">{label}</span>
   {/if}
@@ -64,14 +64,14 @@
     onSelectedChange={(s) => handleChange(s?.value)}
   >
     <SelectPrimitive.Trigger
-      class="flex h-auto w-full items-center justify-between rounded-[2px] border bg-transparent px-3 py-2.5 text-sm ring-offset-background focus:outline-none focus:border-primary-400"
+      class="flex h-auto w-full items-center justify-between rounded-[2px] border bg-transparent px-2 py-1.5 text-sm ring-offset-background focus:outline-none focus:border-primary-400"
     >
       {#if selectedOption}
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
           <div
-            class="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center {selectedColors.bg} {selectedColors.text}"
+            class="flex-shrink-0 w-6 h-6 rounded flex items-center justify-center {selectedColors.bg} {selectedColors.text}"
           >
-            <svelte:component this={SelectedIcon} size="18" />
+            <svelte:component this={SelectedIcon} size="14" />
           </div>
           <div class="flex flex-col items-start">
             <span class="text-sm font-medium text-gray-900">

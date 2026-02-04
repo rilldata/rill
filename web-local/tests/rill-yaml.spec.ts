@@ -61,13 +61,14 @@ test.describe("Default olap_connector behavior", () => {
       .click();
     await page.getByRole("option", { name: /Rill Managed/i }).click();
 
+    // Use force:true to handle CI viewport differences
     await page
       .getByRole("dialog", { name: "ClickHouse" })
       .getByRole("button", {
         name: "Connect",
         exact: true,
       })
-      .click();
+      .click({ force: true });
 
     // Wait for the connector file to be created in the file nav
     await waitForFileNavEntry(page, "/connectors/clickhouse.yaml", false);

@@ -9,6 +9,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
   "x-form-width": "wide",
   "x-button-labels": {
     deployment_type: {
+      playground: { idle: "Connect", loading: "Connecting..." },
       "rill-managed": { idle: "Connect", loading: "Connecting..." },
     },
   },
@@ -34,7 +35,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-ui-only": true,
       "x-grouped-fields": {
         cloud: ["connection_mode"],
-        playground: ["host", "port", "username", "password", "database", "ssl"],
+        playground: ["playground_info"],
         "self-managed": ["connection_mode"],
         "rill-managed": ["managed"],
       },
@@ -89,6 +90,19 @@ export const clickhouseSchema: MultiStepFormSchema = {
       },
       "x-step": "connector",
     },
+    playground_info: {
+      type: "boolean",
+      title: "Playground",
+      description:
+        'Connect to ClickHouse\'s free public <a href="https://play.clickhouse.com/play?user=play" target="_blank" class="text-primary-600 hover:underline">playground instance</a>. This is a read-only demo environment with sample datasets, perfect for testing Rill\'s ClickHouse integration without any setup. No credentials required.',
+      default: true,
+      "x-informational": true,
+      "x-ui-only": true,
+      "x-visible-if": {
+        deployment_type: "playground",
+      },
+      "x-step": "connector",
+    },
     host: {
       type: "string",
       title: "Host",
@@ -96,10 +110,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "your.clickhouse.server.com",
       "x-hint": "Your ClickHouse hostname (e.g., your-server.com)",
       "x-visible-if": {
-        deployment_type: ["cloud", "self-managed", "playground"],
-      },
-      "x-disabled-if": {
-        deployment_type: "playground",
+        deployment_type: ["cloud", "self-managed"],
       },
       "x-step": "connector",
     },
@@ -113,10 +124,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "8443",
       "x-placeholder": "8443",
       "x-visible-if": {
-        deployment_type: ["cloud", "self-managed", "playground"],
-      },
-      "x-disabled-if": {
-        deployment_type: "playground",
+        deployment_type: ["cloud", "self-managed"],
       },
       "x-step": "connector",
     },
@@ -127,10 +135,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-visible-if": {
-        deployment_type: ["cloud", "self-managed", "playground"],
-      },
-      "x-disabled-if": {
-        deployment_type: "playground",
+        deployment_type: ["cloud", "self-managed"],
       },
       "x-step": "connector",
     },
@@ -141,10 +146,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "Database password",
       "x-secret": true,
       "x-visible-if": {
-        deployment_type: ["cloud", "self-managed", "playground"],
-      },
-      "x-disabled-if": {
-        deployment_type: "playground",
+        deployment_type: ["cloud", "self-managed"],
       },
       "x-step": "connector",
     },
@@ -155,10 +157,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-visible-if": {
-        deployment_type: ["cloud", "self-managed", "playground"],
-      },
-      "x-disabled-if": {
-        deployment_type: "playground",
+        deployment_type: ["cloud", "self-managed"],
       },
       "x-step": "connector",
     },
@@ -179,10 +178,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Use SSL to connect to the ClickHouse server",
       default: true,
       "x-visible-if": {
-        deployment_type: ["cloud", "self-managed", "playground"],
-      },
-      "x-disabled-if": {
-        deployment_type: "playground",
+        deployment_type: ["cloud", "self-managed"],
       },
       "x-step": "connector",
     },
