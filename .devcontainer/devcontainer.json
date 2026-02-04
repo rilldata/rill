@@ -1,13 +1,14 @@
 {
   "name": "Rill Development",
-  "image": "mcr.microsoft.com/devcontainers/go:1.24",
+  "image": "mcr.microsoft.com/devcontainers/go:latest",
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
     }
   },
   "containerEnv": {
-    "NODE_OPTIONS": "--max-old-space-size=4096"
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "GOTOOLCHAIN": "auto"
   },
   "postCreateCommand": "make cli",
   "postStartCommand": "./rill start --no-open",
