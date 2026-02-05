@@ -44,6 +44,21 @@ var spec = drivers.Spec{
 			Placeholder: "",
 		},
 		{
+			Key:         "include_thoughts",
+			Type:        drivers.BooleanPropertyType,
+			Required:    false,
+			DisplayName: "Include Thoughts",
+			Description: "Whether to include model's thoughts in the output.",
+		},
+		{
+			Key:         "thinking_level",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Thinking Level",
+			Description: "Level of 'thinking' for the model's response (e.g., 'MINIMAL', 'LOW', 'MEDIUM', 'HIGH'). Default is 'LOW'.",
+			Placeholder: "",
+		},
+		{
 			Key:         "max_output_tokens",
 			Type:        drivers.NumberPropertyType,
 			Required:    false,
@@ -122,6 +137,8 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 type configProperties struct {
 	APIKey          string  `mapstructure:"api_key"`
 	Model           string  `mapstructure:"model"`
+	IncludeThoughts bool    `mapstructure:"include_thoughts"`
+	ThinkingLevel   string  `mapstructure:"thinking_level"`
 	MaxOutputTokens int     `mapstructure:"max_output_tokens"`
 	Temperature     float64 `mapstructure:"temperature"`
 	TopP            float64 `mapstructure:"top_p"`
@@ -132,7 +149,18 @@ func (c *configProperties) getModel() string {
 	if c.Model != "" {
 		return c.Model
 	}
-	return "gemini-3-pro-preview"
+	return "gemini-3-flash-preview"
+}
+
+func (c *configProperties) getThinkingConfig() *genai.ThinkingConfig {
+	res := &genai.ThinkingConfig{
+		IncludeThoughts: c.IncludeThoughts,
+		ThinkingLevel:   genai.ThinkingLevelLow, // IMO it's loony at higher levels.
+	}
+	if c.ThinkingLevel != "" {
+		res.ThinkingLevel = genai.ThinkingLevel(c.ThinkingLevel)
+	}
+	return res
 }
 
 type handle struct {
@@ -252,6 +280,7 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	genConfig := &genai.GenerateContentConfig{
 		MaxOutputTokens:   int32(h.config.MaxOutputTokens),
 		SystemInstruction: systemInstructions,
+		ThinkingConfig:    h.config.getThinkingConfig(),
 	}
 	if h.config.Temperature > 0 {
 		genConfig.Temperature = genai.Ptr(float32(h.config.Temperature))
@@ -527,6 +556,14 @@ func convertResponseToRillMessage(res *genai.GenerateContentResponse) (*aiv1.Com
 				}},
 			})
 		}
+	}
+
+	if len(blocks) == 0 {
+		blocks = append(blocks, &aiv1.ContentBlock{
+			BlockType: &aiv1.ContentBlock_Text{
+				Text: "Response completed.",
+			},
+		})
 	}
 
 	return &aiv1.CompletionMessage{
