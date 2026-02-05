@@ -97,7 +97,7 @@
       >
         <div class="flex gap-x-2" slot="cta">
           {#if ready && selectedView === "viz"}
-            <SaveDefaultsButton {exploreName} {fileArtifact} saving={$saving} />
+            <SaveDefaultsButton {fileArtifact} saving={$saving} />
           {/if}
           <PreviewButton
             href="/explore/{exploreName}"

@@ -7,12 +7,13 @@
 package runtimev1
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -8959,110 +8960,112 @@ func file_rill_runtime_v1_resources_proto_rawDescGZIP() []byte {
 	return file_rill_runtime_v1_resources_proto_rawDescData
 }
 
-var file_rill_runtime_v1_resources_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_rill_runtime_v1_resources_proto_msgTypes = make([]protoimpl.MessageInfo, 83)
-var file_rill_runtime_v1_resources_proto_goTypes = []any{
-	(ReconcileStatus)(0),                      // 0: rill.runtime.v1.ReconcileStatus
-	(ModelChangeMode)(0),                      // 1: rill.runtime.v1.ModelChangeMode
-	(ExploreComparisonMode)(0),                // 2: rill.runtime.v1.ExploreComparisonMode
-	(ExploreWebView)(0),                       // 3: rill.runtime.v1.ExploreWebView
-	(ExploreSortType)(0),                      // 4: rill.runtime.v1.ExploreSortType
-	(AssertionStatus)(0),                      // 5: rill.runtime.v1.AssertionStatus
-	(MetricsViewSpec_DimensionType)(0),        // 6: rill.runtime.v1.MetricsViewSpec.DimensionType
-	(MetricsViewSpec_MeasureType)(0),          // 7: rill.runtime.v1.MetricsViewSpec.MeasureType
-	(*Resource)(nil),                          // 8: rill.runtime.v1.Resource
-	(*ResourceMeta)(nil),                      // 9: rill.runtime.v1.ResourceMeta
-	(*ResourceName)(nil),                      // 10: rill.runtime.v1.ResourceName
-	(*ProjectParser)(nil),                     // 11: rill.runtime.v1.ProjectParser
-	(*ProjectParserSpec)(nil),                 // 12: rill.runtime.v1.ProjectParserSpec
-	(*ProjectParserState)(nil),                // 13: rill.runtime.v1.ProjectParserState
-	(*Source)(nil),                            // 14: rill.runtime.v1.Source
-	(*SourceSpec)(nil),                        // 15: rill.runtime.v1.SourceSpec
-	(*SourceState)(nil),                       // 16: rill.runtime.v1.SourceState
-	(*Model)(nil),                             // 17: rill.runtime.v1.Model
-	(*ModelSpec)(nil),                         // 18: rill.runtime.v1.ModelSpec
-	(*ModelState)(nil),                        // 19: rill.runtime.v1.ModelState
-	(*ModelTest)(nil),                         // 20: rill.runtime.v1.ModelTest
-	(*MetricsView)(nil),                       // 21: rill.runtime.v1.MetricsView
-	(*MetricsViewSpec)(nil),                   // 22: rill.runtime.v1.MetricsViewSpec
-	(*SecurityRule)(nil),                      // 23: rill.runtime.v1.SecurityRule
-	(*SecurityRuleAccess)(nil),                // 24: rill.runtime.v1.SecurityRuleAccess
-	(*SecurityRuleFieldAccess)(nil),           // 25: rill.runtime.v1.SecurityRuleFieldAccess
-	(*SecurityRuleRowFilter)(nil),             // 26: rill.runtime.v1.SecurityRuleRowFilter
-	(*SecurityRuleTransitiveAccess)(nil),      // 27: rill.runtime.v1.SecurityRuleTransitiveAccess
-	(*MetricsViewState)(nil),                  // 28: rill.runtime.v1.MetricsViewState
-	(*Explore)(nil),                           // 29: rill.runtime.v1.Explore
-	(*ExploreSpec)(nil),                       // 30: rill.runtime.v1.ExploreSpec
-	(*ExploreState)(nil),                      // 31: rill.runtime.v1.ExploreState
-	(*ExploreTimeRange)(nil),                  // 32: rill.runtime.v1.ExploreTimeRange
-	(*ExploreComparisonTimeRange)(nil),        // 33: rill.runtime.v1.ExploreComparisonTimeRange
-	(*ExplorePreset)(nil),                     // 34: rill.runtime.v1.ExplorePreset
-	(*FieldSelector)(nil),                     // 35: rill.runtime.v1.FieldSelector
-	(*StringListValue)(nil),                   // 36: rill.runtime.v1.StringListValue
-	(*Migration)(nil),                         // 37: rill.runtime.v1.Migration
-	(*MigrationSpec)(nil),                     // 38: rill.runtime.v1.MigrationSpec
-	(*MigrationState)(nil),                    // 39: rill.runtime.v1.MigrationState
-	(*Report)(nil),                            // 40: rill.runtime.v1.Report
-	(*ReportSpec)(nil),                        // 41: rill.runtime.v1.ReportSpec
-	(*ReportState)(nil),                       // 42: rill.runtime.v1.ReportState
-	(*ReportExecution)(nil),                   // 43: rill.runtime.v1.ReportExecution
-	(*Alert)(nil),                             // 44: rill.runtime.v1.Alert
-	(*AlertSpec)(nil),                         // 45: rill.runtime.v1.AlertSpec
-	(*Notifier)(nil),                          // 46: rill.runtime.v1.Notifier
-	(*AlertState)(nil),                        // 47: rill.runtime.v1.AlertState
-	(*AlertExecution)(nil),                    // 48: rill.runtime.v1.AlertExecution
-	(*AssertionResult)(nil),                   // 49: rill.runtime.v1.AssertionResult
-	(*RefreshTrigger)(nil),                    // 50: rill.runtime.v1.RefreshTrigger
-	(*RefreshTriggerSpec)(nil),                // 51: rill.runtime.v1.RefreshTriggerSpec
-	(*RefreshTriggerState)(nil),               // 52: rill.runtime.v1.RefreshTriggerState
-	(*RefreshModelTrigger)(nil),               // 53: rill.runtime.v1.RefreshModelTrigger
-	(*Theme)(nil),                             // 54: rill.runtime.v1.Theme
-	(*ThemeSpec)(nil),                         // 55: rill.runtime.v1.ThemeSpec
-	(*ThemeState)(nil),                        // 56: rill.runtime.v1.ThemeState
-	(*ThemeColors)(nil),                       // 57: rill.runtime.v1.ThemeColors
-	(*Component)(nil),                         // 58: rill.runtime.v1.Component
-	(*ComponentSpec)(nil),                     // 59: rill.runtime.v1.ComponentSpec
-	(*ComponentState)(nil),                    // 60: rill.runtime.v1.ComponentState
-	(*ComponentVariable)(nil),                 // 61: rill.runtime.v1.ComponentVariable
-	(*Canvas)(nil),                            // 62: rill.runtime.v1.Canvas
-	(*CanvasSpec)(nil),                        // 63: rill.runtime.v1.CanvasSpec
-	(*CanvasState)(nil),                       // 64: rill.runtime.v1.CanvasState
-	(*CanvasRow)(nil),                         // 65: rill.runtime.v1.CanvasRow
-	(*CanvasItem)(nil),                        // 66: rill.runtime.v1.CanvasItem
-	(*CanvasPreset)(nil),                      // 67: rill.runtime.v1.CanvasPreset
-	(*DefaultMetricsSQLFilter)(nil),           // 68: rill.runtime.v1.DefaultMetricsSQLFilter
-	(*API)(nil),                               // 69: rill.runtime.v1.API
-	(*APISpec)(nil),                           // 70: rill.runtime.v1.APISpec
-	(*APIState)(nil),                          // 71: rill.runtime.v1.APIState
-	(*Schedule)(nil),                          // 72: rill.runtime.v1.Schedule
-	(*ParseError)(nil),                        // 73: rill.runtime.v1.ParseError
-	(*ValidationError)(nil),                   // 74: rill.runtime.v1.ValidationError
-	(*DependencyError)(nil),                   // 75: rill.runtime.v1.DependencyError
-	(*ExecutionError)(nil),                    // 76: rill.runtime.v1.ExecutionError
-	(*CharLocation)(nil),                      // 77: rill.runtime.v1.CharLocation
-	(*ConnectorV2)(nil),                       // 78: rill.runtime.v1.ConnectorV2
-	(*ConnectorSpec)(nil),                     // 79: rill.runtime.v1.ConnectorSpec
-	(*ConnectorState)(nil),                    // 80: rill.runtime.v1.ConnectorState
-	(*MetricsViewSpec_Dimension)(nil),         // 81: rill.runtime.v1.MetricsViewSpec.Dimension
-	(*MetricsViewSpec_DimensionSelector)(nil), // 82: rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	(*MetricsViewSpec_MeasureWindow)(nil),     // 83: rill.runtime.v1.MetricsViewSpec.MeasureWindow
-	(*MetricsViewSpec_Measure)(nil),           // 84: rill.runtime.v1.MetricsViewSpec.Measure
-	(*MetricsViewSpec_Annotation)(nil),        // 85: rill.runtime.v1.MetricsViewSpec.Annotation
-	nil,                                       // 86: rill.runtime.v1.MetricsViewSpec.QueryAttributesEntry
-	nil,                                       // 87: rill.runtime.v1.ReportSpec.AnnotationsEntry
-	nil,                                       // 88: rill.runtime.v1.AlertSpec.AnnotationsEntry
-	nil,                                       // 89: rill.runtime.v1.ThemeColors.VariablesEntry
-	nil,                                       // 90: rill.runtime.v1.CanvasPreset.FilterExprEntry
-	(*timestamppb.Timestamp)(nil),             // 91: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),                   // 92: google.protobuf.Struct
-	(*StructType)(nil),                        // 93: rill.runtime.v1.StructType
-	(TimeGrain)(0),                            // 94: rill.runtime.v1.TimeGrain
-	(*Expression)(nil),                        // 95: rill.runtime.v1.Expression
-	(ExportFormat)(0),                         // 96: rill.runtime.v1.ExportFormat
-	(*Color)(nil),                             // 97: rill.runtime.v1.Color
-	(*structpb.Value)(nil),                    // 98: google.protobuf.Value
-	(*Type)(nil),                              // 99: rill.runtime.v1.Type
-}
+var (
+	file_rill_runtime_v1_resources_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
+	file_rill_runtime_v1_resources_proto_msgTypes  = make([]protoimpl.MessageInfo, 83)
+	file_rill_runtime_v1_resources_proto_goTypes   = []any{
+		(ReconcileStatus)(0),                      // 0: rill.runtime.v1.ReconcileStatus
+		(ModelChangeMode)(0),                      // 1: rill.runtime.v1.ModelChangeMode
+		(ExploreComparisonMode)(0),                // 2: rill.runtime.v1.ExploreComparisonMode
+		(ExploreWebView)(0),                       // 3: rill.runtime.v1.ExploreWebView
+		(ExploreSortType)(0),                      // 4: rill.runtime.v1.ExploreSortType
+		(AssertionStatus)(0),                      // 5: rill.runtime.v1.AssertionStatus
+		(MetricsViewSpec_DimensionType)(0),        // 6: rill.runtime.v1.MetricsViewSpec.DimensionType
+		(MetricsViewSpec_MeasureType)(0),          // 7: rill.runtime.v1.MetricsViewSpec.MeasureType
+		(*Resource)(nil),                          // 8: rill.runtime.v1.Resource
+		(*ResourceMeta)(nil),                      // 9: rill.runtime.v1.ResourceMeta
+		(*ResourceName)(nil),                      // 10: rill.runtime.v1.ResourceName
+		(*ProjectParser)(nil),                     // 11: rill.runtime.v1.ProjectParser
+		(*ProjectParserSpec)(nil),                 // 12: rill.runtime.v1.ProjectParserSpec
+		(*ProjectParserState)(nil),                // 13: rill.runtime.v1.ProjectParserState
+		(*Source)(nil),                            // 14: rill.runtime.v1.Source
+		(*SourceSpec)(nil),                        // 15: rill.runtime.v1.SourceSpec
+		(*SourceState)(nil),                       // 16: rill.runtime.v1.SourceState
+		(*Model)(nil),                             // 17: rill.runtime.v1.Model
+		(*ModelSpec)(nil),                         // 18: rill.runtime.v1.ModelSpec
+		(*ModelState)(nil),                        // 19: rill.runtime.v1.ModelState
+		(*ModelTest)(nil),                         // 20: rill.runtime.v1.ModelTest
+		(*MetricsView)(nil),                       // 21: rill.runtime.v1.MetricsView
+		(*MetricsViewSpec)(nil),                   // 22: rill.runtime.v1.MetricsViewSpec
+		(*SecurityRule)(nil),                      // 23: rill.runtime.v1.SecurityRule
+		(*SecurityRuleAccess)(nil),                // 24: rill.runtime.v1.SecurityRuleAccess
+		(*SecurityRuleFieldAccess)(nil),           // 25: rill.runtime.v1.SecurityRuleFieldAccess
+		(*SecurityRuleRowFilter)(nil),             // 26: rill.runtime.v1.SecurityRuleRowFilter
+		(*SecurityRuleTransitiveAccess)(nil),      // 27: rill.runtime.v1.SecurityRuleTransitiveAccess
+		(*MetricsViewState)(nil),                  // 28: rill.runtime.v1.MetricsViewState
+		(*Explore)(nil),                           // 29: rill.runtime.v1.Explore
+		(*ExploreSpec)(nil),                       // 30: rill.runtime.v1.ExploreSpec
+		(*ExploreState)(nil),                      // 31: rill.runtime.v1.ExploreState
+		(*ExploreTimeRange)(nil),                  // 32: rill.runtime.v1.ExploreTimeRange
+		(*ExploreComparisonTimeRange)(nil),        // 33: rill.runtime.v1.ExploreComparisonTimeRange
+		(*ExplorePreset)(nil),                     // 34: rill.runtime.v1.ExplorePreset
+		(*FieldSelector)(nil),                     // 35: rill.runtime.v1.FieldSelector
+		(*StringListValue)(nil),                   // 36: rill.runtime.v1.StringListValue
+		(*Migration)(nil),                         // 37: rill.runtime.v1.Migration
+		(*MigrationSpec)(nil),                     // 38: rill.runtime.v1.MigrationSpec
+		(*MigrationState)(nil),                    // 39: rill.runtime.v1.MigrationState
+		(*Report)(nil),                            // 40: rill.runtime.v1.Report
+		(*ReportSpec)(nil),                        // 41: rill.runtime.v1.ReportSpec
+		(*ReportState)(nil),                       // 42: rill.runtime.v1.ReportState
+		(*ReportExecution)(nil),                   // 43: rill.runtime.v1.ReportExecution
+		(*Alert)(nil),                             // 44: rill.runtime.v1.Alert
+		(*AlertSpec)(nil),                         // 45: rill.runtime.v1.AlertSpec
+		(*Notifier)(nil),                          // 46: rill.runtime.v1.Notifier
+		(*AlertState)(nil),                        // 47: rill.runtime.v1.AlertState
+		(*AlertExecution)(nil),                    // 48: rill.runtime.v1.AlertExecution
+		(*AssertionResult)(nil),                   // 49: rill.runtime.v1.AssertionResult
+		(*RefreshTrigger)(nil),                    // 50: rill.runtime.v1.RefreshTrigger
+		(*RefreshTriggerSpec)(nil),                // 51: rill.runtime.v1.RefreshTriggerSpec
+		(*RefreshTriggerState)(nil),               // 52: rill.runtime.v1.RefreshTriggerState
+		(*RefreshModelTrigger)(nil),               // 53: rill.runtime.v1.RefreshModelTrigger
+		(*Theme)(nil),                             // 54: rill.runtime.v1.Theme
+		(*ThemeSpec)(nil),                         // 55: rill.runtime.v1.ThemeSpec
+		(*ThemeState)(nil),                        // 56: rill.runtime.v1.ThemeState
+		(*ThemeColors)(nil),                       // 57: rill.runtime.v1.ThemeColors
+		(*Component)(nil),                         // 58: rill.runtime.v1.Component
+		(*ComponentSpec)(nil),                     // 59: rill.runtime.v1.ComponentSpec
+		(*ComponentState)(nil),                    // 60: rill.runtime.v1.ComponentState
+		(*ComponentVariable)(nil),                 // 61: rill.runtime.v1.ComponentVariable
+		(*Canvas)(nil),                            // 62: rill.runtime.v1.Canvas
+		(*CanvasSpec)(nil),                        // 63: rill.runtime.v1.CanvasSpec
+		(*CanvasState)(nil),                       // 64: rill.runtime.v1.CanvasState
+		(*CanvasRow)(nil),                         // 65: rill.runtime.v1.CanvasRow
+		(*CanvasItem)(nil),                        // 66: rill.runtime.v1.CanvasItem
+		(*CanvasPreset)(nil),                      // 67: rill.runtime.v1.CanvasPreset
+		(*DefaultMetricsSQLFilter)(nil),           // 68: rill.runtime.v1.DefaultMetricsSQLFilter
+		(*API)(nil),                               // 69: rill.runtime.v1.API
+		(*APISpec)(nil),                           // 70: rill.runtime.v1.APISpec
+		(*APIState)(nil),                          // 71: rill.runtime.v1.APIState
+		(*Schedule)(nil),                          // 72: rill.runtime.v1.Schedule
+		(*ParseError)(nil),                        // 73: rill.runtime.v1.ParseError
+		(*ValidationError)(nil),                   // 74: rill.runtime.v1.ValidationError
+		(*DependencyError)(nil),                   // 75: rill.runtime.v1.DependencyError
+		(*ExecutionError)(nil),                    // 76: rill.runtime.v1.ExecutionError
+		(*CharLocation)(nil),                      // 77: rill.runtime.v1.CharLocation
+		(*ConnectorV2)(nil),                       // 78: rill.runtime.v1.ConnectorV2
+		(*ConnectorSpec)(nil),                     // 79: rill.runtime.v1.ConnectorSpec
+		(*ConnectorState)(nil),                    // 80: rill.runtime.v1.ConnectorState
+		(*MetricsViewSpec_Dimension)(nil),         // 81: rill.runtime.v1.MetricsViewSpec.Dimension
+		(*MetricsViewSpec_DimensionSelector)(nil), // 82: rill.runtime.v1.MetricsViewSpec.DimensionSelector
+		(*MetricsViewSpec_MeasureWindow)(nil),     // 83: rill.runtime.v1.MetricsViewSpec.MeasureWindow
+		(*MetricsViewSpec_Measure)(nil),           // 84: rill.runtime.v1.MetricsViewSpec.Measure
+		(*MetricsViewSpec_Annotation)(nil),        // 85: rill.runtime.v1.MetricsViewSpec.Annotation
+		nil,                                       // 86: rill.runtime.v1.MetricsViewSpec.QueryAttributesEntry
+		nil,                                       // 87: rill.runtime.v1.ReportSpec.AnnotationsEntry
+		nil,                                       // 88: rill.runtime.v1.AlertSpec.AnnotationsEntry
+		nil,                                       // 89: rill.runtime.v1.ThemeColors.VariablesEntry
+		nil,                                       // 90: rill.runtime.v1.CanvasPreset.FilterExprEntry
+		(*timestamppb.Timestamp)(nil),             // 91: google.protobuf.Timestamp
+		(*structpb.Struct)(nil),                   // 92: google.protobuf.Struct
+		(*StructType)(nil),                        // 93: rill.runtime.v1.StructType
+		(TimeGrain)(0),                            // 94: rill.runtime.v1.TimeGrain
+		(*Expression)(nil),                        // 95: rill.runtime.v1.Expression
+		(ExportFormat)(0),                         // 96: rill.runtime.v1.ExportFormat
+		(*Color)(nil),                             // 97: rill.runtime.v1.Color
+		(*structpb.Value)(nil),                    // 98: google.protobuf.Value
+		(*Type)(nil),                              // 99: rill.runtime.v1.Type
+	}
+)
 var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	9,   // 0: rill.runtime.v1.Resource.meta:type_name -> rill.runtime.v1.ResourceMeta
 	11,  // 1: rill.runtime.v1.Resource.project_parser:type_name -> rill.runtime.v1.ProjectParser

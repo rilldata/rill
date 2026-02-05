@@ -12,8 +12,8 @@ import (
 func parseExplorePreset(t *testing.T, exploreYAML string) (*runtimev1.ExplorePreset, error) {
 	t.Helper()
 	files := map[string]string{
-		`rill.yaml`:           ``,
-		`explores/test.yaml`:  exploreYAML,
+		`rill.yaml`:          ``,
+		`explores/test.yaml`: exploreYAML,
 	}
 	ctx := context.Background()
 	repo := makeRepo(t, files)

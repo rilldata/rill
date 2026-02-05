@@ -8,7 +8,6 @@
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  export let exploreName: string;
   export let fileArtifact: FileArtifact;
   export let saving: boolean;
 

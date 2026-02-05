@@ -956,7 +956,6 @@ func (m *ResourceMeta) validate(all bool) error {
 	}
 
 	if m.Owner != nil {
-
 		if all {
 			switch v := interface{}(m.GetOwner()).(type) {
 			case interface{ ValidateAll() error }:
@@ -985,11 +984,9 @@ func (m *ResourceMeta) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.DeletedOn != nil {
-
 		if all {
 			switch v := interface{}(m.GetDeletedOn()).(type) {
 			case interface{ ValidateAll() error }:
@@ -1018,11 +1015,9 @@ func (m *ResourceMeta) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.RenamedFrom != nil {
-
 		if all {
 			switch v := interface{}(m.GetRenamedFrom()).(type) {
 			case interface{ ValidateAll() error }:
@@ -1051,7 +1046,6 @@ func (m *ResourceMeta) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if len(errors) > 0 {
@@ -5464,7 +5458,6 @@ func (m *ExplorePreset) validate(all bool) error {
 	}
 
 	if m.Where != nil {
-
 		if all {
 			switch v := interface{}(m.GetWhere()).(type) {
 			case interface{ ValidateAll() error }:
@@ -5493,7 +5486,6 @@ func (m *ExplorePreset) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.TimeRange != nil {
@@ -8914,7 +8906,6 @@ func (m *ThemeSpec) validate(all bool) error {
 	// no validation rules for SecondaryColorRaw
 
 	if m.PrimaryColor != nil {
-
 		if all {
 			switch v := interface{}(m.GetPrimaryColor()).(type) {
 			case interface{ ValidateAll() error }:
@@ -8943,11 +8934,9 @@ func (m *ThemeSpec) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.SecondaryColor != nil {
-
 		if all {
 			switch v := interface{}(m.GetSecondaryColor()).(type) {
 			case interface{ ValidateAll() error }:
@@ -8976,11 +8965,9 @@ func (m *ThemeSpec) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.Light != nil {
-
 		if all {
 			switch v := interface{}(m.GetLight()).(type) {
 			case interface{ ValidateAll() error }:
@@ -9009,11 +8996,9 @@ func (m *ThemeSpec) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.Dark != nil {
-
 		if all {
 			switch v := interface{}(m.GetDark()).(type) {
 			case interface{ ValidateAll() error }:
@@ -9042,7 +9027,6 @@ func (m *ThemeSpec) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if len(errors) > 0 {

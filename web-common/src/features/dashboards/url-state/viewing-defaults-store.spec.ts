@@ -16,7 +16,6 @@ import {
   V1TimeGrain,
 } from "web-common/src/runtime-client";
 import type { TimeControlState } from "web-common/src/features/dashboards/time-controls/time-control-store";
-import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
 
 // ─── Shared fixtures ───────────────────────────────────────────────
 

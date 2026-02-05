@@ -8,10 +8,7 @@ import type {
   V1Expression,
   V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
-import {
-  V1Operation,
-  type MetricsViewSpecMeasure,
-} from "@rilldata/web-common/runtime-client";
+import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import {
   derived,
   get,
@@ -24,10 +21,7 @@ import { goto } from "$app/navigation";
 import { FilterState } from "./filter-state";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
 import type { ParsedFilters } from "./filter-state";
-import {
-  createAndExpression,
-  flattenExpression,
-} from "../../dashboards/stores/filter-utils";
+import { flattenExpression } from "../../dashboards/stores/filter-utils";
 
 export type UIFilters = {
   dimensionFilters: Map<string, DimensionFilterItem>;
