@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import {
@@ -10,6 +11,30 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
+import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry.ts";
+import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
+import {
+  BehaviourEventAction,
+  BehaviourEventMedium,
+} from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+
+export async function createResourceAndNavigate(
+  kind: ResourceKind,
+  baseResource?: V1Resource,
+) {
+  const filePath = await createResourceFile(kind, baseResource);
+  if (!filePath) return;
+
+  const previousScreenName = getScreenNameFromPage();
+  await goto(`/files${filePath}`);
+  await behaviourEvent?.fireSourceTriggerEvent(
+    BehaviourEventAction.Navigate,
+    BehaviourEventMedium.Button,
+    previousScreenName,
+    MetricsEventSpace.LeftPanel,
+  );
+}
 
 export async function createResourceFile(
   kind: ResourceKind,
@@ -226,8 +251,9 @@ light:
   surface-subtle: "#ffffff"     # Clean white surfaces
   surface-card: "#f1f5f9"       # Subtle card backgrounds
 
+  # Note: The theme system also auto-generates fg-secondary, fg-tertiary, fg-muted, and fg-disabled from fg-primary using opacity percentages if not explicitly set
   fg-primary: "#000000"          # Black text
-  
+
   # Qualitative palette (for categorical data - all 24 colors)
   color-qualitative-1: "#6366f1"   # Indigo
   color-qualitative-2: "#8b5cf6"   # Purple  
@@ -289,7 +315,8 @@ dark:
   surface-subtle: "#1e293b"     # Elevated surfaces
   surface-card: "#334155"        # Card backgrounds
 
-  fg-primary: "#FFFFFF"   # White text
+  # Note: The theme system also auto-generates fg-secondary, fg-tertiary, fg-muted, and fg-disabled from fg-primary using opacity percentages if not explicitly set
+  fg-primary: "#ffffff"   # White text
   
   # Qualitative palette (adjusted for dark mode visibility - all 24 colors)
   color-qualitative-1: "#818cf8"   # Indigo

@@ -1,32 +1,24 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
   import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import { useDeployingDashboards } from "@rilldata/web-admin/features/dashboards/listing/deploying-dashboards.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import type { PageData } from "./$types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
   export let data: PageData;
-  const { project, runtime, deployingDashboard } = data;
+  const { organization, project, deployingDashboard } = data;
 
-  // Get organization name from params (string), not from data (object)
-  // Ensure it's a string to prevent [Object object] in URLs
-  // In tests, $page.params might not be immediately available, so we guard against undefined
-  $: organizationName =
-    typeof $page.params.organization === "string"
-      ? $page.params.organization
-      : undefined;
+  $: ({ instanceId } = $runtime);
 
-  // Make this reactive so it only runs when organizationName is available
-  // This prevents race conditions where the query might be created before params are ready
-  $: deployingDashboardResp = organizationName
-    ? useDeployingDashboards(
-        runtime.instanceId,
-        organizationName,
-        project.name,
-        deployingDashboard,
-      )
-    : null;
+  // Make this reactive so that it fires once params are ready.
+  // During a first deploy, runtime might not be available when deployment is still being created in the backend.
+  $: deployingDashboardResp = useDeployingDashboards(
+    instanceId,
+    organization.name,
+    project.name,
+    deployingDashboard,
+  );
 
   $: ({ data: deployingDashboardsData } = $deployingDashboardResp ?? {
     data: null,

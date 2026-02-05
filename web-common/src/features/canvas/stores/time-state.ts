@@ -17,14 +17,13 @@ import {
 } from "../../dashboards/url-state/time-ranges/RillTime";
 import {
   DateTimeUnitToV1TimeGrain,
-  getRangePrecision,
-  isGrainAllowed,
   minTimeGrainToDefaultTimeRange,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
 import type { TimeManager } from "./time-manager";
 import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
+import { getValidatedTimeGrain } from "@rilldata/web-common/lib/time/grains";
 
 export type MinMax = {
   min: DateTime<true>;
@@ -238,21 +237,19 @@ export class TimeState {
     );
 
     this.grainStore = derived(
-      [this.urlGrainStore, this.manager.largestMinTimeGrain, this.parsedRange],
-      ([urlGrain, minTimeGrain, parsedRange]) => {
-        if (urlGrain && isGrainAllowed(urlGrain, minTimeGrain)) {
-          return urlGrain;
-        } else if (parsedRange) {
-          const parsedRangePrecision = getRangePrecision(parsedRange);
-
-          if (isGrainAllowed(parsedRangePrecision, minTimeGrain)) {
-            return parsedRangePrecision;
-          } else {
-            return minTimeGrain;
-          }
-        } else {
-          return minTimeGrain;
-        }
+      [
+        this.urlGrainStore,
+        this.manager.largestMinTimeGrain,
+        this.parsedRange,
+        this.interval,
+      ],
+      ([urlGrain, minTimeGrain, parsedRange, interval]) => {
+        return getValidatedTimeGrain(
+          interval,
+          minTimeGrain,
+          urlGrain,
+          parsedRange,
+        );
       },
     );
   }

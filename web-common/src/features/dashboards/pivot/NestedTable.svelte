@@ -346,20 +346,8 @@
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
-            on:mouseover={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
-            on:focus={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
+            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component
@@ -394,13 +382,13 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface-subtle table-fixed;
+    @apply bg-surface-background table-fixed;
   }
 
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface-subtle;
+    @apply z-30 bg-surface-background;
   }
 
   .with-row-dimension thead tr th:first-of-type .header-cell {
@@ -457,12 +445,12 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    @apply bg-surface-subtle;
+    /* @apply bg-surface-subtle; */
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    @apply bg-surface-subtle;
+    /* @apply bg-surface-subtle; */
   }
 
   .with-row-dimension tr:hover > td:first-of-type {
@@ -475,7 +463,7 @@
 
   /* The totals row */
   .with-totals-row tbody > tr:nth-of-type(2) {
-    @apply bg-surface-subtle sticky z-20;
+    @apply bg-surface-muted sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }
@@ -485,7 +473,7 @@
     tbody
     > tr:nth-of-type(2)
     > td:first-of-type {
-    @apply font-semibold;
+    @apply font-semibold bg-surface-muted;
   }
 
   .with-expandable-rows.with-totals-row

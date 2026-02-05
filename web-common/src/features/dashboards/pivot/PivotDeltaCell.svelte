@@ -9,7 +9,7 @@
     <span
       class="pointer-events-none {value > 0
         ? 'text-fg-secondary'
-        : 'text-red-500'}"
+        : 'text-destructive'}"
     >
       {formattedValue}
     </span>
@@ -22,6 +22,6 @@
 
 <style lang="postcss">
   .loading-cell {
-    @apply h-2 bg-gray-200 rounded w-full inline-block;
+    @apply h-2 bg-surface-subtle rounded w-full inline-block;
   }
 </style>

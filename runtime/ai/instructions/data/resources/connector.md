@@ -184,7 +184,7 @@ Amazon Athena. Key properties:
 ### Other drivers
 
 - **Slack**: Use `bot_token` for alert notifications
-- **OpenAI**: Use `api_key` for AI-powered features
+- **OpenAI** or **Claude**: Use `api_key` for AI-powered features
 - **HTTPS**: Simple connector for public HTTP sources
 - **Pinot**: Use `broker_host`, `controller_host`, `username`, `password`
 
@@ -417,6 +417,15 @@ database: "analytics"
 type: connector
 driver: openai
 api_key: "{{ .env.openai_api_key }}"
+```
+
+### Claude
+
+```yaml
+# connectors/claude.yaml
+type: connector
+driver: claude
+api_key: "{{ .env.claude_api_key }}"
 ```
 
 ### Slack
