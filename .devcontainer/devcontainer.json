@@ -4,14 +4,15 @@
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
+    },
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
     }
   },
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
     "GOTOOLCHAIN": "auto"
   },
-  "postCreateCommand": "make cli",
-  "postStartCommand": "./rill start --no-open",
   "forwardPorts": [9009],
   "portsAttributes": {
     "9009": {
