@@ -43,10 +43,7 @@ sql: {{ sql }}{{ dev_section }}
  * Parse a multi-line "Header-Name: value" string into a YAML map block.
  * Returns an empty string when there are no valid entries.
  */
-function formatHeadersAsYamlMap(
-  value: string,
-  comment?: string,
-): string {
+function formatHeadersAsYamlMap(value: string, comment?: string): string {
   const lines = value
     .split("\n")
     .map((line) => line.trim())
