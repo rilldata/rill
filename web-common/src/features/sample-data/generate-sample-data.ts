@@ -1,6 +1,5 @@
 import { runtimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types.ts";
-import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import { get, writable } from "svelte/store";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { overlay } from "@rilldata/web-common/layout/overlay-store.ts";
@@ -16,8 +15,6 @@ export async function generateSampleData(
   instanceId: string,
   userPrompt: string,
 ) {
-  const agentPrompt = `Generate a new model with fresh data for the following user prompt: ${userPrompt}`;
-
   try {
     if (initializeProject) {
       overlay.set({
@@ -50,16 +47,24 @@ export async function generateSampleData(
       agent: ToolName.DEVELOPER_AGENT,
     });
 
-    // Continue with the current chat. We might want to revisit this based on feedback.
     const conversation = get(conversationManager.getCurrentConversation());
     conversation.cancelStream();
 
-    sidebarActions.startChat(agentPrompt);
-    // Wait for the stream to start async through the sidebar action.
-    await waitUntil(() => get(conversation.isStreaming));
+    // Open the chat panel
+    sidebarActions.openChat();
 
-    // Then wait for the stream to end.
-    await waitUntil(() => !get(conversation.isStreaming), -1);
+    // Send the message directly.
+    // - For project init: pass initProject context so the agent handles read-only OLAP gracefully
+    // - For existing projects: prefix the prompt so the agent knows the intent
+    const prompt = initializeProject
+      ? userPrompt
+      : `Generate sample data about: ${userPrompt}`;
+    conversation.draftMessage.set(prompt);
+
+    const context = initializeProject
+      ? { developerAgentContext: { initProject: true } }
+      : {};
+    await conversation.sendMessage(context);
   } catch (err) {
     console.error(err);
     eventBus.emit("notification", {
