@@ -43,18 +43,17 @@ sql: {{ sql }}{{ dev_section }}
  * Parse a multi-line "Header-Name: value" string into a YAML map block.
  * Returns an empty string when there are no valid entries.
  */
-function formatHeadersAsYamlMap(value: string, comment?: string): string {
+function formatHeadersAsYamlMap(value: string): string {
   const lines = value
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.includes(":"));
   if (lines.length === 0) return "";
-  const suffix = comment ? ` # ${comment}` : "";
-  const entries = lines.map((line, i) => {
+  const entries = lines.map((line) => {
     const idx = line.indexOf(":");
-    const k = line.substring(0, idx).trim();
-    const v = line.substring(idx + 1).trim();
-    return `    "${k}": "${v}"${i === 0 ? suffix : ""}`;
+    const k = line.substring(0, idx).trim().replace(/^"|"$/g, "");
+    const v = line.substring(idx + 1).trim().replace(/^"|"$/g, "");
+    return `    "${k}": "${v}"`;
   });
   return `headers:\n${entries.join("\n")}`;
 }
@@ -123,11 +122,7 @@ driver: ${driverName}`;
       const value = formValues[key] as string;
 
       if (key === "headers" && typeof value === "string") {
-        const desc =
-          "description" in property
-            ? (property as { description?: string }).description
-            : undefined;
-        return formatHeadersAsYamlMap(value, desc);
+        return formatHeadersAsYamlMap(value);
       }
 
       const isSecretProperty = secretPropertyKeys.includes(key);
