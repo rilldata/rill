@@ -86,7 +86,8 @@
                       bind:value={form[tabKey]}
                       options={tabSelectOptions}
                       label={tabProp.title ?? ""}
-                      placeholder={tabProp["x-placeholder"] ?? "Select an option"}
+                      placeholder={tabProp["x-placeholder"] ??
+                        "Select an option"}
                       tooltip={tabProp.description ?? ""}
                       optional={!isRequired(tabKey)}
                       full
