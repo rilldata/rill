@@ -300,7 +300,7 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 // convertTools converts Rill tools to Gemini tool format.
 func convertTools(tools []*aiv1.Tool) ([]*genai.Tool, error) {
 	var res []*genai.Tool
-	for _, tool := range tools[0:1] {
+	for _, tool := range tools {
 		var inputSchema map[string]any
 		if tool.InputSchema != "" {
 			if err := json.Unmarshal([]byte(tool.InputSchema), &inputSchema); err != nil {
@@ -392,11 +392,11 @@ func normalizeContents(contents []*genai.Content) []*genai.Content {
 	merged = append(merged, current)
 
 	// Ensure it starts with a user turn.
-	if contents[0].Role != genai.RoleUser {
+	if merged[0].Role != genai.RoleUser {
 		return append([]*genai.Content{{
 			Role:  genai.RoleUser,
 			Parts: []*genai.Part{genai.NewPartFromText("Please proceed.")},
-		}}, contents...)
+		}}, merged...)
 	}
 
 	return merged
@@ -437,6 +437,7 @@ func convertMessage(msg *aiv1.CompletionMessage, callIDToName map[string]string)
 
 			part := genai.NewPartFromFunctionCall(b.ToolCall.Name, b.ToolCall.Input.AsMap())
 			part.FunctionCall.ID = b.ToolCall.Id
+			part.ThoughtSignature = []byte("skip_thought_signature_validator") // Necessary since we don't preserve signatures, and sometimes inject deterministic tool calls.
 			parts = append(parts, part)
 
 		case *aiv1.ContentBlock_ToolResult:
