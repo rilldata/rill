@@ -104,7 +104,7 @@
     <form class="w-full" on:submit|preventDefault={submit} use:enhance>
       <div class="flex flex-col gap-y-5">
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-gray-800">Variable</div>
+          <div class="text-sm font-medium text-fg-primary">Variable</div>
           <div class="flex flex-col w-full gap-2">
             <div class="flex flex-row items-center gap-2">
               <Input

@@ -19,6 +19,7 @@
 
   export let open = false;
   export let currentVariables: EnvVariable[] = [];
+  export let isProjectLinked = false;
   export let onSuccess: (() => void) | undefined = undefined;
 
   const currentProjectQuery = createLocalServiceGetCurrentProject();
@@ -76,65 +77,25 @@
     <DialogHeader>
       <DialogTitle>Pull Environment Variables</DialogTitle>
       <DialogDescription>
-        Pull environment variables from your Rill Cloud project to your local
-        .env file.
+        Merge cloud variables with your local .env file. Existing variables will
+        be updated with cloud values.
       </DialogDescription>
     </DialogHeader>
-    <div class="space-y-4">
-      <p class="text-sm text-gray-700">
-        Pull environment variables from your Rill Cloud project to your local
-        .env file. This will merge cloud variables with your local .env file.
+
+    {#if !isProjectLinked}
+      <p class="text-sm text-fg-muted">
+        Deploy this project to Rill Cloud to sync environment variables.
       </p>
+    {/if}
 
-      {#if !$currentProjectQuery.data?.project}
-        <div
-          class="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-800"
-        >
-          <p class="font-medium mb-1">Note</p>
-          <p>
-            Project will be inferred from your Git remote. Make sure your
-            project is deployed to Rill Cloud.
-          </p>
-        </div>
-      {/if}
-
-      {#if error}
-        <div
-          class="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800"
-        >
-          <p class="font-medium mb-1">Error</p>
-          <p>{error?.message || "Failed to pull environment variables"}</p>
-        </div>
-      {/if}
-
+    {#if error}
       <div
-        class="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800"
+        class="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800"
       >
-        <p class="font-medium mb-1">Note</p>
-        <p>
-          This will merge cloud variables with your local .env file. Variables
-          that exist in both will be updated with cloud values.
-        </p>
+        <p>{error?.message || "Failed to pull environment variables"}</p>
       </div>
+    {/if}
 
-      <p class="text-xs text-gray-500">
-        You currently have <strong>{currentVariables.length}</strong>
-        variable{currentVariables.length === 1 ? "" : "s"} in your local .env file.
-      </p>
-
-      <p class="text-xs text-gray-500">
-        For more information see our{" "}
-        <a
-          href="https://docs.rilldata.com/manage/project-management/variables-and-credentials"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-blue-600 hover:underline"
-        >
-          environment variables documentation
-        </a>
-        .
-      </p>
-    </div>
     <DialogFooter>
       <Button type="plain" onClick={() => (open = false)} disabled={isPending}>
         Cancel
@@ -142,7 +103,7 @@
       <Button
         type="primary"
         onClick={handlePull}
-        disabled={isPending}
+        disabled={isPending || !isProjectLinked}
         loading={isPending}
       >
         Pull from Rill Cloud

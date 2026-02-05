@@ -36,6 +36,7 @@
   const metadataQuery = createLocalServiceGetMetadata();
 
   $: project = $currentProjectQuery.data?.project;
+  $: isProjectLinked = Boolean(project?.orgName && project?.name);
   $: manageProjectAccess = project
     ? getManageProjectAccess(project.orgName ?? "", project.name ?? "")
     : null;
@@ -142,85 +143,80 @@
 </script>
 
 <WorkspaceContainer inspector={false}>
-  <div slot="header" class="flex flex-col w-full">
-    <FileWorkspaceHeader
-      resource={undefined}
-      resourceKind={undefined}
-      filePath={path}
-      hasUnsavedChanges={$hasUnsavedChanges}
-    />
-    <div
-      class="flex items-center justify-between px-4 py-2 border-t border-gray-200"
-    >
-      <div class="flex items-center gap-2">
-        <div class="radio relative">
-          {#each [{ view: "code", icon: Code2Icon, label: "Code view" }, { view: "viz", icon: Settings, label: "No-code view" }] as { view, icon: Icon, label } (view)}
-            <Tooltip activeDelay={700} distance={8}>
-              <button
-                aria-label="Switch to {label}"
-                id="{view}-toggle"
-                class="size-[22px] z-10 hover:brightness-75"
-                on:click={handleToggleView}
-              >
-                <Icon
-                  size="15px"
-                  color={view === viewMode ? "#4F46E5" : "#9CA3AF"}
-                />
-              </button>
-              <TooltipContent slot="tooltip-content">
-                {label}
-              </TooltipContent>
-            </Tooltip>
-          {/each}
-          <span
-            style:left={viewMode === "code" ? "2px" : "24px"}
-            class="toggle size-[22px] pointer-events-none absolute rounded-[4px] z-0 transition-[left]"
-          />
-        </div>
-      </div>
-      <div class="ml-auto flex gap-x-2 h-full w-fit items-center">
-        {#if rcUrl}
-          <Button
-            type="secondary"
-            small
-            href={rcUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center gap-2"
+  <FileWorkspaceHeader
+    slot="header"
+    resource={undefined}
+    resourceKind={undefined}
+    filePath={path}
+    hasUnsavedChanges={$hasUnsavedChanges}
+    showIcon={false}
+  >
+    <div slot="left" class="radio relative mr-1">
+      {#each [{ view: "code", icon: Code2Icon, label: "Code view" }, { view: "viz", icon: Settings, label: "No-code view" }] as { view, icon: Icon, label } (view)}
+        <Tooltip activeDelay={700} distance={8}>
+          <button
+            aria-label="Switch to {label}"
+            id="{view}-toggle"
+            class="size-[22px] z-10 hover:brightness-75"
+            on:click={handleToggleView}
           >
-            <span>View in Cloud</span>
-          </Button>
-        {/if}
-        <Button
-          type="secondary"
-          small
-          onClick={() => (pullDialogOpen = true)}
-          class="flex items-center gap-2"
-        >
-          <Download size="14px" />
-        </Button>
-        <Button
-          type="secondary"
-          small
-          onClick={() => (pushDialogOpen = true)}
-          class="flex items-center gap-2"
-        >
-          <Upload size="14px" />
-        </Button>
-        {#if viewMode === "viz"}
-          <Button
-            type="primary"
-            small
-            onClick={() => (addDialogOpen = true)}
-            class="flex items-center gap-2"
-          >
-            <Plus size="14px" />
-            <span>Add variable</span>
-          </Button>
-        {/if}
-      </div>
+            <Icon
+              size="15px"
+              color={view === viewMode ? "#4F46E5" : "#9CA3AF"}
+            />
+          </button>
+          <TooltipContent slot="tooltip-content">
+            {label}
+          </TooltipContent>
+        </Tooltip>
+      {/each}
+      <span
+        style:left={viewMode === "code" ? "2px" : "24px"}
+        class="toggle size-[22px] pointer-events-none absolute rounded-[4px] z-0 transition-[left]"
+      />
     </div>
-  </div>
+    <div slot="workspace-controls" class="flex gap-x-2 items-center">
+      {#if rcUrl}
+        <Button
+          type="secondary"
+          small
+          href={rcUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-2"
+        >
+          <span>View in Cloud</span>
+        </Button>
+      {/if}
+      <Button
+        type="secondary"
+        small
+        onClick={() => (pullDialogOpen = true)}
+        class="flex items-center gap-2"
+      >
+        <Download size="14px" />
+      </Button>
+      <Button
+        type="secondary"
+        small
+        onClick={() => (pushDialogOpen = true)}
+        class="flex items-center gap-2"
+      >
+        <Upload size="14px" />
+      </Button>
+      {#if viewMode === "viz"}
+        <Button
+          type="primary"
+          small
+          onClick={() => (addDialogOpen = true)}
+          class="flex items-center gap-2"
+        >
+          <Plus size="14px" />
+          <span>Add variable</span>
+        </Button>
+      {/if}
+    </div>
+  </FileWorkspaceHeader>
 
   <WorkspaceEditorContainer slot="body">
     {#if viewMode === "code"}
@@ -244,9 +240,17 @@
   on:add={handleAddVariables}
 />
 
-<PullEnvDialog bind:open={pullDialogOpen} currentVariables={envVariables} />
+<PullEnvDialog
+  bind:open={pullDialogOpen}
+  currentVariables={envVariables}
+  {isProjectLinked}
+/>
 
-<PushEnvDialog bind:open={pushDialogOpen} currentVariables={envVariables} />
+<PushEnvDialog
+  bind:open={pushDialogOpen}
+  currentVariables={envVariables}
+  {isProjectLinked}
+/>
 
 <style lang="postcss">
   button {

@@ -237,15 +237,20 @@
       use:enhance
     >
       <div class="flex flex-col gap-y-5">
-        <Button
-          type="secondary"
-          small
-          class="w-fit flex flex-row items-center gap-x-2"
-          onClick={() => fileInput.click()}
-        >
-          <UploadIcon size="14px" />
-          <span>Import .env</span>
-        </Button>
+        <div class="flex flex-col gap-y-1">
+          <p class="text-xs text-fg-muted">
+            Press ⌘⇧. to show .env in file picker
+          </p>
+          <Button
+            type="secondary"
+            small
+            class="w-fit flex flex-row items-center gap-x-2"
+            onClick={() => fileInput.click()}
+          >
+            <UploadIcon size="14px" />
+            <span>Import .env</span>
+          </Button>
+        </div>
         <input
           type="file"
           bind:this={fileInput}
@@ -253,7 +258,7 @@
           class="hidden"
         />
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-gray-800">Variables</div>
+          <div class="text-sm font-medium text-fg-primary">Variables</div>
           <div
             class="flex flex-col gap-y-4 w-full overflow-y-auto max-h-[224px]"
           >
@@ -292,7 +297,7 @@
                     }
                   }}
                 >
-                  <Trash2Icon size="16px" class="text-gray-500" />
+                  <Trash2Icon size="16px" class="text-fg-muted" />
                 </IconButton>
               </div>
             {/each}
