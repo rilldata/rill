@@ -35,6 +35,7 @@
     backgroundColor,
     cardColor,
     fgPrimary,
+    surfaceHeader,
   } = extractThemeColors(themeData, previewMode));
 
   async function toggle() {
@@ -97,6 +98,7 @@
           {primaryColor}
           {cardColor}
           {fgPrimary}
+          {surfaceHeader}
         />
       </ThemeProvider>
     </div>

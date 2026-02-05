@@ -5,6 +5,7 @@
   export let primaryColor: string;
   export let cardColor: string;
   export let fgPrimary: string;
+  export let surfaceHeader: string;
 
   // Mock time series data for KPI sparkline
   const timeSeriesData = [
@@ -140,18 +141,24 @@
   const maxLeaderboardValue = Math.max(...leaderboardData.map((d) => d.value));
 </script>
 
+<!-- Surface Header -->
+<div class="surface-header" style="background-color: {surfaceHeader};">
+  <span style="color: {fgPrimary};">Dashboard Filter Section</span>
+</div>
+
 <div class="grid grid-cols-1 gap-3">
   <!-- KPI Component -->
   <div class="preview-card kpi-card" style="background-color: {cardColor};">
     <div class="kpi-data-wrapper">
-      <div class="kpi-header text-fg-secondary">Revenue</div>
+      <div class="kpi-header" style="color: {fgPrimary};">Revenue</div>
       <div class="kpi-value" style="color: {fgPrimary};">$2.4M</div>
       <div class="kpi-comparison">
-        <span class="kpi-prev text-fg-muted">$2.1M</span>
-        <span class="kpi-delta" style="color: {primaryColor};">+$285K</span>
-        <span class="kpi-percent text-fg-muted">+12.5%</span>
+        <span class="kpi-delta" style="color: {fgPrimary};">+$285K</span>
+        <span class="kpi-percent text-red-500">-12.5%</span>
       </div>
-      <div class="kpi-label text-fg-muted">vs last month</div>
+      <div class="kpi-label" style="color: {fgPrimary}; opacity: 0.7;">
+        vs last month
+      </div>
     </div>
     <div class="kpi-sparkline-wrapper">
       <svg
@@ -174,7 +181,7 @@
           vector-effect="non-scaling-stroke"
         />
       </svg>
-      <div class="kpi-dates text-fg-muted">
+      <div class="kpi-dates" style="color: {fgPrimary}; opacity: 0.5;">
         <span>Nov 1</span>
         <span>Nov 30</span>
       </div>
@@ -191,19 +198,14 @@
       <tbody>
         {#each leaderboardData as item}
           {@const barLength = (item.value / maxLeaderboardValue) * 140}
+          {@const valueBarLength = Math.max(0, barLength - 90)}
           <tr class="leaderboard-row">
-            <td
-              class="leaderboard-name"
-              style="background: linear-gradient(to right, var(--color-theme-100) {barLength}px, transparent {barLength}px);"
-            >
+            <td class="leaderboard-name" style="--bar-length: {barLength}px;">
               <span style="color: {fgPrimary};">{item.name}</span>
             </td>
             <td
               class="leaderboard-value"
-              style="background: linear-gradient(to right, var(--color-theme-100) {Math.max(
-                0,
-                barLength - 90,
-              )}px, transparent {Math.max(0, barLength - 90)}px);"
+              style="--bar-length: {valueBarLength}px;"
             >
               <span style="color: {fgPrimary};">{formatValue(item.value)}</span>
             </td>
@@ -231,6 +233,8 @@
           text-anchor="end"
           dominant-baseline="middle"
           class="axis-label"
+          fill={fgPrimary}
+          fill-opacity="0.5"
         >
           {formatValue(maxBarValue * tick)}
         </text>
@@ -263,6 +267,8 @@
           y={barChartHeight - 4}
           text-anchor="middle"
           class="axis-label"
+          fill={fgPrimary}
+          fill-opacity="0.5"
         >
           {item.label.split(" ")[0]}
         </text>
@@ -288,6 +294,8 @@
           y={heatmapPadding.top - 6}
           text-anchor="middle"
           class="axis-label"
+          fill={fgPrimary}
+          fill-opacity="0.5"
         >
           {col}
         </text>
@@ -300,6 +308,8 @@
           text-anchor="end"
           dominant-baseline="middle"
           class="axis-label"
+          fill={fgPrimary}
+          fill-opacity="0.5"
         >
           {seqRows[i]}
         </text>
@@ -336,6 +346,8 @@
           y={heatmapPadding.top - 6}
           text-anchor="middle"
           class="axis-label"
+          fill={fgPrimary}
+          fill-opacity="0.5"
         >
           {col}
         </text>
@@ -348,6 +360,8 @@
           text-anchor="end"
           dominant-baseline="middle"
           class="axis-label"
+          fill={fgPrimary}
+          fill-opacity="0.5"
         >
           {divRows[i]}
         </text>
@@ -368,8 +382,12 @@
 </div>
 
 <style lang="postcss">
+  .surface-header {
+    @apply p-8 mb-4 font-medium;
+  }
+
   .preview-card {
-    @apply rounded border p-3 shadow-sm;
+    @apply rounded p-3 shadow-sm;
     min-height: 140px;
   }
 
@@ -436,21 +454,32 @@
     height: 22px;
   }
 
-  .leaderboard-row:hover td {
-    background: linear-gradient(
-      to right,
-      var(--color-theme-200) var(--bar-length, 0px),
-      var(--surface-hover) var(--bar-length, 0px)
-    ) !important;
-  }
-
   .leaderboard-name {
     @apply text-xs text-left px-2 truncate;
     width: 90px;
+    background: linear-gradient(
+      to right,
+      var(--color-theme-100) var(--bar-length, 0px),
+      transparent var(--bar-length, 0px)
+    );
   }
 
   .leaderboard-value {
     @apply text-xs text-right px-2;
+    background: linear-gradient(
+      to right,
+      var(--color-theme-100) var(--bar-length, 0px),
+      transparent var(--bar-length, 0px)
+    );
+  }
+
+  .leaderboard-row:hover .leaderboard-name,
+  .leaderboard-row:hover .leaderboard-value {
+    background: linear-gradient(
+      to right,
+      var(--color-theme-200) var(--bar-length, 0px),
+      transparent var(--bar-length, 0px)
+    );
   }
 
   .bar-chart-card {
@@ -473,11 +502,10 @@
 
   .axis-label {
     font-size: 9px;
-    @apply fill-fg-muted;
   }
 
   .grid-line {
     stroke-width: 0.5;
-    @apply stroke-border;
+    @apply stroke-fg-muted;
   }
 </style>

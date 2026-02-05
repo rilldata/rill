@@ -163,7 +163,7 @@
   }
 
   .section-title {
-    @apply text-sm font-semibold text-gray-900;
+    @apply text-sm font-semibold text-fg-primary;
   }
 
   /* Palette Section */
@@ -172,11 +172,11 @@
   }
 
   .palette-title {
-    @apply text-sm font-semibold text-gray-800;
+    @apply text-sm font-semibold text-fg-primary;
   }
 
   .palette-description {
-    @apply text-xs text-gray-600;
+    @apply text-xs text-fg-secondary;
   }
 
   .palette-grid {

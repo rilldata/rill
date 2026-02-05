@@ -26,6 +26,7 @@
     backgroundColor,
     cardColor,
     fgPrimary,
+    surfaceHeader,
   } = extractThemeColors(themeData, $themePreviewMode));
 
   function handleModeChange(_: number, value: string) {
@@ -59,6 +60,7 @@
           {primaryColor}
           {cardColor}
           {fgPrimary}
+          {surfaceHeader}
         />
       </ThemeProvider>
     </div>

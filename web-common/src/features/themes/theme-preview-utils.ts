@@ -35,6 +35,7 @@ export interface ThemeColors {
   backgroundColor: string;
   cardColor: string;
   fgPrimary: string;
+  surfaceHeader: string;
 }
 
 /**
@@ -105,6 +106,8 @@ export function extractThemeColors(
     (previewMode === "light"
       ? FG_PRIMARY_FALLBACK_LIGHT
       : FG_PRIMARY_FALLBACK_DARK);
+  const surfaceHeader =
+    currentModeYaml["surface-subtle"] || "var(--surface-subtle)";
 
   return {
     sequentialColors,
@@ -114,5 +117,6 @@ export function extractThemeColors(
     backgroundColor,
     cardColor,
     fgPrimary,
+    surfaceHeader,
   };
 }

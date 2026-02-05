@@ -114,7 +114,7 @@
 <div class="wrapper">
   <div class="main-area">
     <div class="flex items-center gap-x-4 pb-4 border-b">
-      <h3 class="text-sm font-semibold text-gray-900">Theme Mode</h3>
+      <h3 class="text-sm font-semibold text-fg-primary">Theme Mode</h3>
       <FieldSwitcher
         small
         fields={["Light", "Dark"]}
@@ -211,7 +211,7 @@
   }
 
   .section-title {
-    @apply text-sm font-semibold text-gray-900;
+    @apply text-sm font-semibold text-fg-primary;
   }
 
   .palette-section {
@@ -223,11 +223,11 @@
   }
 
   .palette-title {
-    @apply text-sm font-semibold text-gray-800;
+    @apply text-sm font-semibold text-fg-primary;
   }
 
   .palette-description {
-    @apply text-xs text-gray-600;
+    @apply text-xs text-fg-secondary;
   }
 
   .palette-colors {
@@ -243,6 +243,6 @@
   }
 
   .theme-color-label {
-    @apply text-xs font-semibold text-gray-700;
+    @apply text-xs font-semibold text-fg-secondary;
   }
 </style>
