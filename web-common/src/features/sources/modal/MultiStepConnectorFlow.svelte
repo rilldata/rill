@@ -29,7 +29,6 @@
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
   export let submitting: boolean;
-  export let connectorInstanceName: string | null = null;
 
   // Outputs bound by parent
   export let activeAuthMethod: string | null = null;

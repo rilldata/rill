@@ -231,7 +231,6 @@
           {onStringInputChange}
           {handleFileUpload}
           submitting={$paramsSubmitting}
-          {connectorInstanceName}
           bind:activeAuthMethod
           bind:isSubmitDisabled={multiStepSubmitDisabled}
           bind:primaryButtonLabel={multiStepButtonLabel}
