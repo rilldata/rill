@@ -13,7 +13,7 @@ import type {
   V1Resource,
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
-import type { ResourceNodeData } from "../shared/types";
+import type { ResourceNodeData, ResourceMetadata } from "../shared/types";
 import { graphCache } from "../shared/cache/position-cache";
 import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "../shared/config";
 
@@ -60,6 +60,179 @@ function estimateNodeWidth(label?: string | null) {
     MIN_NODE_WIDTH,
     Math.min(MAX_NODE_WIDTH, Math.round(estimated)),
   );
+}
+
+/**
+ * Format a V1Schedule into a human-readable description.
+ */
+function formatScheduleDescription(
+  schedule:
+    | { cron?: string; tickerSeconds?: number; timeZone?: string }
+    | undefined,
+): string | undefined {
+  if (!schedule) return undefined;
+  if (schedule.cron) {
+    const tz = schedule.timeZone ? ` (${schedule.timeZone})` : "";
+    return `cron: ${schedule.cron}${tz}`;
+  }
+  if (schedule.tickerSeconds) {
+    const seconds = schedule.tickerSeconds;
+    if (seconds >= 3600 && seconds % 3600 === 0) {
+      const hours = seconds / 3600;
+      return `every ${hours}h`;
+    }
+    if (seconds >= 60 && seconds % 60 === 0) {
+      const minutes = seconds / 60;
+      return `every ${minutes}m`;
+    }
+    return `every ${seconds}s`;
+  }
+  return undefined;
+}
+
+/**
+ * Infer the actual data source type from a DuckDB path or SQL.
+ * DuckDB can read from various cloud storage providers, so we detect the
+ * underlying source from the path prefix to show the appropriate icon.
+ *
+ * The content can be either:
+ * - A direct path like "s3://bucket/file.parquet"
+ * - A SQL query like "SELECT * FROM read_parquet('s3://bucket/file.parquet')"
+ *
+ * We search for cloud storage URL patterns anywhere in the content.
+ *
+ * @param content - The path, URI, or SQL from the DuckDB source/model
+ * @returns The inferred connector type (s3, gcs, azure, https, or local_file)
+ */
+function inferDuckDbSourceType(content: string | undefined): string {
+  if (!content) return "local_file";
+
+  const normalized = content.toLowerCase();
+
+  // Check for cloud storage URL patterns anywhere in the content
+  // These patterns work for both direct paths and URLs embedded in SQL
+  if (normalized.includes("s3://") || normalized.includes("s3a://")) {
+    return "s3";
+  }
+  if (normalized.includes("gs://") || normalized.includes("gcs://")) {
+    return "gcs";
+  }
+  if (
+    normalized.includes("azure://") ||
+    normalized.includes("az://") ||
+    normalized.includes("abfs://") ||
+    normalized.includes("abfss://")
+  ) {
+    return "azure";
+  }
+  if (normalized.includes("https://") || normalized.includes("http://")) {
+    return "https";
+  }
+
+  // Local file path (e.g., data/*.parquet, ./files/data.csv)
+  return "local_file";
+}
+
+/**
+ * Extract rich metadata from a resource for badge display.
+ */
+function extractResourceMetadata(
+  resource: V1Resource,
+  kind: ResourceKind | undefined,
+  allResources: V1Resource[],
+): ResourceMetadata {
+  const metadata: ResourceMetadata = {};
+
+  // Model/Source metadata
+  const model = resource.model;
+  const source = resource.source;
+
+  if (model?.spec) {
+    const spec = model.spec;
+    let connector = spec.inputConnector;
+
+    // For DuckDB connector, infer the actual source type from the path
+    if (connector?.toLowerCase() === "duckdb") {
+      const inputProps = spec.inputProperties as
+        | { path?: string; sql?: string }
+        | undefined;
+      const path = inputProps?.path || inputProps?.sql;
+      connector = inferDuckDbSourceType(path);
+    }
+
+    metadata.connector = connector;
+    metadata.incremental = spec.incremental;
+    metadata.partitioned = Boolean(spec.partitionsResolver);
+    metadata.hasSchedule = Boolean(
+      spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
+    );
+    metadata.scheduleDescription = formatScheduleDescription(
+      spec.refreshSchedule,
+    );
+    metadata.retryAttempts = spec.retryAttempts;
+  }
+
+  if (source?.spec) {
+    const spec = source.spec;
+    let connector = spec.sourceConnector;
+
+    // For DuckDB connector, infer the actual source type from the path
+    if (connector?.toLowerCase() === "duckdb") {
+      const props = spec.properties as { path?: string; sql?: string } | undefined;
+      const path = props?.path || props?.sql;
+      connector = inferDuckDbSourceType(path);
+    }
+
+    metadata.connector = connector;
+    metadata.hasSchedule = Boolean(
+      spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
+    );
+    metadata.scheduleDescription = formatScheduleDescription(
+      spec.refreshSchedule,
+    );
+  }
+
+  // Dashboard (Explore/Canvas) theme metadata
+  const explore = resource.explore;
+  const canvas = resource.canvas;
+
+  if (explore?.spec?.theme && !explore?.spec?.embeddedTheme) {
+    metadata.theme = explore.spec.theme;
+  }
+  if (canvas?.spec?.theme && !canvas?.spec?.embeddedTheme) {
+    metadata.theme = canvas.spec.theme;
+  }
+
+  // Count alerts and APIs that reference this resource
+  const resourceId = createResourceId(resource.meta);
+  if (resourceId) {
+    let alertCount = 0;
+    let apiCount = 0;
+
+    for (const res of allResources) {
+      const resKind = res.meta?.name?.kind;
+      const refs = res.meta?.refs ?? [];
+
+      // Check if this resource references our target
+      const refsTarget = refs.some((ref) => {
+        const refId = resourceNameToId(ref);
+        return refId === resourceId;
+      });
+
+      if (refsTarget) {
+        if (resKind === "rill.runtime.v1.Alert") {
+          alertCount++;
+        } else if (resKind === "rill.runtime.v1.API") {
+          apiCount++;
+        }
+      }
+    }
+
+    if (alertCount > 0) metadata.alertCount = alertCount;
+    if (apiCount > 0) metadata.apiCount = apiCount;
+  }
+
+  return metadata;
 }
 
 type BuildGraphOptions = {
@@ -149,6 +322,8 @@ export function buildResourceGraph(
       rank: rankConstraint,
     });
 
+    const metadata = extractResourceMetadata(resource, kind, resources);
+
     const nodeDef: Node<ResourceNodeData> = {
       id,
       width: nodeWidth,
@@ -157,6 +332,7 @@ export function buildResourceGraph(
         resource,
         kind,
         label,
+        metadata,
       },
       type: "resource-node",
       position: { x: 0, y: 0 },

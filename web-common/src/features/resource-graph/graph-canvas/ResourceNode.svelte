@@ -21,8 +21,19 @@
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { GitFork } from "lucide-svelte";
+  import {
+    GitFork,
+    Database,
+    RefreshCw,
+    Clock,
+    RotateCcw,
+    Palette,
+    Bell,
+    Plug,
+    Layers,
+  } from "lucide-svelte";
   import { builderActions, getAttrs } from "bits-ui";
+  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
 
   export let id: string;
   export let type: string;
@@ -95,6 +106,29 @@
     resourceName && originalKind
       ? fileArtifacts.findFileArtifact(originalKind, resourceName)
       : undefined;
+
+  // Rich metadata for badge display
+  $: metadata = data?.metadata;
+  $: hasBadges =
+    metadata?.connector ||
+    metadata?.incremental ||
+    metadata?.partitioned ||
+    metadata?.hasSchedule ||
+    metadata?.retryAttempts ||
+    metadata?.theme ||
+    metadata?.alertCount ||
+    metadata?.apiCount;
+
+  // Get connector-specific icon (falls back to Database icon)
+  $: connectorIcon =
+    metadata?.connector &&
+    connectorIconMapping[
+      metadata.connector.toLowerCase() as keyof typeof connectorIconMapping
+    ]
+      ? connectorIconMapping[
+          metadata.connector.toLowerCase() as keyof typeof connectorIconMapping
+        ]
+      : null;
 
   // Dropdown menu state
   let menuOpen = false;
@@ -173,6 +207,7 @@
       class:root={data?.isRoot}
       style:--node-accent={color}
       style:width={width ? `${width}px` : undefined}
+      style:height={height ? `${height}px` : undefined}
       data-kind={kind}
       role="button"
       tabindex="0"
@@ -245,6 +280,79 @@
         </p>
         <p class="status error">{effectiveStatusLabel}</p>
       </div>
+
+      <!-- Metadata badges -->
+      {#if hasBadges}
+        <div class="badges">
+          {#if metadata?.connector}
+            <span
+              class="badge connector"
+              title="Connector: {metadata.connector}"
+            >
+              {#if connectorIcon}
+                <svelte:component this={connectorIcon} size="10px" />
+              {:else}
+                <Database size={10} />
+              {/if}
+            </span>
+          {/if}
+          {#if metadata?.incremental}
+            <span class="badge incremental" title="Incremental model">
+              <RefreshCw size={10} />
+              Inc
+            </span>
+          {/if}
+          {#if metadata?.partitioned}
+            <span class="badge partitioned" title="Partitioned model">
+              <Layers size={10} />
+              Part
+            </span>
+          {/if}
+          {#if metadata?.hasSchedule}
+            <span
+              class="badge scheduled"
+              title={metadata.scheduleDescription ?? "Scheduled"}
+            >
+              <Clock size={10} />
+            </span>
+          {/if}
+          {#if metadata?.retryAttempts}
+            <span
+              class="badge retry"
+              title="{metadata.retryAttempts} retry attempts"
+            >
+              <RotateCcw size={10} />
+              {metadata.retryAttempts}
+            </span>
+          {/if}
+          {#if metadata?.theme}
+            <span class="badge theme" title="Theme: {metadata.theme}">
+              <Palette size={10} />
+              {metadata.theme}
+            </span>
+          {/if}
+          {#if metadata?.alertCount}
+            <span
+              class="badge alert"
+              title="{metadata.alertCount} alert{metadata.alertCount > 1
+                ? 's'
+                : ''}"
+            >
+              <Bell size={10} />
+              {metadata.alertCount}
+            </span>
+          {/if}
+          {#if metadata?.apiCount}
+            <span
+              class="badge api"
+              title="{metadata.apiCount} API{metadata.apiCount > 1 ? 's' : ''}"
+            >
+              <Plug size={10} />
+              {metadata.apiCount}
+            </span>
+          {/if}
+        </div>
+      {/if}
     </div>
     <TooltipContent slot="tooltip-content" maxWidth="420px">
       <div class="error-tooltip-content">
@@ -264,6 +372,7 @@
     class:root={data?.isRoot}
     style:--node-accent={color}
     style:width={width ? `${width}px` : undefined}
+    style:height={height ? `${height}px` : undefined}
     data-kind={kind}
     role="button"
     tabindex="0"
@@ -338,6 +447,76 @@
         <p class="status">{effectiveStatusLabel}</p>
       {/if}
     </div>
+
+    <!-- Metadata badges -->
+    {#if hasBadges}
+      <div class="badges">
+        {#if metadata?.connector}
+          <span class="badge connector" title="Connector: {metadata.connector}">
+            {#if connectorIcon}
+              <svelte:component this={connectorIcon} size="10px" />
+            {:else}
+              <Database size={10} />
+            {/if}
+          </span>
+        {/if}
+        {#if metadata?.incremental}
+          <span class="badge incremental" title="Incremental model">
+            <RefreshCw size={10} />
+            Inc
+          </span>
+        {/if}
+        {#if metadata?.partitioned}
+          <span class="badge partitioned" title="Partitioned model">
+            <Layers size={10} />
+            Part
+          </span>
+        {/if}
+        {#if metadata?.hasSchedule}
+          <span
+            class="badge scheduled"
+            title={metadata.scheduleDescription ?? "Scheduled"}
+          >
+            <Clock size={10} />
+          </span>
+        {/if}
+        {#if metadata?.retryAttempts}
+          <span
+            class="badge retry"
+            title="{metadata.retryAttempts} retry attempts"
+          >
+            <RotateCcw size={10} />
+            {metadata.retryAttempts}
+          </span>
+        {/if}
+        {#if metadata?.theme}
+          <span class="badge theme" title="Theme: {metadata.theme}">
+            <Palette size={10} />
+            {metadata.theme}
+          </span>
+        {/if}
+        {#if metadata?.alertCount}
+          <span
+            class="badge alert"
+            title="{metadata.alertCount} alert{metadata.alertCount > 1
+              ? 's'
+              : ''}"
+          >
+            <Bell size={10} />
+            {metadata.alertCount}
+          </span>
+        {/if}
+        {#if metadata?.apiCount}
+          <span
+            class="badge api"
+            title="{metadata.apiCount} API{metadata.apiCount > 1 ? 's' : ''}"
+          >
+            <Plug size={10} />
+            {metadata.apiCount}
+          </span>
+        {/if}
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -450,5 +629,53 @@
     border: 1px solid color-mix(in srgb, var(--node-accent) 55%, #b1b1b7);
     box-shadow: 0 0 0 1px #ffffff;
     opacity: 1;
+  }
+
+  /* Metadata badges */
+  .badges {
+    @apply absolute -bottom-2 left-2 flex gap-1 z-10;
+  }
+
+  .badge {
+    @apply flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded;
+    @apply border shadow-sm cursor-default;
+    transition: transform 100ms ease;
+  }
+
+  .badge:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Badge color variants */
+  .badge.connector {
+    @apply bg-indigo-50 text-indigo-700 border-indigo-200;
+  }
+
+  .badge.incremental {
+    @apply bg-cyan-50 text-cyan-700 border-cyan-200;
+  }
+
+  .badge.partitioned {
+    @apply bg-purple-50 text-purple-700 border-purple-200;
+  }
+
+  .badge.scheduled {
+    @apply bg-amber-50 text-amber-700 border-amber-200;
+  }
+
+  .badge.retry {
+    @apply bg-orange-50 text-orange-700 border-orange-200;
+  }
+
+  .badge.theme {
+    @apply bg-pink-50 text-pink-700 border-pink-200;
+  }
+
+  .badge.alert {
+    @apply bg-red-50 text-red-700 border-red-200;
+  }
+
+  .badge.api {
+    @apply bg-blue-50 text-blue-700 border-blue-200;
   }
 </style>

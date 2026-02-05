@@ -51,12 +51,12 @@
   $: overlaySeeds = (function (): string[] | undefined {
     if (!anchorName || !anchorKind) return undefined;
 
-    // Use the same format that would come from URL parameters
-    if (
-      anchorKind === ResourceKind.Canvas ||
-      anchorKind === ResourceKind.Explore
-    ) {
-      return [`dashboard:${anchorName}`];
+    // Use the correct kind prefix to match the actual resource type
+    // Canvas and Explore need different prefixes since they're different resource kinds
+    if (anchorKind === ResourceKind.Canvas) {
+      return [`canvas:${anchorName}`];
+    } else if (anchorKind === ResourceKind.Explore) {
+      return [`explore:${anchorName}`];
     } else if (anchorKind === ResourceKind.Model) {
       return [`model:${anchorName}`];
     } else if (anchorKind === ResourceKind.MetricsView) {
