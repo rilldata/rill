@@ -35,6 +35,12 @@ import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import { OLAP_ENGINES } from "./constants";
+import { getConnectorSchema } from "./connector-schemas";
+import {
+  getSchemaFieldMetaList,
+  getSchemaSecretKeys,
+  getSchemaStringKeys,
+} from "../../templates/schema-utils";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -48,9 +54,8 @@ const savedAnywayPaths = new Set<string>();
 const connectorSubmissions = new Map<
   string,
   {
-    promise: Promise<void>;
+    promise: Promise<string>;
     connectorName: string;
-    completed: boolean;
   }
 >();
 
@@ -162,6 +167,16 @@ async function saveConnectorAnyway(
   instanceId?: string,
 ): Promise<void> {
   const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
+  const schema = getConnectorSchema(connector.name ?? "");
+  const schemaFields = schema
+    ? getSchemaFieldMetaList(schema, { step: "connector" })
+    : [];
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "connector" })
+    : [];
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "connector" })
+    : [];
 
   // Create connector file
   const newConnectorFilePath = getFileAPIPathFromNameAndType(
@@ -179,6 +194,7 @@ async function saveConnectorAnyway(
     formValues,
     "connector",
     newConnectorName,
+    { secretKeys: schemaSecretKeys },
   );
 
   await runtimeServicePutFile(resolvedInstanceId, {
@@ -193,6 +209,12 @@ async function saveConnectorAnyway(
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
       connectorInstanceName: newConnectorName,
+      orderedProperties: schemaFields,
+      secretKeys: schemaSecretKeys,
+      stringKeys: schemaStringKeys,
+      fieldFilter: schemaFields
+        ? (property) => !("internal" in property && property.internal)
+        : undefined,
     }),
     create: true,
     createOnly: false,
@@ -215,9 +237,19 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
-): Promise<void> {
+): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
+  const schema = getConnectorSchema(connector.name ?? "");
+  const schemaFields = schema
+    ? getSchemaFieldMetaList(schema, { step: "connector" })
+    : [];
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "connector" })
+    : [];
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "connector" })
+    : [];
 
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
@@ -236,7 +268,6 @@ export async function submitAddConnectorForm(
     if (saveAnyway) {
       // If Save Anyway is clicked while Test and Connect is running,
       // proceed immediately without waiting for the ongoing operation
-      // Clean up the existing submission
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
 
       // Use the same connector name from the ongoing operation
@@ -250,13 +281,12 @@ export async function submitAddConnectorForm(
         newConnectorName,
         instanceId,
       );
-      return;
-    } else if (!existingSubmission.completed) {
-      // If Test and Connect is clicked while another operation is running,
-      // wait for it to complete
-      await existingSubmission.promise;
-      return;
+      return newConnectorName;
     }
+
+    // If Test and Connect is clicked while another operation is running,
+    // wait for it to complete
+    return existingSubmission.promise;
   }
 
   // Create abort controller for this submission
@@ -288,6 +318,7 @@ export async function submitAddConnectorForm(
         formValues,
         "connector",
         newConnectorName,
+        { secretKeys: schemaSecretKeys },
       );
 
       if (saveAnyway) {
@@ -299,7 +330,7 @@ export async function submitAddConnectorForm(
           newConnectorName,
           instanceId,
         );
-        return;
+        return newConnectorName;
       }
 
       /**
@@ -322,6 +353,12 @@ export async function submitAddConnectorForm(
           path: newConnectorFilePath,
           blob: compileConnectorYAML(connector, formValues, {
             connectorInstanceName: newConnectorName,
+            orderedProperties: schemaFields,
+            secretKeys: schemaSecretKeys,
+            stringKeys: schemaStringKeys,
+            fieldFilter: schemaFields
+              ? (property) => !("internal" in property && property.internal)
+              : undefined,
           }),
           create: true,
           createOnly: false,
@@ -359,11 +396,12 @@ export async function submitAddConnectorForm(
 
       // Go to the new connector file
       await goto(`/files/${newConnectorFilePath}`);
+      return newConnectorName;
     } catch (error) {
       // If the operation was aborted, don't treat it as an error
       if (abortController.signal.aborted) {
         console.log("Operation was cancelled");
-        return;
+        return newConnectorName;
       }
 
       const shouldRollbackConnectorFile =
@@ -390,10 +428,7 @@ export async function submitAddConnectorForm(
     } finally {
       // Mark the submission as completed but keep the connector name around
       // so a subsequent "Save Anyway" can still reuse the same connector file
-      const submission = connectorSubmissions.get(uniqueConnectorSubmissionKey);
-      if (submission) {
-        submission.completed = true;
-      }
+      connectorSubmissions.delete(uniqueConnectorSubmissionKey);
     }
   })();
 
@@ -401,27 +436,44 @@ export async function submitAddConnectorForm(
   connectorSubmissions.set(uniqueConnectorSubmissionKey, {
     promise: submissionPromise,
     connectorName: newConnectorName,
-    completed: false,
   });
 
   // Wait for the submission to complete
-  await submissionPromise;
+  const resolvedConnectorName = await submissionPromise;
+  return resolvedConnectorName;
 }
 
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
+  connectorInstanceName?: string,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
-
   const newSourceName = formValues.name as string;
 
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
     formValues,
+    { connectorInstanceName },
   );
+  const schema = getConnectorSchema(rewrittenConnector.name ?? "");
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "source" })
+    : [];
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "source" })
+    : [];
+
+  // When connector is rewritten to DuckDB (e.g., S3 -> DuckDB), don't use
+  // the original connectorInstanceName in YAML. The original connector is
+  // referenced via create_secrets_from_connectors for credential access.
+  const isRewrittenToDuckDb =
+    rewrittenConnector.name === "duckdb" && connector.name !== "duckdb";
+  const yamlConnectorInstanceName = isRewrittenToDuckDb
+    ? undefined
+    : connectorInstanceName;
 
   // Make a new <source>.yaml file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
@@ -430,7 +482,12 @@ export async function submitAddSourceForm(
   );
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
-    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
+      secretKeys: schemaSecretKeys,
+      stringKeys: schemaStringKeys,
+      connectorInstanceName: yamlConnectorInstanceName,
+      originalDriverName: connector.name || undefined,
+    }),
     create: true,
     createOnly: false,
   });
@@ -443,6 +500,8 @@ export async function submitAddSourceForm(
     rewrittenConnector,
     rewrittenFormValues,
     "source",
+    undefined,
+    { secretKeys: schemaSecretKeys },
   );
 
   // Make sure the file has reconciled before testing the connection
