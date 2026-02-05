@@ -20,17 +20,29 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
+  "x-display"?:
+    | "radio"
+    | "select"
+    | "textarea"
+    | "file"
+    | "tabs"
+    | "connection-type";
+  /** Render the field value in a monospace font. */
+  "x-monospace"?: boolean;
   /** Which modal step this field belongs to. */
   "x-step"?: "connector" | "source" | "explorer";
   /** Field holds a secret value that should be stored in .env, not in YAML. */
   "x-secret"?: boolean;
   /** Show this field only when other fields match the given values. */
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
+  /** Disable this field (read-only) when other fields match the given values. */
+  "x-disabled-if"?: Record<string, JSONSchemaVisibleIfValue>;
   /** Human-readable labels for each enum option, in the same order as `enum`. */
   "x-enum-labels"?: string[];
   /** Descriptive text for each enum option, in the same order as `enum`. */
   "x-enum-descriptions"?: string[];
+  /** Icon identifiers for each enum option, in the same order as `enum`. */
+  "x-enum-icons"?: string[];
   /** Placeholder text shown in the input when empty. */
   "x-placeholder"?: string;
   /** Helper text displayed below the input. */
@@ -90,6 +102,21 @@ export type ButtonLabels = {
   loading: string;
 };
 
+/**
+ * Pre-defined form template that auto-populates fields with preset values.
+ * Useful for common configurations like ClickHouse Playground.
+ */
+export type FormTemplate = {
+  /** Unique identifier for the template */
+  id: string;
+  /** Display name shown in the template selector */
+  label: string;
+  /** Brief description of the template */
+  description?: string;
+  /** Field values to apply when the template is selected */
+  values: Record<string, unknown>;
+};
+
 export type JSONSchemaObject = {
   $schema?: string;
   type: "object";
@@ -112,6 +139,12 @@ export type JSONSchemaObject = {
    */
   "x-form-height"?: "default" | "tall";
   /**
+   * Form width for the add data modal.
+   * "wide" = wider form for connectors with templates or more content
+   * "default" = standard form width
+   */
+  "x-form-width"?: "default" | "wide";
+  /**
    * Backend connector name when different from schema name.
    * Used when a UI variant (e.g., "clickhousecloud") should map
    * to a different backend driver (e.g., "clickhouse").
@@ -123,6 +156,11 @@ export type JSONSchemaObject = {
    * Example: { "connector_type": { "rill-managed": { idle: "Connect", loading: "Connecting..." } } }
    */
   "x-button-labels"?: Record<string, Record<string, ButtonLabels>>;
+  /**
+   * Pre-defined templates for auto-populating form fields.
+   * Useful for common configurations like ClickHouse Playground.
+   */
+  "x-templates"?: FormTemplate[];
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;

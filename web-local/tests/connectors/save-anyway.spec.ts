@@ -14,25 +14,31 @@ test.describe("Save Anyway feature", () => {
     // Select ClickHouse connector
     await page.locator("#clickhouse").click();
 
-    // Wait for the form to load
+    // Wait for the form to load and Host field to be visible
+    // (Host is visible when connection type is "cloud" which is the default)
     await page.waitForSelector('form[id*="clickhouse"]');
+    const hostField = page.getByRole("textbox", { name: "Host" });
+    await expect(hostField).toBeVisible();
 
     // Fill in connection details with invalid values
-    await page.getByRole("textbox", { name: "Host" }).fill("asd");
+    await hostField.fill("asd");
     await page.getByRole("textbox", { name: "Password" }).fill("asd");
 
     // Click "Test and Connect" - this should fail connection test and show "Save Anyway" button
-    await page
-      .getByRole("button", { name: /^(Test and Connect|Connect)$/ })
-      .click();
+    // Scope to dialog and use force:true to handle viewport overflow in CI environments.
+    const submitButton = page
+      .getByRole("dialog")
+      .getByRole("button", { name: /^(Test and Connect|Connect)$/ });
+    await submitButton.click({ force: true });
 
     // Wait for "Save Anyway" button to appear
-    await expect(
-      page.getByRole("button", { name: "Save Anyway" }),
-    ).toBeVisible();
+    const saveAnywayButton = page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Save Anyway" });
+    await expect(saveAnywayButton).toBeVisible();
 
-    // Click "Save Anyway" button
-    await page.getByRole("button", { name: "Save Anyway" }).click();
+    // Click "Save Anyway" button (force:true for same viewport overflow reason)
+    await saveAnywayButton.click({ force: true });
 
     // Wait for navigation to connector file, then for the editor to appear
     await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/, {

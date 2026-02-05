@@ -22,6 +22,7 @@
     connectors,
     getBackendConnectorName,
     getConnectorSchema,
+    getFormWidth,
     type ConnectorInfo,
   } from "./connector-schemas";
   import { ICONS } from "./icons";
@@ -36,6 +37,12 @@
   // Filter connectors by category from JSON schemas
   $: sourceConnectors = connectors.filter((c) => c.category !== "olap");
   $: olapConnectors = connectors.filter((c) => c.category === "olap");
+
+  // Get the form width class for the selected connector
+  $: selectedSchema = selectedSchemaName
+    ? getConnectorSchema(selectedSchemaName)
+    : null;
+  $: formWidthClass = getFormWidth(selectedSchema);
 
   /**
    * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
@@ -152,7 +159,8 @@
   >
     <Dialog.Content
       class={cn(
-        "overflow-hidden max-w-4xl",
+        "overflow-hidden",
+        formWidthClass,
         step === 2 ? "p-0 gap-0" : "p-6 gap-4",
       )}
       noClose={step === 1}

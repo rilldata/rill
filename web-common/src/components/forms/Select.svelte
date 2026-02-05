@@ -7,6 +7,7 @@
   import { InfoIcon } from "lucide-svelte";
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
   import Search from "../search/Search.svelte";
+  import type { ComponentType, SvelteComponent } from "svelte";
 
   export let value: string = "";
   export let id: string;
@@ -21,6 +22,7 @@
     type?: string;
     disabled?: boolean;
     tooltip?: string;
+    icon?: ComponentType<SvelteComponent>;
   }[];
   export let optionsLoading: boolean = false;
   export let onAddNew: (() => void) | null = null;
@@ -145,7 +147,7 @@
           </div>
         </div>
       {:else}
-        {#each filteredOptions as { type, value, label, description, disabled, tooltip } (value)}
+        {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon } (value)}
           <Select.Item
             {value}
             {label}
@@ -156,7 +158,9 @@
             {#if tooltip}
               <Tooltip.Root portal="body">
                 <Tooltip.Trigger class="select-tooltip cursor-default">
-                  {#if type}
+                  {#if icon}
+                    <svelte:component this={icon} size="16px" />
+                  {:else if type}
                     <DataTypeIcon {type} />
                   {/if}
                   {label ?? value}
@@ -166,7 +170,9 @@
                 </Tooltip.Content>
               </Tooltip.Root>
             {:else}
-              {#if type}
+              {#if icon}
+                <svelte:component this={icon} size="16px" />
+              {:else if type}
                 <DataTypeIcon {type} />
               {/if}
               {label ?? value}

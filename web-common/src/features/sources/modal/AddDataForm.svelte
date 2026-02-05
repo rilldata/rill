@@ -24,6 +24,7 @@
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
+  import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -93,8 +94,22 @@
   let multiStepFormId = baseFormId;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
+  let prevDeploymentType: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
+
+  // Clear errors when connection type changes
+  $: {
+    const currentDeploymentType = $form.deployment_type as string | undefined;
+    if (
+      prevDeploymentType !== undefined &&
+      currentDeploymentType !== prevDeploymentType
+    ) {
+      paramsError = null;
+      showSaveAnyway = false;
+    }
+    prevDeploymentType = currentDeploymentType;
+  }
 
   // Hide Save Anyway once we advance to the model step in step flow connectors.
   $: if (
@@ -161,9 +176,6 @@
   }
 
   $: isSubmitting = submitting;
-
-  // Reset errors when form is modified
-  $: if ($paramsTainted) paramsError = null;
 
   async function handleSaveAnyway() {
     // Save Anyway should only work for connector forms
@@ -259,6 +271,7 @@
             errors={$paramsErrors}
             {onStringInputChange}
             {handleFileUpload}
+            iconMap={ICONS}
           />
         </AddDataFormSection>
       {:else}

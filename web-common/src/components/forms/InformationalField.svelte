@@ -11,7 +11,7 @@
 
 <div class="flex flex-row items-center gap-x-1">
   <div class="text-fg-secondary">
-    {description}
+    {@html description}
   </div>
   {#if hint}
     <Tooltip location="bottom" alignment="middle" distance={8}>

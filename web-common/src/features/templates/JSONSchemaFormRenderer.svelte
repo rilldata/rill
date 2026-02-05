@@ -1,14 +1,22 @@
 <script lang="ts">
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import SchemaField from "./SchemaField.svelte";
+  import ConnectionTypeSelector from "./ConnectionTypeSelector.svelte";
+  import GroupedFieldsRenderer from "./GroupedFieldsRenderer.svelte";
   import type { JSONSchemaField, MultiStepFormSchema } from "./schemas/types";
   import {
     getConditionalValues,
+    isDisabledForValues,
     isStepMatch,
     isVisibleForValues,
   } from "./schema-utils";
+  import type { ComponentType, SvelteComponent } from "svelte";
+
+  // Icon mapping for select options
+  export let iconMap: Record<string, ComponentType<SvelteComponent>> = {};
 
   // Use `any` for form values since field types are determined by JSON schema at runtime
   type FormData = Record<string, any>;
@@ -72,6 +80,14 @@
           } else if (isUnset && isRadioEnum(prop) && prop.enum?.length) {
             $form[key] = String(prop.enum[0]);
           } else if (isUnset && isTabsEnum(prop) && prop.enum?.length) {
+            $form[key] = String(prop.enum[0]);
+          } else if (isUnset && isSelectEnum(prop) && prop.enum?.length) {
+            $form[key] = String(prop.enum[0]);
+          } else if (
+            isUnset &&
+            isConnectionTypeEnum(prop) &&
+            prop.enum?.length
+          ) {
             $form[key] = String(prop.enum[0]);
           }
         }
@@ -140,7 +156,7 @@
 
   function isEnumWithDisplay(
     prop: JSONSchemaField,
-    displayType: "radio" | "tabs",
+    displayType: "radio" | "tabs" | "select",
   ) {
     return Boolean(prop.enum && prop["x-display"] === displayType);
   }
@@ -151,6 +167,14 @@
 
   function isTabsEnum(prop: JSONSchemaField) {
     return isEnumWithDisplay(prop, "tabs");
+  }
+
+  function isSelectEnum(prop: JSONSchemaField) {
+    return isEnumWithDisplay(prop, "select");
+  }
+
+  function isConnectionTypeEnum(prop: JSONSchemaField) {
+    return Boolean(prop.enum && prop["x-display"] === "connection-type");
   }
 
   function computeVisibleEntries(
@@ -293,18 +317,27 @@
   function buildEnumOptions(
     prop: JSONSchemaField,
     includeDescription: boolean,
+    includeIcons: boolean = false,
   ) {
     return (
       prop.enum?.map((value, idx) => {
-        const option = {
+        const option: {
+          value: string;
+          label: string;
+          description?: string;
+          icon?: ComponentType<SvelteComponent>;
+        } = {
           value: String(value),
           label: prop["x-enum-labels"]?.[idx] ?? String(value),
         };
         if (includeDescription) {
-          return {
-            ...option,
-            description: prop["x-enum-descriptions"]?.[idx],
-          };
+          option.description = prop["x-enum-descriptions"]?.[idx];
+        }
+        if (includeIcons) {
+          const iconKey = prop["x-enum-icons"]?.[idx];
+          if (iconKey && iconMap[iconKey]) {
+            option.icon = iconMap[iconKey];
+          }
         }
         return option;
       }) ?? []
@@ -319,14 +352,120 @@
     return buildEnumOptions(prop, false);
   }
 
+  function selectOptions(prop: JSONSchemaField) {
+    return buildEnumOptions(prop, true, true);
+  }
+
   function isRequired(key: string) {
     return requiredFields.has(key);
+  }
+
+  function isDisabled(key: string) {
+    if (!schema) return false;
+    return isDisabledForValues(schema, key, $form);
+  }
+
+  function handleSelectChange(key: string, newValue: string) {
+    if (!schema) return;
+    const prop = schema.properties?.[key];
+    if (!prop) return;
+
+    // Clear all grouped fields when select value changes
+    const groupedFieldsMap = prop["x-grouped-fields"];
+    if (groupedFieldsMap) {
+      form.update(
+        ($form) => {
+          // Get all child keys from all groups
+          const allChildKeys = new Set(
+            Object.values(groupedFieldsMap).flat() as string[],
+          );
+
+          // Also collect keys from tab groups of the grouped fields
+          for (const childKey of allChildKeys) {
+            const childProp = schema.properties?.[childKey];
+            const tabGroup = childProp?.["x-tab-group"];
+            if (tabGroup) {
+              const tabKeys = Object.values(tabGroup).flat() as string[];
+              tabKeys.forEach((k) => allChildKeys.add(k));
+            }
+          }
+
+          // Clear all child keys (including nested tab fields)
+          for (const childKey of allChildKeys) {
+            const childProp = schema.properties?.[childKey];
+            if (childProp?.["x-ui-only"]) continue; // Don't clear UI-only fields
+            if (childProp?.default !== undefined) {
+              $form[childKey] = childProp.default;
+            } else {
+              $form[childKey] = "";
+            }
+          }
+
+          $form[key] = newValue;
+          return $form;
+        },
+        { taint: true },
+      );
+    }
   }
 </script>
 
 {#if schema}
   {#each renderOrder as [key, prop] (key)}
-    {#if isRadioEnum(prop)}
+    {#if isConnectionTypeEnum(prop)}
+      {@const options = selectOptions(prop)}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        <ConnectionTypeSelector
+          bind:value={$form[key]}
+          {options}
+          label={prop.title ?? ""}
+          onChange={(newValue) => handleSelectChange(key, newValue)}
+        />
+        {#if groupedFields.get(key)}
+          <GroupedFieldsRenderer
+            fields={getGroupedFieldsForOption(key, $form[key])}
+            formStore={form}
+            {errors}
+            {onStringInputChange}
+            {handleFileUpload}
+            {isRequired}
+            {isDisabled}
+            {getTabFieldsForOption}
+            {tabGroupedFields}
+            {buildEnumOptions}
+          />
+        {/if}
+      </div>
+    {:else if isSelectEnum(prop)}
+      {@const options = selectOptions(prop)}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        <Select
+          id={key}
+          bind:value={$form[key]}
+          {options}
+          label={prop.title ?? ""}
+          placeholder={prop["x-placeholder"] ?? "Select an option"}
+          tooltip={prop.description ?? ""}
+          optional={!isRequired(key)}
+          full
+          onChange={(newValue) => handleSelectChange(key, newValue)}
+        />
+        {#if groupedFields.get(key)}
+          <GroupedFieldsRenderer
+            fields={getGroupedFieldsForOption(key, $form[key])}
+            formStore={form}
+            {errors}
+            {onStringInputChange}
+            {handleFileUpload}
+            {isRequired}
+            {isDisabled}
+            {getTabFieldsForOption}
+            {tabGroupedFields}
+            {buildEnumOptions}
+          />
+        {/if}
+      </div>
+    {:else if isRadioEnum(prop)}
       <div class="py-1.5 first:pt-0 last:pb-0">
         {#if prop.title}
           <div class="text-sm font-medium mb-3">{prop.title}</div>
@@ -338,63 +477,18 @@
         >
           <svelte:fragment slot="custom-content" let:option>
             {#if groupedFields.get(key)}
-              {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if isTabsEnum(childProp)}
-                    {@const childOptions = tabOptions(childProp)}
-                    {#if childProp.title}
-                      <div class="text-sm font-medium mb-3">
-                        {childProp.title}
-                      </div>
-                    {/if}
-                    <Tabs
-                      bind:value={$form[childKey]}
-                      options={childOptions}
-                      disableMarginTop
-                    >
-                      {#each childOptions as childOption (childOption.value)}
-                        <TabsContent value={childOption.value}>
-                          {#if tabGroupedFields.get(childKey)}
-                            {#each getTabFieldsForOption(childKey, childOption.value) as [tabKey, tabProp] (tabKey)}
-                              <div class="py-1.5 first:pt-0 last:pb-0">
-                                <SchemaField
-                                  id={tabKey}
-                                  prop={tabProp}
-                                  optional={!isRequired(tabKey)}
-                                  errors={errors?.[tabKey]}
-                                  bind:value={$form[tabKey]}
-                                  bind:checked={$form[tabKey]}
-                                  {onStringInputChange}
-                                  {handleFileUpload}
-                                  options={isRadioEnum(tabProp)
-                                    ? radioOptions(tabProp)
-                                    : undefined}
-                                  name={`${tabKey}-radio`}
-                                />
-                              </div>
-                            {/each}
-                          {/if}
-                        </TabsContent>
-                      {/each}
-                    </Tabs>
-                  {:else}
-                    <SchemaField
-                      id={childKey}
-                      prop={childProp}
-                      optional={!isRequired(childKey)}
-                      errors={errors?.[childKey]}
-                      bind:value={$form[childKey]}
-                      bind:checked={$form[childKey]}
-                      {onStringInputChange}
-                      {handleFileUpload}
-                      options={isRadioEnum(childProp)
-                        ? radioOptions(childProp)
-                        : undefined}
-                      name={`${childKey}-radio`}
-                    />
-                  {/if}
-                </div>
-              {/each}
+              <GroupedFieldsRenderer
+                fields={getGroupedFieldsForOption(key, option.value)}
+                formStore={form}
+                {errors}
+                {onStringInputChange}
+                {handleFileUpload}
+                {isRequired}
+                {isDisabled}
+                {getTabFieldsForOption}
+                {tabGroupedFields}
+                {buildEnumOptions}
+              />
             {/if}
           </svelte:fragment>
         </Radio>
@@ -424,6 +518,7 @@
                         ? radioOptions(childProp)
                         : undefined}
                       name={`${childKey}-radio`}
+                      disabled={isDisabled(childKey)}
                     />
                   </div>
                 {/each}
@@ -445,6 +540,7 @@
           {handleFileUpload}
           options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
           name={`${key}-radio`}
+          disabled={isDisabled(key)}
         />
       </div>
     {/if}
