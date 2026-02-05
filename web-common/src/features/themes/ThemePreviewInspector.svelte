@@ -48,6 +48,7 @@
     <div
       class="preview-content"
       class:dark={$themePreviewMode === "dark"}
+      class:light={$themePreviewMode === "light"}
       style="background-color: {backgroundColor};"
     >
       <ThemeProvider {theme}>
@@ -70,11 +71,11 @@
   }
 
   .preview-header {
-    @apply flex items-center justify-between p-3 border-b border-gray-200;
+    @apply flex items-center justify-between p-3 border-b;
   }
 
   .preview-title {
-    @apply text-sm font-semibold text-gray-900;
+    @apply text-sm font-semibold text-fg-primary;
   }
 
   .preview-content {

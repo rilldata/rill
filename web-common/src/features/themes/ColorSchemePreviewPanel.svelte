@@ -47,7 +47,7 @@
 </script>
 
 <div
-  class="relative w-full flex-none overflow-hidden flex flex-col bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700"
+  class="relative w-full flex-none overflow-hidden flex flex-col bg-surface-background border-t"
 >
   <Resizer
     disabled={!isOpen}
@@ -61,7 +61,7 @@
   <div class="bar">
     <button
       aria-label="Toggle color scheme preview"
-      class="text-xs text-gray-800 dark:text-gray-200 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 h-6 px-1.5 py-px flex items-center gap-1.5 transition-colors"
+      class="text-xs text-fg-primary rounded-sm hover:bg-surface-hover h-6 px-1.5 py-px flex items-center gap-1.5 transition-colors"
       on:click={toggle}
     >
       <span class="transition-transform" class:rotate-180={isOpen}>
@@ -83,8 +83,9 @@
 
   {#if isOpen}
     <div
-      class="overflow-y-auto px-4 py-4"
+      class="preview-area overflow-y-auto px-4 py-4"
       class:dark={previewMode === "dark"}
+      class:light={previewMode === "light"}
       style="height: {height - 28}px; background-color: {backgroundColor};"
     >
       <!-- Wrap in ThemeProvider to apply the theme CSS -->
@@ -104,10 +105,11 @@
 
 <style lang="postcss">
   .bar {
-    @apply flex items-center px-3 h-7 w-full bg-gray-50 border-b border-gray-200;
+    @apply flex items-center px-3 h-7 w-full bg-surface-subtle border-b;
   }
 
-  :global(.dark) .bar {
-    @apply bg-gray-950 border-gray-700;
+  /* Force light mode colors when .light class is present, even if app is in dark mode */
+  :global(.dark) .preview-area.light {
+    color-scheme: light;
   }
 </style>

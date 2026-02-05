@@ -144,14 +144,14 @@
   <!-- KPI Component -->
   <div class="preview-card kpi-card" style="background-color: {cardColor};">
     <div class="kpi-data-wrapper">
-      <div class="kpi-header text-gray-600 dark:text-gray-400">Revenue</div>
+      <div class="kpi-header text-fg-secondary">Revenue</div>
       <div class="kpi-value" style="color: {fgPrimary};">$2.4M</div>
       <div class="kpi-comparison">
-        <span class="kpi-prev text-gray-500">$2.1M</span>
+        <span class="kpi-prev text-fg-muted">$2.1M</span>
         <span class="kpi-delta" style="color: {primaryColor};">+$285K</span>
-        <span class="kpi-percent text-gray-500">+12.5%</span>
+        <span class="kpi-percent text-fg-muted">+12.5%</span>
       </div>
-      <div class="kpi-label text-gray-400">vs last month</div>
+      <div class="kpi-label text-fg-muted">vs last month</div>
     </div>
     <div class="kpi-sparkline-wrapper">
       <svg
@@ -174,7 +174,7 @@
           vector-effect="non-scaling-stroke"
         />
       </svg>
-      <div class="kpi-dates text-gray-500">
+      <div class="kpi-dates text-fg-muted">
         <span>Nov 1</span>
         <span>Nov 30</span>
       </div>
@@ -369,12 +369,8 @@
 
 <style lang="postcss">
   .preview-card {
-    @apply rounded border p-3 shadow-sm border-gray-200;
+    @apply rounded border p-3 shadow-sm;
     min-height: 140px;
-  }
-
-  :global(.dark) .preview-card {
-    @apply border-gray-600;
   }
 
   .kpi-card {
@@ -444,7 +440,7 @@
     background: linear-gradient(
       to right,
       var(--color-theme-200) var(--bar-length, 0px),
-      var(--color-gray-100) var(--bar-length, 0px)
+      var(--surface-hover) var(--bar-length, 0px)
     ) !important;
   }
 
@@ -477,19 +473,11 @@
 
   .axis-label {
     font-size: 9px;
-    @apply fill-gray-500;
-  }
-
-  :global(.dark) .axis-label {
-    @apply fill-gray-400;
+    @apply fill-fg-muted;
   }
 
   .grid-line {
     stroke-width: 0.5;
-    @apply stroke-gray-200;
-  }
-
-  :global(.dark) .grid-line {
-    @apply stroke-gray-600;
+    @apply stroke-border;
   }
 </style>

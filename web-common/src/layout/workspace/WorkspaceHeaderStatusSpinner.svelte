@@ -29,7 +29,7 @@
 </script>
 
 <div>
-  <div class="text-fg-secondary">
+  <div class="text-secondary">
     <Tooltip distance={8} location="bottom">
       <Spinner size="18px" status={applicationStatus || EntityStatus.Idle} />
       <TooltipContent slot="tooltip-content"
