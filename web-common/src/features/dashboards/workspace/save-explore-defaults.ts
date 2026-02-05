@@ -6,11 +6,22 @@ import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/
 import { get } from "svelte/store";
 import { parseDocument } from "yaml";
 
+export type ComparisonModeValue =
+  | "none"
+  | "time"
+  | "dimension"
+  | "rill-PP"
+  | "rill-PD"
+  | "rill-PW"
+  | "rill-PM"
+  | "rill-PQ"
+  | "rill-PY";
+
 export type ExploreDefaults = {
   filter?: string;
   measures?: string[];
   dimensions?: string[];
-  comparison_mode?: string;
+  comparison_mode?: ComparisonModeValue;
   comparison_dimension?: string;
   time_range?: string;
   pinned?: string[];
@@ -38,7 +49,8 @@ export async function saveExploreDefaults(
   // Comparison
   if (exploreState.showTimeComparison) {
     const comparisonName = exploreState.selectedComparisonTimeRange?.name;
-    defaults.comparison_mode = comparisonName || "rill-PP";
+    defaults.comparison_mode =
+      (comparisonName as ComparisonModeValue) || "rill-PP";
   } else if (exploreState.selectedComparisonDimension) {
     defaults.comparison_mode = "dimension";
     defaults.comparison_dimension = exploreState.selectedComparisonDimension;

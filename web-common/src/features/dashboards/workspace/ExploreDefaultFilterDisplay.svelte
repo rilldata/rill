@@ -2,15 +2,15 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { V1ExploreComparisonMode } from "@rilldata/web-common/runtime-client";
+  import {
+    V1ExploreComparisonMode,
+    type V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import { getStateManagers } from "../state-managers/state-managers";
   import ExploreFilterChipsReadOnly from "../filters/ExploreFilterChipsReadOnly.svelte";
-  import {
-    getExploreFilterStateFromYAMLConfig,
-    getExploreStateFromYAMLConfig,
-  } from "../stores/get-explore-state-from-yaml-config";
+  import { getExploreFilterStateFromYAMLConfig } from "../stores/get-explore-state-from-yaml-config";
 
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
@@ -29,19 +29,24 @@
     defaultPreset?.pinned?.length
   );
 
-  $: filterState = getExploreFilterStateFromYAMLConfig(exploreSpec!);
+  $: filterState = exploreSpec
+    ? getExploreFilterStateFromYAMLConfig(exploreSpec)
+    : {};
 
-  $: comparisonLabel = getComparisonLabel(defaultPreset?.comparisonMode);
+  $: comparisonTimeRange = getComparisonTimeRange(
+    defaultPreset?.comparisonMode,
+    defaultPreset?.compareTimeRange,
+  );
 
-  function getComparisonLabel(mode: string | undefined): string | undefined {
-    switch (mode) {
-      case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME:
-        return "Time comparison";
-      case V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION:
-        return `Dimension comparison: ${defaultPreset?.comparisonDimension ?? ""}`;
-      default:
-        return undefined;
+  function getComparisonTimeRange(
+    mode: string | undefined,
+    compareTimeRange: string | undefined,
+  ): V1TimeRange | undefined {
+    if (mode === V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME) {
+      // Fall back to rill-PP when comparison_mode is "time" with no explicit range
+      return { expression: compareTimeRange ?? "rill-PP" };
     }
+    return undefined;
   }
 
   function clearDefaults() {
@@ -66,9 +71,8 @@
           []}
         dimensionThresholdFilters={filterState.dimensionThresholdFilters ?? []}
         displayTimeRange={{ expression: defaultPreset?.timeRange }}
-        displayComparisonTimeRange={{
-          expression: defaultPreset?.compareTimeRange,
-        }}
+        displayComparisonTimeRange={comparisonTimeRange}
+        pinnedFilters={filterState.pinnedFilters ?? new Set()}
       />
     </div>
 
@@ -92,17 +96,5 @@
   .page-param {
     @apply py-3 px-5;
     @apply border-t;
-  }
-
-  .default-item {
-    @apply flex flex-col gap-y-0.5;
-  }
-
-  .label {
-    @apply text-xs text-fg-muted font-medium;
-  }
-
-  .value {
-    @apply text-sm text-fg-primary;
   }
 </style>

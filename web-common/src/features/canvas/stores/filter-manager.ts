@@ -24,7 +24,10 @@ import { goto } from "$app/navigation";
 import { FilterState } from "./filter-state";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
 import type { ParsedFilters } from "./filter-state";
-import { createAndExpression } from "../../dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  flattenExpression,
+} from "../../dashboards/stores/filter-utils";
 
 export type UIFilters = {
   dimensionFilters: Map<string, DimensionFilterItem>;
@@ -833,58 +836,6 @@ function sortMeasuresOrDimensions(
   const bIndex = fullFilterString.indexOf(bName);
 
   return aIndex - bIndex;
-}
-
-// This should be deprecated eventually in favor of better support for variously formatted expressions
-export function flattenExpression(
-  expression: V1Expression | undefined,
-): V1Expression {
-  if (!expression) {
-    return createAndExpression([]);
-  }
-
-  let root: V1Expression;
-
-  // Ensure top level is an OPERATION_AND
-  if (!expression.cond || expression.cond.op !== V1Operation.OPERATION_AND) {
-    root = createAndExpression([expression]);
-  } else {
-    root = expression;
-  }
-
-  const rootCond = root.cond;
-  if (
-    !rootCond ||
-    rootCond.op !== V1Operation.OPERATION_AND ||
-    !Array.isArray(rootCond.exprs)
-  ) {
-    return root;
-  }
-
-  // Recursively flatten all nested ANDs, preserving order
-  rootCond.exprs = flattenAndExprs(rootCond.exprs);
-
-  return root;
-}
-
-function flattenAndExprs(exprs: V1Expression[]): V1Expression[] {
-  const result: V1Expression[] = [];
-
-  for (const expr of exprs) {
-    const cond = expr.cond;
-    if (
-      cond &&
-      cond.op === V1Operation.OPERATION_AND &&
-      Array.isArray(cond.exprs)
-    ) {
-      // Inline children in order
-      result.push(...flattenAndExprs(cond.exprs));
-    } else {
-      result.push(expr);
-    }
-  }
-
-  return result;
 }
 
 // wip - bgh

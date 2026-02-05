@@ -1,8 +1,10 @@
-import { flattenExpression } from "@rilldata/web-common/features/canvas/stores/filter-manager";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  flattenExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { getGrainForRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -20,6 +22,7 @@ import {
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreComparisonMode,
+  V1Operation,
   V1TimeGrain,
   type V1ExploreSpec,
   type V1TimeRangeSummary,
@@ -105,9 +108,20 @@ export function getExploreFilterStateFromYAMLConfig(
   const { dimensionThresholdFilters, dimensionFilters } =
     splitWhereFilter(flattened);
 
+  // Build dimensionFilterExcludeMode from the parsed filter expressions.
+  // NIN (NOT IN) operations indicate exclude mode for that dimension.
+  const dimensionFilterExcludeMode = new Map<string, boolean>();
+  for (const expr of dimensionFilters.cond?.exprs ?? []) {
+    const ident = expr.cond?.exprs?.[0]?.ident;
+    if (ident && expr.cond?.op === V1Operation.OPERATION_NIN) {
+      dimensionFilterExcludeMode.set(ident, true);
+    }
+  }
+
   return {
     whereFilter: dimensionFilters,
     dimensionThresholdFilters,
+    dimensionFilterExcludeMode,
     pinnedFilters: new Set(exploreSpec.defaultPreset?.pinned ?? []),
   };
 }

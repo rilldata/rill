@@ -26,6 +26,10 @@ export function setLastVisitedState(
   exploreName: string,
   exploreState: ExploreState,
 ) {
+  // Only snapshot state from the main explore or dimension table views.
+  // TDD and pivot views are handled by the per-view state store
+  // (explore-web-view-store.ts), so we skip them here to avoid
+  // overwriting the user's explore-view preferences with TDD/pivot state.
   if (
     exploreState.activePage !== DashboardState_ActivePage.DEFAULT &&
     exploreState.activePage !== DashboardState_ActivePage.DIMENSION_TABLE
@@ -34,29 +38,33 @@ export function setLastVisitedState(
   }
 
   const subset: Partial<ExploreState> = {
-    // Filters
-    whereFilter: exploreState.whereFilter,
-    dimensionThresholdFilters: exploreState.dimensionThresholdFilters,
-    dimensionsWithInlistFilter: exploreState.dimensionsWithInlistFilter,
+    // Filters — deep copy protobuf objects to prevent mutation
+    whereFilter: structuredClone(exploreState.whereFilter),
+    dimensionThresholdFilters: structuredClone(
+      exploreState.dimensionThresholdFilters,
+    ),
+    dimensionsWithInlistFilter: [...exploreState.dimensionsWithInlistFilter],
     pinnedFilters: new Set(exploreState.pinnedFilters),
     dimensionFilterExcludeMode: new Map(
       exploreState.dimensionFilterExcludeMode,
     ),
 
-    // Time
-    selectedTimeRange: exploreState.selectedTimeRange,
-    selectedComparisonTimeRange: exploreState.selectedComparisonTimeRange,
+    // Time — deep copy to snapshot Date objects and nested fields
+    selectedTimeRange: structuredClone(exploreState.selectedTimeRange),
+    selectedComparisonTimeRange: structuredClone(
+      exploreState.selectedComparisonTimeRange,
+    ),
     showTimeComparison: exploreState.showTimeComparison,
     selectedComparisonDimension: exploreState.selectedComparisonDimension,
     selectedTimezone: exploreState.selectedTimezone,
 
-    // Sort / visibility
-    visibleMeasures: exploreState.visibleMeasures,
+    // Sort / visibility — shallow copy arrays
+    visibleMeasures: [...exploreState.visibleMeasures],
     allMeasuresVisible: exploreState.allMeasuresVisible,
-    visibleDimensions: exploreState.visibleDimensions,
+    visibleDimensions: [...exploreState.visibleDimensions],
     allDimensionsVisible: exploreState.allDimensionsVisible,
     leaderboardSortByMeasureName: exploreState.leaderboardSortByMeasureName,
-    leaderboardMeasureNames: exploreState.leaderboardMeasureNames,
+    leaderboardMeasureNames: [...exploreState.leaderboardMeasureNames],
     leaderboardShowContextForAllMeasures:
       exploreState.leaderboardShowContextForAllMeasures,
     sortDirection: exploreState.sortDirection,

@@ -35,7 +35,7 @@
 >
   {#if saving && justClickedSaveAsDefault}
     <LoadingSpinner size="15px" />
-    <div class="flex gaep-x-1 items-center">Saving default state</div>
+    <div class="flex gap-x-1 items-center">Saving default state</div>
   {:else if viewingDefaults}
     {#if justClickedSaveAsDefault}
       <CheckCircleNew size="15px" className="fill-green-600" />

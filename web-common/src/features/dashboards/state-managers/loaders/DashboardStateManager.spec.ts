@@ -1,6 +1,9 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
-import { clearExploreViewState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import {
+  clearExploreViewState,
+  setExploreStateForWebView,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import {
   clearLastVisitedState,
   setLastVisitedStateRaw,
@@ -27,6 +30,7 @@ import {
   AD_BIDS_PUBLISHER_COUNT_MEASURE,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { ExploreUrlWebView } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
@@ -254,6 +258,43 @@ describe("DashboardStateManager", () => {
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
+
+    it("Should load from per-view state on view navigation", async () => {
+      renderDashboardStateManager(BookmarkSourceQueryResult);
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      // After init, overwrite the in-memory view state with custom params
+      setExploreStateForWebView(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        ExploreUrlWebView.Explore,
+        "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC&leaderboard_measures=bid_price",
+      );
+
+      // Navigate with just ?view=explore to trigger loading from the view state store
+      pageMock.gotoSearch("view=explore");
+
+      assertExploreStateSubset({
+        selectedTimeRange: {
+          name: "P14D",
+          interval: V1TimeGrain.TIME_GRAIN_DAY,
+        } as DashboardTimeControls,
+        showTimeComparison: true,
+        selectedComparisonTimeRange: {
+          name: TimeComparisonOption.WEEK,
+        } as DashboardTimeControls,
+
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+        dashboardSortType: DashboardState_LeaderboardSortType.DELTA_ABSOLUTE,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+      });
+    });
   });
 
   describe("Dashboards without timeseries", () => {
@@ -392,6 +433,38 @@ describe("DashboardStateManager", () => {
       );
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
+    });
+
+    it("Should load from per-view state on view navigation", async () => {
+      renderDashboardStateManager();
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      // After init, overwrite the in-memory view state with custom params
+      setExploreStateForWebView(
+        AD_BIDS_EXPLORE_NAME,
+        undefined,
+        ExploreUrlWebView.Explore,
+        "view=explore&measures=bid_price&dims=domain&sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC&leaderboard_measures=bid_price",
+      );
+
+      // Navigate with just ?view=explore to trigger loading from the view state store
+      pageMock.gotoSearch("view=explore");
+
+      assertExploreStateSubset({
+        selectedComparisonTimeRange: undefined,
+        selectedTimeRange: undefined,
+        showTimeComparison: false,
+
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
+
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.DELTA_ABSOLUTE,
+      });
     });
   });
 });

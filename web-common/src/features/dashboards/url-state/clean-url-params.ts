@@ -70,10 +70,14 @@ function paramsAreEqual(
  * Strips array brackets from IN expressions and normalizes IN LIST → IN.
  */
 function normalizeFilterParam(filter: string): string {
-  return filter
-    .replace(/\bNOT IN LIST\b/gi, "NIN")
-    .replace(/\bIN LIST\b/gi, "IN")
-    .replace(/\(\[([^\]]*)\]\)/g, "($1)");
+  return (
+    filter
+      .replace(/\bNOT IN LIST\b/gi, "NIN")
+      .replace(/\bIN LIST\b/gi, "IN")
+      // Only strip array brackets immediately following IN/NIN keywords:
+      // IN (['x','y']) → IN ('x','y')
+      .replace(/\b(IN|NIN)\s*\(\[([^\]]*)\]\)/gi, "$1 ($2)")
+  );
 }
 
 /**

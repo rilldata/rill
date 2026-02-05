@@ -487,9 +487,6 @@ message ExplorePreset {
   // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
   FieldSelector measures_selector = 10;
 
-  DefaultMetricsSQLFilter filter = 36;
-  repeated string pinned = 35;
-
   optional Expression where = 11;
   // Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
   repeated string dimensions_with_inlist_filter = 29;
@@ -532,6 +529,10 @@ message ExplorePreset {
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
   optional int32 pivot_row_limit = 33;
+
+  // Default filter expression (SQL syntax, parsed by metricssql).
+  repeated string pinned = 35;
+  DefaultMetricsSQLFilter filter = 36;
 }
 
 enum ExploreComparisonMode {

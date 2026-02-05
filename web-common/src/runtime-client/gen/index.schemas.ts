@@ -874,8 +874,6 @@ export interface V1ExplorePreset {
   /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
   measuresSelector?: V1FieldSelector;
-  filter?: V1DefaultMetricsSQLFilter;
-  pinned?: string[];
   where?: V1Expression;
   /** Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future. */
   dimensionsWithInlistFilter?: string[];
@@ -908,6 +906,9 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
   pivotRowLimit?: number;
+  /** Default filter expression (SQL syntax, parsed by metricssql). */
+  pinned?: string[];
+  filter?: V1DefaultMetricsSQLFilter;
 }
 
 export type V1ExploreSortType =

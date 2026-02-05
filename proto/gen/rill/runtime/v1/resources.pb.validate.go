@@ -5432,6 +5432,8 @@ func (m *ExplorePreset) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ComparisonMode
+
 	if all {
 		switch v := interface{}(m.GetFilter()).(type) {
 		case interface{ ValidateAll() error }:
@@ -5460,8 +5462,6 @@ func (m *ExplorePreset) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for ComparisonMode
 
 	if m.Where != nil {
 

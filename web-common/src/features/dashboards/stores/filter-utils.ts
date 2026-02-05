@@ -526,3 +526,58 @@ export function flattenInExpressionValues(expr: V1Expression) {
     expr.cond!.op === V1Operation.OPERATION_NIN,
   );
 }
+
+/**
+ * Ensures an expression is wrapped in a top-level AND and recursively
+ * flattens any nested AND conditions into a single flat list.
+ */
+export function flattenExpression(
+  expression: V1Expression | undefined,
+): V1Expression {
+  if (!expression) {
+    return createAndExpression([]);
+  }
+
+  let root: V1Expression;
+
+  // Ensure top level is an OPERATION_AND
+  if (!expression.cond || expression.cond.op !== V1Operation.OPERATION_AND) {
+    root = createAndExpression([expression]);
+  } else {
+    root = expression;
+  }
+
+  const rootCond = root.cond;
+  if (
+    !rootCond ||
+    rootCond.op !== V1Operation.OPERATION_AND ||
+    !Array.isArray(rootCond.exprs)
+  ) {
+    return root;
+  }
+
+  // Recursively flatten all nested ANDs, preserving order
+  rootCond.exprs = flattenAndExprs(rootCond.exprs);
+
+  return root;
+}
+
+function flattenAndExprs(exprs: V1Expression[]): V1Expression[] {
+  const result: V1Expression[] = [];
+
+  for (const expr of exprs) {
+    const cond = expr.cond;
+    if (
+      cond &&
+      cond.op === V1Operation.OPERATION_AND &&
+      Array.isArray(cond.exprs)
+    ) {
+      // Inline children in order
+      result.push(...flattenAndExprs(cond.exprs));
+    } else {
+      result.push(expr);
+    }
+  }
+
+  return result;
+}

@@ -32,8 +32,6 @@ export function toggleFilterPin(
   if (!deleted) {
     dashboard.pinnedFilters.add(name);
   }
-
-  console.log(dashboard.pinnedFilters);
 }
 
 export const filterActions = {

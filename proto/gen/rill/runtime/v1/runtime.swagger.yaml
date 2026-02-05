@@ -4997,12 +4997,6 @@ definitions:
       measuresSelector:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
-      filter:
-        $ref: '#/definitions/v1DefaultMetricsSQLFilter'
-      pinned:
-        type: array
-        items:
-          type: string
       where:
         $ref: '#/definitions/v1Expression'
       dimensionsWithInlistFilter:
@@ -5075,6 +5069,13 @@ definitions:
       pivotRowLimit:
         type: integer
         format: int32
+      pinned:
+        type: array
+        items:
+          type: string
+        description: Default filter expression (SQL syntax, parsed by metricssql).
+      filter:
+        $ref: '#/definitions/v1DefaultMetricsSQLFilter'
   v1ExploreSortType:
     type: string
     enum:
