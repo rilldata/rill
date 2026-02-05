@@ -216,7 +216,11 @@
 
   .retry-button {
     @apply px-3 py-1 text-sm font-medium text-primary-600 bg-primary-50;
-    @apply border border-primary-200 rounded hover:bg-primary-100;
+    @apply border border-primary-200 rounded;
+  }
+
+  .retry-button:hover {
+    @apply bg-primary-100;
   }
 
   .log-entry {
