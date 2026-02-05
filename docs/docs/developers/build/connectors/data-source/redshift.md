@@ -32,13 +32,13 @@ Create a connector with your credentials to connect to Redshift. Here's an examp
 type: connector
 
 driver: redshift
-aws_access_key_id: "{{ .env.connector.redshift.aws_access_key_id }}"
-aws_secret_access_key: "{{ .env.connector.redshift.aws_secret_access_key }}"
+aws_access_key_id: '{{ env "AWS_ACCESS_KEY_ID" }}'
+aws_secret_access_key: '{{ env "AWS_SECRET_ACCESS_KEY" }}'
 database: "dev"
 ```
 
 :::tip Using the Add Data Form
-You can also use the Add Data form in Rill Developer, which will automatically create the `redshift.yaml` file and populate the `.env` file with `connector.redshift.aws_access_key_id` and `connector.redshift.aws_secret_access_key`.
+You can also use the Add Data form in Rill Developer, which will automatically create the `redshift.yaml` file and populate the `.env` file with `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 :::
 
 ### Local AWS Credentials (Local Development Only)

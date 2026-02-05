@@ -38,6 +38,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-placeholder":
         "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>",
       "x-secret": true,
+      "x-env-var-name": "SNOWFLAKE_DSN",
       "x-hint":
         "Use a full DSN or fill the fields below (not both). Include authenticator and privateKey for JWT if needed.",
     },
@@ -61,6 +62,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
         "Snowflake password (use JWT private key if password auth is disabled)",
       "x-placeholder": "your_password",
       "x-secret": true,
+      "x-env-var-name": "SNOWFLAKE_PASSWORD",
     },
     privateKey: {
       type: "string",
@@ -70,6 +72,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-display": "textarea",
       "x-placeholder": "your_private_key",
       "x-secret": true,
+      "x-env-var-name": "SNOWFLAKE_PRIVATE_KEY",
     },
     authenticator: {
       type: "string",

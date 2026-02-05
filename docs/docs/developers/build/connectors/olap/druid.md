@@ -13,7 +13,7 @@ Rill supports connecting to an existing Druid cluster via a "live connector" and
 ## Configuring Rill Developer with Druid
 
 When using Rill for local development, there are a few options to configure Rill to enable Druid as an OLAP engine:
-1. Connect to an OLAP engine via Add Data. This will automatically create the `druid.yaml` file in your `connectors` directory and populate the `.env` file with `connector.druid.password` or `connector.druid.dsn` depending on which you select in the UI.
+1. Connect to an OLAP engine via Add Data. This will automatically create the `druid.yaml` file in your `connectors` directory and populate the `.env` file with `DRUID_PASSWORD` or `DRUID_DSN` depending on which you select in the UI.
 
 For more information on supported parameters, see our [Druid connector YAML reference docs](/reference/project-files/connectors#druid).
 
@@ -24,15 +24,15 @@ driver: druid
 host: <HOSTNAME>
 port: <PORT>
 username: <USERNAME>
-password: "{{ .env.connector.druid.password }}"
+password: '{{ env "DRUID_PASSWORD" }}'
 ssl: true 
 
 # or 
 
-dsn: "{{ .env.connector.druid.dsn }}"
+dsn: '{{ env "DRUID_DSN" }}'
 ```
 
-2. You can manually set `connector.druid.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
+2. You can manually set `DRUID_DSN` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -45,12 +45,12 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 <img src='/img/build/connectors/olap-engines/druid/druid-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
-Rill connects to Druid using the [HTTP API](https://druid.apache.org/docs/latest/api-reference/sql-api) and requires a connection string of the following format: `http://<user>:<password>@<host>:<port>/druid/v2/sql`. If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`). This should be set in the `connector.druid.dsn` property in Rill.
+Rill connects to Druid using the [HTTP API](https://druid.apache.org/docs/latest/api-reference/sql-api) and requires a connection string of the following format: `http://<user>:<password>@<host>:<port>/druid/v2/sql`. If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`). This should be set in the `DRUID_DSN` property in Rill.
 
 As an example, this typically looks like:
 
 ```bash
-connector.druid.dsn="https://user:password@localhost:8888/druid/v2/sql"
+DRUID_DSN="https://user:password@localhost:8888/druid/v2/sql"
 ```
 
 :::info Need help connecting to Druid?
@@ -83,7 +83,7 @@ Please see our [Using Multiple OLAP Engines](/developers/build/connectors/olap/m
 
 When deploying a Druid-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
 1. If you have followed the UI to create your Druid connector, the password or DSN should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
-2. If `connector.druid.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
+2. If `DRUID_DSN` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
 
 
 ## Supported Versions

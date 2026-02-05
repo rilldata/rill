@@ -37,6 +37,7 @@ export const clickhousecloudSchema: MultiStepFormSchema = {
       "x-placeholder":
         "clickhouse://your-instance.clickhouse.cloud:8443?username=default&password=password&secure=true",
       "x-secret": true,
+      "x-env-var-name": "CLICKHOUSE_DSN",
       "x-step": "connector",
     },
     host: {
@@ -72,6 +73,7 @@ export const clickhousecloudSchema: MultiStepFormSchema = {
       description: "Password to connect to ClickHouse Cloud",
       "x-placeholder": "Database password",
       "x-secret": true,
+      "x-env-var-name": "CLICKHOUSE_PASSWORD",
       "x-step": "connector",
     },
     database: {

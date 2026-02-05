@@ -502,10 +502,16 @@ export class AddDataFormManager {
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
     formValues: Record<string, unknown>;
+    existingEnvBlob?: string;
   }): string {
     const connector = this.connector;
-    const { stepState, isMultiStepConnector, isConnectorForm, formValues } =
-      ctx;
+    const {
+      stepState,
+      isMultiStepConnector,
+      isConnectorForm,
+      formValues,
+      existingEnvBlob,
+    } = ctx;
 
     const schema = getConnectorSchema(this.schemaName);
     const schemaConnectorFields = schema
@@ -532,6 +538,8 @@ export class AddDataFormManager {
         orderedProperties: connectorPropertiesForPreview,
         secretKeys: schemaConnectorSecretKeys,
         stringKeys: schemaConnectorStringKeys,
+        schema: schema ?? undefined,
+        existingEnvBlob,
       });
     };
 
