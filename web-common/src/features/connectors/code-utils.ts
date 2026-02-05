@@ -132,8 +132,6 @@ export async function updateDotEnvWithSecrets(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
-  formType: "source" | "connector",
-  connectorInstanceName?: string,
   opts?: {
     secretKeys?: string[];
     schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };

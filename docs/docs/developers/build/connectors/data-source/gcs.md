@@ -124,8 +124,8 @@ Create `connectors/my_gcs_hmac.yaml`:
 type: connector
 driver: gcs
 
-key_id: '{{ env "GS_ACCESS_KEY_ID" }}'
-secret: '{{ env "GS_SECRET_ACCESS_KEY" }}'
+key_id: '{{ env "GCP_ACCESS_KEY_ID" }}'
+secret: '{{ env "GCP_SECRET_ACCESS_KEY" }}'
 ```
 
 **Step 2: Create model configuration**
@@ -147,8 +147,8 @@ refresh:
 **Step 3: Add credentials to `.env`**
 
 ```bash
-GS_ACCESS_KEY_ID=GOOG1234567890ABCDEFG
-GS_SECRET_ACCESS_KEY=your-secret-access-key
+GCP_ACCESS_KEY_ID=GOOG1234567890ABCDEFG
+GCP_SECRET_ACCESS_KEY=your-secret-access-key
 ```
 
 :::info

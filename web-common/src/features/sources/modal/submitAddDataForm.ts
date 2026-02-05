@@ -162,14 +162,10 @@ async function saveConnectorAnyway(
 
   // Update .env file with secrets (keep ordering consistent with Test and Connect)
   const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
-    await updateDotEnvWithSecrets(
-      queryClient,
-      connector,
-      formValues,
-      "connector",
-      newConnectorName,
-      { secretKeys: schemaSecretKeys, schema: schema ?? undefined },
-    );
+    await updateDotEnvWithSecrets(queryClient, connector, formValues, {
+      secretKeys: schemaSecretKeys,
+      schema: schema ?? undefined,
+    });
 
   await runtimeServicePutFile(resolvedInstanceId, {
     path: ".env",
@@ -294,9 +290,10 @@ export async function submitAddConnectorForm(
         queryClient,
         connector,
         formValues,
-        "connector",
-        newConnectorName,
-        { secretKeys: schemaSecretKeys, schema: schema ?? undefined },
+        {
+          secretKeys: schemaSecretKeys,
+          schema: schema ?? undefined,
+        },
       );
       const newEnvBlob = envResult.newBlob;
       originalEnvBlob = envResult.originalBlob;
@@ -480,9 +477,9 @@ export async function submitAddSourceForm(
       queryClient,
       rewrittenConnector,
       rewrittenFormValues,
-      "source",
-      undefined,
-      { secretKeys: schemaSecretKeys },
+      {
+        secretKeys: schemaSecretKeys,
+      },
     );
 
   // Make sure the file has reconciled before testing the connection
