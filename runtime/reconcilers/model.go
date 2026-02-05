@@ -1360,7 +1360,27 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	var defaultAttempts uint32 = 3
 	var defaultDelay uint32 = 5
 	defaultExponentialBackoff := true
-	defaultIfErrorMatches := []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
+	defaultIfErrorMatches := []string{
+		".*OvercommitTracker.*",       // ClickHouse memory pressure
+		".*Bad Gateway.*",             // HTTP 502
+		".*Timeout.*",                 // General timeouts
+		".*timeout.*",                 // Lowercase timeout
+		".*Connection refused.*",      // Server not reachable
+		".*connection refused.*",      // Lowercase variant
+		".*Connection reset.*",        // Connection dropped
+		".*connection reset.*",        // Lowercase variant
+		".*Service Unavailable.*",     // HTTP 503
+		".*Internal Server Error.*",   // HTTP 500
+		".*Gateway Timeout.*",         // HTTP 504
+		".*temporarily unavailable.*", // Transient failures
+		".*network.*unreachable.*",    // Network issues
+		".*no such host.*",            // DNS resolution failure
+		".*certificate.*expired.*",    // TLS issues (transient)
+		".*EOF.*",                     // Unexpected connection close
+		".*broken pipe.*",             // Connection dropped mid-transfer
+		".*i/o timeout.*",             // IO timeout
+		".*TLS handshake timeout.*",   // TLS negotiation timeout
+	}
 
 	retryAttempts := mdl.Spec.RetryAttempts
 	if retryAttempts == nil {
