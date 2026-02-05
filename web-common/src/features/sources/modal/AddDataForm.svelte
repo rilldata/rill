@@ -1,5 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -80,14 +82,9 @@
   let multiStepSubmitDisabled = false;
   let multiStepButtonLabel = "";
   let multiStepLoadingCopy = "";
-  // Show skip link only on connector step (step 1 of multi-step flow)
-  // Don't show on source/explorer step (step 2) or if connectorInstanceName is set (Import Data button was clicked)
-  $: excludedConnectors = ["salesforce", "sqlite", "https"];
+  // Show skip link only on connector step for non-OLAP connectors
   $: shouldShowSkipLink =
-    stepState.step === "connector" &&
-    !connectorInstanceName &&
-    !connector?.implementsOlap &&
-    !excludedConnectors.includes(connector?.name ?? "");
+    stepState.step === "connector" && !connector?.implementsOlap;
   let primaryButtonLabel = "";
   let primaryLoadingCopy = "";
 
@@ -278,27 +275,39 @@
 
       <div class="flex gap-2">
         {#if shouldShowSaveAnywayButton}
-          <Button
-            disabled={isSaveDisabled}
-            loading={saveAnywayLoading}
-            loadingCopy="Saving..."
-            onClick={handleSaveAnyway}
-            type="secondary"
-          >
-            Save
-          </Button>
+          <Tooltip distance={8}>
+            <Button
+              disabled={isSaveDisabled}
+              loading={saveAnywayLoading}
+              loadingCopy="Saving..."
+              onClick={handleSaveAnyway}
+              type="secondary"
+              forcedStyle="cursor: default"
+            >
+              Save
+            </Button>
+            <TooltipContent slot="tooltip-content">
+              Save connector and exit to file
+            </TooltipContent>
+          </Tooltip>
         {/if}
 
-        <Button
-          disabled={submitting || isSubmitDisabled}
-          loading={submitting}
-          loadingCopy={primaryLoadingCopy}
-          form={formId}
-          submitForm
-          type="primary"
-        >
-          {primaryButtonLabel}
-        </Button>
+        <Tooltip distance={8}>
+          <Button
+            disabled={submitting || isSubmitDisabled}
+            loading={submitting}
+            loadingCopy={primaryLoadingCopy}
+            form={formId}
+            submitForm
+            type="primary"
+            forcedStyle="cursor: default"
+          >
+            {primaryButtonLabel}
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            Test connection and proceed to import step
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   </div>

@@ -181,15 +181,9 @@
         ? "Continuing..."
         : "Testing connection...";
   $: formId = baseFormId;
-  // Show skip link for all non-OLAP connectors on connector step, excluding salesforce, sqlite, and https
-  // Don't show skip link if connectorInstanceName is set (Import Data button was clicked)
-  $: excludedConnectors = ["salesforce", "sqlite", "https"];
+  // Show skip link only on connector step for non-OLAP connectors
   $: shouldShowSkipLink =
-    !connectorInstanceName &&
-    stepState.step === "connector" &&
-    formManager.isMultiStepConnector &&
-    !connector?.implementsOlap &&
-    !excludedConnectors.includes(connector?.name ?? "");
+    stepState.step === "connector" && !connector?.implementsOlap;
 </script>
 
 <AddDataFormSection
