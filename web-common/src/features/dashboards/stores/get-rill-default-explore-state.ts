@@ -33,8 +33,6 @@ import {
   V1TimeGrainToAlias,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains";
-import { flattenExpression } from "../../canvas/stores/filter-manager";
-import { splitWhereFilter } from "../filters/measure-filters/measure-filter-utils";
 import { getAggregationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
 import { parseRillTime } from "../url-state/time-ranges/parser";
 
@@ -43,24 +41,14 @@ export function getRillDefaultExploreState(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
-  const filter = exploreSpec.defaultPreset?.filter?.expression;
-  const flattened = filter
-    ? flattenExpression(filter)
-    : createAndExpression([]);
-
-  const { dimensionThresholdFilters, dimensionFilters } =
-    splitWhereFilter(flattened);
-
-  const pinnedFilters = new Set(exploreSpec.defaultPreset?.pinned ?? []);
-
   return <ExploreState>{
     activePage: DashboardState_ActivePage.DEFAULT,
-    whereFilter: dimensionFilters,
-    dimensionThresholdFilters: dimensionThresholdFilters,
+    whereFilter: createAndExpression([]),
+    dimensionThresholdFilters: [],
     dimensionsWithInlistFilter: [],
     dimensionFilterExcludeMode: new Map(),
     temporaryFilterName: null,
-    pinnedFilters,
+    pinnedFilters: new Set<string>(),
     ...getRillDefaultExploreTimeState(
       metricsViewSpec,
       exploreSpec,

@@ -121,6 +121,15 @@ var exploreComparisonModes = map[string]runtimev1.ExploreComparisonMode{
 	"dimension": runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION,
 }
 
+var validRillComparisonOptions = map[string]bool{
+	"rill-PP": true, "rill-PD": true, "rill-PW": true,
+	"rill-PM": true, "rill-PQ": true, "rill-PY": true,
+}
+
+func isRillComparisonOption(s string) bool {
+	return validRillComparisonOptions[s]
+}
+
 func (p *Parser) parseExplore(node *Node) error {
 	// Parse YAML
 	tmp := &ExploreYAML{}
@@ -218,11 +227,17 @@ func (p *Parser) parseExplore(node *Node) error {
 		}
 
 		mode := runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE
+		var compareTimeRange *string
 		if tmp.Defaults.ComparisonMode != "" {
 			var ok bool
 			mode, ok = exploreComparisonModes[tmp.Defaults.ComparisonMode]
 			if !ok {
-				return fmt.Errorf("invalid comparison mode %q (options: %s)", tmp.Defaults.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
+				if isRillComparisonOption(tmp.Defaults.ComparisonMode) {
+					mode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME
+					compareTimeRange = &tmp.Defaults.ComparisonMode
+				} else {
+					return fmt.Errorf("invalid comparison mode %q (options: %s)", tmp.Defaults.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
+				}
 			}
 		}
 
@@ -277,6 +292,7 @@ func (p *Parser) parseExplore(node *Node) error {
 			MeasuresSelector:    presetMeasuresSelector,
 			TimeRange:           tr,
 			ComparisonMode:      mode,
+			CompareTimeRange:    compareTimeRange,
 			ComparisonDimension: compareDim,
 			Filter:              filter,
 			Pinned:              pinnedMeasuresOrDimensions,

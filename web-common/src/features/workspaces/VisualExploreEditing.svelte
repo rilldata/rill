@@ -1,9 +1,6 @@
 <script lang="ts">
   import { replaceState } from "$app/navigation";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     DEFAULT_RANGES,
     isString,
@@ -16,39 +13,28 @@
   } from "@rilldata/web-common/lib/time/config";
   import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
   import {
-    TimeRangePreset,
-    type DashboardTimeControls,
-  } from "@rilldata/web-common/lib/time/types";
-  import {
-    queryServiceConvertExpressionToMetricsSQL,
     type V1Explore,
-    type V1Expression,
     createRuntimeServiceGetInstance,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
-  import { getStateManagers } from "../dashboards/state-managers/state-managers";
-  import {
-    metricsExplorerStore,
-    useExploreState,
-  } from "../dashboards/stores/dashboard-stores";
+  import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
-  import { useTimeControlStore } from "../dashboards/time-controls/time-control-store";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
     ResourceKind,
     useFilteredResources,
   } from "../entity-management/resource-selectors";
+  import Tab from "@rilldata/web-common/features/dashboards/tab-bar/Tab.svelte";
+  import ExploreDefaultFilterDisplay from "@rilldata/web-common/features/dashboards/workspace/ExploreDefaultFilterDisplay.svelte";
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
-  import type { DimensionThresholdFilter } from "../dashboards/stores/explore-state";
-  import { mergeDimensionAndMeasureFilters } from "../dashboards/filters/measure-filters/measure-filter-utils";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   const itemTypes = ["measures", "dimensions"] as const;
+
+  let activeTab: "options" | "filters" = "options";
 
   export let fileArtifact: FileArtifact;
   export let exploreName: string;
@@ -58,20 +44,7 @@
   export let autoSave: boolean;
   export let switchView: () => void;
 
-  const StateManagers = getStateManagers();
-  const timeControlsStore = useTimeControlStore(StateManagers);
-
-  const {
-    selectors: {
-      dimensions: { visibleDimensions },
-      measures: { visibleMeasures },
-    },
-    dashboardStore,
-  } = StateManagers;
-
   $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
-
-  $: ({ selectedTimeRange, showTimeComparison } = $timeControlsStore);
 
   $: ({ instanceId } = $runtime);
   $: ({ editorContent, path, updateEditorContent } = fileArtifact);
@@ -163,7 +136,7 @@
 
   $: defaults = (
     rawDefaults instanceof YAMLMap ? rawDefaults.toJSON() : {}
-  ) as Defaults;
+  ) as Record<string, unknown>;
 
   $: measureExpression =
     rawMeasures instanceof YAMLMap ? rawMeasures?.get("expr") : "";
@@ -195,67 +168,6 @@
       : rawTheme instanceof YAMLMap
         ? exploreSpec?.embeddedTheme
         : undefined;
-
-  $: exploreStateStore = useExploreState(exploreName);
-
-  $: exploreState = $exploreStateStore ?? {};
-
-  let metricsSQLString: string | undefined;
-
-  $: ({
-    whereFilter,
-    dimensionThresholdFilters,
-    pinnedFilters = new Set<string>(),
-  } = exploreState);
-
-  $: deriveString(whereFilter, dimensionThresholdFilters).catch(console.error);
-
-  async function deriveString(
-    whereFilter: V1Expression | undefined,
-    dtf: DimensionThresholdFilter[] | undefined,
-  ) {
-    if (!whereFilter || !dtf) return;
-    const mergedExpression = mergeDimensionAndMeasureFilters(whereFilter, dtf);
-
-    const response = await queryClient.fetchQuery({
-      queryKey: [
-        "resolve-metrics-view-filter-expression",
-        instanceId,
-        mergedExpression,
-      ],
-      queryFn: () =>
-        queryServiceConvertExpressionToMetricsSQL(instanceId, {
-          expression: mergedExpression,
-        }),
-    });
-
-    metricsSQLString = response.sql;
-  }
-  $: visibleDimensionNames = $visibleDimensions
-    .map((d) => d.name)
-    .filter(isString);
-  $: visibleMeasureNames = $visibleMeasures.map((m) => m.name).filter(isString);
-
-  $: newDefaults = constructDefaultState(
-    showTimeComparison,
-    $dashboardStore?.selectedComparisonDimension,
-    visibleDimensionNames,
-    visibleMeasureNames,
-    selectedTimeRange,
-  );
-
-  $: hasDefaultsSet = rawDefaults instanceof YAMLMap;
-
-  $: viewingDefaults =
-    hasDefaultsSet &&
-    Object.entries(newDefaults).every(([key, value]) => {
-      if (Array.isArray(value) && Array.isArray(defaults[key])) {
-        return (
-          JSON.stringify(value.sort()) === JSON.stringify(defaults[key].sort())
-        );
-      }
-      return JSON.stringify(value) === JSON.stringify(defaults[key]);
-    });
 
   function getMeasureOrDimensionState(
     node: unknown,
@@ -311,71 +223,6 @@
     replaceState(window.location.origin + window.location.pathname, {});
   }
 
-  type Defaults = {
-    filter?: string | undefined;
-    measures?: string[] | undefined;
-    dimensions?: string[] | undefined;
-    comparison_mode?: "time" | "dimension" | "none" | undefined;
-    comparison_dimension?: string | undefined;
-    time_comparison?: boolean | undefined;
-    time_range?: string | undefined;
-    pinned?: string[] | undefined;
-  };
-
-  function constructDefaultState(
-    showTimeComparison?: boolean,
-    selectedComparisonDimension?: string | undefined,
-    visibleDimensions?: string[],
-    visibleMeasures?: string[],
-    selectedTimeRange?: DashboardTimeControls | undefined,
-    filter?: string,
-    pinnedFilters?: Set<string>,
-  ): Defaults {
-    const newDefaults: Defaults = {
-      filter: undefined,
-      measures: undefined,
-      dimensions: undefined,
-      comparison_mode: undefined,
-      comparison_dimension: undefined,
-      time_comparison: undefined,
-      time_range: undefined,
-      pinned: undefined,
-    };
-
-    if (filter) {
-      newDefaults.filter = filter;
-    }
-
-    if (pinnedFilters?.size) {
-      newDefaults.pinned = Array.from(pinnedFilters);
-    }
-
-    if (showTimeComparison) {
-      newDefaults.comparison_mode = "time";
-    } else if (selectedComparisonDimension) {
-      newDefaults.comparison_mode = "dimension";
-      newDefaults.comparison_dimension = selectedComparisonDimension;
-    }
-
-    if (visibleDimensions?.length) {
-      newDefaults.dimensions = [...visibleDimensions];
-    }
-
-    if (visibleMeasures?.length) {
-      newDefaults.measures = [...visibleMeasures];
-    }
-
-    if (
-      selectedTimeRange &&
-      selectedTimeRange.name !== TimeRangePreset.CUSTOM &&
-      selectedTimeRange.name !== TimeRangePreset.ALL_TIME
-    ) {
-      newDefaults.time_range = selectedTimeRange.name;
-    }
-
-    return newDefaults;
-  }
-
   function onSelectTimeRangeItem(item: string) {
     const deleted = timeRanges.delete(item);
     if (!deleted) {
@@ -413,243 +260,235 @@
 </script>
 
 <Inspector filePath={path}>
-  <SidebarWrapper title="Edit dashboard">
-    {#if autoSave}
-      <p class="text-fg-secondary text-sm">Changes below will be auto-saved.</p>
-    {/if}
+  <SidebarWrapper
+    type="secondary"
+    disableHorizontalPadding
+    title="Edit dashboard"
+  >
+    <div class="mr-4 bg-surface-background" slot="header">
+      <div class="flex gap-x-2">
+        <Tab
+          selected={activeTab === "options"}
+          on:click={() => (activeTab = "options")}
+        >
+          Options
+        </Tab>
+        <Tab
+          selected={activeTab === "filters"}
+          on:click={() => (activeTab = "filters")}
+        >
+          Filters
+        </Tab>
+      </div>
+    </div>
+    {#if activeTab === "options"}
+      <div class="px-5 flex flex-col gap-y-3 border-t">
+        {#if autoSave}
+          <p class="text-fg-secondary text-sm mt-2">
+            Changes below will be auto-saved.
+          </p>
+        {/if}
 
-    <Input
-      hint="Shown in global header and when deployed to Rill Cloud"
-      capitalizeLabel={false}
-      textClass="text-sm"
-      label="Display name"
-      bind:value={title}
-      onBlur={() => {
-        updateProperties({ display_name: title }, ["title"]);
-      }}
-      onEnter={() => {
-        updateProperties({ display_name: title });
-      }}
-    />
+        <Input
+          hint="Shown in global header and when deployed to Rill Cloud"
+          capitalizeLabel={false}
+          textClass="text-sm"
+          label="Display name"
+          bind:value={title}
+          onBlur={() => {
+            updateProperties({ display_name: title }, ["title"]);
+          }}
+          onEnter={() => {
+            updateProperties({ display_name: title });
+          }}
+        />
 
-    <Input
-      hint="View documentation"
-      link="https://docs.rilldata.com/reference/project-files/metrics-views"
-      lockable
-      lockTooltip="Unlock to change metrics view"
-      label="Metrics view referenced"
-      capitalizeLabel={false}
-      bind:value={metricsView}
-      sameWidth
-      options={metricsViewNames.map((name) => ({
-        label: name,
-        value: name,
-      }))}
-      onChange={() => {
-        killState();
+        <Input
+          hint="View documentation"
+          link="https://docs.rilldata.com/reference/project-files/metrics-views"
+          lockable
+          lockTooltip="Unlock to change metrics view"
+          label="Metrics view referenced"
+          capitalizeLabel={false}
+          bind:value={metricsView}
+          sameWidth
+          options={metricsViewNames.map((name) => ({
+            label: name,
+            value: name,
+          }))}
+          onChange={() => {
+            killState();
 
-        updateProperties(
-          {
-            metrics_view: metricsView,
-            measures: "*",
-            dimensions: "*",
-          },
-          ["defaults"],
-        );
-      }}
-    />
-
-    {#each itemTypes as type (type)}
-      {@const items = type === "measures" ? measures : dimensions}
-      <MeasureDimensionSelector
-        {type}
-        {items}
-        expression={expressions[type]}
-        selectedItems={subsets[type]}
-        excludeMode={excludeMode[type]}
-        mode={fields[type]}
-        onSelectAll={() => {
-          updateProperties({ [type]: "*" });
-        }}
-        onSelectExpression={() => {
-          updateProperties({ [type]: { expr: "*" } });
-        }}
-        setItems={(items, exclude) => {
-          const deleteKeys = [["defaults", type]];
-          if (type === "dimensions") {
-            deleteKeys.push(["defaults", "comparison_dimension"]);
-            deleteKeys.push(["defaults", "comparison_mode"]);
-          }
-
-          if (exclude) {
-            updateProperties({ [type]: { exclude: items } }, deleteKeys);
-          } else {
-            updateProperties({ [type]: items }, deleteKeys);
-          }
-        }}
-        onExpressionBlur={(value) => {
-          const deleteKeys = [["defaults", type]];
-          if (type === "dimensions") {
-            deleteKeys.push(["defaults", "comparison_dimension"]);
-            deleteKeys.push(["defaults", "comparison_mode"]);
-          }
-          updateProperties({ [type]: { expr: value } }, deleteKeys);
-        }}
-        onSelectSubsetItem={(item) => {
-          const deleted = subsets[type].delete(item);
-          if (!deleted) {
-            subsets[type].add(item);
-          }
-
-          const deleteKeys = [["defaults", type]];
-          if (type === "dimensions") {
-            deleteKeys.push(["defaults", "comparison_dimension"]);
-            deleteKeys.push(["defaults", "comparison_mode"]);
-          }
-
-          if (excludeMode[type]) {
             updateProperties(
-              { [type]: { exclude: Array.from(subsets[type]) } },
-              deleteKeys,
+              {
+                metrics_view: metricsView,
+                measures: "*",
+                dimensions: "*",
+              },
+              ["defaults"],
             );
-          } else {
-            updateProperties({ [type]: Array.from(subsets[type]) }, deleteKeys);
-          }
-        }}
-      />
-    {/each}
+          }}
+        />
 
-    <MultiSelectInput
-      label="Time ranges"
-      id="visual-explore-range"
-      hint="Time range shortcuts available via the dashboard filter bar"
-      defaultItems={DEFAULT_RANGES}
-      keyNotSet={!rawTimeRanges}
-      selectedItems={timeRanges}
-      onSelectCustomItem={onSelectTimeRangeItem}
-      setItems={(time_ranges) => {
-        if (time_ranges.length === 0) {
-          updateProperties({ time_ranges }, [["defaults", "time_range"]]);
-        } else {
-          updateProperties({ time_ranges });
-        }
-      }}
-      let:item
-    >
-      {DEFAULT_TIME_RANGES[item]?.label ?? item}
-    </MultiSelectInput>
+        {#each itemTypes as type (type)}
+          {@const items = type === "measures" ? measures : dimensions}
+          <MeasureDimensionSelector
+            {type}
+            {items}
+            expression={expressions[type]}
+            selectedItems={subsets[type]}
+            excludeMode={excludeMode[type]}
+            mode={fields[type]}
+            onSelectAll={() => {
+              updateProperties({ [type]: "*" });
+            }}
+            onSelectExpression={() => {
+              updateProperties({ [type]: { expr: "*" } });
+            }}
+            setItems={(items, exclude) => {
+              const deleteKeys = [["defaults", type]];
+              if (type === "dimensions") {
+                deleteKeys.push(["defaults", "comparison_dimension"]);
+                deleteKeys.push(["defaults", "comparison_mode"]);
+              }
 
-    <MultiSelectInput
-      label="Time zones"
-      id="visual-explore-zone"
-      hint="Time zones selectable via the dashboard filter bar"
-      searchableItems={allTimeZones}
-      defaultItems={DEFAULT_TIMEZONES}
-      keyNotSet={!rawTimeZones}
-      selectedItems={timeZones}
-      clearKey={() => {
-        updateProperties({}, ["time_zones"]);
-      }}
-      onSelectCustomItem={(item) => {
-        const deleted = timeZones.delete(item);
-        if (!deleted) timeZones.add(item);
+              if (exclude) {
+                updateProperties({ [type]: { exclude: items } }, deleteKeys);
+              } else {
+                updateProperties({ [type]: items }, deleteKeys);
+              }
+            }}
+            onExpressionBlur={(value) => {
+              const deleteKeys = [["defaults", type]];
+              if (type === "dimensions") {
+                deleteKeys.push(["defaults", "comparison_dimension"]);
+                deleteKeys.push(["defaults", "comparison_mode"]);
+              }
+              updateProperties({ [type]: { expr: value } }, deleteKeys);
+            }}
+            onSelectSubsetItem={(item) => {
+              const deleted = subsets[type].delete(item);
+              if (!deleted) {
+                subsets[type].add(item);
+              }
 
-        updateProperties({ time_zones: Array.from(timeZones) });
-      }}
-      setItems={(time_zones) => {
-        updateProperties({ time_zones });
-      }}
-      let:item
-    >
-      <ZoneDisplay iana={item} />
-    </MultiSelectInput>
+              const deleteKeys = [["defaults", type]];
+              if (type === "dimensions") {
+                deleteKeys.push(["defaults", "comparison_dimension"]);
+                deleteKeys.push(["defaults", "comparison_mode"]);
+              }
 
-    <ThemeInput
-      {theme}
-      {themeNames}
-      {projectDefaultTheme}
-      onThemeChange={(value) => {
-        if (!value) {
-          updateProperties({}, ["theme"]);
-        } else {
-          updateProperties({ theme: value });
-        }
-      }}
-      onColorChange={(primary, secondary, isDarkMode) => {
-        const modeKey = isDarkMode ? "dark" : "light";
-        const altMode = isDarkMode ? "light" : "dark";
+              if (excludeMode[type]) {
+                updateProperties(
+                  { [type]: { exclude: Array.from(subsets[type]) } },
+                  deleteKeys,
+                );
+              } else {
+                updateProperties(
+                  { [type]: Array.from(subsets[type]) },
+                  deleteKeys,
+                );
+              }
+            }}
+          />
+        {/each}
 
-        // check if theme exists for alt mode
-        const setAltMode = !parsedDocument.hasIn(["theme", altMode]);
-
-        parsedDocument.setIn(["theme", modeKey, "primary"], primary);
-        parsedDocument.setIn(["theme", modeKey, "secondary"], secondary);
-
-        if (setAltMode) {
-          parsedDocument.setIn(["theme", altMode, "primary"], primary);
-          parsedDocument.setIn(["theme", altMode, "secondary"], secondary);
-        }
-
-        killState();
-
-        updateEditorContent(parsedDocument.toString(), false, autoSave);
-      }}
-    />
-
-    <!-- <svelte:fragment slot="footer"> -->
-    {#if viewingDashboard}
-      <footer
-        class="flex flex-col gap-y-4 mt-auto border-t py-5 pb-6 w-full text-sm text-fg-muted"
-      >
-        <p>
-          For more options,
-          <button on:click={switchView} class="text-primary-600 font-medium">
-            edit in YAML
-          </button>
-        </p>
-
-        <Button
-          class="group"
-          type={viewingDefaults ? "tertiary" : "secondary"}
-          large
-          onClick={() => {
-            if (viewingDefaults) {
-              updateProperties({}, ["defaults"]);
+        <MultiSelectInput
+          label="Time ranges"
+          id="visual-explore-range"
+          hint="Time range shortcuts available via the dashboard filter bar"
+          defaultItems={DEFAULT_RANGES}
+          keyNotSet={!rawTimeRanges}
+          selectedItems={timeRanges}
+          onSelectCustomItem={onSelectTimeRangeItem}
+          setItems={(time_ranges) => {
+            if (time_ranges.length === 0) {
+              updateProperties({ time_ranges }, [["defaults", "time_range"]]);
             } else {
-              updateProperties({ defaults: newDefaults });
+              updateProperties({ time_ranges });
             }
           }}
+          let:item
         >
-          {#if viewingDefaults}
-            <span class="flex gap-x-1">
-              <p class="group-hover:block hidden">Remove</p>
-              <p class="group-hover:hidden">Viewing</p>
-              <p>default state</p>
-            </span>
-          {:else}
-            Save dashboard state as default
-          {/if}
+          {DEFAULT_TIME_RANGES[item]?.label ?? item}
+        </MultiSelectInput>
 
-          <Tooltip distance={8} location="top">
-            <InfoIcon
-              size="14px"
-              strokeWidth={2}
-              class={viewingDefaults ? "group-hover:block hidden" : ""}
-            />
-            <TooltipContent slot="tooltip-content">
-              {#if viewingDefaults}
-                Remove default settings for time range, comparison modes and
-                displayed measures/dimensions
-              {:else}
-                Overwrite default settings for time range, comparison modes and
-                displayed measures/dimensions with the current dashboard view
-              {/if}
-            </TooltipContent>
-          </Tooltip>
-        </Button>
-      </footer>
+        <MultiSelectInput
+          label="Time zones"
+          id="visual-explore-zone"
+          hint="Time zones selectable via the dashboard filter bar"
+          searchableItems={allTimeZones}
+          defaultItems={DEFAULT_TIMEZONES}
+          keyNotSet={!rawTimeZones}
+          selectedItems={timeZones}
+          clearKey={() => {
+            updateProperties({}, ["time_zones"]);
+          }}
+          onSelectCustomItem={(item) => {
+            const deleted = timeZones.delete(item);
+            if (!deleted) timeZones.add(item);
+
+            updateProperties({ time_zones: Array.from(timeZones) });
+          }}
+          setItems={(time_zones) => {
+            updateProperties({ time_zones });
+          }}
+          let:item
+        >
+          <ZoneDisplay iana={item} />
+        </MultiSelectInput>
+
+        <ThemeInput
+          {theme}
+          {themeNames}
+          {projectDefaultTheme}
+          onThemeChange={(value) => {
+            if (!value) {
+              updateProperties({}, ["theme"]);
+            } else {
+              updateProperties({ theme: value });
+            }
+          }}
+          onColorChange={(primary, secondary, isDarkMode) => {
+            const modeKey = isDarkMode ? "dark" : "light";
+            const altMode = isDarkMode ? "light" : "dark";
+
+            // check if theme exists for alt mode
+            const setAltMode = !parsedDocument.hasIn(["theme", altMode]);
+
+            parsedDocument.setIn(["theme", modeKey, "primary"], primary);
+            parsedDocument.setIn(["theme", modeKey, "secondary"], secondary);
+
+            if (setAltMode) {
+              parsedDocument.setIn(["theme", altMode, "primary"], primary);
+              parsedDocument.setIn(["theme", altMode, "secondary"], secondary);
+            }
+
+            killState();
+
+            updateEditorContent(parsedDocument.toString(), false, autoSave);
+          }}
+        />
+
+        {#if viewingDashboard}
+          <footer
+            class="flex flex-col gap-y-4 mt-auto border-t py-5 pb-6 w-full text-sm text-fg-muted"
+          >
+            <p>
+              For more options,
+              <button
+                on:click={switchView}
+                class="text-primary-600 font-medium"
+              >
+                edit in YAML
+              </button>
+            </p>
+          </footer>
+        {/if}
+      </div>
+    {:else if activeTab === "filters"}
+      <ExploreDefaultFilterDisplay {fileArtifact} {autoSave} />
     {/if}
-    <!-- </svelte:fragment> -->
   </SidebarWrapper>
 </Inspector>
 

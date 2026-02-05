@@ -17,7 +17,11 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { copyUrlSearchParamsForView } from "web-common/src/features/dashboards/url-state/explore-web-view-specific-url-params";
 
-export function getKeyForSessionStore(
+// In-memory per-view state store, replacing sessionStorage.
+// State is lost on page refresh / new tab — by design.
+const viewStateStore = new Map<string, string>();
+
+export function getKeyForViewStore(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   webView: ExploreUrlWebView,
@@ -26,11 +30,11 @@ export function getKeyForSessionStore(
 }
 
 /**
- * Save the current explore state as "most recent explore" state in sessionStorage.
+ * Save the current explore state as per-view state in an in-memory store.
  * Makes sure to update all views with global and common fields.
  * Stores in url params format so that the converter code is shared.
  */
-export function updateExploreSessionStore(
+export function updateExploreViewState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   exploreState: ExploreState,
@@ -52,29 +56,26 @@ export function updateExploreSessionStore(
     exploreState,
     timeControlsState,
   );
-  try {
-    // Store the full url for the web view
-    setExploreStateForWebView(
-      exploreName,
-      storageNamespacePrefix,
-      curWebView,
-      urlSearchParams.toString(),
-    );
-  } catch {
-    // no-op
-  }
+
+  // Store the full url for the web view
+  setExploreStateForWebView(
+    exploreName,
+    storageNamespacePrefix,
+    curWebView,
+    urlSearchParams.toString(),
+  );
 
   // We need to make sure other views are in sync
   for (const otherWebViewStr in FromURLParamViewMap) {
     const otherWebView = otherWebViewStr as ExploreUrlWebView;
     if (otherWebView === curWebView) continue;
 
-    const otherWebViewKey = getKeyForSessionStore(
+    const otherWebViewKey = getKeyForViewStore(
       exploreName,
       storageNamespacePrefix,
       otherWebView,
     );
-    const otherWebViewRawSearch = sessionStorage.getItem(otherWebViewKey) ?? "";
+    const otherWebViewRawSearch = viewStateStore.get(otherWebViewKey) ?? "";
     const otherWebViewUrlParams = new URLSearchParams(otherWebViewRawSearch);
 
     // Copy relevant params from current view to the other view
@@ -85,90 +86,82 @@ export function updateExploreSessionStore(
       otherWebViewUrlParams,
     );
 
-    try {
-      // Store the full url for the other web view
-      setExploreStateForWebView(
-        exploreName,
-        storageNamespacePrefix,
-        otherWebView,
-        otherWebViewUrlParams.toString(),
-      );
-    } catch {
-      // no-op
-    }
+    // Store the full url for the other web view
+    setExploreStateForWebView(
+      exploreName,
+      storageNamespacePrefix,
+      otherWebView,
+      otherWebViewUrlParams.toString(),
+    );
   }
 }
 
 /**
  * Returns explore state filled with extra fields stored when user last visited a particular view.
- * 1. If no param is set then load the params for the default view from session storage.
- * 2. If only view param is set then load the params from session storage.
- * 3. If view=ttd and `measure` is the only other param set load from session storage.
+ * 1. If no params are set (empty URL), skip — let defaults apply.
+ * 2. If only view param is set then load from per-view state.
+ * 3. If view=tdd and `measure` is the only other param set, load from per-view state.
  */
-export function getPartialExploreStateFromSessionStorage(
+export function getPartialExploreStateFromViewState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   searchParams: URLSearchParams,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
 ) {
-  if (shouldSkipSessionStorage(searchParams)) {
+  if (shouldSkipViewState(searchParams)) {
     return undefined;
   }
 
   const viewFromUrl = (searchParams.get(ExploreStateURLParams.WebView) ??
     ExploreUrlWebView.Explore) as ExploreUrlWebView;
-  const key = getKeyForSessionStore(
+  const key = getKeyForViewStore(
     exploreName,
     storageNamespacePrefix,
     viewFromUrl,
   );
 
-  try {
-    const storedUrlSearch = sessionStorage.getItem(key);
-    if (!storedUrlSearch) return undefined;
-    const storedUrlSearchParams = new URLSearchParams(storedUrlSearch);
+  const storedUrlSearch = viewStateStore.get(key);
+  if (!storedUrlSearch) return undefined;
+  const storedUrlSearchParams = new URLSearchParams(storedUrlSearch);
 
-    const { partialExploreState: storedExploreState } =
-      convertURLSearchParamsToExploreState(
-        storedUrlSearchParams,
-        metricsViewSpec,
-        exploreSpec,
-        {},
-      );
+  const { partialExploreState: storedExploreState } =
+    convertURLSearchParamsToExploreState(
+      storedUrlSearchParams,
+      metricsViewSpec,
+      exploreSpec,
+      {},
+    );
 
-    // TDD is different from other views. It has a variable that is expanded measure.
-    // So we need to copy over the actual measure from current url but keep other params.
-    if (viewFromUrl === ExploreUrlWebView.TimeDimension) {
-      // type safety
-      storedExploreState.tdd ??= {
-        expandedMeasureName: "",
-        chartType: TDDChart.DEFAULT,
-        pinIndex: -1,
-      };
-      // copy over the expanded measure from current url search params.
-      storedExploreState.tdd.expandedMeasureName = searchParams.get(
-        ExploreStateURLParams.ExpandedMeasure,
-      ) as string;
-    }
-
-    return storedExploreState;
-  } catch {
-    return undefined;
+  // TDD is different from other views. It has a variable that is expanded measure.
+  // So we need to copy over the actual measure from current url but keep other params.
+  if (viewFromUrl === ExploreUrlWebView.TimeDimension) {
+    // type safety
+    storedExploreState.tdd ??= {
+      expandedMeasureName: "",
+      chartType: TDDChart.DEFAULT,
+      pinIndex: -1,
+    };
+    // copy over the expanded measure from current url search params.
+    storedExploreState.tdd.expandedMeasureName = searchParams.get(
+      ExploreStateURLParams.ExpandedMeasure,
+    ) as string;
   }
+
+  return storedExploreState;
 }
 
-export function clearExploreSessionStore(
+export function clearExploreViewState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
 ) {
   for (const otherWebView in FromURLParamViewMap) {
-    const key = getKeyForSessionStore(
+    const key = getKeyForViewStore(
       exploreName,
       storageNamespacePrefix,
       otherWebView as ExploreUrlWebView,
     );
-    sessionStorage.removeItem(key);
+    viewStateStore.delete(key);
   }
 }
 
@@ -178,13 +171,16 @@ export function setExploreStateForWebView(
   webView: ExploreUrlWebView,
   state: string,
 ) {
-  sessionStorage.setItem(
-    getKeyForSessionStore(exploreName, storageNamespacePrefix, webView),
+  viewStateStore.set(
+    getKeyForViewStore(exploreName, storageNamespacePrefix, webView),
     state,
   );
 }
 
-function shouldSkipSessionStorage(searchParams: URLSearchParams) {
+function shouldSkipViewState(searchParams: URLSearchParams) {
+  // No params at all (user cleared URL or fresh navigation) — use defaults, not per-view state
+  if (searchParams.size === 0) return true;
+
   // exactly one param is set, but it is not `view`
   const hasSingleNonViewParam =
     searchParams.size === 1 && !searchParams.has(ExploreStateURLParams.WebView);

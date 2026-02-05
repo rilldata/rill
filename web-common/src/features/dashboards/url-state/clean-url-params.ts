@@ -40,7 +40,7 @@ export function cleanUrlParams(
       defaultValue !== null &&
       // make sure it is not one of the params that have the same name but different meaning
       !isParamCommonButDifferentMeaning(currentView, defaultView, key) &&
-      value === defaultValue;
+      paramsAreEqual(key, value, defaultValue);
 
     if (hasNoDefaultAndValueIsEmpty || hasDefaultAndIsUnmodified) {
       return;
@@ -49,6 +49,31 @@ export function cleanUrlParams(
     cleanedParams.set(key, value);
   });
   return cleanedParams;
+}
+
+function paramsAreEqual(
+  key: string,
+  value: string,
+  defaultValue: string,
+): boolean {
+  if (key === ExploreStateURLParams.Filters) {
+    // Normalize array bracket syntax: IN (['x','y']) → IN ('x','y')
+    // The Go backend wraps IN values in arrays while the UI uses individual strings.
+    // Both are semantically identical, so normalize before comparing.
+    return normalizeFilterParam(value) === normalizeFilterParam(defaultValue);
+  }
+  return value === defaultValue;
+}
+
+/**
+ * Normalizes filter param syntax for comparison.
+ * Strips array brackets from IN expressions and normalizes IN LIST → IN.
+ */
+function normalizeFilterParam(filter: string): string {
+  return filter
+    .replace(/\bNOT IN LIST\b/gi, "NIN")
+    .replace(/\bIN LIST\b/gi, "IN")
+    .replace(/\(\[([^\]]*)\]\)/g, "($1)");
 }
 
 /**

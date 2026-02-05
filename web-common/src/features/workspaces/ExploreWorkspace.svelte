@@ -23,6 +23,7 @@
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "../dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import Dashboard from "../dashboards/workspace/Dashboard.svelte";
+  import SaveDefaultsButton from "../dashboards/workspace/SaveDefaultsButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -35,6 +36,7 @@
     fileName,
     getAllErrors,
     remoteContent,
+    saveState: { saving },
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
@@ -94,6 +96,9 @@
         resourceKind={ResourceKind.Explore}
       >
         <div class="flex gap-x-2" slot="cta">
+          {#if ready && selectedView === "viz"}
+            <SaveDefaultsButton {exploreName} {fileArtifact} saving={$saving} />
+          {/if}
           <PreviewButton
             href="/explore/{exploreName}"
             disabled={allErrors.length > 0 || resourceIsReconciling}
