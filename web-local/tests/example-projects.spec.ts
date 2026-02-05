@@ -22,7 +22,6 @@ import {
   getResourceErrors,
   assertNoCriticalErrors,
   assertDashboardRendered,
-  getDashboardNameFromExample,
 } from "./utils/exampleProjectHelpers";
 
 // Filter examples to only test DuckDB-based ones by default
@@ -111,9 +110,7 @@ test.describe("Example project error reporting", () => {
         timeout: 30000,
       });
 
-      await expect(
-        page.getByRole("heading", { name: fileName }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { name: fileName })).toBeVisible();
 
       // Wait for reconciliation to complete
       await waitForAllResourcesIdle(page, 60000);
@@ -161,9 +158,7 @@ test.describe("GitHub Analytics example (external data)", () => {
         timeout: 30000,
       });
 
-      await expect(
-        page.getByRole("heading", { name: fileName }),
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { name: fileName })).toBeVisible();
 
       // Wait for resources to attempt reconciliation
       // Note: This may take longer due to GCS network requests

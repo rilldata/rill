@@ -84,7 +84,12 @@ export async function getResourceErrors(
       (r: { meta?: { reconcileError?: string } }) => r.meta?.reconcileError,
     )
     .map(
-      (r: { meta?: { name?: { name?: string; kind?: string }; reconcileError?: string } }) => ({
+      (r: {
+        meta?: {
+          name?: { name?: string; kind?: string };
+          reconcileError?: string;
+        };
+      }) => ({
         name: r.meta?.name?.name ?? "unknown",
         kind: r.meta?.name?.kind ?? "unknown",
         error: r.meta?.reconcileError ?? "",
@@ -257,9 +262,9 @@ export async function assertDashboardRendered(page: Page): Promise<void> {
  */
 export async function assertExploreHasData(page: Page): Promise<void> {
   // Wait for at least one leaderboard to be visible
-  await expect(
-    page.locator('[data-testid="leaderboard"]').first(),
-  ).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('[data-testid="leaderboard"]').first()).toBeVisible(
+    { timeout: 10000 },
+  );
 
   // Check that we have at least some data rows in the leaderboard
   const rows = page.locator('[data-testid="leaderboard"] tr');
@@ -281,7 +286,9 @@ export function getDashboardNameFromExample(
   if (match) {
     return match[1];
   }
-  return example.firstFile.replace(/^\/dashboards\//, "").replace(/\.yaml$/, "");
+  return example.firstFile
+    .replace(/^\/dashboards\//, "")
+    .replace(/\.yaml$/, "");
 }
 
 /**
