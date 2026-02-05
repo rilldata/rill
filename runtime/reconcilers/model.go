@@ -1368,6 +1368,7 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 		".*Service Unavailable.*",   // 503
 		".*Internal Server Error.*", // 500
 		".*Gateway Timeout.*",       // 504
+		"(?i).*InternalError.*",     // S3 internal error
 		// Timeouts
 		"(?i).*timeout.*",
 		"(?i).*i/o timeout.*",
