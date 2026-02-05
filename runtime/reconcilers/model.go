@@ -1360,7 +1360,30 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	var defaultAttempts uint32 = 3
 	var defaultDelay uint32 = 5
 	defaultExponentialBackoff := true
-	defaultIfErrorMatches := []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
+	defaultIfErrorMatches := []string{
+		// ClickHouse-specific
+		".*OvercommitTracker.*",
+		// HTTP errors
+		".*Bad Gateway.*",           // 502
+		".*Service Unavailable.*",   // 503
+		".*Internal Server Error.*", // 500
+		".*Gateway Timeout.*",       // 504
+		// Timeouts
+		"(?i).*timeout.*",
+		"(?i).*i/o timeout.*",
+		"(?i).*TLS handshake timeout.*",
+		// Connection errors
+		"(?i).*connection refused.*",
+		"(?i).*connection reset.*",
+		"(?i).*broken pipe.*",
+		"(?i).*EOF.*",
+		// Network errors
+		"(?i).*network.*unreachable.*",
+		"(?i).*no such host.*",
+		"(?i).*temporarily unavailable.*",
+		// HTTP/2 stream errors
+		".*stream error.*",
+	}
 
 	retryAttempts := mdl.Spec.RetryAttempts
 	if retryAttempts == nil {
