@@ -132,9 +132,11 @@ export class SSEConnectionManager {
   public heartbeat = async () => {
     const status = get(this.status);
     console.log("[SSE] heartbeat called, status:", status);
-    if (status !== ConnectionStatus.OPEN) {
+    // Only reconnect if PAUSED (intentionally disconnected to save resources)
+    // Don't reconnect if CONNECTING (already in progress) or CLOSED (fatal error)
+    if (status === ConnectionStatus.PAUSED) {
       console.log(
-        "[SSE] heartbeat triggering reconnect because status is not OPEN",
+        "[SSE] heartbeat triggering reconnect because status is PAUSED",
       );
       await this.reconnect();
     }
