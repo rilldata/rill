@@ -302,7 +302,7 @@
               </div>
             {/each}
           </div>
-          <Button type="dashed" class="w-full mt-4" onClick={handleAdd}>
+          <Button type="secondary" class="w-full mt-4" onClick={handleAdd}>
             <Plus size="14px" />
             <span>Add variable</span>
           </Button>
@@ -343,7 +343,7 @@
 
     <DialogFooter>
       <Button
-        type="plain"
+        type="tertiary"
         onClick={() => {
           open = false;
           handleReset();

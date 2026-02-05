@@ -130,7 +130,7 @@
     {/if}
 
     <DialogFooter>
-      <Button type="plain" onClick={() => (open = false)} disabled={isPending}>
+      <Button type="tertiary" onClick={() => (open = false)} disabled={isPending}>
         Cancel
       </Button>
       <Button

@@ -146,7 +146,7 @@
 
     <DialogFooter>
       <Button
-        type="plain"
+        type="tertiary"
         onClick={() => {
           open = false;
         }}>Cancel</Button

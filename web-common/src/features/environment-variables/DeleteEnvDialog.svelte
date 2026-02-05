@@ -42,10 +42,8 @@
       >?
     </AlertDialogDescription>
     <AlertDialogFooter>
-      <Button type="plain" onClick={handleCancel}>Cancel</Button>
-      <Button type="primary" status="error" onClick={handleConfirm}
-        >Delete</Button
-      >
+      <Button type="tertiary" onClick={handleCancel}>Cancel</Button>
+      <Button type="destructive" onClick={handleConfirm}>Delete</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
