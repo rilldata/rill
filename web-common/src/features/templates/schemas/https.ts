@@ -9,8 +9,7 @@ export const httpsSchema: MultiStepFormSchema = {
     headers: {
       type: "string",
       title: "Headers",
-      description:
-        "HTTP headers to include in requests (one per line, format: Header-Name: value)",
+      description: "HTTP headers to include in the request",
       "x-display": "textarea",
       "x-placeholder": "Authorization: Bearer <token>",
       "x-step": "connector",

@@ -43,17 +43,21 @@ sql: {{ sql }}{{ dev_section }}
  * Parse a multi-line "Header-Name: value" string into a YAML map block.
  * Returns an empty string when there are no valid entries.
  */
-function formatHeadersAsYamlMap(value: string): string {
+function formatHeadersAsYamlMap(
+  value: string,
+  comment?: string,
+): string {
   const lines = value
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.includes(":"));
   if (lines.length === 0) return "";
-  const entries = lines.map((line) => {
+  const suffix = comment ? ` # ${comment}` : "";
+  const entries = lines.map((line, i) => {
     const idx = line.indexOf(":");
     const k = line.substring(0, idx).trim();
     const v = line.substring(idx + 1).trim();
-    return `  ${k}: "${v}"`;
+    return `    "${k}": "${v}"${i === 0 ? suffix : ""}`;
   });
   return `headers:\n${entries.join("\n")}`;
 }
@@ -122,7 +126,11 @@ driver: ${driverName}`;
       const value = formValues[key] as string;
 
       if (key === "headers" && typeof value === "string") {
-        return formatHeadersAsYamlMap(value);
+        const desc =
+          "description" in property
+            ? (property as { description?: string }).description
+            : undefined;
+        return formatHeadersAsYamlMap(value, desc);
       }
 
       const isSecretProperty = secretPropertyKeys.includes(key);
