@@ -6,6 +6,7 @@
   import SchemaField from "./SchemaField.svelte";
   import TemplateSelector from "./TemplateSelector.svelte";
   import ConnectionTypeSelector from "./ConnectionTypeSelector.svelte";
+  import GroupedFieldsRenderer from "./GroupedFieldsRenderer.svelte";
   import type {
     FormTemplate,
     JSONSchemaField,
@@ -434,94 +435,18 @@
           onChange={(newValue) => handleSelectChange(key, newValue)}
         />
         {#if groupedFields.get(key)}
-          {#each getGroupedFieldsForOption(key, $form[key]) as [childKey, childProp] (childKey)}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if isTabsEnum(childProp)}
-                {@const childOptions = tabOptions(childProp)}
-                {#if childProp.title}
-                  <div class="text-sm font-medium mb-3">
-                    {childProp.title}
-                  </div>
-                {/if}
-                <Tabs
-                  bind:value={$form[childKey]}
-                  options={childOptions}
-                  disableMarginTop
-                >
-                  {#each childOptions as childOption (childOption.value)}
-                    <TabsContent value={childOption.value}>
-                      {#if tabGroupedFields.get(childKey)}
-                        {#each getTabFieldsForOption(childKey, childOption.value) as [tabKey, tabProp] (tabKey)}
-                          <div class="py-1.5 first:pt-0 last:pb-0">
-                            {#if isSelectEnum(tabProp)}
-                              {@const tabSelectOptions = selectOptions(tabProp)}
-                              <Select
-                                id={tabKey}
-                                bind:value={$form[tabKey]}
-                                options={tabSelectOptions}
-                                label={tabProp.title ?? ""}
-                                placeholder={tabProp["x-placeholder"] ??
-                                  "Select an option"}
-                                tooltip={tabProp.description ?? ""}
-                                optional={!isRequired(tabKey)}
-                                full
-                                disabled={isDisabled(tabKey)}
-                              />
-                            {:else}
-                              <SchemaField
-                                id={tabKey}
-                                prop={tabProp}
-                                optional={!isRequired(tabKey)}
-                                errors={errors?.[tabKey]}
-                                bind:value={$form[tabKey]}
-                                bind:checked={$form[tabKey]}
-                                {onStringInputChange}
-                                {handleFileUpload}
-                                options={isRadioEnum(tabProp)
-                                  ? radioOptions(tabProp)
-                                  : undefined}
-                                name={`${tabKey}-radio`}
-                                disabled={isDisabled(tabKey)}
-                              />
-                            {/if}
-                          </div>
-                        {/each}
-                      {/if}
-                    </TabsContent>
-                  {/each}
-                </Tabs>
-              {:else if isSelectEnum(childProp)}
-                {@const childSelectOptions = selectOptions(childProp)}
-                <Select
-                  id={childKey}
-                  bind:value={$form[childKey]}
-                  options={childSelectOptions}
-                  label={childProp.title ?? ""}
-                  placeholder={childProp["x-placeholder"] ?? "Select an option"}
-                  tooltip={childProp.description ?? ""}
-                  optional={!isRequired(childKey)}
-                  full
-                  disabled={isDisabled(childKey)}
-                />
-              {:else}
-                <SchemaField
-                  id={childKey}
-                  prop={childProp}
-                  optional={!isRequired(childKey)}
-                  errors={errors?.[childKey]}
-                  bind:value={$form[childKey]}
-                  bind:checked={$form[childKey]}
-                  {onStringInputChange}
-                  {handleFileUpload}
-                  options={isRadioEnum(childProp)
-                    ? radioOptions(childProp)
-                    : undefined}
-                  name={`${childKey}-radio`}
-                  disabled={isDisabled(childKey)}
-                />
-              {/if}
-            </div>
-          {/each}
+          <GroupedFieldsRenderer
+            fields={getGroupedFieldsForOption(key, $form[key])}
+            form={$form}
+            {errors}
+            {onStringInputChange}
+            {handleFileUpload}
+            {isRequired}
+            {isDisabled}
+            {getTabFieldsForOption}
+            {tabGroupedFields}
+            {buildEnumOptions}
+          />
         {/if}
       </div>
     {:else if isSelectEnum(prop)}
@@ -539,94 +464,18 @@
           onChange={(newValue) => handleSelectChange(key, newValue)}
         />
         {#if groupedFields.get(key)}
-          {#each getGroupedFieldsForOption(key, $form[key]) as [childKey, childProp] (childKey)}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if isTabsEnum(childProp)}
-                {@const childOptions = tabOptions(childProp)}
-                {#if childProp.title}
-                  <div class="text-sm font-medium mb-3">
-                    {childProp.title}
-                  </div>
-                {/if}
-                <Tabs
-                  bind:value={$form[childKey]}
-                  options={childOptions}
-                  disableMarginTop
-                >
-                  {#each childOptions as childOption (childOption.value)}
-                    <TabsContent value={childOption.value}>
-                      {#if tabGroupedFields.get(childKey)}
-                        {#each getTabFieldsForOption(childKey, childOption.value) as [tabKey, tabProp] (tabKey)}
-                          <div class="py-1.5 first:pt-0 last:pb-0">
-                            {#if isSelectEnum(tabProp)}
-                              {@const tabSelectOptions = selectOptions(tabProp)}
-                              <Select
-                                id={tabKey}
-                                bind:value={$form[tabKey]}
-                                options={tabSelectOptions}
-                                label={tabProp.title ?? ""}
-                                placeholder={tabProp["x-placeholder"] ??
-                                  "Select an option"}
-                                tooltip={tabProp.description ?? ""}
-                                optional={!isRequired(tabKey)}
-                                full
-                                disabled={isDisabled(tabKey)}
-                              />
-                            {:else}
-                              <SchemaField
-                                id={tabKey}
-                                prop={tabProp}
-                                optional={!isRequired(tabKey)}
-                                errors={errors?.[tabKey]}
-                                bind:value={$form[tabKey]}
-                                bind:checked={$form[tabKey]}
-                                {onStringInputChange}
-                                {handleFileUpload}
-                                options={isRadioEnum(tabProp)
-                                  ? radioOptions(tabProp)
-                                  : undefined}
-                                name={`${tabKey}-radio`}
-                                disabled={isDisabled(tabKey)}
-                              />
-                            {/if}
-                          </div>
-                        {/each}
-                      {/if}
-                    </TabsContent>
-                  {/each}
-                </Tabs>
-              {:else if isSelectEnum(childProp)}
-                {@const childSelectOptions = selectOptions(childProp)}
-                <Select
-                  id={childKey}
-                  bind:value={$form[childKey]}
-                  options={childSelectOptions}
-                  label={childProp.title ?? ""}
-                  placeholder={childProp["x-placeholder"] ?? "Select an option"}
-                  tooltip={childProp.description ?? ""}
-                  optional={!isRequired(childKey)}
-                  full
-                  disabled={isDisabled(childKey)}
-                />
-              {:else}
-                <SchemaField
-                  id={childKey}
-                  prop={childProp}
-                  optional={!isRequired(childKey)}
-                  errors={errors?.[childKey]}
-                  bind:value={$form[childKey]}
-                  bind:checked={$form[childKey]}
-                  {onStringInputChange}
-                  {handleFileUpload}
-                  options={isRadioEnum(childProp)
-                    ? radioOptions(childProp)
-                    : undefined}
-                  name={`${childKey}-radio`}
-                  disabled={isDisabled(childKey)}
-                />
-              {/if}
-            </div>
-          {/each}
+          <GroupedFieldsRenderer
+            fields={getGroupedFieldsForOption(key, $form[key])}
+            form={$form}
+            {errors}
+            {onStringInputChange}
+            {handleFileUpload}
+            {isRequired}
+            {isDisabled}
+            {getTabFieldsForOption}
+            {tabGroupedFields}
+            {buildEnumOptions}
+          />
         {/if}
       </div>
     {:else if isRadioEnum(prop)}
@@ -641,65 +490,18 @@
         >
           <svelte:fragment slot="custom-content" let:option>
             {#if groupedFields.get(key)}
-              {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if isTabsEnum(childProp)}
-                    {@const childOptions = tabOptions(childProp)}
-                    {#if childProp.title}
-                      <div class="text-sm font-medium mb-3">
-                        {childProp.title}
-                      </div>
-                    {/if}
-                    <Tabs
-                      bind:value={$form[childKey]}
-                      options={childOptions}
-                      disableMarginTop
-                    >
-                      {#each childOptions as childOption (childOption.value)}
-                        <TabsContent value={childOption.value}>
-                          {#if tabGroupedFields.get(childKey)}
-                            {#each getTabFieldsForOption(childKey, childOption.value) as [tabKey, tabProp] (tabKey)}
-                              <div class="py-1.5 first:pt-0 last:pb-0">
-                                <SchemaField
-                                  id={tabKey}
-                                  prop={tabProp}
-                                  optional={!isRequired(tabKey)}
-                                  errors={errors?.[tabKey]}
-                                  bind:value={$form[tabKey]}
-                                  bind:checked={$form[tabKey]}
-                                  {onStringInputChange}
-                                  {handleFileUpload}
-                                  options={isRadioEnum(tabProp)
-                                    ? radioOptions(tabProp)
-                                    : undefined}
-                                  name={`${tabKey}-radio`}
-                                  disabled={isDisabled(tabKey)}
-                                />
-                              </div>
-                            {/each}
-                          {/if}
-                        </TabsContent>
-                      {/each}
-                    </Tabs>
-                  {:else}
-                    <SchemaField
-                      id={childKey}
-                      prop={childProp}
-                      optional={!isRequired(childKey)}
-                      errors={errors?.[childKey]}
-                      bind:value={$form[childKey]}
-                      bind:checked={$form[childKey]}
-                      {onStringInputChange}
-                      {handleFileUpload}
-                      options={isRadioEnum(childProp)
-                        ? radioOptions(childProp)
-                        : undefined}
-                      name={`${childKey}-radio`}
-                      disabled={isDisabled(childKey)}
-                    />
-                  {/if}
-                </div>
-              {/each}
+              <GroupedFieldsRenderer
+                fields={getGroupedFieldsForOption(key, option.value)}
+                form={$form}
+                {errors}
+                {onStringInputChange}
+                {handleFileUpload}
+                {isRequired}
+                {isDisabled}
+                {getTabFieldsForOption}
+                {tabGroupedFields}
+                {buildEnumOptions}
+              />
             {/if}
           </svelte:fragment>
         </Radio>

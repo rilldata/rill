@@ -107,7 +107,7 @@ export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
  * Some connectors with more fields use a taller form.
  */
 export function getFormHeight(schema: MultiStepFormSchema | null): string {
-  const FORM_HEIGHT_TALL = "max-h-[45rem] min-h-[45rem]";
+  const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
   const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
   return schema?.["x-form-height"] === "tall"
     ? FORM_HEIGHT_TALL
