@@ -14,6 +14,7 @@
 
   let logs: V1Log[] = [];
   let logsContainer: HTMLDivElement;
+  let connectionError: string | null = null;
 
   const logsConnection = new SSEConnectionManager({
     maxRetryAttempts: 5,
@@ -24,6 +25,8 @@
   $: connectionStatus = logsConnection.status;
   $: isConnected = $connectionStatus === ConnectionStatus.OPEN;
   $: isConnecting = $connectionStatus === ConnectionStatus.CONNECTING;
+  $: isClosed = $connectionStatus === ConnectionStatus.CLOSED;
+  $: hasConnectionError = isClosed && connectionError !== null;
 
   onMount(() => {
     const { host, instanceId, jwt } = $runtime;
@@ -34,6 +37,7 @@
 
     logsConnection.on("message", handleMessage);
     logsConnection.on("error", handleError);
+    logsConnection.on("open", handleOpen);
 
     logsConnection.start(url, {
       headers: jwt?.token ? { Authorization: `Bearer ${jwt.token}` } : {},
@@ -72,6 +76,23 @@
 
   function handleError(error: Error) {
     console.error("Logs SSE error:", error);
+    connectionError = error.message || "Connection failed";
+  }
+
+  function handleOpen() {
+    // Clear error when connection succeeds
+    connectionError = null;
+  }
+
+  function retryConnection() {
+    const { host, instanceId, jwt } = $runtime;
+    if (!host || !instanceId) return;
+
+    connectionError = null;
+    const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
+    logsConnection.start(url, {
+      headers: jwt?.token ? { Authorization: `Bearer ${jwt.token}` } : {},
+    });
   }
 
   function getLevelClass(level: V1LogLevel | undefined): string {
@@ -124,15 +145,23 @@
         class="status-indicator"
         class:connected={isConnected}
         class:connecting={isConnecting}
+        class:error={hasConnectionError}
       />
       {#if isConnecting}
         <span class="text-sm text-fg-secondary">Connecting...</span>
+      {:else if hasConnectionError}
+        <span class="text-sm text-red-600">Disconnected</span>
       {/if}
     </div>
   </div>
 
   <div class="logs-container" bind:this={logsContainer}>
-    {#if logs.length === 0}
+    {#if hasConnectionError}
+      <div class="error-state">
+        <span class="text-red-600">Connection failed: {connectionError}</span>
+        <button class="retry-button" on:click={retryConnection}> Retry </button>
+      </div>
+    {:else if logs.length === 0}
       <div class="empty-state">Waiting for logs...</div>
     {:else}
       {#each logs as log, i (log.time ?? i)}
@@ -168,6 +197,10 @@
     @apply bg-yellow-500 animate-pulse;
   }
 
+  .status-indicator.error {
+    @apply bg-red-500;
+  }
+
   .logs-container {
     @apply h-64 overflow-y-auto overflow-x-hidden font-mono text-xs;
     @apply bg-surface-background border border-gray-200 rounded-md p-2;
@@ -175,6 +208,15 @@
 
   .empty-state {
     @apply flex items-center justify-center h-full text-fg-secondary;
+  }
+
+  .error-state {
+    @apply flex flex-col items-center justify-center h-full gap-2;
+  }
+
+  .retry-button {
+    @apply px-3 py-1 text-sm font-medium text-primary-600 bg-primary-50;
+    @apply border border-primary-200 rounded hover:bg-primary-100;
   }
 
   .log-entry {

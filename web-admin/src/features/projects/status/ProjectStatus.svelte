@@ -17,6 +17,8 @@
     sensitive: true,
   });
 
+  $: isLoading = $instanceQuery.isLoading;
+  $: isError = $instanceQuery.isError;
   $: instance = $instanceQuery.data?.instance;
   $: olapConnectorName = instance?.olapConnector;
   $: olapConnector = instance?.projectConnectors?.find(
@@ -35,8 +37,8 @@
 <div class="info-box">
   <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
     <ProjectStatusGitHub {organization} {project} />
-    <ProjectStatusOlap {olapConnector} />
-    <ProjectStatusAI {aiConnector} />
+    <ProjectStatusOlap {olapConnector} {isLoading} {isError} />
+    <ProjectStatusAI {aiConnector} {isLoading} {isError} />
     <ProjectStatusLocalDev {organization} {project} />
   </div>
 </div>

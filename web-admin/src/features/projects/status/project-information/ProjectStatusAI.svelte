@@ -9,6 +9,8 @@
   const RILL_MANAGED_CONNECTOR_NAME = "admin";
 
   export let aiConnector: { name?: string; type?: string } | undefined;
+  export let isLoading = false;
+  export let isError = false;
 
   $: isRillManaged = aiConnector?.name === RILL_MANAGED_CONNECTOR_NAME;
 </script>
@@ -32,14 +34,16 @@
     </Tooltip>
   </div>
   <div class="cell-content">
-    {#if aiConnector}
+    {#if isLoading}
+      <span class="text-sm text-gray-400">Loading...</span>
+    {:else if isError}
+      <span class="text-sm text-red-500">Failed to load</span>
+    {:else if aiConnector}
       <span class="connector-name">
         {formatConnectorName(aiConnector.name)}
       </span>
       <div class="connector-details">
-        <span class="detail-value">
-          {isRillManaged ? "Rill Managed" : aiConnector.type}
-        </span>
+        {isRillManaged ? "Rill Managed" : aiConnector.type}
       </div>
     {:else}
       <span class="connector-name">Rill Managed</span>
@@ -70,10 +74,6 @@
 
   .connector-details {
     @apply flex items-center gap-2 text-xs text-gray-600;
-  }
-
-  .detail-value {
-    @apply text-xs text-gray-600;
   }
 
   .info-link {

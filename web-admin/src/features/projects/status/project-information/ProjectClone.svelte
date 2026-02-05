@@ -19,9 +19,9 @@
   $: isGithubConnected = !!gitRemote && !managedGitId && !!githubUrl;
 
   // CLI commands
-  $: cloneCommand = `rill project clone ${project}`;
+  $: cloneCommand = `rill project clone --org ${organization} ${project}`;
   $: rillStartCommand = `rill start ${githubUrl}.git`;
-  $: envPullCommand = `rill env pull --project ${project}`;
+  $: envPullCommand = `rill env pull --org ${organization} --project ${project}`;
 
   let copiedCommand: string | null = null;
 

@@ -7,6 +7,8 @@
   import { formatConnectorName } from "../display-utils";
 
   export let olapConnector: V1Connector | undefined;
+  export let isLoading = false;
+  export let isError = false;
 </script>
 
 <div class="info-cell">
@@ -28,14 +30,16 @@
     </Tooltip>
   </div>
   <div class="cell-content">
-    {#if olapConnector}
+    {#if isLoading}
+      <span class="text-sm text-gray-400">Loading...</span>
+    {:else if isError}
+      <span class="text-sm text-red-500">Failed to load</span>
+    {:else if olapConnector}
       <span class="connector-name">
         {formatConnectorName(olapConnector.type)}
       </span>
       <div class="connector-details">
-        <span class="detail-value"
-          >{olapConnector.provision ? "Rill-Managed" : "Self-Managed"}</span
-        >
+        {olapConnector.provision ? "Rill-Managed" : "Self-Managed"}
       </div>
     {:else}
       <span class="connector-name">-</span>

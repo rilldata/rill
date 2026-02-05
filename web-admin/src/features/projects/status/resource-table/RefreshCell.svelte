@@ -7,7 +7,13 @@
 
   $: dateTime = DateTime.fromISO(date);
 
-  $: formattedDate = dateTime.toLocaleString(DateTime.DATETIME_SHORT);
+  // Use compact format: "Jan 15, 2:30 PM" - shorter than DATETIME_SHORT
+  $: formattedDate = dateTime.toLocaleString({
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
   $: full = dateTime.toLocaleString(DateTime.DATETIME_FULL);
 </script>
