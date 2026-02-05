@@ -3,7 +3,7 @@
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { parseDocument } from "yaml";
-  import { themePreviewMode } from "./theme-preview-utils";
+  import { themePreviewMode, updateThemeColor } from "./theme-preview-utils";
 
   export let filePath: string;
 
@@ -38,25 +38,13 @@
   function updateColor(colorKey: string, value: string) {
     if (!parsedDocument) return;
 
-    // Get or create the mode section (light/dark)
-    const mode = $themePreviewMode;
-    let modeSection = parsedDocument.get(mode, true) as any;
-    if (!modeSection) {
-      parsedDocument.set(mode, {});
-      modeSection = parsedDocument.get(mode, true) as any;
-    }
-
-    // Set the color value
-    modeSection.set(colorKey, value);
-
-    // Remove inline comment from the edited line
-    const valueNode = modeSection.get(colorKey, true);
-    if (valueNode && "comment" in valueNode) {
-      valueNode.comment = undefined;
-    }
-
-    // Update the editor content
-    updateEditorContent(parsedDocument.toString(), false, true);
+    const updatedYaml = updateThemeColor(
+      parsedDocument,
+      $themePreviewMode,
+      colorKey,
+      value,
+    );
+    updateEditorContent(updatedYaml, false, true);
   }
 
   // Core colors to edit

@@ -4,6 +4,8 @@
   import { parseDocument } from "yaml";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
+  import { updateThemeColor } from "./theme-preview-utils";
+
   export let filePath: string;
 
   let mode: "light" | "dark" = "light";
@@ -39,18 +41,8 @@
   function updateColor(colorKey: string, value: string) {
     if (!parsedDocument) return;
 
-    // Get or create the mode section (light/dark)
-    let modeSection = parsedDocument.get(mode) as any;
-    if (!modeSection) {
-      parsedDocument.set(mode, {});
-      modeSection = parsedDocument.get(mode) as any;
-    }
-
-    // Set the color value
-    modeSection.set(colorKey, value);
-
-    // Update the editor content
-    updateEditorContent(parsedDocument.toString(), false, true);
+    const updatedYaml = updateThemeColor(parsedDocument, mode, colorKey, value);
+    updateEditorContent(updatedYaml, false, true);
   }
 
   // Core colors to edit
