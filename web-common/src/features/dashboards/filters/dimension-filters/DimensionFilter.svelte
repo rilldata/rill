@@ -39,6 +39,7 @@
   export let readOnly: boolean = false;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
+  export let timeDimension: string | undefined = undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
@@ -79,6 +80,10 @@
     pinned,
   } = filterData);
 
+  $: if (!open && filterData.mode !== curMode) {
+    resyncFilterData(filterData);
+  }
+
   // Sync proxy when selectedValues changes (for Select mode)
   $: if (!open && mode === DimensionFilterMode.Select) {
     selectedValuesProxy = structuredClone(filterData.selectedValues) ?? [];
@@ -112,6 +117,7 @@
       searchText: curSearchText,
       timeStart,
       timeEnd,
+      timeDimension,
       enabled: enableSearchQuery,
       metricsViewWheres: expressionMap,
     },
@@ -139,6 +145,7 @@
       searchText: curSearchText,
       timeStart,
       timeEnd,
+      timeDimension,
       enabled: enableSearchCountQuery,
 
       metricsViewWheres: expressionMap,
@@ -383,6 +390,18 @@
       await toggleDimensionValueSelections(name, [value], metricsViewNames);
     }
   }
+
+  function resyncFilterData(filterData: DimensionFilterItem) {
+    curMode = filterData.mode;
+    curSearchText = filterData.inputText ?? "";
+    curExcludeMode = filterData.isInclude === false;
+    selectedValuesProxy = filterData.selectedValues ?? [];
+    searchedBulkValues =
+      filterData.mode === DimensionFilterMode.InList
+        ? (filterData.selectedValues ?? [])
+        : [];
+    curPinned = filterData.pinned;
+  }
 </script>
 
 <svelte:window
@@ -493,7 +512,7 @@
         <div class="flex flex-row items-center justify-between pt-2 pb-1">
           {#if curMode !== DimensionFilterMode.Select}
             <DropdownMenu.Label
-              class="pb-0 uppercase text-[10px] text-gray-500"
+              class="pb-0 uppercase text-[10px] text-fg-secondary"
               aria-label={`${name} result count`}
             >
               {searchResultCountText}
@@ -506,7 +525,7 @@
     </div>
 
     {#if showExtraInfo}
-      <DropdownMenu.Separator class="bg-slate-200" />
+      <DropdownMenu.Separator class="bg-gray-200" />
     {/if}
 
     <div
@@ -586,7 +605,7 @@
 
           <!-- Show "no results" only if both checked and unchecked are empty -->
           {#if uncheckedItems.length === 0 && (curMode !== DimensionFilterMode.Select || checkedItems.length === 0)}
-            <div class="ui-copy-disabled text-center p-2 w-full">
+            <div class="text-fg-disabled text-center p-2 w-full">
               no results
             </div>
           {/if}

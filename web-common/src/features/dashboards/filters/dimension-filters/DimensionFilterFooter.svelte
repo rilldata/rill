@@ -26,7 +26,7 @@
   </div>
   <div class="flex gap-2">
     {#if mode === DimensionFilterMode.Select}
-      <Button onClick={onToggleSelectAll} type="plain">
+      <Button onClick={onToggleSelectAll} type="tertiary">
         {#if allSelected}
           Deselect all
         {:else}
@@ -49,8 +49,8 @@
 <style lang="postcss">
   footer {
     height: 42px;
-    @apply border-t border-slate-300;
-    @apply bg-slate-100;
+    @apply border-t;
+    @apply bg-popover-footer;
     @apply flex flex-row flex-none items-center justify-between;
     @apply gap-x-2 p-2 px-3.5;
   }

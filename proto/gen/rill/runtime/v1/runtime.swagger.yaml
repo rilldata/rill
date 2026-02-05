@@ -380,16 +380,6 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1Connector'
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
-              annotations:
-                type: object
-                additionalProperties:
-                  type: string
-              frontendUrl:
-                type: string
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -546,6 +536,75 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
+    post:
+      summary: |-
+        ForkConversation creates a new conversation by copying messages from an existing one.
+        If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+      operationId: RuntimeService_ForkConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ForkConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.ForkConversation
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
+    post:
+      summary: ShareConversation enables sharing of the conversation by adding metadata.
+      operationId: RuntimeService_ShareConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ShareConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              untilMessageId:
+                type: string
+                description: |-
+                  optional message ID up to which to share otherwise share all current messages
+                  only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+                  It supports a special value of "none" to unshare the conversation.
+            title: Request message for RuntimeService.ShareConversation
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/tools:
@@ -1126,6 +1185,261 @@ paths:
               metricsView:
                 type: string
                 description: table and connector should not be provided if metrics_view is provided.
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/branches:
+    get:
+      operationId: RuntimeService_ListGitBranches
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGitBranchesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/branches/switch:
+    post:
+      operationId: RuntimeService_GitSwitchBranch
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitSwitchBranchResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              create:
+                type: boolean
+              ignoreLocalChanges:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/commit:
+    post:
+      summary: GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+      operationId: RuntimeService_GitCommit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitCommitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              commitMessage:
+                type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/commits:
+    get:
+      operationId: RuntimeService_ListGitCommits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGitCommitsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/merge:
+    post:
+      summary: |-
+        GitMergeToBranch merges current branch to the specified branch.
+        Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+        It restores back to the original branch after the merge.
+      operationId: RuntimeService_GitMergeToBranch
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitMergeToBranchResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              force:
+                type: boolean
+                description: In case of merge conflicts, prefer current changes.
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/pull:
+    post:
+      summary: |-
+        GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+        If there are any merge conflicts the pull is aborted.
+        Force can be set to true to force the pull and overwrite any local changes.
+      operationId: RuntimeService_GitPull
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitPullResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              discardLocal:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/push:
+    post:
+      summary: |-
+        GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+        It only pushes the changes to the existing remote repo.
+      operationId: RuntimeService_GitPush
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitPushResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              commitMessage:
+                type: string
+              force:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/restore/{commitSha}:
+    post:
+      summary: |-
+        RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+        This effectively discards all the changes made after the specified commit.
+      operationId: RuntimeService_RestoreGitCommit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RestoreGitCommitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: commitSha
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.RestoreGitCommit
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/status:
+    get:
+      summary: GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+      operationId: RuntimeService_GitStatus
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:
@@ -2911,6 +3225,34 @@ paths:
                 format: int32
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/reload-config:
+    post:
+      summary: |-
+        ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+        If the instance doesn't have an admin connector, this RPC does nothing.
+      operationId: RuntimeService_ReloadConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ReloadConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.ReloadConfig
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/reports/{report}/export:
     post:
       summary: ExportReport builds a URL to download the results of a query as a file.
@@ -3054,10 +3396,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: level
-          in: query
-          required: false
-          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/explore:
@@ -3355,6 +3693,7 @@ definitions:
       - DIMENSION_TYPE_UNSPECIFIED
       - DIMENSION_TYPE_CATEGORICAL
       - DIMENSION_TYPE_TIME
+      - DIMENSION_TYPE_GEOSPATIAL
     default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
@@ -3510,6 +3849,8 @@ definitions:
       - CODE_DECIMAL
       - CODE_JSON
       - CODE_UUID
+      - CODE_POINT
+      - CODE_POLYGON
     default: CODE_UNSPECIFIED
     title: Code enumerates all the types that can be represented in a schema
   protobufAny:
@@ -4675,6 +5016,8 @@ definitions:
         type: string
       selectTimeRange:
         type: string
+      timeDimension:
+        type: string
       comparisonMode:
         $ref: '#/definitions/v1ExploreComparisonMode'
         description: Comparison mode.
@@ -4723,6 +5066,9 @@ definitions:
         type: boolean
       pivotTableMode:
         type: string
+      pivotRowLimit:
+        type: integer
+        format: int32
   v1ExploreSortType:
     type: string
     enum:
@@ -4900,6 +5246,13 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
+  v1ForkConversationResponse:
+    type: object
+    properties:
+      conversationId:
+        type: string
+        title: new conversation ID
+    title: Response message for RuntimeService.ForkConversation
   v1GenerateCanvasFileResponse:
     type: object
     properties:
@@ -4938,6 +5291,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Message'
+      isOwner:
+        type: boolean
+        title: would be false for shared conversations accessed by non-owners
     title: Response message for RuntimeService.GetConversation
   v1GetExploreResponse:
     type: object
@@ -4991,6 +5347,73 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GitBranch:
+    type: object
+    properties:
+      name:
+        type: string
+      hasDeployment:
+        type: boolean
+      editableDeployment:
+        type: boolean
+  v1GitCommit:
+    type: object
+    properties:
+      commitSha:
+        type: string
+      authorName:
+        type: string
+      authorEmail:
+        type: string
+      committedOn:
+        type: string
+        format: date-time
+      message:
+        type: string
+  v1GitCommitResponse:
+    type: object
+    properties:
+      commitSha:
+        type: string
+  v1GitMergeToBranchResponse:
+    type: object
+    properties:
+      output:
+        type: string
+        description: The output of the git merge command. Only set for unsuccessful merges.
+  v1GitPullResponse:
+    type: object
+    properties:
+      output:
+        type: string
+        description: The output of the git pull command. Only set for unsuccessful pulls.
+  v1GitPushResponse:
+    type: object
+  v1GitStatusResponse:
+    type: object
+    properties:
+      branch:
+        type: string
+        description: The current branch of the git repo.
+      githubUrl:
+        type: string
+        description: The remote url of the git repo.
+      managedGit:
+        type: boolean
+        description: If the repo is managed by Rill.
+      localChanges:
+        type: boolean
+        description: local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+      localCommits:
+        type: integer
+        format: int32
+        description: local_commits returns number of local commits that are not pushed to the remote git repo.
+      remoteCommits:
+        type: integer
+        format: int32
+        description: remote_commits returns number of remote commits not pulled yet.
+  v1GitSwitchBranchResponse:
+    type: object
   v1HealthResponse:
     type: object
     properties:
@@ -5065,6 +5488,8 @@ definitions:
       aiInstructions:
         type: string
       frontendUrl:
+        type: string
+      theme:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
@@ -5177,6 +5602,26 @@ definitions:
           type: object
           $ref: '#/definitions/v1DirEntry'
     title: Response message for RuntimeService.ListFiles
+  v1ListGitBranchesResponse:
+    type: object
+    properties:
+      currentBranch:
+        type: string
+      branches:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1GitBranch'
+  v1ListGitCommitsResponse:
+    type: object
+    properties:
+      commits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1GitCommit'
+      nextPageToken:
+        type: string
   v1ListInstancesResponse:
     type: object
     properties:
@@ -6449,6 +6894,7 @@ definitions:
       - OPERATION_NIN
       - OPERATION_LIKE
       - OPERATION_NLIKE
+      - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
   v1ParseError:
     type: object
@@ -6681,6 +7127,9 @@ definitions:
         description: Models to refresh. These are specified separately to enable more fine-grained configuration.
   v1RefreshTriggerState:
     type: object
+  v1ReloadConfigResponse:
+    type: object
+    title: Response message for RuntimeService.ReloadConfig
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
@@ -6914,6 +7363,12 @@ definitions:
         type: string
       name:
         type: string
+  v1RestoreGitCommitResponse:
+    type: object
+    properties:
+      newCommitSha:
+        type: string
+    title: Response message for RuntimeService.RestoreGitCommit
   v1Schedule:
     type: object
     properties:
@@ -7031,6 +7486,9 @@ definitions:
       resource:
         $ref: '#/definitions/v1ResourceName'
         description: this rules resolves to rules that provides access to whatever is needed to access this resource.
+  v1ShareConversationResponse:
+    type: object
+    title: Response message for RuntimeService.ShareConversation
   v1Source:
     type: object
     properties:

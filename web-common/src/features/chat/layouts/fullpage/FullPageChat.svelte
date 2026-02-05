@@ -1,5 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { page } from "$app/stores";
+  import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
   import { onMount } from "svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
@@ -8,19 +10,24 @@
   } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
+  import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
   import {
     conversationSidebarCollapsed,
     toggleConversationSidebar,
   } from "./fullpage-store";
 
-  import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
-
   $: ({ instanceId } = $runtime);
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
 
   $: conversationManager = getConversationManager(instanceId, {
     conversationState: "url",
   });
+
+  $: currentConversationStore = conversationManager.getCurrentConversation();
+  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
+  $: currentConversation = $getConversationQuery?.data?.conversation ?? null;
 
   let chatInputComponent: ChatInput;
 
@@ -65,12 +72,22 @@
 
   <!-- Main Chat Area -->
   <div class="chat-main">
+    {#if currentConversation?.id}
+      <div class="chat-header">
+        <ShareChatPopover
+          conversationId={currentConversation.id}
+          {instanceId}
+          {organization}
+          {project}
+        />
+      </div>
+    {/if}
     <div class="chat-content">
       <div class="chat-messages-wrapper">
         <Messages
           {conversationManager}
           layout="fullpage"
-          config={dashboardChatConfig}
+          config={projectChat}
         />
       </div>
     </div>
@@ -81,7 +98,7 @@
           {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}
-          config={dashboardChatConfig}
+          config={projectChat}
         />
       </div>
     </div>
@@ -90,59 +107,49 @@
 
 <style lang="postcss">
   .chat-fullpage {
-    display: flex;
-    height: 100%;
-    width: 100%;
+    @apply flex h-full w-full;
     background: var(--surface);
   }
 
-  /* Main Chat Area */
   .chat-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    @apply relative flex-1 flex flex-col overflow-hidden;
     background: var(--surface);
+  }
+
+  .chat-header {
+    @apply absolute top-0 right-0;
+    @apply flex items-center justify-end;
+    @apply py-2 px-4 z-10 pointer-events-none;
+  }
+
+  .chat-header :global(*) {
+    @apply pointer-events-auto;
   }
 
   .chat-content {
-    flex: 1;
-    overflow: hidden;
+    @apply flex-1 overflow-hidden flex flex-col;
     background: var(--surface);
-    display: flex;
-    flex-direction: column;
   }
 
   .chat-messages-wrapper {
-    flex: 1;
-    overflow-y: auto;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
+    @apply flex-1 overflow-y-auto w-full flex flex-col;
   }
 
   .chat-input-section {
-    flex-shrink: 0;
+    @apply shrink-0 p-4 flex justify-center;
     background: var(--surface);
-    padding: 1rem;
-    display: flex;
-    justify-content: center;
   }
 
   .chat-input-wrapper {
-    width: 100%;
-    max-width: 48rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    @apply w-full max-w-3xl flex flex-col gap-2;
   }
 
-  /* Responsive behavior for full-page layout */
   @media (max-width: 768px) {
     .chat-messages-wrapper,
     .chat-input-wrapper {
       max-width: none;
-      padding: 0 1rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
 
     .chat-input-section {

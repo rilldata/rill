@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/riverqueue/river"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -23,11 +24,19 @@ type ReconcileDeploymentWorker struct {
 	admin *admin.Service
 }
 
+// NewReconcileDeploymentWorker creates a new ReconcileDeploymentWorker. Only to be used in tests to trigger the worker directly.
+func NewReconcileDeploymentWorker(admin *admin.Service) *ReconcileDeploymentWorker {
+	return &ReconcileDeploymentWorker{
+		admin: admin,
+	}
+}
+
 // ReconcileDeploymentWorker is a state machine, it reconciles the state of a deployment based on its desired and current status.
 // This job is responsible for transitioning deployments through their lifecycle states,
 // such as starting, updating, stopping, and deleting deployments.
 // We handle all deployment state transitions in this job to ensure consistency and to avoid concurrent conflicting operations on the same deployment.
 func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[ReconcileDeploymentArgs]) error {
+	observability.AddRequestAttributes(ctx, attribute.String("args.deployment_id", job.Args.DeploymentID))
 	depl, err := w.admin.DB.FindDeployment(ctx, job.Args.DeploymentID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -74,6 +83,10 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		newStatus = database.DeploymentStatusRunning
 
 	case database.DeploymentStatusStopped:
+		if depl.Status == database.DeploymentStatusStopped {
+			// No action needed, already stopped
+			return nil
+		}
 		// Update the deployment status to stopping
 		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusStopping, "Stopping...")
 		if err != nil {
@@ -89,6 +102,10 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		newStatus = database.DeploymentStatusStopped
 
 	case database.DeploymentStatusDeleted:
+		if depl.Status == database.DeploymentStatusDeleted {
+			// No action needed, already deleted
+			return nil
+		}
 		// Update the deployment status to deleting
 		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusDeleting, "Deleting...")
 		if err != nil {

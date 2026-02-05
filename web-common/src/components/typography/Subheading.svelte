@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let twColor = "text-gray-500";
+  export let twColor = "text-fg-secondary";
 </script>
 
 <p class="text-base font-normal {twColor}">

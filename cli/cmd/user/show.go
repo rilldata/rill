@@ -6,10 +6,13 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	var email string
+	var project string
 
 	showCmd := &cobra.Command{
 		Use:   "show",
@@ -47,12 +50,44 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfSuccess("No custom attributes set\n")
 			}
 
+			if project == "" {
+				return nil
+			}
+			projMember, err := client.GetProjectMemberUser(cmd.Context(), &adminv1.GetProjectMemberUserRequest{
+				Org:     ch.Org,
+				Project: project,
+				Email:   email,
+			})
+			if err != nil && status.Code(err) != codes.NotFound {
+				return err
+			}
+			if projMember != nil {
+				ch.PrintfSuccess("Project Member Info:\n")
+				ch.PrintProjectMemberUsers([]*adminv1.ProjectMemberUser{projMember.Member})
+			} else {
+				cmd.Printf("No membership found for user %q in project %q\n", email, project)
+			}
+
+			groupResp, err := client.ListUsergroupsForProjectAndUser(cmd.Context(), &adminv1.ListUsergroupsForProjectAndUserRequest{
+				Org:     ch.Org,
+				Project: project,
+				Email:   email,
+			})
+			if err != nil {
+				return err
+			}
+			if len(groupResp.Usergroups) > 0 {
+				ch.PrintfSuccess("\nThe user has project access through the following user groups:\n")
+				ch.PrintMemberUsergroups(groupResp.Usergroups)
+			}
+
 			return nil
 		},
 	}
 
 	showCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	showCmd.Flags().StringVar(&email, "email", "", "Email of the user (required)")
+	showCmd.Flags().StringVar(&project, "project", "", "Project name to include project membership details (optional)")
 
 	return showCmd
 }

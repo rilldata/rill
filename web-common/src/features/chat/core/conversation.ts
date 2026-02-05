@@ -2,6 +2,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
+  runtimeServiceForkConversation,
   type RpcStatus,
   type RuntimeServiceCompleteBody,
   type V1CompleteStreamingResponse,
@@ -15,7 +16,13 @@ import {
   type SSEMessage,
 } from "@rilldata/web-common/runtime-client/sse-fetch-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get, writable, type Readable } from "svelte/store";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
 import { transformToBlocks, type Block } from "./messages/block-transform";
 import { MessageContentType, MessageType, ToolName } from "./types";
@@ -24,6 +31,17 @@ import {
   invalidateConversationsList,
   NEW_CONVERSATION_ID,
 } from "./utils";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+import { getToolConfig } from "@rilldata/web-common/features/chat/core/messages/tools/tool-registry.ts";
+
+type ConversationEvents = {
+  "conversation-created": string;
+  "conversation-forked": string;
+  "stream-start": void;
+  message: V1Message;
+  "stream-complete": string;
+  error: string;
+};
 
 /**
  * Individual conversation state management.
@@ -37,47 +55,82 @@ export class Conversation {
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
 
+  private readonly events = new EventEmitter<ConversationEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+  public readonly once = this.events.once.bind(
+    this.events,
+  ) as typeof this.events.once;
+
   // Private state
   private sseClient: SSEFetchClient | null = null;
   private hasReceivedFirstMessage = false;
 
+  // Reactive conversation ID - enables query to auto-update when ID changes (e.g., after fork)
+  private readonly conversationIdStore: Writable<string>;
+  private readonly conversationQuery: CreateQueryResult<
+    V1GetConversationResponse,
+    RpcStatus
+  >;
+
+  public get conversationId(): string {
+    return get(this.conversationIdStore);
+  }
+
+  private set conversationId(value: string) {
+    this.conversationIdStore.set(value);
+  }
+
   constructor(
     private readonly instanceId: string,
-    public conversationId: string,
-    private readonly options: {
-      agent?: string;
-      onStreamStart?: () => void;
-      onConversationCreated?: (conversationId: string) => void;
-    } = {
-      agent: ToolName.ANALYST_AGENT, // Hardcoded default for now
-    },
+    initialConversationId: string,
+    private readonly agent: string = ToolName.ANALYST_AGENT,
   ) {
-    if (this.options) {
-      this.options.agent ??= ToolName.ANALYST_AGENT;
+    this.conversationIdStore = writable(initialConversationId);
+
+    // Create query with reactive options that respond to conversationId changes
+    const queryOptionsStore = derived(
+      this.conversationIdStore,
+      ($conversationId) =>
+        getRuntimeServiceGetConversationQueryOptions(
+          this.instanceId,
+          $conversationId,
+          {
+            query: {
+              enabled: $conversationId !== NEW_CONVERSATION_ID,
+              staleTime: Infinity, // We manage cache manually during streaming
+            },
+          },
+        ),
+    );
+    this.conversationQuery = createQuery(queryOptionsStore, queryClient);
+  }
+
+  /**
+   * Get ownership status from the conversation query.
+   * Returns true if the current user owns this conversation or if ownership is unknown.
+   */
+  private getIsOwner(): boolean {
+    if (this.conversationId === NEW_CONVERSATION_ID) {
+      return true; // New conversations are always owned by the creator
     }
+
+    // Default to true if query hasn't loaded yet (optimistic assumption)
+    return get(this.conversationQuery).data?.isOwner ?? true;
   }
 
   // ===== PUBLIC API =====
 
   /**
-   * Get a reactive query for this conversation's data
+   * Get a reactive query for this conversation's data.
+   * The query reacts to conversationId changes (e.g., after fork).
    */
   public getConversationQuery(): CreateQueryResult<
     V1GetConversationResponse,
     RpcStatus
   > {
-    return createQuery(
-      getRuntimeServiceGetConversationQueryOptions(
-        this.instanceId,
-        this.conversationId,
-        {
-          query: {
-            enabled: this.conversationId !== NEW_CONVERSATION_ID,
-          },
-        },
-      ),
-      queryClient,
-    );
+    return this.conversationQuery;
   }
 
   /**
@@ -116,12 +169,7 @@ export class Conversation {
    */
   public async sendMessage(
     context: RuntimeServiceCompleteBody,
-    options?: {
-      onStreamStart?: () => void;
-      onMessage?: (message: V1Message) => void;
-      onStreamComplete?: (conversationId: string) => void;
-      onError?: (error: string) => void;
-    },
+    options?: { onStreamStart?: () => void },
   ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
@@ -138,22 +186,37 @@ export class Conversation {
     this.isStreaming.set(true);
     this.hasReceivedFirstMessage = false;
 
+    // Fork conversation if user is not the owner (viewing a shared conversation)
+    const isOwner = this.getIsOwner();
+    if (!isOwner && this.conversationId !== NEW_CONVERSATION_ID) {
+      try {
+        const forkedConversationId = await this.forkConversation();
+        // Update to the forked conversation (setter updates the reactive store)
+        this.conversationId = forkedConversationId;
+        this.events.emit("conversation-forked", forkedConversationId);
+      } catch (error) {
+        console.error("[Conversation] Fork failed:", error);
+        this.isStreaming.set(false);
+        this.streamError.set(
+          "Failed to create your copy of this conversation. Please try again.",
+        );
+        return;
+      }
+    }
+
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
-      options?.onStreamStart?.();
+      options?.onStreamStart?.(); // Callback for direct callers
+      this.events.emit("stream-start"); // Event for external listeners
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(
-        prompt,
-        context,
-        options?.onMessage,
-      );
+      const streamPromise = this.startStreaming(prompt, context);
 
       // Wait for streaming to complete
       await streamPromise;
 
       // Stream has completed successfully
-      options?.onStreamComplete?.(this.conversationId);
+      this.events.emit("stream-complete", this.conversationId);
 
       // Temporary fix to make sure the title of the conversation is updated.
       void invalidateConversationsList(this.instanceId);
@@ -171,7 +234,7 @@ export class Conversation {
         userMessage,
         this.hasReceivedFirstMessage,
       );
-      options?.onError?.(this.formatTransportError(error));
+      this.events.emit("error", this.formatTransportError(error));
     } finally {
       this.isStreaming.set(false);
     }
@@ -200,6 +263,8 @@ export class Conversation {
       this.sseClient.cleanup();
       this.sseClient = null;
     }
+
+    this.events.clearListeners();
   }
 
   // ===== PRIVATE IMPLEMENTATION =====
@@ -213,7 +278,6 @@ export class Conversation {
   private async startStreaming(
     prompt: string,
     context: RuntimeServiceCompleteBody | undefined,
-    onMessage: ((message: V1Message) => void) | undefined,
   ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
@@ -238,7 +302,7 @@ export class Conversation {
             message.data,
           );
           this.processStreamingResponse(response);
-          if (response.message) onMessage?.(response.message);
+          if (response.message) this.events.emit("message", response.message);
         } catch (error) {
           console.error("Failed to parse streaming response:", error);
           this.streamError.set("Failed to process server response");
@@ -276,12 +340,12 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
-      agent: this.options?.agent,
+      agent: this.agent,
       ...context,
     };
 
     // Notify that streaming is about to start (for concurrent stream management)
-    this.options?.onStreamStart?.();
+    this.events.emit("stream-start");
 
     // Start streaming - this will establish the connection and then stream until completion
     await this.sseClient.start(baseUrl, {
@@ -318,10 +382,69 @@ export class Conversation {
       }
 
       this.addMessageToCache(response.message);
+      if (response.message.type === MessageType.CALL) {
+        const config = getToolConfig(response.message.tool);
+        config?.onResult?.(response.message);
+      }
     }
   }
 
   // ----- Conversation Lifecycle -----
+
+  /**
+   * Fork the current conversation to create a copy owned by the current user.
+   * Used when a non-owner wants to continue a shared conversation.
+   *
+   * Note: The cache copying logic here follows the pattern established by
+   * `transitionToRealConversation`—both read from an old cache key and write
+   * to a new one with an updated conversation ID. However, since forking
+   * conceptually creates a new conversation from an existing one, this
+   * responsibility might be better suited for ConversationManager in the future.
+   */
+  private async forkConversation(): Promise<string> {
+    const originalConversationId = this.conversationId;
+
+    const response = await runtimeServiceForkConversation(
+      this.instanceId,
+      this.conversationId,
+      {},
+    );
+
+    if (!response.conversationId) {
+      throw new Error("Fork response missing conversation ID");
+    }
+
+    const forkedConversationId = response.conversationId;
+
+    // Copy cached messages from original conversation to forked conversation
+    // This ensures the UI shows the conversation history immediately
+    const originalCacheKey = getRuntimeServiceGetConversationQueryKey(
+      this.instanceId,
+      originalConversationId,
+    );
+    const forkedCacheKey = getRuntimeServiceGetConversationQueryKey(
+      this.instanceId,
+      forkedConversationId,
+    );
+    const originalData =
+      queryClient.getQueryData<V1GetConversationResponse>(originalCacheKey);
+
+    if (originalData) {
+      queryClient.setQueryData<V1GetConversationResponse>(forkedCacheKey, {
+        conversation: {
+          ...originalData.conversation,
+          id: forkedConversationId,
+        },
+        messages: originalData.messages || [],
+        isOwner: true, // User now owns the forked conversation
+      });
+    }
+
+    // Invalidate the conversations list to show the new forked conversation
+    void invalidateConversationsList(this.instanceId);
+
+    return forkedConversationId;
+  }
 
   /**
    * Transition from NEW_CONVERSATION_ID to real conversation ID
@@ -356,11 +479,11 @@ export class Conversation {
     // Clean up the old "new" conversation cache
     queryClient.removeQueries({ queryKey: oldCacheKey });
 
-    // Update the conversation ID
+    // Update the conversation ID (setter updates the reactive store)
     this.conversationId = realConversationId;
 
     // Notify that conversation was created
-    this.options?.onConversationCreated?.(realConversationId);
+    this.events.emit("conversation-created", realConversationId);
   }
 
   // ----- Cache Management -----

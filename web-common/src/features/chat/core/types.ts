@@ -52,6 +52,9 @@ export const ToolName = {
   SEARCH_FILES: "search_files",
   READ_FILE: "read_file",
   WRITE_FILE: "write_file",
+
+  // Common tools
+  NAVIGATE: "navigate",
 } as const;
 
 // =============================================================================
@@ -65,5 +68,5 @@ export type ChatConfig = {
   >;
   emptyChatLabel: string;
   placeholder: string;
-  enableMention: boolean; // TODO: should be a list of allowed mentions in the future
+  minChatHeight: string;
 };

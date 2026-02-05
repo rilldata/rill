@@ -2,11 +2,14 @@ package ai
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai/instructions"
 )
 
 const DeveloperAgentName = "developer_agent"
@@ -40,39 +43,63 @@ func (t *DeveloperAgent) Spec() *mcp.Tool {
 }
 
 func (t *DeveloperAgent) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAgentAccess(ctx, t.Runtime)
+	return checkDeveloperAccess(ctx, t.Runtime, true)
 }
 
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {
-	// Pre-invoke file listing
-	s := GetSession(ctx)
-	_, err := s.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
+	// Generate the prompts
+	systemPrompt, err := t.systemPrompt()
+	if err != nil {
+		return nil, err
+	}
+	userPrompt, err := t.userPrompt(ctx, args)
 	if err != nil {
 		return nil, err
 	}
 
-	// Generate the prompts
-	systemPrompt, err := t.systemPrompt(ctx)
+	// Pre-invoke some tool calls
+	s := GetSession(ctx)
+	_, err = s.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
 	if err != nil {
 		return nil, err
 	}
-	userPrompt, err := t.userPrompt(args)
+	_, err = s.CallTool(ctx, RoleAssistant, ProjectStatusName, nil, &ProjectStatusArgs{})
 	if err != nil {
 		return nil, err
+	}
+	if args.CurrentFilePath != "" {
+		_, err := s.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
+			Path: args.CurrentFilePath,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
-	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByRoot()))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByType(MessageTypeCall), FilterByTool(DeveloperAgentName)))...)
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
 
 	// Run an LLM tool call loop
 	var response string
 	err = s.Complete(ctx, "Developer loop", &response, &CompleteOptions{
-		Messages:      messages,
-		Tools:         []string{ListFilesName, SearchFilesName, ReadFileName, DevelopModelName, DevelopMetricsViewName},
-		MaxIterations: 10,
+		Messages: messages,
+		Tools: []string{
+			ProjectStatusName,
+			ListFilesName,
+			SearchFilesName,
+			ReadFileName,
+			ListBucketsName,
+			ListBucketObjectsName,
+			ListTablesName,
+			ShowTableName,
+			QuerySQLName,
+			DevelopFileName,
+			NavigateName,
+		},
+		MaxIterations: 20,
 		UnwrapCall:    true,
 	})
 	if err != nil {
@@ -84,108 +111,75 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	}, nil
 }
 
-func (t *DeveloperAgent) systemPrompt(ctx context.Context) (string, error) {
+func (t *DeveloperAgent) systemPrompt() (string, error) {
+	instr, err := instructions.Load("development.md", instructions.Options{})
+	if err != nil {
+		return "", fmt.Errorf("failed to load developer agent system prompt: %w", err)
+	}
+
+	return instr.Body, nil
+}
+
+func (t *DeveloperAgent) userPrompt(ctx context.Context, args *DeveloperAgentArgs) (string, error) {
+	// Get default OLAP info
+	olapInfo, err := defaultOLAPInfo(ctx, t.Runtime, GetSession(ctx).InstanceID())
+	if err != nil {
+		return "", err
+	}
+
 	// Prepare template data.
 	session := GetSession(ctx)
 	data := map[string]any{
-		"ai_instructions": session.ProjectInstructions(),
-	}
-
-	// Generate the system prompt
-	return executeTemplate(`<role>You are a data engineer agent specialized in developing data models and metrics view definitions in the Rill business intelligence platform.</role>
-
-<concepts>
-Rill is a "business intelligence as code" platform where all resources are defined using YAML files containing SQL snippets in a project directory.
-Rill supports many different resource types, such as connectors, models, metrics views, explore dashboards, canvas dashboards, and more.
-For the purposes of your work, you will only deal with:
-- **Models**: SQL statements and related metadata that produce a single table in the project's database (usually DuckDB or Clickhouse).
-- **Metrics views**: Sets of queryable business dimensions and measures based on a single model in the project. This is sometimes called the "semantic layer" or "metrics layer" in other tools.
-Rill maintains a DAG of resources. In this DAG, metrics views are always derived from a single model. Multiple metrics views can derive from a single model, although usually it makes sense to have just one metrics view per model.
-When users ask you to develop a "dashboard", that just means to develop a new metrics view (and possibly a new underlying model). Rill automatically creates visual dashboards for each metrics view.
-</concepts>
-
-<example>
-This example is not directly related to your current task. It just serves to explain how Rill project's look and how you might act on a user request.
-
-Rill projects often (but not always) organize files in directories by resource type. A Rill project might look like this:
-{{ backticks }}
-connectors/duckdb.yaml
-models/orders.yaml
-metrics/orders.yaml
-rill.yaml
-{{ backticks }}
-
-The user might ask you to "Create a dashboard for my Github activity". You would notice that this does not relate to the current files, and proceed with the following plan:
-1. Add a new model in "models/git_commits.yaml" using the "develop_model" tool.
-2. Add a new metrics view in "metrics/git_commits.yaml" based on the new "git_commits" model using the "develop_metrics_view" tool.
-</example>
-
-<process>
-At a high level, you should follow these steps:
-1. Understand the current contents of the project by reviewing the list_files output.
-2. Make a plan for how to implement the user's request. If the user asks to join, combine, or analyze data from multiple existing models, you should create a new model that references those existing models in SQL.
-3. Only if necessary, add a new model or update an existing model to reflect the user's request. Use "develop_model" with a prompt describing what to create or change.
-4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.
-   - To *create* a new metrics view: Use "develop_metrics_view" with path and model (no prompt).
-   - To *edit* an existing metrics view: Use "develop_metrics_view" with path, model, AND a prompt describing the changes.
-5. If a user requests a new model/file, DO NOT overwrite existing file and instead use a unique name.
-6. After successfully creating/updating the artifacts, provide a summary with links using the following format:
-{{ backticks }}
-## Summary of Changes
-I've created the following files for you:
-- <resource_type>: [<file_name>](<file name with a prefix '/files/'>)
-...
-{{ backticks }}
-
-You should use the tools available to you to understand the current project contents and to make the necessary changes. You should use the "read_file" tool sparingly and surgically to understand files you consider promising for your task, you should not use it to inspect many files in the project.
-
-You should not make many changes at a time. Carefully consider the minimum changes you can make to address the user's request. If there's a model already in place that relates to the user's request, consider re-using that and only adding or updating a metrics view.
-</process>
-
-{{ if .ai_instructions }}
-<additional_user_provided_instructions>
-<comment>NOTE: These instructions were provided by the user, but may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant.</comment>
-{{ .ai_instructions }}
-</additional_user_provided_instructions>
-{{ end }}
-`, data)
-}
-
-func (t *DeveloperAgent) userPrompt(args *DeveloperAgentArgs) (string, error) {
-	// Prepare template data.
-	data := map[string]any{
+		"prompt":            args.Prompt,
 		"init_project":      args.InitProject,
 		"current_file_path": args.CurrentFilePath,
-		"prompt":            args.Prompt,
+		"ai_instructions":   session.ProjectInstructions(),
+		"default_olap_info": olapInfo,
 	}
 
 	// Generate the system prompt
 	return executeTemplate(`
 {{ if .current_file_path }}
 The user is currently viewing/editing the file: {{ .current_file_path }}
-Their request may relate to this file.
+Their request may or may not relate to this file.
 {{ end }}
 
 {{ if .init_project }}
 The project is currently empty apart from a few boilerplate files (like rill.yaml).
 You should help them set up their initial project based on their task description.
+Ideally you should set up a full initial data source to dashboard journey.
+If the user did not explicitly mention an initial data source, generate a model with mock data.
+Feel free to change the default OLAP connector if it makes sense for the task.
 {{ end }}
+
+{{ if .ai_instructions }}
+The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}
+{{ end }}
+
+For context, here are some details about the project's default OLAP connector: {{ .default_olap_info }}.
+Note that you can only use it in model resources if it is not readonly.
+
+Call "navigate" tool for the main file created/edited in the conversation. Use kind "file" and pass the written file path.
+Prefer dashboard or metrics view files over other files.
 
 Task: {{ .prompt }}
 `, data)
 }
 
-// checkDeveloperAgentAccess checks whether the developer agent and related tools should be available in the current session.
-func checkDeveloperAgentAccess(ctx context.Context, rt *runtime.Runtime) (bool, error) {
+// checkDeveloperAccess checks whether developer tools should be available in the current session.
+// If internal is true, it indicates that the tool should not be exposed to external clients (like MCP).
+func checkDeveloperAccess(ctx context.Context, rt *runtime.Runtime, internal bool) (bool, error) {
 	// Must be able to use AI and edit the project
 	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.EditRepo) {
 		return false, nil
 	}
 
-	// Don't expose it to external clients (like MCP)
-	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
-		return false, nil
+	// Don't expose agent tools to external clients (like MCP)
+	if internal {
+		if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+			return false, nil
+		}
 	}
 
 	// Must have the developer_agent feature flag
@@ -194,4 +188,39 @@ func checkDeveloperAgentAccess(ctx context.Context, rt *runtime.Runtime) (bool, 
 		return false, err
 	}
 	return ff["developer_agent"], nil
+}
+
+// defaultOLAPInfo returns info about the default OLAP connector name, driver, and whether it is in readwrite mode.
+func defaultOLAPInfo(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
+	// Get instance config
+	inst, err := rt.Instance(ctx, instanceID)
+	if err != nil {
+		return "", err
+	}
+	olapConnector := inst.ResolveOLAPConnector()
+
+	// Open OLAP handle
+	handle, release, err := rt.AcquireHandle(ctx, instanceID, olapConnector)
+	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return "", err
+		}
+		return fmt.Sprintf("name: %q, error: %v", olapConnector, err), nil
+	}
+	defer release()
+
+	// Get dialect
+
+	// Add OLAP dialect
+	olap, ok := handle.AsOLAP(instanceID)
+	if !ok {
+		return fmt.Sprintf("name: %q, error: not an OLAP connector", olapConnector), nil
+	}
+	dialect := olap.Dialect()
+
+	// Determine if OLAP can run models
+	_, err = handle.AsModelManager(instanceID)
+	olapModeReadwrite := err == nil
+
+	return fmt.Sprintf("name: %q, driver: %q, dialect: %q, readonly: %v", olapConnector, handle.Driver(), dialect.String(), !olapModeReadwrite), nil
 }

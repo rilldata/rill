@@ -432,7 +432,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			DirectoryName: directoryName,
 			GitRemote:     githubRemote,
 			Subpath:       subPath,
-			ProdBranch:    repoStatus.DefaultBranch,
+			PrimaryBranch: repoStatus.DefaultBranch,
 		}
 	}
 
@@ -470,7 +470,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 
 	return connect.NewResponse(&localv1.DeployProjectResponse{
-		DeployId:    projResp.Project.ProdDeploymentId,
+		DeployId:    projResp.Project.PrimaryDeploymentId,
 		Org:         projResp.Project.OrgName,
 		Project:     projResp.Project.Name,
 		FrontendUrl: projResp.Project.FrontendUrl,
@@ -558,7 +558,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			}
 			config := &gitutil.Config{
 				Remote:        projResp.Project.GitRemote,
-				DefaultBranch: projResp.Project.ProdBranch,
+				DefaultBranch: projResp.Project.PrimaryBranch,
 				Subpath:       projResp.Project.Subpath,
 			}
 			err = s.app.ch.CommitAndSafePush(ctx, reporoot, config, "", author, "1")

@@ -15,7 +15,7 @@
     type MetricsViewSpecMeasure,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import type { VegaSpec, View } from "svelte-vega";
   import type { TopLevelSpec } from "vega-lite";
   import type { TDDAlternateCharts } from "../types";
@@ -28,6 +28,7 @@
     updateChartOnTableCellHover,
   } from "./utils";
   import { VegaSignalManager } from "./vega-signal-manager";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
@@ -38,17 +39,27 @@
   export let timeGrain: V1TimeGrain | undefined;
   export let isTimeComparison: boolean;
   export let isScrubbing: boolean;
+  export let onChartHover: (
+    dimension: undefined | string | null,
+    ts: Date | undefined,
+  ) => void;
+  export let onChartBrush: (interval: { start: Date; end: Date }) => void;
+  export let onChartBrushEnd: (interval: { start: Date; end: Date }) => void;
+  export let onChartBrushClear: () => void;
 
   let viewVL: View;
   let vegaSpec: VegaSpec;
 
-  const dispatch = createEventDispatcher();
   const {
     selectors: {
       measures: { measureLabel, getMeasureByName },
       dimensions: { comparisonDimension },
     },
   } = getStateManagers();
+
+  $: ({ current } = themeControl);
+
+  $: themeMode = $current;
 
   $: hasDimensionData = !!dimensionData?.length;
   $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
@@ -137,7 +148,7 @@
     rafId = requestAnimationFrame((timestamp) => {
       const elapsed = timestamp - lastUpdateTime;
       if (elapsed >= currentInterval) {
-        dispatch("chart-brush", { interval });
+        onChartBrush(interval);
         lastUpdateTime = timestamp;
 
         // Adjust interval based on performance
@@ -170,7 +181,7 @@
       const dimension = resolveSignalField(value, "dimension");
       const ts = resolveSignalTimeField(value);
 
-      dispatch("chart-hover", { dimension, ts });
+      onChartHover(dimension, ts);
     },
     brush: (_name: string, value) => {
       const interval = resolveSignalIntervalField(value);
@@ -183,14 +194,11 @@
     brush_end: (_name: string, value: boolean) => {
       const interval = resolveSignalIntervalField(value);
 
-      dispatch("chart-brush-end", { interval });
+      if (interval) onChartBrushEnd(interval);
     },
     brush_clear: (_name: string, value: boolean) => {
       if (value) {
-        dispatch("chart-brush-clear", {
-          start: undefined,
-          end: undefined,
-        });
+        onChartBrushClear();
       }
     },
   };
@@ -218,6 +226,7 @@
     {tooltipFormatter}
     {isScrubbing}
     renderer="svg"
+    theme={themeMode}
   />
 {:else}
   <!-- JIC we add a new chart type without brush param -->

@@ -15,6 +15,7 @@
     type DimensionColumnProps,
     type MeasureColumnProps,
   } from "./pivot-column-definition";
+  import { isShowMoreRow } from "./pivot-utils";
   import {
     calculateMeasureWidth,
     calculateRowDimensionWidth,
@@ -328,7 +329,7 @@
     <tr style:height="{before}px" />
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
-      <tr>
+      <tr class:show-more-row={isShowMoreRow(rows[row.index])}>
         {#each cells as cell, i (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
@@ -345,20 +346,8 @@
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
-            on:mouseover={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
-            on:focus={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
+            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component
@@ -383,7 +372,7 @@
 
 <style lang="postcss">
   * {
-    @apply border-slate-200;
+    @apply border-gray-200;
   }
 
   .resize-bar {
@@ -393,13 +382,13 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface table-fixed;
+    @apply bg-surface-background table-fixed;
   }
 
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface;
+    @apply z-30 bg-surface-background;
   }
 
   .with-row-dimension thead tr th:first-of-type .header-cell {
@@ -441,12 +430,12 @@
   .header-cell {
     @apply px-2 size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply text-gray-800 font-medium;
+    @apply text-fg-primary font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2 text-gray-800;
+    @apply size-full p-1 px-2 text-fg-primary;
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
@@ -456,25 +445,25 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    @apply bg-surface;
+    /* @apply bg-surface-subtle; */
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    @apply bg-surface;
+    /* @apply bg-surface-subtle; */
   }
 
   .with-row-dimension tr:hover > td:first-of-type {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   .with-row-dimension.with-col-dimension tr > th:first-of-type {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 
   /* The totals row */
   .with-totals-row tbody > tr:nth-of-type(2) {
-    @apply bg-surface sticky z-20;
+    @apply bg-surface-muted sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }
@@ -484,7 +473,7 @@
     tbody
     > tr:nth-of-type(2)
     > td:first-of-type {
-    @apply font-semibold;
+    @apply font-semibold bg-surface-muted;
   }
 
   .with-expandable-rows.with-totals-row
@@ -496,7 +485,7 @@
 
   tr:hover,
   tr:hover .cell {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   tr:hover .active-cell {
@@ -511,5 +500,16 @@
   }
   .active-cell.cell {
     @apply bg-primary-50;
+  }
+
+  /* Show more row styling */
+  .show-more-row,
+  .show-more-row .cell {
+    @apply bg-surface-background;
+  }
+
+  .show-more-row:hover,
+  .show-more-row:hover .cell {
+    @apply bg-gray-100;
   }
 </style>

@@ -99,17 +99,24 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		opts.Attributes = attrs
 	}
 
-	if req.Filter != nil {
-		val, err := protojson.Marshal(req.Filter)
+	filterSize := 0
+	for mv, filter := range req.MetricsViewFilters {
+		if opts.MetricsViewFilterJSONs == nil {
+			opts.MetricsViewFilterJSONs = make(map[string]string)
+		}
+		val, err := protojson.Marshal(filter)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if len(val) > magicAuthTokenFilterMaxSize {
+		filterSize += len(val)
+		if filterSize > magicAuthTokenFilterMaxSize {
 			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenFilterMaxSize)
 		}
 
-		opts.FilterJSON = string(val)
+		filterJSON := string(val)
+
+		opts.MetricsViewFilterJSONs[mv] = filterJSON
 	}
 
 	token, err := s.admin.IssueMagicAuthToken(ctx, opts)
@@ -268,13 +275,14 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		return nil, fmt.Errorf("failed to convert attributes to structpb: %w", err)
 	}
 
-	var filter *runtimev1.Expression
-	if tkn.FilterJSON != "" {
-		filter = &runtimev1.Expression{}
-		err := protojson.Unmarshal([]byte(tkn.FilterJSON), filter)
+	mvFilters := make(map[string]*runtimev1.Expression)
+	for mv, filterJSON := range tkn.MetricsViewFilterJSONs {
+		mvFilter := &runtimev1.Expression{}
+		err := protojson.Unmarshal([]byte(filterJSON), mvFilter)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal filter: %w", err)
+			return nil, fmt.Errorf("failed to unmarshal filter for metrics view %s: %w", mv, err)
 		}
+		mvFilters[mv] = mvFilter
 	}
 
 	// backwards compatibility
@@ -313,7 +321,7 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		CreatedByUserEmail: tkn.CreatedByUserEmail,
 		Attributes:         attrs,
 		Resources:          rs,
-		Filter:             filter,
+		MetricsViewFilters: mvFilters,
 		Fields:             tkn.Fields,
 		State:              tkn.State,
 		DisplayName:        tkn.DisplayName,

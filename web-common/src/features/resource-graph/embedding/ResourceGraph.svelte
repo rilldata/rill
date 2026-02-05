@@ -457,7 +457,7 @@
               open={isExpanded}
               mode={overlayMode}
               {showControls}
-              on:close={() => handleExpandChange(null)}
+              onClose={() => handleExpandChange(null)}
             />
           {:else if isExpanded}
             <!-- Inline expansion within grid -->
@@ -482,7 +482,7 @@
               {fitViewPadding}
               {fitViewMinZoom}
               {fitViewMaxZoom}
-              on:expand={() => handleExpandChange(null)}
+              onExpand={() => handleExpandChange(null)}
             />
           {:else}
             <!-- Collapsed card view -->
@@ -508,7 +508,7 @@
                 {fitViewPadding}
                 {fitViewMinZoom}
                 {fitViewMaxZoom}
-                on:expand={() => handleExpandChange(group.id)}
+                onExpand={() => handleExpandChange(group.id)}
               />
             </slot>
           {/if}
@@ -552,7 +552,7 @@
   }
 
   .state {
-    @apply flex h-full w-full items-center justify-center text-sm text-gray-500;
+    @apply flex h-full w-full items-center justify-center text-sm text-fg-secondary;
   }
 
   .state.error {
@@ -567,6 +567,6 @@
     @apply mb-2;
   }
   .graph-section-title {
-    @apply text-sm font-semibold text-foreground mt-4 mb-2;
+    @apply text-sm font-semibold text-fg-primary mt-4 mb-2;
   }
 </style>

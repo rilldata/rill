@@ -46,26 +46,17 @@ export class ConversationManager {
   private static readonly MAX_CONCURRENT_STREAMS = 3;
 
   private newConversation: Conversation;
+  private newConversationUnsub: (() => void) | null = null;
   private conversations = new Map<string, Conversation>();
   private conversationSelector: ConversationSelector;
-  private agent?: string;
+  private readonly agent?: string;
 
   constructor(
     public readonly instanceId: string,
     options: ConversationManagerOptions,
   ) {
     this.agent = options.agent;
-    this.newConversation = new Conversation(
-      this.instanceId,
-      NEW_CONVERSATION_ID,
-      {
-        agent: this.agent,
-        onStreamStart: () => this.enforceMaxConcurrentStreams(),
-        onConversationCreated: (conversationId: string) => {
-          this.handleConversationCreated(conversationId);
-        },
-      },
-    );
+    this.createNewConversation();
 
     switch (options.conversationState) {
       case "url":
@@ -121,10 +112,13 @@ export class ConversationManager {
         const conversation = new Conversation(
           this.instanceId,
           $conversationId,
-          {
-            agent: this.agent,
-            onStreamStart: () => this.enforceMaxConcurrentStreams(),
-          },
+          this.agent,
+        );
+        conversation.on("stream-start", () =>
+          this.enforceMaxConcurrentStreams(),
+        );
+        conversation.on("conversation-forked", (newConversationId) =>
+          this.handleConversationForked($conversationId, newConversationId),
         );
         this.conversations.set($conversationId, conversation);
         return conversation;
@@ -161,6 +155,26 @@ export class ConversationManager {
   }
 
   // ===== PRIVATE IMPLEMENTATION =====
+
+  private createNewConversation() {
+    this.newConversationUnsub?.();
+    this.newConversation = new Conversation(
+      this.instanceId,
+      NEW_CONVERSATION_ID,
+      this.agent,
+    );
+    const streamStartUnsub = this.newConversation.on("stream-start", () =>
+      this.enforceMaxConcurrentStreams(),
+    );
+    const conversationStartedUnsub = this.newConversation.on(
+      "conversation-created",
+      (conversationId) => this.handleConversationCreated(conversationId),
+    );
+    this.newConversationUnsub = () => {
+      streamStartUnsub();
+      conversationStartedUnsub();
+    };
+  }
 
   // ----- Stream Management -----
 
@@ -213,6 +227,26 @@ export class ConversationManager {
   }
 
   /**
+   * Handle conversation forking - updates state to navigate to the forked conversation
+   * Called when a non-owner sends a message and the conversation is forked
+   */
+  private handleConversationForked(
+    originalConversationId: string,
+    newConversationId: string,
+  ): void {
+    // Get the forked conversation (which is the updated instance)
+    const forkedConversation = this.conversations.get(originalConversationId);
+    if (forkedConversation) {
+      // Move the conversation to the new ID in our map
+      this.conversations.delete(originalConversationId);
+      this.conversations.set(newConversationId, forkedConversation);
+    }
+
+    // Navigate to the new forked conversation
+    this.conversationSelector.selectConversation(newConversationId);
+  }
+
+  /**
    * Rotates the new conversation: moves current "new" conversation to the conversations map
    * and creates a fresh "new" conversation instance
    */
@@ -221,17 +255,7 @@ export class ConversationManager {
     this.conversations.set(conversationId, this.newConversation);
 
     // Create a fresh "new" conversation instance
-    this.newConversation = new Conversation(
-      this.instanceId,
-      NEW_CONVERSATION_ID,
-      {
-        agent: this.agent,
-        onStreamStart: () => this.enforceMaxConcurrentStreams(),
-        onConversationCreated: (conversationId: string) => {
-          this.handleConversationCreated(conversationId);
-        },
-      },
-    );
+    this.createNewConversation();
   }
 }
 

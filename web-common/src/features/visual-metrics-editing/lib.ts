@@ -33,6 +33,7 @@ export class YAMLDimension {
   description: string;
   unnest: boolean | undefined;
   resourceName: string;
+  type: "time" | "geo" | "categorical" | undefined;
 
   constructor(
     item?: YAMLMap<string, string>,
@@ -48,6 +49,7 @@ export class YAMLDimension {
         ? undefined
         : item?.get("unnest") === "true";
     this.resourceName = dimension?.name ?? "";
+    this.type = item?.get("type") as "time" | "geo" | "categorical" | undefined;
   }
 }
 
@@ -59,6 +61,7 @@ export class YAMLMeasure {
   valid_percent_of_total: boolean;
   format_d3: string;
   format_preset: FormatPreset | "";
+  type: "simple" | "derived" | "time_comparison" | undefined;
 
   constructor(item?: YAMLMap<string, string>) {
     this.expression = item?.get("expression") ?? "";
@@ -70,6 +73,11 @@ export class YAMLMeasure {
     this.format_preset =
       (item?.get("format_preset") as unknown as FormatPreset) ??
       (this.format_d3 ? "" : FormatPreset.NONE);
+    this.type = item?.get("type") as
+      | "simple"
+      | "derived"
+      | "time_comparison"
+      | undefined;
   }
 }
 
