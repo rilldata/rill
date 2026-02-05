@@ -121,6 +121,11 @@ export class SSEFetchClient {
     } = {},
   ): Promise<void> {
     // Clean up any existing connection
+    const wasStreaming = this.isStreaming();
+    console.log("[SSE-Client] start() called, wasStreaming:", wasStreaming);
+    if (wasStreaming) {
+      console.log("[SSE-Client] ABORTING existing connection!");
+    }
     this.stop();
 
     const { method = "GET", body, headers: customHeaders = {} } = options;
@@ -156,18 +161,23 @@ export class SSEFetchClient {
         throw new Error("No response body");
       }
 
+      console.log("[SSE-Client] Connection OPEN - emitting open event");
       this.events.emit("open");
 
       // Process the SSE stream
       await this.processSSEStream(response.body);
     } catch (error) {
       if (error.name !== "AbortError") {
+        console.log("[SSE-Client] Error (not AbortError):", error);
         const errorArg =
           error instanceof Error ? error : new Error(String(error));
         this.events.emit("error", errorArg);
+      } else {
+        console.log("[SSE-Client] AbortError - connection was aborted");
       }
     } finally {
       this.stop();
+      console.log("[SSE-Client] emitting close event");
       this.events.emit("close");
     }
   }
