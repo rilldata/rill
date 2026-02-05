@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/mitchellh/mapstructure"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -282,7 +281,6 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	// Call Gemini API
 	res, err := h.client.Models.GenerateContent(ctx, h.config.getModel(), contents, genConfig)
 	if err != nil {
-		log.Printf("HERE?: %v", err)
 		return nil, err
 	}
 
@@ -339,6 +337,7 @@ func convertTools(tools []*aiv1.Tool) ([]*genai.Tool, error) {
 
 // convertMessages converts Rill messages to Gemini format.
 // It returns system parts separately because Gemini's API treats them differently.
+// It also merges consecutive contents with the same role since Gemini requires role alternation.
 func convertMessages(msgs []*aiv1.CompletionMessage) (*genai.Content, []*genai.Content, error) {
 	var systemParts []*genai.Part
 	var contents []*genai.Content
@@ -360,12 +359,47 @@ func convertMessages(msgs []*aiv1.CompletionMessage) (*genai.Content, []*genai.C
 		contents = append(contents, converted...)
 	}
 
+	contents = normalizeContents(contents)
+
 	var systemInstructions *genai.Content
 	if len(systemParts) > 0 {
 		systemInstructions = &genai.Content{Parts: systemParts}
 	}
 
 	return systemInstructions, contents, nil
+}
+
+// normalizeContents normalizes contents to align with the Gemini API's expectations.
+// Specifically, it merges consecutive contents with the same role, and ensures the conversation starts with a user turn.
+func normalizeContents(contents []*genai.Content) []*genai.Content {
+	if len(contents) == 0 {
+		return contents
+	}
+
+	// Iterate through contents and merge consecutive ones with the same role.
+	var merged []*genai.Content
+	current := contents[0]
+	for i := 1; i < len(contents); i++ {
+		if contents[i].Role == current.Role {
+			// Same role: merge parts into current
+			current.Parts = append(current.Parts, contents[i].Parts...)
+		} else {
+			// Different role: save current and start new
+			merged = append(merged, current)
+			current = contents[i]
+		}
+	}
+	merged = append(merged, current)
+
+	// Ensure it starts with a user turn.
+	if contents[0].Role != genai.RoleUser {
+		return append([]*genai.Content{{
+			Role:  genai.RoleUser,
+			Parts: []*genai.Part{genai.NewPartFromText("Please proceed.")},
+		}}, contents...)
+	}
+
+	return merged
 }
 
 // extractSystemParts extracts text parts from a system message.
@@ -390,44 +424,38 @@ func convertMessage(msg *aiv1.CompletionMessage, callIDToName map[string]string)
 		role = genai.RoleModel
 	}
 
-	var result []*genai.Content
+	// Collect all parts from this message into a single Content.
+	// Gemini expects all parts from a single turn to be grouped together.
+	var parts []*genai.Part
 	for _, block := range msg.Content {
 		switch b := block.BlockType.(type) {
 		case *aiv1.ContentBlock_Text:
-			result = append(result, &genai.Content{
-				Role: role,
-				Parts: []*genai.Part{
-					genai.NewPartFromText(b.Text),
-				},
-			})
+			parts = append(parts, genai.NewPartFromText(b.Text))
+
 		case *aiv1.ContentBlock_ToolCall:
 			callIDToName[b.ToolCall.Id] = b.ToolCall.Name
 
 			part := genai.NewPartFromFunctionCall(b.ToolCall.Name, b.ToolCall.Input.AsMap())
 			part.FunctionCall.ID = b.ToolCall.Id
-
-			result = append(result, &genai.Content{
-				Role:  role,
-				Parts: []*genai.Part{part},
-			})
+			parts = append(parts, part)
 
 		case *aiv1.ContentBlock_ToolResult:
 			part, err := convertFunctionResponse(b.ToolResult, callIDToName[b.ToolResult.Id])
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert tool result: %w", err)
 			}
-
-			result = append(result, &genai.Content{
-				Role:  role,
-				Parts: []*genai.Part{part},
-			})
+			parts = append(parts, part)
 
 		default:
 			return nil, fmt.Errorf("unsupported message block type: %T", block.BlockType)
 		}
 	}
 
-	return result, nil
+	if len(parts) == 0 {
+		return nil, nil
+	}
+
+	return []*genai.Content{{Role: role, Parts: parts}}, nil
 }
 
 // convertFunctionResponse converts a Rill ToolResult to a Gemini FunctionResponse part.
