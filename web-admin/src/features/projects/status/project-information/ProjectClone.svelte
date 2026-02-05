@@ -42,7 +42,7 @@
 
     <Popover.Content class="w-[380px]" align="end" sideOffset={8}>
       <div class="flex flex-col gap-y-3">
-        <span class="text-sm text-gray-600">
+        <span class="text-sm text-fg-secondary">
           Clone this project to develop locally.
           <a
             href="https://docs.rilldata.com/developers/guides/clone-a-project"
@@ -61,7 +61,7 @@
               on:click={() => onCopy(rillStartCommand)}
             >
               <code class="text-xs truncate">{rillStartCommand}</code>
-              <span class="text-gray-400">
+              <span class="text-fg-muted">
                 {#if copiedCommand === rillStartCommand}
                   <Check size="14px" color="#22c55e" />
                 {:else}
@@ -71,7 +71,7 @@
             </button>
 
             <div class="env-note">
-              <span class="text-[11px] text-gray-500">
+              <span class="text-[11px] text-fg-secondary">
                 Then pull environment variables:
               </span>
               <button
@@ -80,7 +80,7 @@
                 on:click={() => onCopy(envPullCommand)}
               >
                 <code class="text-[11px] truncate">{envPullCommand}</code>
-                <span class="text-gray-400">
+                <span class="text-fg-muted">
                   {#if copiedCommand === envPullCommand}
                     <Check size="14px" color="#22c55e" />
                   {:else}
@@ -96,7 +96,7 @@
               on:click={() => onCopy(cloneCommand)}
             >
               <code class="text-xs truncate">{cloneCommand}</code>
-              <span class="text-gray-400">
+              <span class="text-fg-muted">
                 {#if copiedCommand === cloneCommand}
                   <Check size="14px" color="#22c55e" />
                 {:else}
@@ -114,16 +114,16 @@
 <style lang="postcss">
   .command-box {
     @apply flex items-center justify-between gap-x-2;
-    @apply bg-gray-50 border border-gray-200 rounded px-2 py-1;
-    @apply font-mono text-gray-800 text-left;
+    @apply bg-surface-subtle border border-gray-200 rounded px-2 py-1;
+    @apply font-mono text-fg-primary text-left;
     @apply cursor-pointer w-full;
   }
 
   .command-box:hover {
-    @apply bg-gray-100;
+    @apply bg-surface-hover;
   }
 
   .env-note {
-    @apply flex flex-col gap-y-1 mt-1 pt-2 border-t border-gray-100;
+    @apply flex flex-col gap-y-1 mt-1 pt-2 border-t border-gray-200;
   }
 </style>

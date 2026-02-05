@@ -202,7 +202,7 @@
   }
 
   .logs-container {
-    @apply h-64 overflow-y-auto overflow-x-hidden font-mono text-xs;
+    @apply h-96 overflow-y-auto overflow-x-hidden font-mono text-xs;
     @apply bg-surface-background border border-gray-200 rounded-md p-2;
   }
 

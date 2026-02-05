@@ -61,7 +61,7 @@
   }
 
   .title {
-    @apply text-lg font-semibold text-gray-900;
+    @apply text-lg font-semibold text-fg-primary;
   }
 
   .status-dot {
@@ -69,7 +69,7 @@
   }
 
   .version {
-    @apply text-sm font-mono text-gray-500;
+    @apply text-sm font-mono text-fg-secondary;
   }
 
   .deployment-info {
@@ -77,11 +77,11 @@
   }
 
   .deployment-env {
-    @apply text-sm font-medium text-gray-500 italic;
+    @apply text-sm font-medium text-fg-secondary italic;
   }
 
   .status-message {
-    @apply text-sm text-gray-600;
+    @apply text-sm text-fg-secondary;
     @apply max-w-md truncate;
   }
 

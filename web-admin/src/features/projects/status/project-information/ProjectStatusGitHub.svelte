@@ -111,7 +111,7 @@
   }
 
   .cell-label {
-    @apply text-xs font-medium text-gray-500 uppercase tracking-wide;
+    @apply text-xs font-medium text-fg-secondary uppercase tracking-wide;
   }
 
   .cell-content {
@@ -119,7 +119,7 @@
   }
 
   .repo-link {
-    @apply text-sm font-semibold text-gray-900;
+    @apply text-sm font-semibold text-fg-primary;
     @apply font-mono truncate;
   }
 
@@ -128,15 +128,15 @@
   }
 
   .github-detail {
-    @apply text-sm text-gray-700;
+    @apply text-sm text-fg-primary;
   }
 
   .detail-label {
-    @apply font-mono text-gray-500;
+    @apply font-mono text-fg-secondary;
   }
 
   .synced-text {
-    @apply text-xs text-gray-500;
+    @apply text-xs text-fg-secondary;
   }
 
   .info-link {

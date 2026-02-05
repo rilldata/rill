@@ -57,7 +57,7 @@
   }
 
   .cell-label {
-    @apply text-xs font-medium text-gray-500 uppercase tracking-wide;
+    @apply text-xs font-medium text-fg-secondary uppercase tracking-wide;
   }
 
   .cell-content {
@@ -65,15 +65,15 @@
   }
 
   .connector-name {
-    @apply text-sm font-medium text-gray-900;
+    @apply text-sm font-medium text-fg-primary;
   }
 
   .connector-details {
-    @apply flex items-center gap-2 text-xs text-gray-600;
+    @apply flex items-center gap-2 text-xs text-fg-secondary;
   }
 
   .icon-muted {
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 
   .icon-muted :global(svg path) {

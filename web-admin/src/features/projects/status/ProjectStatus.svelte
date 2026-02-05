@@ -45,6 +45,6 @@
 
 <style lang="postcss">
   .info-box {
-    @apply p-4 bg-white border border-gray-200 rounded-lg;
+    @apply p-4 bg-surface-background border border-gray-200 rounded-lg;
   }
 </style>

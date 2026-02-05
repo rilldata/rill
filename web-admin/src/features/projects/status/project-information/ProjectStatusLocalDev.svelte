@@ -44,7 +44,7 @@
   }
 
   .cell-label {
-    @apply text-xs font-medium text-gray-500 uppercase tracking-wide;
+    @apply text-xs font-medium text-fg-secondary uppercase tracking-wide;
   }
 
   .cell-content {
@@ -56,7 +56,7 @@
   }
 
   .icon-muted {
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 
   .icon-muted :global(svg path) {
