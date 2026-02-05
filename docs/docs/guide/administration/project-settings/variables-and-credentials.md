@@ -85,8 +85,8 @@ Older projects may use the `connector.<connector_name>.<property>` syntax (e.g.,
 | **Source Name** |             Property             | Environment Variable                |
 | :-------------: | :------------------------------: | :---------------------------------- |
 |     **GCS**     | `google_application_credentials` | `GOOGLE_APPLICATION_CREDENTIALS`    |
-|                 |             `key_id`             | `GS_ACCESS_KEY_ID`                  |
-|                 |             `secret`             | `GS_SECRET_ACCESS_KEY`              |
+|                 |             `key_id`             | `GCP_ACCESS_KEY_ID`                 |
+|                 |             `secret`             | `GCP_SECRET_ACCESS_KEY`             |
 |   **AWS S3**    |       `aws_access_key_id`        | `AWS_ACCESS_KEY_ID`                 |
 |                 |     `aws_secret_access_key`      | `AWS_SECRET_ACCESS_KEY`             |
 |    **Azure**    |     `azure_storage_account`      | `AZURE_STORAGE_ACCOUNT`             |
