@@ -121,7 +121,6 @@ driver: ${driverName}`;
       const key = property.key as string;
       const value = formValues[key] as string;
 
-      // Format headers as a YAML map (key-value pairs, one per line)
       if (key === "headers" && typeof value === "string") {
         return formatHeadersAsYamlMap(value);
       }
