@@ -72,27 +72,9 @@ var spec = drivers.Spec{
 	ImplementsAI: true,
 }
 
-type configProperties struct {
-	APIKey      string  `mapstructure:"api_key"`
-	Model       string  `mapstructure:"model"`
-	Temperature float32 `mapstructure:"temperature"`
-	BaseURL     string  `mapstructure:"base_url"`
-	APIType     string  `mapstructure:"api_type"`
-	APIVersion  string  `mapstructure:"api_version"`
-}
-
-func (c *configProperties) getModel() string {
-	if c.Model != "" {
-		return c.Model
-	}
-	return openai.ChatModelGPT5_2
-}
-
 type driver struct{}
 
 var _ drivers.Driver = driver{}
-
-var _ drivers.AIService = (*openaiHandle)(nil)
 
 // HasAnonymousSourceAccess implements drivers.Driver.
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
@@ -150,10 +132,28 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 	return nil, drivers.ErrNotImplemented
 }
 
+type configProperties struct {
+	APIKey      string  `mapstructure:"api_key"`
+	Model       string  `mapstructure:"model"`
+	Temperature float32 `mapstructure:"temperature"`
+	BaseURL     string  `mapstructure:"base_url"`
+	APIType     string  `mapstructure:"api_type"`
+	APIVersion  string  `mapstructure:"api_version"`
+}
+
+func (c *configProperties) getModel() string {
+	if c.Model != "" {
+		return c.Model
+	}
+	return openai.ChatModelGPT5_2
+}
+
 type openaiHandle struct {
 	client openai.Client
 	config *configProperties
 }
+
+var _ drivers.AIService = (*openaiHandle)(nil)
 
 // AsAI implements drivers.Handle.
 func (o *openaiHandle) AsAI(instanceID string) (drivers.AIService, bool) {
@@ -320,8 +320,14 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 	return result, nil
 }
 
-// messageToOpenAI converts a Rill CompletionMessage to OpenAI messages.
-// Each Rill message may become multiple OpenAI messages due to tool result handling.
+// messageToOpenAI converts a single Rill CompletionMessage to one or more OpenAI ChatCompletionMessages.
+//
+// This handles the asymmetric nature of OpenAI's tool calling pattern:
+// - Tool calls: Multiple calls are grouped in ONE assistant message (how OpenAI sends them)
+// - Tool results: Each result becomes a SEPARATE message with role="tool" (how OpenAI expects responses)
+//
+// Note: In practice, Rill messages have at most 1 text block (from OpenAI's single Content field),
+// so we don't need to worry about concatenating multiple text blocks.
 func messageToOpenAI(msg *aiv1.CompletionMessage) ([]openai.ChatCompletionMessageParamUnion, error) {
 	var result []openai.ChatCompletionMessageParamUnion
 	var regularContent string
