@@ -13,11 +13,14 @@ rill user add [flags]
 ### Flags
 
 ```
-      --email string     Email of the user
-      --group string     User group
-      --org string       Organization
-      --project string   Project
-      --role string      Role of the user (options: admin, editor, viewer, guest)
+      --canvas stringArray    Canvas resource to restrict to (repeat for multiple)
+      --email string          Email of the user
+      --explore stringArray   Explore resource to restrict to (repeat for multiple)
+      --group string          User group
+      --org string            Organization
+      --project string        Project
+      --restrict-resources    Restrict the user to the provided resources (defaults to true when resources are provided)
+      --role string           Role of the user (options: admin, editor, viewer, guest)
 ```
 
 ### Global flags

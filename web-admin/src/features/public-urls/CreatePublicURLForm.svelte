@@ -16,6 +16,7 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
+  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -40,7 +41,7 @@
 
   const {
     dashboardStore,
-    exploreName,
+    metricsViewName,
     selectors: {
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
@@ -65,6 +66,11 @@
     exploreFields,
     $validSpecStore.data?.explore,
   );
+
+  $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
+  $: hasDimensionThresholdFilter =
+    hasDashboardDimensionThresholdFilter($dashboardStore);
+  $: hasSomeFilter = hasWhereFilter || hasDimensionThresholdFilter;
 
   let url: string | null = null;
   let setExpiration = false;
@@ -95,13 +101,24 @@
         const values = form.data;
 
         try {
+          const filter = hasSomeFilter
+            ? mergeDimensionAndMeasureFilters(
+                $dashboardStore.whereFilter,
+                $dashboardStore.dimensionThresholdFilters,
+              )
+            : undefined;
+          // TODO : add a check upstream to make sure if filter exists, metricsViewName is defined
+          const metricsViewFilters = filter
+            ? { [$metricsViewName]: filter }
+            : undefined;
+
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
-            organization,
+            org: organization,
             project,
             data: {
               resourceType: ResourceKind.Explore as string,
               resourceName: dashboard,
-              filter: hasWhereFilter ? $dashboardStore.whereFilter : undefined,
+              metricsViewFilters,
               fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
@@ -137,10 +154,6 @@
     }, 2_000);
   }
 
-  $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
-  $: hasDimensionThresholdFilter =
-    hasDashboardDimensionThresholdFilter($dashboardStore);
-
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
     $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
@@ -157,7 +170,7 @@
 
 {#if !url}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
-    <h3 class="text-xs text-gray-800 font-normal">
+    <h3 class="text-xs text-fg-primary font-normal">
       Create a shareable public URL for this view.
     </h3>
 
@@ -170,17 +183,14 @@
         />
       </div>
 
-      <div
-        class="mt-4"
-        class:mb-4={!hasWhereFilter && !hasDimensionThresholdFilter}
-      >
+      <div class="mt-4" class:mb-4={!hasSomeFilter}>
         <div class="flex items-center gap-x-2">
           <Switch small id="has-expiration" bind:checked={setExpiration} />
           <Label class="text-xs" for="has-expiration">Set expiration</Label>
         </div>
         {#if setExpiration}
           <div class="flex items-center gap-x-1 pl-[30px]">
-            <label for="expires-at" class="text-slate-500 font-medium">
+            <label for="expires-at" class="text-fg-secondary font-medium">
               Access expires {new Date($form.expiresAt).toLocaleDateString(
                 "en-US",
                 { year: "numeric", month: "short", day: "numeric" },
@@ -217,7 +227,7 @@
         <div class="flex flex-row items-center gap-x-1">
           <Label class="text-xs" for="lock-time-range">Lock time range</Label>
           <Tooltip location="right" alignment="middle" distance={8}>
-            <div class="text-gray-500">
+            <div class="text-fg-secondary">
               <InfoCircle size="12px" />
             </div>
             <TooltipContent maxWidth="400px" slot="tooltip-content">
@@ -228,7 +238,7 @@
       </div>
       {#if lockTimeRange}
         <div class="w-full pl-[30px]">
-          <label for="lock-time-range" class="text-slate-500 font-medium">
+          <label for="lock-time-range" class="text-fg-secondary font-medium">
             {#if interval.isValid}
               <RangeDisplay {interval} grain={activeTimeGrain} {abbreviation} />
             {/if}
@@ -237,28 +247,26 @@
       {/if}
     </div> -->
 
-      {#if hasWhereFilter || hasDimensionThresholdFilter}
+      {#if hasSomeFilter}
         <hr class="mt-4 mb-4" />
 
         <div class="flex flex-col gap-y-1">
-          <p class="text-xs text-gray-800 font-normal">
+          <p class="text-xs text-fg-primary font-normal">
             The following filters will be locked and hidden:
           </p>
           <div class="flex flex-row gap-1 mt-2">
             <ExploreFilterChipsReadOnly
-              exploreName={$exploreName}
+              metricsViewNames={[$metricsViewName]}
               filters={$dashboardStore.whereFilter}
               dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}
               dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
-              displayTimeRange={undefined}
-              displayComparisonTimeRange={undefined}
               queryTimeStart={$timeControlStore.timeStart}
               queryTimeEnd={$timeControlStore.timeEnd}
             />
           </div>
         </div>
 
-        <p class="text-xs text-gray-800 font-normal mt-4 mb-4">
+        <p class="text-xs text-fg-primary font-normal mt-4 mb-4">
           Measures and dimensions will be limited to current visible set.
         </p>
       {/if}

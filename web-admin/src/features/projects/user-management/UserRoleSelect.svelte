@@ -10,6 +10,7 @@
   import { PROJECT_ROLES_OPTIONS } from "../constants";
 
   export let value: string;
+  export let width = "w-18";
 
   let open = false;
 
@@ -22,9 +23,9 @@
 
 <DropdownMenu bind:open typeahead={false}>
   <DropdownMenuTrigger
-    class="w-18 flex flex-row gap-1 items-center rounded-sm {open
-      ? 'bg-slate-200'
-      : 'hover:bg-slate-100'} px-2 py-1"
+    class="{width} flex flex-row gap-1 items-center rounded-sm {open
+      ? 'bg-surface-active'
+      : 'hover:bg-surface-hover'} px-2 py-1"
   >
     <div class="text-xs">{selected?.label ?? ""}</div>
     {#if open}
@@ -42,13 +43,13 @@
     {#each PROJECT_ROLES_OPTIONS as { value, label, description } (value)}
       <DropdownMenuItem
         on:click={() => onSelect(value)}
-        class="text-xs hover:bg-slate-100 {selected?.value === value
-          ? 'bg-slate-50'
+        class="text-xs hover:bg-surface-hover {selected?.value === value
+          ? 'bg-surface-active'
           : ''}"
       >
         <div class="flex flex-col">
-          <div class="text-xs font-medium text-slate-700">{label}</div>
-          <div class="text-slate-500 text-[11px]">{description}</div>
+          <div class="text-xs font-medium text-fg-primary">{label}</div>
+          <div class="text-fg-secondary text-[11px]">{description}</div>
         </div>
       </DropdownMenuItem>
     {/each}

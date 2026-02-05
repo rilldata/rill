@@ -145,6 +145,8 @@ message DashboardState {
   optional PivotTableMode pivot_table_mode = 31;
   // Enable comparison for pivot
   optional bool pivot_enable_comparison = 34;
+  // Row limit for pivot table (number of child rows to show under each dimension)
+  optional int32 pivot_row_limit = 41;
 
   // List of all dimensions selected for rows
   repeated PivotElement pivot_row_all_dimensions = 35;

@@ -94,10 +94,10 @@ func listUsergroupMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, group, pa
 	}
 
 	members, err := client.ListUsergroupMemberUsers(cmd.Context(), &adminv1.ListUsergroupMemberUsersRequest{
-		Organization: org,
-		Usergroup:    group,
-		PageSize:     pageSize,
-		PageToken:    pageToken,
+		Org:       org,
+		Usergroup: group,
+		PageSize:  pageSize,
+		PageToken: pageToken,
 	})
 	if err != nil {
 		return err
@@ -120,10 +120,10 @@ func listProjectMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 	}
 
 	members, err := client.ListProjectMemberUsers(cmd.Context(), &adminv1.ListProjectMemberUsersRequest{
-		Organization: org,
-		Project:      project,
-		PageSize:     pageSize,
-		PageToken:    pageToken,
+		Org:       org,
+		Project:   project,
+		PageSize:  pageSize,
+		PageToken: pageToken,
 	})
 	if err != nil {
 		return err
@@ -146,10 +146,10 @@ func listProjectInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 	}
 
 	invites, err := client.ListProjectInvites(cmd.Context(), &adminv1.ListProjectInvitesRequest{
-		Organization: org,
-		Project:      project,
-		PageSize:     pageSize,
-		PageToken:    pageToken,
+		Org:       org,
+		Project:   project,
+		PageSize:  pageSize,
+		PageToken: pageToken,
 	})
 	if err != nil {
 		return err
@@ -181,9 +181,9 @@ func listOrgMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 	}
 
 	members, err := client.ListOrganizationMemberUsers(cmd.Context(), &adminv1.ListOrganizationMemberUsersRequest{
-		Organization: org,
-		PageSize:     pageSize,
-		PageToken:    pageToken,
+		Org:       org,
+		PageSize:  pageSize,
+		PageToken: pageToken,
 	})
 	if err != nil {
 		return err
@@ -205,9 +205,9 @@ func listOrgInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 	}
 
 	invites, err := client.ListOrganizationInvites(cmd.Context(), &adminv1.ListOrganizationInvitesRequest{
-		Organization: org,
-		PageSize:     pageSize,
-		PageToken:    pageToken,
+		Org:       org,
+		PageSize:  pageSize,
+		PageToken: pageToken,
 	})
 	if err != nil {
 		return err

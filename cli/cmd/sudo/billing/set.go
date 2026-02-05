@@ -28,7 +28,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			req := &adminv1.SudoUpdateOrganizationBillingCustomerRequest{
-				Organization: org,
+				Org: org,
 			}
 
 			if cmd.Flags().Changed("billing-customer-id") {

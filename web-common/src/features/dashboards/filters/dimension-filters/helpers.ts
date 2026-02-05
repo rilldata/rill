@@ -52,14 +52,18 @@ export function getItemLists(
   curSearchText: string,
 ): { checkedItems: string[]; uncheckedItems: string[] } {
   if (mode === DimensionFilterMode.Select && correctedSearchResults) {
+    // While searching in Select mode, include selected items in the unified list
+    // so that matching selections are visible. When not searching, keep the
+    // split view: checked items first, then unchecked.
+    const isSearching = Boolean(curSearchText);
     return {
-      checkedItems: curSearchText
+      checkedItems: isSearching
         ? []
         : correctedSearchResults.filter((item) =>
             selectedValues.includes(item),
           ),
-      uncheckedItems: correctedSearchResults.filter(
-        (item) => !selectedValues.includes(item),
+      uncheckedItems: correctedSearchResults.filter((item) =>
+        isSearching ? true : !selectedValues.includes(item),
       ),
     };
   }

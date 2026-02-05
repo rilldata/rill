@@ -54,7 +54,7 @@
   .inner {
     will-change: width;
     @apply h-full flex-none;
-    @apply border   bg-surface;
+    @apply border bg-surface-background;
     @apply overflow-y-auto overflow-x-hidden rounded-[2px];
   }
 </style>

@@ -537,6 +537,31 @@ func TestCloseDB(t *testing.T) {
 	require.Equal(t, "USA", country)
 }
 
+func TestDiskCleanupOnFailures(t *testing.T) {
+	testDB, localDir, _ := prepareDB(t)
+	ctx := context.Background()
+
+	// create a table that fails
+	_, err := testDB.CreateTableAsSelect(ctx, "test_table_fail", "SELECT 1 AS id, 'India AS country", &CreateTableOptions{})
+	require.Error(t, err)
+
+	// verify directory is cleaned up
+	entries, err := os.ReadDir(filepath.Join(localDir, "test_table_fail"))
+	require.NoError(t, err)
+	require.Len(t, entries, 0)
+
+	// create a view that fails
+	_, err = testDB.CreateTableAsSelect(ctx, "test_view_fail", "SELECT 1 AS id, 'India AS country", &CreateTableOptions{View: true})
+	require.Error(t, err)
+
+	// verify directory is cleaned up
+	entries, err = os.ReadDir(filepath.Join(localDir, "test_view_fail"))
+	require.NoError(t, err)
+	require.Len(t, entries, 0)
+
+	require.NoError(t, testDB.Close())
+}
+
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	localDir = t.TempDir()
 	ctx := context.Background()

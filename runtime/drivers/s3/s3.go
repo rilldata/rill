@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -19,17 +23,25 @@ import (
 var spec = drivers.Spec{
 	DisplayName: "Amazon S3",
 	Description: "Connect to AWS S3 Storage.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/s3",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/s3",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "aws_access_key_id",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_access_key_id",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS access key ID",
+			Description: "AWS access key ID for explicit credentials",
+			Placeholder: "Enter your AWS access key ID",
+			Secret:      true,
+			Required:    true,
 		},
 		{
-			Key:    "aws_secret_access_key",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_secret_access_key",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS secret access key",
+			Description: "AWS secret access key for explicit credentials",
+			Placeholder: "Enter your AWS secret access key",
+			Secret:      true,
+			Required:    true,
 		},
 		{
 			Key:         "region",
@@ -90,8 +102,6 @@ var spec = drivers.Spec{
 	ImplementsObjectStore: true,
 }
 
-const defaultPageSize = 20
-
 func init() {
 	drivers.Register("s3", driver{})
 	drivers.RegisterAsConnector("s3", driver{})
@@ -110,7 +120,12 @@ type ConfigProperties struct {
 	RoleARN         string `mapstructure:"aws_role_arn"`
 	RoleSessionName string `mapstructure:"aws_role_session_name"`
 	ExternalID      string `mapstructure:"aws_external_id"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	// A list of bucket path prefixes that this connector is allowed to access.
+	// Useful when different buckets or bucket prefixes use different credentials,
+	// allowing the system to select the appropriate connector based on the bucket path.
+	// Example formats: `s3://my-bucket/` `s3://my-bucket/path/` `s3://my-bucket/path/prefix`
+	PathPrefixes    []string `mapstructure:"path_prefixes"`
+	AllowHostAccess bool     `mapstructure:"allow_host_access"`
 }
 
 // Open implements drivers.Driver
@@ -155,31 +170,16 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	creds, err := c.newCredentials()
-	if err != nil {
-		return fmt.Errorf("failed to get AWS credentials: %w", err)
+	if c.config.Endpoint == "" {
+		stsClient, err := getSTSClient(ctx, c.config)
+		if err != nil {
+			return err
+		}
+		_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		if err != nil {
+			return fmt.Errorf("GetCallerIdentity failed: %w", err)
+		}
 	}
-
-	cfg := aws.NewConfig().WithCredentials(creds)
-	if c.config.Region != "" {
-		cfg = cfg.WithRegion(c.config.Region)
-	}
-
-	if c.config.Endpoint != "" {
-		cfg = cfg.WithEndpoint(c.config.Endpoint).WithS3ForcePathStyle(true)
-	}
-
-	sess, err := session.NewSession(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to create AWS session: %w", err)
-	}
-
-	stsClient := sts.New(sess)
-	_, err = stsClient.GetCallerIdentityWithContext(ctx, &sts.GetCallerIdentityInput{})
-	if err != nil {
-		return fmt.Errorf("GetCallerIdentity failed: %w", err)
-	}
-
 	return nil
 }
 
@@ -260,13 +260,13 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return c, true
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return c, nil
 }
 
 // AsFileStore implements drivers.Connection.
@@ -284,103 +284,227 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// newCredentials returns credentials for connecting to AWS.
-func (c *Connection) newCredentials() (*credentials.Credentials, error) {
-	// If a role ARN is provided, assume the role and return the credentials.
-	if c.config.RoleARN != "" {
-		assumedCreds, err := c.assumeRole()
-		if err != nil {
-			return nil, fmt.Errorf("failed to assume role: %w", err)
-		}
-		return assumedCreds, nil
+// BucketRegion returns the region to use for the given bucket.
+func BucketRegion(ctx context.Context, confProp *ConfigProperties, bucket string) (string, error) {
+	cfg, err := getAWSConfig(ctx, confProp)
+	if err != nil {
+		return "", fmt.Errorf("failed to load AWS config for bucket region detection (set `region` in s3 connector yaml): %w", err)
 	}
-
-	providers := make([]credentials.Provider, 0)
-
-	staticProvider := &credentials.StaticProvider{}
-	staticProvider.AccessKeyID = c.config.AccessKeyID
-	staticProvider.SecretAccessKey = c.config.SecretAccessKey
-	staticProvider.SessionToken = c.config.SessionToken
-	staticProvider.ProviderName = credentials.StaticProviderName
-	// in case user doesn't set access key id and secret access key the credentials retreival will fail
-	// the credential lookup will proceed to next provider in chain
-	providers = append(providers, staticProvider)
-
-	if c.config.AllowHostAccess {
-		// allowed to access host credentials so we add them in chain
-		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
-		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})
-	}
-	// Find credentials to use.
-	creds := credentials.NewChainCredentials(providers)
-	if _, err := creds.Get(); err != nil {
-		if !errors.Is(err, credentials.ErrNoValidProvidersFoundInChain) {
-			return nil, err
-		}
-		// If no local credentials are found, you must explicitly set AnonymousCredentials to fetch public objects.
-		// AnonymousCredentials can't be chained, so we try to resolve local creds, and use anon if none were found.
-		creds = credentials.AnonymousCredentials
-	}
-
-	return creds, nil
+	return bucketRegionFromConfig(ctx, cfg, confProp, bucket)
 }
 
-// assumeRole returns a new credentials object that assumes the role specified by the ARN.
-func (c *Connection) assumeRole() (*credentials.Credentials, error) {
+func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp *ConfigProperties, bucket string) (string, error) {
+	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
+	if confProp.Endpoint != "" {
+		if confProp.Region == "" {
+			// Set the default region for bwd compatibility reasons
+			// cloudflare and minio ignore if us-east-1 is set, not tested for others
+			return "us-east-1", nil
+		}
+	}
+	if confProp.Region != "" {
+		return confProp.Region, nil
+	}
+
+	// default region is required to even to detect bucket region
+	if cfg.Region == "" {
+		cfg.Region = "us-east-1"
+	}
+	// Use the manager utility to detect the correct bucket region.
+	region, err := manager.GetBucketRegion(ctx, s3.NewFromConfig(cfg), bucket)
+	if err != nil {
+		return "", fmt.Errorf(
+			"failed to detect bucket region for %s (set `region` in s3 connector yaml): %w",
+			bucket, err,
+		)
+	}
+
+	return region, nil
+}
+
+func getAnonymousS3Client(ctx context.Context, confProp *ConfigProperties, bucket string) (*s3.Client, error) {
+	cfg := aws.Config{
+		Credentials: aws.AnonymousCredentials{},
+	}
+	region := confProp.Region
+	// If the region is not explicitly provided in the config,
+	// try to automatically detect it from the bucket
+	if region == "" && bucket != "" {
+		var err error
+		region, err = bucketRegionFromConfig(ctx, cfg, confProp, bucket)
+		if err != nil {
+			return nil, fmt.Errorf("failed to detect bucket region: %w", err)
+		}
+	}
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		if confProp.Endpoint != "" {
+			o.BaseEndpoint = aws.String(confProp.Endpoint)
+			o.UsePathStyle = true
+		}
+		o.Region = region
+	}), nil
+}
+
+func getS3Client(ctx context.Context, confProp *ConfigProperties, bucket string) (*s3.Client, error) {
+	cfg, err := getAWSConfig(ctx, confProp)
+	if err != nil {
+		return nil, err
+	}
+	region := confProp.Region
+	// If the region is not explicitly provided in the config,
+	// try to automatically detect it from the bucket
+	if region == "" && bucket != "" {
+		var err error
+		region, err = bucketRegionFromConfig(ctx, cfg, confProp, bucket)
+		if err != nil {
+			return nil, fmt.Errorf("failed to detect bucket region: %w", err)
+		}
+	}
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		if confProp.Endpoint != "" {
+			// Apply workaround if using Google Cloud Storage (GCS) endpoint
+			// This fixes signature issues with AWS SDK v2 when using GCS
+			// See: https://github.com/aws/aws-sdk-go-v2/issues/1816#issuecomment-1927281540
+			if strings.Contains(confProp.Endpoint, "storage.googleapis.com") {
+				// GCS alters the Accept-Encoding header which breaks the request signature
+				ignoreSigningHeaders(o, []string{"Accept-Encoding"})
+			}
+			o.BaseEndpoint = aws.String(confProp.Endpoint)
+			o.UsePathStyle = true
+		}
+		o.Region = region
+	}), nil
+}
+
+func getSTSClient(ctx context.Context, confProp *ConfigProperties) (*sts.Client, error) {
+	cfg, err := getAWSConfig(ctx, confProp)
+	if err != nil {
+		return nil, err
+	}
+	return sts.NewFromConfig(cfg, func(o *sts.Options) {
+		if confProp.Endpoint != "" {
+			o.BaseEndpoint = aws.String(confProp.Endpoint)
+		}
+		// set default region to "us-east-1"
+		if cfg.Region == "" {
+			o.Region = "us-east-1"
+		}
+	}), nil
+}
+
+func getAWSConfig(ctx context.Context, confProp *ConfigProperties) (aws.Config, error) {
+	provider, err := newCredentialsProvider(ctx, confProp)
+	if err != nil {
+		return aws.Config{}, fmt.Errorf("failed to get AWS credentials: %w", err)
+	}
+
+	opts := []func(*config.LoadOptions) error{
+		config.WithCredentialsProvider(provider),
+	}
+	if confProp.Region != "" {
+		opts = append(opts, config.WithRegion(confProp.Region))
+	}
+
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
+	if err != nil {
+		return aws.Config{}, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+	return cfg, nil
+}
+
+// newCredentialsProvider returns credentials for connecting to AWS.
+func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties) (aws.CredentialsProvider, error) {
+	// 1. If a role ARN is provided, assume it.
+	if confProp.RoleARN != "" {
+		return assumeRole(ctx, confProp)
+	}
+
+	// 1. Explicit static credentials
+	if confProp.AccessKeyID != "" && confProp.SecretAccessKey != "" {
+		return aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
+			confProp.AccessKeyID,
+			confProp.SecretAccessKey,
+			confProp.SessionToken,
+		)), nil
+	}
+
+	// 3. Allow host-based credentials
+	if confProp.AllowHostAccess {
+		cfg, err := config.LoadDefaultConfig(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load AWS config: %w", err)
+		}
+
+		// Optional: pre-fetch credentials to ensure valid keys exist
+		if creds, err := cfg.Credentials.Retrieve(ctx); err != nil || !creds.HasKeys() {
+			// fallback to anonymous if nothing found
+			return aws.AnonymousCredentials{}, nil
+		}
+
+		return cfg.Credentials, nil
+	}
+
+	// 3. Fallback to anonymous credentials
+	return aws.AnonymousCredentials{}, nil
+}
+
+// assumeRole returns a credentials provider that assumes the role specified by the ARN using AWS SDK v2.
+// It uses stscreds.NewAssumeRoleProvider so credentials are automatically refreshed before expiration.
+func assumeRole(ctx context.Context, confProp *ConfigProperties) (aws.CredentialsProvider, error) {
 	// Add session name if specified
-	sessionName := c.config.RoleSessionName
+	sessionName := confProp.RoleSessionName
 	if sessionName == "" {
 		sessionName = "rill-session"
 	}
 
-	sessOpts := session.Options{
-		SharedConfigState: session.SharedConfigDisable, // Disable shared config to prevent loading default config
+	region := confProp.Region
+	if region == "" {
+		region = "us-east-1"
 	}
 
-	// Add region if specified
-	if c.config.Region != "" {
-		sessOpts.Config.Region = &c.config.Region
-	}
+	var credsProvider aws.CredentialsProvider
 
-	// Add credentials if provided
-	if c.config.AccessKeyID != "" && c.config.SecretAccessKey != "" {
-		sessOpts.Config.Credentials = credentials.NewStaticCredentials(
-			c.config.AccessKeyID,
-			c.config.SecretAccessKey,
-			c.config.SessionToken,
+	if confProp.AccessKeyID != "" && confProp.SecretAccessKey != "" {
+		// Use explicit static credentials
+		credsProvider = credentials.NewStaticCredentialsProvider(
+			confProp.AccessKeyID,
+			confProp.SecretAccessKey,
+			confProp.SessionToken,
 		)
+	} else if confProp.AllowHostAccess {
+		hostCfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(region),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load host credentials: %w", err)
+		}
+		credsProvider = hostCfg.Credentials
+	} else {
+		// No valid credentials to assume role
+		return nil, fmt.Errorf("cannot assume role: no base credentials available")
 	}
 
-	// Create session with explicit configuration
-	s, err := session.NewSessionWithOptions(sessOpts)
+	// Load AWS config with the chosen provider
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(region),
+		config.WithCredentialsProvider(credsProvider),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to create AWS config: %w", err)
 	}
 
-	// Create STS client with explicit session
-	stsClient := sts.New(s)
+	// Create STS client with explicit configuration
+	stsClient := sts.NewFromConfig(cfg)
 
-	// Create assume role input with explicit parameters
-	assumeRoleInput := &sts.AssumeRoleInput{
-		RoleArn:         &c.config.RoleARN,
-		RoleSessionName: &sessionName,
-	}
+	// Create an assume role provider that automatically refreshes credentials before expiration
+	assumeRoleProvider := stscreds.NewAssumeRoleProvider(stsClient, confProp.RoleARN, func(o *stscreds.AssumeRoleOptions) {
+		o.RoleSessionName = sessionName
+		// Add external ID if provided to mitigate confused deputy problem
+		if confProp.ExternalID != "" {
+			o.ExternalID = &confProp.ExternalID
+		}
+	})
 
-	// Add external ID if provided to mitigate confused deputy problem
-	if c.config.ExternalID != "" {
-		assumeRoleInput.ExternalId = &c.config.ExternalID
-	}
-
-	// Assume the role
-	result, err := stsClient.AssumeRole(assumeRoleInput)
-	if err != nil {
-		return nil, fmt.Errorf("failed to assume role: %w", err)
-	}
-
-	// Return static credentials from the assumed role
-	return credentials.NewStaticCredentials(
-		*result.Credentials.AccessKeyId,
-		*result.Credentials.SecretAccessKey,
-		*result.Credentials.SessionToken,
-	), nil
+	// Wrap in a credentials cache so multiple calls share refreshed credentials
+	return aws.NewCredentialsCache(assumeRoleProvider), nil
 }

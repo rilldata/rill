@@ -34,4 +34,5 @@ export interface KPISpec
   sparkline?: "none" | "bottom" | "right";
   // Defaults to "delta" and "percent_change"
   comparison?: ComponentComparisonOptions[];
+  hide_time_range?: boolean;
 }

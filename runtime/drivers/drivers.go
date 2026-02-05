@@ -83,8 +83,8 @@ type Handle interface {
 
 	// MigrationStatus returns the handle's current and desired migration version (if applicable).
 	MigrationStatus(ctx context.Context) (current int, desired int, err error)
-	// Close closes the handle.
 
+	// Close closes the handle.
 	Close() error
 
 	// AsRegistry returns a RegistryStore if the handle can serve as such, otherwise returns false.
@@ -133,12 +133,12 @@ type Handle interface {
 	// Since models may move data between connectors, the model executor can be seem as a "meta driver" that uses handles on other connectors.
 	// The provided options provides both an input connector and an output connector. One or both of these will be the receiver itself.
 	// It should return false if the handle is not capable of executing a model between the provided input and output connectors.
-	AsModelExecutor(instanceID string, opts *ModelExecutorOptions) (ModelExecutor, bool)
+	AsModelExecutor(instanceID string, opts *ModelExecutorOptions) (ModelExecutor, error)
 
 	// AsModelManager returns a ModelManager for managing model results produced by a ModelExecutor.
 	// This is different from the ModelExecutor since sometimes, the model's input connector executes and writes the model result to the output connector.
 	// But managing the result lifecycle is easier to do directly using the output connector.
-	AsModelManager(instanceID string) (ModelManager, bool)
+	AsModelManager(instanceID string) (ModelManager, error)
 
 	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
 	// Examples: email notifier, slack notifier.

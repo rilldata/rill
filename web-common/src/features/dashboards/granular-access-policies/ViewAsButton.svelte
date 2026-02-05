@@ -29,7 +29,7 @@
       <button
         use:builder.action
         {...builder}
-        class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-gray-200 items-center"
+        class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-surface-hover items-center"
       >
         <EyeIcon size={"16px"} />
         <div class="flex items-center gap-x-1">
@@ -43,7 +43,7 @@
         slideDuration={0}
         active={viewAsMenuOpen}
         removeTooltipText="Clear view"
-        on:remove={() => {
+        onRemove={() => {
           updateDevJWT(queryClient, null);
         }}
       >

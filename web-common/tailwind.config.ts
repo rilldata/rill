@@ -22,6 +22,7 @@ function genColorObject(color: string) {
   );
 }
 
+// Enables Tailwind opacity control via bg-red-400/50
 function oklabString(variableName: string) {
   return `color-mix(in oklab, var(--${variableName}) calc(<alpha-value> * 100%), transparent)`;
 }
@@ -40,22 +41,20 @@ export default {
       colors: {
         background: oklabString("background"),
         foreground: oklabString("foreground"),
-        card: {
-          DEFAULT: oklabString("card"),
-          foreground: oklabString("card-foreground"),
-        },
         popover: {
           DEFAULT: oklabString("popover"),
           foreground: oklabString("popover-foreground"),
+          accent: oklabString("popover-accent"),
+          footer: oklabString("popover-footer"),
         },
         primary: {
           DEFAULT: oklabString("color-primary-500"),
-          foreground: oklabString("color-gray-50"),
+          foreground: oklabString("fg-secondary"),
           ...genColorObject("primary"),
         },
         secondary: {
           DEFAULT: oklabString("color-secondary-500"),
-          foreground: oklabString("color-gray-50"),
+          foreground: oklabString("fg-secondary"),
           ...genColorObject("secondary"),
         },
         muted: {
@@ -64,21 +63,81 @@ export default {
         },
         accent: {
           DEFAULT: oklabString("accent"),
-          foreground: oklabString("accent-foreground"),
+          primary: oklabString("accent-primary"),
+          "primary-action": oklabString("accent-primary-action"),
+          secondary: oklabString("accent-secondary"),
+          "secondary-action": oklabString("accent-secondary-action"),
+        },
+        icon: {
+          DEFAULT: oklabString("icon-default"),
+          default: oklabString("icon-default"),
+          muted: oklabString("icon-muted"),
+          disabled: oklabString("icon-disabled"),
+          accent: oklabString("icon-accent"),
         },
         destructive: {
           DEFAULT: oklabString("destructive"),
           foreground: oklabString("destructive-foreground"),
         },
         border: oklabString("border"),
-        input: oklabString("input"),
-        ring: oklabString("ring"),
-        surface: oklabString("surface"),
+        input: "var(--input)",
+        ring: {
+          DEFAULT: oklabString("ring"),
+          focus: oklabString("ring-focus"),
+          offset: oklabString("ring-offset"),
+        },
+        sidebar: {
+          DEFAULT: oklabString("sidebar"),
+          foreground: oklabString("sidebar-foreground"),
+        },
+        surface: {
+          DEFAULT: oklabString("surface"),
+          base: oklabString("surface-base"),
+          subtle: oklabString("surface-subtle"),
+          background: oklabString("surface-background"),
+          hover: oklabString("surface-hover"),
+          active: oklabString("surface-active"),
+          overlay: oklabString("surface-overlay"),
+          muted: oklabString("surface-muted"),
+          card: oklabString("surface-card"),
+        },
+        fg: {
+          DEFAULT: oklabString("fg-primary"),
+          primary: oklabString("fg-primary"),
+          secondary: oklabString("fg-secondary"),
+          tertiary: oklabString("fg-tertiary"),
+          inverse: oklabString("fg-inverse"),
+          muted: oklabString("fg-muted"),
+          disabled: oklabString("fg-disabled"),
+          accent: oklabString("fg-accent"),
+        },
         theme: {
           DEFAULT: oklabString("color-theme-500"),
           foreground: oklabString("theme-foreground"),
           ...genColorObject("theme"),
         },
+        Canvas: oklabString("canvas"),
+        Explore: oklabString("explore"),
+        Metrics: oklabString("metrics"),
+        Model: oklabString("model"),
+        API: oklabString("api"),
+        Data: oklabString("data"),
+        Theme: oklabString("theme"),
+        Alert: oklabString("alert"),
+        Report: oklabString("report"),
+        Connector: oklabString("connector"),
+        Component: oklabString("component"),
+        dimension: {
+          DEFAULT: oklabString("dimension"),
+          foreground: oklabString("dimension-foreground"),
+          border: oklabString("dimension-border"),
+        },
+        measure: {
+          DEFAULT: oklabString("measure"),
+          foreground: oklabString("measure-foreground"),
+          border: oklabString("measure-border"),
+        },
+        tooltip: oklabString("tooltip"),
         "theme-secondary": {
           DEFAULT: oklabString("color-theme-secondary-500"),
           foreground: oklabString("color-gray-50"),
@@ -96,8 +155,4 @@ export default {
       },
     },
   },
-
-  safelist: [
-    "ui-copy-code", // needed for code in measure expressions
-  ],
 } satisfies Config;

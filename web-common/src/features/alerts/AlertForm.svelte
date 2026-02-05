@@ -179,7 +179,7 @@
     );
 
     await $mutation.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: alertName,
       data: {
@@ -292,11 +292,11 @@
   use:enhance
 >
   <DialogTitle
-    class="px-6 py-4 text-gray-900 text-lg font-semibold leading-7 flex flex-row items-center justify-between"
+    class="px-6 py-4 text-fg-primary text-lg font-semibold leading-7 flex flex-row items-center justify-between"
   >
     <div>{dialogTitle}</div>
     <Button type="link" noStroke compact onClick={handleCancel}>
-      <X strokeWidth={3} size={16} class="text-black" />
+      <X strokeWidth={3} size={16} class="text-fg-secondary" />
     </Button>
   </DialogTitle>
   <DialogTabs.Root value={tabs[currentTabIndex]}>
@@ -308,7 +308,7 @@
         </DialogTabs.Trigger>
       {/each}
     </DialogTabs.List>
-    <div class="p-3 bg-slate-100 h-[600px] overflow-auto">
+    <div class="p-3 bg-surface-subtle h-[600px] overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
         <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>

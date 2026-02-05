@@ -40,6 +40,7 @@ export async function handleUninitializedProject(instanceId: string) {
     // Clickhouse and Druid-backed projects should be initialized immediately
     await runtimeServiceUnpackEmpty(instanceId, {
       displayName: EMPTY_PROJECT_TITLE,
+      olap: olapConnector, // Use the instance's configured OLAP connector
       force: true,
     });
 

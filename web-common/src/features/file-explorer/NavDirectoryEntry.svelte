@@ -80,9 +80,9 @@
 <button
   class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center
   {isProtectedDirectory
-    ? 'text-gray-500'
-    : 'text-gray-900 hover:text-gray-900'} 
-  font-medium hover:bg-slate-100"
+    ? 'hover:text-fg-secondary text-fg-muted '
+    : 'text-fg-primary hover:text-fg-primary'}
+  font-medium hover:bg-surface-hover"
   {id}
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
@@ -91,7 +91,7 @@
   aria-expanded={expanded}
 >
   <CaretDownIcon
-    className="flex-none text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
+    className="flex-none text-fg-muted {expanded ? '' : 'transform -rotate-90'}"
     size="14px"
   />
   <span class="truncate w-full" class:text-red-600={$hasErrors}>
@@ -122,7 +122,7 @@
         </NavigationMenuItem>
         <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
           <EditIcon slot="icon" />
-          Rename...
+          Rename
         </NavigationMenuItem>
         <NavigationMenuItem on:click={() => onDelete(dir.path, true)}>
           <Cancel slot="icon" />

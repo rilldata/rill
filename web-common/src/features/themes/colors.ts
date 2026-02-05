@@ -1,4 +1,4 @@
-import chroma from "chroma-js";
+import chroma, { type Color } from "chroma-js";
 
 const red = {
   50: chroma.oklch(0.971, 0.013, 17.38),
@@ -308,7 +308,7 @@ const stone = {
   950: chroma.oklch(0.147, 0.004, 49.25),
 };
 
-const primary = {
+export const primary = {
   50: chroma.oklch(0.96, 0.0206, 274.04),
   100: chroma.oklch(0.92, 0.0375, 274.1),
   200: chroma.oklch(0.86, 0.0707, 275.12),
@@ -322,7 +322,7 @@ const primary = {
   950: chroma.oklch(0.25, 0.1016, 280.81),
 };
 
-const secondary = {
+export const secondary = {
   50: chroma.oklch(0.98, 0.0134, 226.56),
   100: chroma.oklch(0.95, 0.0275, 232.66),
   200: chroma.oklch(0.91, 0.0603, 226.17),
@@ -336,7 +336,31 @@ const secondary = {
   950: chroma.oklch(0.3, 0.0672, 241.09),
 };
 
-export const allColors = {
+export const grayDark = {
+  950: chroma.oklch(0.4324, 0.0259, 259.17),
+  900: chroma.oklch(0.4205, 0.0232, 255.65),
+  800: chroma.oklch(0.3912, 0.0215, 256.38),
+  700: chroma.oklch(0.3647, 0.0182, 254.76),
+  600: chroma.oklch(0.3343, 0.0163, 255.63),
+  500: chroma.oklch(0.3072, 0.0144, 256.78),
+  400: chroma.oklch(0.2754, 0.0125, 258.37),
+  300: chroma.oklch(0.2463, 0.0088, 255.59),
+  200: chroma.oklch(0.2126, 0.0067, 258.37),
+  100: chroma.oklch(0.1815, 0.0026, 247.97),
+  50: chroma.oklch(0.1626, 0.0017, 196.99),
+};
+
+/**
+ * Default Rill primary color palette as Color array
+ */
+export const defaultPrimaryPalette = Object.values(primary);
+
+/**
+ * Default Rill secondary color palette as Color array
+ */
+export const defaultSecondaryPalette = Object.values(secondary);
+
+export const definedLightModeColors: Record<string, Record<number, Color>> = {
   red,
   orange,
   amber,
@@ -361,4 +385,11 @@ export const allColors = {
   stone,
   primary,
   secondary,
+};
+
+export const definedDarkModeColors: Record<
+  string,
+  { overwrite: boolean; colors: Record<number, Color> }
+> = {
+  gray: { overwrite: false, colors: grayDark },
 };

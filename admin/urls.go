@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -78,7 +79,7 @@ func (u *URLs) WithCustomDomain(domain string) *URLs {
 	}
 }
 
-// WithCustomDomainFromURL attempts to infer a custom domain from a redirect URL.
+// WithCustomDomainFromRedirectURL attempts to infer a custom domain from a redirect URL.
 // If it succeeds, it passes the custom domain to WithCustomDomain and returns the result.
 // If it does not detect a custom domain in the redirect URL, or the redirect URL is invalid, it fails silently by returning itself unchanged.
 func (u *URLs) WithCustomDomainFromRedirectURL(redirectURL string) *URLs {
@@ -106,6 +107,15 @@ func (u *URLs) IsHTTPS() bool {
 	return u.https
 }
 
+// IsCustomDomain returns true if the given domain is a custom domain.
+func (u *URLs) IsCustomDomain(domain string) bool {
+	externalURL, err := url.Parse(u.external)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse external domain %q: %w", u.external, err))
+	}
+	return !strings.EqualFold(externalURL.Host, domain)
+}
+
 // External returns the external URL for the admin service.
 func (u *URLs) External() string {
 	if u.custom != "" {
@@ -124,10 +134,18 @@ func (u *URLs) Frontend() string {
 }
 
 // AuthLogin returns the URL that starts the redirects to the auth service for login.
-func (u *URLs) AuthLogin(redirect string) string {
+func (u *URLs) AuthLogin(redirect string, customDomainFlow bool) string {
 	res := urlutil.MustJoinURL(u.external, "/auth/login") // NOTE: Always using the primary external URL.
+	q := map[string]string{}
 	if redirect != "" {
-		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
+		q["redirect"] = redirect
+	}
+	if customDomainFlow {
+		q["custom_domain_flow"] = "true"
+	}
+
+	if len(q) > 0 {
+		res = urlutil.MustWithQuery(res, q)
 	}
 	return res
 }
@@ -135,6 +153,15 @@ func (u *URLs) AuthLogin(redirect string) string {
 // AuthLoginCallback returns the URL for the OAuth2 callback.
 func (u *URLs) AuthLoginCallback() string {
 	return urlutil.MustJoinURL(u.external, "/auth/callback") // NOTE: Always using the primary external URL.
+}
+
+// AuthCustomDomainCallback returns the URL with state for custom domain callback
+func (u *URLs) AuthCustomDomainCallback(state string) string {
+	res := urlutil.MustJoinURL(u.External(), "/auth/custom-domain-callback") // NOTE: Uses custom domain
+	if state != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"state": state})
+	}
+	return res
 }
 
 // AuthLogout returns the URL that starts the logout redirects.
@@ -215,10 +242,13 @@ func (u *URLs) GithubConnectUI(redirect string) string {
 }
 
 // GithubConnectRetryUI returns the page in the Rill frontend for retrying the Github connect flow.
-func (u *URLs) GithubConnectRetryUI(remote string) string {
+func (u *URLs) GithubConnectRetryUI(remote, redirect string) string {
 	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect/retry-install") // NOTE: Always using the primary frontend URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
+	}
+	if redirect != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
 	}
 	return res
 }
@@ -242,13 +272,16 @@ func (u *URLs) GithubConnectSuccessUI(autoclose bool) string {
 }
 
 // GithubRetryAuthUI returns the page in the Rill frontend for retrying the Github auth flow.
-func (u *URLs) GithubRetryAuthUI(remote, username string) string {
+func (u *URLs) GithubRetryAuthUI(remote, username, redirect string) string {
 	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect/retry-auth") // NOTE: Always using the primary frontend URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
 	}
 	if username != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"githubUsername": username})
+	}
+	if redirect != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
 	}
 	return res
 }
@@ -310,16 +343,25 @@ func (u *URLs) ReportOpen(org, project, report, token string, executionTime time
 
 // ReportExport returns the URL for exporting a report in the frontend.
 func (u *URLs) ReportExport(org, project, report, token string) string {
+	if token == "" {
+		return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
+	}
 	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export"), map[string]string{"token": token})
 }
 
 // ReportUnsubscribe returns the URL for unsubscribing from the report.
 func (u *URLs) ReportUnsubscribe(org, project, report, token, email string) string {
-	queryParams := map[string]string{"token": token}
+	queryParams := map[string]string{
+		"org":     org,
+		"project": project,
+		"token":   token,
+	}
 	if email != "" {
 		queryParams["email"] = email
 	}
-	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "unsubscribe"), queryParams)
+	// We always fetch org and project under `/<org>/<project>` path prefix, so here we use a separate path for unsubscribe reports.
+	// Unsub token only has access to unsub and not for org or project data.
+	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), "-", "unsubscribe", "reports", report), queryParams)
 }
 
 // ReportEdit returns the URL for editing a report in the frontend.
@@ -328,13 +370,24 @@ func (u *URLs) ReportEdit(org, project, report string) string {
 }
 
 // AlertOpen returns the URL for opening an alert in the frontend.
-func (u *URLs) AlertOpen(org, project, alert string) string {
+func (u *URLs) AlertOpen(org, project, alert, token string) string {
+	if token != "" {
+		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open"), map[string]string{"token": token})
+	}
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open")
 }
 
 // AlertEdit returns the URL for editing an alert in the frontend.
 func (u *URLs) AlertEdit(org, project, alert string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert)
+}
+
+// AlertUnsubscribe returns the URL for unsubscribing from an alert.
+func (u *URLs) AlertUnsubscribe(org, project, alert, token string) string {
+	if token != "" {
+		return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "unsubscribe"), map[string]string{"token": token})
+	}
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "unsubscribe")
 }
 
 // Billing returns the landing page url that optionally shows the upgrade modal.
@@ -350,4 +403,43 @@ func (u *URLs) Billing(org string, upgrade bool) string {
 // Since the payment link can expire it is generated in this landing page on demand.
 func (u *URLs) PaymentPortal(org string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, "-", "settings", "billing", "payment")
+}
+
+// OAuthExternalResourceURL returns the external URL for OAuth 2.0 resource access.
+// If a request is provided, it uses the request's Host header to construct the URL to make sure protected resource URLs origin matches with the resource URL being accessed by the client.
+// This helps in cases, for example, where the MCP server url starts with api.rilldata.com instead of admin.rilldata.com.
+func (u *URLs) OAuthExternalResourceURL(r *http.Request) string {
+	if r != nil {
+		scheme := "http"
+		if u.IsHTTPS() {
+			scheme = "https"
+		}
+		return fmt.Sprintf("%s://%s", scheme, r.Host)
+	}
+	return u.External()
+}
+
+// OAuthProtectedResourceMetadata returns the URL for the OAuth 2.0 Protected Resource Metadata endpoint.
+// This endpoint is used by MCP clients to discover authorization server information.
+func (u *URLs) OAuthProtectedResourceMetadata(r *http.Request) string {
+	return urlutil.MustJoinURL(u.OAuthExternalResourceURL(r), "/.well-known/oauth-protected-resource")
+}
+
+// OAuthRegister returns the URL for the OAuth 2.0 Dynamic Client Registration endpoint.
+func (u *URLs) OAuthRegister() string {
+	return urlutil.MustJoinURL(u.External(), "/auth/oauth/register")
+}
+
+// OAuthAuthorize returns the URL for the OAuth 2.0 Authorization endpoint.
+func (u *URLs) OAuthAuthorize() string {
+	return urlutil.MustJoinURL(u.External(), "/auth/oauth/authorize")
+}
+
+// OAuthToken returns the URL for the OAuth 2.0 Token endpoint.
+func (u *URLs) OAuthToken() string {
+	return urlutil.MustJoinURL(u.External(), "/auth/oauth/token")
+}
+
+func (u *URLs) OAuthJWKS() string {
+	return urlutil.MustJoinURL(u.External(), "/.well-known/jwks.json")
 }

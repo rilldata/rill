@@ -1,0 +1,12 @@
+# https://redocly.com/docs/cli/configuration
+
+extends:
+  - recommended
+
+decorators:
+  remove-unused-components: on
+  remove-unused-tags: on
+
+openapi:
+  schemasExpansionLevel: 2
+  showExtensions: true

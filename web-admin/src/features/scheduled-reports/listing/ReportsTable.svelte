@@ -1,9 +1,9 @@
 <script lang="ts">
-  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
-  import Table from "../../../components/table/Table.svelte";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
 
   export let data: V1Resource[];
@@ -66,6 +66,20 @@
   };
 </script>
 
-<Table {columns} {data} {columnVisibility} kind="report">
-  <ResourceHeader kind="report" icon={ReportIcon} slot="header" />
-</Table>
+<ResourceList {columns} {data} {columnVisibility} kind="report">
+  <ResourceListEmptyState
+    slot="empty"
+    icon={ReportIcon}
+    message="You don't have any reports yet"
+  >
+    <span slot="action">
+      Schedule <a
+        href="https://docs.rilldata.com/guide/reports/exports"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        reports</a
+      > from any dashboard
+    </span>
+  </ResourceListEmptyState>
+</ResourceList>

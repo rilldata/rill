@@ -37,7 +37,7 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, na
 
 	// generate a upload URL
 	asset, err := adminClient.CreateAsset(ctx, &adminv1.CreateAssetRequest{
-		OrganizationName:   org,
+		Org:                org,
 		Type:               "deploy",
 		Name:               name,
 		Extension:          "tar.gz",

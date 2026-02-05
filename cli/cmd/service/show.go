@@ -21,8 +21,8 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.GetService(cmd.Context(), &adminv1.GetServiceRequest{
-				Name:             args[0],
-				OrganizationName: ch.Org,
+				Name: args[0],
+				Org:  ch.Org,
 			})
 			if err != nil {
 				return err

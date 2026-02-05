@@ -1,5 +1,6 @@
 import { gotoNavEntry } from "web-local/tests/utils/waitHelpers";
 import { test } from "../setup/base";
+import { expect } from "@playwright/test";
 
 test.describe("canvas charts", () => {
   test.use({ project: "AdBids" });
@@ -12,12 +13,20 @@ test.describe("canvas charts", () => {
 
     await page.locator(".chart-icons").getByLabel("Heatmap").click();
 
+    await page.waitForTimeout(500);
+
     await page
       .getByLabel("A heatmap chart with embedded data")
       .locator("canvas")
       .click();
 
     await page.locator(".chart-icons").getByLabel("Donut").click();
+
+    await page.waitForTimeout(500);
+
+    // Ensure the sidebar properties have updated
+    await expect(page.getByText("Inner Radius (%)")).toBeVisible();
+
     await page
       .getByLabel("A arc chart with embedded")
       .locator("canvas")

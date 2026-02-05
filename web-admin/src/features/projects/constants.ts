@@ -1,7 +1,4 @@
-import {
-  OrgUserRoles,
-  ProjectUserRoles,
-} from "@rilldata/web-common/features/users/roles.ts";
+import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
 
 export const PROJECT_ROLES_OPTIONS = [
   {
@@ -18,11 +15,6 @@ export const PROJECT_ROLES_OPTIONS = [
     value: ProjectUserRoles.Viewer,
     label: "Viewer",
     description: "Read-only access to all project resources",
-  },
-  {
-    value: OrgUserRoles.Guest,
-    label: "Guest",
-    description: "Access to invited projects only",
   },
 ];
 

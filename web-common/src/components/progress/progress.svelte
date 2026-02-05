@@ -12,7 +12,7 @@
 
 <ProgressPrimitive.Root
   class={cn(
-    "relative h-2 w-full overflow-hidden rounded-full bg-slate-200",
+    "relative h-2 w-full overflow-hidden rounded-full bg-gray-200",
     className,
   )}
   {...$$restProps}

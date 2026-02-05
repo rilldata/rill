@@ -23,7 +23,7 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			subResp, err := client.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{
-				Organization:         ch.Org,
+				Org:                  ch.Org,
 				SuperuserForceAccess: force,
 			})
 			if err != nil {
@@ -47,7 +47,7 @@ func RenewCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.RenewBillingSubscription(cmd.Context(), &adminv1.RenewBillingSubscriptionRequest{
-				Organization:         ch.Org,
+				Org:                  ch.Org,
 				PlanName:             plan,
 				SuperuserForceAccess: force,
 			})

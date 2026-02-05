@@ -14,9 +14,11 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { string, object, mixed } from "yup";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import PinButton from "../PinButton.svelte";
 
   export let dimensionName: string;
   export let name: string;
+  export let label: string;
   export let open: boolean;
   export let filter: MeasureFilterEntry | undefined = undefined;
   export let onApply: (params: {
@@ -26,6 +28,8 @@
   }) => void;
   export let allDimensions: MetricsViewSpecDimension[];
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let pinned = false;
+  export let showPinControl = false;
 
   const initialValues = {
     dimension: dimensionName,
@@ -120,7 +124,22 @@
   {side}
   class="p-2 px-3 w-[250px]"
   strategy="fixed"
+  id="measure-filter-popover"
 >
+  {#if showPinControl}
+    <div
+      class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
+    >
+      <b>{label}</b>
+
+      <PinButton
+        pinned={!!pinned}
+        onTogglePin={() => {
+          pinned = !pinned;
+        }}
+      />
+    </div>
+  {/if}
   <form
     use:enhance
     autocomplete="off"

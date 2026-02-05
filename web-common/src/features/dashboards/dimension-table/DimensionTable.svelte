@@ -9,7 +9,7 @@ TableCells – the cell contents.
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
-  import { createEventDispatcher, setContext } from "svelte";
+  import { setContext } from "svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import type { DimensionTableRow } from "./dimension-table-types";
   import {
@@ -20,13 +20,15 @@ TableCells – the cell contents.
   import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
-  const dispatch = createEventDispatcher();
-
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: ReturnType<typeof selectedDimensionValues>;
   export let dimensionName: string;
   export let isFetching: boolean;
+  export let onSelectItem: (data: {
+    index: number;
+    meta: boolean;
+  }) => void = () => {};
 
   const {
     actions: {
@@ -47,8 +49,8 @@ TableCells – the cell contents.
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
    * to render on initial load.
    */
-  export let rowOverscanAmount = 40;
-  export let columnOverscanAmount = 5;
+  export let rowOverscanAmount = 120;
+  export let columnOverscanAmount = 12;
 
   let container: HTMLDivElement;
 
@@ -102,6 +104,10 @@ TableCells – the cell contents.
     getScrollElement: () => container,
     count: rows.length,
     estimateSize: () => config.rowHeight,
+    // Provides a stable identity for each virtualized row so the virtualizer can reuse DOM nodes
+    // instead of remounting them during fast scrolls or data updates. This reduces blank frames,
+    // preserves focus/hover state, and avoids unnecessary re-renders.
+    getItemKey: (index) => String(rows?.[index]?.[dimensionName] ?? index),
     overscan: rowOverscanAmount,
     paddingStart: config.columnHeaderHeight,
     initialOffset: rowScrollOffset,
@@ -140,8 +146,8 @@ TableCells – the cell contents.
   $: virtualWidth = $columnVirtualizer?.getTotalSize() ?? 0;
 
   let activeIndex;
-  function setActiveIndex(event) {
-    activeIndex = event.detail;
+  function setActiveIndex(index: number) {
+    activeIndex = index;
   }
   function clearActiveIndex() {
     activeIndex = false;
@@ -159,24 +165,23 @@ TableCells – the cell contents.
     }
   }
 
-  function onSelectItem(event) {
+  function onSelectItemHandler(data: { index: number; meta: boolean }) {
     // store previous scroll position before re-render
     rowScrollOffset = $rowVirtualizer?.scrollOffset ?? 0;
     colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
-    dispatch("select-item", event.detail);
+    onSelectItem(data);
   }
 
-  async function handleColumnHeaderClick(event) {
+  function handleColumnHeaderClick(columnName: string) {
     colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
-    const columnName = event.detail;
+
     dimensionTable.handleDimensionMeasureColumnHeaderClick(columnName);
   }
 
-  async function handleResizeDimensionColumn(event) {
+  function handleResizeDimensionColumn(size: number) {
     rowScrollOffset = $rowVirtualizer?.scrollOffset ?? 0;
     colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
 
-    const { size } = event.detail;
     manualDimensionColumnWidth = Math.max(config.minColumnWidth, size);
   }
 </script>
@@ -191,26 +196,25 @@ TableCells – the cell contents.
     bind:this={container}
     on:scroll={() => {
       horizontalScrolling = container?.scrollLeft > 0;
-    }}
-    style:width="100%"
-    style:height="100%"
-    class="overflow-auto grid max-w-fit"
-    style:grid-template-columns="max-content auto"
-    on:scroll={() => {
       /** capture to suppress cell tooltips. Otherwise,
        * there's quite a bit of rendering jank.
        */
       scrolling = true;
     }}
+    style:width="100%"
+    style:height="100%"
+    class="overflow-auto grid max-w-fit"
+    style:grid-template-columns="max-content auto"
   >
     {#if $rowVirtualizer}
       <div
         role="grid"
         tabindex="0"
-        class="relative bg-surface"
+        class="relative"
         on:mouseleave={clearActiveIndex}
         on:blur={clearActiveIndex}
         style:will-change="transform, contents"
+        style:contain="content"
         style:width="{virtualWidth}px"
         style:height="{virtualHeight}px"
       >
@@ -220,7 +224,7 @@ TableCells – the cell contents.
           noPin={true}
           sortByMeasure={$sortByMeasure}
           columns={measureColumns}
-          on:click-column={handleColumnHeaderClick}
+          onClickColumn={handleColumnHeaderClick}
         />
         <!-- dimension value and gutter column -->
         <div class="flex">
@@ -233,24 +237,24 @@ TableCells – the cell contents.
             {excludeMode}
             {dimensionName}
             {toggleComparisonDimension}
-            on:select-item={(event) => onSelectItem(event)}
           />
-          <DimensionValueHeader
-            on:resize-column={handleResizeDimensionColumn}
-            virtualRowItems={virtualRows}
-            totalHeight={virtualHeight}
-            width={estimateColumnSize[0]}
-            column={dimensionColumn}
-            {rows}
-            {activeIndex}
-            {selectedIndex}
-            {excludeMode}
-            {scrolling}
-            {horizontalScrolling}
-            on:dimension-sort
-            on:select-item={(event) => onSelectItem(event)}
-            on:inspect={setActiveIndex}
-          />
+          {#if dimensionColumn}
+            <DimensionValueHeader
+              virtualRowItems={virtualRows}
+              totalHeight={virtualHeight}
+              width={estimateColumnSize[0]}
+              column={dimensionColumn}
+              {rows}
+              {activeIndex}
+              {selectedIndex}
+              {excludeMode}
+              {scrolling}
+              {horizontalScrolling}
+              onSelectItem={onSelectItemHandler}
+              onInspect={setActiveIndex}
+              onResizeColumn={handleResizeDimensionColumn}
+            />
+          {/if}
         </div>
         {#if rows.length}
           <!-- VirtualTableBody -->
@@ -263,16 +267,16 @@ TableCells – the cell contents.
             {selectedIndex}
             {scrolling}
             {excludeMode}
-            on:select-item={(event) => onSelectItem(event)}
-            on:inspect={setActiveIndex}
+            onSelectItem={onSelectItemHandler}
+            onInspect={setActiveIndex}
             cellLabel="Filter dimension value"
           />
         {:else if isFetching || $selectedValues.isFetching}
-          <div class="flex text-gray-500 justify-center mt-[30vh]">
+          <div class="flex text-fg-secondary justify-center mt-[30vh]">
             Loading...
           </div>
         {:else}
-          <div class="flex text-gray-500 justify-center mt-[30vh]">
+          <div class="flex text-fg-secondary justify-center mt-[30vh]">
             No results to show
           </div>
         {/if}

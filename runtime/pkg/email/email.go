@@ -92,6 +92,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			IsRecover:           opts.IsRecover,
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
+			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
 		return c.sendAlertFail(opts, &alertFailData{
@@ -100,6 +101,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			FailRow:             opts.FailRow,
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
+			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 		return c.sendAlertStatus(opts, &alertStatusData{
@@ -109,6 +111,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			ErrorMessage:        opts.ExecutionError,
 			OpenLink:            template.URL(opts.EditLink), // NOTE: Using edit link here since for errors, we don't want to open a dashboard, but rather the alert itself
 			EditLink:            template.URL(opts.EditLink),
+			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
 		})
 	default:
 		return fmt.Errorf("unknown assertion status: %v", opts.Status)
@@ -121,6 +124,7 @@ type alertFailData struct {
 	FailRow             map[string]any
 	OpenLink            template.URL
 	EditLink            template.URL
+	UnsubscribeLink     template.URL
 }
 
 func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) error {
@@ -145,6 +149,7 @@ type alertStatusData struct {
 	ErrorMessage        string
 	OpenLink            template.URL
 	EditLink            template.URL
+	UnsubscribeLink     template.URL
 }
 
 func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusData) error {
@@ -517,7 +522,7 @@ func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Subscription for %s has now ended. Org is hibernated", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-Your cancelled subscription for <b>%s</b> has ended and its projects are now <a href="https://docs.rilldata.com/other/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
+Your cancelled subscription for <b>%s</b> has ended and its projects are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
 <br /><br />
 If you’d like to reactivate your subscription and regain access, you can easily do so at any time by renewing your subscription from here:
 `, opts.OrgName)),
@@ -624,7 +629,7 @@ func (c *Client) SendTrialGracePeriodEnded(opts *TrialGracePeriodEnded) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Trial plan grace period for %s has ended. Org is now hibernated", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-<b>%s</b> and its projects are now <a href="https://docs.rilldata.com/other/FAQ#what-is-project-hibernation">hibernating</a>.
+<b>%s</b> and its projects are now <a href="https://docs.rilldata.com/developers/other/FAQ#what-is-project-hibernation">hibernating</a>.
 <br /><br />
 Reactivate your org by upgrading to the Team Plan today!
 `, opts.OrgName)),

@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import { getUserCounts } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
 
   export let data;
 
@@ -10,18 +11,26 @@
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/users`;
 
-  // https://docs.rilldata.com/manage/roles-permissions#organization-level-permissions
+  // https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions#organization-level-permissions
   // org admin and editor can manage org members
   $: hasManageOrgMembers = organizationPermissions?.manageOrgMembers;
 
-  const navItems = [
+  $: userCountsQuery = getUserCounts(organization);
+  $: ({ membersCount, guestsCount, groupsCount } = $userCountsQuery);
+
+  $: navItems = [
     {
-      label: "Users",
+      label: `Members (${membersCount})`,
       route: "",
       hasPermission: hasManageOrgMembers,
     },
     {
-      label: "Groups",
+      label: `Guests (${guestsCount})`,
+      route: "/guests",
+      hasPermission: hasManageOrgMembers,
+    },
+    {
+      label: `Groups (${groupsCount})`,
       route: "/groups",
       hasPermission: hasManageOrgMembers,
     },

@@ -10,7 +10,7 @@
 </script>
 
 <AlertDialogPrimitive.Title
-  class={cn("text-lg font-semibold", className)}
+  class={cn("text-lg text-fg-primary font-semibold", className)}
   {level}
   {...$$restProps}
 >

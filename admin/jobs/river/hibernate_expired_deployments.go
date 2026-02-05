@@ -55,7 +55,7 @@ func (w *HibernateExpiredDeploymentsWorker) hibernateExpiredDeployment(ctx conte
 	if depl.Environment == "prod" {
 		// Tear down prod deployments on hibernation
 		// TODO: update this to stop deployment instead of tearing it down when the frontend supports it
-		if proj.ProdDeploymentID != nil && *proj.ProdDeploymentID == depl.ID {
+		if proj.PrimaryDeploymentID != nil && *proj.PrimaryDeploymentID == depl.ID {
 			_, err = w.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
 				Name:                 proj.Name,
 				Description:          proj.Description,
@@ -68,11 +68,11 @@ func (w *HibernateExpiredDeploymentsWorker) hibernateExpiredDeployment(ctx conte
 				GithubRepoID:         proj.GithubRepoID,
 				ManagedGitRepoID:     proj.ManagedGitRepoID,
 				ProdVersion:          proj.ProdVersion,
-				ProdBranch:           proj.ProdBranch,
+				PrimaryBranch:        proj.PrimaryBranch,
 				Subpath:              proj.Subpath,
 				ProdSlots:            proj.ProdSlots,
 				ProdTTLSeconds:       proj.ProdTTLSeconds,
-				ProdDeploymentID:     nil,
+				PrimaryDeploymentID:  nil,
 				DevSlots:             proj.DevSlots,
 				DevTTLSeconds:        proj.DevTTLSeconds,
 				Annotations:          proj.Annotations,

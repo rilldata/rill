@@ -90,12 +90,16 @@ func (b exprExportBuilder) writeValue(val any) error {
 }
 
 func (b exprExportBuilder) writeSubquery(subquery *Subquery) error {
-	// we have to write like measure_abc > 0 measure_abc < 1 by dim_xyz so joiner is space
-	err := b.writeCondition(subquery.Having.Condition, " ")
-	if err != nil {
-		return err
+	if subquery.Having != nil {
+		// we have to write like measure_abc > 0 measure_abc < 1 by dim_xyz so joiner is space
+		err := b.writeExpression(subquery.Having, " ")
+		if err != nil {
+			return err
+		}
+	} else {
+		b.writeString("true")
 	}
-	_, err = b.WriteString(" by " + subquery.Dimension.Name)
+	_, err := b.WriteString(" by " + subquery.Dimension.Name)
 	return err
 }
 

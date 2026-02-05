@@ -9,7 +9,6 @@
 
   /**
    * Input that allows to enter multiple items but appears within a single input box.
-   * This is a more advanced version of InputArray.svelte
    */
 
   export let id: string;
@@ -104,10 +103,11 @@
 <div class="flex flex-col w-full">
   {#if label}
     <div class="flex items-center gap-x-1">
-      <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
+      <label for={id} class="text-fg-primary text-sm font-medium">{label}</label
+      >
       {#if hint}
         <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500" style="transform:translateY(-.5px)">
+          <div class="text-fg-secondary" style="transform:translateY(-.5px)">
             <InfoCircle size="13px" />
           </div>
           <TooltipContent maxWidth="400px" slot="tooltip-content">
@@ -116,13 +116,13 @@
         </Tooltip>
       {/if}
       {#if description}
-        <div class="text-sm text-slate-600">{description}</div>
+        <div class="text-sm text-fg-secondary">{description}</div>
       {/if}
     </div>
   {/if}
   <div class="flex flex-row gap-1.5 items-center">
     <div
-      class="flex flex-row items-center bg-surface rounded-sm px-1 py-[3px] w-full {contentClassName}"
+      class="flex flex-row items-center bg-input rounded-sm px-1 py-[3px] w-full {contentClassName}"
       class:border={!hasSomeErrors}
       class:border-gray-300={!hasSomeErrors}
       class:outline={focused || hasSomeErrors}
@@ -130,10 +130,10 @@
       class:outline-primary-500={focused && !hasSomeErrors}
     >
       <div class="flex flex-wrap gap-1 w-full min-h-[24px]">
-        {#each values.slice(0, lastIdx) as _, i}
+        {#each values.slice(0, lastIdx) as _, i (i)}
           {@const hasError = errors?.[i]?.length}
           <div
-            class="flex items-center text-gray-600 text-sm rounded-2xl border bg-gray-100 pl-2 pr-1 max-w-full"
+            class="flex items-center text-fg-secondary text-sm rounded-2xl border bg-input pl-2 pr-1 max-w-full"
             class:border-gray-300={!hasError}
             class:border-red-300={hasError}
             class:bg-red-50={hasError}
@@ -149,7 +149,7 @@
                 size="12px"
                 class="{hasError
                   ? 'text-red-600'
-                  : 'text-gray-500'} cursor-pointer"
+                  : 'text-fg-secondary'} cursor-pointer"
               />
             </IconButton>
           </div>
@@ -159,7 +159,7 @@
           on:keydown={handleKeyDown}
           autocomplete="off"
           id="{id}.{lastIdx}"
-          class="focus:outline-white group-hover:text-red-500 text-sm grow px-1"
+          class="focus:outline-none group-hover:text-red-500 placeholder-fg-secondary text-sm grow px-1 bg-transparent"
           on:focusin={() => (focused = true)}
           on:focusout={() => (focused = false)}
           on:click|preventDefault|stopPropagation={() => preventFocus}

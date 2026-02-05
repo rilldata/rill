@@ -3,7 +3,6 @@ package resolvers
 import (
 	"context"
 	"crypto/rand"
-	databasesql "database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -184,7 +183,11 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, fmt.Errorf("connector %q is not an object store", r.props.Connector)
 	}
 
-	entries, err := store.ListObjects(ctx, r.props.Path)
+	url, err := globutil.ParseBucketURL(r.props.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %q: %w", r.props.Path, err)
+	}
+	entries, err := store.ListObjectsForGlob(ctx, url.Host, url.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -213,6 +216,10 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 
 func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	return nil, errors.New("security rule inference not implemented")
 }
 
 // buildUnpartitioned builds a result consisting of one row per file.
@@ -325,7 +332,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 	defer os.Remove(jsonFile)
 
 	var result []map[string]any
-	err = olap.WithConnection(ctx, 0, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
+	err = olap.WithConnection(ctx, 0, func(wrappedCtx context.Context, ensuredCtx context.Context) error {
 		// Load the JSON file into a temporary table
 		err = olap.Exec(wrappedCtx, &drivers.Statement{
 			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT * FROM read_ndjson_auto(%s))", olap.Dialect().EscapeIdentifier(r.tmpTableName), olap.Dialect().EscapeStringValue(jsonFile)),

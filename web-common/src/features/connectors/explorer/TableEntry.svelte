@@ -7,7 +7,6 @@
   import TableIcon from "../../../components/icons/TableIcon.svelte";
   import TableMenuItems from "./TableMenuItems.svelte";
   import TableSchema from "./TableSchema.svelte";
-  import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
@@ -16,17 +15,15 @@
     makeTablePreviewHref,
   } from "../connectors-utils";
 
-  export let instanceId: string;
   export let driver: string;
   export let connector: string;
   export let database: string; // The backend interprets an empty string as the default database
   export let databaseSchema: string; // The backend interprets an empty string as the default schema
   export let table: string;
-  export let hasUnsupportedDataTypes: boolean = false;
   export let store: ConnectorExplorerStore;
-  export let useNewAPI: boolean = false;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
+  export let isOlapConnector: boolean = false;
 
   let contextMenuOpen = false;
 
@@ -50,15 +47,15 @@
   );
   $: tableId = `${connector}-${fullyQualifiedTableName}`;
 
-  // Only generate preview href for OLAP connectors (legacy API)
-  $: href = !useNewAPI
-    ? makeTablePreviewHref(driver, connector, database, databaseSchema, table)
-    : undefined;
+  // Generate preview href for any connector that supports preview routes
+  $: href =
+    makeTablePreviewHref(driver, connector, database, databaseSchema, table) ||
+    undefined;
 
   $: open = href ? $page.url.pathname === href : false;
 
-  // For new API, don't allow navigation until we implement table preview for non-OLAP
-  $: element = allowNavigateToTable && !useNewAPI ? "a" : "button";
+  // Allow navigation when a preview href is available
+  $: element = allowNavigateToTable && href ? "a" : "button";
 </script>
 
 <li aria-label={tableId} class="table-entry group" class:open>
@@ -73,7 +70,7 @@
         }}
       >
         <CaretDownIcon
-          className="flex-none transform transition-transform text-gray-400 {!showSchema &&
+          className="flex-none transform transition-transform text-fg-secondary {!showSchema &&
             '-rotate-90'}"
           size="14px"
         />
@@ -83,34 +80,25 @@
     <svelte:element
       this={element}
       class="clickable-text"
-      {...allowNavigateToTable && !useNewAPI && href ? { href } : {}}
+      {...allowNavigateToTable && href ? { href } : {}}
       role="menuitem"
       tabindex="0"
       on:click={() => {
         store.toggleItem(connector, database, databaseSchema, table);
       }}
     >
-      <TableIcon size="14px" className="shrink-0 text-gray-400" />
+      <TableIcon size="14px" className="shrink-0 text-fg-secondary" />
       <span class="truncate">
         {table}
       </span>
     </svelte:element>
-
-    {#if hasUnsupportedDataTypes && !useNewAPI}
-      <UnsupportedTypesIndicator
-        {instanceId}
-        {connector}
-        {database}
-        {databaseSchema}
-        {table}
-      />
-    {/if}
 
     {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
             id="more-actions-{tableId}"
+            testId="more-actions-context-button"
             tooltipText="More actions"
             label="{tableId} actions menu trigger"
             builders={[builder]}
@@ -133,6 +121,7 @@
             {showGenerateMetricsAndDashboard}
             {showGenerateModel}
             {isModelingSupported}
+            {isOlapConnector}
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
@@ -140,7 +129,7 @@
   </div>
 
   {#if allowShowSchema && showSchema}
-    <TableSchema {connector} {database} {databaseSchema} {table} {useNewAPI} />
+    <TableSchema {connector} {database} {databaseSchema} {table} />
   {/if}
 </li>
 
@@ -156,19 +145,19 @@
   }
 
   .table-entry-header:hover {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   .open {
-    @apply bg-slate-100;
+    @apply bg-gray-100;
   }
 
   .clickable-text {
     @apply flex grow items-center gap-x-1;
-    @apply text-gray-900 truncate;
+    @apply text-fg-primary truncate;
   }
 
   .selected:hover {
-    @apply bg-slate-200;
+    @apply bg-gray-200;
   }
 </style>

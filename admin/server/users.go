@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -16,6 +19,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	// Load time zone data for time.ParseInLocation
@@ -35,7 +39,7 @@ func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusers
 
 	dtos := make([]*adminv1.User, len(users))
 	for i, user := range users {
-		dtos[i] = userToPB(user)
+		dtos[i] = s.userToPB(user, false)
 	}
 
 	return &adminv1.ListSuperusersResponse{Users: dtos}, nil
@@ -88,7 +92,7 @@ func (s *Server) SearchUsers(ctx context.Context, req *adminv1.SearchUsersReques
 
 	dtos := make([]*adminv1.User, len(users))
 	for i, user := range users {
-		dtos[i] = userToPB(user)
+		dtos[i] = s.userToPB(user, false)
 	}
 
 	return &adminv1.SearchUsersResponse{
@@ -116,7 +120,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 	}
 
 	return &adminv1.GetCurrentUserResponse{
-		User: userToPB(u),
+		User: s.userToPB(u, true),
 		Preferences: &adminv1.UserPreferences{
 			TimeZone: &u.PreferenceTimeZone,
 		},
@@ -148,13 +152,15 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 
 	// Update user quota here
 	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-		DisplayName:         user.DisplayName,
-		PhotoURL:            user.PhotoURL,
-		GithubUsername:      user.GithubUsername,
-		GithubRefreshToken:  user.GithubRefreshToken,
-		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-		QuotaTrialOrgs:      user.QuotaTrialOrgs,
-		PreferenceTimeZone:  valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
+		DisplayName:          user.DisplayName,
+		PhotoURL:             user.PhotoURL,
+		GithubUsername:       user.GithubUsername,
+		GithubToken:          user.GithubToken,
+		GithubTokenExpiresOn: user.GithubTokenExpiresOn,
+		GithubRefreshToken:   user.GithubRefreshToken,
+		QuotaSingleuserOrgs:  user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:       user.QuotaTrialOrgs,
+		PreferenceTimeZone:   valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
 	})
 	if err != nil {
 		return nil, err
@@ -192,7 +198,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize)
+	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize, req.Refresh)
 	if err != nil {
 		return nil, err
 	}
@@ -236,6 +242,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 			ExpiresOn:             expiresOn,
 			UsedOn:                timestamppb.New(t.UsedOn),
 			Prefix:                prefix,
+			Refresh:               t.Refresh,
 		}
 	}
 
@@ -289,7 +296,7 @@ func (s *Server) IssueUserAuthToken(ctx context.Context, req *adminv1.IssueUserA
 		representingUserID = &u.ID
 	}
 
-	authToken, err := s.admin.IssueUserAuthToken(ctx, userID, req.ClientId, req.DisplayName, representingUserID, ttl)
+	authToken, err := s.admin.IssueUserAuthToken(ctx, userID, req.ClientId, req.DisplayName, representingUserID, ttl, false)
 	if err != nil {
 		return nil, err
 	}
@@ -333,6 +340,64 @@ func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUse
 	return &adminv1.RevokeUserAuthTokenResponse{}, nil
 }
 
+func (s *Server) RevokeAllUserAuthTokens(ctx context.Context, req *adminv1.RevokeAllUserAuthTokensRequest) (*adminv1.RevokeAllUserAuthTokensResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
+	userID := req.UserId
+	if userID == "current" { // Special alias for the current user
+		if claims.OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+		}
+		userID = claims.OwnerID()
+	}
+	if userID != claims.OwnerID() && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to revoke auth tokens for other users")
+	}
+
+	tokensRevoked, err := s.admin.DB.DeleteAllUserAuthTokens(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.RevokeAllUserAuthTokensResponse{
+		TokensRevoked: int32(tokensRevoked),
+	}, nil
+}
+
+func (s *Server) RevokeRepresentativeAuthTokens(ctx context.Context, req *adminv1.RevokeRepresentativeAuthTokensRequest) (*adminv1.RevokeRepresentativeAuthTokensResponse, error) {
+	claims := auth.GetClaims(ctx)
+
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage representative auth tokens")
+	}
+
+	// Error if authenticated as anything other than a user
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	u, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", u.ID),
+	)
+
+	err = s.admin.DB.DeleteUserAuthTokensByUserAndRepresentingUser(ctx, claims.OwnerID(), u.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.RevokeRepresentativeAuthTokensResponse{}, nil
+}
+
 // IssueRepresentativeAuthToken returns the temporary auth token for representing email
 func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.IssueRepresentativeAuthTokenRequest) (*adminv1.IssueRepresentativeAuthTokenResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -362,7 +427,7 @@ func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.
 	ttl := time.Duration(req.TtlMinutes) * time.Minute
 	displayName := fmt.Sprintf("Support for %s", u.Email)
 
-	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, &ttl)
+	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, &ttl, false)
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +471,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 		if err != nil {
 			return nil, err
 		}
-		res.Resource = &adminv1.SudoGetResourceResponse_User{User: userToPB(user)}
+		res.Resource = &adminv1.SudoGetResourceResponse_User{User: s.userToPB(user, false)}
 	case *adminv1.SudoGetResourceRequest_OrgId:
 		org, err := s.admin.DB.FindOrganization(ctx, id.OrgId)
 		if err != nil {
@@ -453,7 +518,7 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 		return nil, err
 	}
 
-	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
+	return &adminv1.GetUserResponse{User: s.userToPB(user, false)}, nil
 }
 
 func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest) (*adminv1.DeleteUserResponse, error) {
@@ -500,30 +565,32 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 
 	// Update user quota here
 	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-		DisplayName:         user.DisplayName,
-		PhotoURL:            user.PhotoURL,
-		GithubUsername:      user.GithubUsername,
-		GithubRefreshToken:  user.GithubRefreshToken,
-		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, int32(user.QuotaSingleuserOrgs))),
-		QuotaTrialOrgs:      int(valOrDefault(req.TrialOrgs, int32(user.QuotaTrialOrgs))),
-		PreferenceTimeZone:  user.PreferenceTimeZone,
+		DisplayName:          user.DisplayName,
+		PhotoURL:             user.PhotoURL,
+		GithubUsername:       user.GithubUsername,
+		GithubToken:          user.GithubToken,
+		GithubTokenExpiresOn: user.GithubTokenExpiresOn,
+		GithubRefreshToken:   user.GithubRefreshToken,
+		QuotaSingleuserOrgs:  int(valOrDefault(req.SingleuserOrgs, int32(user.QuotaSingleuserOrgs))),
+		QuotaTrialOrgs:       int(valOrDefault(req.TrialOrgs, int32(user.QuotaTrialOrgs))),
+		PreferenceTimeZone:   user.PreferenceTimeZone,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &adminv1.SudoUpdateUserQuotasResponse{User: userToPB(updatedUser)}, nil
+	return &adminv1.SudoUpdateUserQuotasResponse{User: s.userToPB(updatedUser, false)}, nil
 }
 
 // SearchProjectUsers returns a list of users that match the given search/email query.
 func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProjectUsersRequest) (*adminv1.SearchProjectUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.email_query", req.EmailQuery),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -552,7 +619,7 @@ func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProj
 
 	dtos := make([]*adminv1.User, len(users))
 	for i, user := range users {
-		dtos[i] = userToPB(user)
+		dtos[i] = s.userToPB(user, false)
 	}
 
 	return &adminv1.SearchProjectUsersResponse{
@@ -561,7 +628,15 @@ func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProj
 	}, nil
 }
 
-func userToPB(u *database.User) *adminv1.User {
+func (s *Server) userToPB(u *database.User, isCurrentUser bool) *adminv1.User {
+	// Compute a HMAC-SHA256 hash of the email if Pylon identity verification is configured.
+	var pylonEmailHash string
+	if isCurrentUser && len(s.opts.PylonIdentitySecret) != 0 {
+		h := hmac.New(sha256.New, s.opts.PylonIdentitySecret)
+		h.Write([]byte(u.Email))
+		pylonEmailHash = hex.EncodeToString(h.Sum(nil))
+	}
+
 	return &adminv1.User{
 		Id:          u.ID,
 		Email:       u.Email,
@@ -571,12 +646,20 @@ func userToPB(u *database.User) *adminv1.User {
 			SingleuserOrgs: int32(u.QuotaSingleuserOrgs),
 			TrialOrgs:      int32(u.QuotaTrialOrgs),
 		},
-		CreatedOn: timestamppb.New(u.CreatedOn),
-		UpdatedOn: timestamppb.New(u.UpdatedOn),
+		PylonEmailHash: pylonEmailHash,
+		CreatedOn:      timestamppb.New(u.CreatedOn),
+		UpdatedOn:      timestamppb.New(u.UpdatedOn),
 	}
 }
 
 func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.OrganizationMemberUser {
+	var attributes *structpb.Struct
+	if len(m.Attributes) > 0 {
+		if s, err := structpb.NewStruct(m.Attributes); err == nil {
+			attributes = s
+		}
+	}
+
 	return &adminv1.OrganizationMemberUser{
 		UserId:          m.ID,
 		UserEmail:       m.Email,
@@ -587,19 +670,22 @@ func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.Organization
 		UsergroupsCount: uint32(m.UsergroupsCount),
 		CreatedOn:       timestamppb.New(m.CreatedOn),
 		UpdatedOn:       timestamppb.New(m.UpdatedOn),
+		Attributes:      attributes,
 	}
 }
 
 func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUser {
 	return &adminv1.ProjectMemberUser{
-		UserId:       m.ID,
-		UserEmail:    m.Email,
-		UserName:     m.DisplayName,
-		UserPhotoUrl: m.PhotoURL,
-		RoleName:     m.RoleName,
-		OrgRoleName:  m.OrgRoleName,
-		CreatedOn:    timestamppb.New(m.CreatedOn),
-		UpdatedOn:    timestamppb.New(m.UpdatedOn),
+		UserId:            m.ID,
+		UserEmail:         m.Email,
+		UserName:          m.DisplayName,
+		UserPhotoUrl:      m.PhotoURL,
+		RoleName:          m.RoleName,
+		OrgRoleName:       m.OrgRoleName,
+		CreatedOn:         timestamppb.New(m.CreatedOn),
+		UpdatedOn:         timestamppb.New(m.UpdatedOn),
+		Resources:         resourceNamesToPB(m.Resources),
+		RestrictResources: m.RestrictResources,
 	}
 }
 
@@ -618,16 +704,18 @@ func orgInviteToPB(i *database.OrganizationInviteWithRole) *adminv1.Organization
 	return &adminv1.OrganizationInvite{
 		Email:     i.Email,
 		RoleName:  i.RoleName,
-		InvitedBy: i.InvitedBy,
+		InvitedBy: safeStr(i.InvitedBy),
 	}
 }
 
 func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
 	return &adminv1.ProjectInvite{
-		Email:       i.Email,
-		RoleName:    i.RoleName,
-		OrgRoleName: i.OrgRoleName,
-		InvitedBy:   i.InvitedBy,
+		Email:             i.Email,
+		RoleName:          i.RoleName,
+		OrgRoleName:       i.OrgRoleName,
+		InvitedBy:         safeStr(i.InvitedBy),
+		RestrictResources: i.RestrictResources,
+		Resources:         resourceNamesToPB(i.Resources),
 	}
 }
 
@@ -663,7 +751,7 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 	}
 
 	// Find all tokens for the user and match by prefix
-	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
+	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -694,4 +782,15 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 		}
 	}
 	return nil, status.Error(codes.NotFound, "token not found")
+}
+
+func resourceNamesToPB(resources []database.ResourceName) []*adminv1.ResourceName {
+	rs := make([]*adminv1.ResourceName, 0, len(resources))
+	for _, r := range resources {
+		rs = append(rs, &adminv1.ResourceName{
+			Type: r.Type,
+			Name: r.Name,
+		})
+	}
+	return rs
 }

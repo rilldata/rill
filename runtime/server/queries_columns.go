@@ -4,6 +4,7 @@ import (
 	"context"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -26,7 +27,7 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
@@ -77,7 +78,7 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
@@ -112,7 +113,7 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
@@ -181,7 +182,7 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
@@ -215,7 +216,7 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
@@ -258,7 +259,7 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
@@ -297,7 +298,7 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
@@ -330,7 +331,7 @@ func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCar
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 

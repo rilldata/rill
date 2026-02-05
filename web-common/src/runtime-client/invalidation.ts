@@ -1,3 +1,4 @@
+import { getRuntimeServiceGetInstanceQueryKey } from "@rilldata/web-common/runtime-client/gen/runtime-service/runtime-service.ts";
 import {
   isColumnProfilingQuery,
   isProfilingQuery,
@@ -61,7 +62,13 @@ export async function invalidateAllMetricsViews(
   queryClient: QueryClient,
   instanceId: string,
 ) {
-  // First, refetch the resource entries (which returns the available dimensions and measures)
+  // First, refetch the instance query. Instance has feature flag that depends on the user.
+  await queryClient.refetchQueries({
+    type: "active",
+    queryKey: getRuntimeServiceGetInstanceQueryKey(instanceId),
+  });
+
+  // Second, refetch the resource entries (which returns the available dimensions and measures)
   await queryClient.refetchQueries({
     type: "active",
     predicate: (query) =>
@@ -69,7 +76,7 @@ export async function invalidateAllMetricsViews(
       query.queryKey[0].startsWith(`/v1/instances/${instanceId}/resource`),
   });
 
-  // Second, reset queries for all metrics views. This will cause the active queries to refetch.
+  // Third, reset queries for all metrics views. This will cause the active queries to refetch.
   // Note: This is a confusing hack. At time of writing, neither `queryClient.refetchQueries`
   // nor `queryClient.invalidateQueries` were working as expected. Perhaps there's a race condition somewhere.
   void queryClient.resetQueries({

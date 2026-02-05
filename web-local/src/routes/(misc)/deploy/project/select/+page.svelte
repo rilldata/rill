@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     getSelectOrganizationRoute,
@@ -13,6 +14,8 @@
   let selectedProject: Project | undefined = undefined;
 
   $: deployUrl = getUpdateProjectRoute(
+    $page,
+    undefined,
     selectedProject?.orgName ?? "",
     selectedProject?.name ?? "",
   );
@@ -20,7 +23,7 @@
 
 <div class="flex flex-col gap-y-2">
   <div class="text-xl">Which project would you like to update?</div>
-  <div class="text-sm text-gray-500">
+  <div class="text-sm text-fg-secondary">
     These all have matching project name with your Rill Developer project.
   </div>
   <div class="w-[500px]">

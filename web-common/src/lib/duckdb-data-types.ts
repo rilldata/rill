@@ -2,6 +2,13 @@
  * Provides mappings from duckdb's data types to conceptual types we use in the application:
  * CATEGORICALS, NUMERICS, and TIMESTAMPS.
  */
+import IntegerType from "@rilldata/web-common/components/icons/IntegerType.svelte";
+import FloatType from "@rilldata/web-common/components/icons/FloatType.svelte";
+import StringlikeType from "@rilldata/web-common/components/icons/StringlikeType.svelte";
+import TimestampType from "@rilldata/web-common/components/icons/TimestampType.svelte";
+import BooleanType from "@rilldata/web-common/components/icons/BooleanType.svelte";
+import StructType from "@rilldata/web-common/components/icons/StructType.svelte";
+import ListType from "@rilldata/web-common/components/icons/ListType.svelte";
 
 export const INTEGERS = new Set([
   // Rill runtime types
@@ -160,7 +167,7 @@ export const TIMESTAMP_TOKENS: ColorTokens = {
 };
 
 export const NESTED_TOKENS: ColorTokens = {
-  textClass: "text-gray-800",
+  textClass: "text-fg-primary",
   bgClass: "bg-gray-200",
   vizFillClass: "fill-gray-800",
   vizStrokeClass: "stroke-gray-800",
@@ -200,4 +207,24 @@ export enum PreviewRollupInterval {
   day = "1 day",
   month = "1 month",
   year = "1 year",
+}
+
+export function fieldTypeToSymbol(fieldType: string) {
+  if (INTEGERS.has(fieldType)) {
+    return IntegerType;
+  } else if (FLOATS.has(fieldType)) {
+    return FloatType;
+  } else if (STRING_LIKES.has(fieldType)) {
+    return StringlikeType;
+  } else if (TIMESTAMPS.has(fieldType) || INTERVALS.has(fieldType)) {
+    return TimestampType;
+  } else if (BOOLEANS.has(fieldType)) {
+    return BooleanType;
+  } else if (isStruct(fieldType)) {
+    return StructType;
+  } else if (isList(fieldType)) {
+    return ListType;
+  } else if (isNested(fieldType)) {
+    return StructType;
+  }
 }

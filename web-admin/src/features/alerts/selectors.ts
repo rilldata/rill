@@ -7,9 +7,9 @@ import {
   createRuntimeServiceGetExplore,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
-  type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
-import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
+import type { V1AlertSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 import { derived, type Readable, readable } from "svelte/store";
 
 export function useAlerts(instanceId: string, enabled = true) {
@@ -22,7 +22,7 @@ export function useAlerts(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
-        refetchInterval: createSmartRefetchInterval,
+        refetchInterval: smartRefetchIntervalFunc,
       },
     },
   );
@@ -139,7 +139,6 @@ export function useAlertDashboardState(
             webState,
             data.metricsView?.metricsView?.state?.validSpec ?? {},
             data.explore?.explore?.state?.validSpec,
-            {}, // We dont really need schema right now since this a legacy thing only
           ),
       },
     },

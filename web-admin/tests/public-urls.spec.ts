@@ -18,7 +18,7 @@ test.describe.serial("Public URLs", () => {
 
     // Change the time grain to hour
     // (Tests that non-default state propagates to the public URL)
-    await page.getByLabel("Select a time grain").click();
+    await page.getByLabel("Select reference time and grain").click();
     await page.getByRole("menuitem", { name: "hour" }).click();
 
     // Check the Big Number
@@ -71,7 +71,7 @@ test.describe.serial("Public URLs", () => {
 
     // Check that the original dashboard state is reflected in the public URL
     await expect(
-      page.getByLabel("Select a time grain").getByText("Hour"),
+      page.getByLabel("Select reference time and grain").getByText("Hour"),
     ).toBeVisible();
   });
 

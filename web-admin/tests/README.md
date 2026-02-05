@@ -11,7 +11,7 @@ Playwright recommends that global setup takes place in a dedicated Playwright "p
 1. Starts a fresh instance of Rill Cloud
 2. Logs-in via the e2e-admin@rilldata.com user (which has been pre-populated in our Auth0 staging database)
 3. Creates an organization named `e2e`
-4. Deploys the OpenRTB project
+4. Deploys the OpenRTB and AdBids projects
 5. Waits for data ingestion and asserts when the primary dashboard is ready-to-go
 
 ```bash

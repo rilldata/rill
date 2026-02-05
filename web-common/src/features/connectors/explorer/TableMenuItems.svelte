@@ -10,16 +10,13 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { WandIcon } from "lucide-svelte";
-  import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
-  import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { featureFlags } from "../../feature-flags";
-  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { generateMetricsFromTable } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     createSqlModelFromTable,
     createYamlModelFromTable,
   } from "../code-utils";
+  import GenerateMenuItem from "./GenerateMenuItem.svelte";
 
   export let connector: string;
   export let database: string = "";
@@ -28,30 +25,9 @@
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
   export let isModelingSupported: boolean | undefined = false;
-
-  const { ai } = featureFlags;
+  export let isOlapConnector: boolean = false;
 
   $: ({ instanceId } = $runtime);
-  $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
-    instanceId,
-    connector,
-    database,
-    databaseSchema,
-    table,
-    false,
-    BehaviourEventMedium.Menu,
-    MetricsEventSpace.LeftPanel,
-  );
-  $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
-    instanceId,
-    connector,
-    database,
-    databaseSchema,
-    table,
-    true,
-    BehaviourEventMedium.Menu,
-    MetricsEventSpace.LeftPanel,
-  );
 
   async function handleCreateModel(
     modelCreationFn: () => Promise<[string, string]>,
@@ -95,6 +71,30 @@
       );
     }
   }
+
+  async function handleGenerateMetrics() {
+    await generateMetricsFromTable(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      false, // Don't create explore dashboard
+      isOlapConnector,
+    );
+  }
+
+  async function handleGenerateDashboard() {
+    await generateMetricsFromTable(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      true, // Create explore dashboard
+      isOlapConnector,
+    );
+  }
 </script>
 
 {#if isModelingSupported || showGenerateModel}
@@ -104,26 +104,7 @@
   </NavigationMenuItem>
 {/if}
 
-{#if showGenerateMetricsAndDashboard}
-  <NavigationMenuItem on:click={createMetricsViewFromTable}>
-    <MetricsViewIcon slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate metrics
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-  </NavigationMenuItem>
-
-  <NavigationMenuItem on:click={createExploreFromTable}>
-    <ExploreIcon slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate dashboard
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-  </NavigationMenuItem>
+{#if isOlapConnector || showGenerateMetricsAndDashboard}
+  <GenerateMenuItem type="metrics" onClick={handleGenerateMetrics} />
+  <GenerateMenuItem type="dashboard" onClick={handleGenerateDashboard} />
 {/if}

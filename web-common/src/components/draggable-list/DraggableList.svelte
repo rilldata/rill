@@ -25,6 +25,7 @@
   export let onItemClick:
     | ((data: { item: DraggableItem; index: number }) => void)
     | undefined = undefined;
+  export let draggable = true;
 
   let initialMousePosition = 0;
   let contentRect = new DOMRectReadOnly();
@@ -43,12 +44,21 @@
   );
 
   $: filteredItems = searchValue
-    ? items.filter((item) =>
-        item.id.toLowerCase().includes(searchValue.toLowerCase()),
-      )
+    ? items.filter((item) => {
+        const normalizedSearch = searchValue.trim().toLowerCase();
+        if (normalizedSearch === "") return true;
+        const itemId = item.id.toLowerCase();
+        const itemDisplayName =
+          (item.displayName as string | undefined)?.toLowerCase() ?? "";
+        return (
+          itemId.includes(normalizedSearch) ||
+          itemDisplayName.includes(normalizedSearch)
+        );
+      })
     : items;
 
   function handleMouseDown(e: MouseEvent) {
+    if (!draggable) return;
     e.preventDefault();
 
     if (e.button !== 0) return;
@@ -82,7 +92,7 @@
     clone.style.zIndex = "50";
 
     clone.classList.add(
-      "bg-slate-100",
+      "bg-gray-100",
       "cursor-grabbing",
       "shadow-md",
       "outline",
@@ -167,7 +177,7 @@
         <input
           bind:value={searchValue}
           placeholder="Search..."
-          class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+          class="w-full px-2 py-1 border rounded text-sm"
         />
       </slot>
     </div>
@@ -184,7 +194,7 @@
       on:mousedown={handleMouseDown}
     >
       {#if filteredItems.length === 0}
-        <div class="px-2 py-2 text-xs text-gray-500">
+        <div class="px-2 py-2 text-xs text-fg-secondary">
           <slot name="empty" {searchValue}>
             {searchValue ? "No matching items" : "No items"}
           </slot>
@@ -199,36 +209,59 @@
           {@const isLastItem =
             dropIndex === items.length - 1 &&
             i === items.length - 1 - (dragIndex === items.length - 1 ? 1 : 0)}
-          <div
-            data-drag-item
-            data-index={i}
-            data-item-id={item.id}
-            class:sr-only={isDragItem}
-            class:transition-margin={dragIndex !== -1 &&
-              dropIndex !== dragIndex}
-            class:drag-transition={dragIndex !== -1}
-            class:mt-7={isDropTarget}
-            class:mb-7={isLastItem}
-            style:pointer-events={isDragItem ? "none" : "auto"}
-            style:height="{ITEM_HEIGHT}px"
-            class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto cursor-grab items-center hover:bg-slate-50 rounded-sm"
-            class:cursor-not-allowed={items.length === 1}
-            on:click={() => handleItemClick(item, i)}
-            on:keydown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleItemClick(item, i);
-              }
-            }}
-            role="button"
-            tabindex="0"
-          >
-            <slot name="item" {item} index={i} {isDragItem}>
-              <span class="truncate flex-1 text-left pointer-events-none">
-                {item.id}
-              </span>
-            </slot>
-          </div>
+          {#if onItemClick}
+            <button
+              type="button"
+              data-drag-item
+              data-index={i}
+              data-item-id={item.id}
+              class:sr-only={isDragItem}
+              class:transition-margin={dragIndex !== -1 &&
+                dropIndex !== dragIndex}
+              class:drag-transition={dragIndex !== -1}
+              class:mt-7={isDropTarget}
+              class:mb-7={isLastItem}
+              style:pointer-events={isDragItem ? "none" : "auto"}
+              style:height="{ITEM_HEIGHT}px"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-surface-background rounded-sm text-left"
+              class:cursor-grab={draggable}
+              class:cursor-not-allowed={draggable && items.length === 1}
+              class:cursor-pointer={!draggable && !!onItemClick}
+              class:cursor-default={!draggable && !onItemClick}
+              on:click={() => handleItemClick(item, i)}
+            >
+              <slot name="item" {item} index={i} {isDragItem}>
+                <span class="truncate flex-1 text-left pointer-events-none">
+                  {item.id}
+                </span>
+              </slot>
+            </button>
+          {:else}
+            <div
+              data-drag-item
+              data-index={i}
+              data-item-id={item.id}
+              class:sr-only={isDragItem}
+              class:transition-margin={dragIndex !== -1 &&
+                dropIndex !== dragIndex}
+              class:drag-transition={dragIndex !== -1}
+              class:mt-7={isDropTarget}
+              class:mb-7={isLastItem}
+              style:pointer-events={isDragItem ? "none" : "auto"}
+              style:height="{ITEM_HEIGHT}px"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center text-fg-primary hover:bg-popover-accent rounded-sm"
+              class:cursor-grab={draggable}
+              class:cursor-not-allowed={draggable && items.length === 1}
+              class:cursor-pointer={!draggable && !!onItemClick}
+              class:cursor-default={!draggable && !onItemClick}
+            >
+              <slot name="item" {item} index={i} {isDragItem}>
+                <span class="truncate flex-1 text-left pointer-events-none">
+                  {item.id}
+                </span>
+              </slot>
+            </div>
+          {/if}
         {/each}
       {/if}
     </div>

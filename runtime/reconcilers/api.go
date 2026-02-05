@@ -63,3 +63,10 @@ func (r *APIReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName
 
 	return runtime.ReconcileResult{}
 }
+
+func (r *APIReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetApi() == nil {
+		return nil, fmt.Errorf("not an API resource")
+	}
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}

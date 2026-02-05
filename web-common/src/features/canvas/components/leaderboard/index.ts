@@ -15,9 +15,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/sorting";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type {
-  V1MetricsViewSpec,
-  V1Resource,
+import {
+  type V1MetricsViewSpec,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";

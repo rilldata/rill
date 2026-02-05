@@ -16,10 +16,6 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectPinot
 }
 
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return false
-}
-
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("pinot: WithConnection not supported")
 }
@@ -37,7 +33,16 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.logQueries {
-		c.logger.Info("pinot query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), zap.Int64("timeoutMS", c.timeoutMS), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", stmt.Query),
+			zap.Any("args", stmt.Args),
+			zap.Int64("timeoutMS", c.timeoutMS),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("pinot query", fields...)
 	}
 	if stmt.DryRun {
 		rows, err := c.db.QueryxContext(ctx, "EXPLAIN PLAN FOR "+stmt.Query, stmt.Args...)

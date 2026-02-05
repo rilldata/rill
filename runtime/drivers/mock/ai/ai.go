@@ -4,6 +4,7 @@ import (
 	"context"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	rillai "github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
@@ -135,13 +136,13 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsFileStore implements drivers.Handle.
@@ -160,15 +161,23 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // Complete implements drivers.AIService.
-func (c *connection) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
+func (c *connection) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
 	if c.toolCallingMode {
-		return c.handleToolCalling()
+		return &drivers.CompleteResult{
+			Message:      c.handleToolCalling(),
+			InputTokens:  10,
+			OutputTokens: 20,
+		}, nil
 	}
-	return c.echoUserMessage(msgs)
+	return &drivers.CompleteResult{
+		Message:      c.echoUserMessage(opts.Messages),
+		InputTokens:  10,
+		OutputTokens: 20,
+	}, nil
 }
 
 // handleToolCalling returns a simple mock tool call for testing
-func (c *connection) handleToolCalling() (*aiv1.CompletionMessage, error) {
+func (c *connection) handleToolCalling() *aiv1.CompletionMessage {
 	inputStruct, _ := structpb.NewStruct(map[string]interface{}{})
 	return &aiv1.CompletionMessage{
 		Role: "assistant",
@@ -177,17 +186,17 @@ func (c *connection) handleToolCalling() (*aiv1.CompletionMessage, error) {
 				BlockType: &aiv1.ContentBlock_ToolCall{
 					ToolCall: &aiv1.ToolCall{
 						Id:    "tool_call_123",
-						Name:  "list_metrics_views",
+						Name:  rillai.ListMetricsViewsName,
 						Input: inputStruct,
 					},
 				},
 			},
 		},
-	}, nil
+	}
 }
 
 // echoUserMessage finds the last user message and echoes it back
-func (c *connection) echoUserMessage(msgs []*aiv1.CompletionMessage) (*aiv1.CompletionMessage, error) {
+func (c *connection) echoUserMessage(msgs []*aiv1.CompletionMessage) *aiv1.CompletionMessage {
 	text := c.findLastUserText(msgs)
 	if text == "" {
 		text = "No user message found"
@@ -204,7 +213,7 @@ func (c *connection) echoUserMessage(msgs []*aiv1.CompletionMessage) (*aiv1.Comp
 				},
 			},
 		},
-	}, nil
+	}
 }
 
 // findLastUserText extracts text from the most recent user message

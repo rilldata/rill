@@ -23,7 +23,7 @@
   function getColorClass(color: string) {
     switch (color) {
       case "gray":
-        return "bg-gray-100 border-gray-300 text-gray-600";
+        return "bg-gray-100 border border-gray-300 dark:border-gray-400 dark:bg-surface-active text-fg-secondary";
       case "magenta":
         return "bg-pink-50 border-pink-300 text-pink-700";
       case "green":
@@ -41,7 +41,7 @@
       case "purple":
         return "bg-purple-50 border-purple-300 text-purple-600";
       default:
-        return "bg-gray-100 border-gray-300 text-gray-600";
+        return "bg-gray-100 border-gray-300 text-fg-secondary";
     }
   }
 </script>

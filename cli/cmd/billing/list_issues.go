@@ -20,7 +20,7 @@ func ListIssuesCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.ListOrganizationBillingIssues(cmd.Context(), &adminv1.ListOrganizationBillingIssuesRequest{
-				Organization:         ch.Org,
+				Org:                  ch.Org,
 				SuperuserForceAccess: force,
 			})
 			if err != nil {

@@ -64,13 +64,13 @@ const queryRefetchStateMap = new WeakMap<
 >();
 
 /**
- * Creates a smart refetch interval function that uses a WeakMap to store state.
+ * A smart refetch interval function that uses a WeakMap to store state.
  * This approach keeps refetch state per query without mutating the query object.
  *
  * @param query The TanStack query object
  * @returns The refetch interval (number in ms or false to disable)
  */
-export function createSmartRefetchInterval(
+export function smartRefetchIntervalFunc(
   query: Query<
     V1ListResourcesResponse,
     HTTPError,
@@ -83,12 +83,6 @@ export function createSmartRefetchInterval(
   }
 
   const resources = query.state.data.resources;
-
-  // If there are no resources at all, use a fixed refetch interval
-  // This handles the case during initial deployment creation when parser hasn't run yet
-  if (resources.length === 0) {
-    return INITIAL_REFETCH_INTERVAL;
-  }
 
   // Get or initialize state from WeakMap
   const currentState = queryRefetchStateMap.get(query) || {};

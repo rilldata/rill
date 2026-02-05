@@ -30,8 +30,6 @@ describe("cascadingExploreStateMerge", () => {
       selectedTimeRange: {
         // selected time range name is from StateFromURL
         name: TimeRangePreset.LAST_SIX_HOURS,
-        // selected time range interval from YAMLConfigState
-        interval: V1TimeGrain.TIME_GRAIN_HOUR,
       } as DashboardTimeControls,
       // Comparison settings are from StateFromURL
       showTimeComparison: true,

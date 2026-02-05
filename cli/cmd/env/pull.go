@@ -71,9 +71,9 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 		return err
 	}
 	res, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-		Organization: ch.Org,
-		Project:      projectName,
-		Environment:  environment,
+		Org:         ch.Org,
+		Project:     projectName,
+		Environment: environment,
 	})
 	if err != nil {
 		return err

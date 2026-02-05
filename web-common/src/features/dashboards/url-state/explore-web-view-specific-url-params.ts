@@ -32,6 +32,7 @@ export const ExploreWebViewSpecificURLParams: Record<
     ExploreStateURLParams.PivotRows,
     ExploreStateURLParams.PivotColumns,
     ExploreStateURLParams.PivotTableMode,
+    ExploreStateURLParams.PivotRowLimit,
     ExploreStateURLParams.SortBy,
     ExploreStateURLParams.SortDirection,
   ],

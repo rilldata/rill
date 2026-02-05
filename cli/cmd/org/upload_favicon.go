@@ -51,7 +51,7 @@ func UploadFaviconCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				empty := ""
 				_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-					Name:           ch.Org,
+					Org:            ch.Org,
 					FaviconAssetId: &empty,
 				})
 				if err != nil {
@@ -94,7 +94,7 @@ func UploadFaviconCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Generate the asset upload URL
 			asset, err := client.CreateAsset(cmd.Context(), &adminv1.CreateAssetRequest{
-				OrganizationName:   ch.Org,
+				Org:                ch.Org,
 				Type:               "image",
 				Name:               "favicon",
 				Extension:          ext,
@@ -125,7 +125,7 @@ func UploadFaviconCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Update the favicon
 			_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-				Name:           ch.Org,
+				Org:            ch.Org,
 				FaviconAssetId: &asset.AssetId,
 			})
 			if err != nil {

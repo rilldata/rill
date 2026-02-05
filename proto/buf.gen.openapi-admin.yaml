@@ -11,3 +11,4 @@ plugins:
       - logtostderr=true
       - output_format=yaml
       - allow_merge=true,merge_file_name=rill/admin/v1/admin
+      - disable_service_tags=true

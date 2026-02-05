@@ -94,9 +94,10 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 var dotenvURLs = map[string]string{
-	"cloud": "gs://rill-devtool/dotenv/cloud-dev.env",
-	"e2e":   "gs://rill-devtool/dotenv/cloud-e2e.env",
-	"other": "gs://rill-devtool/dotenv/other.env",
+	"cloud":   "gs://rill-devtool/dotenv/cloud-dev.env",
+	"minimal": "gs://rill-devtool/dotenv/cloud-dev.env", // "minimal" uses the same .env as "cloud"
+	"e2e":     "gs://rill-devtool/dotenv/cloud-e2e.env",
+	"other":   "gs://rill-devtool/dotenv/other.env",
 }
 
 func checkDotenv() error {

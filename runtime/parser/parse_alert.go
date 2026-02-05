@@ -94,7 +94,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Parse refresh schedule
-	schedule, err := p.parseScheduleYAML(tmp.Refresh)
+	schedule, err := p.parseScheduleYAML(tmp.Refresh, false)
 	if err != nil {
 		return err
 	}

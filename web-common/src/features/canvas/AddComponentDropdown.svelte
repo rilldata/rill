@@ -1,9 +1,12 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
+  import {
+    CHART_CONFIG,
+    VISIBLE_CHART_TYPES,
+  } from "@rilldata/web-common/features/components/charts/config";
   import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
-  import { CHART_CONFIG, VISIBLE_CHART_TYPES } from "./components/charts";
+  import type { ChartType } from "../components/charts/types";
   import type { CanvasComponentType } from "./components/types";
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
@@ -20,7 +23,7 @@
   export const menuItems: MainMenuItem[] = [
     { id: "chart_submenu", label: "Chart", icon: ChartIcon },
     { id: "table", label: "Table", icon: TableIcon },
-    { id: "markdown", label: "Text", icon: TextIcon },
+    { id: "markdown", label: "Text/Markdown", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
     { id: "leaderboard", label: "Leaderboard", icon: LeaderboardIcon },
     { id: "image", label: "Image", icon: ChartIcon },
@@ -53,10 +56,10 @@
       <button
         {...builder}
         use:builder.action
-        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-slate-200 w-full"
+        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface-subtle h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
       >
-        <PlusCircle class="w-6 h-6 text-slate-500" />
-        <span class="text-sm font-medium text-slate-500">Add widget</span>
+        <PlusCircle class="w-6 h-6 text-fg-secondary" />
+        <span class="text-sm font-medium text-fg-secondary">Add widget</span>
       </button>
     {:else if floatingForm}
       <button
@@ -81,8 +84,8 @@
         {...builder}
         aria-label={getAriaLabel(rowIndex, columnIndex)}
         title="Insert widget"
-        class:bg-gray-50={open}
-        class="pointer-events-auto bg-surface active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
+        class:bg-surface-background={open}
+        class="pointer-events-auto bg-surface-subtle active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
         on:mouseenter={onMouseEnter}
       >
         <PlusCircle size="15px" />
@@ -104,7 +107,7 @@
             <DropdownMenu.SubContent class="min-w-[160px]">
               {#each ADD_DROPDOWN_CHART_TYPES as chartType}
                 <DropdownMenu.Item
-                  class="flex flex-row gap-x-2"
+                  class="flex flex-row gap-x-2 text-fg-primary"
                   on:click={() => onItemClick(chartType)}
                 >
                   <svelte:component
@@ -117,7 +120,7 @@
               {/each}
               <DropdownMenu.Separator />
               <DropdownMenu.Item
-                class="flex flex-row gap-x-2"
+                class="flex flex-row gap-x-2 text-fg-primary"
                 on:click={() => onItemClick("custom_chart")}
               >
                 <ChartIcon />
@@ -127,10 +130,10 @@
           </DropdownMenu.Sub>
         {:else}
           <DropdownMenu.Item
-            class="flex flex-row gap-x-2"
+            class="flex flex-row gap-x-2 text-fg-primary"
             on:click={() => onItemClick(id)}
           >
-            <svelte:component this={icon} color="var(--color-gray-600)" />
+            <svelte:component this={icon} color="var(--fg-muted)" />
             {label}
           </DropdownMenu.Item>
         {/if}

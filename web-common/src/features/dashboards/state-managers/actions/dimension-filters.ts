@@ -3,7 +3,6 @@ import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filte
 import {
   createInExpression,
   createLikeExpression,
-  getValueIndexInExpression,
   getValuesInExpression,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -12,14 +11,14 @@ import {
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
+import { get } from "svelte/store";
 import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 import type { DashboardMutables } from "./types";
-import { get } from "svelte/store";
 
 export function toggleDimensionValueSelection(
   { dashboard }: DashboardMutables,
   dimensionName: string,
-  dimensionValue: string,
+  dimensionValue: string | null,
   keepPillVisible?: boolean,
   /**
    * This marks the value as being exclusive. All other selected values will be unselected.
@@ -38,7 +37,7 @@ export function toggleDimensionValueSelection(
 export function toggleMultipleDimensionValueSelections(
   { dashboard }: DashboardMutables,
   dimensionName: string,
-  dimensionValues: string[],
+  dimensionValues: (string | null)[],
   keepPillVisible?: boolean,
   isExclusiveFilter?: boolean,
 ) {
@@ -272,25 +271,30 @@ export function setFilters(
 
 export function toggleDimensionFilterValue(
   expr: V1Expression,
-  dimensionValue: string,
+  dimensionValue: string | null,
   isExclusiveFilter: boolean,
 ) {
   if (!expr.cond?.exprs) return -1;
 
-  const inIdx = getValueIndexInExpression(expr, dimensionValue);
+  const ident = expr.cond.exprs[0];
+  const values = getValuesInExpression(expr);
+
+  const inIdx = values.findIndex((v) => v === dimensionValue);
+
   if (inIdx === -1) {
     if (isExclusiveFilter) {
-      expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
-        val: dimensionValue,
-      });
+      expr.cond.exprs = [ident, { val: dimensionValue }];
+      return -1;
     } else {
-      expr.cond.exprs.push({ val: dimensionValue });
+      values.push(dimensionValue);
     }
-    return -1;
   } else {
-    expr.cond.exprs.splice(inIdx, 1);
-    return inIdx;
+    values.splice(inIdx, 1);
   }
+
+  expr.cond.exprs = [ident, ...values.map((v) => ({ val: v }))];
+
+  return inIdx;
 }
 
 export const dimensionFilterActions = {

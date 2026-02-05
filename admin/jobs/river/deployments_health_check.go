@@ -51,7 +51,7 @@ func (w *DeploymentsHealthCheckWorker) Work(ctx context.Context, job *river.Job[
 		group.SetLimit(32)
 		for _, d := range deployments {
 			d := d
-			if d.Status != database.DeploymentStatusOK {
+			if d.Status != database.DeploymentStatusRunning {
 				if time.Since(d.UpdatedOn) > time.Hour {
 					w.logger.Error("deployment health check: deployment not ok", zap.String("project_id", d.ProjectID), zap.String("deployment_id", d.ID), zap.String("status", d.Status.String()), zap.Time("since", d.UpdatedOn), observability.ZapCtx(ctx))
 				}
@@ -146,7 +146,7 @@ func deploymentHealthCheck(ctx context.Context, w *DeploymentsHealthCheckWorker,
 			w.logger.Error("deployment health check: failed to find deployment", zap.String("project_id", d.ProjectID), zap.String("deployment_id", d.ID), zap.Error(dbErr), observability.ZapCtx(ctx))
 			return nil, false
 		}
-		if d.Status == database.DeploymentStatusOK {
+		if d.Status == database.DeploymentStatusRunning {
 			w.logger.Error("deployment health check: health check call failed", zap.String("project_id", d.ProjectID), zap.String("deployment_id", d.ID), zap.String("host", d.RuntimeHost), zap.Error(err), observability.ZapCtx(ctx))
 		}
 		// Deployment status changed (probably being deleted)

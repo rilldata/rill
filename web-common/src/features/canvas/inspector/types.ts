@@ -1,8 +1,8 @@
+import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 import type {
   ChartLegend,
   ChartSortDirectionOptions,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
-import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
+} from "@rilldata/web-common/features/components/charts/types";
 
 type SemanticInputTypes =
   | "metrics"
@@ -16,7 +16,8 @@ type CustomInputTypes =
   | "rill_time"
   | "sparkline"
   | "comparison_options"
-  | "vega_spec";
+  | "vega_spec"
+  | "switcher_tab";
 type PositionalInputTypes = "alignment";
 
 export type InputType =
@@ -45,7 +46,14 @@ export type ChartFieldInput = {
   originSelector?: boolean;
   sortSelector?: SortSelectorConfig;
   limitSelector?: { defaultLimit: number };
-  colorMappingSelector?: { enable: boolean; values?: string[] };
+  colorMappingSelector?: {
+    enable: boolean;
+    values?: string[];
+    isContinuous?: boolean;
+  };
+  colorRangeSelector?: {
+    enable: boolean;
+  };
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;
@@ -59,6 +67,14 @@ export type ChartFieldInput = {
    * If this key is not specified, legend selector will not be shown.
    */
   defaultLegendOrientation?: ChartLegend;
+  /**
+   * For measures toggle for displaying measure total value
+   */
+  totalSelector?: boolean;
+  /**
+   * Marks a field as optional which can be removed from the chart.
+   */
+  isRemovable?: boolean;
 };
 
 export interface ComponentInputParam {
@@ -71,11 +87,15 @@ export interface ComponentInputParam {
     allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
     defaultAlignment?: ComponentAlignment;
     chartFieldInput?: ChartFieldInput;
+    layout?: "default" | "grouped";
+    /**
+     * If true, the boolean input will be inverted. This is useful when true
+     * is the intended default state
+     */
+    invertBoolean?: boolean;
     [key: string]: any;
   };
 }
-
-export type ColorMapping = { value: string; color: string }[];
 
 export interface FilterInputParam {
   type: FilterInputTypes;

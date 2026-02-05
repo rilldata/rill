@@ -66,6 +66,7 @@ var _ provisioner.Provisioner = (*KubernetesProvisioner)(nil)
 type TemplateData struct {
 	Image        string
 	ImageTag     string
+	ProvisionID  string
 	Host         string
 	CPU          int
 	MemoryGB     int
@@ -186,12 +187,13 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	data := &TemplateData{
 		ImageTag:     version,
 		Image:        p.Spec.Image,
-		Names:        names,
+		ProvisionID:  provisionID,
 		Host:         strings.Split(host, "//")[1], // Remove protocol
 		CPU:          1 * args.Slots,
 		MemoryGB:     4 * args.Slots,
 		StorageBytes: 40 * int64(args.Slots) * int64(datasize.GB),
 		Slots:        args.Slots,
+		Names:        names,
 		Annotations:  opts.Annotations,
 		Environment:  environment,
 	}

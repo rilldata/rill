@@ -1,4 +1,7 @@
 <script lang="ts">
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
   import LocalFiltersHeader from "@rilldata/web-common/features/canvas/LocalFiltersHeader.svelte";
@@ -6,6 +9,7 @@
 
   export let title: string | undefined = undefined;
   export let description: string | undefined = undefined;
+  export let showDescriptionAsTooltip: boolean | undefined = false;
   export let filters: ComponentFilterProperties | undefined = undefined;
   export let faint: boolean = false;
   export let component: BaseCanvasComponent<any>;
@@ -35,22 +39,46 @@
 {#if title || description}
   <div
     bind:this={container}
-    class="component-header-container w-full h-fit flex flex-col bg-surface px-4 pt-2 pb-1 items-start {wide
+    class="component-header-container w-full h-fit flex flex-col bg-surface-card px-4 pt-2 pb-1 items-start {wide
       ? 'wide'
       : ''}"
   >
     {#if title}
       <div class="header-row">
-        <h1 class:faint class="title">{title}</h1>
+        {#if showDescriptionAsTooltip && description}
+          <Tooltip location="bottom" alignment="start">
+            <div class="title-with-icon">
+              <h1 class:faint class="title">{title}</h1>
+              <InfoCircle className="text-fg-secondary" size="16px" />
+            </div>
+            <TooltipContent slot="tooltip-content">
+              {description}
+            </TooltipContent>
+          </Tooltip>
+        {:else}
+          <h1 class:faint class="title">{title}</h1>
+        {/if}
         {#if atleastOneFilter}
           <LocalFiltersHeader {component} />
         {/if}
       </div>
     {/if}
-    {#if description}
+    {#if description && !showDescriptionAsTooltip}
       <div class="header-row">
         <h2 class="description">{description}</h2>
         {#if !title && atleastOneFilter}
+          <LocalFiltersHeader {component} />
+        {/if}
+      </div>
+    {:else if !title && showDescriptionAsTooltip && description}
+      <div class="header-row">
+        <Tooltip location="bottom" alignment="start" distance={4}>
+          <InfoCircle className="text-fg-secondary" size="16px" />
+          <TooltipContent slot="tooltip-content">
+            {description}
+          </TooltipContent>
+        </Tooltip>
+        {#if atleastOneFilter}
           <LocalFiltersHeader {component} />
         {/if}
       </div>
@@ -71,20 +99,24 @@
     @apply flex-row items-center;
   }
 
+  .title-with-icon {
+    @apply flex items-center gap-x-1 flex-shrink-0;
+  }
+
   .title {
     font-size: 15px;
     line-height: 26px;
     @apply flex-shrink-0;
-    @apply font-medium text-gray-800 truncate;
+    @apply font-medium text-fg-primary truncate;
   }
 
   .title.faint {
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 
   .description {
     font-size: 13px;
     @apply flex-shrink-0;
-    @apply text-gray-500 font-normal leading-none;
+    @apply text-fg-secondary font-normal leading-none;
   }
 </style>

@@ -35,7 +35,8 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	s.addInstanceRequestAttributes(ctx, instanceID)
 
 	// Check if user has access to query for API data
-	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadAPI) {
+	claims := auth.GetClaims(ctx, instanceID)
+	if !claims.Can(runtime.ReadAPI) {
 		return httputil.Errorf(http.StatusForbidden, "does not have access to custom APIs")
 	}
 
@@ -65,7 +66,6 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	// Rewrite the claims before passing them to the resolver
-	claims := auth.GetClaims(ctx).SecurityClaims()
 	if api.Spec.SkipNestedSecurity {
 		claims.SkipChecks = true
 	}
@@ -112,7 +112,7 @@ func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) e
 	}
 
 	// Check if user has access to query for API data
-	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadAPI) {
+	if !auth.GetClaims(ctx, instanceID).Can(runtime.ReadAPI) {
 		return httputil.Errorf(http.StatusForbidden, "does not have access to custom APIs")
 	}
 

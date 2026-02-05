@@ -9,7 +9,6 @@ import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/sto
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimension,
-  MetricsViewSpecMeasure,
   QueryServiceMetricsViewAggregationBody,
   V1Expression,
   V1MetricsViewAggregationMeasure,
@@ -18,16 +17,6 @@ import type {
 import { SortType } from "./proto-state/derived-types";
 import type { TimeControlState } from "./time-controls/time-control-store";
 
-const countRegex = /count(?=[^(]*\()/i;
-const sumRegex = /sum(?=[^(]*\()/i;
-
-export function isSummableMeasure(measure: MetricsViewSpecMeasure): boolean {
-  const expression = measure.expression?.toLowerCase();
-  return (
-    !!(expression?.match(countRegex) || expression?.match(sumRegex)) ||
-    Boolean(measure.validPercentOfTotal)
-  );
-}
 /**
  * Returns a sanitized column name appropriate for use in e.g. filters.
  *

@@ -30,7 +30,7 @@
   async function onDelete(deletedName: string) {
     try {
       await $updateProjectVariables.mutateAsync({
-        organization,
+        org: organization,
         project,
         data: {
           environment,
@@ -79,22 +79,28 @@
       <AlertDialogTitle>Delete this environment variable?</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          This environment variable will no longer be available to the project.
+          The environment variable <span class="source-code text-sm font-medium"
+            >{name}</span
+          > will no longer be available for this project.
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
       <Button
-        type="plain"
+        type="tertiary"
         onClick={() => {
           open = false;
         }}
       >
         Cancel
       </Button>
-      <Button type="primary" status="error" onClick={handleDelete}>
-        Yes, delete
-      </Button>
+      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
+
+<style lang="postcss">
+  .source-code {
+    font-family: "Source Code Variable", monospace;
+  }
+</style>

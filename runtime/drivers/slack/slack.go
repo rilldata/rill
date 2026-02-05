@@ -153,13 +153,13 @@ func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {

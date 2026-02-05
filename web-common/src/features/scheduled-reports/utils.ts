@@ -28,6 +28,10 @@ import {
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 
+export enum ReportRunAs {
+  Recipient = "recipient",
+  Creator = "creator",
+}
 export type ReportValues = ReturnType<typeof getNewReportInitialFormValues>;
 
 export function getQueryNameFromQuery(query: V1Query) {
@@ -46,6 +50,7 @@ export function getNewReportInitialFormValues(
 ) {
   return {
     title: "",
+    webOpenMode: ReportRunAs.Creator as string,
     ...getInitialScheduleFormValues(),
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
     exportLimit: "",
@@ -62,6 +67,8 @@ export function getExistingReportInitialFormValues(
 ) {
   return {
     title: reportSpec.displayName ?? "",
+    webOpenMode:
+      reportSpec.annotations?.web_open_mode || (ReportRunAs.Creator as string),
     ...getExistingScheduleFormValues(reportSpec.refreshSchedule),
     exportFormat:
       reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,

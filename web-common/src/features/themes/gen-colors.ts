@@ -1,8 +1,14 @@
+/**
+ * This file can be run using the script npm run gen:colors
+ * Generates a CSS file defining color variables for light and dark modes
+ * based on the pre-defined color palettes.
+ */
+
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { allColors } from "./colors.ts";
-import { createDarkVariation } from "./actions.ts";
+import { definedDarkModeColors, definedLightModeColors } from "./colors.ts";
+import { createDarkVariation } from "./color-generation.ts";
 import { TailwindColorSpacing } from "./color-config.ts";
 import { execFile } from "child_process";
 import type { Color } from "chroma-js";
@@ -30,9 +36,17 @@ function generateCSSBlock(): string {
   let lightAssignments = "  /* LIGHT MODE ASSIGNMENT */\n";
   let darkAssignments = "  /* DARK MODE ASSIGNMENT */\n";
 
-  for (const [colorName, colorMap] of Object.entries(allColors)) {
+  for (const [colorName, colorMap] of Object.entries(definedLightModeColors)) {
     const colorList = Object.values(colorMap);
-    const darkVariants = createDarkVariation([...colorList]);
+    const predefinedDarkModeColors = definedDarkModeColors[colorName];
+
+    const overwrite = predefinedDarkModeColors?.overwrite ?? true;
+
+    const mappedDarkVariants = createDarkVariation([...colorList]);
+
+    const predefinedDarkVariants = predefinedDarkModeColors
+      ? Object.values(predefinedDarkModeColors.colors)
+      : undefined;
 
     // Light and dark variables for each color and shade
     const lightVars = colorList
@@ -42,14 +56,24 @@ function generateCSSBlock(): string {
       )
       .join("\n");
 
-    const darkVars = darkVariants
-      .map(
+    const predefinedVars = predefinedDarkVariants
+      ?.map(
         (color, i) =>
-          `  --color-${colorName}-dark-${TailwindColorSpacing[i]}: ${getCssString(color)};`,
+          `  --color-${overwrite ? colorName : `rill-${colorName}`}-dark-${TailwindColorSpacing[i]}: ${getCssString(color)};`,
       )
       .join("\n");
 
-    variables += `  /* ${colorName.toUpperCase()} */\n${lightVars}\n\n${darkVars}\n\n`;
+    const mappedVars =
+      predefinedDarkModeColors && overwrite
+        ? undefined
+        : mappedDarkVariants
+            ?.map(
+              (color, i) =>
+                `  --color-${colorName}-dark-${TailwindColorSpacing[i]}: ${getCssString(color)};`,
+            )
+            .join("\n");
+
+    variables += `  /* ${colorName.toUpperCase()} */\n${lightVars}\n\n${predefinedVars ?? ""}\n\n${mappedVars ?? ""}\n`;
 
     // Assigning light and dark variables to the main color variables
     lightAssignments += `  /* ${colorName.toUpperCase()} */\n`;

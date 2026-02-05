@@ -5,11 +5,8 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { InfoIcon } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
   import Search from "../search/Search.svelte";
-
-  const dispatch = createEventDispatcher();
 
   export let value: string = "";
   export let id: string;
@@ -33,6 +30,7 @@
   export let tooltip: string = "";
   export let width: number | null = null;
   export let minWidth: number | null = null;
+  export let dropdownWidth: string | null = null;
   export let disabled = false;
   export let selectElement: HTMLButtonElement | undefined = undefined;
   export let full = false;
@@ -69,19 +67,21 @@
       for={id}
       class="{size === 'sm' ? 'text-xs' : 'text-sm'} flex items-center gap-x-1"
     >
-      <span class="text-gray-800 font-medium">
+      <span class="text-fg-primary dark:text-fg-primary font-medium">
         {label}
       </span>
       {#if optional}
-        <span class="text-gray-500">(optional)</span>
+        <span class="text-fg-secondary">(optional)</span>
       {/if}
       {#if tooltip}
         <Tooltip.Root portal="body">
           <Tooltip.Trigger>
-            <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+            <InfoIcon class="text-fg-secondary" size="14px" strokeWidth={2} />
           </Tooltip.Trigger>
           <Tooltip.Content side="right">
-            {tooltip}
+            {#each tooltip.split(/\n/gm) as line (line)}
+              <div>{line}</div>
+            {/each}
           </Tooltip.Content>
         </Tooltip.Root>
       {/if}
@@ -95,7 +95,6 @@
     onSelectedChange={(newSelection) => {
       if (!newSelection) return;
       value = newSelection.value;
-      dispatch("change", newSelection.value);
       onChange(newSelection.value);
     }}
     onOpenChange={(isOpen) => {
@@ -111,8 +110,10 @@
       {lockable}
       {lockTooltip}
       bind:el={selectElement}
-      class="flex px-3 gap-x-2 max-w-full {HeightBySize[size]} {width &&
-        `w-[${width}px]`} {minWidth && `min-w-[${minWidth}px]`} {ringFocus &&
+      class="bg-input flex px-3 gap-x-2 max-w-full {HeightBySize[
+        size
+      ]} {width && `w-[${width}px]`} {minWidth &&
+        `min-w-[${minWidth}px]`} {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
         : ''} {forcedTriggerStyle}"
@@ -121,15 +122,15 @@
       <Select.Value
         {placeholder}
         class="text-[{fontSize}px] {!selected
-          ? 'text-gray-400'
-          : ''} w-full  text-left"
+          ? 'text-fg-secondary'
+          : 'text-fg-primary'} w-full  text-left"
       />
     </Select.Trigger>
 
     <Select.Content
       {sameWidth}
       align="start"
-      class="max-h-80 overflow-y-auto"
+      class="max-h-80 overflow-y-auto {dropdownWidth ? dropdownWidth : ''}"
       strategy="fixed"
     >
       {#if enableSearch}
@@ -172,7 +173,7 @@
             {/if}
           </Select.Item>
         {:else}
-          <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
+          <div class="px-2.5 py-1.5 text-fg-secondary">No results found</div>
         {/each}
         {#if onAddNew}
           <SelectSeparator />

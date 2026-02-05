@@ -8,10 +8,6 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -87,41 +83,6 @@ func (c *Connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.
 }
 
 func deleteObjectsInPrefix(ctx context.Context, c *Connection, bucketName, prefix string) error {
-	if c.config.SecretJSON == "" && (c.config.KeyID != "" && c.config.Secret != "") {
-		// use s3 api when KeyID is provided
-		sess, err := session.NewSession(&aws.Config{
-			Region:           aws.String("auto"),
-			Credentials:      credentials.NewStaticCredentials(c.config.KeyID, c.config.Secret, ""),
-			Endpoint:         aws.String("https://storage.googleapis.com"),
-			S3ForcePathStyle: aws.Bool(true),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create S3 session for GCS: %w", err)
-		}
-
-		s3Client := s3.New(sess)
-
-		result, err := s3Client.ListObjectsV2(&s3.ListObjectsV2Input{
-			Bucket: aws.String(bucketName),
-			Prefix: aws.String(prefix),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to list objects: %w", err)
-		}
-
-		// Delete each object
-		for _, obj := range result.Contents {
-			deleteInput := &s3.DeleteObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    obj.Key,
-			}
-			_, err := s3Client.DeleteObject(deleteInput)
-			if err != nil {
-				return fmt.Errorf("failed to delete object %s: %w", *obj.Key, err)
-			}
-		}
-		return nil
-	}
 	cred, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
 		return err

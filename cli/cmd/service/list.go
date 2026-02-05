@@ -20,8 +20,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			if project != "" {
 				// If project is specified, list services for that project
 				res, err := client.ListProjectMemberServices(cmd.Context(), &adminv1.ListProjectMemberServicesRequest{
-					OrganizationName: ch.Org,
-					ProjectName:      project,
+					Org:     ch.Org,
+					Project: project,
 				})
 				if err != nil {
 					return err
@@ -32,7 +32,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.ListServices(cmd.Context(), &adminv1.ListServicesRequest{
-				OrganizationName: ch.Org,
+				Org: ch.Org,
 			})
 			if err != nil {
 				return err

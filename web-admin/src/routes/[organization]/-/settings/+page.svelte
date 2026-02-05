@@ -9,14 +9,19 @@
 
   export let data: PageData;
 
-  $: ({ showUpgradeDialog, organizationLogoUrl, organizationFaviconUrl } =
-    data);
+  $: ({ showUpgradeDialog, organization: organizationObj } = data);
+
+  $: ({
+    logoUrl: organizationLogoUrl,
+    logoDarkUrl: organizationLogoDarkUrl,
+    faviconUrl: organizationFaviconUrl,
+  } = organizationObj ?? {});
 
   $: organization = $page.params.organization;
 </script>
 
 <OrgNameSettings {organization} />
-<LogoSettings {organization} {organizationLogoUrl} />
+<LogoSettings {organization} {organizationLogoUrl} {organizationLogoDarkUrl} />
 <FaviconSettings {organization} {organizationFaviconUrl} />
 <OrgDomainAllowListSettings {organization} />
 <!-- disabling for now since  there are some open questions around billing -->

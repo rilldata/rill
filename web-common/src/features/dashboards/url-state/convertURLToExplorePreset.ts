@@ -1,4 +1,5 @@
 import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
@@ -18,18 +19,23 @@ import {
 import {
   FromURLParamsSortTypeMap,
   FromURLParamTimeDimensionMap,
-  FromURLParamTimeGrainMap,
-  FromURLParamTimeRangePresetMap,
   FromURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import {
+  parseRillTime,
+  validateRillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import { validateISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import {
+  DateTimeUnitToV1TimeGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains";
+import { getAggregationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -60,8 +66,10 @@ export function convertURLToExplorePreset(
     (m) => m.name!,
   );
   const dimensions = getMapFromArray(
-    metricsView.dimensions?.filter((d) =>
-      explore.dimensions?.includes(d.name!),
+    metricsView.dimensions?.filter(
+      (d) =>
+        explore.dimensions?.includes(d.name!) &&
+        d.type !== "DIMENSION_TYPE_TIME",
     ) ?? [],
     (d) => d.name!,
   );
@@ -120,6 +128,7 @@ export function convertURLToExplorePreset(
     searchParams,
     dimensions,
   );
+
   Object.assign(preset, trPreset);
   errors.push(...trErrors);
 
@@ -179,6 +188,28 @@ export function convertURLToExplorePreset(
     } else {
       // Unset leaderboard measures if any are invalid
       preset.exploreLeaderboardMeasures = [];
+    }
+  }
+
+  if (
+    searchParams.has(ExploreStateURLParams.LeaderboardShowContextForAllMeasures)
+  ) {
+    const rawValue = searchParams.get(
+      ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
+    );
+    const normalized = rawValue?.toLowerCase();
+    if (normalized === "true" || normalized === "1") {
+      preset.exploreLeaderboardShowContextForAllMeasures = true;
+    } else if (
+      normalized === "false" ||
+      normalized === "0" ||
+      normalized === ""
+    ) {
+      preset.exploreLeaderboardShowContextForAllMeasures = false;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard context toggle", rawValue ?? ""),
+      );
     }
   }
 
@@ -292,19 +323,12 @@ export function fromTimeRangesParams(
 
   if (searchParams.has(ExploreStateURLParams.TimeRange)) {
     const tr = searchParams.get(ExploreStateURLParams.TimeRange) as string;
-    if (
-      tr in FromURLParamTimeRangePresetMap ||
-      validateISODuration(tr) ||
-      CustomTimeRangeRegex.test(tr)
-    ) {
-      preset.timeRange = tr;
+
+    const rillTimeError = validateRillTime(tr);
+    if (rillTimeError) {
+      errors.push(getSingleFieldError("time range", tr));
     } else {
-      const rillTimeError = validateRillTime(tr);
-      if (rillTimeError) {
-        errors.push(getSingleFieldError("time range", tr));
-      } else {
-        preset.timeRange = tr;
-      }
+      preset.timeRange = tr;
     }
   }
 
@@ -333,10 +357,24 @@ export function fromTimeRangesParams(
 
   if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
     const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
-    if (tg in FromURLParamTimeGrainMap) {
+
+    if (tg in DateTimeUnitToV1TimeGrain) {
       preset.timeGrain = tg;
     } else {
       errors.push(getSingleFieldError("time grain", tg));
+    }
+  } else {
+    try {
+      const parsed = parseRillTime(preset.timeRange ?? "");
+      const grain = getAggregationGrain(parsed);
+
+      if (grain && grain in V1TimeGrainToDateTimeUnit) {
+        preset.timeGrain = V1TimeGrainToDateTimeUnit[grain];
+      } else {
+        errors.push(getSingleFieldError("time grain", grain ?? "undefined"));
+      }
+    } catch {
+      // ignore
     }
   }
 
@@ -373,6 +411,17 @@ export function fromTimeRangesParams(
       preset.selectTimeRange = selectTr;
     } else {
       errors.push(getSingleFieldError("highlighted time range", selectTr));
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.TimeDimension)) {
+    const timeDimension = searchParams.get(
+      ExploreStateURLParams.TimeDimension,
+    ) as string;
+
+    // Simply remove from the URL for now
+    if (dimensions.has(timeDimension)) {
+      preset.timeDimension = timeDimension;
     }
   }
   return { preset, errors };
@@ -569,6 +618,21 @@ function fromPivotUrlParams(
       ExploreStateURLParams.PivotTableMode,
     ) as string;
     preset.pivotTableMode = tableMode;
+  }
+
+  if (searchParams.has(ExploreStateURLParams.PivotRowLimit)) {
+    const rowLimitStr = searchParams.get(
+      ExploreStateURLParams.PivotRowLimit,
+    ) as string;
+    const rowLimit = parseInt(rowLimitStr, 10);
+    // Use shared constants to validate row limit values
+    if (
+      !isNaN(rowLimit) &&
+      rowLimit > 0 &&
+      (PIVOT_ROW_LIMIT_OPTIONS as readonly number[]).includes(rowLimit)
+    ) {
+      preset.pivotRowLimit = rowLimit;
+    }
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

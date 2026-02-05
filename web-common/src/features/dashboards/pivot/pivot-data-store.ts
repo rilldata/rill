@@ -1,4 +1,9 @@
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
+import {
+  calculateEffectiveRowLimit,
+  MAX_ROW_EXPANSION_LIMIT,
+  SHOW_MORE_BUTTON,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -248,6 +253,7 @@ export function createPivotDataStore(
       colDimensionNames,
       measureBody,
       config.whereFilter,
+      [],
     );
 
     return derived(
@@ -297,6 +303,27 @@ export function createPivotDataStore(
           readable(null);
 
         if (!isFlat) {
+          // Use outermostRowLimit if set, otherwise fall back to rowLimit
+          const effectiveOutermostLimit =
+            config.pivot.outermostRowLimit ?? config.pivot.rowLimit;
+
+          // Calculate the effective limit based on outermostRowLimit, offset, and page size
+          // When outermostRowLimit is explicitly set, don't constrain by page size
+          const isExplicitOutermostLimit =
+            config.pivot.outermostRowLimit !== undefined;
+          const limitToApply = calculateEffectiveRowLimit(
+            effectiveOutermostLimit,
+            rowOffset,
+            NUM_ROWS_PER_PAGE,
+            !isExplicitOutermostLimit, // Don't respect page size for explicit outermost limit
+          );
+
+          // Query for limit + 1 to detect if there's more data
+          const limitToQuery =
+            effectiveOutermostLimit !== undefined
+              ? (parseInt(limitToApply) + 1).toString()
+              : limitToApply;
+
           // Get sort order for the anchor dimension
           rowDimensionAxisQuery = getAxisForDimensions(
             ctx,
@@ -306,7 +333,7 @@ export function createPivotDataStore(
             whereFilter,
             sortPivotBy,
             timeRange,
-            NUM_ROWS_PER_PAGE.toString(),
+            limitToQuery,
             rowOffset.toString(),
           );
         }
@@ -415,13 +442,35 @@ export function createPivotDataStore(
               globalTotalsResponse?.data?.data,
             );
 
-            const rowDimensionValues =
+            let rowDimensionValues =
               rowDimensionAxes?.data?.[anchorDimension] || [];
 
-            const totalColumns = getTotalColumnCount(totalsRowData);
-
-            const axesRowTotals =
+            let axesRowTotals =
               rowDimensionAxes?.totals?.[anchorDimension] || [];
+
+            // Detect if there's more data for the outermost dimension
+            // and trim to the actual limit
+            let hasMoreRows = false;
+            const effectiveOutermostLimit =
+              config.pivot.outermostRowLimit ?? config.pivot.rowLimit;
+            if (!isFlat && effectiveOutermostLimit !== undefined) {
+              const isExplicitOutermostLimit =
+                config.pivot.outermostRowLimit !== undefined;
+              const limitToApply = calculateEffectiveRowLimit(
+                effectiveOutermostLimit,
+                rowOffset,
+                NUM_ROWS_PER_PAGE,
+                !isExplicitOutermostLimit, // Don't respect page size for explicit outermost limit
+              );
+              const actualLimit = parseInt(limitToApply);
+              if (rowDimensionValues.length > actualLimit) {
+                hasMoreRows = true;
+                rowDimensionValues = rowDimensionValues.slice(0, actualLimit);
+                axesRowTotals = axesRowTotals.slice(0, actualLimit);
+              }
+            }
+
+            const totalColumns = getTotalColumnCount(totalsRowData);
 
             const rowAxesQueryForMeasureTotals = getAxisQueryForMeasureTotals(
               ctx,
@@ -596,6 +645,22 @@ export function createPivotDataStore(
                       expandedTableMap[key] = tableDataExpanded;
                     }
 
+                    // Add "Show more" row for outermost dimension if needed
+                    const effectiveOutermostLimit =
+                      config.pivot.outermostRowLimit ?? config.pivot.rowLimit;
+
+                    if (
+                      hasMoreRows &&
+                      effectiveOutermostLimit &&
+                      effectiveOutermostLimit < MAX_ROW_EXPANSION_LIMIT
+                    ) {
+                      const showMoreRow: PivotDataRow = {
+                        [anchorDimension]: SHOW_MORE_BUTTON,
+                        __currentLimit: effectiveOutermostLimit,
+                      } as PivotDataRow;
+                      tableDataExpanded = [...tableDataExpanded, showMoreRow];
+                    }
+
                     const activeCell = config.pivot.activeCell;
                     let activeCellFilters: PivotFilter | undefined = undefined;
                     if (activeCell) {
@@ -612,10 +677,23 @@ export function createPivotDataStore(
                     lastPivotColumnDef = columnDef;
                     lastTotalColumns = totalColumns;
 
-                    const reachedEndForRowData =
-                      (isFlat
-                        ? isCellDataEmpty
-                        : rowDimensionValues.length === 0) && rowPage > 1;
+                    let reachedEndForRowData = false;
+
+                    if (isFlat) {
+                      reachedEndForRowData = isCellDataEmpty && rowPage > 1;
+                    } else {
+                      const rowLimit = config.pivot.rowLimit;
+                      if (rowLimit !== undefined) {
+                        // Check if we've fetched all rows allowed by rowLimit
+                        // This includes both the current page data and any previous pages
+                        const totalRowsFetched =
+                          rowOffset + rowDimensionValues.length;
+                        reachedEndForRowData = totalRowsFetched >= rowLimit;
+                      } else {
+                        reachedEndForRowData =
+                          rowDimensionValues.length === 0 && rowPage > 1;
+                      }
+                    }
                     return {
                       isFetching: false,
                       data: tableDataExpanded,

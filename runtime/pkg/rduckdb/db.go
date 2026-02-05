@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/jmoiron/sqlx"
-	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -67,7 +67,7 @@ type DB interface {
 	// Meta APIs
 
 	// Schema returns the schema of the database.
-	Schema(ctx context.Context, ilike, name string) ([]*Table, error)
+	Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error)
 }
 
 type DBOptions struct {
@@ -388,17 +388,17 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	if err != nil {
 		return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
 	}
+	defer func() {
+		if createErr != nil {
+			_ = d.deleteLocalTableFiles(name, newVersion)
+		}
+	}()
 	var dsn string
 	if opts.View {
 		dsn = ""
 		newMeta.SQL = query
 	} else {
 		dsn = d.localDBPath(name, newVersion)
-		defer func() {
-			if createErr != nil {
-				_ = d.deleteLocalTableFiles(name, newVersion)
-			}
-		}()
 	}
 
 	t := time.Now()

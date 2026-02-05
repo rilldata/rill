@@ -12,7 +12,12 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 
   const ctx = getStateManagers();
-  const { exploreName } = ctx;
+  const {
+    exploreName,
+    selectors: {
+      leaderboard: { leaderboardShowContextForAllMeasures },
+    },
+  } = ctx;
 
   const timeControlsStore = useTimeControlStore(ctx);
   $: ({ showTimeComparison } = $timeControlsStore);
@@ -42,6 +47,7 @@
     <span>Show context for all measures</span>
     <Switch
       theme
+      checked={$leaderboardShowContextForAllMeasures}
       onCheckedChange={() => {
         ensureTimeComparisonEnabled();
 

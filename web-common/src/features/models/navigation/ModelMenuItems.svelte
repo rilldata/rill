@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -9,18 +10,22 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { WandIcon } from "lucide-svelte";
+  import { GitBranch, WandIcon } from "lucide-svelte";
+  import CanvasIcon from "../../../components/icons/CanvasIcon.svelte";
   import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import Model from "../../../components/icons/Model.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
-  import { V1ReconcileStatus, type V1Resource } from "../../../runtime-client";
+  import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getScreenNameFromPage } from "../../file-explorer/telemetry";
-  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
+  import { getScreenNameFromPage } from "../../file-explorer/telemetry";
+  import {
+    useCreateMetricsViewFromTableUIAction,
+    useCreateMetricsViewWithCanvasUIAction,
+  } from "../../metrics-views/ai-generation/generateMetricsView";
 
-  const { ai } = featureFlags;
+  const { ai, generateCanvas } = featureFlags;
   const queryClient = useQueryClient();
 
   export let filePath: string;
@@ -31,13 +36,23 @@
 
   $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: connector = ($modelQuery.data as V1Resource | undefined)?.model?.spec
-    ?.outputConnector;
+  $: modelResource = $modelQuery.data;
+  $: connector = modelResource?.model?.spec?.outputConnector;
   $: modelIsIdle =
-    $modelQuery.data?.meta?.reconcileStatus ===
+    modelResource?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
-  $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
+  $: tableName = modelResource?.model?.state?.resultTable ?? "";
+
+  function viewGraph() {
+    if (!modelResource) {
+      console.warn(
+        "[ModelMenuItems] Cannot open resource graph: resource unavailable.",
+      );
+      return;
+    }
+    openResourceGraphQuickView(modelResource);
+  }
 
   async function handleCreateModel() {
     try {
@@ -87,7 +102,22 @@
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
+
+  $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
+    instanceId,
+    connector as string,
+    "",
+    "",
+    tableName,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
 </script>
+
+<NavigationMenuItem on:click={viewGraph}>
+  <GitBranch slot="icon" size="14px" />
+  View DAG graph
+</NavigationMenuItem>
 
 <NavigationMenuItem on:click={handleCreateModel}>
   <Model slot="icon" />
@@ -100,7 +130,7 @@
 >
   <MetricsViewIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate metrics
+    Generate Metrics View
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />
@@ -115,13 +145,36 @@
   </svelte:fragment>
 </NavigationMenuItem>
 
+{#if $generateCanvas}
+  <NavigationMenuItem
+    disabled={disableCreateDashboard}
+    on:click={createCanvasDashboardFromTable}
+  >
+    <CanvasIcon slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate Canvas Dashboard
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
+    </div>
+    <svelte:fragment slot="description">
+      {#if $modelHasError}
+        Model has errors
+      {:else if !modelIsIdle}
+        Dependencies are being reconciled.
+      {/if}
+    </svelte:fragment>
+  </NavigationMenuItem>
+{/if}
+
 <NavigationMenuItem
   disabled={disableCreateDashboard}
   on:click={createExploreFromTable}
 >
   <ExploreIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard
+    Generate Explore Dashboard
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />

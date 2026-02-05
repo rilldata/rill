@@ -152,9 +152,10 @@ func (d *DeviceAuthenticator) GetAccessTokenForDevice(ctx context.Context, v *De
 
 func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clientID string) (*oauth.TokenResponse, error) {
 	req, err := d.newFormRequest(ctx, "auth/oauth/token", url.Values{
-		"grant_type":  []string{"urn:ietf:params:oauth:grant-type:device_code"},
-		"device_code": []string{deviceCode},
-		"client_id":   []string{clientID},
+		"grant_type":             []string{"urn:ietf:params:oauth:grant-type:device_code"},
+		"device_code":            []string{deviceCode},
+		"client_id":              []string{clientID},
+		"token_response_version": []string{"standard"}, // For backward compatibility with older Rill CLI, see utils.go in oauth pkg
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)

@@ -17,7 +17,7 @@
   {transition}
   {transitionConfig}
   class={cn(
-    "fixed inset-0 bg-gray-400 transition-opacity opacity-40 z-50",
+    "fixed inset-0 bg-neutral-800 dark:bg-neutral-100 transition-opacity opacity-60 z-50",
     className,
   )}
   {...$$restProps}

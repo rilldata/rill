@@ -5,10 +5,10 @@ sidebar_position: 33
 ---
 
 
-This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/build/models/) documentation.
+This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/developers/build/models/) documentation.
 :::tip
 
-Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/developers/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
 
 **When to use Model YAML:**
 - **Partitions** - Optimize performance with data partitioning strategies
@@ -69,6 +69,43 @@ _[string]_ - Refers to a SQL query that is run after the main query, available f
 
 ```yaml
 post_exec: DETACH DATABASE IF EXISTS postgres_db
+```
+
+### `create_secrets_from_connectors`
+
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors. 
+
+```yaml
+create_secrets_from_connectors: my_s3_connector
+```
+
+```yaml
+create_secrets_from_connectors:
+    - my_s3_connector
+    - my_other_s3_connector
+```
+
+### `retry`
+
+_[object]_ - Refers to the retry configuration for the model. (optional) 
+
+  - **`attempts`** - _[integer]_ - The number of attempts to retry the model. 
+
+  - **`delay`** - _[string]_ - The delay between attempts. 
+
+  - **`exponential_backoff`** - _[boolean]_ - Whether to use exponential backoff. 
+
+  - **`if_error_matches`** - _[array of string]_ - The error messages to match. 
+
+```yaml
+retry:
+    attempts: 5
+    delay: 10s
+    exponential_backoff: true
+    if_error_matches:
+        - ".*OvercommitTracker.*"
+        - ".*Timeout.*"
+        - ".*Bad Gateway.*"
 ```
 
 ### `timeout`
@@ -343,7 +380,7 @@ _[object]_ - Overrides any properties in development environment.
 
 _[object]_ - Overrides any properties in production environment. 
 
-## Additional properties when `connector` is `athena` or [named connector](./connectors.md#athena) for athena
+## Additional properties when `connector` is `athena` or [named connector](./connectors#athena) for athena
 
 ### `output_location`
 
@@ -357,7 +394,7 @@ _[string]_ - AWS Athena workgroup to use for queries.
 
 _[string]_ - AWS region to connect to Athena and the output location. 
 
-## Additional properties when `connector` is `azure` or [named connector](./connectors.md#azure) of azure
+## Additional properties when `connector` is `azure` or [named connector](./connectors#azure) of azure
 
 ### `path`
 
@@ -391,13 +428,13 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is `bigquery` or [named connector](./connectors.md#bigquery) of bigquery
+## Additional properties when `connector` is `bigquery` or [named connector](./connectors#bigquery) of bigquery
 
 ### `project_id`
 
 _[string]_ - ID of the BigQuery project. 
 
-## Additional properties when `connector` is `duckdb` or [named connector](./connectors.md#duckdb) of duckdb
+## Additional properties when `connector` is `duckdb` or [named connector](./connectors#duckdb) of duckdb
 
 ### `path`
 
@@ -421,7 +458,11 @@ sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
 
-## Additional properties when `connector` is `gcs` or [named connector](./connectors.md#gcs) of gcs
+### `create_secrets_from_connectors`
+
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
+
+## Additional properties when `connector` is `gcs` or [named connector](./connectors#gcs) of gcs
 
 ### `path`
 
@@ -451,7 +492,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is `local_file` or [named connector](/connect/data-source/local-file) of local_file
+## Additional properties when `connector` is `local_file` or [named connector](/developers/build/connectors/data-source/local-file) of local_file
 
 ### `path`
 
@@ -461,7 +502,11 @@ _[string]_ - Path to the data source.
 
 _[string]_ - Format of the data source (e.g., csv, json, parquet). 
 
-## Additional properties when `connector` is `redshift` or [named connector](./connectors.md#redshift) of redshift
+### `invalidate_on_change`
+
+_[boolean]_ - When true, the model will be invalidated and re-processed if the source file changes. 
+
+## Additional properties when `connector` is `redshift` or [named connector](./connectors#redshift) of redshift
 
 ### `output_location`
 
@@ -487,7 +532,7 @@ _[string]_ - ARN of the IAM role to assume for Redshift access.
 
 _[string]_ - AWS region of the Redshift deployment. 
 
-## Additional properties when `connector` is `s3` or [named connector](./connectors.md#s3) of s3
+## Additional properties when `connector` is `s3` or [named connector](./connectors#s3) of s3
 
 ### `region`
 
@@ -525,7 +570,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is `salesforce` or [named connector](./connectors.md#salesforce) of salesforce
+## Additional properties when `connector` is `salesforce` or [named connector](./connectors#salesforce) of salesforce
 
 ### `soql`
 

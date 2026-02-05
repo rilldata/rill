@@ -1,15 +1,15 @@
-import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
-import { getFieldsByType } from "@rilldata/web-common/features/canvas/components/charts/util";
+import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
-import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import { getFieldsByType } from "@rilldata/web-common/features/components/charts/util";
+import type { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
 import { derived, type Readable } from "svelte/store";
 
 export function validateChartSchema(
-  ctx: CanvasStore,
-  chartSpec: ChartSpec,
+  metricsView: MetricsViewSelectors,
+  chartSpec: CanvasChartSpec,
 ): Readable<{
   isValid: boolean;
   error?: string;
@@ -20,7 +20,7 @@ export function validateChartSchema(
   const { measures, dimensions, timeDimensions } = getFieldsByType(chartSpec);
 
   return derived(
-    ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
+    metricsView.getMetricsViewFromName(metrics_view),
     (metricsViewQuery) => {
       if (metricsViewQuery.isLoading) {
         return {
@@ -41,7 +41,7 @@ export function validateChartSchema(
       if (timeDimensions.length > 0 && timeDimension !== timeDimensions[0]) {
         return {
           isValid: false,
-          error: `Invalid time dimension ${timeDimension} selected`,
+          error: `Invalid time dimension ${timeDimension} in metrics view ${metrics_view}`,
         };
       }
 
@@ -50,7 +50,7 @@ export function validateChartSchema(
         const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
         return {
           isValid: false,
-          error: `Invalid measure ${invalidMeasures} selected`,
+          error: `Invalid measure ${invalidMeasures} in metrics view ${metrics_view}`,
         };
       }
 
@@ -62,7 +62,7 @@ export function validateChartSchema(
 
         return {
           isValid: false,
-          error: `Invalid dimension(s) ${invalidDimensions} selected`,
+          error: `Invalid dimension(s) ${invalidDimensions} in metrics view ${metrics_view}`,
         };
       }
       return {

@@ -11,6 +11,14 @@ project_files:
       select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'US' as country, 2 as val union all
       select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as time, 'US' as country, 4 as val union all
       select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country, 5 as val
+  clickhouse_data_tz.yaml:
+    type: model
+    connector: clickhouse
+    output: clickhouse
+    sql: |
+      select parseDateTimeBestEffort('2024-03-10T00:00:00Z') as time, 'DK' as country, 1 as val union all
+      select parseDateTimeBestEffort('2024-03-11T00:00:00Z') as time, 'US' as country, 10 as val union all
+      select parseDateTimeBestEffort('2024-03-12T00:00:00Z') as time, 'US' as country, 100 as val
   clickhouse_metrics.yaml:
     type: metrics_view
     model: clickhouse_data
@@ -23,6 +31,15 @@ project_files:
       - name: sum
         expression: sum(val)
         treat_nulls_as: 123
+  clickhouse_metrics_tz.yaml:
+    type: metrics_view
+    model: clickhouse_data_tz
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: sum
+        expression: sum(val)
   druid_metrics.yaml:
     type: metrics_view
     connector: druid
@@ -49,6 +66,13 @@ project_files:
       select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
       select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, null as val union all
       select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
+  duckdb_data_tz.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-03-10T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
+      select '2024-03-11T00:00:00Z'::TIMESTAMP as time, 'US' as country, 10 as val union all
+      select '2024-03-12T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
   duckdb_metrics.yaml:
     type: metrics_view
     model: duckdb_data
@@ -99,6 +123,15 @@ project_files:
       - name: sum
         expression: sum(val)
         treat_nulls_as: -1
+  duckdb_metrics_tz.yaml:
+    type: metrics_view
+    model: duckdb_data_tz
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: sum
+        expression: sum(val)
 tests:
   - name: null_filling_coalesce_clickhouse
     resolver: metrics
@@ -127,6 +160,33 @@ tests:
         time__day: "2024-01-03T00:00:00Z"
       - sum: 4
         time__day: "2024-01-04T00:00:00Z"
+  - name: null_filling_coalesce_clickhouse_quarter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__quarter
+          compute:
+            time_floor:
+              dimension: time
+              grain: quarter
+      measures:
+        - name: count
+        - name: sum
+      time_range:
+        end: 2024-01-05T00:00:00Z
+        start: 2024-01-03T00:00:00Z
+      sort:
+        - name: time__quarter
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - count: 1
+        sum: 4
+        time__quarter: "2024-01-01T00:00:00Z"
   - name: null_filling_coalesce_computed_time_same_name_as_alias_clickhouse
     resolver: metrics
     properties:
@@ -658,6 +718,273 @@ tests:
         time__day: "2024-01-03T00:00:00Z"
       - sum: 100
         time__day: "2024-01-05T00:00:00Z"
+  - name: utc_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics_tz
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-03-13T00:00:00Z
+        start: 2024-03-10T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 1
+        time__day: "2024-03-10T00:00:00Z"
+      - sum: 10
+        time__day: "2024-03-11T00:00:00Z"
+      - sum: 100
+        time__day: "2024-03-12T00:00:00Z"
+  - name: pst_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics_tz
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-03-13T07:00:00Z
+        start: 2024-03-10T08:00:00Z
+      time_zone: "America/Los_Angeles"
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 10
+        time__day: "2024-03-10T08:00:00Z"
+      - sum: 100
+        time__day: "2024-03-11T07:00:00Z"
+      - sum: null
+        time__day: "2024-03-12T07:00:00Z"
+  - name: ist_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics_tz
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-03-12T18:30:00Z
+        start: 2024-03-09T18:30:00Z
+      time_zone: "Asia/Kolkata"
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 1
+        time__day: "2024-03-09T18:30:00Z"
+      - sum: 10
+        time__day: "2024-03-10T18:30:00Z"
+      - sum: 100
+        time__day: "2024-03-11T18:30:00Z"
+  - name: utc_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_tz
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-03-13T00:00:00Z
+        start: 2024-03-10T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 1
+        time__day: "2024-03-10T00:00:00Z"
+      - sum: 10
+        time__day: "2024-03-11T00:00:00Z"
+      - sum: 100
+        time__day: "2024-03-12T00:00:00Z"
+  - name: pst_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_tz
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-03-13T07:00:00Z
+        start: 2024-03-10T08:00:00Z
+      time_zone: "America/Los_Angeles"
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 10
+        time__day: "2024-03-10T08:00:00Z"
+      - sum: 100
+        time__day: "2024-03-11T07:00:00Z"
+      - sum: null
+        time__day: "2024-03-12T07:00:00Z"
+  - name: ist_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics_tz
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: day
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-03-12T18:30:00Z
+        start: 2024-03-09T18:30:00Z
+      time_zone: "Asia/Kolkata"
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 1
+        time__day: "2024-03-09T18:30:00Z"
+      - sum: 10
+        time__day: "2024-03-10T18:30:00Z"
+      - sum: 100
+        time__day: "2024-03-11T18:30:00Z"
+  - name: utc_druid
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: __time
+              grain: day
+      measures:
+        - name: count
+      time_range:
+        end: 2022-03-15T00:00:00Z
+        start: 2022-03-12T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - count: 1071
+        time__day: "2022-03-12T00:00:00Z"
+      - count: 1028
+        time__day: "2022-03-13T00:00:00Z"
+      - count: 1099
+        time__day: "2022-03-14T00:00:00Z"
+  - name: pst_druid
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: __time
+              grain: day
+      measures:
+        - name: count
+      time_range:
+        end: 2022-03-15T07:00:00Z
+        start: 2022-03-12T08:00:00Z
+      time_zone: "America/Los_Angeles"
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - count: 1047
+        time__day: "2022-03-12T08:00:00Z"
+      - count: 974
+        time__day: "2022-03-13T08:00:00Z"
+      - count: 1136
+        time__day: "2022-03-14T07:00:00Z"
+  - name: ist_druid
+    resolver: metrics
+    properties:
+      metrics_view: druid_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: __time
+              grain: day
+      measures:
+        - name: count
+      time_range:
+        end: 2022-03-14T18:30:00Z
+        start: 2022-03-11T18:30:00Z
+      time_zone: "Asia/Kolkata"
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - count: 1061
+        time__day: "2022-03-11T18:30:00Z"
+      - count: 1052
+        time__day: "2022-03-12T18:30:00Z"
+      - count: 1083
+        time__day: "2022-03-13T18:30:00Z"
   - name: coalesce_compare_duckdb
     resolver: metrics
     properties:

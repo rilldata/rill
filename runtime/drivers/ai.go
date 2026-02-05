@@ -3,9 +3,22 @@ package drivers
 import (
 	"context"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 )
 
 type AIService interface {
-	Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error)
+	Complete(ctx context.Context, opts *CompleteOptions) (*CompleteResult, error)
+}
+
+type CompleteOptions struct {
+	Messages     []*aiv1.CompletionMessage
+	Tools        []*aiv1.Tool
+	OutputSchema *jsonschema.Schema
+}
+
+type CompleteResult struct {
+	Message      *aiv1.CompletionMessage
+	InputTokens  int
+	OutputTokens int
 }

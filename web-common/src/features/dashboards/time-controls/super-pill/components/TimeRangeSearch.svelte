@@ -103,8 +103,8 @@
   form {
     @apply overflow-hidden;
     @apply flex justify-center gap-x-1 items-center pl-2 pr-0.5;
-    @apply bg-background justify-center;
-    @apply border border-gray-300 rounded-sm;
+    @apply bg-input justify-center placeholder-fg-secondary text-fg-secondary;
+    @apply border rounded-sm;
     @apply h-7 w-full truncate;
   }
 

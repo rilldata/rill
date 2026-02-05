@@ -35,7 +35,7 @@ func JoinCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = c.AddOrganizationMemberUser(cmd.Context(), &adminv1.AddOrganizationMemberUserRequest{
-				Organization:         args[0],
+				Org:                  args[0],
 				Email:                me.User.Email,
 				Role:                 database.OrganizationRoleNameAdmin,
 				SuperuserForceAccess: true,
@@ -43,7 +43,7 @@ func JoinCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				// Optimistically retry if the user is already a member (but might not be an admin).
 				_, retryErr := c.SetOrganizationMemberUserRole(cmd.Context(), &adminv1.SetOrganizationMemberUserRoleRequest{
-					Organization:         args[0],
+					Org:                  args[0],
 					Email:                me.User.Email,
 					Role:                 database.OrganizationRoleNameAdmin,
 					SuperuserForceAccess: true,

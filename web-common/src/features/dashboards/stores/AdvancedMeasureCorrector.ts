@@ -94,7 +94,7 @@ export class AdvancedMeasureCorrector {
       !this.measureIsValidForComponent(
         this.exploreState.tdd.expandedMeasureName ?? "",
         true,
-        false,
+        true,
       )
     ) {
       return;

@@ -12,8 +12,7 @@
 
   const browserIANA = getLocalIANA();
 
-  // watermark indicates the latest reference point in the dashboard
-  export let watermark: DateTime;
+  export let referencePoint: DateTime;
   export let availableTimeZones: string[];
   export let activeTimeZone: string;
   export let context: string;
@@ -23,9 +22,12 @@
 
   let searchValue = "";
 
-  $: ianaMap = formatIANAs(allTimeZones, watermark);
+  $: ianaMap = formatIANAs(allTimeZones, referencePoint);
 
-  $: pinnedTimeZones = formatIANAs([...availableTimeZones, "UTC"], watermark);
+  $: pinnedTimeZones = formatIANAs(
+    [...availableTimeZones, "UTC"],
+    referencePoint,
+  );
 
   $: filteredPinnedTimeZones = filterTimeZones(pinnedTimeZones, searchValue);
 
@@ -68,7 +70,7 @@
           iana={activeTimeZone}
         />
         <!-- {#if activeTimeZone === iana} -->
-        <Check class="size-4" color="var(--color-gray-800)" />
+        <Check class="size-4" color="var(--foreground)" />
         <!-- {/if} -->
       </button>
     {/if}
@@ -93,7 +95,7 @@
       />
       <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
         {#if activeTimeZone === iana}
-          <Check class="size-4" color="var(--color-gray-800)" />
+          <Check class="size-4" color="var(--foreground)" />
         {/if}
       </span>
     </button>
@@ -107,7 +109,7 @@
       <h3>Recent</h3>
       {#if recentIANAs.length}
         <button
-          class="text-[11px] text-gray-500 hover:bg-gray-100 p-1 rounded-sm h-fit"
+          class="text-[11px] text-fg-secondary hover:bg-surface-hover p-1 rounded-sm h-fit"
           on:click={() => {
             recents.set([]);
           }}
@@ -133,7 +135,7 @@
           />
           <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
             {#if activeTimeZone === iana}
-              <Check class="size-4" color="var(--color-gray-800)" />
+              <Check class="size-4" color="var(--foreground)" />
             {/if}
           </span>
         </button>
@@ -162,13 +164,13 @@
         <ZoneDisplay {iana} {offset} {abbreviation} />
         <span class="flex flex-none h-3.5 w-3.5 items-center justify-center">
           {#if activeTimeZone === iana}
-            <Check class="size-4" color="var(--color-gray-800)" />
+            <Check class="size-4" color="var(--foreground)" />
           {/if}
         </span>
       </button>
     {:else}
       <div>
-        <p class="pt-0 pb-2 text-gray-500 text-center">No options found</p>
+        <p class="pt-0 pb-2 text-fg-secondary text-center">No options found</p>
       </div>
     {/each}
   </div>
@@ -176,11 +178,11 @@
 
 <style lang="postcss">
   .item {
-    @apply w-full relative justify-between flex cursor-pointer select-none items-start rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none;
+    @apply w-full relative text-fg-primary justify-between flex cursor-pointer select-none items-start rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none;
   }
 
   .item:hover {
-    @apply bg-accent text-accent-foreground;
+    @apply bg-popover-accent text-fg-accent;
   }
 
   .separator {
@@ -188,6 +190,6 @@
   }
 
   h3 {
-    @apply px-2 py-1.5 text-xs text-gray-500 font-semibold;
+    @apply px-2 py-1.5 text-xs text-fg-secondary font-semibold;
   }
 </style>

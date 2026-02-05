@@ -15,11 +15,11 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.24
+        go-version: 1.25
     - name: Go fmt
       run: test -z $(gofmt -l .)
     - name: Go test
-      run: go test -short -v ./...
+      run: go test -timeout 30m -short -v ./...
       env:
         RILL_RUNTIME_DRUID_TEST_DSN: ${{ secrets.RILL_RUNTIME_DRUID_TEST_DSN }}
         RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON }}
@@ -33,4 +33,5 @@ jobs:
         RILL_RUNTIME_ATHENA_TEST_AWS_SECRET_ACCESS_KEY: ${{ secrets.RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY }}
         RILL_RUNTIME_REDSHIFT_TEST_AWS_ACCESS_KEY_ID: ${{ secrets.RILL_RUNTIME_S3_TEST_AWS_ACCESS_KEY_ID }}
         RILL_RUNTIME_REDSHIFT_TEST_AWS_SECRET_ACCESS_KEY: ${{ secrets.RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY }}
+        RILL_RUNTIME_MOTHERDUCK_TEST_PATH: ${{ secrets.RILL_RUNTIME_MOTHERDUCK_TEST_PATH }}
         RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN: ${{ secrets.RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN }}

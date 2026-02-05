@@ -10,18 +10,18 @@ export const CONFIG_TOP_LEVEL_INPUT_CONTAINER_CLASSES =
 
 /** individual label class styling */
 export const CONFIG_TOP_LEVEL_LABEL_CLASSES =
-  "text-gray-500 font-medium w-[10em] text-[11px]";
+  "text-fg-secondary font-medium w-[10em] text-[11px]";
 
 /** active classes are used in selector items, where active-ness is determined with JS, not web APIs */
 const activeSelectorClasses =
-  "shadow-md outline-none ring-1 ring-gray-300 bg-surface hover:bg-surface";
+  "shadow-md outline-none ring-1 ring-gray-300 bg-surface-subtle hover:bg-surface-subtle";
 const focusSelectorClasses =
-  "focus:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-300 focus:bg-surface focus:hover:bg-surface";
+  "focus:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-300 focus:bg-surface-subtle focus:hover:bg-surface-subtle";
 export const CONFIG_SELECTOR = {
   base: "overflow-hidden px-2 py-2 rounded border focus:outline-none focus:shadow-md",
   active: activeSelectorClasses,
   focus: focusSelectorClasses,
-  info: "bg-surface   hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900",
+  info: "bg-surface-subtle   hover:border-gray-300 hover:bg-surface-hover hover:text-fg-primary",
   // FIXME: we should probably redo how we're handling these styles.
   error:
     "bg-red-100 border-red-500 text-red-800 hover:bg-red-200 hover:border-red-600",
@@ -32,7 +32,7 @@ export const CONFIG_SELECTOR = {
 
 export const SELECTOR_BUTTON_TEXT_CLASSES = {
   selected: `font-semibold truncate`,
-  unselected: `text-gray-600 truncate`,
+  unselected: `text-fg-secondary truncate`,
 };
 export const SELECTOR_CONTAINER = {
   classes: "grow grid items-center",

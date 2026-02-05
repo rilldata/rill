@@ -40,13 +40,16 @@
 
 <div
   class:!flex={dropdownOpen}
-  class="group-hover:flex p-0 overflow-hidden bg-slate-50 gap-x-1 items-center justify-center hidden toolbar top-0 right-0 shadow-sm z-[1000] absolute w-fit border-l border-b pointer-events-auto rounded-bl-sm rounded-tr-sm"
+  class="group-hover:flex p-0 overflow-hidden bg-surface-card gap-x-1 items-center justify-center hidden toolbar top-0 right-0 shadow-sm z-[1000] absolute w-fit border-l border-b pointer-events-auto rounded-bl-sm rounded-tr-sm"
 >
   {#if editable}
     <!-- Editable mode: Show dropdown with explore option -->
-    <DropdownMenu.Root bind:open={dropdownOpen}>
+    <DropdownMenu.Root
+      bind:open={dropdownOpen}
+      portal=".dashboard-theme-boundary"
+    >
       <DropdownMenu.Trigger
-        class="size-7 grid place-content-center hover:bg-slate-100 active:bg-slate-200"
+        class="size-7 grid place-content-center bg-surface-card hover:brightness-[85%] active:brightness-75"
       >
         <ThreeDot size="16px" />
       </DropdownMenu.Trigger>

@@ -31,8 +31,8 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             name,
+				Org:     ch.Org,
+				Project: name,
 			})
 			if err != nil {
 				return err

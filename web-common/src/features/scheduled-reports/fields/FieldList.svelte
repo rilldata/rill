@@ -109,7 +109,7 @@
             removable
             fullWidth
             type={displayMap[field]?.type ?? "dimension"}
-            on:remove={() => handleRemove(field)}
+            onRemove={() => handleRemove(field)}
           >
             <span class="font-bold truncate" slot="body">
               {displayMap[field]?.label || field}
@@ -132,7 +132,7 @@
           label={`Add ${label} fields`}
           active={open}
           builders={[builder]}
-          class="w-[34px] ml-2 border border-dashed border-slate-300"
+          class="w-[34px] ml-2 border border-dashed border-gray-300"
           compact
           rounded
         >

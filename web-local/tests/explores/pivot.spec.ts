@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { test } from "../setup/base";
 import { clickMenuButton } from "../utils/commonHelpers";
@@ -524,7 +524,7 @@ const expectSortedDeltaCol = [
 
 const expectedFlatTable = [
   [],
-  ["", "", "100.0k", "300.6k"],
+  ["Total", "", "100.0k", "300.6k"],
   ["facebook.com", "Facebook", "10.5k", "32.9k"],
   ["msn.com", "Microsoft", "10.4k", "32.5k"],
   ["google.com", "Google", "10.1k", "31.3k"],
@@ -541,6 +541,32 @@ const expectedFlatTable = [
   ["news.google.com", "", "4.2k", "12.1k"],
   [],
 ];
+
+async function dragPivotChip(
+  page: Page,
+  chip: Locator,
+  targetZone: Locator,
+): Promise<void> {
+  await chip.waitFor({ state: "visible" });
+  await targetZone.waitFor({ state: "visible" });
+
+  const chipBox = await chip.boundingBox();
+  const zoneBox = await targetZone.boundingBox();
+
+  if (!chipBox || !zoneBox) {
+    throw new Error("Missing bounding box for drag operation");
+  }
+
+  const startX = chipBox.x + chipBox.width / 2;
+  const startY = chipBox.y + chipBox.height / 2;
+  const endX = zoneBox.x + zoneBox.width / 2;
+  const endY = zoneBox.y + zoneBox.height / 2;
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(endX, endY, { steps: 10 });
+  await page.mouse.up();
+}
 
 test.describe("pivot run through", () => {
   test.use({ project: "AdBids" });
@@ -581,18 +607,18 @@ test.describe("pivot run through", () => {
     const domain = page.getByLabel("Domain pivot chip", { exact: true });
 
     // single measure
-    await totalRecords.dragTo(columnZone);
+    await dragPivotChip(page, totalRecords, columnZone);
     await expect(
       page.locator("td").filter({ hasText: "100.0k" }),
     ).toBeVisible();
 
     // one measure and one dimension
-    await publisher.dragTo(rowZone);
+    await dragPivotChip(page, publisher, rowZone);
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedOneMeasureOneDim);
 
     // add second measure using menu and add column dimension
-    await domain.dragTo(columnZone);
+    await dragPivotChip(page, domain, columnZone);
     const addColumnField = page
       .getByRole("button", { name: "Add filter button" })
       .nth(2);
@@ -617,7 +643,7 @@ test.describe("pivot run through", () => {
     await validateTableContents(page, "table", expectedOneMeasureColDim);
 
     const timeMonth = page.getByLabel("Time pivot chip", { exact: true });
-    await timeMonth.dragTo(rowZone);
+    await dragPivotChip(page, timeMonth, rowZone);
 
     const addRowField = page
       .getByRole("button", { name: "Add filter button" })
@@ -638,13 +664,18 @@ test.describe("pivot run through", () => {
 
     // Change the time range
     await interactWithTimeRangeMenu(page, async () => {
-      await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+      await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
+    await page.waitForTimeout(100);
+
     // add measure and time week to column
+    await dragPivotChip(page, totalRecords, columnZone);
+
+    await expect(page.locator(".status.running")).toHaveCount(0);
+
     const timeWeek = page.getByLabel("Time pivot chip", { exact: true });
-    await totalRecords.dragTo(columnZone);
-    await timeWeek.dragTo(columnZone);
+    await dragPivotChip(page, timeWeek, columnZone);
 
     // enable time comparison
     await page.getByLabel("Toggle time comparison").click();
@@ -660,7 +691,7 @@ test.describe("pivot run through", () => {
     );
     await firstColumnDeltaButton.click();
     await interactWithTimeRangeMenu(page, async () => {
-      await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
+      await page.getByRole("menuitem", { name: "Last 24 hours" }).click();
     });
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectSortedDeltaCol, 4);

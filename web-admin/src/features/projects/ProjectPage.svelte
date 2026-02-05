@@ -1,6 +1,5 @@
 <script lang="ts">
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-  import NoResourceCTA from "@rilldata/web-admin/features/projects/NoResourceCTA.svelte";
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
@@ -12,12 +11,10 @@
     queryKey: QueryKey;
   };
 
-  $: ({ data, isLoading, isError, isSuccess, error } = $query);
-
-  $: resources = data?.resources ?? [];
+  $: ({ isLoading, isError, isSuccess, error } = $query);
 </script>
 
-<ContentContainer title="Project {kind}s" showTitle={!!resources.length}>
+<ContentContainer title="Project {kind}s">
   <div class="flex flex-col items-center gap-y-4">
     {#if isLoading}
       <div class="m-auto mt-20">
@@ -26,13 +23,7 @@
     {:else if isError}
       <ResourceError {kind} {error} />
     {:else if isSuccess}
-      {#if !resources?.length}
-        <NoResourceCTA {kind}>
-          <slot name="action" />
-        </NoResourceCTA>
-      {:else}
-        <slot name="table" />
-      {/if}
+      <slot name="table" />
     {/if}
   </div>
 </ContentContainer>

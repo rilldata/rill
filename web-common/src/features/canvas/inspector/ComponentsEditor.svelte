@@ -41,7 +41,7 @@
     {/if}
   </svelte:fragment>
 
-  {#if componentType && component && rendererProperties}
+  {#if componentType && component && rendererProperties && currentTab}
     {#if currentTab === "options"}
       {#key component}
         <ParamMapper {component} />

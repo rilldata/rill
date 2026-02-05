@@ -178,7 +178,7 @@ function escapeColumnName(columnName: string) {
   return columnName;
 }
 
-function escapeValue(value: unknown) {
+function escapeValue(value: unknown): string {
   switch (typeof value) {
     case "string":
       return escapeStringValue(value);

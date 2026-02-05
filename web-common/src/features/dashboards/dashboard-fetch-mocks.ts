@@ -109,6 +109,20 @@ export class DashboardFetchMocks {
     this.aggregationRequestMocks.push({ regex, response });
   }
 
+  public mockMetricsViewTimeRanges(
+    metricsViewName: string,
+    start: string,
+    end: string,
+  ) {
+    this.responses.set(
+      `queries__metrics-views__time-ranges__${metricsViewName}`,
+      {
+        timeRanges: [{ start, end }],
+        resolvedTimeRanges: [{ expression: "PT6H", start, end }],
+      },
+    );
+  }
+
   private async fetchMock(url: string, body: string | undefined) {
     const u = new URL(url);
     const [, , , , type, ...parts] = u.pathname.split("/");

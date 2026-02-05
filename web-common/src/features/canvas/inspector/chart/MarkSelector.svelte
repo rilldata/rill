@@ -1,11 +1,13 @@
 <script lang="ts">
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import { type FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { type FieldConfig } from "@rilldata/web-common/features/components/charts/types";
+  import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ColorPaletteSelector from "./field-config/ColorPaletteSelector.svelte";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
@@ -22,6 +24,9 @@
   $: ({
     canvasEntity: { selectedComponent, theme },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: isThemeModeDark = $themeControl === "dark";
+  $: resolvedTheme = resolveThemeColors($theme?.spec, isThemeModeDark);
 
   $: selected = !markConfig || typeof markConfig === "string" ? 0 : 1;
 
@@ -99,14 +104,16 @@
   </div>
 {:else if selected === 0}
   <div class="pt-2">
-    <SingleColorSelector
-      small
-      theme={$theme}
-      markConfig={typeof markConfig === "string" ? markConfig : "primary"}
-      onChange={(newColor) => {
-        onChange(newColor);
-      }}
-    />
+    {#key `${isThemeModeDark}-${resolvedTheme.primary.hex()}-${resolvedTheme.secondary.hex()}`}
+      <SingleColorSelector
+        small
+        theme={resolvedTheme}
+        markConfig={typeof markConfig === "string" ? markConfig : "primary"}
+        onChange={(newColor) => {
+          onChange(newColor);
+        }}
+      />
+    {/key}
   </div>
 {:else if selected === 1}
   <SingleFieldInput

@@ -2,12 +2,12 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { createEventDispatcher } from "svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
 
-  const dispatch = createEventDispatcher();
+  export let onClose: () => void = () => {};
+  export let onBack: () => void = () => {};
 
   const FORM_ID = "1P9sP1jxjFcMqDzxsweIrZiU7pFUgRY452S3Nk7cEeao";
   const GOOGLE_FORM_ENDPOINT = `https://docs.google.com/forms/d/${FORM_ID}`;
@@ -44,7 +44,7 @@
               "Content-Type": "application/x-www-form-urlencoded",
             },
           });
-          dispatch("close");
+          onClose();
           eventBus.emit("notification", {
             message: "Thanks for your request!",
           });
@@ -57,7 +57,7 @@
 </script>
 
 <form on:submit|preventDefault={submit} id="request-connector-form" use:enhance>
-  <span class="text-slate-500 text-sm">
+  <span class="text-fg-secondary text-sm mt-2">
     Don't see the connector you're looking for? Let us know what we're missing!
   </span>
   <Input
@@ -77,7 +77,7 @@
   />
   <div class="flex gap-x-2">
     <div class="grow" />
-    <Button onClick={() => dispatch("back")} type="secondary">Back</Button>
+    <Button onClick={onBack} type="secondary">Back</Button>
     <Button
       type="primary"
       submitForm

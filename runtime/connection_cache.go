@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
@@ -121,8 +122,12 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 			cfg.config = maps.Clone(cfg.config)
 			cfg.config["managed"] = true
 
-			if inst.AdminConnector == "" {
-				// Provisioning has been requested, but the instance does not have an admin connector.
+			// As a special carve-out, we never try to provision DuckDB through the admin service.
+			// (Since the driver just starts an embedded DuckDB when `managed: true`.)
+			skipAdminProvisioning := cfg.driver == "duckdb"
+
+			// Provisioning has been requested, but the instance does not have an admin connector.
+			if inst.AdminConnector == "" || skipAdminProvisioning {
 				// As a fallback, we pass the provision arguments to the driver, giving it a chance to provision itself if it supports it.
 				cfg.config["provision"] = true
 				cfg.config["provision_args"] = cfg.provisionArgs
@@ -147,12 +152,21 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		}
 	}
 
+	// Create storage client with a path prefix scoped to the instance and connector.
+	// For shared connections, we use "shared" as the path prefix.
+	var storage *storage.Client
+	if cfg.instanceID != "" {
+		storage = r.storage.WithPrefix(cfg.instanceID, cfg.name)
+	} else {
+		storage = r.storage.WithPrefix("shared", cfg.name)
+	}
+
 	r.Logger.Debug("opening connection", zap.String("instance_id", cfg.instanceID), zap.String("driver", cfg.driver), zap.String("name", cfg.name), zap.Bool("provision", cfg.provision))
-	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID, cfg.name), activityClient, logger)
+	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, storage, activityClient, logger)
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}
-	r.activity.Record(ctx, "connection_open", activity.EventTypeLog,
+	r.activity.Record(ctx, activity.EventTypeLog, "connection_open",
 		attribute.String("instance_id", cfg.instanceID),
 		attribute.String("driver", cfg.driver),
 		attribute.String("name", cfg.name),

@@ -56,9 +56,9 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to create client: %w", err)
 			}
 			res, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      projectName,
-				Environment:  environment,
+				Org:         ch.Org,
+				Project:     projectName,
+				Environment: environment,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to get project variables: %w", err)
@@ -107,10 +107,10 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Write the merged variables back to the cloud project
 			_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      projectName,
-				Environment:  environment,
-				Variables:    vars,
+				Org:         ch.Org,
+				Project:     projectName,
+				Environment: environment,
+				Variables:   vars,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update project variables: %w", err)

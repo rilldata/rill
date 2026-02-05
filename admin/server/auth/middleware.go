@@ -136,7 +136,13 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 		if ok && authToken != "" {
 			newCtx, err := a.parseClaimsFromToken(r.Context(), authToken)
 			if err != nil {
-				// NOTE: No lenient mode for cookies. It doesn't make sense at the moment.
+				// In lenient mode, we set anonClaims.
+				if lenient {
+					newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
+					next.ServeHTTP(w, r.WithContext(newCtx))
+					return
+				}
+
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}

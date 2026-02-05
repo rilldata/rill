@@ -54,6 +54,12 @@ blobs:
   - disable: "{{ .IsNightly }}"
     provider: gs
     bucket: prod-cdn.rilldata.com
+    directory: "rill/latest"
+    extra_files:
+      - glob: ./dist/**/*
+  - disable: "{{ .IsNightly }}"
+    provider: gs
+    bucket: prod-cdn.rilldata.com
     directory: "rill/v{{ .Version }}"
     extra_files:
       - glob: ./dist/**/*

@@ -107,7 +107,7 @@
 
     if (type === "renew") {
       await $planRenewer.mutateAsync({
-        organization,
+        org: organization,
         data: {
           planName: teamPlan.name,
         },
@@ -118,7 +118,7 @@
       });
     } else {
       await $planUpdater.mutateAsync({
-        organization,
+        org: organization,
         data: {
           planName: teamPlan.name,
         },

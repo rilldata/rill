@@ -1,9 +1,12 @@
 <script lang="ts">
   export let assembled;
+  export let isShowMoreRow = false;
 </script>
 
-{#if assembled}
-  <span class="text-gray-400">-</span>
+{#if isShowMoreRow}
+  <!-- Render blank for show more rows -->
+{:else if assembled}
+  <span class="text-fg-secondary">-</span>
 {:else}
   <span class="loading-cell" />
 {/if}

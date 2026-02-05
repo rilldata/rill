@@ -40,6 +40,7 @@
             {hovering.value}
           {:else}
             <FormattedDataType
+              color="text-fg-inverse"
               type={hovering?.type ?? "VARCHAR"}
               value={hovering?.value}
             />

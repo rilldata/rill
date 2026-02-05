@@ -1,7 +1,6 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   getAvailableComparisonsForTimeRange,
-  getComparisonRange,
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
 import {
@@ -30,6 +29,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { RillTime } from "../url-state/time-ranges/RillTime";
+import { DateTime, Interval } from "luxon";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
 
 export type TimeRangeControlsState = {
   latestWindowTimeRanges: Array<TimeRangeOption>;
@@ -165,6 +166,7 @@ export function timeComparisonOptionsSelector([
   ) {
     return [];
   }
+  const timezone = explorer.selectedTimezone;
 
   const allTimeRange = {
     name: TimeRangePreset.ALL_TIME,
@@ -185,13 +187,6 @@ export function timeComparisonOptionsSelector([
         ) ?? [];
       allOptions.push(TimeComparisonOption.CUSTOM);
     }
-  } else if (
-    explorer.selectedTimeRange?.name &&
-    explorer.selectedTimeRange?.name in PREVIOUS_COMPLETE_DATE_RANGES
-  ) {
-    // Previous complete ranges should only have previous period.
-    // Other options dont make sense with our current wording of the comparison ranges.
-    allOptions = [TimeComparisonOption.CONTIGUOUS, TimeComparisonOption.CUSTOM];
   }
 
   const timeComparisonOptions = getAvailableComparisonsForTimeRange(
@@ -200,21 +195,36 @@ export function timeComparisonOptionsSelector([
     selectedTimeRange.start,
     selectedTimeRange.end,
     allOptions,
+    timezone,
   );
 
-  return timeComparisonOptions.map((co, i) => {
-    const comparisonTimeRange = getComparisonRange(
-      selectedTimeRange.start,
-      selectedTimeRange.end,
-      co,
+  const options: {
+    name: TimeComparisonOption;
+    key: number;
+    start: Date;
+    end: Date;
+  }[] = [];
+
+  timeComparisonOptions.forEach((co, i) => {
+    const interval = Interval.fromDateTimes(
+      DateTime.fromJSDate(selectedTimeRange.start, { zone: timezone }),
+      DateTime.fromJSDate(selectedTimeRange.end, { zone: timezone }),
     );
-    return {
+    const comparisonTimeRange = getComparisonInterval(
+      interval as Interval<true>,
+      co,
+      timezone,
+    );
+    if (!comparisonTimeRange) return;
+    options.push({
       name: co,
       key: i,
-      start: comparisonTimeRange.start,
-      end: comparisonTimeRange.end,
-    };
+      start: comparisonTimeRange?.start.toJSDate(),
+      end: comparisonTimeRange?.end.toJSDate(),
+    });
   });
+
+  return options;
 }
 
 export function getValidComparisonOption(
@@ -222,6 +232,7 @@ export function getValidComparisonOption(
   selectedTimeRange: TimeRange,
   prevComparisonOption: TimeComparisonOption | undefined,
   allTimeRange: TimeRange,
+  timezone: string | undefined,
 ): TimeComparisonOption {
   if (!timeRanges?.length) {
     return (
@@ -255,6 +266,7 @@ export function getValidComparisonOption(
     allTimeRange.end,
     selectedTimeRange.start,
     selectedTimeRange.end,
+    timezone ?? "UTC",
   );
   // if currently selected comparison option is in allowed list and is valid select it
   if (existing && existingComparison.isComparisonRangeAvailable) {

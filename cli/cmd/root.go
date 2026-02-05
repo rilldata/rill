@@ -10,10 +10,12 @@ import (
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/billing"
+	"github.com/rilldata/rill/cli/cmd/chat"
 	"github.com/rilldata/rill/cli/cmd/deploy"
 	"github.com/rilldata/rill/cli/cmd/devtool"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/env"
+	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/cmd/publicurl"
@@ -28,6 +30,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
 	"github.com/rilldata/rill/cli/cmd/usergroup"
+	"github.com/rilldata/rill/cli/cmd/validate"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/cmd/whoami"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -114,8 +117,11 @@ func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 	// Project commands
 	cmdutil.AddGroup(rootCmd, "Project", false,
 		start.StartCmd(ch),
+		validate.ValidateCmd(ch),
+		initialize.InitCmd(ch),
 		deploy.DeployCmd(ch),
 		project.ProjectCmd(ch),
+		chat.ChatCmd(ch),
 		query.QueryCmd(ch),
 		publicurl.PublicURLCmd(ch),
 		env.EnvCmd(ch),

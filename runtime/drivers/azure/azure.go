@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -20,7 +21,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Azure Blob Storage",
 	Description: "Connect to Azure Blob Storage.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/azure",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/azure",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "azure_storage_account",
@@ -38,12 +39,14 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 		{
-			Key:    "azure_storage_connection_string",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "azure_storage_connection_string",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Azure Connection String",
+			Description: "Azure connection string for storage account",
+			Placeholder: "Paste your Azure connection string here",
+			Secret:      true,
 		},
 	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -73,7 +76,63 @@ type ConfigProperties struct {
 	Key              string `mapstructure:"azure_storage_key"`
 	SASToken         string `mapstructure:"azure_storage_sas_token"`
 	ConnectionString string `mapstructure:"azure_storage_connection_string"`
-	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
+	// A list of container or virtual directory prefixes that this connector is allowed to access.
+	// Useful when different containers or paths use different credentials, allowing the system
+	// to route access through the appropriate connector based on the blob path.
+	// Example formats: `azure://my-container/` `azure://my-container/path/` `azure://my-container/path/prefix`
+	PathPrefixes    []string `mapstructure:"path_prefixes"`
+	AllowHostAccess bool     `mapstructure:"allow_host_access"`
+}
+
+func (c *ConfigProperties) GetAccount() string {
+	if c.Account == "" && c.AllowHostAccess {
+		return os.Getenv("AZURE_STORAGE_ACCOUNT")
+	}
+	return c.Account
+}
+
+func (c *ConfigProperties) GetKey() string {
+	if c.Key == "" && c.AllowHostAccess {
+		return os.Getenv("AZURE_STORAGE_KEY")
+	}
+	return c.Key
+}
+
+func (c *ConfigProperties) GetSASToken() string {
+	if c.SASToken == "" && c.AllowHostAccess {
+		return os.Getenv("AZURE_STORAGE_SAS_TOKEN")
+	}
+	return c.SASToken
+}
+
+func (c *ConfigProperties) GetConnectionString() string {
+	if c.AllowHostAccess {
+		if c.ConnectionString == "" {
+			c.ConnectionString = os.Getenv("AZURE_STORAGE_CONNECTION_STRING")
+		}
+	}
+
+	if c.ConnectionString != "" {
+		return c.ConnectionString
+	}
+
+	// If no auth provided, return empty so caller can use AAD
+	if c.GetKey() == "" && c.GetSASToken() == "" {
+		return ""
+	}
+
+	dsn := fmt.Sprintf("AccountName=%s;", c.GetAccount())
+
+	var authPart string
+	switch {
+	case c.GetKey() != "":
+		authPart = fmt.Sprintf("AccountKey=%s;", c.GetKey())
+	case c.GetSASToken() != "":
+		authPart = fmt.Sprintf("SharedAccessSignature=%s;", c.GetSASToken())
+	}
+	dsn += authPart
+
+	return dsn
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -204,13 +263,13 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {

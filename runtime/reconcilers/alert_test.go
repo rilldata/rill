@@ -585,13 +585,14 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
-				Connector:     "duckdb",
-				Table:         model,
-				Model:         model,
-				DisplayName:   parser.ToDisplayName(name),
-				TimeDimension: timeDim,
-				Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
-				Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
+				Connector:         "duckdb",
+				Table:             model,
+				Model:             model,
+				DisplayName:       parser.ToDisplayName(name),
+				TimeDimension:     timeDim,
+				SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_SECOND,
+				Measures:          make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
+				Dimensions:        make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
 			},
 		},
 	}
@@ -626,8 +627,24 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 			DisplayName: parser.ToDisplayName(name),
 			Column:      name,
 			DataType:    &runtimev1.Type{Code: dimensions[idx+1].(runtimev1.Type_Code), Nullable: true},
+			Type:        runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL,
 		}
 	}
+	// prepend the time dimension to metrics.Spec.Dimensions and metrics.State.ValidSpec.Dimensions
+	metrics.Spec.Dimensions = slices.Insert(metrics.Spec.Dimensions, 0, &runtimev1.MetricsViewSpec_Dimension{
+		Name:        timeDim,
+		Column:      timeDim,
+		DisplayName: parser.ToDisplayName(timeDim),
+	})
+	metrics.State.ValidSpec.Dimensions = slices.Insert(metrics.State.ValidSpec.Dimensions, 0, &runtimev1.MetricsViewSpec_Dimension{
+		Name:              timeDim,
+		Column:            timeDim,
+		DisplayName:       parser.ToDisplayName(timeDim),
+		DataType:          &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true},
+		Type:              runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME,
+		SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_SECOND,
+	})
+
 	metricsRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name},

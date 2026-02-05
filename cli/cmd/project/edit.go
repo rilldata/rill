@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, description, prodVersion, prodBranch, subpath, path, provisioner string
+	var name, description, prodVersion, primaryBranch, subpath, path, provisioner, gitRemote string
 	var public bool
 	var prodTTL int64
 
@@ -33,8 +33,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			req := &adminv1.UpdateProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             name,
+				Org:     ch.Org,
+				Project: name,
 			}
 
 			var flagSet bool
@@ -50,9 +50,9 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				flagSet = true
 				req.ProdVersion = &prodVersion
 			}
-			if cmd.Flags().Changed("prod-branch") {
+			if cmd.Flags().Changed("primary-branch") {
 				flagSet = true
-				req.ProdBranch = &prodBranch
+				req.PrimaryBranch = &primaryBranch
 			}
 			if cmd.Flags().Changed("subpath") {
 				flagSet = true
@@ -65,6 +65,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if cmd.Flags().Changed("prod-ttl-seconds") {
 				flagSet = true
 				req.ProdTtlSeconds = &prodTTL
+			}
+			if cmd.Flags().Changed("remote-url") {
+				flagSet = true
+				req.GitRemote = &gitRemote
 			}
 
 			if !flagSet {
@@ -86,9 +90,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().SortFlags = false
 	editCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	editCmd.Flags().StringVar(&description, "description", "", "Project Description")
-	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
+	editCmd.Flags().StringVar(&primaryBranch, "primary-branch", "", "Primary branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	editCmd.Flags().StringVar(&gitRemote, "remote-url", "", "Github remote URL")
 	editCmd.Flags().StringVar(&subpath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
 	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Time-to-live in seconds for production deployment (0 means no expiration)")

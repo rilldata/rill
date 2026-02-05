@@ -8,6 +8,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -152,6 +153,100 @@ func (r *CanvasReconciler) checkAnyComponentHasValidSpec(components map[string]*
 	return false
 }
 
+func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
+	refs := &rendererRefs{
+		metricsViews: make(map[string]bool),
+	}
+
+	canvas := res.GetCanvas()
+	if canvas == nil {
+		return nil, fmt.Errorf("resource is not a canvas")
+	}
+	spec := canvas.GetState().GetValidSpec()
+	if spec == nil {
+		spec = canvas.GetSpec() // Fallback to spec if ValidSpec is not available
+	}
+	if spec == nil {
+		return nil, fmt.Errorf("canvas spec is nil")
+	}
+
+	// explicitly allow access to the canvas itself
+	conditionResources = append(conditionResources, res.Meta.Name)
+	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
+
+	// Get controller to fetch components
+	ctr, err := r.C.Runtime.Controller(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get controller: %w", err)
+	}
+
+	// Collect all component names referenced by the canvas
+	componentNames := make(map[string]bool)
+	for _, row := range spec.Rows {
+		for _, item := range row.Items {
+			componentNames[item.Component] = true
+		}
+	}
+
+	// Process each component
+	for componentName := range componentNames {
+		componentRef := &runtimev1.ResourceName{
+			Kind: runtime.ResourceKindComponent,
+			Name: componentName,
+		}
+		// Allow access to the component itself
+		conditionResources = append(conditionResources, componentRef)
+
+		// Get component resource
+		componentRes, err := ctr.Get(ctx, componentRef, false)
+		if err != nil {
+			// If component is not found, skip it but still allow access to the component name
+			continue
+		}
+
+		// Get component spec to extract renderer properties
+		componentSpec := componentRes.GetComponent().State.ValidSpec
+		if componentSpec == nil {
+			componentSpec = componentRes.GetComponent().Spec
+		}
+		if componentSpec.RendererProperties == nil {
+			continue
+		}
+
+		// Track refs
+		err = refs.populateRendererRefs(componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse renderer properties for component %q: %w", componentName, err)
+		}
+	}
+
+	// Now build security rules based on the collected references
+	// First, allow access to all referenced metrics views
+	// Then, for each metrics view, add field access and row filter rules as needed
+	for mv := range refs.metricsViews {
+		// allow access to the referenced metrics view
+		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: mv})
+	}
+
+	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					ConditionKinds:     conditionKinds,
+					ConditionResources: conditionResources,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
+}
+
 // validateMetricsViewTimeConsistency checks that all the metrics views referenced by the canvas' components have the same first_day_of_week and first_month_of_year.
 func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Context, components map[string]*runtimev1.Resource) error {
 	metricsViews := make(map[string]*runtimev1.Resource)
@@ -217,4 +312,35 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 	}
 
 	return nil
+}
+
+// rendererRefs tracks all metrics views found in canvas component renderer properties.
+// It currently only tracks metrics views, but in the future we may want to add an option to also track metrics view fields and filters.
+// We did that previously, but removed it since such granular security was considered too strict (it also impacts ability to filter by fields not present on the canvas).
+// See this PR for details in case we want to reintroduce it: https://github.com/rilldata/rill/pull/8370
+type rendererRefs struct {
+	metricsViews map[string]bool
+}
+
+// populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.
+func (r *rendererRefs) populateRendererRefs(_ string, rendererProps map[string]any) error {
+	mv, ok := pathutil.GetPath(rendererProps, "metrics_view")
+	if !ok {
+		return nil
+	}
+	err := r.metricsView(mv)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// metricsView registers a metrics view reference.
+func (r *rendererRefs) metricsView(mv any) error {
+	if mv, ok := mv.(string); ok {
+		r.metricsViews[mv] = true
+		return nil
+	}
+	return fmt.Errorf("metrics view field is not a string")
 }

@@ -1,20 +1,24 @@
 <script lang="ts">
-  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
-  import NoResourceCTA from "@rilldata/web-admin/features/projects/NoResourceCTA.svelte";
+  import { page } from "$app/stores";
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
+  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { flexRender, type Row } from "@tanstack/svelte-table";
-  import { createEventDispatcher } from "svelte";
-  import Table from "../../../components/table/Table.svelte";
+  import { flexRender } from "@tanstack/svelte-table";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards } from "./selectors";
 
   export let isEmbedded = false;
+  export let isPreview = false;
+  export let previewLimit = 5;
 
   $: ({ instanceId } = $runtime);
+  $: ({
+    params: { organization, project },
+  } = $page);
 
   $: dashboards = useDashboards(instanceId);
   $: ({
@@ -24,6 +28,12 @@
     isSuccess,
     error,
   } = $dashboards);
+
+  $: displayData = isPreview
+    ? (dashboardsData?.slice(0, previewLimit) ?? [])
+    : (dashboardsData ?? []);
+  $: hasMoreDashboards =
+    isPreview && dashboardsData && dashboardsData.length > previewLimit;
 
   /**
    * Table column definitions.
@@ -103,11 +113,7 @@
     description: false,
   };
 
-  const dispatch = createEventDispatcher();
-
-  function handleClickRow(e: CustomEvent<Row<V1Resource>>) {
-    dispatch("select-resource", e.detail.original.meta.name);
-  }
+  const initialSorting = [{ id: "name", desc: false }];
 </script>
 
 {#if isLoading}
@@ -117,22 +123,40 @@
 {:else if isError}
   <ResourceError kind="dashboard" {error} />
 {:else if isSuccess}
-  {#if !dashboardsData.length}
-    <NoResourceCTA kind="dashboard">
-      <svelte:fragment>
-        Learn how to deploy a dashboard in our
-        <a href="https://docs.rilldata.com/" target="_blank">docs</a>
-      </svelte:fragment>
-    </NoResourceCTA>
-  {:else}
-    <Table
+  <div class="flex flex-col w-full gap-y-3">
+    <ResourceList
       kind="dashboard"
-      data={dashboardsData}
+      data={displayData}
       {columns}
       {columnVisibility}
-      on:click-row={handleClickRow}
+      {initialSorting}
+      toolbar={!isPreview}
     >
-      <ResourceHeader kind="dashboard" icon={ExploreIcon} slot="header" />
-    </Table>
-  {/if}
+      <ResourceListEmptyState
+        slot="empty"
+        icon={ExploreIcon}
+        message="You don't have any dashboards yet"
+      >
+        <span slot="action">
+          <a
+            href="https://docs.rilldata.com/build/dashboards"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Create a dashboard</a
+          > to get started
+        </span>
+      </ResourceListEmptyState>
+    </ResourceList>
+    {#if hasMoreDashboards}
+      <div class="pl-4 py-1">
+        <a
+          href={`/${organization}/${project}/-/dashboards`}
+          class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
+        >
+          See all dashboards →
+        </a>
+      </div>
+    {/if}
+  </div>
 {/if}

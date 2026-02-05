@@ -23,7 +23,7 @@ func (s *Server) ListConnectorDrivers(ctx context.Context, req *runtimev1.ListCo
 }
 
 func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeConnectorsRequest) (*runtimev1.AnalyzeConnectorsResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
 		return nil, ErrForbidden
 	}
 
@@ -73,12 +73,38 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 			}
 		}
 
+		cfgConfig := cfg.Resolve()
+		var cfgConfigPB *structpb.Struct
+		if len(cfgConfig) > 0 {
+			cfgConfigPB, err = structpb.NewStruct(cfgConfig)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		var presetConfigPB *structpb.Struct
+		if len(cfg.Preset) > 0 {
+			presetConfigPB, err = structpb.NewStruct(cfg.Preset)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		projectConfig := connector.DefaultConfig
+		var projectConfigPB *structpb.Struct
+		if len(projectConfig) > 0 {
+			projectConfigPB, err = structpb.NewStruct(projectConfig)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		c := &runtimev1.AnalyzedConnector{
 			Name:               connector.Name,
 			Driver:             driverSpecToPB(connector.Driver, connector.Spec),
-			Config:             cfg.ResolveStrings(),
-			PresetConfig:       cfg.Preset,
-			ProjectConfig:      connector.DefaultConfig, // NOTE: Could also use cfg.Project, but connector.DefaultConfig might be slightly more up-to-date
+			Config:             cfgConfigPB,
+			PresetConfig:       presetConfigPB,
+			ProjectConfig:      projectConfigPB, // NOTE: Could also use cfg.Project, but connector.DefaultConfig might be slightly more up-to-date
 			EnvConfig:          cfg.Env,
 			Provision:          cfg.Provision,
 			ProvisionArgs:      provisionArgsPB,
@@ -99,7 +125,7 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 }
 
 func (s *Server) ListNotifierConnectors(ctx context.Context, req *runtimev1.ListNotifierConnectorsRequest) (*runtimev1.ListNotifierConnectorsResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadObjects) {
 		return nil, ErrForbidden
 	}
 

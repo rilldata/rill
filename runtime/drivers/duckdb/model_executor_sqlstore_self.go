@@ -81,7 +81,7 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 		if dsn == "" {
 			// may be configured via a connector
 			var config *rillmysql.ConfigProperties
-			if err := mapstructure.Decode(inputHandle.Config(), &config); err != nil {
+			if err := mapstructure.WeakDecode(inputHandle.Config(), &config); err != nil {
 				return nil, err
 			}
 			var err error
@@ -100,7 +100,7 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 		if dsn == "" {
 			// may be configured via a connector
 			var config *postgres.ConfigProperties
-			if err := mapstructure.Decode(inputHandle.Config(), &config); err != nil {
+			if err := mapstructure.WeakDecode(inputHandle.Config(), &config); err != nil {
 				return nil, err
 			}
 			dsn = config.ResolveDSN()

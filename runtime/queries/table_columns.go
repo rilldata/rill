@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -68,9 +67,11 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 	}
 	defer release()
 
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
-		return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
+	if !supportedTableHeadDialects[olap.Dialect()] {
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+	if olap.Dialect() == drivers.DialectDuckDB {
+		return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
 			// views return duplicate column names, so we need to create a temporary table
 			temporaryTableName := tempName("profile_columns_")
 			err = olap.Exec(ctx, &drivers.Statement{
@@ -107,7 +108,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			i := 0
 			for rows.Next() {
 				pc := runtimev1.ProfileColumn{}
-				if err := rows.StructScan(&pc); err != nil {
+				if err := rows.Scan(&pc.Name, &pc.Type); err != nil {
 					return err
 				}
 				// TODO: Find a better way to handle this, this is ugly
@@ -121,32 +122,27 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			if err != nil {
 				return err
 			}
-
 			q.Result = &runtimev1.TableColumnsResponse{
 				ProfileColumns: pcs[0:i],
 			}
 			return nil
 		})
-	case drivers.DialectClickHouse, drivers.DialectDruid, drivers.DialectPinot:
-		tbl, err := olap.InformationSchema().Lookup(ctx, q.Database, q.DatabaseSchema, q.TableName)
-		if err != nil {
-			return err
-		}
-
-		q.Result = &runtimev1.TableColumnsResponse{
-			ProfileColumns:     make([]*runtimev1.ProfileColumn, len(tbl.Schema.Fields)),
-			UnsupportedColumns: tbl.UnsupportedCols,
-		}
-		for i := 0; i < len(tbl.Schema.Fields); i++ {
-			q.Result.ProfileColumns[i] = &runtimev1.ProfileColumn{
-				Name: tbl.Schema.Fields[i].Name,
-				Type: tbl.Schema.Fields[i].Type.Code.String(),
-			}
-		}
-		return nil
-	default:
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
+	tbl, err := olap.InformationSchema().Lookup(ctx, q.Database, q.DatabaseSchema, q.TableName)
+	if err != nil {
+		return err
+	}
+	q.Result = &runtimev1.TableColumnsResponse{
+		ProfileColumns:     make([]*runtimev1.ProfileColumn, len(tbl.Schema.Fields)),
+		UnsupportedColumns: tbl.UnsupportedCols,
+	}
+	for i := 0; i < len(tbl.Schema.Fields); i++ {
+		q.Result.ProfileColumns[i] = &runtimev1.ProfileColumn{
+			Name: tbl.Schema.Fields[i].Name,
+			Type: tbl.Schema.Fields[i].Type.Code.String(),
+		}
+	}
+	return nil
 }
 
 func (q *TableColumns) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {

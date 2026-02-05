@@ -3,6 +3,7 @@ package river
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
@@ -23,13 +24,9 @@ type deleteUnusedGithubReposWorker struct {
 	logger *zap.Logger
 }
 
-func (w *deleteUnusedGithubReposWorker) Work(ctx context.Context, job *river.Job[deleteUnusedGithubReposArgs]) error {
-	return work(ctx, w.admin.Logger, job.Kind, w.deleteUnusedGithubRepos)
-}
-
 // deleteUnusedGithubRepos deletes unused Rill managed Github repositories from the database and Github.
 // An unused repository is one that is not associated with any Rill project since more than 7 days.
-func (w *deleteUnusedGithubReposWorker) deleteUnusedGithubRepos(ctx context.Context) error {
+func (w *deleteUnusedGithubReposWorker) Work(ctx context.Context, job *river.Job[deleteUnusedGithubReposArgs]) error {
 	for {
 		// 1. Fetch repositories that are not associated with any Rill project
 		repos, err := w.admin.DB.FindUnusedManagedGitRepos(ctx, _unusedGithubRepoPageSize)
@@ -60,8 +57,12 @@ func (w *deleteUnusedGithubReposWorker) deleteUnusedGithubRepos(ctx context.Cont
 				if !ok {
 					w.logger.Error("invalid github url", zap.String("remote", repo.Remote), zap.String("repo_id", repo.ID))
 				}
-				_, err := client.Repositories.Delete(cctx, account, name)
+				resp, err := client.Repositories.Delete(cctx, account, name)
 				if err != nil {
+					if resp != nil && resp.StatusCode == http.StatusNotFound {
+						// already deleted, ignore
+						return nil
+					}
 					return fmt.Errorf("failed to delete github repo %q: %w", repo.Remote, err)
 				}
 				return nil

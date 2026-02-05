@@ -80,9 +80,15 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 		return fmt.Errorf("metrics view %q is not valid", rs.Meta.Name.Name)
 	}
 
+	olap, release, err := rt.OLAP(ctx, instanceID, spec.Connector)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	sql := ""
 	if spec.WatermarkExpression != "" {
-		sql = fmt.Sprintf("SELECT %s FROM %s", spec.WatermarkExpression, safeName(spec.Table))
+		sql = fmt.Sprintf("SELECT %s FROM %s", spec.WatermarkExpression, olap.Dialect().EscapeTable(spec.Database, spec.DatabaseSchema, spec.Table))
 	} else if spec.TimeDimension != "" {
 		// get the actual time column if its defined in the dimension list
 		expr := safeName(spec.TimeDimension)
@@ -96,17 +102,11 @@ func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.
 				break
 			}
 		}
-		sql = fmt.Sprintf("SELECT MAX(%s) FROM %s", expr, safeName(spec.Table))
+		sql = fmt.Sprintf("SELECT MAX(%s) FROM %s", expr, olap.Dialect().EscapeTable(spec.Database, spec.DatabaseSchema, spec.Table))
 	} else {
 		// No watermark available
 		return nil
 	}
-
-	olap, release, err := rt.OLAP(ctx, instanceID, spec.Connector)
-	if err != nil {
-		return err
-	}
-	defer release()
 
 	res, err := olap.Query(ctx, &drivers.Statement{
 		Query:            sql,

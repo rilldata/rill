@@ -1,9 +1,19 @@
-export const ORG_ROLES_DESCRIPTION_MAP = {
-  admin: "Full access to org settings, members, and all projects",
-  editor: "Can create/manage projects and non-admin members",
-  viewer: "Read-only access to all org projects",
-  guest: "Access to invited projects only",
-};
+import { OrgUserRoles } from "@rilldata/web-common/features/users/roles";
 
-// Source: https://github.com/rilldata/rill/blob/main/admin/database/validate.go#L57
-export const SLUG_REGEX = /^[_a-zA-Z0-9][-_a-zA-Z0-9]*$/;
+export const ORG_ROLES_OPTIONS = [
+  {
+    value: OrgUserRoles.Admin,
+    label: "Admin",
+    description: "Full control over organization settings and members",
+  },
+  {
+    value: OrgUserRoles.Editor,
+    label: "Editor",
+    description: "Can manage projects and most org resources",
+  },
+  {
+    value: OrgUserRoles.Viewer,
+    label: "Viewer",
+    description: "Read-only access to organization and projects",
+  },
+];

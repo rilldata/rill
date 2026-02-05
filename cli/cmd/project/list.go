@@ -20,9 +20,9 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.ListProjectsForOrganization(cmd.Context(), &adminv1.ListProjectsForOrganizationRequest{
-				OrganizationName: ch.Org,
-				PageSize:         pageSize,
-				PageToken:        pageToken,
+				Org:       ch.Org,
+				PageSize:  pageSize,
+				PageToken: pageToken,
 			})
 			if err != nil {
 				return err

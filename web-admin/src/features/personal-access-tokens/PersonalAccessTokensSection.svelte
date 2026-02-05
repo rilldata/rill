@@ -32,25 +32,29 @@
   }
 </script>
 
-<div class="mb-2">
-  <h2 class="text-xl font-semibold mb-2">Create a Personal Access Token</h2>
-  <p class="mb-4 text-gray-600">
+<div class="flex flex-col gap-y-3">
+  <h4 class="text-sm font-medium text-fg-primary">
+    Create a personal access token
+  </h4>
+  <p class="text-sm text-fg-secondary">
     Because this project is <span class="font-medium">private</span>, you need a
     <span class="font-medium">personal access token</span> to use in your MCP configuration.
     This token authenticates your requests.
   </p>
-  <Button type="primary" onClick={issueToken} disabled={issuing}>
-    {issuing ? "Issuing..." : "Create token"}
-  </Button>
+  <div>
+    <Button type="primary" onClick={issueToken} disabled={issuing}>
+      {issuing ? "Issuing..." : "Create token"}
+    </Button>
+  </div>
 
   {#if issuedToken}
-    <div class="mt-4 mb-2 text-green-700 text-sm font-semibold">
+    <div class="text-green-700 text-sm font-semibold">
       Token created! Your new token is now included in the configuration snippet
       below.
     </div>
   {/if}
 
   {#if error}
-    <div class="text-red-600 mt-2">{error}</div>
+    <div class="text-red-600 text-sm">{error}</div>
   {/if}
 </div>

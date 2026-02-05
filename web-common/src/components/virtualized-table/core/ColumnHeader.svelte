@@ -13,10 +13,9 @@
     copyToClipboard,
     isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import { fly } from "svelte/transition";
   import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
-  import type { ResizeEvent } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
@@ -32,9 +31,12 @@
   export let enableSorting = true;
   export let isSelected = false;
   export let sorted: SortDirection | undefined = undefined;
+  export let onResizeColumn: (size: number, name: string) => void = () => {};
+  export let onResetColumnWidth: (name: string) => void = () => {};
+  export let onClickColumn: (name: string) => void;
+  export let onPin: () => void;
 
   const config: VirtualizedTableConfig = getContext("config");
-  const dispatch = createEventDispatcher();
 
   let showMore = false;
 
@@ -46,32 +48,27 @@
 
   $: columnFontWeight = isSelected ? "" : config.columnHeaderFontWeightClass;
 
-  const handleResize = (event: ResizeEvent) => {
-    dispatch("resize-column", {
-      size: event.detail.size,
-      name,
-    });
+  const handleResize = (size: number) => {
+    onResizeColumn(size, name);
   };
 </script>
 
 <StickyHeader
   {enableResize}
   bgClass={config.headerBgColorClass}
-  on:reset-column-width={() => {
-    dispatch("reset-column-width", { name });
+  onResetColumnWidth={() => {
+    onResetColumnWidth(name);
   }}
-  on:resize={handleResize}
+  onResize={handleResize}
   {position}
   {header}
-  on:focus={() => {
+  onFocus={() => {
     showMore = true;
   }}
-  on:blur={() => {
+  onBlur={() => {
     showMore = false;
   }}
-  onClick={() => {
-    dispatch("click-column");
-  }}
+  onClick={() => onClickColumn(name)}
   onShiftClick={() => {
     copyToClipboard(name, `Copied column name "${name}" to clipboard`);
   }}
@@ -96,7 +93,7 @@
           : `max-content auto ${!noPin && showMore ? "max-content" : ""}`}
       >
         {#if showDataIcon}
-          <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
+          <DataTypeIcon suppressTooltip color={"text-fg-secondary"} {type} />
         {/if}
         <span
           class="text-ellipsis
@@ -152,7 +149,7 @@
     </Tooltip>
 
     {#if sorted}
-      <div class="mt-0.5 ui-copy-icon">
+      <div class="mt-0.5 text-fg-secondary">
         {#if sorted === SortDirection.DESCENDING}
           <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
             <ArrowDown size="12px" />
@@ -169,12 +166,10 @@
       <Tooltip location="top" alignment="middle" distance={16}>
         <button
           transition:fly={{ duration: 200, y: 4 }}
-          class:text-gray-900={pinned}
-          class:text-gray-400={!pinned}
+          class:text-fg-primary={pinned}
+          class:text-fg-secondary={!pinned}
           class="   duration-100 justify-self-end"
-          on:click={() => {
-            dispatch("pin");
-          }}
+          on:click={onPin}
         >
           <Pin size="16px" />
         </button>

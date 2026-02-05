@@ -1,11 +1,11 @@
 <script lang="ts">
-  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import { Chip } from "@rilldata/web-common/components/chip";
   import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
   import {
     useAllSearchResultsCount,
     useDimensionSearch,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
+  import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let name: string;
@@ -17,6 +17,7 @@
   export let isInclude: boolean;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
+  export let pinned = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -72,7 +73,15 @@
       : (correctedSearchResults ?? []);
 </script>
 
-<Chip type="dimension" label={effectiveLabel} readOnly exclude={!isInclude}>
+<Chip
+  type="dimension"
+  theme
+  label={effectiveLabel}
+  readOnly
+  exclude={!isInclude}
+  showPinnedIcon={pinned}
+  gray={pinned && values.length === 0}
+>
   <DimensionFilterChipBody
     slot="body"
     label={effectiveLabel}

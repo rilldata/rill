@@ -64,6 +64,41 @@ func ReconcileAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1
 	require.NoError(t, err)
 }
 
+func RefreshModelAndWait(t testing.TB, rt *runtime.Runtime, id string, model *runtimev1.RefreshModelTrigger) {
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
+	require.NoError(t, err)
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: model.Model}
+
+	// Get resource before refresh
+	rPrev, err := ctrl.Get(ctx, n, false)
+	require.NoError(t, err)
+
+	// Create refresh trigger
+	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: time.Now().String()}
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
+		Resource: &runtimev1.Resource_RefreshTrigger{
+			RefreshTrigger: &runtimev1.RefreshTrigger{
+				Spec: &runtimev1.RefreshTriggerSpec{
+					Models: []*runtimev1.RefreshModelTrigger{model},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	// Wait for refresh to complete
+	err = ctrl.WaitUntilIdle(ctx, false)
+	require.NoError(t, err)
+
+	// Get resource after refresh
+	rNew, err := ctrl.Get(ctx, n, false)
+	require.NoError(t, err)
+
+	// Check the resource's spec version has increased
+	require.Greater(t, rNew.Meta.SpecVersion, rPrev.Meta.SpecVersion)
+}
+
 func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
 	ctx := t.Context()
 	ctrl, err := rt.Controller(ctx, id)
@@ -269,6 +304,7 @@ type RequireResolveOptions struct {
 	Properties         map[string]any
 	Args               map[string]any
 	UserAttributes     map[string]any
+	AdditionalRules    []*runtimev1.SecurityRule
 	SkipSecurityChecks bool
 
 	Result        []map[string]any
@@ -286,8 +322,9 @@ func RequireResolve(t testing.TB, rt *runtime.Runtime, id string, opts *RequireR
 		ResolverProperties: opts.Properties,
 		Args:               opts.Args,
 		Claims: &runtime.SecurityClaims{
-			UserAttributes: opts.UserAttributes,
-			SkipChecks:     opts.SkipSecurityChecks,
+			UserAttributes:  opts.UserAttributes,
+			AdditionalRules: opts.AdditionalRules,
+			SkipChecks:      opts.SkipSecurityChecks,
 		},
 	})
 
@@ -307,7 +344,10 @@ func RequireResolve(t testing.TB, rt *runtime.Runtime, id string, opts *RequireR
 	// The caller can then access the updated values.
 	if opts.Update {
 		opts.Result = rows
-		opts.ResultCSV = resultToCSV(t, rows, res.Schema())
+		opts.ResultCSV = ""
+		if res != nil {
+			opts.ResultCSV = resultToCSV(t, rows, res.Schema())
+		}
 		opts.ErrorContains = ""
 		if err != nil {
 			opts.ErrorContains = err.Error()

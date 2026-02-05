@@ -3,6 +3,8 @@ package drivers
 import (
 	"context"
 	"time"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // ModelExecutor executes models.
@@ -75,9 +77,6 @@ type ModelExecuteOptions struct {
 	// PartitionKey is the unique key for the partition currently being run.
 	// It is empty when PartitionRun is false.
 	PartitionKey string
-	// PreviousResult is the result of a previous execution.
-	// For concurrent partition execution, it may not be the most recent previous result.
-	PreviousResult *ModelResult
 	// TempDir is a temporary directory for storing intermediate data.
 	TempDir string
 }
@@ -88,6 +87,7 @@ type ModelEnv struct {
 	RepoRoot           string
 	StageChanges       bool
 	DefaultMaterialize bool
+	Connectors         []*runtimev1.Connector
 	AcquireConnector   func(ctx context.Context, name string) (Handle, func(), error)
 }
 

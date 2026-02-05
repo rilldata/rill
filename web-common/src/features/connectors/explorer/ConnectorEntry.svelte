@@ -8,6 +8,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { connectorIconMapping } from "../connector-icon-mapping";
+  import { getConnectorIconKey } from "../connectors-utils";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
 
   export let connector: V1AnalyzedConnector;
@@ -36,14 +37,14 @@
   {#if connector.name}
     <li class="connector-entry">
       <button
-        class="connector-entry-header"
+        class="connector-entry-header text-fg-primary"
         aria-label={connector.name}
         on:click={() => {
           store.toggleItem(connectorName);
         }}
       >
         <CaretDownIcon
-          className="transform transition-transform text-gray-400 {expanded
+          className="transform transition-transform text-fg-secondary {expanded
             ? 'rotate-0'
             : '-rotate-90'}"
           size="14px"
@@ -51,7 +52,7 @@
         <span class="flex-none">
           {#if connector.driver?.name}
             <svelte:component
-              this={connectorIconMapping[connector.driver.name]}
+              this={connectorIconMapping[getConnectorIconKey(connector)]}
               size="16px"
             />
           {/if}
@@ -79,11 +80,11 @@
   .connector-entry-header {
     @apply flex gap-x-1 items-center flex-none;
     @apply w-full px-2 h-6 outline-none;
-    @apply z-10 bg-surface;
+    @apply z-10 bg-surface-subtle;
   }
 
   button:hover {
-    @apply bg-slate-100;
+    @apply bg-popover-accent;
   }
 
   h4 {

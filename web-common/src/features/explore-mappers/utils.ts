@@ -1,5 +1,6 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   mapV1TimeRangeToSelectedComparisonTimeRange,
@@ -24,7 +25,9 @@ import {
   type QueryServiceMetricsViewAggregationBody,
   queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
+  type V1ExploreSpec,
   type V1MetricsViewAggregationRequest,
+  type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1TimeRange,
   type V1TimeRangeSummary,
@@ -42,22 +45,27 @@ for (const preset in PreviousCompleteRangeMap) {
   ] = preset as TimeRangePreset;
 }
 
-export function fillTimeRange(
+export async function fillTimeRange(
+  exploreSpec: V1ExploreSpec,
   exploreState: ExploreState,
   reqTimeRange: V1TimeRange | undefined,
   reqComparisonTimeRange: V1TimeRange | undefined,
   timeRangeSummary: V1TimeRangeSummary,
-  executionTime: string,
+  executionTime?: string,
 ) {
+  const endTime =
+    executionTime ?? timeRangeSummary.max ?? new Date().toISOString();
+
   if (reqTimeRange) {
     exploreState.selectedTimeRange = mapV1TimeRangeToSelectedTimeRange(
       reqTimeRange,
       timeRangeSummary,
-      executionTime,
+      endTime,
     );
     if (
       exploreState.selectedTimeRange?.start &&
-      exploreState.selectedTimeRange?.end
+      exploreState.selectedTimeRange?.end &&
+      executionTime
     ) {
       exploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
     }
@@ -80,7 +88,7 @@ export function fillTimeRange(
         mapV1TimeRangeToSelectedComparisonTimeRange(
           reqComparisonTimeRange,
           timeRangeSummary,
-          executionTime,
+          endTime,
         );
     }
 
@@ -89,6 +97,18 @@ export function fillTimeRange(
         exploreState.selectedTimeRange?.interval;
     }
     exploreState.showTimeComparison = true;
+  }
+
+  // Resolve time range overriding ref to `executionTime` and set to custom.
+  // This keeps the time range consistent regardless of when the link is opened.
+  [exploreState.selectedTimeRange] = await resolveTimeRanges(
+    exploreSpec,
+    [exploreState.selectedTimeRange],
+    exploreState.selectedTimezone,
+    executionTime,
+  );
+  if (exploreState.selectedTimeRange) {
+    exploreState.selectedTimeRange.name = TimeRangePreset.CUSTOM;
   }
 }
 
@@ -175,11 +195,58 @@ export async function getExplorePageUrlSearchParams(
   // So no need to use getCleanedUrlParamsForGoto
   const searchParams = convertPartialExploreStateToUrlParams(
     exploreSpec,
+    metricsViewSpec,
     exploreState,
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
       fullTimeRange?.timeRangeSummary,
+      exploreState,
+    ),
+  );
+
+  return searchParams;
+}
+
+/**
+ * Sync method to get explore page url search params if metrics view time range is present in cache.
+ * Else the map will have to happen in the `/-/open-query` route.
+ * @param exploreState
+ * @param metricsViewSpec
+ * @param exploreSpec
+ */
+export function maybeGetExplorePageUrlSearchParams(
+  exploreState: Partial<ExploreState>,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+) {
+  const instanceId = get(runtime).instanceId;
+  const metricsViewName = exploreSpec.metricsView ?? "";
+
+  const metricsViewTimeRangeQueryKey =
+    getQueryServiceMetricsViewTimeRangeQueryKey(
+      instanceId,
+      metricsViewName,
+      {},
+    );
+
+  // Get time range query from cache if present, else we will go to `/-/open-query` to fetch it.
+  const queryResp = queryClient.getQueryData<V1MetricsViewTimeRangeResponse>(
+    metricsViewTimeRangeQueryKey,
+  );
+  if (!queryResp) return null;
+
+  // This is just for an initial redirect.
+  // DashboardStateDataLoader will handle compression etc. during init
+  // So no need to use getCleanedUrlParamsForGoto
+  const searchParams = convertPartialExploreStateToUrlParams(
+    exploreSpec,
+    metricsViewSpec,
+    exploreState,
+    getTimeControlState(
+      metricsViewSpec,
+      exploreSpec,
+      queryResp.timeRangeSummary,
       exploreState,
     ),
   );

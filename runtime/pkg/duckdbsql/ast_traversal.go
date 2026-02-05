@@ -52,6 +52,26 @@ func (a *AST) traverseSelectQueryStatement(node astNode, isRoot bool) {
 	}
 
 	switch toString(node, astKeyType) {
+	case "CTE_NODE":
+		// Handle new nested CTE structure in DuckDB 1.4.1+
+		// Each CTE_NODE represents one CTE in the WITH clause
+
+		// Mark the CTE name as an alias
+		if cteName := toString(node, astKeyCTEName); cteName != "" {
+			a.aliases[cteName] = true
+		}
+
+		// Traverse the query for this specific CTE (not the root)
+		if query := toNode(toNode(node, astKeyQuery), astKeyNode); query != nil {
+			a.traverseSelectQueryStatement(query, false)
+		}
+
+		// Process the child node (could be another CTE_NODE or the final SELECT_NODE)
+		// Pass through isRoot so the final SELECT_NODE can be marked as root
+		if child := toNode(node, astKeyChild); child != nil {
+			a.traverseSelectQueryStatement(child, isRoot)
+		}
+
 	case "SELECT_NODE":
 		if isRoot {
 			// only get the select list from the root select.

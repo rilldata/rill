@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
 )
@@ -22,10 +23,11 @@ type RillYAML struct {
 	AIInstructions string
 	OLAPConnector  string
 	AIConnector    string
+	Theme          string
 	Connectors     []*ConnectorDef
 	Variables      []*VariableDef
 	Defaults       map[ResourceKind]yaml.Node
-	FeatureFlags   map[string]bool
+	FeatureFlags   map[string]string
 	PublicPaths    []string
 }
 
@@ -33,7 +35,7 @@ type RillYAML struct {
 type ConnectorDef struct {
 	Type     string
 	Name     string
-	Defaults map[string]string
+	Defaults map[string]any
 }
 
 // VariableDef is a subtype of RillYAML, defining defaults for project variables
@@ -60,13 +62,15 @@ type rillYAML struct {
 	AIInstructions string `yaml:"ai_instructions"`
 	// Connector to use for the AI service
 	AIConnector string `yaml:"ai_connector"`
+	// Theme resource name to use for AI-generated charts
+	Theme string `yaml:"theme"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
 	OLAPConnector string `yaml:"olap_connector"`
 	// Connectors required by the project
 	Connectors []struct {
-		Type     string            `yaml:"type"`
-		Name     string            `yaml:"name"`
-		Defaults map[string]string `yaml:"defaults"`
+		Type     string         `yaml:"type"`
+		Name     string         `yaml:"name"`
+		Defaults map[string]any `yaml:"defaults"`
 	} `yaml:"connectors"`
 	// Default values for project variables.
 	// For backwards compatibility, "dev" and "prod" keys with nested values will populate "environment_overrides".
@@ -86,7 +90,7 @@ type rillYAML struct {
 	// Default YAML values for metric views
 	MetricsViews yaml.Node `yaml:"metrics_views"`
 	// Default YAML values for metric views.
-	// Deprecated: Use "metrics_views" instead
+	// Deprecated: Use "metrics_views" instead.
 	MetricsViewsLegacy yaml.Node `yaml:"dashboards"`
 	// Default YAML values for explores
 	Explores yaml.Node `yaml:"explores"`
@@ -243,8 +247,8 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		}
 	}
 
-	// For backwards compatibility, we allow "features" to be either a map of bools (preferred) or a sequence of strings.
-	var featureFlags map[string]bool
+	// For backwards compatibility, we allow "features" to be either a map of strings (preferred) or a sequence of strings.
+	var featureFlags map[string]string
 	if !tmp.Features.IsZero() {
 		switch tmp.Features.Kind {
 		case yaml.MappingNode:
@@ -257,13 +261,27 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 				return newYAMLError(err)
 			}
 
-			featureFlags = map[string]bool{}
+			featureFlags = map[string]string{}
 			for _, f := range fs {
-				featureFlags[f] = true
+				featureFlags[f] = "true"
 			}
 		default:
 			return fmt.Errorf(`invalid property "features": must be a map or a sequence`)
 		}
+	}
+	// Validate the feature flags to give upfront error.
+	for f, v := range featureFlags {
+		_, err := ResolveTemplate(v, validationTemplateData, false)
+		if err != nil {
+			return fmt.Errorf(`invalid property "features": invalid value %q for %q: %w`, v, f, err)
+		}
+	}
+
+	// We used to have camelCase for feature flags before. Convert it to snake_case to maintain backwards compatibility.
+	snakeCaseFeatureFlags := make(map[string]string, len(featureFlags))
+	for f, v := range featureFlags {
+		sf := strcase.ToSnake(f)
+		snakeCaseFeatureFlags[sf] = v
 	}
 
 	if len(tmp.PublicPaths) == 0 {
@@ -288,11 +306,12 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Description:    tmp.Description,
 		AIInstructions: tmp.AIInstructions,
 		AIConnector:    tmp.AIConnector,
+		Theme:          tmp.Theme,
 		OLAPConnector:  tmp.OLAPConnector,
 		Connectors:     make([]*ConnectorDef, len(tmp.Connectors)),
 		Variables:      make([]*VariableDef, len(vars)),
 		Defaults:       defaults,
-		FeatureFlags:   featureFlags,
+		FeatureFlags:   snakeCaseFeatureFlags,
 		PublicPaths:    tmp.PublicPaths,
 	}
 

@@ -39,11 +39,13 @@
 
   $: buttonText = invited || allowDomain ? "Continue" : "Skip for now";
 
+  $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
+
   async function onContinue() {
     if (allowDomain) {
       try {
         await $addToAllowlist.mutateAsync({
-          organization,
+          org: organization,
           project,
           data: {
             domain: $userDomain.data,
@@ -61,10 +63,14 @@
         });
       }
     }
-    return goto(`/${organization}/${project}/-/status`);
+    return goto(getDeployLandingPage());
   }
 
-  $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
+  function getDeployLandingPage() {
+    const u = new URL($page.url);
+    u.pathname = `/${organization}/${project}/-/deploying`;
+    return u.toString();
+  }
 </script>
 
 <div class="flex flex-col gap-5 w-[600px] my-16 sm:my-32 md:my-64 mx-auto">
@@ -91,7 +97,7 @@
           id="allow-domain"
           class="mt-1"
         />
-        <Label for="allow-domain" class="font-normal text-gray-700 text-sm">
+        <Label for="allow-domain" class="font-normal text-fg-primary text-sm">
           Allow existing and new Rill users with a <b>@{$userDomain.data}</b>
           email address to join this project as a <b>Viewer</b>.
           <a

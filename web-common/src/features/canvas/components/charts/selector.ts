@@ -1,123 +1,34 @@
-import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
-import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-import {
-  defaultPrimaryColors,
-  defaultSecondaryColors,
-} from "@rilldata/web-common/features/themes/color-config";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import {
-  type MetricsViewSpecDimension,
-  type MetricsViewSpecMeasure,
-} from "@rilldata/web-common/runtime-client";
-import chroma from "chroma-js";
-import { derived, type Readable } from "svelte/store";
-import type { ChartDataResult, TimeDimensionDefinition } from "./types";
-import { adjustDataForTimeZone, getFieldsByType } from "./util";
+import { getChartData } from "@rilldata/web-common/features/components/charts/data-provider";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import type { Readable } from "svelte/store";
+import type { ChartDataResult } from "../../../components/charts/types";
 
-export function getChartData(
+/**
+ * Convenience wrapper for using getChartData with canvas context.
+ * @param themeModeStore - Reactive store tracking if theme mode is dark (for light/dark toggle)
+ */
+export function getChartDataForCanvas(
   ctx: CanvasStore,
-  component: BaseChart<ChartSpec>,
-  config: ChartSpec,
+  component: BaseChart<CanvasChartSpec>,
+  config: CanvasChartSpec,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
+  themeModeStore: Readable<boolean>,
 ): Readable<ChartDataResult> {
   const chartDataQuery = component.createChartDataQuery(
     ctx,
     timeAndFilterStore,
   );
-  const { spec } = ctx.canvasEntity;
 
-  const themeStore = ctx.canvasEntity.theme;
-
-  const { measures, dimensions, timeDimensions } = getFieldsByType(config);
-
-  // Combine all fields with their types
-  const allFields = [
-    ...measures.map((field) => ({ field, type: "measure" })),
-    ...dimensions.map((field) => ({ field, type: "dimension" })),
-    ...timeDimensions.map((field) => ({ field, type: "time" })),
-  ];
-
-  // Match each field to its corresponding measure or dimension spec.
-  const fieldReadableMap = allFields.map((field) => {
-    if (field.type === "measure") {
-      return spec.getMeasureForMetricView(field.field, config.metrics_view);
-    } else if (field.type === "dimension") {
-      return spec.getDimensionForMetricView(field.field, config.metrics_view);
-    } else {
-      return getTimeDimensionDefinition(field.field, timeAndFilterStore);
-    }
-  });
-
-  return derived(
-    [chartDataQuery, timeAndFilterStore, themeStore, ...fieldReadableMap],
-    ([chartData, $timeAndFilterStore, theme, ...fieldMap]) => {
-      const fieldSpecMap = allFields.reduce(
-        (acc, field, index) => {
-          acc[field.field] = fieldMap?.[index];
-          return acc;
-        },
-        {} as Record<
-          string,
-          | MetricsViewSpecMeasure
-          | MetricsViewSpecDimension
-          | TimeDimensionDefinition
-          | undefined
-        >,
-      );
-
-      let data = chartData?.data?.data;
-
-      if (timeDimensions?.length && $timeAndFilterStore.timeGrain) {
-        data = adjustDataForTimeZone(
-          data,
-          timeDimensions,
-          $timeAndFilterStore.timeGrain,
-          $timeAndFilterStore.timeRange.timeZone || "UTC",
-        );
-      }
-
-      const domainValues = component.getChartDomainValues();
-
-      return {
-        data: data || [],
-        isFetching: chartData?.isFetching ?? false,
-        error: chartData?.error,
-        fields: fieldSpecMap,
-        domainValues,
-        theme: {
-          primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
-          secondary:
-            theme.secondary || chroma(`hsl(${defaultSecondaryColors[500]})`),
-        },
-      };
-    },
-  );
-}
-
-export function getTimeDimensionDefinition(
-  field: string,
-  timeAndFilterStore: Readable<TimeAndFilterStore>,
-): Readable<TimeDimensionDefinition> {
-  return derived(timeAndFilterStore, ($timeAndFilterStore) => {
-    const grain = $timeAndFilterStore?.timeGrain;
-    const displayName = "Time";
-
-    if (grain) {
-      const timeUnit = timeGrainToVegaTimeUnitMap[grain];
-      const format = TIME_GRAIN[grain]?.d3format as string;
-      return {
-        field,
-        timeUnit,
-        displayName,
-        format,
-      };
-    }
-    return {
-      field,
-      displayName,
-    };
+  return getChartData({
+    config,
+    chartDataQuery,
+    getDomainValues: () => component.getChartDomainValues(),
+    metricsView: ctx.canvasEntity.metricsView,
+    themeStore: ctx.canvasEntity.theme,
+    timeAndFilterStore,
+    themeModeStore,
   });
 }

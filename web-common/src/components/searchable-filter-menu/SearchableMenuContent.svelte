@@ -104,7 +104,7 @@
             }}
           >
             <span
-              class:ui-copy-disabled={fadeUnselected &&
+              class:text-fg-disabled={fadeUnselected &&
                 !selected &&
                 allowMultiSelect}
             >
@@ -118,7 +118,7 @@
         {:else}
           <div
             data-testid="searchable-menu-no-results"
-            class="ui-copy-disabled text-center p-2 w-full"
+            class="text-fg-disabled text-center p-2 w-full"
           >
             no results
           </div>
@@ -133,7 +133,7 @@
 
   {#if allowSelectAll && allowMultiSelect}
     <footer>
-      <Button onClick={onToggleSelectAll} type="plain">
+      <Button onClick={onToggleSelectAll} type="tertiary">
         {#if allSelected}
           Deselect all
         {:else}
@@ -154,8 +154,8 @@
 <style lang="postcss">
   footer {
     height: 42px;
-    @apply border-t border-slate-300;
-    @apply bg-slate-100;
+    @apply border-t border-gray-300;
+    @apply bg-gray-100;
     @apply flex flex-row flex-none items-center justify-end;
     @apply gap-x-2 p-2 px-3.5;
   }

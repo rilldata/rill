@@ -21,7 +21,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if project != "" {
-				whitelistedDomains, err := client.ListProjectWhitelistedDomains(ctx, &adminv1.ListProjectWhitelistedDomainsRequest{Organization: ch.Org, Project: project})
+				whitelistedDomains, err := client.ListProjectWhitelistedDomains(ctx, &adminv1.ListProjectWhitelistedDomainsRequest{Org: ch.Org, Project: project})
 				if err != nil {
 					return err
 				}
@@ -37,7 +37,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			whitelistedDomains, err := client.ListWhitelistedDomains(ctx, &adminv1.ListWhitelistedDomainsRequest{Organization: ch.Org})
+			whitelistedDomains, err := client.ListWhitelistedDomains(ctx, &adminv1.ListWhitelistedDomainsRequest{Org: ch.Org})
 			if err != nil {
 				return err
 			}

@@ -115,12 +115,74 @@ function getPeriodToDateTestCases(): TestCase[] {
   }).flat();
 }
 
+function getLegacyISOTestCases(): TestCase[] {
+  return [
+    [
+      `P2M3D`,
+      "Last 2 months and 3 days",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    [
+      `PT2H3M`,
+      "Last 2 hours and 3 minutes",
+      false,
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+      undefined,
+    ],
+    [
+      `P2M3DT2H3M`,
+      "Last 2 months, 3 days, 2 hours and 3 minutes",
+      false,
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+      undefined,
+    ],
+  ];
+}
+
+function getLegacyDAXTestCases(): TestCase[] {
+  return [
+    ["rill-TD", "Today", false, V1TimeGrain.TIME_GRAIN_HOUR, undefined],
+    ["rill-WTD", "Week to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+    [
+      "rill-QTD",
+      "Quarter to Date",
+      false,
+      V1TimeGrain.TIME_GRAIN_WEEK,
+      undefined,
+    ],
+    ["rill-MTD", "Month to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+    ["rill-YTD", "Year to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+
+    ["rill-PDC", "Yesterday", false, V1TimeGrain.TIME_GRAIN_HOUR, undefined],
+    ["rill-PWC", "Previous week", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+    [
+      "rill-PQC",
+      "Previous quarter",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    [
+      "rill-PMC",
+      "Previous month",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    ["rill-PYC", "Previous year", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+  ];
+}
+
 describe("rill time", () => {
   describe("positive cases", () => {
     const Cases: TestCase[] = [
       ...getSinglePeriodTestCases(),
       ...getMultiPeriodTestCases(7),
       ...getPeriodToDateTestCases(),
+      ...getLegacyISOTestCases(),
+      ...getLegacyDAXTestCases(),
       [
         "-5W4M3Q2Y to -4W3M2Q1Y",
         "-5W4M3Q2Y to -4W3M2Q1Y",
@@ -148,9 +210,11 @@ describe("rill time", () => {
         `2025-02-20T01:23:45Z,2025-07-15T02:34:50Z`,
         `Custom`,
         false,
-        undefined,
+        V1TimeGrain.TIME_GRAIN_SECOND,
         undefined,
       ],
+
+      ["inf", "All time", false, undefined, undefined],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);

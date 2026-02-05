@@ -66,3 +66,10 @@ func (r *ThemeReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	return runtime.ReconcileResult{}
 }
+
+func (r *ThemeReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetTheme() == nil {
+		return nil, fmt.Errorf("not a theme resource")
+	}
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}

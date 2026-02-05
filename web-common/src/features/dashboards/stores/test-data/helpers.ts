@@ -11,11 +11,9 @@ import {
   AD_BIDS_METRICS_INIT,
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
-  AD_BIDS_SCHEMA,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   type V1ExploreSpec,
@@ -74,22 +72,6 @@ export function getInitExploreStateForTest(
     defaultExplorePreset,
   );
   return partialExploreState as ExploreState;
-}
-
-export function createAdBidsMirrorInStore({
-  metricsView,
-  explore,
-}: ExploreValidSpecResponse) {
-  const proto =
-    get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].proto ?? "";
-  // actual url is not relevant here
-  metricsExplorerStore.syncFromUrl(
-    AD_BIDS_MIRROR_NAME,
-    proto,
-    metricsView ?? { measures: [], dimensions: [] },
-    explore ?? { metricsView: AD_BIDS_NAME, measures: [], dimensions: [] },
-    AD_BIDS_SCHEMA,
-  );
 }
 
 // Wrapper function to simplify assert call

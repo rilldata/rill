@@ -40,7 +40,8 @@ type kafkaSink struct {
 	topic    string
 	logger   *zap.Logger
 	logChan  chan kafka.LogEvent
-	closedCh chan struct{}
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 // NewKafkaSink returns a sink that sends events to a Kafka topic.
@@ -67,12 +68,16 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (Sink, error) {
 		return nil, err
 	}
 
+	// Create a context that we can close when closing the sink
+	ctx, cancel := context.WithCancel(context.Background())
+
 	sink := &kafkaSink{
 		producer: producer,
 		topic:    topic,
 		logger:   logger,
 		logChan:  logChan,
-		closedCh: make(chan struct{}),
+		ctx:      ctx,
+		cancel:   cancel,
 	}
 
 	go sink.processProducerEvents()
@@ -99,7 +104,7 @@ func (s *kafkaSink) Emit(event Event) error {
 		return errors.As(err, &kafkaErr) && kafkaErr.Code() == kafka.ErrQueueFull
 	}
 
-	err = retry(retryN, retryWait, sendMessageFn, retryOnErrFn)
+	err = retry(s.ctx, retryN, retryWait, sendMessageFn, retryOnErrFn)
 	if err != nil {
 		return err
 	}
@@ -110,7 +115,7 @@ func (s *kafkaSink) Emit(event Event) error {
 func (s *kafkaSink) Close() {
 	s.producer.Flush(10000)
 	s.producer.Close()
-	close(s.closedCh)
+	s.cancel()
 	close(s.logChan)
 }
 
@@ -155,7 +160,7 @@ func (s *kafkaSink) processProducerEvents() {
 				lastDeliveryError = nil
 			}
 
-		case <-s.closedCh:
+		case <-s.ctx.Done():
 			return
 		}
 	}
@@ -197,14 +202,19 @@ func kafkaLogLevelToZapLevel(level int) zapcore.Level {
 	}
 }
 
-func retry(maxRetries int, delay time.Duration, fn func() error, retryOnErrFn func(err error) bool) error {
+func retry(ctx context.Context, maxRetries int, delay time.Duration, fn func() error, retryOnErrFn func(err error) bool) error {
 	var err error
 	for i := 0; i < maxRetries; i++ {
 		err = fn()
 		if err == nil {
 			return nil // success
 		} else if retryOnErrFn(err) {
-			time.Sleep(delay) // retry
+			// retry
+			select {
+			case <-time.After(delay):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		} else {
 			break // failure
 		}

@@ -20,10 +20,6 @@ type ResetAllDeploymentsWorker struct {
 }
 
 func (w *ResetAllDeploymentsWorker) Work(ctx context.Context, job *river.Job[ResetAllDeploymentsArgs]) error {
-	return work(ctx, w.admin.Logger, job.Kind, w.resetAllDeployments)
-}
-
-func (w *ResetAllDeploymentsWorker) resetAllDeployments(ctx context.Context) error {
 	// Iterate over batches of projects to redeploy
 	limit := 100
 	afterName := ""
@@ -55,7 +51,7 @@ func (w *ResetAllDeploymentsWorker) resetAllDeployments(ctx context.Context) err
 }
 
 func (w *ResetAllDeploymentsWorker) resetAllDeploymentsForProject(ctx context.Context, proj *database.Project) error {
-	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
+	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", "")
 	if err != nil {
 		return err
 	}

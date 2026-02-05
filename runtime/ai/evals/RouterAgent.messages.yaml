@@ -1,0 +1,320 @@
+- id: 4682ba8f-1cac-47dd-b003-0546a730d54e
+  parent_id: ""
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:28:59.302833Z
+  index: 0
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"What country has the highest revenue?","skip_handoff":true}'
+- id: 8605392a-43cb-4160-8b6e-09e113ac698f
+  parent_id: 4682ba8f-1cac-47dd-b003-0546a730d54e
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:28:59.302967Z
+  index: 1
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: aa5416ff-62ba-4b14-802e-16f31ddfc0b6
+  parent_id: 8605392a-43cb-4160-8b6e-09e113ac698f
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:00.032205Z
+  index: 2
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"analyst_agent"}'
+- id: 769d5503-8f27-4932-9e6b-02350bd005c1
+  parent_id: 4682ba8f-1cac-47dd-b003-0546a730d54e
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:00.032266Z
+  index: 3
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+- id: 5baf853a-1f9d-40c5-90d4-ca010b6550a4
+  parent_id: ""
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:00.032339Z
+  index: 4
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"Repeat the answer you gave to my last question","skip_handoff":true}'
+- id: ed122602-a4ec-4494-a0b3-b0d50cfc3208
+  parent_id: 5baf853a-1f9d-40c5-90d4-ca010b6550a4
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:00.032805Z
+  index: 5
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: b070e81c-d53e-40df-b867-c4b728948317
+  parent_id: ed122602-a4ec-4494-a0b3-b0d50cfc3208
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:00.465039Z
+  index: 6
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"analyst_agent"}'
+- id: 3a6b8441-6503-4b27-b659-b7bd69cd3b7e
+  parent_id: 5baf853a-1f9d-40c5-90d4-ca010b6550a4
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:00.465059Z
+  index: 7
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+- id: cba272e2-0c80-4142-aa79-3343c56d3da2
+  parent_id: ""
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:00.465084Z
+  index: 8
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"Create a model called ''sales_data'' that selects all columns from the ''orders'' table.","skip_handoff":true}'
+- id: ed79b1db-2a49-468d-ace4-9c58cf94769a
+  parent_id: cba272e2-0c80-4142-aa79-3343c56d3da2
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:00.46543Z
+  index: 9
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: 9fab6515-abb9-4e2e-a87c-8d1bbe7d4c26
+  parent_id: ed79b1db-2a49-468d-ace4-9c58cf94769a
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:01.337348Z
+  index: 10
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"developer_agent"}'
+- id: 381d7f08-b289-4f16-9c92-65b175410b44
+  parent_id: cba272e2-0c80-4142-aa79-3343c56d3da2
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:01.337397Z
+  index: 11
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'
+- id: 91acac53-276b-433c-9764-19fb9f44d436
+  parent_id: ""
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:01.337462Z
+  index: 12
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"Do another one for the ''customers'' table.","skip_handoff":true}'
+- id: 14e67d33-358a-4535-a70b-00d599051b70
+  parent_id: 91acac53-276b-433c-9764-19fb9f44d436
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:01.337933Z
+  index: 13
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: dcf2f357-c1d1-47dc-bc32-458a6a606813
+  parent_id: 14e67d33-358a-4535-a70b-00d599051b70
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:01.766469Z
+  index: 14
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"developer_agent"}'
+- id: 3cb3a30d-0226-425a-8c36-747beba4ebcf
+  parent_id: 91acac53-276b-433c-9764-19fb9f44d436
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:01.766479Z
+  index: 15
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'
+- id: a3645f7b-51ce-4615-a60f-a23c54ad8807
+  parent_id: ""
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:01.766497Z
+  index: 16
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"What is 2 + 2?","skip_handoff":true}'
+- id: 74f9fc87-73d2-4ff5-93a3-69b6111723c1
+  parent_id: a3645f7b-51ce-4615-a60f-a23c54ad8807
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:01.766633Z
+  index: 17
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: 5306bcde-b686-41cf-98a8-7b021392856f
+  parent_id: 74f9fc87-73d2-4ff5-93a3-69b6111723c1
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:02.261066Z
+  index: 18
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"analyst_agent"}'
+- id: 4447c431-3219-4b8e-86d9-ca27b0d24d38
+  parent_id: a3645f7b-51ce-4615-a60f-a23c54ad8807
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:02.261083Z
+  index: 19
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+- id: f310a151-8f1f-4776-92eb-606bda015eb2
+  parent_id: ""
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:02.261098Z
+  index: 20
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"developer: Add the metric code_churn","skip_handoff":true}'
+- id: 92ca9cd7-1a35-4789-90b7-b7c2e9eb0906
+  parent_id: f310a151-8f1f-4776-92eb-606bda015eb2
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:02.261286Z
+  index: 21
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: fbcdb136-d154-403a-9b7d-7b3279acdc08
+  parent_id: 92ca9cd7-1a35-4789-90b7-b7c2e9eb0906
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:02.731087Z
+  index: 22
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"developer_agent"}'
+- id: 6a0efff5-b1d8-4a60-8415-2da4aeb665c4
+  parent_id: f310a151-8f1f-4776-92eb-606bda015eb2
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:02.731098Z
+  index: 23
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'
+- id: f3196565-dcfc-45e0-80a7-a33292bde68d
+  parent_id: ""
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:02.731115Z
+  index: 24
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"developer_agent: Add a new metric code_churn","skip_handoff":true}'
+- id: 8c19c72d-71aa-4e91-af6c-9b8fbe53552b
+  parent_id: f3196565-dcfc-45e0-80a7-a33292bde68d
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:02.731287Z
+  index: 25
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: 614e0d96-4309-4ece-a987-e4cc9b6a54ab
+  parent_id: 8c19c72d-71aa-4e91-af6c-9b8fbe53552b
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:03.306917Z
+  index: 26
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"developer_agent"}'
+- id: f97c06d2-40e1-4c44-9dc0-9cf15c709024
+  parent_id: f3196565-dcfc-45e0-80a7-a33292bde68d
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:03.306963Z
+  index: 27
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'
+- id: 786f20f5-91d2-475b-91ad-3e71b91f4f06
+  parent_id: ""
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:03.307036Z
+  index: 28
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"Add a new metric code_churn. Use the developer agent.","skip_handoff":true}'
+- id: b29edac4-d9d6-4906-b3f5-4cd80355ad34
+  parent_id: 786f20f5-91d2-475b-91ad-3e71b91f4f06
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:03.307712Z
+  index: 29
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: 5968b2ab-3c90-44e8-bb20-a5c792061ca4
+  parent_id: b29edac4-d9d6-4906-b3f5-4cd80355ad34
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:03.909101Z
+  index: 30
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"developer_agent"}'
+- id: 0e926bfa-9d34-4a2a-85c6-f6f2a06ffe68
+  parent_id: 786f20f5-91d2-475b-91ad-3e71b91f4f06
+  session_id: 470145f4-7df7-4dc9-ae77-3840d3a3cf02
+  time: 2025-11-28T13:29:03.909147Z
+  index: 31
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'

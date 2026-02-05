@@ -1,0 +1,35 @@
+project_files:
+  data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-01T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 1 as val union all
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 2 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 3 as val union all
+      select '2024-01-04T00:00:00Z'::TIMESTAMP as time, 'US' as country, 4 as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 5 as val
+  metrics_no_security.yaml:
+    type: metrics_view
+    model: data
+    timeseries: time
+    dimensions:
+      - column: country
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+tests:
+  - name: additional_rules_with_subquery
+    resolver: metrics
+    properties:
+      metrics_view: metrics_no_security
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+    additional_rules:
+      - row_filter: country IN (SELECT country FROM metrics_no_security HAVING count > 2)
+    result:
+      - country: US
+        sum: 9

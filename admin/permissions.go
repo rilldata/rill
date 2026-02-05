@@ -134,6 +134,10 @@ func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, user
 	}
 
 	composite := &adminv1.ProjectPermissions{}
+	if len(roles) == 0 {
+		return composite, nil
+	}
+
 	for _, role := range roles {
 		composite = UnionProjectRoles(composite, role)
 	}

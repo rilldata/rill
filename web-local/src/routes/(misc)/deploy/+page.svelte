@@ -10,6 +10,7 @@
     getSelectProjectRoute,
     getUpdateProjectRoute,
   } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
+  import { maybeSetDeployingDashboard } from "@rilldata/web-common/features/project/deploy/utils.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -58,6 +59,8 @@
 
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
 
+    maybeSetDeployingDashboard(get(page).url);
+
     // Cloud project doest exist.
     const projectExists = !!$matchingProjects.data?.projects?.length;
     if (!projectExists) {
@@ -75,7 +78,12 @@
       const singleProject = $matchingProjects.data!.projects[0];
       // Project already exists. Run a redeploy
       return goto(
-        getUpdateProjectRoute(singleProject.orgName, singleProject.name),
+        getUpdateProjectRoute(
+          $page,
+          undefined,
+          singleProject.orgName,
+          singleProject.name,
+        ),
       );
     } else {
       return goto(getSelectProjectRoute());

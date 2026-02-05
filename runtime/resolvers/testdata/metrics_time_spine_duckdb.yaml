@@ -1,0 +1,50 @@
+project_files:
+  duckdb_data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as time, 'US' as country, 10 as val union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 100 as val
+      -- 2024-01-02T00:00:00Z is Tuesday
+  duckdb_metrics.yaml:
+    type: metrics_view
+    model: duckdb_data
+    timeseries: time
+    first_day_of_week: 7
+    dimensions:
+      - column: country
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+        treat_nulls_as: 0
+tests:
+  - name: time_spine_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__day
+          compute:
+            time_floor:
+              dimension: time
+              grain: week
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-10T00:00:00Z
+        start: 2024-01-02T00:00:00Z
+      sort:
+        - name: time__day
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 111
+        time__day: "2023-12-31T00:00:00Z"
+      - sum: 0
+        time__day: "2024-01-07T00:00:00Z"

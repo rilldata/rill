@@ -48,16 +48,16 @@
 <style lang="postcss">
   a {
     @apply px-2 py-1.5 flex gap-x-1 items-center w-fit;
-    @apply rounded-sm text-gray-500;
+    @apply rounded-sm text-fg-muted;
     @apply text-xs font-medium justify-center;
   }
 
   .selected {
-    @apply text-gray-900 font-semibold;
+    @apply text-fg-accent font-semibold;
   }
 
   a:hover {
-    @apply bg-slate-100 text-gray-700;
+    @apply bg-gray-100;
   }
 
   p {

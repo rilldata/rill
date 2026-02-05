@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { portal } from "../../../lib/actions/portal";
   import PivotChip from "./PivotChip.svelte";
   import { type PivotChipData, PivotChipType } from "./types";
@@ -9,8 +8,7 @@
   export let offset: { x: number; y: number };
   export let position = { left: 0, top: 0 };
   export let width: number | undefined = undefined;
-
-  const dispatch = createEventDispatcher();
+  export let onRelease: () => void = () => {};
 
   function trackDragItem(e: MouseEvent) {
     requestAnimationFrame(() => {
@@ -20,13 +18,9 @@
       };
     });
   }
-
-  function onDragRelease() {
-    dispatch("release");
-  }
 </script>
 
-<svelte:window on:mousemove={trackDragItem} on:mouseup={onDragRelease} />
+<svelte:window on:mousemove={trackDragItem} on:mouseup={onRelease} />
 
 <div
   class="portal-item"

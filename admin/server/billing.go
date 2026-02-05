@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -23,9 +24,9 @@ import (
 )
 
 func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBillingSubscriptionRequest) (*adminv1.GetBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -57,10 +58,10 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 }
 
 func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.UpdateBillingSubscriptionRequest) (*adminv1.UpdateBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -250,9 +251,9 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 // CancelBillingSubscription cancels the billing subscription for the organization
 func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.CancelBillingSubscriptionRequest) (*adminv1.CancelBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -316,10 +317,10 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 }
 
 func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.RenewBillingSubscriptionRequest) (*adminv1.RenewBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -375,7 +376,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		if err != nil {
 			return nil, err
 		}
-	} else if sub.EndDate == sub.CurrentBillingCycleEndDate {
+	} else if sub.EndDate.Equal(sub.CurrentBillingCycleEndDate) {
 		// To make request idempotent, if subscription is still on cancellation schedule, unschedule it
 		sub, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
 		if err != nil {
@@ -397,6 +398,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		LogoDarkAssetID:                     org.LogoDarkAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
@@ -464,10 +466,10 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 }
 
 func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPaymentsPortalURLRequest) (*adminv1.GetPaymentsPortalURLResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	observability.AddRequestAttributes(ctx, attribute.String("args.return_url", req.ReturnUrl))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -498,7 +500,7 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 // SudoUpdateOrganizationBillingCustomer updates the billing customer id for an organization. May be useful if customer is initialized manually in billing system
 func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingCustomerRequest) (*adminv1.SudoUpdateOrganizationBillingCustomerResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 	)
 	if req.BillingCustomerId != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.billing_customer_id", *req.BillingCustomerId))
@@ -516,7 +518,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		return nil, status.Error(codes.InvalidArgument, "either or both billing and payment customer id must be provided")
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -526,6 +528,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		LogoDarkAssetID:                     org.LogoDarkAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
@@ -620,7 +623,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 }
 
 func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTrialRequest) (*adminv1.SudoExtendTrialResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	days := int(req.Days)
 	observability.AddRequestAttributes(ctx, attribute.Int("args.days", days))
 
@@ -629,7 +632,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 		return nil, status.Error(codes.PermissionDenied, "only superusers can extend trial")
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -723,7 +726,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 	}
 
 	// if trial subscription was cancelled then unschedule the cancellation
-	if sub.EndDate == sub.CurrentBillingCycleEndDate {
+	if sub.EndDate.Equal(sub.CurrentBillingCycleEndDate) {
 		// if trial subscription was cancelled then unschedule the cancellation
 		_, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
 		if err != nil {
@@ -776,9 +779,9 @@ func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPu
 }
 
 func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.GetBillingProjectCredentialsRequest) (*adminv1.GetBillingProjectCredentialsResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -797,11 +800,11 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if metricsProj.ProdDeploymentID == nil {
+	if metricsProj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
 	}
 
-	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.ProdDeploymentID)
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -811,11 +814,11 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         runtimeAccessTokenDefaultTTL,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
 			},
 		},
 		Attributes: map[string]any{"organization_id": org.ID, "is_embed": true},
@@ -835,9 +838,9 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 }
 
 func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1.ListOrganizationBillingIssuesRequest) (*adminv1.ListOrganizationBillingIssuesResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, "org not found")
@@ -859,12 +862,12 @@ func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1
 	var dtos []*adminv1.BillingIssue
 	for _, i := range issues {
 		dtos = append(dtos, &adminv1.BillingIssue{
-			Organization: org.Name,
-			Type:         billingIssueTypeToDTO(i.Type),
-			Level:        billingIssueLevelToDTO(i.Level),
-			Metadata:     billingIssueMetadataToDTO(i.Type, i.Metadata),
-			EventTime:    timestamppb.New(i.EventTime),
-			CreatedOn:    timestamppb.New(i.CreatedOn),
+			Org:       org.Name,
+			Type:      billingIssueTypeToDTO(i.Type),
+			Level:     billingIssueLevelToDTO(i.Level),
+			Metadata:  billingIssueMetadataToDTO(i.Type, i.Metadata),
+			EventTime: timestamppb.New(i.EventTime),
+			CreatedOn: timestamppb.New(i.CreatedOn),
 		})
 	}
 
@@ -874,14 +877,14 @@ func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1
 }
 
 func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *adminv1.SudoDeleteOrganizationBillingIssueRequest) (*adminv1.SudoDeleteOrganizationBillingIssueResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization), attribute.String("args.type", req.Type.String()))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org), attribute.String("args.type", req.Type.String()))
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can delete billing errors")
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -905,6 +908,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		LogoDarkAssetID:                     org.LogoDarkAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
@@ -996,6 +1000,7 @@ func (s *Server) getSubscriptionAndUpdateOrg(ctx context.Context, org *database.
 			DisplayName:                         org.DisplayName,
 			Description:                         org.Description,
 			LogoAssetID:                         org.LogoAssetID,
+			LogoDarkAssetID:                     org.LogoDarkAssetID,
 			FaviconAssetID:                      org.FaviconAssetID,
 			ThumbnailAssetID:                    org.ThumbnailAssetID,
 			CustomDomain:                        org.CustomDomain,

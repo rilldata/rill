@@ -80,7 +80,7 @@
 
 <style lang="postcss">
   td {
-    @apply truncate p-0 bg-surface;
+    @apply truncate p-0 bg-surface-base;
     height: var(--row-height);
   }
 
@@ -120,16 +120,20 @@
     @apply sticky left-0 z-10 text-center;
   }
 
-  tr:hover > td {
-    @apply bg-gray-100;
+  tr:hover > td:not(:first-of-type) {
+    @apply bg-surface-overlay;
   }
 
   td:not(:first-of-type):hover {
-    filter: brightness(0.95) !important;
+    background-color: color-mix(
+      in oklab,
+      var(--surface-hover) calc(var(--tw-bg-opacity, 1) * 100%),
+      transparent
+    ) !important;
   }
 
   .last-pinned {
-    box-shadow: 2px 0 0 0px gray;
+    box-shadow: 2px 0 0 0px var(--color-gray-200);
   }
 
   .selected {

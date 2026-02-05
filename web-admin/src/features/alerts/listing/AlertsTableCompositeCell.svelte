@@ -1,7 +1,7 @@
 <script lang="ts">
+  import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
-  import { BellIcon } from "lucide-svelte";
   import { timeAgo } from "../../dashboards/listing/utils";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import AlertOwnerBullet from "./AlertOwnerBullet.svelte";
@@ -15,31 +15,37 @@
   export let lastTriggerErrorMessage: string | undefined;
 </script>
 
-<a href={`alerts/${id}`} class="flex flex-col gap-y-0.5 group px-4 py-2">
-  <div class="flex gap-x-2 items-center text-slate-500">
-    <BellIcon size="14px" />
-    <div
-      class="text-gray-700 text-sm font-semibold group-hover:text-primary-600"
+<a
+  href={`alerts/${id}`}
+  class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full"
+>
+  <div class="flex gap-x-2 items-center min-h-[20px]">
+    <AlertIcon size="14px" />
+    <span
+      class="text-fg-primary text-sm font-semibold group-hover:text-accent-primary-action truncate"
     >
       {title}
-    </div>
+    </span>
     {#if lastTrigger}
       {#if lastTriggerErrorMessage}
-        <CancelCircleInverse className="text-red-500" />
+        <CancelCircleInverse className="text-red-500 shrink-0" />
       {:else}
-        <CheckCircleOutline className="text-primary-500" />
+        <CheckCircleOutline className="text-primary-500 shrink-0" />
       {/if}
     {/if}
   </div>
-  <div class="flex gap-x-1 text-gray-500 text-xs font-normal">
+  <div
+    class="flex gap-x-1 text-fg-secondary text-xs font-normal min-h-[16px] overflow-hidden"
+  >
     {#if !lastTrigger}
-      <span>Hasn't been checked yet</span>
+      <span class="shrink-0">Hasn't been checked yet</span>
     {:else}
-      <span>Last checked {timeAgo(new Date(lastTrigger))}</span>
+      <span class="shrink-0">Last checked {timeAgo(new Date(lastTrigger))}</span
+      >
     {/if}
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
-        <span>•</span>
+        <span class="shrink-0">•</span>
         <AlertOwnerBullet {organization} {project} {ownerId} />
       </svelte:fragment>
     </ProjectAccessControls>

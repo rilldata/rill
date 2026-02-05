@@ -3,10 +3,11 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils";
   import type { PathOption, PathOptions } from "./types";
+  import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
-  export let options: PathOptions;
+  export let pathOptions: PathOptions;
   export let current: string;
   export let isCurrentPage = false;
   export let depth: number = 0;
@@ -14,9 +15,27 @@
   export let onSelect: undefined | ((id: string) => void) = undefined;
   export let isEmbedded: boolean = false;
 
+  $: ({ options, carryOverSearchParams } = pathOptions);
   $: selected = options.get(current.toLowerCase());
 
   function linkMaker(
+    current: (string | undefined)[],
+    depth: number,
+    id: string,
+    option: PathOption,
+    route: string,
+  ) {
+    const path = makePath(current, depth, id, option, route);
+
+    if (!path || !carryOverSearchParams || $page.url.search === "") return path;
+
+    const url = new URL($page.url);
+    url.pathname = path;
+    url.searchParams.set(ExploreStateURLParams.IgnoreErrors, "true");
+    return url.pathname + url.search;
+  }
+
+  function makePath(
     current: (string | undefined)[],
     depth: number,
     id: string,
@@ -34,7 +53,6 @@
 
     newPath.push(id);
     const path = `/${newPath.join("/")}`;
-
     // add the sub route if it has no variables
     return path + getNonVariableSubRoute(path, route);
   }
@@ -53,7 +71,7 @@
         href={isCurrentPage
           ? "#top"
           : linkMaker(currentPath, depth, current, selected, "")}
-        class="text-gray-500 hover:text-gray-600 flex flex-row items-center gap-x-2"
+        class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2"
         class:current={isCurrentPage}
       >
         <span>{selected?.label}</span>
@@ -100,7 +118,7 @@
                 }
               }}
             >
-              <span class="text-xs text-gray-800 flex-grow">
+              <span class="text-xs text-fg-secondary flex-grow">
                 {option.label}
               </span>
             </DropdownMenu.CheckboxItem>
@@ -113,12 +131,12 @@
 
 <style lang="postcss">
   .current {
-    @apply text-gray-800 font-medium;
+    @apply text-fg-muted font-medium;
   }
 
   .trigger {
     @apply flex flex-col justify-center items-center;
-    @apply transition-transform  text-gray-500;
+    @apply transition-transform text-fg-muted;
     @apply px-0.5 py-1 rounded;
   }
 

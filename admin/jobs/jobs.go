@@ -13,6 +13,7 @@ type Client interface {
 
 	// NOTE: Add new job trigger functions here
 	ResetAllDeployments(ctx context.Context) (*InsertResult, error)
+	ReconcileDeployment(ctx context.Context, deploymentID string) (*InsertResult, error)
 
 	// payment provider related jobs
 	PaymentMethodAdded(ctx context.Context, methodID, paymentCustomerID, typ string, eventTime time.Time) (*InsertResult, error)

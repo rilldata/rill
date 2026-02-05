@@ -6,7 +6,6 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 )
 
@@ -14,16 +13,16 @@ import (
 type connCtxKey struct{}
 
 // contextWithConnection returns a wrapped context that contains the connection
-func contextWithConn(ctx context.Context, conn *sqlx.Conn) context.Context {
+func contextWithConn(ctx context.Context, conn *SQLConn) context.Context {
 	return context.WithValue(ctx, connCtxKey{}, conn)
 }
 
 // connFromContext retrieves a connection wrapped with contextWithConn.
 // If no connection is in the context, it returns nil.
-func connFromContext(ctx context.Context) *sqlx.Conn {
+func connFromContext(ctx context.Context) *SQLConn {
 	conn := ctx.Value(connCtxKey{})
 	if conn != nil {
-		return conn.(*sqlx.Conn)
+		return conn.(*SQLConn)
 	}
 	return nil
 }
@@ -51,5 +50,9 @@ func contextWithQueryID(ctx context.Context) context.Context {
 	if traceID == "" {
 		return ctx
 	}
-	return clickhouse.Context(ctx, clickhouse.WithQueryID(traceID))
+
+	// clickhouse complains if the query ID of two concurrent queries are the same
+	// we append a random suffix to ensure uniqueness but users can still correlate queries by trace ID
+	queryID := traceID + "_" + uuid.New().String()[0:8]
+	return clickhouse.Context(ctx, clickhouse.WithQueryID(queryID))
 }

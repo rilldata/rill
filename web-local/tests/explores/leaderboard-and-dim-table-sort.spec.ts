@@ -46,9 +46,9 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     async function openTimeRangeMenu() {
       await timeRangeMenu.click();
-      await page
-        .getByRole("menu", { name: "Select time range" })
-        .waitFor({ state: "visible" });
+      // await page
+      //   .getByRole("menu", { name: "Select time range" })
+      //   .waitFor({ state: "visible" });
     }
 
     await assertAAboveB(

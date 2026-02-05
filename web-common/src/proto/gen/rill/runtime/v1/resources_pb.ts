@@ -966,6 +966,26 @@ export class ModelSpec extends Message<ModelSpec> {
   outputProperties?: Struct;
 
   /**
+   * @generated from field: optional uint32 retry_attempts = 26;
+   */
+  retryAttempts?: number;
+
+  /**
+   * @generated from field: optional uint32 retry_delay_seconds = 27;
+   */
+  retryDelaySeconds?: number;
+
+  /**
+   * @generated from field: optional bool retry_exponential_backoff = 28;
+   */
+  retryExponentialBackoff?: boolean;
+
+  /**
+   * @generated from field: repeated string retry_if_error_matches = 29;
+   */
+  retryIfErrorMatches: string[] = [];
+
+  /**
    * change_mode is the mode of change detection to use for the model.
    *
    * @generated from field: rill.runtime.v1.ModelChangeMode change_mode = 24;
@@ -978,14 +998,25 @@ export class ModelSpec extends Message<ModelSpec> {
   tests: ModelTest[] = [];
 
   /**
+   * trigger indicates a normal refresh (incremental or full depending on the model type).
+   *
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
 
   /**
+   * trigger_full indicates a full refresh regardless of the model type.
+   *
    * @generated from field: bool trigger_full = 22;
    */
   triggerFull = false;
+
+  /**
+   * trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models.
+   *
+   * @generated from field: bool trigger_partitions = 30;
+   */
+  triggerPartitions = false;
 
   /**
    * defined_as_source is true if it was defined by user as a source but converted internally to a model.
@@ -1017,10 +1048,15 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
+    { no: 26, name: "retry_attempts", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 27, name: "retry_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 28, name: "retry_exponential_backoff", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 29, name: "retry_if_error_matches", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
     { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 30, name: "trigger_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -1448,6 +1484,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   cacheKeyTtlSeconds = protoInt64.zero;
 
+  /**
+   * Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+   * Keys and values are stored as templates and will be resolved at query time.
+   *
+   * @generated from field: map<string, string> query_attributes = 33;
+   */
+  queryAttributes: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1479,6 +1523,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1497,6 +1542,38 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     return proto3.util.equals(MetricsViewSpec, a, b);
   }
 }
+
+/**
+ * @generated from enum rill.runtime.v1.MetricsViewSpec.DimensionType
+ */
+export enum MetricsViewSpec_DimensionType {
+  /**
+   * @generated from enum value: DIMENSION_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_CATEGORICAL = 1;
+   */
+  CATEGORICAL = 1,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_TIME = 2;
+   */
+  TIME = 2,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_GEOSPATIAL = 3;
+   */
+  GEOSPATIAL = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_DimensionType)
+proto3.util.setEnumType(MetricsViewSpec_DimensionType, "rill.runtime.v1.MetricsViewSpec.DimensionType", [
+  { no: 0, name: "DIMENSION_TYPE_UNSPECIFIED" },
+  { no: 1, name: "DIMENSION_TYPE_CATEGORICAL" },
+  { no: 2, name: "DIMENSION_TYPE_TIME" },
+  { no: 3, name: "DIMENSION_TYPE_GEOSPATIAL" },
+]);
 
 /**
  * Type of measure query to generate
@@ -1544,6 +1621,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   name = "";
 
   /**
+   * The dimension type. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.DimensionType type = 14;
+   */
+  type = MetricsViewSpec_DimensionType.UNSPECIFIED;
+
+  /**
    * @generated from field: string display_name = 3;
    */
   displayName = "";
@@ -1552,6 +1636,11 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    * @generated from field: string description = 4;
    */
   description = "";
+
+  /**
+   * @generated from field: repeated string tags = 16;
+   */
+  tags: string[] = [];
 
   /**
    * @generated from field: string column = 2;
@@ -1596,6 +1685,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   lookupDefaultExpression = "";
 
   /**
+   * The smallest time grain for the dimension. Only populated for time dimensions.
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 13;
+   */
+  smallestTimeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
    * The data type of the dimension. Only populated in ValidSpec.
    *
    * @generated from field: rill.runtime.v1.Type data_type = 12;
@@ -1611,8 +1707,10 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Dimension";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_DimensionType) },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1621,6 +1719,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
 
@@ -1775,6 +1874,11 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
   description = "";
 
   /**
+   * @generated from field: repeated string tags = 16;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: string expression = 2;
    */
   expression = "";
@@ -1847,6 +1951,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_MeasureType) },
     { no: 9, name: "window", kind: "message", T: MetricsViewSpec_MeasureWindow },
@@ -2017,6 +2122,12 @@ export class SecurityRule extends Message<SecurityRule> {
      */
     value: SecurityRuleRowFilter;
     case: "rowFilter";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleTransitiveAccess transitive_access = 4;
+     */
+    value: SecurityRuleTransitiveAccess;
+    case: "transitiveAccess";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<SecurityRule>) {
@@ -2030,6 +2141,7 @@ export class SecurityRule extends Message<SecurityRule> {
     { no: 1, name: "access", kind: "message", T: SecurityRuleAccess, oneof: "rule" },
     { no: 2, name: "field_access", kind: "message", T: SecurityRuleFieldAccess, oneof: "rule" },
     { no: 3, name: "row_filter", kind: "message", T: SecurityRuleRowFilter, oneof: "rule" },
+    { no: 4, name: "transitive_access", kind: "message", T: SecurityRuleTransitiveAccess, oneof: "rule" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRule {
@@ -2054,14 +2166,41 @@ export class SecurityRule extends Message<SecurityRule> {
  */
 export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
   /**
-   * @generated from field: string condition = 1;
+   * The condition under which this rule applies.
+   * It is ANDed together with the condition_kinds and condition_resources.
+   *
+   * @generated from field: string condition_expression = 1;
    */
-  condition = "";
+  conditionExpression = "";
 
   /**
+   * The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+   *
+   * @generated from field: repeated string condition_kinds = 3;
+   */
+  conditionKinds: string[] = [];
+
+  /**
+   * The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+   * It is ORed together with the condition_kinds.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName condition_resources = 4;
+   */
+  conditionResources: ResourceName[] = [];
+
+  /**
+   * Whether to allow or deny access to the resources covered by the conditions.
+   *
    * @generated from field: bool allow = 2;
    */
   allow = false;
+
+  /**
+   * If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true).
+   *
+   * @generated from field: bool exclusive = 5;
+   */
+  exclusive = false;
 
   constructor(data?: PartialMessage<SecurityRuleAccess>) {
     super();
@@ -2071,8 +2210,11 @@ export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleAccess";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "condition_kinds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "condition_resources", kind: "message", T: ResourceName, repeated: true },
     { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "exclusive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleAccess {
@@ -2097,14 +2239,39 @@ export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
  */
 export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
   /**
-   * @generated from field: string condition = 1;
+   * The condition under which this rule applies.
+   * It is ANDed together with the condition_kinds and condition_resources.
+   *
+   * @generated from field: string condition_expression = 1;
    */
-  condition = "";
+  conditionExpression = "";
+
+  /**
+   * The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+   *
+   * @generated from field: repeated string condition_kinds = 5;
+   */
+  conditionKinds: string[] = [];
+
+  /**
+   * The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+   * It is ORed together with the condition_kinds.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName condition_resources = 6;
+   */
+  conditionResources: ResourceName[] = [];
 
   /**
    * @generated from field: bool allow = 2;
    */
   allow = false;
+
+  /**
+   * If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
+   *
+   * @generated from field: bool exclusive = 7;
+   */
+  exclusive = false;
 
   /**
    * @generated from field: repeated string fields = 3;
@@ -2124,8 +2291,11 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleFieldAccess";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "condition_kinds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "condition_resources", kind: "message", T: ResourceName, repeated: true },
     { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "exclusive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "all_fields", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
@@ -2152,9 +2322,27 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
  */
 export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
   /**
-   * @generated from field: string condition = 1;
+   * The condition under which this rule applies.
+   * It is ANDed together with the condition_kinds and condition_resources.
+   *
+   * @generated from field: string condition_expression = 1;
    */
-  condition = "";
+  conditionExpression = "";
+
+  /**
+   * The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+   *
+   * @generated from field: repeated string condition_kinds = 4;
+   */
+  conditionKinds: string[] = [];
+
+  /**
+   * The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+   * It is ORed together with the condition_kinds.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName condition_resources = 5;
+   */
+  conditionResources: ResourceName[] = [];
 
   /**
    * Raw SQL expression to apply to the underlying table
@@ -2178,7 +2366,9 @@ export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleRowFilter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "condition_kinds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "condition_resources", kind: "message", T: ResourceName, repeated: true },
     { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "expression", kind: "message", T: Expression },
   ]);
@@ -2197,6 +2387,45 @@ export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
 
   static equals(a: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined, b: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined): boolean {
     return proto3.util.equals(SecurityRuleRowFilter, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleTransitiveAccess
+ */
+export class SecurityRuleTransitiveAccess extends Message<SecurityRuleTransitiveAccess> {
+  /**
+   * this rules resolves to rules that provides access to whatever is needed to access this resource.
+   *
+   * @generated from field: rill.runtime.v1.ResourceName resource = 1;
+   */
+  resource?: ResourceName;
+
+  constructor(data?: PartialMessage<SecurityRuleTransitiveAccess>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleTransitiveAccess";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "resource", kind: "message", T: ResourceName },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleTransitiveAccess {
+    return new SecurityRuleTransitiveAccess().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleTransitiveAccess {
+    return new SecurityRuleTransitiveAccess().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleTransitiveAccess {
+    return new SecurityRuleTransitiveAccess().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleTransitiveAccess | PlainMessage<SecurityRuleTransitiveAccess> | undefined, b: SecurityRuleTransitiveAccess | PlainMessage<SecurityRuleTransitiveAccess> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleTransitiveAccess, a, b);
   }
 }
 
@@ -2690,6 +2919,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
   selectTimeRange?: string;
 
   /**
+   * @generated from field: optional string time_dimension = 34;
+   */
+  timeDimension?: string;
+
+  /**
    * Comparison mode.
    *
    * @generated from field: rill.runtime.v1.ExploreComparisonMode comparison_mode = 7;
@@ -2790,6 +3024,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotTableMode?: string;
 
+  /**
+   * @generated from field: optional int32 pivot_row_limit = 33;
+   */
+  pivotRowLimit?: number;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2808,6 +3047,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 14, name: "select_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 34, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 15, name: "compare_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -2827,6 +3067,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 26, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
@@ -4082,6 +4323,16 @@ export class ThemeSpec extends Message<ThemeSpec> {
    */
   secondaryColorRaw = "";
 
+  /**
+   * @generated from field: optional rill.runtime.v1.ThemeColors light = 5;
+   */
+  light?: ThemeColors;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ThemeColors dark = 6;
+   */
+  dark?: ThemeColors;
+
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4094,6 +4345,8 @@ export class ThemeSpec extends Message<ThemeSpec> {
     { no: 2, name: "secondary_color", kind: "message", T: Color, opt: true },
     { no: 3, name: "primary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "light", kind: "message", T: ThemeColors, opt: true },
+    { no: 6, name: "dark", kind: "message", T: ThemeColors, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
@@ -4141,6 +4394,55 @@ export class ThemeState extends Message<ThemeState> {
 
   static equals(a: ThemeState | PlainMessage<ThemeState> | undefined, b: ThemeState | PlainMessage<ThemeState> | undefined): boolean {
     return proto3.util.equals(ThemeState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeColors
+ */
+export class ThemeColors extends Message<ThemeColors> {
+  /**
+   * @generated from field: string primary = 1;
+   */
+  primary = "";
+
+  /**
+   * @generated from field: string secondary = 2;
+   */
+  secondary = "";
+
+  /**
+   * @generated from field: map<string, string> variables = 3;
+   */
+  variables: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<ThemeColors>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeColors";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "primary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "secondary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeColors {
+    return new ThemeColors().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeColors {
+    return new ThemeColors().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeColors {
+    return new ThemeColors().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeColors | PlainMessage<ThemeColors> | undefined, b: ThemeColors | PlainMessage<ThemeColors> | undefined): boolean {
+    return proto3.util.equals(ThemeColors, a, b);
   }
 }
 
@@ -4513,6 +4815,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   securityRules: SecurityRule[] = [];
 
+  /**
+   * Array of dimension or measure names
+   *
+   * @generated from field: repeated string pinned_filters = 16;
+   */
+  pinnedFilters: string[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4536,6 +4845,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
@@ -4749,6 +5059,15 @@ export class CanvasPreset extends Message<CanvasPreset> {
    */
   comparisonDimension?: string;
 
+  /**
+   * Filter expressions as key-value pairs for the canvas.
+   * Key: Metrics view name
+   * Value: Valid Metrics SQL expression
+   *
+   * @generated from field: map<string, rill.runtime.v1.DefaultMetricsSQLFilter> filter_expr = 19;
+   */
+  filterExpr: { [key: string]: DefaultMetricsSQLFilter } = {};
+
   constructor(data?: PartialMessage<CanvasPreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4760,6 +5079,7 @@ export class CanvasPreset extends Message<CanvasPreset> {
     { no: 1, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "filter_expr", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: DefaultMetricsSQLFilter} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasPreset {
@@ -4776,6 +5096,43 @@ export class CanvasPreset extends Message<CanvasPreset> {
 
   static equals(a: CanvasPreset | PlainMessage<CanvasPreset> | undefined, b: CanvasPreset | PlainMessage<CanvasPreset> | undefined): boolean {
     return proto3.util.equals(CanvasPreset, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.DefaultMetricsSQLFilter
+ */
+export class DefaultMetricsSQLFilter extends Message<DefaultMetricsSQLFilter> {
+  /**
+   * @generated from field: rill.runtime.v1.Expression expression = 1;
+   */
+  expression?: Expression;
+
+  constructor(data?: PartialMessage<DefaultMetricsSQLFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DefaultMetricsSQLFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "expression", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DefaultMetricsSQLFilter | PlainMessage<DefaultMetricsSQLFilter> | undefined, b: DefaultMetricsSQLFilter | PlainMessage<DefaultMetricsSQLFilter> | undefined): boolean {
+    return proto3.util.equals(DefaultMetricsSQLFilter, a, b);
   }
 }
 
@@ -5269,9 +5626,9 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   driver = "";
 
   /**
-   * @generated from field: map<string, string> properties = 2;
+   * @generated from field: google.protobuf.Struct properties = 7;
    */
-  properties: { [key: string]: string } = {};
+  properties?: Struct;
 
   /**
    * @generated from field: repeated string templated_properties = 4;
@@ -5297,7 +5654,7 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   static readonly typeName = "rill.runtime.v1.ConnectorSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "properties", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "properties", kind: "message", T: Struct },
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "provision_args", kind: "message", T: Struct },

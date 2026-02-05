@@ -1,3 +1,3 @@
-<div class="text-gray-400 text-sm font-bold">
+<div class="text-fg-secondary text-sm font-bold">
   <slot />
 </div>

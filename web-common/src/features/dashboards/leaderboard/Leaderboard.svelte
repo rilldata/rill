@@ -4,6 +4,7 @@
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
     MetricsViewSpecDimension,
+    MetricsViewSpecMeasure,
     V1Expression,
     V1MetricsViewAggregationMeasure,
     V1TimeRange,
@@ -33,6 +34,7 @@
   import {
     cleanUpComparisonValue,
     compareLeaderboardValues,
+    getLeaderboardMaxValues,
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
@@ -50,7 +52,7 @@
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let leaderboardSortByMeasureName: string;
-  export let leaderboardMeasureNames: string[];
+  export let leaderboardMeasures: MetricsViewSpecMeasure[];
   export let leaderboardShowContextForAllMeasures: boolean;
   export let metricsViewName: string;
   export let sortType: SortType;
@@ -61,9 +63,10 @@
   export let dimensionColumnWidth: number;
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
-  export let parentElement: HTMLElement;
+  export let parentElement: HTMLElement | undefined = undefined;
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
+  export let visible = false;
   export let formatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
@@ -82,23 +85,27 @@
     dimensionName: string | undefined,
   ) => void = () => {};
 
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      visible = entry.isIntersecting;
-    },
-    {
-      root: parentElement,
-      rootMargin: "120px",
-      threshold: 0,
-    },
-  );
-
   onMount(() => {
+    if (!parentElement) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          visible = true;
+          observer.unobserve(container);
+        }
+      },
+      {
+        root: parentElement,
+        rootMargin: "120px",
+        threshold: 0,
+      },
+    );
     observer.observe(container);
   });
 
   let container: HTMLElement;
-  let visible = false;
+
   let hovered: boolean;
 
   $: queryLimit = slice + 1;
@@ -110,6 +117,10 @@
     displayName = "",
     uri,
   } = dimension);
+
+  $: leaderboardMeasureNames = leaderboardMeasures.map(
+    (measure) => measure.name!,
+  );
 
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
@@ -179,8 +190,7 @@
     {
       measures: leaderboardMeasureNames.map((name) => ({ name })),
       where,
-      timeStart: timeRange.start,
-      timeEnd: timeRange.end,
+      timeRange,
     },
     {
       query: {
@@ -283,6 +293,13 @@
           (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
       : 0);
 
+  // Calculate maximum values for relative magnitude bar sizing
+  // This includes both above-the-fold and below-the-fold data for accurate scaling
+  $: maxValues = getLeaderboardMaxValues(
+    [...aboveTheFold, ...belowTheFoldRows],
+    leaderboardMeasures,
+  );
+
   function shouldShowContextColumns(measureName: string): boolean {
     return (
       leaderboardShowContextForAllMeasures ||
@@ -356,11 +373,11 @@
       >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
-            {tableWidth}
             {isBeingCompared}
             {filterExcludeMode}
             {atLeastOneActive}
             {dimensionName}
+            dataType={dimension.dataType?.code ?? ""}
             {itemData}
             {isValidPercentOfTotal}
             {leaderboardShowContextForAllMeasures}
@@ -370,6 +387,7 @@
             {leaderboardSortByMeasureName}
             {formatters}
             {dimensionColumnWidth}
+            {maxValues}
           />
         {/each}
       </DelayedLoadingRows>
@@ -377,8 +395,8 @@
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
           {itemData}
-          {tableWidth}
           {dimensionName}
+          dataType={dimension.dataType?.code ?? ""}
           {isBeingCompared}
           {filterExcludeMode}
           {atLeastOneActive}
@@ -392,6 +410,7 @@
           {leaderboardSortByMeasureName}
           {formatters}
           {dimensionColumnWidth}
+          {maxValues}
         />
       {/each}
     </tbody>
@@ -400,17 +419,17 @@
   {#if allowExpandTable && showExpandTable}
     <Tooltip location="right">
       <button
-        class="transition-color ui-copy-muted table-message"
+        class="transition-color text-fg-muted table-message"
         on:click={() => setPrimaryDimension(dimensionName)}
       >
-        <div class="pl-8">(Expand Table)</div>
+        <div class="pl-8 text-fg-muted">(Expand Table)</div>
       </button>
       <TooltipContent slot="tooltip-content">
         Expand dimension to see more values
       </TooltipContent>
     </Tooltip>
   {:else if noAvailableValues}
-    <div class="table-message ui-copy-muted">
+    <div class="table-message text-fg-muted">
       <div class="pl-8">(No available values)</div>
     </div>
   {/if}

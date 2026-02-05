@@ -16,6 +16,7 @@ import (
 	"github.com/go-jose/go-jose/v3"
 	"github.com/golang-jwt/jwt/v4"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -111,8 +112,8 @@ type TokenOptions struct {
 	AudienceURL         string
 	Subject             string
 	TTL                 time.Duration
-	SystemPermissions   []Permission
-	InstancePermissions map[string][]Permission
+	SystemPermissions   []runtime.Permission
+	InstancePermissions map[string][]runtime.Permission
 	Attributes          map[string]any
 	SecurityRules       []*runtimev1.SecurityRule
 }
@@ -238,7 +239,7 @@ func (a *Audience) Close() {
 }
 
 // ParseAndValidate parses and validates a JWT and returns Claims if successful.
-func (a *Audience) ParseAndValidate(tokenStr string) (Claims, error) {
+func (a *Audience) ParseAndValidate(tokenStr string) (ClaimsProvider, error) {
 	claims := &jwtClaims{}
 
 	_, err := jwt.ParseWithClaims(tokenStr, claims, a.jwks.Keyfunc) // NOTE: also validates claims
@@ -257,11 +258,12 @@ func (a *Audience) ParseAndValidate(tokenStr string) (Claims, error) {
 	return claims, nil
 }
 
-func NewDevToken(attr map[string]any) (string, error) {
-	claims := &devJWTClaims{
-		Attrs: attr,
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
+// NewDevToken creates a new development token with the given user attributes.
+func NewDevToken(attr map[string]any, permissions []runtime.Permission) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodNone, &devJWTClaims{
+		Attrs:       attr,
+		Permissions: permissions,
+	})
 	res, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
 	if err != nil {
 		return "", err

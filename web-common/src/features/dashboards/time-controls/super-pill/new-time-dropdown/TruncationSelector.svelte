@@ -14,6 +14,7 @@
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
   import { onDestroy, onMount } from "svelte";
   import SyntaxElement from "../components/SyntaxElement.svelte";
+  import { RillTimeLabel } from "../../../url-state/time-ranges/RillTime";
 
   export let dateTimeAnchor: DateTime;
   export let grain: V1TimeGrain | undefined;
@@ -24,10 +25,8 @@
   export let watermark: DateTime | undefined;
   export let latest: DateTime | undefined;
   export let zone: string;
-  export let ref: "latest" | "watermark" | "now" | string;
-  export let onSelectAsOfOption: (
-    ref: "latest" | "watermark" | "now" | string,
-  ) => void;
+  export let ref: RillTimeLabel | string | undefined;
+  export let onSelectAsOfOption: (ref: RillTimeLabel) => void;
   export let onToggleAlignment: (forward: boolean) => void;
   export let onSelectEnding: (
     grain: V1TimeGrain | undefined,
@@ -37,6 +36,7 @@
   let open = false;
   let now = DateTime.now().setZone(zone);
   let interval: ReturnType<typeof setInterval> | undefined = undefined;
+  let disableTooltip = false;
 
   onMount(() => {
     interval = setInterval(() => {
@@ -64,20 +64,20 @@
 
   $: options = [
     {
-      id: "watermark",
+      id: RillTimeLabel.Watermark,
       label: "complete data",
       timestamp: watermark,
       description:
         "Timestamp prior to which data frames are considered complete, also known as the watermark",
     },
     {
-      id: "latest",
+      id: RillTimeLabel.Latest,
       label: "latest data",
       timestamp: latest,
       description: "Timestamp of latest data point",
     },
     {
-      id: "now",
+      id: RillTimeLabel.Now,
       label: "current time",
       timestamp: now,
       description: "Server clock in selected timezone",
@@ -97,18 +97,26 @@
     });
   }
 
-  function humanizeRef(ref: string, grain: V1TimeGrain | undefined): string {
+  function humanizeRef(
+    ref: RillTimeLabel | string | undefined,
+    grain: V1TimeGrain | undefined,
+  ): string {
     switch (ref) {
-      case "watermark":
+      case RillTimeLabel.Watermark:
         if (grain) return "complete";
         return "complete data";
-      case "latest":
+      case RillTimeLabel.Latest:
         return "latest";
-      case "now":
+      case RillTimeLabel.Now:
         if (grain) return "current";
         return "now";
       default:
-        return ref;
+        try {
+          const dt = DateTime.fromISO(ref as string).setZone(zone);
+          return dt.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+        } catch {
+          return ref as string;
+        }
     }
   }
 
@@ -132,91 +140,123 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open disableFocusFirstItem={true}>
+<DropdownMenu.Root bind:open disableFocusFirstItem>
   <DropdownMenu.Trigger asChild let:builder id="truncation-selector-trigger">
-    <Tooltip.Root openDelay={800}>
-      <Tooltip.Trigger
-        asChild
-        let:builder={builder2}
-        id="truncation-selector-trigger"
-      >
-        <button
-          {...getAttrs([builder, builder2])}
-          use:builderActions={{ builders: [builder, builder2] }}
-          class="flex gap-x-1 items-center flex-none truncate"
-          aria-label="Select time range"
-          data-state={open ? "open" : "closed"}
-        >
-          <p>
-            as of
-            <b>
-              {humanizedRef}
-              {#if dateTimeUnit}
-                {dateTimeUnit}
+    <button
+      type="button"
+      {...getAttrs([builder])}
+      use:builderActions={{ builders: [builder] }}
+      class="flex gap-x-1 items-center flex-none truncate"
+      aria-label="Select reference time and grain"
+      data-state={open ? "open" : "closed"}
+      on:mouseenter={() => {
+        if (!open) disableTooltip = false;
+      }}
+      on:mouseleave={() => {
+        disableTooltip = true;
+      }}
+    >
+      <Tooltip.Root openDelay={800}>
+        <Tooltip.Trigger asChild id="truncation-selector-trigger" let:builder>
+          <div
+            class:pointer-events-none={disableTooltip}
+            class="flex gap-x-1 items-center flex-none truncate"
+            use:builderActions={{ builders: [builder] }}
+            {...getAttrs([builder])}
+          >
+            <p>
+              as of
+              <b>
+                {humanizedRef}
+                {#if dateTimeUnit}
+                  {dateTimeUnit}
+                {/if}
+              </b>
+              {#if grain}
+                {#if snapToEnd || ref === RillTimeLabel.Watermark}
+                  end
+                {:else}
+                  start
+                {/if}
               {/if}
-            </b>
-            {#if grain}
-              {#if snapToEnd || ref === "watermark"}
-                end
-              {:else}
-                start
-              {/if}
-            {/if}
-          </p>
+            </p>
 
-          <span class="flex-none transition-transform" class:-rotate-180={open}>
-            <CaretDownIcon />
-          </span>
-        </button>
-      </Tooltip.Trigger>
+            <span
+              class="flex-none transition-transform"
+              class:-rotate-180={open}
+            >
+              <CaretDownIcon />
+            </span>
+          </div>
+        </Tooltip.Trigger>
 
-      <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-        <TooltipContent>
-          <TooltipTitle>
-            <svelte:fragment slot="name">
-              {derivedAnchor.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
-            </svelte:fragment>
-          </TooltipTitle>
-          <TooltipDescription>
-            {getColloquialOffset(derivedAnchor)}
-          </TooltipDescription>
-        </TooltipContent>
-      </Tooltip.Content>
-    </Tooltip.Root>
+        <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
+          <TooltipContent>
+            <TooltipTitle>
+              <svelte:fragment slot="name">
+                {derivedAnchor.toLocaleString(
+                  DateTime.DATETIME_MED_WITH_SECONDS,
+                )}
+              </svelte:fragment>
+            </TooltipTitle>
+            <TooltipDescription>
+              {getColloquialOffset(derivedAnchor)}
+            </TooltipDescription>
+          </TooltipContent>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    </button>
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" class="w-52 flex flex-col p-0">
     <DropdownMenu.Group class="p-1">
-      <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Reference</h3>
+      <h3 class="mt-1 px-2 uppercase text-fg-secondary font-semibold">
+        Reference
+      </h3>
       {#each options as { id, label, description, timestamp } (id)}
-        {#if id !== "watermark" || (id === "watermark" && !!timestamp)}
+        {#if id !== RillTimeLabel.Watermark || (id === RillTimeLabel.Watermark && !!timestamp)}
           <DropdownMenu.CheckboxItem
             checkRight
             checked={ref === id}
+            preloadData={false}
             on:click={() => {
               onSelectAsOfOption(id);
             }}
           >
-            <Tooltip.Root>
-              <Tooltip.Trigger class="size-full flex justify-between ">
-                {label}
+            <Tooltip.Root openDelay={800}>
+              <Tooltip.Trigger
+                asChild
+                class="size-full flex justify-between"
+                id="{label}-tooltip-trigger"
+                let:builder
+              >
+                <div
+                  class="w-full"
+                  {...getAttrs([builder])}
+                  use:builderActions={{ builders: [builder] }}
+                >
+                  {label}
+                </div>
               </Tooltip.Trigger>
 
               {#if timestamp}
-                <Tooltip.Content side="right" sideOffset={40} class="w-65 z-50">
+                <Tooltip.Content
+                  side="right"
+                  sideOffset={40}
+                  class="w-65 z-50"
+                  id="{label}-tooltip-content"
+                >
                   <TooltipContent class="w-60">
                     <div class="flex items-center justify-between">
-                      <span
-                        class="font-bold truncate text-gray-100 dark:text-gray-200"
-                      >
+                      <span class="font-bold truncate text-fg-inverse">
                         {timestamp.toLocaleString(
                           DateTime.DATETIME_MED_WITH_SECONDS,
                         )}
                       </span>
-                      <SyntaxElement range={id} dark />
+                      <SyntaxElement dark range={id} />
                     </div>
 
-                    {#if id !== "now"}
+                    {#if id !== RillTimeLabel.Now}
                       <div>
                         {getColloquialOffset(timestamp)}
                       </div>
@@ -235,7 +275,7 @@
     <DropdownMenu.Separator class="my-0" />
 
     <DropdownMenu.Group class="p-1">
-      <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Grain</h3>
+      <h3 class="mt-1 px-2 uppercase text-fg-secondary font-semibold">Grain</h3>
 
       {#each grainOptions as option, i (i)}
         <DropdownMenu.CheckboxItem
@@ -247,18 +287,22 @@
         >
           {V1TimeGrainToDateTimeUnit[option]}
         </DropdownMenu.CheckboxItem>
+      {:else}
+        <div class="px-2 py-1 text-fg-secondary flex justify-center italic">
+          No valid grains available.
+        </div>
       {/each}
     </DropdownMenu.Group>
 
     {#if dateTimeUnit}
-      <div class="bg-gray-100 border-t">
+      <div class="bg-popover-footer border-t rounded-b-sm">
         <div class="flex justify-between items-center p-2">
           <span>Anchor to period end</span>
 
           <Switch
-            disabled={ref === "watermark"}
+            disabled={ref === RillTimeLabel.Watermark}
             small
-            checked={snapToEnd || ref === "watermark"}
+            checked={snapToEnd || ref === RillTimeLabel.Watermark}
             on:click={() => {
               onToggleAlignment(!snapToEnd);
             }}

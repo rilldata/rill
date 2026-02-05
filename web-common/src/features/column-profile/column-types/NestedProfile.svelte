@@ -86,7 +86,7 @@
   {hideRight}
   isFetching={fetchingSummaries}
   {mode}
-  on:select={toggleColumnProfile}
+  onSelect={toggleColumnProfile}
   onShiftClick={() => copyToClipboard(columnName)}
   {type}
 >

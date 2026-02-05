@@ -72,7 +72,7 @@ export class StreamingQueryBatch {
     queries.forEach(({ query, signal }) => {
       body.queries?.push(query);
       signal?.addEventListener("abort", () => {
-        controller.abort();
+        controller.abort(signal.reason || "Query cancelled");
       });
     });
 

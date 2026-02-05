@@ -5,24 +5,23 @@
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import DatabaseSchemaEntry from "./DatabaseSchemaEntry.svelte";
-  import { useSchemasForDatabase } from "../selectors";
-  import { useDatabaseSchemasOLAP as useDatabaseSchemasLegacy } from "../selectors";
+  import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let store: ConnectorExplorerStore;
-  export let useNewAPI: boolean = false;
 
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName, database);
   $: expanded = $expandedStore;
 
-  // Use appropriate selector based on API version
-  $: databaseSchemasQuery = useNewAPI
-    ? useSchemasForDatabase(instanceId, connectorName, database)
-    : useDatabaseSchemasLegacy(instanceId, connectorName, database);
+  $: databaseSchemasQuery = useListDatabaseSchemas(
+    instanceId,
+    connectorName,
+    database,
+  );
 
   $: ({ data, error, isLoading } = $databaseSchemasQuery);
 </script>
@@ -35,13 +34,13 @@
       on:click={() => store.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
-        className="transform transition-transform text-gray-400 {expanded
+        className="transform transition-transform text-fg-secondary {expanded
           ? 'rotate-0'
           : '-rotate-90'}"
         size="14px"
       />
-      <Database size="14px" class="shrink-0 text-gray-400" />
-      <span class="truncate">
+      <Database size="14px" class="shrink-0 text-fg-secondary" />
+      <span class="truncate text-fg-primary">
         {database}
       </span>
     </button>
@@ -65,7 +64,6 @@
               {connector}
               {database}
               {store}
-              {useNewAPI}
               databaseSchema={schema ?? ""}
             />
           {/each}
@@ -87,10 +85,10 @@
   }
 
   button:hover {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   .message {
-    @apply pl-2 pr-3.5 pt-2 pb-2 text-gray-500;
+    @apply pl-2 pr-3.5 pt-2 pb-2 text-fg-secondary;
   }
 </style>

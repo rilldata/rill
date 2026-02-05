@@ -10,13 +10,12 @@
 
 <header class="flex w-full border-b">
   <div class="border-r">
-    <h2 class="italic text-gray-400">Unsaved changes</h2>
+    <h2 class="italic text-fg-secondary">Unsaved changes</h2>
 
     <Button
-      type="subtle"
+      type={!!errorMessage && !saving ? "destructive" : "secondary"}
       loading={saving}
       loadingCopy="Saving"
-      danger={!!errorMessage && !saving}
       disabled={saving}
       onClick={onAcceptCurrent}
     >

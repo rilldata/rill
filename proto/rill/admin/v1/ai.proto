@@ -1,6 +1,8 @@
 syntax = "proto3";
 package rill.admin.v1;
 
+option go_package = "github.com/rilldata/rill/proto/gen/rill/admin/v1;adminv1";
+
 import "google/api/annotations.proto";
 import "rill/ai/v1/ai.proto";
 
@@ -15,11 +17,19 @@ service AIService {
 }
 
 message CompleteRequest {
+  // Input message(s) for the AI to complete.
   repeated rill.ai.v1.CompletionMessage messages = 1;
   // Optional list of tools that the AI can use during completion
   repeated rill.ai.v1.Tool tools = 2;
+  // Optional output JSON schema
+  string output_json_schema = 3;
 }
 
 message CompleteResponse {
+  // The AI-generated output message.
   rill.ai.v1.CompletionMessage message = 1;
+  // Number of tokens in the input.
+  uint32 input_tokens = 2;
+  // Number of tokens in the output.
+  uint32 output_tokens = 3;
 }

@@ -16,8 +16,8 @@ import {
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
-  keepPreviousData,
   type CreateQueryResult,
+  keepPreviousData,
 } from "@tanstack/svelte-query";
 import { type Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
@@ -85,12 +85,14 @@ export function createPivotAggregationRowQuery(
           timeRange: {
             start: timeRange?.start ? timeRange.start : config.time.timeStart,
             end: timeRange?.end ? timeRange.end : config.time.timeEnd,
+            timeDimension: config.time.timeDimension,
           },
           comparisonTimeRange:
             hasComparison && comparisonTime
               ? {
                   start: comparisonTime.start,
                   end: comparisonTime.end,
+                  timeDimension: config.time.timeDimension,
                 }
               : undefined,
           sort,

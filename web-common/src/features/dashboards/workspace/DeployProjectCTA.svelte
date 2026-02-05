@@ -62,7 +62,7 @@
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
-  $: deployPageUrl = getDeployRoute($page.url);
+  $: deployPageUrl = getDeployRoute($page);
   $: redirectPageUrl = copyWithAdditionalArguments($page.url, {
     deploy: "true",
   });
@@ -110,7 +110,7 @@
 
     // do not show the confirmation dialog for successive deploys
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-    window.open(deployPageUrl, "_blank");
+    window.open($deployPageUrl, "_blank");
   }
 
   async function handleForceFetchRemoteCommits() {
@@ -157,7 +157,7 @@
       {loading}
       onClick={() =>
         hasRemoteChanges ? (remoteChangeDialog = true) : onDeploy()}
-      type={hasValidDashboard ? "primary" : "secondary"}
+      type="primary"
     >
       <Rocket size="16px" />
 

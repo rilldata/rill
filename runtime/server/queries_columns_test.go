@@ -600,7 +600,7 @@ func getColumnTestServerWithEmptyModel(t *testing.T) (*server.Server, string) {
 func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	olap, release, err := rt.OLAP(testCtx(), instanceID, "")

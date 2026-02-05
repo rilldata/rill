@@ -27,8 +27,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("service name is required. Use --service flag or provide as an argument")
 			}
 			res, err := client.ListServiceAuthTokens(cmd.Context(), &adminv1.ListServiceAuthTokensRequest{
-				ServiceName:      name,
-				OrganizationName: ch.Org,
+				ServiceName: name,
+				Org:         ch.Org,
 			})
 			if err != nil {
 				return err

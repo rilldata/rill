@@ -26,12 +26,12 @@ const magicAuthTokenFilterMaxSize = 1024
 
 func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagicAuthTokenRequest) (*adminv1.IssueMagicAuthTokenResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.display_name", req.DisplayName),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -99,17 +99,24 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		opts.Attributes = attrs
 	}
 
-	if req.Filter != nil {
-		val, err := protojson.Marshal(req.Filter)
+	filterSize := 0
+	for mv, filter := range req.MetricsViewFilters {
+		if opts.MetricsViewFilterJSONs == nil {
+			opts.MetricsViewFilterJSONs = make(map[string]string)
+		}
+		val, err := protojson.Marshal(filter)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if len(val) > magicAuthTokenFilterMaxSize {
+		filterSize += len(val)
+		if filterSize > magicAuthTokenFilterMaxSize {
 			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenFilterMaxSize)
 		}
 
-		opts.FilterJSON = string(val)
+		filterJSON := string(val)
+
+		opts.MetricsViewFilterJSONs[mv] = filterJSON
 	}
 
 	token, err := s.admin.IssueMagicAuthToken(ctx, opts)
@@ -120,7 +127,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	tokenStr := token.Token().String()
 	return &adminv1.IssueMagicAuthTokenResponse{
 		Token: tokenStr,
-		Url:   s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(req.Organization, req.Project, tokenStr),
+		Url:   s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(req.Org, req.Project, tokenStr),
 	}, nil
 }
 
@@ -160,7 +167,7 @@ func (s *Server) GetCurrentMagicAuthToken(ctx context.Context, req *adminv1.GetC
 
 func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagicAuthTokensRequest) (*adminv1.ListMagicAuthTokensResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 
@@ -170,7 +177,7 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -268,13 +275,14 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		return nil, fmt.Errorf("failed to convert attributes to structpb: %w", err)
 	}
 
-	var filter *runtimev1.Expression
-	if tkn.FilterJSON != "" {
-		filter = &runtimev1.Expression{}
-		err := protojson.Unmarshal([]byte(tkn.FilterJSON), filter)
+	mvFilters := make(map[string]*runtimev1.Expression)
+	for mv, filterJSON := range tkn.MetricsViewFilterJSONs {
+		mvFilter := &runtimev1.Expression{}
+		err := protojson.Unmarshal([]byte(filterJSON), mvFilter)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal filter: %w", err)
+			return nil, fmt.Errorf("failed to unmarshal filter for metrics view %s: %w", mv, err)
 		}
+		mvFilters[mv] = mvFilter
 	}
 
 	// backwards compatibility
@@ -313,7 +321,7 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		CreatedByUserEmail: tkn.CreatedByUserEmail,
 		Attributes:         attrs,
 		Resources:          rs,
-		Filter:             filter,
+		MetricsViewFilters: mvFilters,
 		Fields:             tkn.Fields,
 		State:              tkn.State,
 		DisplayName:        tkn.DisplayName,

@@ -3,6 +3,7 @@ package blob
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 )
@@ -40,10 +42,10 @@ func (b *Bucket) Underlying() *blob.Bucket {
 	return b.bucket
 }
 
-// ListObjects lists objects in the bucket that match the given glob pattern.
+// ListObjectsForGlob lists objects in the bucket that match the given glob pattern.
 // The glob pattern should be a valid path *without* scheme or bucket name.
 // E.g. to list gs://my-bucket/path/to/files/*, the glob pattern should be "path/to/files/*".
-func (b *Bucket) ListObjects(ctx context.Context, glob string) ([]drivers.ObjectStoreEntry, error) {
+func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string) ([]drivers.ObjectStoreEntry, error) {
 	// If it's not a glob, we're pulling a single file.
 	// TODO: Should we add support for listing out directories without ** at the end?
 	if !fileutil.IsGlob(glob) {
@@ -112,4 +114,45 @@ func (b *Bucket) ListObjects(ctx context.Context, glob string) ([]drivers.Object
 	}
 
 	return entries, nil
+}
+
+func (b *Bucket) ListObjects(ctx context.Context, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	driverPageToken := blob.FirstPageToken
+	if pageToken != "" {
+		if err := pagination.UnmarshalPageToken(pageToken, &driverPageToken); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
+	retval, nextDriverPageToken, err := b.bucket.ListPage(ctx, driverPageToken, validPageSize, &blob.ListOptions{
+		Prefix:    path,
+		Delimiter: delimiter,
+		BeforeList: func(as func(interface{}) bool) error {
+			// For GCS
+			var q *storage.Query
+			if as(&q) {
+				// Only fetch the fields we need.
+				_ = q.SetAttrSelection([]string{"Name", "Size", "Created", "Updated"})
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		return nil, "", err
+	}
+	entries := make([]drivers.ObjectStoreEntry, 0, len(retval))
+	for _, obj := range retval {
+		entries = append(entries, drivers.ObjectStoreEntry{
+			Path:      obj.Key,
+			IsDir:     strings.HasSuffix(obj.Key, "/"), // Workaround for some object stores not marking IsDir correctly
+			Size:      obj.Size,
+			UpdatedOn: obj.ModTime,
+		})
+	}
+	nextToken := ""
+	if nextDriverPageToken != nil {
+		nextToken = pagination.MarshalPageToken(nextDriverPageToken)
+	}
+	return entries, nextToken, nil
 }

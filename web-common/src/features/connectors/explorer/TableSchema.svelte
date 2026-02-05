@@ -1,64 +1,53 @@
 <script lang="ts">
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
-  import { createQueryServiceTableColumns } from "../../../runtime-client";
-  import { useTableMetadata } from "../selectors";
+  import { useGetTable } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
 
   export let connector: string;
   export let database: string = ""; // The backend interprets an empty string as the default database
   export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
   export let table: string;
-  export let useNewAPI: boolean = false;
 
   $: ({ instanceId } = $runtime);
+  $: newTableQuery = useGetTable(
+    instanceId,
+    connector,
+    database,
+    databaseSchema,
+    table,
+  );
 
-  // Use appropriate API based on connector type
-  $: legacyColumnsQuery = !useNewAPI
-    ? createQueryServiceTableColumns(instanceId, table, {
-        connector,
-        database,
-        databaseSchema,
-      })
-    : null;
+  // New API returns schema as { [columnName]: "type" }
+  $: columns = $newTableQuery?.data?.schema
+    ? Object.entries($newTableQuery.data.schema).map(([name, type]) => ({
+        name,
+        type: type as string,
+      }))
+    : [];
 
-  $: newTableQuery = useNewAPI
-    ? useTableMetadata(instanceId, connector, database, databaseSchema, table)
-    : null;
-
-  // Normalize data from both APIs
-  $: columns = useNewAPI
-    ? // New API returns schema as { [columnName]: "type" }
-      $newTableQuery?.data?.schema
-      ? Object.entries($newTableQuery.data.schema).map(([name, type]) => ({
-          name,
-          type: type as string,
-        }))
-      : []
-    : // Legacy API returns profileColumns array
-      ($legacyColumnsQuery?.data?.profileColumns ?? []);
-
-  $: error = useNewAPI ? $newTableQuery?.error : $legacyColumnsQuery?.error;
-  $: isError = useNewAPI
-    ? !!$newTableQuery?.error
-    : !!$legacyColumnsQuery?.error;
-  $: isLoading = useNewAPI
-    ? $newTableQuery?.isLoading
-    : $legacyColumnsQuery?.isLoading;
+  $: error = $newTableQuery?.error;
+  $: isError = !!$newTableQuery?.error;
+  $: isLoading = $newTableQuery?.isLoading;
 
   function prettyPrintType(type: string) {
-    // If the type starts with "CODE_", remove it
-    return type.replace(/^CODE_/, "");
+    // Remove CODE_ prefix and normalize unsupported types to just "UNKNOWN"
+    const normalized = type.replace(/^CODE_/, "");
+    return normalized.startsWith("UNKNOWN(") ? "UNKNOWN" : normalized;
   }
 </script>
 
 <ul class="table-schema-list">
   {#if isError}
-    <div class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-gray-500">
+    <div
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
+    >
       Error loading schema: {error?.response?.data?.message || error?.message}
     </div>
   {:else if isLoading}
-    <div class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-gray-500">
+    <div
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
+    >
       Loading schema...
     </div>
   {:else if columns && columns.length > 0}
@@ -70,13 +59,15 @@
             {column.name}
           </TooltipContent>
         </Tooltip>
-        <span class="uppercase text-gray-800">
+        <span class="uppercase text-fg-primary">
           {prettyPrintType(column.type ?? "")}
         </span>
       </li>
     {/each}
   {:else}
-    <div class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-gray-500">
+    <div
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
+    >
       No columns found
     </div>
   {/if}

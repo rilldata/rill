@@ -4,6 +4,7 @@ import (
 	"context"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -25,7 +26,7 @@ func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardi
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
@@ -62,7 +63,7 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
@@ -94,7 +95,7 @@ func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 

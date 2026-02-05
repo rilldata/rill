@@ -18,8 +18,8 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.DeleteService(cmd.Context(), &adminv1.DeleteServiceRequest{
-				Name:             args[0],
-				OrganizationName: ch.Org,
+				Name: args[0],
+				Org:  ch.Org,
 			})
 			if err != nil {
 				return err

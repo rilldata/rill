@@ -73,8 +73,9 @@ function validateAndCleanExploreViewState(
   const errors: Error[] = [];
 
   if (exploreState.visibleDimensions) {
-    const selectedDimensions = exploreState.visibleDimensions.filter((d) =>
-      dimensions.has(d),
+    const selectedDimensions = exploreState.visibleDimensions.filter(
+      (d) =>
+        dimensions.has(d) && dimensions.get(d)?.type !== "DIMENSION_TYPE_TIME",
     );
     const missingDimensions = getMissingValues(
       selectedDimensions,

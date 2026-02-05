@@ -19,7 +19,7 @@
   $: projectDeployment = useProjectDeployment(organization, project);
   $: ({ data: deployment } = $projectDeployment);
   $: isDeploymentNotOk =
-    deployment?.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
+    deployment?.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
 
   $: hasResourceErrorsQuery = createRuntimeServiceListResources(
     instanceId,

@@ -2,12 +2,12 @@
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { colorToVariableReference } from "@rilldata/web-common/features/components/charts/util";
   import {
-    defaultPrimaryColors,
-    defaultSecondaryColors,
-  } from "@rilldata/web-common/features/themes/color-config";
-  import chroma, { type Color } from "chroma-js";
-
+    primary,
+    secondary,
+  } from "@rilldata/web-common/features/themes/colors";
+  import { type Color } from "chroma-js";
   export let markConfig: string;
   export let onChange: (newColor: string) => void;
   export let small = false;
@@ -17,8 +17,8 @@
   };
 
   $: effectiveTheme = {
-    primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
-    secondary: theme.secondary || chroma(`hsl(${defaultSecondaryColors[500]})`),
+    primary: theme.primary || primary["500"],
+    secondary: theme.secondary || secondary["500"],
   };
 
   $: isPresetMode = markConfig === "primary" || markConfig === "secondary";
@@ -66,7 +66,9 @@
 
   function handleColorChange(color: string) {
     customColor = color;
-    onChange(color);
+    // Convert color back to CSS variable reference if it matches a palette color
+    const colorToSave = colorToVariableReference(color);
+    onChange(colorToSave);
   }
 </script>
 

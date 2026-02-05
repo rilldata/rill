@@ -27,8 +27,10 @@
   $: clientSideUsers = $projectUsers.data?.users ?? [];
 </script>
 
-<div class="px-0.5 pt-1 pb-2 text-[10px] text-gray-500 text-left">
-  Test your <a target="_blank" href="https://docs.rilldata.com/manage/security"
+<div class="px-0.5 pt-1 pb-2 text-[10px] text-fg-secondary text-left">
+  Test your <a
+    target="_blank"
+    href="https://docs.rilldata.com/build/metrics-view/security#rill-cloud"
     >security policies</a
   > by viewing this project from the perspective of another user.
 </div>

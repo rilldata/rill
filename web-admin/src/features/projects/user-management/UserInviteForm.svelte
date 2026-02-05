@@ -59,7 +59,7 @@
           emails.map(async (email) => {
             try {
               await $userInvite.mutateAsync({
-                organization,
+                org: organization,
                 project,
                 data: {
                   email,

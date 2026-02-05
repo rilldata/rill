@@ -6,6 +6,7 @@
 
   // utilize the ID for easier UI testing.
   export let id: string;
+  export let testId: string = "";
   export let suppressTooltip = false;
   export let tooltipText: string;
   export let label: string | undefined = undefined;
@@ -21,6 +22,7 @@
     class="group-hover:w-fit"
     class:!w-fit={suppressTooltip}
     {id}
+    data-testid={testId}
     on:click|preventDefault|stopPropagation
     use:builderActions={{ builders }}
   >
@@ -35,13 +37,13 @@
   button {
     @apply h-full aspect-square;
     @apply flex justify-center items-center;
-    @apply text-gray-500;
+    @apply text-fg-secondary;
     @apply transition-transform duration-100;
     width: 0px;
   }
 
   button:hover,
   button:focus {
-    @apply outline-none bg-slate-300;
+    @apply outline-none bg-surface-active;
   }
 </style>

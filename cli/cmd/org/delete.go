@@ -30,7 +30,7 @@ This operation cannot be undone. Use --force to skip confirmation.`,
 			}
 
 			// Find all the projects for the given org
-			res, err := client.ListProjectsForOrganization(cmd.Context(), &adminv1.ListProjectsForOrganizationRequest{OrganizationName: name})
+			res, err := client.ListProjectsForOrganization(cmd.Context(), &adminv1.ListProjectsForOrganizationRequest{Org: name})
 			if err != nil {
 				return err
 			}
@@ -63,7 +63,7 @@ This operation cannot be undone. Use --force to skip confirmation.`,
 			totalProjects := len(projects)
 			for i, proj := range projects {
 				fmt.Printf("Deleting project %d/%d: %s/%s\n", i+1, totalProjects, name, proj)
-				_, err := client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{OrganizationName: name, Name: proj})
+				_, err := client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{Org: name, Project: proj})
 				if err != nil {
 					return err
 				}
@@ -71,7 +71,7 @@ This operation cannot be undone. Use --force to skip confirmation.`,
 				fmt.Printf("Deleted project %s/%s\n", name, proj)
 			}
 
-			_, err = client.DeleteOrganization(cmd.Context(), &adminv1.DeleteOrganizationRequest{Name: name})
+			_, err = client.DeleteOrganization(cmd.Context(), &adminv1.DeleteOrganizationRequest{Org: name})
 			if err != nil {
 				return err
 			}

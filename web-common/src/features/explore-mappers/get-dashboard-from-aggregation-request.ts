@@ -1,6 +1,7 @@
 import { splitDimensionsAndMeasuresAsRowsAndColumns } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
 import {
   ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
   mapExprToMeasureFilter,
@@ -9,6 +10,9 @@ import {
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  COMPARISON_VALUE,
   type PivotChipData,
   PivotChipType,
   type PivotState,
@@ -34,8 +38,6 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  getQueryServiceMetricsViewSchemaQueryKey,
-  queryServiceMetricsViewSchema,
   type V1ExploreSpec,
   type V1Expression,
   type V1MetricsViewAggregationDimension,
@@ -56,23 +58,25 @@ export async function getDashboardFromAggregationRequest({
   executionTime,
   metricsView,
   explore,
-  annotations,
+  exploreProtoState,
+  ignoreFilters,
   forceOpenPivot,
 }: TransformerArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
-  if (annotations["web_open_state"]) {
+  if (exploreProtoState) {
     await mergeDashboardFromUrlState(
       queryClient,
       instanceId,
       dashboard,
       metricsView,
       explore,
-      annotations["web_open_state"],
+      exploreProtoState,
     );
     loadedFromState = true;
   }
 
-  fillTimeRange(
+  await fillTimeRange(
+    explore,
     dashboard,
     req.timeRange,
     req.comparisonTimeRange,
@@ -80,16 +84,23 @@ export async function getDashboardFromAggregationRequest({
     executionTime,
   );
 
-  if (req.where) {
+  const shouldParseWhereFilter = Boolean(!ignoreFilters && req.where);
+  if (shouldParseWhereFilter) {
     const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
       req.where,
     );
     dashboard.whereFilter = dimensionFilters;
     dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
   }
-  if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
-    const dimension = req.dimensions[0].name;
-    if (exprHasComparison(req.having)) {
+
+  const shouldParseHavingFilter = Boolean(
+    !ignoreFilters &&
+      req.having?.cond?.exprs?.length &&
+      req.dimensions?.[0]?.name,
+  );
+  if (shouldParseHavingFilter) {
+    const dimension = req.dimensions![0].name!;
+    if (exprHasComparison(req.having!)) {
       // We do not support comparison based dimension threshold filter in dashboards right now.
       // So convert it to a toplist and add `in` filter.
       const expr = await convertQueryFilterToToplistQuery(
@@ -104,7 +115,7 @@ export async function getDashboardFromAggregationRequest({
           createAndExpression([expr]),
         ) ?? createAndExpression([]);
     } else if (
-      req.having.cond.exprs.length > 1 ||
+      req.having!.cond!.exprs!.length > 1 ||
       dashboard.dimensionThresholdFilters.length > 0
     ) {
       // If there are dimension threshold and having filter we just add a subquery in where filter.
@@ -128,7 +139,7 @@ export async function getDashboardFromAggregationRequest({
         {
           name: dimension,
           filters:
-            req.having.cond?.exprs
+            req.having?.cond?.exprs
               ?.map(mapExprToMeasureFilter)
               .filter((f): f is NonNullable<typeof f> => f != null) ?? [],
         },
@@ -207,20 +218,12 @@ async function mergeDashboardFromUrlState(
   exploreSpec: V1ExploreSpec,
   urlState: string,
 ) {
-  const schemaResp = await queryClient.fetchQuery({
-    queryKey: getQueryServiceMetricsViewSchemaQueryKey(
-      instanceId,
-      exploreState.name,
-    ),
-    queryFn: () => queryServiceMetricsViewSchema(instanceId, exploreState.name),
-  });
-  if (!schemaResp.schema) return;
+  if (!exploreSpec.metricsView) return;
 
   const parsedDashboard = getDashboardStateFromUrl(
     urlState,
     metricsViewSpec,
     exploreSpec,
-    schemaResp.schema,
   );
   for (const k in parsedDashboard) {
     exploreState[k] = parsedDashboard[k];
@@ -270,7 +273,10 @@ function getPivotStateFromRequest(
   const tableMode = isFlat ? "flat" : "nest";
 
   const sorting: SortingState =
-    req.sort?.map((s) => ({ id: s.name!, desc: !!s.desc })) ?? [];
+    req.sort?.map((s) => ({
+      id: convertComparisonMeasureToPivotMeasures(s.name!),
+      desc: !!s.desc,
+    })) ?? [];
 
   return {
     rows: rowChips,
@@ -283,4 +289,33 @@ function getPivotStateFromRequest(
     activeCell: null,
     tableMode,
   };
+}
+
+// Map measure filter suffixes and API suffixes to pivot suffixes
+// to handle the measure filter format (_delta, _delta_perc) for backwards compatibility
+function convertComparisonMeasureToPivotMeasures(measure: string) {
+  if (
+    measure.endsWith(COMPARISON_DELTA) ||
+    measure.endsWith(COMPARISON_PERCENT) ||
+    measure.endsWith(COMPARISON_VALUE)
+  ) {
+    return measure;
+  }
+
+  // Handle measure filter format for backwards compatibility
+  switch (true) {
+    case measure.endsWith(ComparisonDeltaPreviousSuffix):
+      return measure.replace(ComparisonDeltaPreviousSuffix, COMPARISON_VALUE);
+
+    case measure.endsWith(ComparisonDeltaAbsoluteSuffix):
+      return measure.replace(ComparisonDeltaAbsoluteSuffix, COMPARISON_DELTA);
+
+    case measure.endsWith(ComparisonDeltaRelativeSuffix):
+      return measure.replace(ComparisonDeltaRelativeSuffix, COMPARISON_PERCENT);
+
+    case measure.endsWith(ComparisonPercentOfTotal):
+      return measure.replace(ComparisonPercentOfTotal, "");
+  }
+
+  return measure;
 }

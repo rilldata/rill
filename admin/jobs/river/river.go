@@ -63,10 +63,14 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		adm.Logger.Info("river database migrated", zap.String("direction", string(res.Direction)), zap.Int("version", version.Version))
 	}
 
+	riverLogger := adm.Logger.Named("river")
 	billingLogger := adm.Logger.Named("billing")
 
 	workers := river.NewWorkers()
 	// NOTE: Register new job workers here
+
+	// deployment related workers
+	river.AddWorker(workers, &ReconcileDeploymentWorker{admin: adm})
 	river.AddWorker(workers, &ValidateDeploymentsWorker{admin: adm})
 	river.AddWorker(workers, &ResetAllDeploymentsWorker{admin: adm})
 
@@ -165,8 +169,8 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		periodicJobs = append(periodicJobs, job)
 	}
 
-	// Wire our zap logger to a slog logger for the river client
-	logger := slog.New(zapslog.NewHandler(adm.Logger.Core(), &zapslog.HandlerOptions{
+	// Wire our zap river logger to a slog logger for the river client
+	riverClientLogger := slog.New(zapslog.NewHandler(riverLogger.Core(), &zapslog.HandlerOptions{
 		AddSource: true,
 	}))
 
@@ -176,10 +180,17 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		},
 		Workers:      workers,
 		PeriodicJobs: periodicJobs,
-		Logger:       logger,
+		Logger:       riverClientLogger,
 		JobTimeout:   time.Hour,
 		MaxAttempts:  3, // default retry policy with backoff of attempt^4 seconds
 		ErrorHandler: &ErrorHandler{logger: adm.Logger},
+		Middleware: []rivertype.Middleware{
+			&observabilityMiddleware{
+				tracer:              tracer,
+				jobLatencyHistogram: jobLatencyHistogram,
+				logger:              riverLogger,
+			},
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -190,6 +201,49 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 		dbPool:      dbPool,
 		riverClient: riverClient,
 	}, nil
+}
+
+type observabilityMiddleware struct {
+	river.MiddlewareDefaults
+	tracer              oteltrace.Tracer
+	jobLatencyHistogram metric.Int64Histogram
+	logger              *zap.Logger
+}
+
+func (m *observabilityMiddleware) Work(ctx context.Context, job *rivertype.JobRow, doInner func(ctx context.Context) error) error {
+	ctx, span := m.tracer.Start(ctx, fmt.Sprintf("runJob %s", job.Kind), oteltrace.WithAttributes(attribute.String("name", job.Kind)))
+	defer span.End()
+
+	attrs := []attribute.KeyValue{
+		attribute.Int("attempt", job.Attempt),
+		attribute.String("kind", job.Kind),
+		attribute.Int("priority", job.Priority),
+		attribute.String("queue", job.Queue),
+		attribute.StringSlice("tag", job.Tags),
+	}
+	var (
+		start = time.Now()
+		err   error
+	)
+	defer func() {
+		duration := time.Since(start)
+		m.jobLatencyHistogram.Record(ctx, duration.Milliseconds(), metric.WithAttributes(attribute.String("name", job.Kind), attribute.Bool("failed", err != nil)))
+
+		if err != nil {
+			m.logger.Warn("job failed", zap.String("name", job.Kind), zap.Error(err), zap.Duration("duration", duration), observability.ZapCtx(ctx))
+		} else {
+			m.logger.Info("job completed", zap.String("name", job.Kind), zap.Duration("duration", duration), observability.ZapCtx(ctx))
+		}
+
+		span.SetAttributes(attrs...)
+		if err != nil {
+			span.SetAttributes(attribute.String("err", err.Error()))
+		}
+	}()
+
+	m.logger.Info("job started", zap.String("name", job.Kind), observability.ZapCtx(ctx))
+	err = doInner(ctx)
+	return err
 }
 
 func (c *Client) Close(ctx context.Context) error {
@@ -276,6 +330,31 @@ func (c *Client) EnqueueByKind(ctx context.Context, kind string) (*jobs.InsertRe
 }
 
 // NOTE: Add new job trigger functions here
+
+func (c *Client) ReconcileDeployment(ctx context.Context, deploymentID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, ReconcileDeploymentArgs{
+		DeploymentID: deploymentID,
+	}, &river.InsertOpts{
+		MaxAttempts: 25, // Last retry, ~3 weeks after first run
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+			ByState: []rivertype.JobState{
+				rivertype.JobStateAvailable,
+				rivertype.JobStatePending,
+				rivertype.JobStateRunning,
+				rivertype.JobStateScheduled,
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
 func (c *Client) ResetAllDeployments(ctx context.Context) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, ResetAllDeploymentsArgs{}, nil)
 	if err != nil {
@@ -726,7 +805,7 @@ func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, e
 	if job.Attempt >= job.MaxAttempts {
 		var args string
 		_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
-		h.logger.Error("Job failed, max attempts reached", zap.Int64("job_id", job.ID), zap.Int("num_attempt", job.Attempt), zap.Int("max_attempts", job.MaxAttempts), zap.String("kind", job.Kind), zap.String("args", args), zap.Error(err))
+		h.logger.Error("Job failed, max attempts reached", zap.Int64("job_id", job.ID), zap.Int("num_attempt", job.Attempt), zap.Int("max_attempts", job.MaxAttempts), zap.String("job_kind", job.Kind), zap.String("args", args), zap.Error(err))
 	}
 	return nil
 }
@@ -734,7 +813,7 @@ func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, e
 func (h *ErrorHandler) HandlePanic(ctx context.Context, job *rivertype.JobRow, panicVal any, trace string) *river.ErrorHandlerResult {
 	var args string
 	_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
-	h.logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
+	h.logger.Error("Job panicked", zap.Int64("job_id", job.ID), zap.String("job_kind", job.Kind), zap.String("args", args), zap.Any("panic_val", panicVal), zap.String("trace", trace))
 	// Set the job to be immediately cancelled
 	return &river.ErrorHandlerResult{SetCancelled: true}
 }
@@ -758,21 +837,4 @@ func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) (*r
 	)
 
 	return periodicJob, nil
-}
-
-// Observability work wrapper for the job workers
-func work(ctx context.Context, logger *zap.Logger, name string, fn func(context.Context) error) error {
-	ctx, span := tracer.Start(ctx, fmt.Sprintf("runJob %s", name), oteltrace.WithAttributes(attribute.String("name", name)))
-	defer span.End()
-
-	start := time.Now()
-	logger.Info("job started", zap.String("name", name), observability.ZapCtx(ctx))
-	err := fn(ctx)
-	jobLatencyHistogram.Record(ctx, time.Since(start).Milliseconds(), metric.WithAttributes(attribute.String("name", name), attribute.Bool("failed", err != nil)))
-	if err != nil {
-		logger.Error("job failed", zap.String("name", name), zap.Error(err), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
-		return err
-	}
-	logger.Info("job completed", zap.String("name", name), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
-	return nil
 }

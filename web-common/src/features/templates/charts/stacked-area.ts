@@ -2,7 +2,7 @@ import {
   sanitizeValueForVega,
   sanitizeValuesForSpec,
 } from "@rilldata/web-common/components/vega/util";
-import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
 import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { ChartField } from "./build-template";
 import { multiLayerBaseSpec } from "./utils";

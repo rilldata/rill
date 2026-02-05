@@ -36,7 +36,7 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveSecurity(instanceID, claims, res)
+	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, claims, res)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -419,7 +419,7 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 
 	defer parquetwriter.Close()
 
-	rec := recordBuilder.NewRecord()
+	rec := recordBuilder.NewRecordBatch()
 	err = parquetwriter.Write(rec)
 	return err
 }

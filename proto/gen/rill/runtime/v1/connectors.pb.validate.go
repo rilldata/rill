@@ -35,156 +35,22 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on S3Object with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *S3Object) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on S3Object with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in S3ObjectMultiError, or nil
-// if none found.
-func (m *S3Object) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *S3Object) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Name
-
-	if all {
-		switch v := interface{}(m.GetModifiedOn()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, S3ObjectValidationError{
-					field:  "ModifiedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, S3ObjectValidationError{
-					field:  "ModifiedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetModifiedOn()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return S3ObjectValidationError{
-				field:  "ModifiedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	// no validation rules for Size
-
-	// no validation rules for IsDir
-
-	if len(errors) > 0 {
-		return S3ObjectMultiError(errors)
-	}
-
-	return nil
-}
-
-// S3ObjectMultiError is an error wrapping multiple validation errors returned
-// by S3Object.ValidateAll() if the designated constraints aren't met.
-type S3ObjectMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m S3ObjectMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m S3ObjectMultiError) AllErrors() []error { return m }
-
-// S3ObjectValidationError is the validation error returned by
-// S3Object.Validate if the designated constraints aren't met.
-type S3ObjectValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e S3ObjectValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e S3ObjectValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e S3ObjectValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e S3ObjectValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e S3ObjectValidationError) ErrorName() string { return "S3ObjectValidationError" }
-
-// Error satisfies the builtin error interface
-func (e S3ObjectValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sS3Object.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = S3ObjectValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = S3ObjectValidationError{}
-
-// Validate checks the field values on S3ListBucketsRequest with the rules
+// Validate checks the field values on ListBucketsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3ListBucketsRequest) Validate() error {
+func (m *ListBucketsRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on S3ListBucketsRequest with the rules
+// ValidateAll checks the field values on ListBucketsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// S3ListBucketsRequestMultiError, or nil if none found.
-func (m *S3ListBucketsRequest) ValidateAll() error {
+// ListBucketsRequestMultiError, or nil if none found.
+func (m *ListBucketsRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *S3ListBucketsRequest) validate(all bool) error {
+func (m *ListBucketsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -200,19 +66,19 @@ func (m *S3ListBucketsRequest) validate(all bool) error {
 	// no validation rules for PageToken
 
 	if len(errors) > 0 {
-		return S3ListBucketsRequestMultiError(errors)
+		return ListBucketsRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// S3ListBucketsRequestMultiError is an error wrapping multiple validation
-// errors returned by S3ListBucketsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type S3ListBucketsRequestMultiError []error
+// ListBucketsRequestMultiError is an error wrapping multiple validation errors
+// returned by ListBucketsRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ListBucketsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m S3ListBucketsRequestMultiError) Error() string {
+func (m ListBucketsRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -221,11 +87,11 @@ func (m S3ListBucketsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m S3ListBucketsRequestMultiError) AllErrors() []error { return m }
+func (m ListBucketsRequestMultiError) AllErrors() []error { return m }
 
-// S3ListBucketsRequestValidationError is the validation error returned by
-// S3ListBucketsRequest.Validate if the designated constraints aren't met.
-type S3ListBucketsRequestValidationError struct {
+// ListBucketsRequestValidationError is the validation error returned by
+// ListBucketsRequest.Validate if the designated constraints aren't met.
+type ListBucketsRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -233,24 +99,24 @@ type S3ListBucketsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e S3ListBucketsRequestValidationError) Field() string { return e.field }
+func (e ListBucketsRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e S3ListBucketsRequestValidationError) Reason() string { return e.reason }
+func (e ListBucketsRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e S3ListBucketsRequestValidationError) Cause() error { return e.cause }
+func (e ListBucketsRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e S3ListBucketsRequestValidationError) Key() bool { return e.key }
+func (e ListBucketsRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e S3ListBucketsRequestValidationError) ErrorName() string {
-	return "S3ListBucketsRequestValidationError"
+func (e ListBucketsRequestValidationError) ErrorName() string {
+	return "ListBucketsRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e S3ListBucketsRequestValidationError) Error() string {
+func (e ListBucketsRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -262,14 +128,14 @@ func (e S3ListBucketsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sS3ListBucketsRequest.%s: %s%s",
+		"invalid %sListBucketsRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = S3ListBucketsRequestValidationError{}
+var _ error = ListBucketsRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -277,24 +143,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = S3ListBucketsRequestValidationError{}
+} = ListBucketsRequestValidationError{}
 
-// Validate checks the field values on S3ListBucketsResponse with the rules
+// Validate checks the field values on ListBucketsResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3ListBucketsResponse) Validate() error {
+func (m *ListBucketsResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on S3ListBucketsResponse with the rules
+// ValidateAll checks the field values on ListBucketsResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// S3ListBucketsResponseMultiError, or nil if none found.
-func (m *S3ListBucketsResponse) ValidateAll() error {
+// ListBucketsResponseMultiError, or nil if none found.
+func (m *ListBucketsResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *S3ListBucketsResponse) validate(all bool) error {
+func (m *ListBucketsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -304,19 +170,19 @@ func (m *S3ListBucketsResponse) validate(all bool) error {
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
-		return S3ListBucketsResponseMultiError(errors)
+		return ListBucketsResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// S3ListBucketsResponseMultiError is an error wrapping multiple validation
-// errors returned by S3ListBucketsResponse.ValidateAll() if the designated
+// ListBucketsResponseMultiError is an error wrapping multiple validation
+// errors returned by ListBucketsResponse.ValidateAll() if the designated
 // constraints aren't met.
-type S3ListBucketsResponseMultiError []error
+type ListBucketsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m S3ListBucketsResponseMultiError) Error() string {
+func (m ListBucketsResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -325,11 +191,11 @@ func (m S3ListBucketsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m S3ListBucketsResponseMultiError) AllErrors() []error { return m }
+func (m ListBucketsResponseMultiError) AllErrors() []error { return m }
 
-// S3ListBucketsResponseValidationError is the validation error returned by
-// S3ListBucketsResponse.Validate if the designated constraints aren't met.
-type S3ListBucketsResponseValidationError struct {
+// ListBucketsResponseValidationError is the validation error returned by
+// ListBucketsResponse.Validate if the designated constraints aren't met.
+type ListBucketsResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -337,24 +203,24 @@ type S3ListBucketsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e S3ListBucketsResponseValidationError) Field() string { return e.field }
+func (e ListBucketsResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e S3ListBucketsResponseValidationError) Reason() string { return e.reason }
+func (e ListBucketsResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e S3ListBucketsResponseValidationError) Cause() error { return e.cause }
+func (e ListBucketsResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e S3ListBucketsResponseValidationError) Key() bool { return e.key }
+func (e ListBucketsResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e S3ListBucketsResponseValidationError) ErrorName() string {
-	return "S3ListBucketsResponseValidationError"
+func (e ListBucketsResponseValidationError) ErrorName() string {
+	return "ListBucketsResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e S3ListBucketsResponseValidationError) Error() string {
+func (e ListBucketsResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -366,14 +232,14 @@ func (e S3ListBucketsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sS3ListBucketsResponse.%s: %s%s",
+		"invalid %sListBucketsResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = S3ListBucketsResponseValidationError{}
+var _ error = ListBucketsResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -381,24 +247,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = S3ListBucketsResponseValidationError{}
+} = ListBucketsResponseValidationError{}
 
-// Validate checks the field values on S3ListObjectsRequest with the rules
+// Validate checks the field values on ListObjectsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3ListObjectsRequest) Validate() error {
+func (m *ListObjectsRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on S3ListObjectsRequest with the rules
+// ValidateAll checks the field values on ListObjectsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// S3ListObjectsRequestMultiError, or nil if none found.
-func (m *S3ListObjectsRequest) ValidateAll() error {
+// ListObjectsRequestMultiError, or nil if none found.
+func (m *ListObjectsRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *S3ListObjectsRequest) validate(all bool) error {
+func (m *ListObjectsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -409,10 +275,25 @@ func (m *S3ListObjectsRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	if utf8.RuneCountInString(m.GetBucket()) < 1 {
+		err := ListObjectsRequestValidationError{
+			field:  "Bucket",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Path
+
+	// no validation rules for Delimiter
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 100 {
-			err := S3ListObjectsRequestValidationError{
+			err := ListObjectsRequestValidationError{
 				field:  "PageSize",
 				reason: "value must be less than or equal to 100",
 			}
@@ -426,37 +307,20 @@ func (m *S3ListObjectsRequest) validate(all bool) error {
 
 	// no validation rules for PageToken
 
-	if utf8.RuneCountInString(m.GetBucket()) < 1 {
-		err := S3ListObjectsRequestValidationError{
-			field:  "Bucket",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Prefix
-
-	// no validation rules for StartAfter
-
-	// no validation rules for Delimiter
-
 	if len(errors) > 0 {
-		return S3ListObjectsRequestMultiError(errors)
+		return ListObjectsRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// S3ListObjectsRequestMultiError is an error wrapping multiple validation
-// errors returned by S3ListObjectsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type S3ListObjectsRequestMultiError []error
+// ListObjectsRequestMultiError is an error wrapping multiple validation errors
+// returned by ListObjectsRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ListObjectsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m S3ListObjectsRequestMultiError) Error() string {
+func (m ListObjectsRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -465,11 +329,11 @@ func (m S3ListObjectsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m S3ListObjectsRequestMultiError) AllErrors() []error { return m }
+func (m ListObjectsRequestMultiError) AllErrors() []error { return m }
 
-// S3ListObjectsRequestValidationError is the validation error returned by
-// S3ListObjectsRequest.Validate if the designated constraints aren't met.
-type S3ListObjectsRequestValidationError struct {
+// ListObjectsRequestValidationError is the validation error returned by
+// ListObjectsRequest.Validate if the designated constraints aren't met.
+type ListObjectsRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -477,24 +341,24 @@ type S3ListObjectsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e S3ListObjectsRequestValidationError) Field() string { return e.field }
+func (e ListObjectsRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e S3ListObjectsRequestValidationError) Reason() string { return e.reason }
+func (e ListObjectsRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e S3ListObjectsRequestValidationError) Cause() error { return e.cause }
+func (e ListObjectsRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e S3ListObjectsRequestValidationError) Key() bool { return e.key }
+func (e ListObjectsRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e S3ListObjectsRequestValidationError) ErrorName() string {
-	return "S3ListObjectsRequestValidationError"
+func (e ListObjectsRequestValidationError) ErrorName() string {
+	return "ListObjectsRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e S3ListObjectsRequestValidationError) Error() string {
+func (e ListObjectsRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -506,14 +370,14 @@ func (e S3ListObjectsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sS3ListObjectsRequest.%s: %s%s",
+		"invalid %sListObjectsRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = S3ListObjectsRequestValidationError{}
+var _ error = ListObjectsRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -521,24 +385,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = S3ListObjectsRequestValidationError{}
+} = ListObjectsRequestValidationError{}
 
-// Validate checks the field values on S3ListObjectsResponse with the rules
+// Validate checks the field values on ListObjectsResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3ListObjectsResponse) Validate() error {
+func (m *ListObjectsResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on S3ListObjectsResponse with the rules
+// ValidateAll checks the field values on ListObjectsResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// S3ListObjectsResponseMultiError, or nil if none found.
-func (m *S3ListObjectsResponse) ValidateAll() error {
+// ListObjectsResponseMultiError, or nil if none found.
+func (m *ListObjectsResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *S3ListObjectsResponse) validate(all bool) error {
+func (m *ListObjectsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -554,7 +418,7 @@ func (m *S3ListObjectsResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, S3ListObjectsResponseValidationError{
+					errors = append(errors, ListObjectsResponseValidationError{
 						field:  fmt.Sprintf("Objects[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -562,7 +426,7 @@ func (m *S3ListObjectsResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, S3ListObjectsResponseValidationError{
+					errors = append(errors, ListObjectsResponseValidationError{
 						field:  fmt.Sprintf("Objects[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -571,7 +435,7 @@ func (m *S3ListObjectsResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return S3ListObjectsResponseValidationError{
+				return ListObjectsResponseValidationError{
 					field:  fmt.Sprintf("Objects[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -582,19 +446,19 @@ func (m *S3ListObjectsResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return S3ListObjectsResponseMultiError(errors)
+		return ListObjectsResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// S3ListObjectsResponseMultiError is an error wrapping multiple validation
-// errors returned by S3ListObjectsResponse.ValidateAll() if the designated
+// ListObjectsResponseMultiError is an error wrapping multiple validation
+// errors returned by ListObjectsResponse.ValidateAll() if the designated
 // constraints aren't met.
-type S3ListObjectsResponseMultiError []error
+type ListObjectsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m S3ListObjectsResponseMultiError) Error() string {
+func (m ListObjectsResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -603,11 +467,11 @@ func (m S3ListObjectsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m S3ListObjectsResponseMultiError) AllErrors() []error { return m }
+func (m ListObjectsResponseMultiError) AllErrors() []error { return m }
 
-// S3ListObjectsResponseValidationError is the validation error returned by
-// S3ListObjectsResponse.Validate if the designated constraints aren't met.
-type S3ListObjectsResponseValidationError struct {
+// ListObjectsResponseValidationError is the validation error returned by
+// ListObjectsResponse.Validate if the designated constraints aren't met.
+type ListObjectsResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -615,24 +479,24 @@ type S3ListObjectsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e S3ListObjectsResponseValidationError) Field() string { return e.field }
+func (e ListObjectsResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e S3ListObjectsResponseValidationError) Reason() string { return e.reason }
+func (e ListObjectsResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e S3ListObjectsResponseValidationError) Cause() error { return e.cause }
+func (e ListObjectsResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e S3ListObjectsResponseValidationError) Key() bool { return e.key }
+func (e ListObjectsResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e S3ListObjectsResponseValidationError) ErrorName() string {
-	return "S3ListObjectsResponseValidationError"
+func (e ListObjectsResponseValidationError) ErrorName() string {
+	return "ListObjectsResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e S3ListObjectsResponseValidationError) Error() string {
+func (e ListObjectsResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -644,14 +508,14 @@ func (e S3ListObjectsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sS3ListObjectsResponse.%s: %s%s",
+		"invalid %sListObjectsResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = S3ListObjectsResponseValidationError{}
+var _ error = ListObjectsResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -659,460 +523,23 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = S3ListObjectsResponseValidationError{}
+} = ListObjectsResponseValidationError{}
 
-// Validate checks the field values on S3GetBucketMetadataRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3GetBucketMetadataRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on S3GetBucketMetadataRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// S3GetBucketMetadataRequestMultiError, or nil if none found.
-func (m *S3GetBucketMetadataRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *S3GetBucketMetadataRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for Connector
-
-	if utf8.RuneCountInString(m.GetBucket()) < 1 {
-		err := S3GetBucketMetadataRequestValidationError{
-			field:  "Bucket",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return S3GetBucketMetadataRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// S3GetBucketMetadataRequestMultiError is an error wrapping multiple
-// validation errors returned by S3GetBucketMetadataRequest.ValidateAll() if
-// the designated constraints aren't met.
-type S3GetBucketMetadataRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m S3GetBucketMetadataRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m S3GetBucketMetadataRequestMultiError) AllErrors() []error { return m }
-
-// S3GetBucketMetadataRequestValidationError is the validation error returned
-// by S3GetBucketMetadataRequest.Validate if the designated constraints aren't met.
-type S3GetBucketMetadataRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e S3GetBucketMetadataRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e S3GetBucketMetadataRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e S3GetBucketMetadataRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e S3GetBucketMetadataRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e S3GetBucketMetadataRequestValidationError) ErrorName() string {
-	return "S3GetBucketMetadataRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e S3GetBucketMetadataRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sS3GetBucketMetadataRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = S3GetBucketMetadataRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = S3GetBucketMetadataRequestValidationError{}
-
-// Validate checks the field values on S3GetBucketMetadataResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3GetBucketMetadataResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on S3GetBucketMetadataResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// S3GetBucketMetadataResponseMultiError, or nil if none found.
-func (m *S3GetBucketMetadataResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *S3GetBucketMetadataResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Region
-
-	if len(errors) > 0 {
-		return S3GetBucketMetadataResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// S3GetBucketMetadataResponseMultiError is an error wrapping multiple
-// validation errors returned by S3GetBucketMetadataResponse.ValidateAll() if
-// the designated constraints aren't met.
-type S3GetBucketMetadataResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m S3GetBucketMetadataResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m S3GetBucketMetadataResponseMultiError) AllErrors() []error { return m }
-
-// S3GetBucketMetadataResponseValidationError is the validation error returned
-// by S3GetBucketMetadataResponse.Validate if the designated constraints
-// aren't met.
-type S3GetBucketMetadataResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e S3GetBucketMetadataResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e S3GetBucketMetadataResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e S3GetBucketMetadataResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e S3GetBucketMetadataResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e S3GetBucketMetadataResponseValidationError) ErrorName() string {
-	return "S3GetBucketMetadataResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e S3GetBucketMetadataResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sS3GetBucketMetadataResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = S3GetBucketMetadataResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = S3GetBucketMetadataResponseValidationError{}
-
-// Validate checks the field values on S3GetCredentialsInfoRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3GetCredentialsInfoRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on S3GetCredentialsInfoRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// S3GetCredentialsInfoRequestMultiError, or nil if none found.
-func (m *S3GetCredentialsInfoRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *S3GetCredentialsInfoRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for Connector
-
-	if len(errors) > 0 {
-		return S3GetCredentialsInfoRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// S3GetCredentialsInfoRequestMultiError is an error wrapping multiple
-// validation errors returned by S3GetCredentialsInfoRequest.ValidateAll() if
-// the designated constraints aren't met.
-type S3GetCredentialsInfoRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m S3GetCredentialsInfoRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m S3GetCredentialsInfoRequestMultiError) AllErrors() []error { return m }
-
-// S3GetCredentialsInfoRequestValidationError is the validation error returned
-// by S3GetCredentialsInfoRequest.Validate if the designated constraints
-// aren't met.
-type S3GetCredentialsInfoRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e S3GetCredentialsInfoRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e S3GetCredentialsInfoRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e S3GetCredentialsInfoRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e S3GetCredentialsInfoRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e S3GetCredentialsInfoRequestValidationError) ErrorName() string {
-	return "S3GetCredentialsInfoRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e S3GetCredentialsInfoRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sS3GetCredentialsInfoRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = S3GetCredentialsInfoRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = S3GetCredentialsInfoRequestValidationError{}
-
-// Validate checks the field values on S3GetCredentialsInfoResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3GetCredentialsInfoResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on S3GetCredentialsInfoResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// S3GetCredentialsInfoResponseMultiError, or nil if none found.
-func (m *S3GetCredentialsInfoResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *S3GetCredentialsInfoResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Exist
-
-	// no validation rules for Provider
-
-	if len(errors) > 0 {
-		return S3GetCredentialsInfoResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// S3GetCredentialsInfoResponseMultiError is an error wrapping multiple
-// validation errors returned by S3GetCredentialsInfoResponse.ValidateAll() if
-// the designated constraints aren't met.
-type S3GetCredentialsInfoResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m S3GetCredentialsInfoResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m S3GetCredentialsInfoResponseMultiError) AllErrors() []error { return m }
-
-// S3GetCredentialsInfoResponseValidationError is the validation error returned
-// by S3GetCredentialsInfoResponse.Validate if the designated constraints
-// aren't met.
-type S3GetCredentialsInfoResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e S3GetCredentialsInfoResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e S3GetCredentialsInfoResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e S3GetCredentialsInfoResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e S3GetCredentialsInfoResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e S3GetCredentialsInfoResponseValidationError) ErrorName() string {
-	return "S3GetCredentialsInfoResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e S3GetCredentialsInfoResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sS3GetCredentialsInfoResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = S3GetCredentialsInfoResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = S3GetCredentialsInfoResponseValidationError{}
-
-// Validate checks the field values on GCSObject with the rules defined in the
+// Validate checks the field values on Object with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *GCSObject) Validate() error {
+func (m *Object) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GCSObject with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in GCSObjectMultiError, or nil
-// if none found.
-func (m *GCSObject) ValidateAll() error {
+// ValidateAll checks the field values on Object with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in ObjectMultiError, or nil if none found.
+func (m *Object) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GCSObject) validate(all bool) error {
+func (m *Object) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1125,7 +552,7 @@ func (m *GCSObject) validate(all bool) error {
 		switch v := interface{}(m.GetModifiedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GCSObjectValidationError{
+				errors = append(errors, ObjectValidationError{
 					field:  "ModifiedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1133,7 +560,7 @@ func (m *GCSObject) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GCSObjectValidationError{
+				errors = append(errors, ObjectValidationError{
 					field:  "ModifiedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1142,7 +569,7 @@ func (m *GCSObject) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetModifiedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GCSObjectValidationError{
+			return ObjectValidationError{
 				field:  "ModifiedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -1155,18 +582,18 @@ func (m *GCSObject) validate(all bool) error {
 	// no validation rules for IsDir
 
 	if len(errors) > 0 {
-		return GCSObjectMultiError(errors)
+		return ObjectMultiError(errors)
 	}
 
 	return nil
 }
 
-// GCSObjectMultiError is an error wrapping multiple validation errors returned
-// by GCSObject.ValidateAll() if the designated constraints aren't met.
-type GCSObjectMultiError []error
+// ObjectMultiError is an error wrapping multiple validation errors returned by
+// Object.ValidateAll() if the designated constraints aren't met.
+type ObjectMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GCSObjectMultiError) Error() string {
+func (m ObjectMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1175,623 +602,11 @@ func (m GCSObjectMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GCSObjectMultiError) AllErrors() []error { return m }
+func (m ObjectMultiError) AllErrors() []error { return m }
 
-// GCSObjectValidationError is the validation error returned by
-// GCSObject.Validate if the designated constraints aren't met.
-type GCSObjectValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GCSObjectValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GCSObjectValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GCSObjectValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GCSObjectValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GCSObjectValidationError) ErrorName() string { return "GCSObjectValidationError" }
-
-// Error satisfies the builtin error interface
-func (e GCSObjectValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGCSObject.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GCSObjectValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GCSObjectValidationError{}
-
-// Validate checks the field values on GCSListBucketsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GCSListBucketsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GCSListBucketsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GCSListBucketsRequestMultiError, or nil if none found.
-func (m *GCSListBucketsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GCSListBucketsRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for Connector
-
-	if m.GetPageSize() != 0 {
-
-		if m.GetPageSize() > 100 {
-			err := GCSListBucketsRequestValidationError{
-				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	// no validation rules for PageToken
-
-	if len(errors) > 0 {
-		return GCSListBucketsRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// GCSListBucketsRequestMultiError is an error wrapping multiple validation
-// errors returned by GCSListBucketsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type GCSListBucketsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GCSListBucketsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GCSListBucketsRequestMultiError) AllErrors() []error { return m }
-
-// GCSListBucketsRequestValidationError is the validation error returned by
-// GCSListBucketsRequest.Validate if the designated constraints aren't met.
-type GCSListBucketsRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GCSListBucketsRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GCSListBucketsRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GCSListBucketsRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GCSListBucketsRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GCSListBucketsRequestValidationError) ErrorName() string {
-	return "GCSListBucketsRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GCSListBucketsRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGCSListBucketsRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GCSListBucketsRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GCSListBucketsRequestValidationError{}
-
-// Validate checks the field values on GCSListBucketsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GCSListBucketsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GCSListBucketsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GCSListBucketsResponseMultiError, or nil if none found.
-func (m *GCSListBucketsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GCSListBucketsResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for NextPageToken
-
-	if len(errors) > 0 {
-		return GCSListBucketsResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// GCSListBucketsResponseMultiError is an error wrapping multiple validation
-// errors returned by GCSListBucketsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type GCSListBucketsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GCSListBucketsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GCSListBucketsResponseMultiError) AllErrors() []error { return m }
-
-// GCSListBucketsResponseValidationError is the validation error returned by
-// GCSListBucketsResponse.Validate if the designated constraints aren't met.
-type GCSListBucketsResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GCSListBucketsResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GCSListBucketsResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GCSListBucketsResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GCSListBucketsResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GCSListBucketsResponseValidationError) ErrorName() string {
-	return "GCSListBucketsResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GCSListBucketsResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGCSListBucketsResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GCSListBucketsResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GCSListBucketsResponseValidationError{}
-
-// Validate checks the field values on GCSListObjectsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GCSListObjectsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GCSListObjectsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GCSListObjectsRequestMultiError, or nil if none found.
-func (m *GCSListObjectsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GCSListObjectsRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for Connector
-
-	if m.GetPageSize() != 0 {
-
-		if m.GetPageSize() > 100 {
-			err := GCSListObjectsRequestValidationError{
-				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	// no validation rules for PageToken
-
-	if utf8.RuneCountInString(m.GetBucket()) < 1 {
-		err := GCSListObjectsRequestValidationError{
-			field:  "Bucket",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Prefix
-
-	// no validation rules for StartOffset
-
-	// no validation rules for EndOffset
-
-	// no validation rules for Delimiter
-
-	if len(errors) > 0 {
-		return GCSListObjectsRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// GCSListObjectsRequestMultiError is an error wrapping multiple validation
-// errors returned by GCSListObjectsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type GCSListObjectsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GCSListObjectsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GCSListObjectsRequestMultiError) AllErrors() []error { return m }
-
-// GCSListObjectsRequestValidationError is the validation error returned by
-// GCSListObjectsRequest.Validate if the designated constraints aren't met.
-type GCSListObjectsRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GCSListObjectsRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GCSListObjectsRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GCSListObjectsRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GCSListObjectsRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GCSListObjectsRequestValidationError) ErrorName() string {
-	return "GCSListObjectsRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GCSListObjectsRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGCSListObjectsRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GCSListObjectsRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GCSListObjectsRequestValidationError{}
-
-// Validate checks the field values on GCSListObjectsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GCSListObjectsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GCSListObjectsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GCSListObjectsResponseMultiError, or nil if none found.
-func (m *GCSListObjectsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GCSListObjectsResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for NextPageToken
-
-	for idx, item := range m.GetObjects() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GCSListObjectsResponseValidationError{
-						field:  fmt.Sprintf("Objects[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, GCSListObjectsResponseValidationError{
-						field:  fmt.Sprintf("Objects[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return GCSListObjectsResponseValidationError{
-					field:  fmt.Sprintf("Objects[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return GCSListObjectsResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// GCSListObjectsResponseMultiError is an error wrapping multiple validation
-// errors returned by GCSListObjectsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type GCSListObjectsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GCSListObjectsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GCSListObjectsResponseMultiError) AllErrors() []error { return m }
-
-// GCSListObjectsResponseValidationError is the validation error returned by
-// GCSListObjectsResponse.Validate if the designated constraints aren't met.
-type GCSListObjectsResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GCSListObjectsResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GCSListObjectsResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GCSListObjectsResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GCSListObjectsResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GCSListObjectsResponseValidationError) ErrorName() string {
-	return "GCSListObjectsResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GCSListObjectsResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGCSListObjectsResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GCSListObjectsResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GCSListObjectsResponseValidationError{}
-
-// Validate checks the field values on GCSGetCredentialsInfoRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GCSGetCredentialsInfoRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GCSGetCredentialsInfoRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GCSGetCredentialsInfoRequestMultiError, or nil if none found.
-func (m *GCSGetCredentialsInfoRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GCSGetCredentialsInfoRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for Connector
-
-	if len(errors) > 0 {
-		return GCSGetCredentialsInfoRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// GCSGetCredentialsInfoRequestMultiError is an error wrapping multiple
-// validation errors returned by GCSGetCredentialsInfoRequest.ValidateAll() if
+// ObjectValidationError is the validation error returned by Object.Validate if
 // the designated constraints aren't met.
-type GCSGetCredentialsInfoRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GCSGetCredentialsInfoRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GCSGetCredentialsInfoRequestMultiError) AllErrors() []error { return m }
-
-// GCSGetCredentialsInfoRequestValidationError is the validation error returned
-// by GCSGetCredentialsInfoRequest.Validate if the designated constraints
-// aren't met.
-type GCSGetCredentialsInfoRequestValidationError struct {
+type ObjectValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1799,24 +614,22 @@ type GCSGetCredentialsInfoRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GCSGetCredentialsInfoRequestValidationError) Field() string { return e.field }
+func (e ObjectValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GCSGetCredentialsInfoRequestValidationError) Reason() string { return e.reason }
+func (e ObjectValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GCSGetCredentialsInfoRequestValidationError) Cause() error { return e.cause }
+func (e ObjectValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GCSGetCredentialsInfoRequestValidationError) Key() bool { return e.key }
+func (e ObjectValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GCSGetCredentialsInfoRequestValidationError) ErrorName() string {
-	return "GCSGetCredentialsInfoRequestValidationError"
-}
+func (e ObjectValidationError) ErrorName() string { return "ObjectValidationError" }
 
 // Error satisfies the builtin error interface
-func (e GCSGetCredentialsInfoRequestValidationError) Error() string {
+func (e ObjectValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1828,14 +641,14 @@ func (e GCSGetCredentialsInfoRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGCSGetCredentialsInfoRequest.%s: %s%s",
+		"invalid %sObject.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GCSGetCredentialsInfoRequestValidationError{}
+var _ error = ObjectValidationError{}
 
 var _ interface {
 	Field() string
@@ -1843,114 +656,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GCSGetCredentialsInfoRequestValidationError{}
-
-// Validate checks the field values on GCSGetCredentialsInfoResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GCSGetCredentialsInfoResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GCSGetCredentialsInfoResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// GCSGetCredentialsInfoResponseMultiError, or nil if none found.
-func (m *GCSGetCredentialsInfoResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GCSGetCredentialsInfoResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Exist
-
-	// no validation rules for ProjectId
-
-	if len(errors) > 0 {
-		return GCSGetCredentialsInfoResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// GCSGetCredentialsInfoResponseMultiError is an error wrapping multiple
-// validation errors returned by GCSGetCredentialsInfoResponse.ValidateAll()
-// if the designated constraints aren't met.
-type GCSGetCredentialsInfoResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GCSGetCredentialsInfoResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GCSGetCredentialsInfoResponseMultiError) AllErrors() []error { return m }
-
-// GCSGetCredentialsInfoResponseValidationError is the validation error
-// returned by GCSGetCredentialsInfoResponse.Validate if the designated
-// constraints aren't met.
-type GCSGetCredentialsInfoResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GCSGetCredentialsInfoResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GCSGetCredentialsInfoResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GCSGetCredentialsInfoResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GCSGetCredentialsInfoResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GCSGetCredentialsInfoResponseValidationError) ErrorName() string {
-	return "GCSGetCredentialsInfoResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GCSGetCredentialsInfoResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGCSGetCredentialsInfoResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GCSGetCredentialsInfoResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GCSGetCredentialsInfoResponseValidationError{}
+} = ObjectValidationError{}
 
 // Validate checks the field values on OLAPListTablesRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -1979,6 +685,23 @@ func (m *OLAPListTablesRequest) validate(all bool) error {
 	// no validation rules for Connector
 
 	// no validation rules for SearchPattern
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := OLAPListTablesRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
 
 	if len(errors) > 0 {
 		return OLAPListTablesRequestMultiError(errors)
@@ -2115,6 +838,8 @@ func (m *OLAPListTablesResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
 		return OLAPListTablesResponseMultiError(errors)
@@ -2585,6 +1310,23 @@ func (m *ListDatabaseSchemasRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListDatabaseSchemasRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
 	if len(errors) > 0 {
 		return ListDatabaseSchemasRequestMultiError(errors)
 	}
@@ -2720,6 +1462,8 @@ func (m *ListDatabaseSchemasResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
 		return ListDatabaseSchemasResponseMultiError(errors)
@@ -2938,6 +1682,23 @@ func (m *ListTablesRequest) validate(all bool) error {
 
 	// no validation rules for DatabaseSchema
 
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListTablesRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
 	if len(errors) > 0 {
 		return ListTablesRequestMultiError(errors)
 	}
@@ -3073,6 +1834,8 @@ func (m *ListTablesResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
 		return ListTablesResponseMultiError(errors)
@@ -3468,461 +2231,3 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetTableResponseValidationError{}
-
-// Validate checks the field values on BigQueryListDatasetsRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *BigQueryListDatasetsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on BigQueryListDatasetsRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// BigQueryListDatasetsRequestMultiError, or nil if none found.
-func (m *BigQueryListDatasetsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *BigQueryListDatasetsRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for Connector
-
-	if m.GetPageSize() != 0 {
-
-		if m.GetPageSize() > 100 {
-			err := BigQueryListDatasetsRequestValidationError{
-				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	// no validation rules for PageToken
-
-	if len(errors) > 0 {
-		return BigQueryListDatasetsRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// BigQueryListDatasetsRequestMultiError is an error wrapping multiple
-// validation errors returned by BigQueryListDatasetsRequest.ValidateAll() if
-// the designated constraints aren't met.
-type BigQueryListDatasetsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m BigQueryListDatasetsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m BigQueryListDatasetsRequestMultiError) AllErrors() []error { return m }
-
-// BigQueryListDatasetsRequestValidationError is the validation error returned
-// by BigQueryListDatasetsRequest.Validate if the designated constraints
-// aren't met.
-type BigQueryListDatasetsRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e BigQueryListDatasetsRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e BigQueryListDatasetsRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e BigQueryListDatasetsRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e BigQueryListDatasetsRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e BigQueryListDatasetsRequestValidationError) ErrorName() string {
-	return "BigQueryListDatasetsRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e BigQueryListDatasetsRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sBigQueryListDatasetsRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = BigQueryListDatasetsRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = BigQueryListDatasetsRequestValidationError{}
-
-// Validate checks the field values on BigQueryListDatasetsResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *BigQueryListDatasetsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on BigQueryListDatasetsResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// BigQueryListDatasetsResponseMultiError, or nil if none found.
-func (m *BigQueryListDatasetsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *BigQueryListDatasetsResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for NextPageToken
-
-	if len(errors) > 0 {
-		return BigQueryListDatasetsResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// BigQueryListDatasetsResponseMultiError is an error wrapping multiple
-// validation errors returned by BigQueryListDatasetsResponse.ValidateAll() if
-// the designated constraints aren't met.
-type BigQueryListDatasetsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m BigQueryListDatasetsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m BigQueryListDatasetsResponseMultiError) AllErrors() []error { return m }
-
-// BigQueryListDatasetsResponseValidationError is the validation error returned
-// by BigQueryListDatasetsResponse.Validate if the designated constraints
-// aren't met.
-type BigQueryListDatasetsResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e BigQueryListDatasetsResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e BigQueryListDatasetsResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e BigQueryListDatasetsResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e BigQueryListDatasetsResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e BigQueryListDatasetsResponseValidationError) ErrorName() string {
-	return "BigQueryListDatasetsResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e BigQueryListDatasetsResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sBigQueryListDatasetsResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = BigQueryListDatasetsResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = BigQueryListDatasetsResponseValidationError{}
-
-// Validate checks the field values on BigQueryListTablesRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *BigQueryListTablesRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on BigQueryListTablesRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// BigQueryListTablesRequestMultiError, or nil if none found.
-func (m *BigQueryListTablesRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *BigQueryListTablesRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for Connector
-
-	// no validation rules for Dataset
-
-	if m.GetPageSize() != 0 {
-
-		if m.GetPageSize() > 100 {
-			err := BigQueryListTablesRequestValidationError{
-				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	// no validation rules for PageToken
-
-	if len(errors) > 0 {
-		return BigQueryListTablesRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// BigQueryListTablesRequestMultiError is an error wrapping multiple validation
-// errors returned by BigQueryListTablesRequest.ValidateAll() if the
-// designated constraints aren't met.
-type BigQueryListTablesRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m BigQueryListTablesRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m BigQueryListTablesRequestMultiError) AllErrors() []error { return m }
-
-// BigQueryListTablesRequestValidationError is the validation error returned by
-// BigQueryListTablesRequest.Validate if the designated constraints aren't met.
-type BigQueryListTablesRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e BigQueryListTablesRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e BigQueryListTablesRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e BigQueryListTablesRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e BigQueryListTablesRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e BigQueryListTablesRequestValidationError) ErrorName() string {
-	return "BigQueryListTablesRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e BigQueryListTablesRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sBigQueryListTablesRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = BigQueryListTablesRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = BigQueryListTablesRequestValidationError{}
-
-// Validate checks the field values on BigQueryListTablesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *BigQueryListTablesResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on BigQueryListTablesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// BigQueryListTablesResponseMultiError, or nil if none found.
-func (m *BigQueryListTablesResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *BigQueryListTablesResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for NextPageToken
-
-	if len(errors) > 0 {
-		return BigQueryListTablesResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// BigQueryListTablesResponseMultiError is an error wrapping multiple
-// validation errors returned by BigQueryListTablesResponse.ValidateAll() if
-// the designated constraints aren't met.
-type BigQueryListTablesResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m BigQueryListTablesResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m BigQueryListTablesResponseMultiError) AllErrors() []error { return m }
-
-// BigQueryListTablesResponseValidationError is the validation error returned
-// by BigQueryListTablesResponse.Validate if the designated constraints aren't met.
-type BigQueryListTablesResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e BigQueryListTablesResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e BigQueryListTablesResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e BigQueryListTablesResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e BigQueryListTablesResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e BigQueryListTablesResponseValidationError) ErrorName() string {
-	return "BigQueryListTablesResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e BigQueryListTablesResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sBigQueryListTablesResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = BigQueryListTablesResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = BigQueryListTablesResponseValidationError{}

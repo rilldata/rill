@@ -13,7 +13,7 @@ import (
 )
 
 func (s *Server) AnalyzeVariables(ctx context.Context, req *runtimev1.AnalyzeVariablesRequest) (*runtimev1.AnalyzeVariablesResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
 		return nil, ErrForbidden
 	}
 

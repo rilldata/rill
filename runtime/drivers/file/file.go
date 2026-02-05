@@ -6,8 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -54,6 +58,11 @@ type driver struct {
 type configProperties struct {
 	DSN             string `mapstructure:"dsn"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+
+	// admin client config overrides, only used to fetch github tokens
+	AdminURLOverride    string `mapstructure:"admin_url_override"`
+	AccessTokenOverride string `mapstructure:"access_token_override"`
+	HomeDir             string `mapstructure:"home_dir"`
 }
 
 // a smaller subset of relevant parts of rill.yaml
@@ -87,6 +96,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		root:         absPath,
 		driverConfig: conf,
 		driverName:   d.name,
+		dotRill:      dotrill.New(conf.HomeDir),
 	}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -141,6 +151,11 @@ type connection struct {
 	driverConfig *configProperties
 	driverName   string
 
+	gitConfig *gitutil.Config // git config for repo
+	admin     *client.Client  // admin client for admin service, used to obtain github tokens
+	dotRill   dotrill.DotRill
+	gitMu     sync.Mutex // mutex to protect git related operations
+
 	watcher     *filewatcher.LazyWatcher
 	ignorePaths []string
 }
@@ -169,6 +184,10 @@ func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 
 // Close implements drivers.Handle.
 func (c *connection) Close() error {
+	c.watcher.Close()
+	if c.admin != nil {
+		return c.admin.Close()
+	}
 	return nil
 }
 
@@ -218,18 +237,18 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.OutputHandle == c {
 		if olap, ok := opts.InputHandle.AsOLAP(instanceID); ok {
-			return &olapToSelfExecutor{c, olap}, true
+			return &olapToSelfExecutor{c, olap}, nil
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsFileStore implements drivers.Handle.
