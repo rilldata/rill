@@ -47,16 +47,16 @@
       SPA: true,
       validators: schema,
       dataType: "json",
-      async onUpdate({ form }) {
-        if (!form.valid) return;
+      async onUpdate({ form: formResult }) {
+        if (!formResult.valid) return;
 
         checkForExistingKey();
         if (isKeyAlreadyExists) return;
 
         dispatch("save", {
           oldKey: initialKey,
-          key: $form.key,
-          value: $form.value,
+          key: formResult.data.key,
+          value: formResult.data.value,
         });
 
         open = false;
