@@ -81,11 +81,9 @@ export class SSEConnectionManager {
   private async reconnect() {
     // Prevent concurrent reconnection attempts
     if (this.isReconnecting) {
-      console.log("[SSE] reconnect skipped - already reconnecting");
       return;
     }
     this.isReconnecting = true;
-    console.log("[SSE] reconnect started");
 
     try {
       if (this.autoCloseThrottler?.isThrottling()) {
@@ -94,20 +92,12 @@ export class SSEConnectionManager {
 
       // Don't reconnect if client is already streaming
       if (get(this.status) === ConnectionStatus.OPEN) {
-        console.log("[SSE] reconnect skipped - already OPEN");
         return;
       }
 
       const currentAttempts = get(this.retryAttempts);
-      console.log(
-        "[SSE] reconnect attempt",
-        currentAttempts + 1,
-        "of",
-        this.params?.maxRetryAttempts ?? 0,
-      );
 
       if (currentAttempts >= (this.params?.maxRetryAttempts ?? 0)) {
-        console.log("[SSE] MAX RETRIES EXCEEDED - setting CLOSED");
         this.status.set(ConnectionStatus.CLOSED);
         return;
       }
@@ -122,7 +112,6 @@ export class SSEConnectionManager {
       void this.start(this.url, this.options);
     } finally {
       this.isReconnecting = false;
-      console.log("[SSE] reconnect finished, isReconnecting reset to false");
     }
   }
 
@@ -131,13 +120,9 @@ export class SSEConnectionManager {
    */
   public heartbeat = async () => {
     const status = get(this.status);
-    console.log("[SSE] heartbeat called, status:", status);
     // Only reconnect if PAUSED (intentionally disconnected to save resources)
     // Don't reconnect if CONNECTING (already in progress) or CLOSED (fatal error)
     if (status === ConnectionStatus.PAUSED) {
-      console.log(
-        "[SSE] heartbeat triggering reconnect because status is PAUSED",
-      );
       await this.reconnect();
     }
 
@@ -233,19 +218,12 @@ export class SSEConnectionManager {
       headers?: Record<string, string>;
     } = {},
   ): void {
-    console.log(
-      "[SSE] start() called, current status:",
-      get(this.status),
-      "isStreaming:",
-      this.client.isStreaming(),
-    );
     this.url = url;
     this.options = options;
 
     this.status.set(ConnectionStatus.CONNECTING);
 
     void this.client.start(url);
-    console.log("[SSE] client.start() initiated");
 
     if (this.params?.autoCloseTimeouts) {
       this.scheduleAutoClose();
