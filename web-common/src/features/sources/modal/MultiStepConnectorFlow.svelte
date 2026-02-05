@@ -29,6 +29,7 @@
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
   export let submitting: boolean;
+  export let connectorInstanceName: string | null = null;
 
   // Outputs bound by parent
   export let activeAuthMethod: string | null = null;
@@ -180,9 +181,13 @@
         ? "Continuing..."
         : "Testing connection...";
   $: formId = baseFormId;
-  // Show skip link only on connector step for non-OLAP connectors
+  // Show skip link on connector step for non-OLAP connectors, excluding salesforce and sqlite
+  $: excludedConnectors = ["salesforce", "sqlite"];
   $: shouldShowSkipLink =
-    stepState.step === "connector" && !connector?.implementsOlap;
+    stepState.step === "connector" &&
+    !connectorInstanceName &&
+    !connector?.implementsOlap &&
+    !excludedConnectors.includes(connector?.name ?? "");
 </script>
 
 <AddDataFormSection

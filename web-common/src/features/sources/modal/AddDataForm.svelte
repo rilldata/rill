@@ -82,9 +82,13 @@
   let multiStepSubmitDisabled = false;
   let multiStepButtonLabel = "";
   let multiStepLoadingCopy = "";
-  // Show skip link only on connector step for non-OLAP connectors
+  // Show skip link on connector step for non-OLAP connectors, excluding salesforce and sqlite
+  $: excludedConnectors = ["salesforce", "sqlite"];
   $: shouldShowSkipLink =
-    stepState.step === "connector" && !connector?.implementsOlap;
+    stepState.step === "connector" &&
+    !connectorInstanceName &&
+    !connector?.implementsOlap &&
+    !excludedConnectors.includes(connector?.name ?? "");
   let primaryButtonLabel = "";
   let primaryLoadingCopy = "";
 
@@ -231,6 +235,7 @@
           {onStringInputChange}
           {handleFileUpload}
           submitting={$paramsSubmitting}
+          {connectorInstanceName}
           bind:activeAuthMethod
           bind:isSubmitDisabled={multiStepSubmitDisabled}
           bind:primaryButtonLabel={multiStepButtonLabel}
