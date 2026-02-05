@@ -205,7 +205,7 @@ describe("updateThemeColor", () => {
 
     const result = updateThemeColor(doc, "light", "primary", "#00ff00");
 
-    expect(result).toContain("primary: \"#00ff00\"");
+    expect(result).toContain('primary: "#00ff00"');
   });
 
   it("adds a new color to existing mode section", () => {
@@ -216,8 +216,8 @@ describe("updateThemeColor", () => {
 
     const result = updateThemeColor(doc, "light", "secondary", "#0000ff");
 
-    expect(result).toContain("primary: \"#ff0000\"");
-    expect(result).toContain("secondary: \"#0000ff\"");
+    expect(result).toContain('primary: "#ff0000"');
+    expect(result).toContain('secondary: "#0000ff"');
   });
 
   it("creates mode section if it does not exist", () => {
@@ -230,7 +230,7 @@ describe("updateThemeColor", () => {
 
     expect(result).toContain("light:");
     expect(result).toContain("dark:");
-    expect(result).toContain("primary: \"#00ff00\"");
+    expect(result).toContain('primary: "#00ff00"');
   });
 
   it("works with empty document", () => {
@@ -240,7 +240,7 @@ describe("updateThemeColor", () => {
     const result = updateThemeColor(doc, "light", "primary", "#ff0000");
 
     expect(result).toContain("light:");
-    expect(result).toContain("primary: \"#ff0000\"");
+    expect(result).toContain('primary: "#ff0000"');
   });
 
   it("removes inline comments by default", () => {
@@ -252,7 +252,7 @@ describe("updateThemeColor", () => {
     const result = updateThemeColor(doc, "light", "primary", "#00ff00");
 
     expect(result).not.toContain("# this is a comment");
-    expect(result).toContain("primary: \"#00ff00\"");
+    expect(result).toContain('primary: "#00ff00"');
   });
 
   it("preserves inline comments when removeComments is false", () => {
@@ -264,7 +264,7 @@ describe("updateThemeColor", () => {
     const result = updateThemeColor(doc, "light", "primary", "#00ff00", false);
 
     expect(result).toContain("# this is a comment");
-    expect(result).toContain("primary: \"#00ff00\"");
+    expect(result).toContain('primary: "#00ff00"');
   });
 
   it("handles hyphenated color keys", () => {
@@ -280,7 +280,7 @@ describe("updateThemeColor", () => {
       "#000000",
     );
 
-    expect(result).toContain("surface-background: \"#000000\"");
+    expect(result).toContain('surface-background: "#000000"');
   });
 
   it("handles palette color keys", () => {
@@ -296,6 +296,6 @@ describe("updateThemeColor", () => {
       "#bbbbbb",
     );
 
-    expect(result).toContain("color-sequential-1: \"#bbbbbb\"");
+    expect(result).toContain('color-sequential-1: "#bbbbbb"');
   });
 });
