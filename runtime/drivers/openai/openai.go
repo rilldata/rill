@@ -121,8 +121,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		if apiVersion == "" {
 			apiVersion = "2024-06-01"
 		}
-		opts = append(opts, azure.WithEndpoint(conf.BaseURL, apiVersion))
-		opts = append(opts, azure.WithAPIKey(conf.APIKey))
+		opts = append(opts,
+			azure.WithEndpoint(conf.BaseURL, apiVersion),
+			azure.WithAPIKey(conf.APIKey),
+		)
 	default:
 		opts = append(opts, option.WithAPIKey(conf.APIKey))
 		if conf.BaseURL != "" {
@@ -382,8 +384,10 @@ func messageFromOpenAI(message openai.ChatCompletionMessage) (*aiv1.CompletionMe
 		})
 	}
 
-	for _, toolCall := range message.ToolCalls {
-		// Parse tool call arguments - if malformed, include raw arguments as fallback
+	for i := range message.ToolCalls {
+		toolCall := message.ToolCalls[i]
+
+		// Parse tool call arguments: if malformed, include raw arguments as fallback
 		var input map[string]any
 		err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input)
 		if err != nil {
