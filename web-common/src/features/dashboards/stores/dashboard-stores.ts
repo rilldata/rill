@@ -2,12 +2,12 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
+import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
   filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
 import {
@@ -114,6 +114,7 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
 function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsSet = new Set(explore.dimensions ?? []);
+
   exploreState.whereFilter =
     filterExpressions(exploreState.whereFilter, (e) => {
       if (!e.cond?.exprs?.length) return true;
@@ -261,6 +262,7 @@ const metricsViewReducers = {
         }
       }
 
+      exploreState.pivot.expanded = {};
       exploreState.pivot.rows = dimensions;
     });
   },
@@ -269,7 +271,6 @@ const metricsViewReducers = {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
-      exploreState.pivot.expanded = {};
 
       if (exploreState.pivot.sorting.length) {
         const accessor = exploreState.pivot.sorting[0].id;
@@ -286,6 +287,7 @@ const metricsViewReducers = {
           }
         }
       }
+      exploreState.pivot.expanded = {};
       exploreState.pivot.columns = value;
     });
   },
@@ -294,6 +296,8 @@ const metricsViewReducers = {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
+      exploreState.pivot.expanded = {};
+
       if (value.type === PivotChipType.Measure) {
         exploreState.pivot.columns.push(value);
       } else {
@@ -476,6 +480,12 @@ const metricsViewReducers = {
     });
   },
 
+  setTimeDimension(name: string, column: string) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedTimeDimension = column;
+    });
+  },
+
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.showTimeComparison = showTimeComparison;
@@ -540,6 +550,47 @@ const metricsViewReducers = {
         columns,
         sorting: [],
         expanded: {},
+        activeCell: null,
+      };
+    });
+  },
+
+  setPivotRowLimit(name: string, limit: number | undefined) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        rowLimit: limit,
+        expanded: {},
+        nestedRowLimits: {},
+        outermostRowLimit: undefined,
+        rowPage: 1,
+        activeCell: null,
+      };
+    });
+  },
+
+  setPivotRowLimitForExpandedRow(
+    name: string,
+    expandIndex: string,
+    limit: number,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        nestedRowLimits: {
+          ...exploreState.pivot.nestedRowLimits,
+          [expandIndex]: limit,
+        },
+        activeCell: null,
+      };
+    });
+  },
+
+  setPivotOutermostRowLimit(name: string, limit: number) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        outermostRowLimit: limit,
         activeCell: null,
       };
     });

@@ -3,7 +3,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { EnumOptions, EnumValueOptions, FieldOptions, MessageOptions, MethodOptions, proto3, ServiceOptions } from "@bufbuild/protobuf";
+import {
+  EnumOptions,
+  EnumValueOptions,
+  FieldOptions,
+  MessageOptions,
+  MethodOptions,
+  proto3,
+  ServiceOptions,
+} from "@bufbuild/protobuf";
 
 /**
  * @generated from enum rill.admin.v1.Visibility
@@ -36,36 +44,45 @@ proto3.util.setEnumType(Visibility, "rill.admin.v1.Visibility", [
 /**
  * @generated from extension: rill.admin.v1.Visibility service_visibility = 50001;
  */
-export const service_visibility = proto3.makeExtension<ServiceOptions, Visibility>(
-  "rill.admin.v1.service_visibility", 
-  ServiceOptions, 
-  () => ({ no: 50001, kind: "enum", T: proto3.getEnumType(Visibility) }),
-);
+export const service_visibility = proto3.makeExtension<
+  ServiceOptions,
+  Visibility
+>("rill.admin.v1.service_visibility", ServiceOptions, () => ({
+  no: 50001,
+  kind: "enum",
+  T: proto3.getEnumType(Visibility),
+}));
 
 /**
  * @generated from extension: rill.admin.v1.Visibility method_visibility = 50002;
  */
-export const method_visibility = proto3.makeExtension<MethodOptions, Visibility>(
-  "rill.admin.v1.method_visibility", 
-  MethodOptions, 
-  () => ({ no: 50002, kind: "enum", T: proto3.getEnumType(Visibility) }),
-);
+export const method_visibility = proto3.makeExtension<
+  MethodOptions,
+  Visibility
+>("rill.admin.v1.method_visibility", MethodOptions, () => ({
+  no: 50002,
+  kind: "enum",
+  T: proto3.getEnumType(Visibility),
+}));
 
 /**
  * @generated from extension: rill.admin.v1.Visibility message_visibility = 50003;
  */
-export const message_visibility = proto3.makeExtension<MessageOptions, Visibility>(
-  "rill.admin.v1.message_visibility", 
-  MessageOptions, 
-  () => ({ no: 50003, kind: "enum", T: proto3.getEnumType(Visibility) }),
-);
+export const message_visibility = proto3.makeExtension<
+  MessageOptions,
+  Visibility
+>("rill.admin.v1.message_visibility", MessageOptions, () => ({
+  no: 50003,
+  kind: "enum",
+  T: proto3.getEnumType(Visibility),
+}));
 
 /**
  * @generated from extension: rill.admin.v1.Visibility field_visibility = 50004;
  */
 export const field_visibility = proto3.makeExtension<FieldOptions, Visibility>(
-  "rill.admin.v1.field_visibility", 
-  FieldOptions, 
+  "rill.admin.v1.field_visibility",
+  FieldOptions,
   () => ({ no: 50004, kind: "enum", T: proto3.getEnumType(Visibility) }),
 );
 
@@ -73,17 +90,19 @@ export const field_visibility = proto3.makeExtension<FieldOptions, Visibility>(
  * @generated from extension: rill.admin.v1.Visibility enum_visibility = 50005;
  */
 export const enum_visibility = proto3.makeExtension<EnumOptions, Visibility>(
-  "rill.admin.v1.enum_visibility", 
-  EnumOptions, 
+  "rill.admin.v1.enum_visibility",
+  EnumOptions,
   () => ({ no: 50005, kind: "enum", T: proto3.getEnumType(Visibility) }),
 );
 
 /**
  * @generated from extension: rill.admin.v1.Visibility enum_value_visibility = 50006;
  */
-export const enum_value_visibility = proto3.makeExtension<EnumValueOptions, Visibility>(
-  "rill.admin.v1.enum_value_visibility", 
-  EnumValueOptions, 
-  () => ({ no: 50006, kind: "enum", T: proto3.getEnumType(Visibility) }),
-);
-
+export const enum_value_visibility = proto3.makeExtension<
+  EnumValueOptions,
+  Visibility
+>("rill.admin.v1.enum_value_visibility", EnumValueOptions, () => ({
+  no: 50006,
+  kind: "enum",
+  T: proto3.getEnumType(Visibility),
+}));

@@ -14,6 +14,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var group string
 	var role string // NOTE: Overloaded to mean org role or project role based on whether --project is specified
+	var explores []string
+	var canvases []string
+	var restrictResources bool
 
 	addCmd := &cobra.Command{
 		Use:   "add",
@@ -33,6 +36,10 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
+			}
+
+			if projectName == "" && (len(explores) > 0 || len(canvases) > 0 || restrictResources) {
+				return fmt.Errorf("resource restrictions can only be set when adding a user to a project")
 			}
 
 			// Handle adding the user to the org.
@@ -70,6 +77,14 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Handle adding the user to a project.
 			if projectName != "" {
+				resources, err := cmdutil.ParseResourceStrings(explores, canvases)
+				if err != nil {
+					return err
+				}
+				if len(resources) > 0 {
+					restrictResources = true
+				}
+
 				// Handle empty role
 				if role == "" {
 					if !ch.Interactive {
@@ -83,10 +98,12 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// Add to project
 				res, err := client.AddProjectMemberUser(cmd.Context(), &adminv1.AddProjectMemberUserRequest{
-					Org:     ch.Org,
-					Project: projectName,
-					Email:   email,
-					Role:    role,
+					Org:               ch.Org,
+					Project:           projectName,
+					Email:             email,
+					Role:              role,
+					Resources:         resources,
+					RestrictResources: &restrictResources,
 				})
 				if err != nil {
 					// We don't need to handle org membership errors since AddProjectMemberUser automatically invites the user to the org with role guest if needed.
@@ -180,6 +197,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	addCmd.Flags().StringVar(&group, "group", "", "User group")
 	addCmd.Flags().StringVar(&email, "email", "", "Email of the user")
 	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(orgRoles, ", ")))
+	addCmd.Flags().StringArrayVar(&explores, "explore", nil, "Explore resource to restrict to (repeat for multiple)")
+	addCmd.Flags().StringArrayVar(&canvases, "canvas", nil, "Canvas resource to restrict to (repeat for multiple)")
+	addCmd.Flags().BoolVar(&restrictResources, "restrict-resources", false, "Restrict the user to the provided resources (defaults to true when resources are provided)")
 
 	return addCmd
 }

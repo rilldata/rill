@@ -1355,9 +1355,8 @@ annotations:
 			ReportSpec: &runtimev1.ReportSpec{
 				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
-					RefUpdate: true,
-					Cron:      "0 * * * *",
-					TimeZone:  "America/Los_Angeles",
+					Cron:     "0 * * * *",
+					TimeZone: "America/Los_Angeles",
 				},
 				QueryName:           "MetricsViewToplist",
 				QueryArgsJson:       `{"metrics_view":"mv1"}`,
@@ -1380,9 +1379,8 @@ annotations:
 			ReportSpec: &runtimev1.ReportSpec{
 				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
-					RefUpdate: true,
-					Cron:      "0 * * * *",
-					TimeZone:  "America/Los_Angeles",
+					Cron:     "0 * * * *",
+					TimeZone: "America/Los_Angeles",
 				},
 				QueryName:           "MetricsViewToplist",
 				QueryArgsJson:       `{"metrics_view":"mv1"}`,
@@ -1420,7 +1418,7 @@ refs:
   - model/m1
 
 refresh:
-  ref_update: false
+  ref_update: true
   cron: '0 * * * *'
 
 watermark: inherit
@@ -1469,8 +1467,8 @@ annotations:
 			AlertSpec: &runtimev1.AlertSpec{
 				DisplayName: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
+					RefUpdate: true,
 					Cron:      "0 * * * *",
-					RefUpdate: false,
 				},
 				WatermarkInherit:     true,
 				IntervalsIsoDuration: "PT1H",
@@ -2534,6 +2532,7 @@ light:
 				Light: &runtimev1.ThemeColors{
 					Primary:   "red",
 					Secondary: "green",
+					Variables: map[string]string{},
 				},
 			},
 		},
@@ -2596,18 +2595,18 @@ dark:
 					Primary:   "red",
 					Secondary: "green",
 					Variables: map[string]string{
-						"background":      "blue",
-						"foreground":      "yellow",
-						"card-foreground": "yellow",
+						"surface-subtle": "blue",
+						"fg-primary":     "yellow",
+						"fg-secondary":   "yellow",
 					},
 				},
 				Dark: &runtimev1.ThemeColors{
 					Primary:   "gray",
 					Secondary: "black",
 					Variables: map[string]string{
-						"background":      "black",
-						"foreground":      "white",
-						"card-foreground": "white",
+						"surface-subtle": "black",
+						"fg-primary":     "white",
+						"fg-secondary":   "white",
 					},
 				},
 			},

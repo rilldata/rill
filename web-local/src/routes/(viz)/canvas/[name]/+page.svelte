@@ -10,6 +10,8 @@
   $: ({ canvasName } = data);
 </script>
 
-<CanvasProvider {canvasName} {instanceId} showBanner>
-  <CanvasDashboardEmbed {canvasName} />
-</CanvasProvider>
+{#key instanceId}
+  <CanvasProvider {canvasName} {instanceId} showBanner>
+    <CanvasDashboardEmbed {canvasName} />
+  </CanvasProvider>
+{/key}

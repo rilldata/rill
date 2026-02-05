@@ -53,7 +53,7 @@ export function getBookmarksQueryOptions(
         },
         {
           query: {
-            enabled: hasUser && !!projectId,
+            enabled: Boolean(hasUser && !!projectId),
           },
         },
       );

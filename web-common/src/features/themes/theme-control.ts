@@ -1,30 +1,37 @@
 import { get, writable } from "svelte/store";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { featureFlags } from "../feature-flags";
+import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage";
 
 type Theme = "light" | "dark" | "system";
 
+function isEmbedEnvironment(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.location.pathname.includes("/-/embed");
+  } catch {
+    return false;
+  }
+}
+
 class ThemeControl {
-  private current = writable<Theme>("light");
+  public current = writable<"light" | "dark">("light");
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  private preferenceStore = localStorageStore<Theme>("rill:theme", "light");
+  private preferenceStore = isEmbedEnvironment()
+    ? sessionStorageStore<Theme>("rill:embed:theme-mode", "light")
+    : localStorageStore<Theme>("rill:theme", "light");
 
   public subscribe = this.current.subscribe;
-  public _preference = { subscribe: this.preferenceStore.subscribe };
+  public preference = { subscribe: this.preferenceStore.subscribe };
 
   constructor() {
-    this.init().catch((error) => {
-      console.error("Failed to initialize theme control:", error);
-    });
+    this.init();
   }
 
-  init = async () => {
+  init = () => {
     const currentPreference = get(this.preferenceStore);
 
-    await featureFlags.ready;
-
     if (
-      (get(featureFlags.darkMode) && currentPreference === "dark") ||
+      currentPreference === "dark" ||
       (currentPreference === "system" && this.darkQuery.matches)
     ) {
       this.setDark();
@@ -33,7 +40,7 @@ class ThemeControl {
     this.darkQuery.addEventListener("change", ({ matches }) => {
       if (get(this.preferenceStore) !== "system") return;
 
-      if (matches && get(featureFlags.darkMode)) {
+      if (matches) {
         this.setDark();
       } else {
         this.removeDark();

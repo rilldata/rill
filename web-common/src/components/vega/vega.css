@@ -5,58 +5,79 @@
 
 #vg-tooltip-element,
 #rill-vg-tooltip {
-  @apply absolute border p-3 rounded-lg pointer-events-none;
+  @apply absolute p-3 rounded-lg pointer-events-none;
   @apply ui-copy-number;
-  background: light-dark(rgba(255, 255, 255, 0.95), rgba(30, 30, 30, 0.95));
-  border-color: light-dark(rgb(203 213 225), rgb(71 85 105));
-  /* slate-300 / slate-600 */
-  color: light-dark(rgb(15 23 42), rgb(226 232 240));
-  /* slate-900 / slate-200 */
+  border: 0 !important;
+  background: var(--tooltip) !important;
+  color: var(--fg-inverse) !important;
+
   font-family: "Inter";
   border-radius: 5px;
 
   & h2 {
     @apply text-sm font-semibold mb-2;
-    color: light-dark(rgb(100 116 139), rgb(148 163 184));
-    /* slate-500 / slate-400 */
+    color: color-mix(
+      in oklab,
+      var(--fg-inverse) 90%,
+      transparent 30%
+    ) !important;
   }
 
   & table {
     @apply border-spacing-0;
+    border-collapse: separate;
+    border-spacing: 0;
+    display: table;
   }
 
   & table tr td {
-    @apply truncate py-0.5;
+    @apply py-0.5;
+    white-space: nowrap;
+    padding-left: 0;
+    padding-right: 12px;
+  }
+
+  & table tr td:first-child {
+    padding-left: 0;
+  }
+
+  & table tr td:last-child {
+    padding-right: 0;
   }
 
   & table tr td.key {
-    @apply flex items-center gap-x-1;
-    @apply text-left px-1 font-normal truncate text-xs;
-    color: light-dark(rgb(71 85 105), rgb(148 163 184));
-    /* slate-600 / slate-400 */
-    max-width: 250px;
+    @apply text-left font-normal text-xs;
+    padding-right: 12px;
+    color: color-mix(
+      in oklab,
+      var(--fg-inverse) 70%,
+      transparent 30%
+    ) !important;
   }
 
   & table tr td.value {
-    @apply text-left truncate font-semibold text-xs;
-    max-width: 250px;
+    @apply text-right font-semibold text-xs;
+    display: table-cell !important;
+    max-width: none !important;
+    max-height: none !important;
+  }
+
+  & table tr td.previous-value {
+    opacity: 0.6;
+  }
+
+  & table tr td.empty-cell {
+    visibility: hidden;
   }
 
   & table tr .key-color {
-    @apply w-3 h-3 min-w-3 min-h-3 rounded-full inline-block;
+    @apply w-3 h-3 min-w-3 min-h-3 rounded-full;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
   }
-}
-
-#vg-tooltip-element table tr:first-child td:first-child {
-  display: none;
-}
-
-#vg-tooltip-element table tr {
-  @apply flex justify-between gap-x-3;
 }
 
 #vg-tooltip-element table tr:first-child td {
   font-size: 14px;
-  margin-left: 2px;
-  margin-bottom: 4px;
 }

@@ -1,22 +1,22 @@
+<script lang="ts" context="module">
+  export type ButtonType =
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "neutral"
+    | "destructive"
+    | "ghost"
+    | "link"
+    | "text"
+    | "toolbar";
+</script>
+
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
 
-  type ButtonType =
-    | "primary"
-    | "secondary"
-    | "plain"
-    | "subtle"
-    | "ghost"
-    | "dashed"
-    | "link"
-    | "text"
-    | "add"
-    | "toolbar";
-
-  export let type: ButtonType = "plain";
+  export let type: ButtonType = "tertiary";
   export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
-  export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
   export let submitForm = false;
@@ -37,8 +37,7 @@
   export let target: string | undefined = undefined;
   export let fit = false;
   export let noWrap = false;
-  export let gray = false;
-  export let danger = false;
+  // export let gray = false;
   export let preload = true;
   export let active = false;
   export let loadingCopy = "Loading";
@@ -67,7 +66,6 @@
   class:square
   class:circle
   class:selected
-  class:gray
   class:loading
   class:large
   class:small
@@ -78,7 +76,6 @@
   class:active
   class:!w-fit={fit}
   class:whitespace-nowrap={noWrap}
-  class:danger={status === "error" || danger}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
@@ -111,199 +108,131 @@
     @apply select-none  cursor-pointer;
     @apply rounded-[2px];
     @apply px-3 gap-x-2;
-    @apply h-7  min-h-[28px] min-w-fit;
+    @apply h-7 min-h-[28px] min-w-fit;
     @apply font-medium pointer-events-auto;
+    --focus-color: var(--fg-inverse);
   }
 
   button:disabled {
     @apply cursor-not-allowed;
   }
 
+  /* button:focus {
+    @apply outline-none;
+    box-shadow: 0px 0px 4px 1px
+      color-mix(in oklab, var(--focus-color) 50%, transparent);
+  } */
+
   /* PRIMARY STYLES */
 
   .primary {
-    @apply bg-primary-600 text-white;
+    @apply bg-accent-primary text-fg-inverse;
   }
 
-  .primary:hover {
-    @apply bg-primary-700;
+  .primary:hover:not(:disabled) {
+    @apply opacity-80;
   }
 
-  .primary:active,
+  /* .primary:active,
   .primary.selected {
     @apply bg-primary-800;
-  }
+  } */
 
   .primary:disabled {
-    @apply bg-slate-400;
+    @apply opacity-50;
   }
 
   .primary.theme {
-    @apply bg-theme-600 text-white;
+    @apply bg-theme-500 text-fg-inverse;
   }
 
-  .primary.theme:hover {
-    @apply bg-theme-700;
+  /* SECONDARY STYLES */
+
+  .secondary {
+    --focus-color: var(--color-primary-600);
+    @apply bg-transparent border border-accent-primary-action text-accent-primary-action;
   }
 
-  .primary.theme:active,
-  .primary.theme.selected {
-    @apply bg-theme-800;
+  :global(.dark) .secondary {
+    @apply bg-transparent;
   }
 
-  /* SECONDARY, GHOST, DASHED STYLES */
-
-  .secondary,
-  .ghost,
-  .dashed {
-    @apply bg-transparent text-primary-600;
+  .secondary.theme {
+    --focus-color: var(--color-theme-600);
+    @apply border-theme-500;
   }
 
-  .secondary,
-  .dashed {
-    @apply border border-primary-300;
+  .secondary:hover:not(:disabled) {
+    @apply bg-surface-hover text-fg-accent;
   }
 
-  .secondary:hover,
-  .ghost:hover,
-  .dashed:hover {
-    @apply bg-primary-50;
+  .secondary:disabled {
+    @apply opacity-50;
   }
 
-  .secondary:active,
-  .secondary.selected,
-  .ghost:active,
-  .ghost.selected,
-  .dashed:active,
-  .dashed.selected {
-    @apply bg-primary-100;
+  /* GHOST STYLES */
+
+  .ghost {
+    @apply bg-transparent text-fg-primary;
   }
 
-  .secondary.theme,
-  .ghost.theme,
-  .dashed.theme {
-    @apply bg-transparent text-theme-600;
-  }
-
-  .secondary.theme,
-  .dashed.theme {
-    @apply border border-theme-300;
-  }
-
-  .secondary.theme:hover,
-  .ghost.theme:hover,
-  .dashed.theme:hover {
-    @apply bg-theme-50;
-  }
-
-  .secondary.theme:active,
-  .secondary.theme.selected,
-  .ghost.theme:active,
-  .ghost.theme.elected,
-  .dashed.theme:active,
-  .dashed.theme.selected {
-    @apply bg-theme-100;
-  }
-
-  .secondary.loading,
-  .ghost.loading,
-  .dashed.loading {
-    @apply bg-slate-50;
-    @apply border-slate-300;
-    @apply text-slate-600;
-  }
-
-  .secondary:disabled,
-  .dashed:disabled {
-    @apply text-slate-400 bg-slate-50 border-slate-300;
+  .ghost:hover {
+    @apply bg-surface-hover;
   }
 
   .ghost:disabled {
-    @apply bg-transparent text-slate-400;
+    @apply opacity-50;
   }
 
-  .secondary:active:hover,
-  .secondary.selected:hover,
-  .ghost:active:hover,
-  .ghost.selected:hover,
-  .dashed:active:hover,
-  .dashed.selected:hover {
-    @apply bg-primary-200;
+  /* TERTIARY STYLES */
+
+  .tertiary {
+    --focus-color: var(--color-primary-600);
+    @apply bg-input text-fg-primary border;
   }
 
-  .secondary.theme:active:hover,
-  .secondary.theme.selected:hover,
-  .ghost.theme:active:hover,
-  .ghost.theme.selected:hover,
-  .dashed.theme:active:hover,
-  .dashed.theme.selected:hover {
-    @apply bg-theme-200;
+  .tertiary.theme {
+    --focus-color: var(--color-theme-600);
   }
 
-  /* PLAIN STYLES */
-
-  .plain {
-    @apply bg-transparent text-slate-600;
-    @apply border border-slate-300;
+  .tertiary:hover:not(:disabled) {
+    @apply bg-surface-hover;
   }
 
-  .plain:hover {
-    @apply bg-slate-100;
+  .tertiary.disabled {
+    @apply opacity-50;
   }
 
-  .plain:active,
-  .plain.selected {
-    @apply bg-slate-200;
+  /* NEUTRAL STYLES */
+
+  .neutral {
+    @apply bg-surface-muted text-fg-secondary;
   }
 
-  .plain.disabled {
-    @apply text-slate-400;
+  .neutral:hover:not(:disabled) {
+    @apply opacity-80;
   }
 
-  /* SUBTLE STYLES */
-
-  .subtle {
-    @apply bg-primary-50 text-primary-700;
-  }
-
-  .subtle:hover {
-    @apply bg-primary-100;
-  }
-
-  .subtle:active,
-  .subtle.selected {
-    @apply bg-primary-200 text-primary-900;
-  }
-
-  .subtle.loading {
-    @apply bg-slate-50 text-slate-600;
-  }
-
-  .subtle:disabled {
-    @apply text-slate-400 bg-slate-50;
+  .neutral.disabled {
+    @apply opacity-50;
   }
 
   /* LINK STYLES */
 
   .link {
-    @apply text-primary-600 p-0;
+    @apply text-accent-primary-action p-0;
   }
 
-  .link:hover {
-    @apply text-primary-700;
-  }
-
-  .link:active,
-  .link.selected {
-    @apply text-primary-800;
+  .link:hover:not(:disabled) {
+    @apply underline;
   }
 
   .link.loading {
-    @apply text-slate-600;
+    @apply text-fg-secondary;
   }
 
   .link:disabled {
-    @apply text-slate-400;
+    @apply opacity-50;
   }
 
   .link.theme {
@@ -322,7 +251,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-gray-700 p-0;
+    @apply text-fg-muted p-0;
   }
 
   .text:hover {
@@ -335,11 +264,11 @@
   }
 
   .text.loading {
-    @apply text-slate-600;
+    @apply text-fg-secondary;
   }
 
   .text:disabled {
-    @apply text-slate-400;
+    @apply text-fg-secondary/30;
   }
 
   .text.theme:hover {
@@ -354,22 +283,22 @@
   /* TOOLBAR STYLES */
 
   .toolbar {
-    @apply font-normal text-gray-800;
+    @apply font-normal text-fg-secondary;
     @apply h-6 px-1.5 rounded-sm;
     @apply gap-x-1.5;
   }
 
-  .toolbar:hover {
-    @apply bg-slate-600/15;
+  .toolbar:hover:not(:disabled) {
+    @apply bg-gray-600/15;
   }
 
   .toolbar:active,
   .toolbar.selected {
-    @apply bg-slate-600/15;
+    @apply bg-gray-600/15;
   }
 
   .toolbar:disabled {
-    @apply text-slate-400;
+    @apply opacity-50;
   }
 
   .text.theme:hover {
@@ -381,56 +310,23 @@
     @apply text-theme-800;
   }
 
-  /* DANGER STYLES */
+  /* DESTRUCTIVE STYLES */
 
-  .danger.primary {
-    @apply bg-red-500 text-white;
+  .destructive {
+    @apply bg-destructive text-destructive-foreground;
+    --focus-color: var(--color-destructive-600);
   }
 
-  .danger.primary:hover {
-    @apply bg-red-600;
+  :global(.dark) .destructive {
+    @apply bg-destructive/65;
   }
 
-  .danger.primary:active,
-  .danger.selected {
-    @apply bg-red-700;
+  .destructive:hover {
+    @apply bg-destructive;
   }
 
-  .danger.primary:disabled {
-    @apply bg-slate-400;
-  }
-
-  .danger.secondary {
-    @apply bg-surface;
-    @apply text-red-500;
-    @apply border-red-500;
-  }
-
-  .danger.secondary:hover {
-    @apply text-red-600;
-    @apply border-red-600;
-  }
-
-  .danger.secondary:disabled {
-    @apply text-slate-400;
-    @apply bg-slate-50;
-    @apply border-slate-300;
-  }
-
-  .danger.text {
-    @apply text-slate-600 p-0;
-  }
-
-  .danger.text:hover {
-    @apply text-red-600;
-  }
-
-  .danger.subtle {
-    @apply bg-red-50 text-red-600;
-  }
-
-  .danger.subtle:hover {
-    @apply bg-red-100;
+  .destructive:disabled {
+    @apply opacity-50;
   }
 
   /* SHAPE STYLES */
@@ -474,29 +370,11 @@
     @apply border-none;
   }
 
-  .dashed {
-    @apply border border-dashed;
-  }
-
-  /* TODO: variants for types like danger */
-  .active {
-    @apply bg-primary-100;
-  }
-
-  /* ADD BUTTON STYLES */
-
-  .add {
-    @apply w-[34px] h-[26px] rounded-2xl;
-    @apply flex items-center justify-center;
-    @apply border border-dashed border-slate-300;
-    @apply bg-surface px-0;
-  }
-
   .gray:not(:hover) {
-    @apply text-slate-600 border-slate-300;
+    @apply text-fg-secondary border-gray-300;
   }
 
   .gray:not(.ghost):not(:hover) {
-    @apply bg-slate-50;
+    @apply bg-surface-background;
   }
 </style>

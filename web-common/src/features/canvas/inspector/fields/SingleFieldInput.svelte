@@ -16,7 +16,9 @@
   export let canvasName: string;
   export let searchableItems: string[] | undefined = undefined;
   export let excludedValues: string[] | undefined = undefined;
+  export let isRemovable = false;
   export let onSelect: (item: string, displayName: string) => void = () => {};
+  export let onRemove: () => void = () => {};
 
   let open = false;
   let searchValue = "";
@@ -51,22 +53,28 @@
       <Chip
         fullWidth
         caret
+        removable={isRemovable && !!selectedItem}
+        {onRemove}
         type={isTimeSelected ? "time" : type}
         builders={[builder]}
       >
-        <span class="font-bold truncate" slot="body">
+        <span
+          class="font-bold truncate"
+          class:text-fg-tertiary={!selectedItem}
+          slot="body"
+        >
           {#if isTimeSelected}
             Time
           {:else if selectedItem}
             {$fieldData.displayMap[selectedItem]?.label || selectedItem}
           {:else}
-            Select a {type} field
+            Choose a field...
           {/if}
         </span>
       </Chip>
     </DropdownMenu.Trigger>
 
-    <DropdownMenu.Content class="p-0">
+    <DropdownMenu.Content class="p-0" sameWidth>
       <div class="p-3 pb-1">
         <Search bind:value={searchValue} autofocus={false} />
       </div>
@@ -84,7 +92,6 @@
           <DropdownMenu.Separator />
         {/if}
         {#each $fieldData.filteredItems as item (item)}
-          <!-- Hide item if it's the already selected one -->
           {#if item !== selectedItem}
             <DropdownMenu.Item
               class="pl-8 mx-1"
@@ -100,7 +107,7 @@
           {/if}
         {:else}
           {#if searchValue}
-            <div class="ui-copy-disabled text-center p-2 w-full">
+            <div class="text-fg-disabled text-center p-2 w-full">
               no results
             </div>
           {/if}

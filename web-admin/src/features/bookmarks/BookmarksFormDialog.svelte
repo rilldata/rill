@@ -7,7 +7,6 @@
   } from "@rilldata/web-admin/client";
   import {
     type BookmarkEntry,
-    type BookmarkFormValues,
     formatTimeRange,
     getBookmarkData,
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
@@ -33,12 +32,14 @@
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { InfoIcon } from "lucide-svelte";
-  import { createForm } from "svelte-forms-lib";
-  import * as yup from "yup";
   import type { Interval } from "luxon";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import CanvasFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/CanvasFilterChipsReadOnly.svelte";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { object, string, boolean } from "yup";
+  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
 
   export let organization: string;
   export let project: string;
@@ -157,20 +158,35 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
-  const { form, errors, handleSubmit, handleReset } =
-    createForm<BookmarkFormValues>({
-      initialValues: {
-        displayName: bookmark?.resource.displayName || "Default Label",
-        description: bookmark?.resource.description ?? "",
-        shared: bookmark?.resource.shared ? "true" : "false",
-        filtersOnly: bookmark?.filtersOnly ?? false,
-        absoluteTimeRange: bookmark?.absoluteTimeRange ?? false,
-      },
-      validationSchema: yup.object({
-        displayName: yup.string().required("Required"),
-        description: yup.string(),
-      }),
-      onSubmit: async (values) => {
+  const initialValues = {
+    displayName: bookmark?.resource.displayName || "Default Label",
+    description: bookmark?.resource.description ?? "",
+    shared: bookmark?.resource.shared ? "true" : "false",
+    filtersOnly: bookmark?.filtersOnly ?? false,
+    absoluteTimeRange: bookmark?.absoluteTimeRange ?? false,
+  };
+
+  const schema = yup(
+    object({
+      displayName: string().required("Required"),
+      description: string(),
+      shared: string(),
+      filtersOnly: boolean(),
+      absoluteTimeRange: boolean(),
+    }),
+  );
+
+  const formId = "create-bookmark-dialog";
+
+  const { form, errors, submit, reset, enhance } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+
         const bookmarkData = getBookmarkData({
           curUrlParams,
           defaultUrlParams,
@@ -200,7 +216,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
               urlSearch: bookmarkData,
             },
           });
-          handleReset();
+          reset();
         }
         onClose();
 
@@ -215,7 +231,12 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           message: bookmark ? "Bookmark updated" : "Bookmark created",
         });
       },
-    });
+    },
+  );
+
+  $: error = getRpcErrorMessage(
+    $bookmarkCreator.error ?? $bookmarkUpdater.error,
+  );
 </script>
 
 <Dialog.Root
@@ -233,10 +254,9 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
 
     <form
       class="flex flex-col gap-4 z-50"
-      id="create-bookmark-dialog"
-      on:submit|preventDefault={() => {
-        /* Switch was triggering this causing clicking on them submitting the form */
-      }}
+      id={formId}
+      use:enhance
+      on:submit|preventDefault={submit}
     >
       <Input
         bind:value={$form["displayName"]}
@@ -253,8 +273,8 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       />
       <div class="flex flex-col gap-y-2">
         <Label class="flex flex-col gap-y-1 text-sm">
-          <div class="text-gray-800 font-medium">Filters</div>
-          <div class="text-gray-500">
+          <div class="text-fg-primary font-medium">Filters</div>
+          <div class="text-fg-secondary">
             Inherited from underlying dashboard view.
           </div>
         </Label>
@@ -306,7 +326,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           >
             <span>Save filters only</span>
             <Tooltip distance={8}>
-              <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+              <InfoIcon class="text-fg-secondary" size="14px" strokeWidth={2} />
               <TooltipContent
                 class="whitespace-pre-line"
                 maxWidth="600px"
@@ -329,7 +349,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           <div class="text-left text-sm flex gap-x-1 items-center">
             <span>Absolute time range</span>
             <Tooltip distance={8}>
-              <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+              <InfoIcon class="text-fg-secondary" size="14px" strokeWidth={2} />
               <TooltipContent
                 class="whitespace-pre-line"
                 maxWidth="600px"
@@ -341,18 +361,23 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
             </Tooltip>
           </div>
           {#if filterState}
-            <div class="text-gray-500 text-sm">
+            <div class="text-fg-secondary text-sm">
               {filterState.selectedTimeRange}
             </div>
           {/if}
         </Label>
       </div>
+      {#if error}
+        <div class="text-red-500 text-sm py-px">
+          {error}
+        </div>
+      {/if}
     </form>
 
     <div class="flex flex-row mt-4 gap-2">
       <div class="grow" />
       <Button onClick={onClose} type="secondary">Cancel</Button>
-      <Button onClick={handleSubmit} type="primary">Save</Button>
+      <Button onClick={submit} type="primary">Save</Button>
     </div>
   </Dialog.Content>
 </Dialog.Root>

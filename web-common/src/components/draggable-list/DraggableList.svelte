@@ -44,9 +44,17 @@
   );
 
   $: filteredItems = searchValue
-    ? items.filter((item) =>
-        item.id.toLowerCase().includes(searchValue.toLowerCase()),
-      )
+    ? items.filter((item) => {
+        const normalizedSearch = searchValue.trim().toLowerCase();
+        if (normalizedSearch === "") return true;
+        const itemId = item.id.toLowerCase();
+        const itemDisplayName =
+          (item.displayName as string | undefined)?.toLowerCase() ?? "";
+        return (
+          itemId.includes(normalizedSearch) ||
+          itemDisplayName.includes(normalizedSearch)
+        );
+      })
     : items;
 
   function handleMouseDown(e: MouseEvent) {
@@ -84,7 +92,7 @@
     clone.style.zIndex = "50";
 
     clone.classList.add(
-      "bg-slate-100",
+      "bg-gray-100",
       "cursor-grabbing",
       "shadow-md",
       "outline",
@@ -169,7 +177,7 @@
         <input
           bind:value={searchValue}
           placeholder="Search..."
-          class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+          class="w-full px-2 py-1 border rounded text-sm"
         />
       </slot>
     </div>
@@ -186,7 +194,7 @@
       on:mousedown={handleMouseDown}
     >
       {#if filteredItems.length === 0}
-        <div class="px-2 py-2 text-xs text-gray-500">
+        <div class="px-2 py-2 text-xs text-fg-secondary">
           <slot name="empty" {searchValue}>
             {searchValue ? "No matching items" : "No items"}
           </slot>
@@ -215,7 +223,7 @@
               class:mb-7={isLastItem}
               style:pointer-events={isDragItem ? "none" : "auto"}
               style:height="{ITEM_HEIGHT}px"
-              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-slate-50 rounded-sm text-left"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-surface-background rounded-sm text-left"
               class:cursor-grab={draggable}
               class:cursor-not-allowed={draggable && items.length === 1}
               class:cursor-pointer={!draggable && !!onItemClick}
@@ -241,7 +249,7 @@
               class:mb-7={isLastItem}
               style:pointer-events={isDragItem ? "none" : "auto"}
               style:height="{ITEM_HEIGHT}px"
-              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-slate-50 rounded-sm"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center text-fg-primary hover:bg-popover-accent rounded-sm"
               class:cursor-grab={draggable}
               class:cursor-not-allowed={draggable && items.length === 1}
               class:cursor-pointer={!draggable && !!onItemClick}

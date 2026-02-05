@@ -35,6 +35,8 @@ import {
 } from "@rilldata/web-common/lib/time/new-grains";
 import { flattenExpression } from "../../canvas/stores/filter-manager";
 import { splitWhereFilter } from "../filters/measure-filters/measure-filter-utils";
+import { getAggregationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
+import { parseRillTime } from "../url-state/time-ranges/parser";
 
 export function getRillDefaultExploreState(
   metricsViewSpec: V1MetricsViewSpec,
@@ -232,16 +234,24 @@ export function getGrainForRange(
   timeRangeSummary: V1TimeRangeSummary,
 ) {
   if (!timeRangeName) return undefined;
-  const fullTimeStart = new Date(timeRangeSummary.min!);
-  const fullTimeEnd = new Date(timeRangeSummary.max!);
-  const timeRange = isoDurationToFullTimeRange(
-    timeRangeName,
-    fullTimeStart,
-    fullTimeEnd,
-    timezone,
-  );
 
-  return getDefaultTimeGrain(timeRange.start, timeRange.end);
+  try {
+    const parsed = parseRillTime(timeRangeName);
+    const grain = getAggregationGrain(parsed);
+
+    return grain;
+  } catch {
+    const fullTimeStart = new Date(timeRangeSummary.min!);
+    const fullTimeEnd = new Date(timeRangeSummary.max!);
+    const timeRange = isoDurationToFullTimeRange(
+      timeRangeName,
+      fullTimeStart,
+      fullTimeEnd,
+      timezone,
+    );
+
+    return getDefaultTimeGrain(timeRange.start, timeRange.end);
+  }
 }
 
 export function getDefaultTimeZone(explore: V1ExploreSpec) {

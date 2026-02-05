@@ -12,8 +12,10 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**ClickHouse**](#clickhouse) - ClickHouse analytical database
 - [**Druid**](#druid) - Apache Druid
 - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
+- [**External DuckDB**](#external-duckdb) - External DuckDB database
 - [**MotherDuck**](#motherduck) - MotherDuck cloud database
 - [**Pinot**](#pinot) - Apache Pinot
+- [**StarRocks**](#starrocks) - StarRocks analytical database
 
 ### _Data Warehouses_
 - [**Athena**](#athena) - Amazon Athena
@@ -26,20 +28,22 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**PostgreSQL**](#postgres) - PostgreSQL databases
 - [**SQLite**](#sqlite) - SQLite databases
 
-### _Cloud Storage_
+### _Object Storage_
 - [**Azure**](#azure) - Azure Blob Storage
 - [**GCS**](#gcs) - Google Cloud Storage
 - [**S3**](#s3) - Amazon S3 storage
 
-### _Other_
-- [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
-- [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**OpenAI**](#openai) - OpenAI data
-- [**Salesforce**](#salesforce) - Salesforce data
+### Service Integrations
+- [**Claude**](#claude) - Claude connector for chat with your own API key
+- [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
 - [**Slack**](#slack) - Slack data
 
+### _Other_
+- [**HTTPS**](#https) - Public files via HTTP/HTTPS
+- [**Salesforce**](#salesforce) - Salesforce data
+
 :::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
 :::
 
 
@@ -666,6 +670,40 @@ api_type: "openai" # The type of OpenAI API to use
 api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD  
 ```
 
+## Claude
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "claude" 
+
+### `api_key`
+
+_[string]_ - API key for connecting to Claude _(required)_
+
+### `model`
+
+_[string]_ - The Claude model to use (e.g., 'claude-opus-4-5') 
+
+### `max_tokens`
+
+_[number]_ - Maximum number of tokens in the response (e.g., 8192) 
+
+### `temperature`
+
+_[number]_ - Sampling temperature to use (e.g., 0.0) 
+
+### `base_url`
+
+_[string]_ - The base URL for the Claude API 
+
+```yaml
+# Example: Claude connector configuration
+type: connector
+driver: claude
+api_key: "{{ .env.claude_api_key }}"
+model: claude-opus-4-5
+```
+
 ## Pinot
 
 ### `driver`
@@ -712,6 +750,10 @@ _[boolean]_ - Log raw SQL queries executed through Pinot
 
 _[integer]_ - Maximum number of open connections to the Pinot database 
 
+### `timeout_ms`
+
+_[integer]_ - Query timeout in milliseconds 
+
 ```yaml
 # Example: Pinot connector configuration
 type: connector # Must be `connector` (required)
@@ -725,6 +767,58 @@ controller_port: 9000 # Port number for the Pinot controller
 ssl: true # Enable SSL connection to Pinot  
 log_queries: true # Log raw SQL queries executed through Pinot  
 max_open_conns: 100 # Maximum number of open connections to the Pinot database
+timeout_ms: 30000 # Query timeout in milliseconds
+```
+
+## StarRocks
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `starrocks` _(required)_
+
+### `dsn`
+
+_[string]_ - DSN (Data Source Name) for the StarRocks connection. Follows MySQL protocol format. 
+
+### `host`
+
+_[string]_ - StarRocks FE (Frontend) server hostname 
+
+### `port`
+
+_[integer]_ - MySQL protocol port of StarRocks FE 
+
+### `username`
+
+_[string]_ - Username for authentication 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+### `catalog`
+
+_[string]_ - StarRocks catalog name (for external catalogs like Iceberg, Hive) 
+
+### `database`
+
+_[string]_ - StarRocks database name 
+
+### `ssl`
+
+_[boolean]_ - Enable SSL/TLS encryption 
+
+```yaml
+# Example: StarRocks connector configuration
+type: connector # Must be `connector` (required)
+driver: starrocks # Must be `starrocks` _(required)_
+host: "starrocks-fe.example.com" # Hostname of the StarRocks FE server  
+port: 9030 # MySQL protocol port of StarRocks FE  
+username: "analyst" # Username for authentication  
+password: "{{ .env.connector.starrocks.password }}" # Password for authentication  
+catalog: "default_catalog" # StarRocks catalog name  
+database: "my_database" # StarRocks database name  
+ssl: false # Enable SSL/TLS encryption
 ```
 
 ## Postgres
@@ -886,6 +980,18 @@ _[string]_ - Optional custom endpoint URL for S3-compatible storage
 
 _[string]_ - AWS region of the S3 bucket 
 
+### `aws_role_arn`
+
+_[string]_ - ARN of the IAM role to assume for accessing S3 resources 
+
+### `aws_role_session_name`
+
+_[string]_ - Session name to use when assuming the IAM role 
+
+### `aws_external_id`
+
+_[string]_ - External ID for cross-account role assumption 
+
 ### `path_prefixes`
 
 _[string, array]_ - A list of bucket path prefixes that this connector is allowed to access.
@@ -996,7 +1102,7 @@ openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
 # Convert URL safe format for Snowflake
 cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
 ```
-See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+See: https://docs.snowflake.com/en/guide/key-pair-auth
 :::
  
 

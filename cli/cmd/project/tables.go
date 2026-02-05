@@ -19,7 +19,7 @@ type TableInfo struct {
 }
 
 func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
-	var project, path string
+	var project, path, branch string
 	var local bool
 
 	tablesCmd := &cobra.Command{
@@ -44,7 +44,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, local)
+			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, branch, local)
 			if err != nil {
 				return fmt.Errorf("failed to connect to runtime: %w", err)
 			}
@@ -129,6 +129,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 	tablesCmd.Flags().StringVar(&project, "project", "", "Project name")
 	tablesCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	tablesCmd.Flags().BoolVar(&local, "local", false, "Target local runtime instead of Rill Cloud")
+	tablesCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 
 	return tablesCmd
 }
