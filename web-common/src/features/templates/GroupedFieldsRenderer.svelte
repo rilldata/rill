@@ -5,7 +5,6 @@
   import SchemaField from "./SchemaField.svelte";
   import type { JSONSchemaField } from "./schemas/types";
   import type { ComponentType, SvelteComponent } from "svelte";
-  import type { Writable } from "svelte/store";
 
   type FieldEntry = [string, JSONSchemaField];
   type EnumOption = {
@@ -15,8 +14,17 @@
     icon?: ComponentType<SvelteComponent>;
   };
 
+  // Superforms-compatible store type (matches JSONSchemaFormRenderer)
+  type FormStore = {
+    subscribe: (run: (value: Record<string, any>) => void) => () => void;
+    update: (
+      updater: (value: Record<string, any>) => Record<string, any>,
+      options?: { taint?: boolean },
+    ) => void;
+  };
+
   export let fields: FieldEntry[];
-  export let formStore: Writable<Record<string, any>>;
+  export let formStore: FormStore;
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
