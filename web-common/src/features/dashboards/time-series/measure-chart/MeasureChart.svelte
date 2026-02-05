@@ -45,7 +45,7 @@
   import MeasureChartAnnotationMarkers from "./MeasureChartAnnotationMarkers.svelte";
   import MeasureChartAnnotationPopover from "./MeasureChartAnnotationPopover.svelte";
   import { measureSelection } from "../measure-selection/measure-selection";
-  import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
+  import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
   import { snapIndex, dateToIndex } from "./utils";
   import { hoverIndex } from "./hover-index";
   import {
@@ -345,7 +345,6 @@
         data,
         config,
         timeGranularity,
-        timeZone,
       )
     : [];
 
@@ -405,7 +404,7 @@
   function formatScrubLabel(idx: number): string {
     const dt = indexToDateTime(idx);
     if (!dt) return "";
-    return formatDateTimeByGrain(dt, timeGranularity);
+    return formatGrainBucket(dt, timeGranularity, interval);
   }
 
   function clampX(offsetX: number) {
@@ -711,10 +710,11 @@
           <!-- Date -->
           <text
             class="fill-fg-muted text-outline text-[10px]"
+            aria-label="{measureName} primary time label"
             x={pb.left + 6}
             y={pb.top + 10}
           >
-            {formatDateTimeByGrain(hoveredPoint.ts, timeGranularity)}
+            {formatGrainBucket(hoveredPoint.ts, timeGranularity, interval)}
           </text>
 
           {#if showComparison}
@@ -786,6 +786,8 @@
         currentTs={hoveredPoint.ts}
         comparisonTs={hoveredPoint.comparisonTs}
         {timeGranularity}
+        {interval}
+        {comparisonInterval}
         {isComparingDimension}
         {dimTooltipEntries}
         deltaLabel={tooltipDeltaLabel}

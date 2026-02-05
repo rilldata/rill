@@ -2,7 +2,6 @@ import type { Annotation } from "@rilldata/web-common/components/data-graphic/ma
 import type { ChartScales, ChartConfig, TimeSeriesPoint } from "./types";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
-import { DateTime } from "luxon";
 import { dateToIndex } from "./utils";
 
 export type AnnotationGroup = {
@@ -30,7 +29,6 @@ export function groupAnnotations(
   data: TimeSeriesPoint[],
   config: ChartConfig,
   timeGrain: V1TimeGrain | undefined,
-  timeZone: string,
 ): AnnotationGroup[] {
   if (annotations.length === 0 || data.length === 0) return [];
 
@@ -38,20 +36,28 @@ export function groupAnnotations(
   const diamondY =
     config.plotBounds.top + config.plotBounds.height - AnnotationHeight;
 
-  // Bucket annotations by their truncated grain key
+  // Bucket annotations by their grain-truncated start time.
+  // Store the truncated millis so the visibility check and positioning
+  // use the bucket boundary (not the raw annotation time).
   const buckets = new Map<
     string,
-    { annotations: Annotation[]; hasRange: boolean }
+    { annotations: Annotation[]; hasRange: boolean; bucketMs: number }
   >();
 
   for (const a of annotations) {
-    const dt = DateTime.fromJSDate(a.startTime, { zone: timeZone });
+    const bucketStart = a.startTime.startOf(unit);
     const key =
-      dt.startOf(unit).toISO() ?? dt.toISO() ?? String(a.startTime.getTime());
+      bucketStart.toISO() ??
+      a.startTime.toISO() ??
+      String(a.startTime.toMillis());
 
     let bucket = buckets.get(key);
     if (!bucket) {
-      bucket = { annotations: [], hasRange: false };
+      bucket = {
+        annotations: [],
+        hasRange: false,
+        bucketMs: bucketStart.toMillis(),
+      };
       buckets.set(key, bucket);
     }
     bucket.annotations.push(a);
@@ -66,13 +72,12 @@ export function groupAnnotations(
   const dataEndMs = data[data.length - 1].ts.toMillis();
 
   for (const [bucketKey, bucket] of buckets) {
-    // Use the first annotation's startTime for positioning
-    const annotationMs = bucket.annotations[0].startTime.getTime();
+    // Use the grain-truncated bucket time for visibility and positioning.
+    // This ensures e.g. an hour annotation at 06:00 snaps to its day bucket
+    // at 00:00, which aligns with the day-grain data point grid.
+    if (bucket.bucketMs < dataStartMs || bucket.bucketMs > dataEndMs) continue;
 
-    // Skip annotations whose start falls outside the data range
-    if (annotationMs < dataStartMs || annotationMs > dataEndMs) continue;
-
-    const startIdx = dateToIndex(data, annotationMs);
+    const startIdx = dateToIndex(data, bucket.bucketMs);
     if (startIdx === null) continue;
 
     const left = scales.x(startIdx);
@@ -81,7 +86,7 @@ export function groupAnnotations(
     let right = left + AnnotationWidth;
     for (const a of bucket.annotations) {
       if (a.endTime) {
-        const endIdx = dateToIndex(data, a.endTime.getTime());
+        const endIdx = dateToIndex(data, a.endTime.toMillis());
         if (endIdx !== null) {
           right = Math.max(right, scales.x(endIdx));
         }

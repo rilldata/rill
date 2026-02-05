@@ -35,3 +35,11 @@ measures:
     expression: SUM(bid_price)
     description: ""
     format_preset: humanize
+
+annotations:
+  - model: AdBids_point_annotations
+    measures: ['total_records']
+  - model: AdBids_range_annotations
+    measures: ['total_records']
+  - model: AdBids_hour_annotations
+    measures: ['total_records']

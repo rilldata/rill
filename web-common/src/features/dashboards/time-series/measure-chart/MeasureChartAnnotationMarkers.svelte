@@ -29,6 +29,7 @@
   {@const cx = group.left}
   {@const cy = group.top + AnnotationHeight / 2}
   <rect
+    aria-label="annotation marker"
     x={cx - halfSize}
     y={cy - halfSize}
     width={halfSize * 2}

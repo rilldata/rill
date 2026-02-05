@@ -138,11 +138,16 @@
     }
 
     // Day, week, month, quarter grains
-    const timeLine =
-      timeGranularity === V1TimeGrain.TIME_GRAIN_MONTH ||
-      timeGranularity === V1TimeGrain.TIME_GRAIN_QUARTER
-        ? dt.toLocaleString({ month: "short" })
-        : dt.toLocaleString({ month: "short", day: "numeric" });
+    let timeLine: string;
+    if (timeGranularity === V1TimeGrain.TIME_GRAIN_WEEK) {
+      timeLine = `W${dt.weekNumber}`;
+    } else if (timeGranularity === V1TimeGrain.TIME_GRAIN_QUARTER) {
+      timeLine = `Q${dt.quarter}`;
+    } else if (timeGranularity === V1TimeGrain.TIME_GRAIN_MONTH) {
+      timeLine = dt.toLocaleString({ month: "short" });
+    } else {
+      timeLine = dt.toLocaleString({ month: "short", day: "numeric" });
+    }
 
     if (spansYears) {
       const yearChanged = !prevDt || dt.year !== prevDt.year;

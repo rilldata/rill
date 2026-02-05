@@ -25,6 +25,7 @@
 />
 
 <text
+  aria-label="main value"
   class="text-xs font-semibold fill-fg-secondary"
   class:fill-theme-500={selected}
   style:paint-order="stroke"

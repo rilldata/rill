@@ -2,7 +2,6 @@ import type { Annotation } from "@rilldata/web-common/components/data-graphic/ma
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
-import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   type DashboardTimeControls,
   Period,
@@ -77,7 +76,7 @@ export function getAnnotationsForMeasure({
           dashboardTimezone,
         ),
       ) ?? [];
-    annotations.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+    annotations.sort((a, b) => a.startTime.toMillis() - b.startTime.toMillis());
     return annotations;
   });
 }
@@ -88,8 +87,6 @@ function convertV1AnnotationsResponseItemToAnnotation(
   selectedTimeGrain: V1TimeGrain,
   dashboardTimezone: string,
 ) {
-  const localTimezone = getLocalIANA();
-
   let startTime = DateTime.fromISO(annotation.time as string, {
     zone: dashboardTimezone,
   });
@@ -116,12 +113,8 @@ function convertV1AnnotationsResponseItemToAnnotation(
 
   return <Annotation>{
     ...annotation,
-    startTime: startTime
-      .setZone(localTimezone, { keepLocalTime: true })
-      .toJSDate(),
-    endTime: endTime
-      ?.setZone(localTimezone, { keepLocalTime: true })
-      .toJSDate(),
+    startTime,
+    endTime,
     formattedTimeOrRange,
   };
 }

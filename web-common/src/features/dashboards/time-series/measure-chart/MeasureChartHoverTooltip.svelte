@@ -1,8 +1,8 @@
 <script lang="ts">
   import { portal } from "@rilldata/web-common/lib/actions/portal";
-  import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
+  import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import type { DateTime } from "luxon";
+  import { type DateTime, type Interval } from "luxon";
 
   interface DimTooltipEntry {
     label: string;
@@ -17,6 +17,8 @@
   export let currentTs: DateTime;
   export let comparisonTs: DateTime | undefined;
   export let timeGranularity: V1TimeGrain | undefined;
+  export let interval: Interval<true> | undefined = undefined;
+  export let comparisonInterval: Interval<true> | undefined = undefined;
   export let isComparingDimension: boolean;
   export let dimTooltipEntries: DimTooltipEntry[] = [];
   export let deltaLabel: string | null;
@@ -40,7 +42,7 @@
   {#if isComparingDimension}
     <div class="dimension-tooltip">
       <div class="dimension-date">
-        {formatDateTimeByGrain(currentTs, timeGranularity)}
+        {formatGrainBucket(currentTs, timeGranularity, interval)}
       </div>
       {#each dimTooltipEntries as entry (entry.label)}
         <div class="dimension-entry">
@@ -55,7 +57,7 @@
       <div class="period current">
         <span class="value primary-value">{formatter(currentValue)}</span>
         <span class="date">
-          {formatDateTimeByGrain(currentTs, timeGranularity)}</span
+          {formatGrainBucket(currentTs, timeGranularity, interval)}</span
         >
       </div>
 
@@ -68,7 +70,11 @@
         <span class="value">{formatter(comparisonValue)}</span>
         <span class="date">
           {#if comparisonTs}
-            {formatDateTimeByGrain(comparisonTs, timeGranularity)}
+            {formatGrainBucket(
+              comparisonTs,
+              timeGranularity,
+              comparisonInterval,
+            )}
           {/if}
         </span>
       </div>
