@@ -2,7 +2,7 @@
 title: Gemini
 description: Use Gemini for AI features with your own API key
 sidebar_label: Gemini
-sidebar_position: 44
+sidebar_position: 20
 ---
 
 Rill supports connecting to Google's Gemini API using your own API key and configuration parameters for AI-powered coding and data analysis features.
