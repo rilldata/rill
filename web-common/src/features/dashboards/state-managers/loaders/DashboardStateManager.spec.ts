@@ -206,20 +206,17 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setLastVisitedStateRaw(
-        AD_BIDS_EXPLORE_NAME,
-        JSON.stringify({
-          visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
-          allMeasuresVisible: false,
-          visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
-          allDimensionsVisible: false,
+      setLastVisitedStateRaw(AD_BIDS_EXPLORE_NAME, {
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
 
-          leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-          leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
-          sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
-          dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-        }),
-      );
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
       renderDashboardStateManager(BookmarkSourceQueryResult);
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
@@ -319,20 +316,17 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setLastVisitedStateRaw(
-        AD_BIDS_EXPLORE_NAME,
-        JSON.stringify({
-          visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
-          allMeasuresVisible: false,
-          visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
-          allDimensionsVisible: false,
+      setLastVisitedStateRaw(AD_BIDS_EXPLORE_NAME, {
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
+        allDimensionsVisible: false,
 
-          leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
-          leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
-          sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
-          dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-        }),
-      );
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_BID_PRICE_MEASURE],
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
@@ -362,20 +356,17 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should validate most recent dashboard state and correct invalid fields", async () => {
-      setLastVisitedStateRaw(
-        AD_BIDS_EXPLORE_NAME,
-        JSON.stringify({
-          visibleMeasures: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
-          allMeasuresVisible: false,
-          visibleDimensions: [AD_BIDS_COUNTRY_DIMENSION],
-          allDimensionsVisible: false,
+      setLastVisitedStateRaw(AD_BIDS_EXPLORE_NAME, {
+        visibleMeasures: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_COUNTRY_DIMENSION],
+        allDimensionsVisible: false,
 
-          leaderboardSortByMeasureName: AD_BIDS_PUBLISHER_COUNT_MEASURE,
-          leaderboardMeasureNames: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
-          sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
-          dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-        }),
-      );
+        leaderboardSortByMeasureName: AD_BIDS_PUBLISHER_COUNT_MEASURE,
+        leaderboardMeasureNames: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
+        sortDirection: DashboardState_LeaderboardSortDirection.ASCENDING,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+      });
       renderDashboardStateManager();
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 

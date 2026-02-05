@@ -326,12 +326,11 @@ export class DashboardStateDataLoader {
 
     // Check in-memory last visited state
     let mostRecentPartialExploreState: Partial<ExploreState> | undefined;
-    const lastVisitedJson = getLastVisitedState(this.exploreName);
-    if (lastVisitedJson) {
+    const lastVisited = getLastVisitedState(this.exploreName);
+    if (lastVisited) {
       try {
-        const parsed = JSON.parse(lastVisitedJson) as Partial<ExploreState>;
-        validateAndCleanExploreState(metricsViewSpec, exploreSpec, parsed);
-        mostRecentPartialExploreState = parsed;
+        validateAndCleanExploreState(metricsViewSpec, exploreSpec, lastVisited);
+        mostRecentPartialExploreState = lastVisited;
       } catch {
         // Invalid state, ignore
       }
