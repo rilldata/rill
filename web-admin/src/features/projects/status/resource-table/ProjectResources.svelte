@@ -7,7 +7,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import Button from "web-common/src/components/button/Button.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";

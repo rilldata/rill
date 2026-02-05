@@ -135,7 +135,7 @@
     {#if logs.length === 0}
       <div class="empty-state">Waiting for logs...</div>
     {:else}
-      {#each logs as log}
+      {#each logs as log, i (log.time ?? i)}
         <div class="log-entry {getLevelClass(log.level)}">
           {formatTime(log.time)}
           {getLevelLabel(log.level)}
