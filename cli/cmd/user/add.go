@@ -17,6 +17,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	var explores []string
 	var canvases []string
 	var restrictResources bool
+	var autoInvite bool
 
 	addCmd := &cobra.Command{
 		Use:   "add",
@@ -132,14 +133,17 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					if !strings.Contains(err.Error(), "user is not a member of the org") {
 						return err
 					}
-					if !ch.Interactive {
+					if !ch.Interactive && !autoInvite {
 						return err
 					}
-					ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("The user must be a member of %q to join one of its groups. Do you want to invite the user to join %q?", ch.Org, ch.Org), "", false)
-					if err != nil {
-						return err
+					// prompt only if explicit flag not set
+					if !cmd.Flags().Changed("auto-invite") {
+						autoInvite, err = cmdutil.ConfirmPrompt(fmt.Sprintf("The user must be a member of %q to join one of its groups. Do you want to invite the user to join %q?", ch.Org, ch.Org), "", false)
+						if err != nil {
+							return err
+						}
 					}
-					if !ok {
+					if !autoInvite {
 						return fmt.Errorf("aborted: user needs to be part of the organization to be added to the user group")
 					}
 
@@ -150,9 +154,13 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 						orgRole = ""
 					}
 					if orgRole == "" {
-						err := cmdutil.SelectPromptIfEmpty(&orgRole, "Select organization role", orgRoles, orgRoles[len(orgRoles)-1])
-						if err != nil {
-							return err
+						if !ch.Interactive {
+							orgRole = "guest"
+						} else {
+							err := cmdutil.SelectPromptIfEmpty(&orgRole, "Select organization role", orgRoles, orgRoles[len(orgRoles)-1])
+							if err != nil {
+								return err
+							}
 						}
 					}
 
@@ -195,6 +203,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	addCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	addCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	addCmd.Flags().StringVar(&group, "group", "", "User group")
+	addCmd.Flags().BoolVar(&autoInvite, "auto-invite", false, "Automatically invite the user to the organization if they are not already a member when adding to a group")
 	addCmd.Flags().StringVar(&email, "email", "", "Email of the user")
 	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(orgRoles, ", ")))
 	addCmd.Flags().StringArrayVar(&explores, "explore", nil, "Explore resource to restrict to (repeat for multiple)")
