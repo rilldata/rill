@@ -20,7 +20,10 @@
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get } from "svelte/store";
-  import { getConnectorSchema } from "./connector-schemas";
+  import {
+    getConnectorSchema,
+    shouldShowSkipLink as checkShouldShowSkipLink,
+  } from "./connector-schemas";
   import {
     getRequiredFieldsForValues,
     getSchemaButtonLabels,
@@ -82,13 +85,13 @@
   let multiStepSubmitDisabled = false;
   let multiStepButtonLabel = "";
   let multiStepLoadingCopy = "";
-  // Show skip link on connector step for non-OLAP connectors, excluding salesforce and sqlite
-  $: excludedConnectors = ["salesforce", "sqlite"];
-  $: shouldShowSkipLink =
-    stepState.step === "connector" &&
-    !connectorInstanceName &&
-    !connector?.implementsOlap &&
-    !excludedConnectors.includes(connector?.name ?? "");
+  // Show skip link on connector step for non-OLAP connectors
+  $: shouldShowSkipLink = checkShouldShowSkipLink(
+    stepState.step,
+    connector?.name,
+    connectorInstanceName,
+    connector?.implementsOlap,
+  );
   let primaryButtonLabel = "";
   let primaryLoadingCopy = "";
 
@@ -286,7 +289,6 @@
               loadingCopy="Saving..."
               onClick={handleSaveAnyway}
               type="secondary"
-              forcedStyle="cursor: default"
             >
               Save
             </Button>
@@ -304,7 +306,6 @@
             form={formId}
             submitForm
             type="primary"
-            forcedStyle="cursor: default"
           >
             {primaryButtonLabel}
           </Button>

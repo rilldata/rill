@@ -16,13 +16,15 @@
   $: hasReconcileError = !!resource?.meta?.reconcileError;
   $: isOlapConnector = driverName ? OLAP_ENGINES.includes(driverName) : false;
   // Map driver name to schema name for connector lookup
-  $: schemaName = driverName
-    ? (getSchemaNameFromDriver(driverName) ?? driverName)
-    : null;
+  $: schemaName = driverName ? getSchemaNameFromDriver(driverName) : null;
 
+  /**
+   * Opens the Add Data modal pre-configured for this connector.
+   * Passes the schema name (for form lookup) and connector instance name
+   * so the modal can skip to the import step with the connector pre-selected.
+   */
   function openAddModel() {
     if (!schemaName || !connectorName) return;
-    // Pass schema name (for lookup) and connector instance name
     addSourceModal.open(schemaName, connectorName);
   }
 </script>

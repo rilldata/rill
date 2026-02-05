@@ -90,7 +90,7 @@ export function getBackendConnectorName(schemaName: string): string {
  * Reverse lookup: finds the schema name that maps to the given driver name.
  * For most connectors, driver name = schema name, but some have x-driver override.
  */
-export function getSchemaNameFromDriver(driverName: string): string | null {
+export function getSchemaNameFromDriver(driverName: string): string {
   // First, check if driver name matches a schema name directly
   if (driverName in multiStepFormSchemas) {
     return driverName;
@@ -137,4 +137,33 @@ export function getFormHeight(schema: MultiStepFormSchema | null): string {
   return schema?.["x-form-height"] === "tall"
     ? FORM_HEIGHT_TALL
     : FORM_HEIGHT_DEFAULT;
+}
+
+/**
+ * Connectors excluded from showing the "skip to import" link.
+ * These connectors don't support skipping the connector setup step.
+ */
+export const SKIP_LINK_EXCLUDED_CONNECTORS = ["salesforce", "sqlite"];
+
+/**
+ * Determine if the skip link should be shown for a connector.
+ * The skip link allows users to skip connector setup and go directly to import.
+ *
+ * @param step - Current form step ("connector", "source", or "explorer")
+ * @param connectorName - Name of the connector (e.g., "postgres", "s3")
+ * @param connectorInstanceName - If set, user came from "Import Data" button
+ * @param implementsOlap - Whether the connector is an OLAP engine
+ */
+export function shouldShowSkipLink(
+  step: string,
+  connectorName: string | undefined,
+  connectorInstanceName: string | null,
+  implementsOlap: boolean | undefined,
+): boolean {
+  return (
+    step === "connector" &&
+    !connectorInstanceName &&
+    !implementsOlap &&
+    !SKIP_LINK_EXCLUDED_CONNECTORS.includes(connectorName ?? "")
+  );
 }

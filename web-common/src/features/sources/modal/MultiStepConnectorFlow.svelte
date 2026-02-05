@@ -9,7 +9,10 @@
     getRadioEnumOptions,
     getSchemaInitialValues,
   } from "../../templates/schema-utils";
-  import { getConnectorSchema } from "./connector-schemas";
+  import {
+    getConnectorSchema,
+    shouldShowSkipLink as checkShouldShowSkipLink,
+  } from "./connector-schemas";
   import { isMultiStepConnectorDisabled } from "./utils";
   import type { AddDataFormManager } from "./AddDataFormManager";
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
@@ -181,13 +184,13 @@
         ? "Continuing..."
         : "Testing connection...";
   $: formId = baseFormId;
-  // Show skip link on connector step for non-OLAP connectors, excluding salesforce and sqlite
-  $: excludedConnectors = ["salesforce", "sqlite"];
-  $: shouldShowSkipLink =
-    stepState.step === "connector" &&
-    !connectorInstanceName &&
-    !connector?.implementsOlap &&
-    !excludedConnectors.includes(connector?.name ?? "");
+  // Show skip link on connector step for non-OLAP connectors
+  $: shouldShowSkipLink = checkShouldShowSkipLink(
+    stepState.step,
+    connector?.name,
+    connectorInstanceName,
+    connector?.implementsOlap,
+  );
 </script>
 
 <AddDataFormSection

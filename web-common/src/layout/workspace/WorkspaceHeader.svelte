@@ -37,12 +37,11 @@
   $: tableVisible = workspaceLayout.table.visible;
   $: view = workspaceLayout.view;
 
-  // Check if it's a connector by resourceKind or by file path (for when reconcile fails)
+  // Check if it's a connector by resourceKind or by file path.
+  // File path fallback is needed when reconcile fails and resourceKind is unavailable.
   $: isConnector =
     resourceKind === ResourceKind.Connector ||
-    (filePath &&
-      (filePath.startsWith("/connectors/") ||
-        filePath.includes("/connectors/")));
+    (filePath && filePath.startsWith("/connectors/"));
 
   // Check if it's an OLAP connector (exclude these from showing connector buttons)
   $: driverName = resource?.connector?.spec?.driver;
