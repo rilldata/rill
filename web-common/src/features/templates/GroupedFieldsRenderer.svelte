@@ -5,6 +5,7 @@
   import SchemaField from "./SchemaField.svelte";
   import type { JSONSchemaField } from "./schemas/types";
   import type { ComponentType, SvelteComponent } from "svelte";
+  import type { Writable } from "svelte/store";
 
   type FieldEntry = [string, JSONSchemaField];
   type EnumOption = {
@@ -15,7 +16,7 @@
   };
 
   export let fields: FieldEntry[];
-  export let form: Record<string, any>;
+  export let formStore: Writable<Record<string, any>>;
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
@@ -73,7 +74,11 @@
           {childProp.title}
         </div>
       {/if}
-      <Tabs bind:value={form[childKey]} options={childOptions} disableMarginTop>
+      <Tabs
+        bind:value={$formStore[childKey]}
+        options={childOptions}
+        disableMarginTop
+      >
         {#each childOptions as childOption (childOption.value)}
           <TabsContent value={childOption.value}>
             {#if tabGroupedFields.get(childKey)}
@@ -83,7 +88,7 @@
                     {@const tabSelectOptions = selectOptions(tabProp)}
                     <Select
                       id={tabKey}
-                      bind:value={form[tabKey]}
+                      bind:value={$formStore[tabKey]}
                       options={tabSelectOptions}
                       label={tabProp.title ?? ""}
                       placeholder={tabProp["x-placeholder"] ??
@@ -99,8 +104,8 @@
                       prop={tabProp}
                       optional={!isRequired(tabKey)}
                       errors={errors?.[tabKey]}
-                      bind:value={form[tabKey]}
-                      bind:checked={form[tabKey]}
+                      bind:value={$formStore[tabKey]}
+                      bind:checked={$formStore[tabKey]}
                       {onStringInputChange}
                       {handleFileUpload}
                       options={isRadioEnum(tabProp)
@@ -120,7 +125,7 @@
       {@const childSelectOptions = selectOptions(childProp)}
       <Select
         id={childKey}
-        bind:value={form[childKey]}
+        bind:value={$formStore[childKey]}
         options={childSelectOptions}
         label={childProp.title ?? ""}
         placeholder={childProp["x-placeholder"] ?? "Select an option"}
@@ -135,8 +140,8 @@
         prop={childProp}
         optional={!isRequired(childKey)}
         errors={errors?.[childKey]}
-        bind:value={form[childKey]}
-        bind:checked={form[childKey]}
+        bind:value={$formStore[childKey]}
+        bind:checked={$formStore[childKey]}
         {onStringInputChange}
         {handleFileUpload}
         options={isRadioEnum(childProp) ? radioOptions(childProp) : undefined}

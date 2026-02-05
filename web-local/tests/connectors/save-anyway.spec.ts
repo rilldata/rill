@@ -14,18 +14,17 @@ test.describe("Save Anyway feature", () => {
     // Select ClickHouse connector
     await page.locator("#clickhouse").click();
 
-    // Wait for the form to load
+    // Wait for the form to load and Host field to be visible
+    // (Host is visible when connection type is "cloud" which is the default)
     await page.waitForSelector('form[id*="clickhouse"]');
-
-    // Ensure ClickHouse Cloud is selected (default) via the connection type dropdown
-    await expect(page.getByRole("dialog").getByRole("combobox")).toBeVisible();
+    const hostField = page.getByRole("textbox", { name: "Host" });
+    await expect(hostField).toBeVisible();
 
     // Fill in connection details with invalid values
-    await page.getByRole("textbox", { name: "Host" }).fill("asd");
+    await hostField.fill("asd");
     await page.getByRole("textbox", { name: "Password" }).fill("asd");
 
     // Click "Test and Connect" - this should fail connection test and show "Save Anyway" button
-    // Note: ClickHouse form is tall (x-form-height: tall = 720px) which can exceed viewport.
     // Scope to dialog and use force:true to handle viewport overflow in CI environments.
     const submitButton = page
       .getByRole("dialog")

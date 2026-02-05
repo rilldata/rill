@@ -401,7 +401,17 @@
             Object.values(groupedFieldsMap).flat() as string[],
           );
 
-          // Clear all child keys except the new selection's grouped fields
+          // Also collect keys from tab groups of the grouped fields
+          for (const childKey of allChildKeys) {
+            const childProp = schema.properties?.[childKey];
+            const tabGroup = childProp?.["x-tab-group"];
+            if (tabGroup) {
+              const tabKeys = Object.values(tabGroup).flat() as string[];
+              tabKeys.forEach((k) => allChildKeys.add(k));
+            }
+          }
+
+          // Clear all child keys (including nested tab fields)
           for (const childKey of allChildKeys) {
             const childProp = schema.properties?.[childKey];
             if (childProp?.["x-ui-only"]) continue; // Don't clear UI-only fields
@@ -437,7 +447,7 @@
         {#if groupedFields.get(key)}
           <GroupedFieldsRenderer
             fields={getGroupedFieldsForOption(key, $form[key])}
-            form={$form}
+            formStore={form}
             {errors}
             {onStringInputChange}
             {handleFileUpload}
@@ -466,7 +476,7 @@
         {#if groupedFields.get(key)}
           <GroupedFieldsRenderer
             fields={getGroupedFieldsForOption(key, $form[key])}
-            form={$form}
+            formStore={form}
             {errors}
             {onStringInputChange}
             {handleFileUpload}
@@ -492,7 +502,7 @@
             {#if groupedFields.get(key)}
               <GroupedFieldsRenderer
                 fields={getGroupedFieldsForOption(key, option.value)}
-                form={$form}
+                formStore={form}
                 {errors}
                 {onStringInputChange}
                 {handleFileUpload}
