@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -283,44 +282,29 @@ func serveSSEUntilClose(w http.ResponseWriter, events chan *sseEvent) {
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
 
-	// Keep-alive ticker prevents proxy idle timeouts (CloudFlare ~100s, Codespaces ~100s).
-	// SSE comments (lines starting with ':') are ignored by clients per the SSE spec.
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	// Consume events from channel and write to response
-	for {
-		select {
-		case ev, ok := <-events:
-			if !ok {
-				// Channel closed, exit
-				return
-			}
-			// Skip empty events
-			if ev == nil || len(ev.Data) == 0 {
-				continue
-			}
-			// Write the event
-			if ev.Event != "" {
-				if _, err := fmt.Fprintf(w, "event: %s\n", ev.Event); err != nil {
-					return
-				}
-			}
-			if _, err := fmt.Fprintf(w, "data: %s\n", ev.Data); err != nil {
-				return
-			}
-			if _, err := fmt.Fprint(w, "\n"); err != nil {
-				return
-			}
-			flusher.Flush()
-
-		case <-ticker.C:
-			// Send SSE comment as keep-alive
-			if _, err := fmt.Fprint(w, ": keepalive\n\n"); err != nil {
-				return
-			}
-			flusher.Flush()
+	// Consume events from channel and write to response (the loop ends when the channel is closed)
+	for ev := range events {
+		// Skip empty events
+		if ev == nil || len(ev.Data) == 0 {
+			continue
 		}
+
+		// Write the event
+		if ev.Event != "" {
+			_, err := fmt.Fprintf(w, "event: %s\n", ev.Event)
+			if err != nil {
+				return
+			}
+		}
+		_, err := fmt.Fprintf(w, "data: %s\n", ev.Data)
+		if err != nil {
+			return
+		}
+		_, err = fmt.Fprint(w, "\n")
+		if err != nil {
+			return
+		}
+		flusher.Flush()
 	}
 }
 
