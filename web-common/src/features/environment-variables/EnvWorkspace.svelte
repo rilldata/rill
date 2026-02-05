@@ -240,17 +240,9 @@
   on:add={handleAddVariables}
 />
 
-<PullEnvDialog
-  bind:open={pullDialogOpen}
-  currentVariables={envVariables}
-  {isProjectLinked}
-/>
+<PullEnvDialog bind:open={pullDialogOpen} {isProjectLinked} />
 
-<PushEnvDialog
-  bind:open={pushDialogOpen}
-  currentVariables={envVariables}
-  {isProjectLinked}
-/>
+<PushEnvDialog bind:open={pushDialogOpen} {isProjectLinked} />
 
 <style lang="postcss">
   button {
