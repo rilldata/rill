@@ -9,7 +9,10 @@
     getRadioEnumOptions,
     getSchemaInitialValues,
   } from "../../templates/schema-utils";
-  import { getConnectorSchema } from "./connector-schemas";
+  import {
+    getConnectorSchema,
+    shouldShowSkipLink as checkShouldShowSkipLink,
+  } from "./connector-schemas";
   import { isMultiStepConnectorDisabled } from "./utils";
   import type { AddDataFormManager } from "./AddDataFormManager";
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
@@ -29,6 +32,7 @@
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
   export let submitting: boolean;
+  export let connectorInstanceName: string | null = null;
 
   // Outputs bound by parent
   export let activeAuthMethod: string | null = null;
@@ -180,8 +184,13 @@
         ? "Continuing..."
         : "Testing connection...";
   $: formId = baseFormId;
-  $: shouldShowSkipLink =
-    stepState.step === "connector" && formManager.isMultiStepConnector;
+  // Show skip link on connector step for non-OLAP connectors
+  $: shouldShowSkipLink = checkShouldShowSkipLink(
+    stepState.step,
+    connector?.name,
+    connectorInstanceName,
+    connector?.implementsOlap,
+  );
 </script>
 
 <AddDataFormSection
