@@ -71,12 +71,13 @@
   // Text/Foreground colors
   const textColors = [
     { key: "fg-primary", label: "Primary (Titles)" },
-    { key: "fg-secondary", label: "Secondary (Body)" },
-    { key: "fg-tertiary", label: "Tertiary (Captions)" },
-    { key: "fg-muted", label: "Muted (Hints)" },
-    { key: "fg-disabled", label: "Disabled" },
-    { key: "fg-inverse", label: "Inverse (On Dark)" },
-    { key: "fg-accent", label: "Accent (Links)" },
+    // Keeping these commented out for now, but they can be easily added back if needed. These should be surfaced for true theme editing.
+    // { key: "fg-secondary", label: "Secondary (Body)" },
+    // { key: "fg-tertiary", label: "Tertiary (Captions)" },
+    // { key: "fg-muted", label: "Muted (Hints)" },
+    // { key: "fg-disabled", label: "Disabled" },
+    // { key: "fg-inverse", label: "Inverse (On Dark)" },
+    // { key: "fg-accent", label: "Accent (Links)" },
   ];
 
   const paletteInfo = [
