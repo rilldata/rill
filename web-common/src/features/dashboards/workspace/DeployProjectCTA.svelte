@@ -8,8 +8,10 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
+  import { getFilesExceedingGithubPushLimit } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
   import { getDeployRoute } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import UpdateProjectPopup from "@rilldata/web-common/features/project/deploy/UpdateProjectPopup.svelte";
+  import ProjectHasLargeFiles from "@rilldata/web-common/features/project/ProjectHasLargeFiles.svelte";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
@@ -25,6 +27,7 @@
     createLocalServiceGitStatus,
     getLocalServiceGitStatusQueryKey,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { onMount } from "svelte";
   import Rocket from "svelte-radix/Rocket.svelte";
   import { writable, get, derived } from "svelte/store";
@@ -35,6 +38,7 @@
   let remoteChangeDialog = false;
   let deployConfirmOpen = false;
   let updateProjectDropdownOpen = false;
+  let projectHasLargeFilesDialogOpen = false;
 
   const userQuery = createLocalServiceGetCurrentUser();
   const metadata = createLocalServiceGetMetadata();
@@ -42,6 +46,10 @@
 
   const gitStatusQuery = createLocalServiceGitStatus();
   const gitPullMutation = createLocalServiceGitPull();
+
+  $: ({ instanceId } = $runtime);
+  $: filesExceedingGithubPushLimit =
+    getFilesExceedingGithubPushLimit(instanceId);
 
   $: ({ isPending: githubPullPending, error: githubPullError } =
     $gitPullMutation);
@@ -146,7 +154,12 @@
   });
 </script>
 
-{#if isDeployed && !hasRemoteChanges}
+{#if $filesExceedingGithubPushLimit.data?.length}
+  <ProjectHasLargeFiles
+    bind:open={projectHasLargeFilesDialogOpen}
+    files={$filesExceedingGithubPushLimit.data ?? []}
+  />
+{:else if isDeployed && !hasRemoteChanges}
   <UpdateProjectPopup
     bind:open={updateProjectDropdownOpen}
     matchingProjects={$matchingProjectsQuery.data?.projects ?? []}

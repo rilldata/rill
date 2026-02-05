@@ -564,6 +564,7 @@ message ListFilesResponse {
 message DirEntry {
   string path = 1;
   bool is_dir = 2;
+  int64 size = 3;
 }
 
 // FileEvent describes a file change.
@@ -584,6 +585,7 @@ message WatchFilesResponse {
   FileEvent event = 1;
   string path = 2;
   bool is_dir = 3;
+  int64 size = 4;
 }
 
 // Request message for RuntimeService.GetFile

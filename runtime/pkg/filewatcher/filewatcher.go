@@ -45,6 +45,7 @@ type WatchEvent struct {
 	FullPath string
 	RelPath  string
 	Dir      bool
+	Size     int64
 	isCreate bool
 }
 
@@ -192,6 +193,13 @@ func (w *Watcher) runInner() error {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
 			} else if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) || e.Has(fsnotify.Chmod) {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
+				s, err := os.Stat(e.Name)
+				// This could be deleted before we get the event, so ignore errors but log them.
+				if err != nil {
+					w.logger.Warn("failed to stat file", zap.String("path", e.Name), zap.Error(err))
+				} else {
+					we.Size = s.Size()
+				}
 			} else {
 				continue
 			}
@@ -272,11 +280,17 @@ func (w *Watcher) addDir(p string, replay, errIfNotExist bool) error {
 			}
 			ep = path.Join("/", ep)
 
+			s, err := os.Stat(fullPath)
+			if err != nil {
+				return err
+			}
+
 			w.buffer[ep] = WatchEvent{
 				Type:     runtimev1.FileEvent_FILE_EVENT_WRITE,
 				FullPath: fullPath,
 				RelPath:  ep,
 				Dir:      e.IsDir(),
+				Size:     s.Size(),
 			}
 		}
 

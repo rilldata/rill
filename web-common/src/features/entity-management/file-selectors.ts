@@ -1,3 +1,4 @@
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import {
   createRuntimeServiceListFiles,
   getRuntimeServiceListFilesQueryKey,
@@ -181,4 +182,24 @@ export function useDirectoryNamesInDirectorySelector(
     });
 
   return directoryNames;
+}
+
+export const UploadFileSizeLimitInBytes = 100 * 1024 * 1024; // 100MB limit
+export function getFilesExceedingGithubPushLimit(instanceId: string) {
+  return createRuntimeServiceListFiles(
+    instanceId,
+    undefined,
+    {
+      query: {
+        select: (data) =>
+          data.files?.filter(
+            (f) =>
+              !f.isDir &&
+              f.size &&
+              Number(f.size) >= UploadFileSizeLimitInBytes,
+          ) ?? [],
+      },
+    },
+    queryClient,
+  );
 }

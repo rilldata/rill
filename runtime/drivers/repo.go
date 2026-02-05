@@ -80,6 +80,7 @@ type FileInfo struct {
 type DirEntry struct {
 	Path  string
 	IsDir bool
+	Size  int64
 }
 
 // WatchCallback is a function that will be called with file events.
@@ -90,6 +91,7 @@ type WatchEvent struct {
 	Type runtimev1.FileEvent
 	Path string
 	Dir  bool
+	Size int64
 }
 
 // RepoListLimit is the maximum number of files that can be listed in a call to RepoStore.ListGlob.

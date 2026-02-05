@@ -828,6 +828,7 @@ This helps the agent understand which file the user is referring to in their req
 export interface V1DirEntry {
   path?: string;
   isDir?: boolean;
+  size?: string;
 }
 
 export interface V1EditInstanceResponse {
@@ -2578,6 +2579,7 @@ export interface V1WatchFilesResponse {
   event?: V1FileEvent;
   path?: string;
   isDir?: boolean;
+  size?: string;
 }
 
 export interface V1WatchLogsResponse {

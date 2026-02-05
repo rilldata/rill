@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
+import { Message as Message$1, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { ContentBlock, Tool } from "../../ai/v1/ai_pb.js";
@@ -1310,6 +1310,11 @@ export class DirEntry extends Message$1<DirEntry> {
    */
   isDir = false;
 
+  /**
+   * @generated from field: int64 size = 3;
+   */
+  size = protoInt64.zero;
+
   constructor(data?: PartialMessage<DirEntry>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1320,6 +1325,7 @@ export class DirEntry extends Message$1<DirEntry> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "is_dir", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "size", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DirEntry {
@@ -1405,6 +1411,11 @@ export class WatchFilesResponse extends Message$1<WatchFilesResponse> {
    */
   isDir = false;
 
+  /**
+   * @generated from field: int64 size = 4;
+   */
+  size = protoInt64.zero;
+
   constructor(data?: PartialMessage<WatchFilesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1416,6 +1427,7 @@ export class WatchFilesResponse extends Message$1<WatchFilesResponse> {
     { no: 1, name: "event", kind: "enum", T: proto3.getEnumType(FileEvent) },
     { no: 2, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "is_dir", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "size", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchFilesResponse {
