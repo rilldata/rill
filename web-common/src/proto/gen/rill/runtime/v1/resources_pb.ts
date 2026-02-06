@@ -3029,6 +3029,18 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotRowLimit?: number;
 
+  /**
+   * Default filter expression (SQL syntax, parsed by metricssql).
+   *
+   * @generated from field: repeated string pinned = 35;
+   */
+  pinned: string[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.DefaultMetricsSQLFilter filter = 36;
+   */
+  filter?: DefaultMetricsSQLFilter;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3068,6 +3080,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 35, name: "pinned", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 36, name: "filter", kind: "message", T: DefaultMetricsSQLFilter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {

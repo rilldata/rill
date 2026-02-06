@@ -1,5 +1,12 @@
+import { page } from "$app/stores";
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import { createViewingDefaultsStore } from "@rilldata/web-common/features/dashboards/url-state/viewing-defaults-store";
 import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
@@ -69,6 +76,11 @@ export type StateManagers = {
    */
   contextColumnWidths: Writable<ContextColWidths>;
   defaultExploreState: Readable<V1ExplorePreset>;
+  /**
+   * Whether the current explore state matches the YAML-configured defaults.
+   * Compares cleaned current URL params against YAML default URL params.
+   */
+  viewingDefaultsStore: Readable<boolean>;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -156,6 +168,98 @@ export function createStateManagers({
     },
   );
 
+  // YAML default URL params — represents the state when explore is at its YAML-configured defaults.
+  const yamlDefaultExploreUrlParams: Readable<URLSearchParams | undefined> =
+    derived(
+      [validSpecStore, timeRangeSummaryStore],
+      ([validSpec, timeRangeSummary]) => {
+        const metricsViewSpec = validSpec.data?.metricsView;
+        const exploreSpec = validSpec.data?.explore;
+
+        if (
+          !metricsViewSpec ||
+          !exploreSpec ||
+          (metricsViewSpec.timeDimension &&
+            !timeRangeSummary.data?.timeRangeSummary)
+        ) {
+          return undefined;
+        }
+
+        const yamlExploreState = getExploreStateFromYAMLConfig(
+          exploreSpec,
+          timeRangeSummary.data?.timeRangeSummary,
+          metricsViewSpec.smallestTimeGrain,
+        );
+
+        // Build a minimal TimeControlState directly from the YAML explore state.
+        // We avoid getTimeControlState() here because it calls isoDurationToFullTimeRange
+        // which can't handle rill-time expressions (e.g. "14D as of latest/D+1D").
+        // The YAML state already has the correct name and interval from getGrainForRange.
+        const timeControlState: Partial<TimeControlState> = {
+          selectedTimeRange: yamlExploreState.selectedTimeRange,
+          selectedComparisonTimeRange:
+            yamlExploreState.selectedComparisonTimeRange,
+        };
+
+        return convertPartialExploreStateToUrlParams(
+          exploreSpec,
+          metricsViewSpec,
+          yamlExploreState,
+          timeControlState as TimeControlState,
+        );
+      },
+    );
+
+  // Current URL params cleaned of YAML-default values (so only the "interesting" params remain).
+  const currentCleanedUrlParams: Readable<URLSearchParams> = derived(
+    [page, yamlDefaultExploreUrlParams],
+    ([$page, $yamlDefaults]) => {
+      if (!$yamlDefaults) return $page.url.searchParams;
+      return cleanUrlParams($page.url.searchParams, $yamlDefaults);
+    },
+  );
+
+  // Rill opinionated default URL params — the baseline that DashboardStateSync cleans against.
+  // Needed to identify which YAML defaults are "significant" (differ from rill defaults).
+  const rillDefaultExploreUrlParams: Readable<URLSearchParams | undefined> =
+    derived(
+      [validSpecStore, timeRangeSummaryStore],
+      ([validSpec, timeRangeSummary]) => {
+        const metricsViewSpec = validSpec.data?.metricsView;
+        const exploreSpec = validSpec.data?.explore;
+
+        if (
+          !metricsViewSpec ||
+          !exploreSpec ||
+          (metricsViewSpec.timeDimension &&
+            !timeRangeSummary.data?.timeRangeSummary)
+        ) {
+          return undefined;
+        }
+
+        return getRillDefaultExploreUrlParams(
+          metricsViewSpec,
+          exploreSpec,
+          timeRangeSummary.data?.timeRangeSummary,
+        );
+      },
+    );
+
+  const rawUrlParams: Readable<URLSearchParams> = derived(
+    page,
+    ($page) => $page.url.searchParams,
+  );
+
+  // Viewing defaults when:
+  // 1. Forward: cleaned params are empty (no non-YAML-default params in browser URL)
+  // 2. Reverse: all YAML defaults that differ from rill defaults are present in the browser URL
+  const viewingDefaultsStore = createViewingDefaultsStore(
+    currentCleanedUrlParams,
+    yamlDefaultExploreUrlParams,
+    rillDefaultExploreUrlParams,
+    rawUrlParams,
+  );
+
   return {
     runtime: runtime,
     metricsViewName: metricsViewNameStore,
@@ -184,5 +288,6 @@ export function createStateManagers({
     }),
     contextColumnWidths,
     defaultExploreState,
+    viewingDefaultsStore,
   };
 }

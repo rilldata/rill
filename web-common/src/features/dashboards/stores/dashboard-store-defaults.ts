@@ -14,7 +14,7 @@ export function getFullInitExploreState(
     name,
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-
+    pinnedFilters: new Set<string>(),
     temporaryFilterName: null,
     contextColumnWidths: { ...contextColWidthDefaults },
 
