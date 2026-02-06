@@ -120,16 +120,24 @@
   }
 
   .remove-button {
-    @apply text-fg-muted hover:text-fg-primary;
+    @apply text-fg-muted;
     @apply flex-none flex items-center justify-center;
     @apply cursor-pointer;
     width: 24px;
     height: 30px;
   }
 
+  .remove-button:hover {
+    @apply text-fg-primary;
+  }
+
   .add-button {
     @apply flex items-center gap-1;
-    @apply text-xs text-primary-500 hover:text-primary-600 font-medium;
+    @apply text-xs text-primary-500 font-medium;
     @apply cursor-pointer w-fit mt-0.5;
+  }
+
+  .add-button:hover {
+    @apply text-primary-600;
   }
 </style>
