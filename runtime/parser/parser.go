@@ -354,11 +354,8 @@ func (p *Parser) reload(ctx context.Context) error {
 		return err
 	}
 
-	seenResources := make(map[ResourceName]bool)
-
 	// Infer unspecified refs for all inserted resources
 	for _, r := range p.insertedResources {
-		seenResources[r.Name.Normalized()] = true
 		p.inferUnspecifiedRefs(r)
 	}
 
