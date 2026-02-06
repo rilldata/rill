@@ -14,7 +14,6 @@ export interface ResourceMetadata {
   scheduleDescription?: string; // "cron: 0 * * * *" or "every 3600s"
   retryAttempts?: number;
   isSqlModel?: boolean; // true if model defined via SQL file
-  isIntermediate?: boolean; // true if model has both upstream and downstream deps
 
   // Dashboard metadata
   theme?: string; // theme name (not embedded)

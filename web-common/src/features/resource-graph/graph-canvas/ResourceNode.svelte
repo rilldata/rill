@@ -31,6 +31,7 @@
     Bell,
     Plug,
     Layers,
+    FileCode,
   } from "lucide-svelte";
   import { builderActions, getAttrs } from "bits-ui";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
@@ -109,15 +110,6 @@
 
   // Rich metadata for badge display
   $: metadata = data?.metadata;
-  $: hasBadges =
-    metadata?.connector ||
-    metadata?.incremental ||
-    metadata?.partitioned ||
-    metadata?.hasSchedule ||
-    metadata?.retryAttempts ||
-    metadata?.theme ||
-    metadata?.alertCount ||
-    metadata?.apiCount;
 
   // Get connector-specific icon (falls back to Database icon)
   $: connectorIcon =
@@ -281,21 +273,22 @@
         <p class="status error">{effectiveStatusLabel}</p>
       </div>
 
-      <!-- Metadata badges -->
-      {#if hasBadges}
-        <div class="badges">
-          {#if metadata?.connector}
-            <span
-              class="badge connector"
-              title="Connector: {metadata.connector}"
-            >
-              {#if connectorIcon}
-                <svelte:component this={connectorIcon} size="10px" />
-              {:else}
-                <Database size={10} />
-              {/if}
-            </span>
-          {/if}
+      <!-- Connector badge (bottom left) -->
+      {#if metadata?.connector}
+        <div class="badges-left">
+          <span class="badge connector" title="Connector: {metadata.connector}">
+            {#if connectorIcon}
+              <svelte:component this={connectorIcon} size="10px" />
+            {:else}
+              <Database size={10} />
+            {/if}
+          </span>
+        </div>
+      {/if}
+
+      <!-- Other badges (bottom right) -->
+      {#if metadata?.incremental || metadata?.partitioned || metadata?.hasSchedule || metadata?.retryAttempts || metadata?.isSqlModel || metadata?.theme || metadata?.alertCount || metadata?.apiCount}
+        <div class="badges-right">
           {#if metadata?.incremental}
             <span class="badge incremental" title="Incremental model">
               <RefreshCw size={10} />
@@ -325,10 +318,15 @@
               {metadata.retryAttempts}
             </span>
           {/if}
+          {#if metadata?.isSqlModel}
+            <span class="badge sql" title="SQL model">
+              <FileCode size={10} />
+              SQL
+            </span>
+          {/if}
           {#if metadata?.theme}
             <span class="badge theme" title="Theme: {metadata.theme}">
               <Palette size={10} />
-              {metadata.theme}
             </span>
           {/if}
           {#if metadata?.alertCount}
@@ -448,18 +446,22 @@
       {/if}
     </div>
 
-    <!-- Metadata badges -->
-    {#if hasBadges}
-      <div class="badges">
-        {#if metadata?.connector}
-          <span class="badge connector" title="Connector: {metadata.connector}">
-            {#if connectorIcon}
-              <svelte:component this={connectorIcon} size="10px" />
-            {:else}
-              <Database size={10} />
-            {/if}
-          </span>
-        {/if}
+    <!-- Connector badge (bottom left) -->
+    {#if metadata?.connector}
+      <div class="badges-left">
+        <span class="badge connector" title="Connector: {metadata.connector}">
+          {#if connectorIcon}
+            <svelte:component this={connectorIcon} size="10px" />
+          {:else}
+            <Database size={10} />
+          {/if}
+        </span>
+      </div>
+    {/if}
+
+    <!-- Other badges (bottom right) -->
+    {#if metadata?.incremental || metadata?.partitioned || metadata?.hasSchedule || metadata?.retryAttempts || metadata?.isSqlModel || metadata?.theme || metadata?.alertCount || metadata?.apiCount}
+      <div class="badges-right">
         {#if metadata?.incremental}
           <span class="badge incremental" title="Incremental model">
             <RefreshCw size={10} />
@@ -489,10 +491,15 @@
             {metadata.retryAttempts}
           </span>
         {/if}
+        {#if metadata?.isSqlModel}
+          <span class="badge sql" title="SQL model">
+            <FileCode size={10} />
+            SQL
+          </span>
+        {/if}
         {#if metadata?.theme}
           <span class="badge theme" title="Theme: {metadata.theme}">
             <Palette size={10} />
-            {metadata.theme}
           </span>
         {/if}
         {#if metadata?.alertCount}
@@ -632,8 +639,12 @@
   }
 
   /* Metadata badges */
-  .badges {
+  .badges-left {
     @apply absolute -bottom-2 left-2 flex gap-1 z-10;
+  }
+
+  .badges-right {
+    @apply absolute -bottom-2 right-2 flex gap-1 z-10;
   }
 
   .badge {
@@ -665,6 +676,10 @@
 
   .badge.retry {
     @apply bg-orange-50 text-orange-700 border-orange-200;
+  }
+
+  .badge.sql {
+    @apply bg-emerald-50 text-emerald-700 border-emerald-200;
   }
 
   .badge.theme {

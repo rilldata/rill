@@ -102,10 +102,12 @@ function formatScheduleDescription(
  * We search for cloud storage URL patterns anywhere in the content.
  *
  * @param content - The path, URI, or SQL from the DuckDB source/model
- * @returns The inferred connector type (s3, gcs, azure, https, or local_file)
+ * @returns The inferred connector type, or undefined if no external source detected
  */
-function inferDuckDbSourceType(content: string | undefined): string {
-  if (!content) return "local_file";
+function inferDuckDbSourceType(
+  content: string | undefined,
+): string | undefined {
+  if (!content) return undefined;
 
   const normalized = content.toLowerCase();
 
@@ -125,12 +127,40 @@ function inferDuckDbSourceType(content: string | undefined): string {
   ) {
     return "azure";
   }
-  if (normalized.includes("https://") || normalized.includes("http://")) {
-    return "https";
+
+  // For HTTP(S), only match if it looks like a data file URL (not documentation links)
+  // Check for common data file extensions near the URL
+  const httpMatch = normalized.match(/https?:\/\/[^\s'"]+/g);
+  if (httpMatch) {
+    const dataExtensions = [
+      ".parquet",
+      ".csv",
+      ".json",
+      ".ndjson",
+      ".jsonl",
+      ".xlsx",
+      ".xls",
+      ".tsv",
+    ];
+    for (const url of httpMatch) {
+      if (dataExtensions.some((ext) => url.includes(ext))) {
+        return "https";
+      }
+    }
   }
 
-  // Local file path (e.g., data/*.parquet, ./files/data.csv)
-  return "local_file";
+  // Check for explicit DuckDB read functions with local paths
+  if (
+    normalized.includes("read_parquet(") ||
+    normalized.includes("read_csv(") ||
+    normalized.includes("read_json(") ||
+    normalized.includes("read_ndjson(")
+  ) {
+    return "local_file";
+  }
+
+  // No external data source detected (e.g., SQL referencing other models)
+  return undefined;
 }
 
 /**
@@ -170,6 +200,10 @@ function extractResourceMetadata(
       spec.refreshSchedule,
     );
     metadata.retryAttempts = spec.retryAttempts;
+
+    // Check if model is defined via SQL file
+    const filePaths = resource.meta?.filePaths ?? [];
+    metadata.isSqlModel = filePaths.some((fp) => fp.endsWith(".sql"));
   }
 
   if (source?.spec) {
@@ -178,7 +212,9 @@ function extractResourceMetadata(
 
     // For DuckDB connector, infer the actual source type from the path
     if (connector?.toLowerCase() === "duckdb") {
-      const props = spec.properties as { path?: string; sql?: string } | undefined;
+      const props = spec.properties as
+        | { path?: string; sql?: string }
+        | undefined;
       const path = props?.path || props?.sql;
       connector = inferDuckDbSourceType(path);
     }
@@ -342,6 +378,8 @@ export function buildResourceGraph(
     nodeDefinitions.set(id, nodeDef);
   }
 
+  // Build adjacency map for edges
+  // dependentsMap: sourceId -> Set of dependentIds (outgoing edges from source)
   const dependentsMap = new Map<string, Set<string>>();
 
   for (const resource of resourceMap.values()) {
@@ -354,6 +392,7 @@ export function buildResourceGraph(
       if (!resourceMap.has(sourceId)) continue;
       if (sourceId === dependentId) continue;
 
+      // Track outgoing edges (source -> dependent)
       if (!dependentsMap.has(sourceId)) dependentsMap.set(sourceId, new Set());
       dependentsMap.get(sourceId)!.add(dependentId);
     }
