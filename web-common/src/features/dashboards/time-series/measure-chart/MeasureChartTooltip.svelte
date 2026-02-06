@@ -45,10 +45,20 @@
   $: hasValidComparisonPoint =
     comparisonY !== undefined && comparisonY !== null;
 
-  // Tweened pixel positions
-  const tweenedX = tweened(0, { duration: 25, easing: cubicOut });
-  const tweenedY = tweened(0, { duration: 60, easing: cubicOut });
-  const tweenedComparisonY = tweened(0, { duration: 60, easing: cubicOut });
+  const tweenedX = tweened(scales.x(hoveredIndex), {
+    duration: 25,
+    easing: cubicOut,
+  });
+  const tweenedY = tweened(
+    hoveredPoint?.value != null ? scales.y(hoveredPoint.value) : 0,
+    { duration: 60, easing: cubicOut },
+  );
+  const tweenedComparisonY = tweened(
+    hoveredPoint?.comparisonValue != null
+      ? scales.y(hoveredPoint.comparisonValue)
+      : 0,
+    { duration: 60, easing: cubicOut },
+  );
 
   $: tweenedX.set(scales.x(hoveredIndex));
   $: if (y !== null && y !== undefined) tweenedY.set(scales.y(y));
