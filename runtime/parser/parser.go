@@ -532,6 +532,26 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			}
 		}
 	}
+	// ... any unchanged resource that might have a ref to a newly inserted connector
+	// since connectors are not frequently updates/inserted no lookups are used here and resources are simply iterated over
+	for _, r1 := range p.insertedResources {
+		if r1.Name.Kind != ResourceKindConnector {
+			continue
+		}
+		for _, r2 := range p.Resources {
+			n := r2.Name.Normalized()
+			if inferRefsSeen[n] {
+				continue
+			}
+			for _, ref := range r2.rawRefs {
+				if ref.Kind == ResourceKindConnector && strings.EqualFold(ref.Name, r1.Name.Name) {
+					inferRefsSeen[n] = true
+					p.inferUnspecifiedRefs(r2)
+					p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
+				}
+			}
+		}
+	}
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
 	diff := &Diff{
@@ -748,8 +768,19 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 // We may want to revisit this handling in the future.
 func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 	var refs []ResourceName
+	var mvRefsModel bool
 	for _, ref := range r.rawRefs {
 		if ref.Kind != ResourceKindUnspecified {
+			if ref.Kind == ResourceKindConnector {
+				// metrics views are handled separately below
+				if r.Name.Kind == ResourceKindMetricsView {
+					continue
+				}
+				// a connector may not be explicitly defined so only add ref if it exists
+				if _, ok := p.Resources[ref.Normalized()]; !ok {
+					continue
+				}
+			}
 			refs = append(refs, ref)
 			continue
 		}
@@ -768,11 +799,13 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 			n := ResourceName{Kind: ResourceKindModel, Name: ref.Name}
 			if _, ok := p.Resources[n.Normalized()]; ok {
 				refs = append(refs, n)
+				mvRefsModel = true
 				continue
 			}
 			n = ResourceName{Kind: ResourceKindSource, Name: ref.Name}
 			if _, ok := p.Resources[n.Normalized()]; ok {
 				refs = append(refs, n)
+				mvRefsModel = true
 				continue
 			}
 		}
@@ -788,6 +821,18 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 		}
 
 		// Rule 4: Skip it
+	}
+
+	if r.Name.Kind == ResourceKindMetricsView && !mvRefsModel {
+		// this is a metrics view that doesn't ref a model
+		// try to add a ref to the connector
+		for _, ref := range r.rawRefs {
+			if ref.Kind == ResourceKindConnector {
+				if _, ok := p.Resources[ref.Normalized()]; ok {
+					refs = append(refs, ref)
+				}
+			}
+		}
 	}
 
 	slices.SortFunc(refs, func(a, b ResourceName) int {
