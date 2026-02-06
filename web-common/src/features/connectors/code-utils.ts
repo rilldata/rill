@@ -52,7 +52,10 @@ function formatHeadersAsYamlMap(value: string): string {
   const entries = lines.map((line) => {
     const idx = line.indexOf(":");
     const k = line.substring(0, idx).trim().replace(/^"|"$/g, "");
-    const v = line.substring(idx + 1).trim().replace(/^"|"$/g, "");
+    const v = line
+      .substring(idx + 1)
+      .trim()
+      .replace(/^"|"$/g, "");
     return `    "${k}": "${v}"`;
   });
   return `headers:\n${entries.join("\n")}`;
