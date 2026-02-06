@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, TestInfo } from "@playwright/test";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import axios from "axios";
 import { spawn } from "node:child_process";
@@ -41,7 +41,12 @@ export const rillDev = base.extend<MyFixtures>({
       locale,
     },
     use,
+    testInfo: TestInfo,
   ) => {
+    // Extend timeout to cover fixture setup (server start + reconciliation)
+    // and teardown (process kill + temp dir cleanup).
+    testInfo.setTimeout(testInfo.timeout + 30_000);
+
     const TEST_PORT = await getOpenPort();
     const TEST_GRPC_PORT = await getOpenPort();
     const TEST_PROJECT_DIRECTORY =
@@ -126,7 +131,7 @@ export const rillDev = base.extend<MyFixtures>({
         } catch {
           return false;
         }
-      }, 60000);
+      }, 30_000);
     }
 
     const context = await browser.newContext({
@@ -137,9 +142,6 @@ export const rillDev = base.extend<MyFixtures>({
     const page = await context.newPage();
 
     await page.goto(`http://localhost:${TEST_PORT}`);
-
-    // Brief wait for DOM hydration after navigation
-    await page.waitForTimeout(1000);
 
     await use(page);
 
