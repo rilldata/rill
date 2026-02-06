@@ -14,6 +14,10 @@ interface ExtentConfig {
 /**
  * Default extent configuration.
  */
+export const LINE_MODE_MIN_POINTS = 6;
+export const X_PAD = 8;
+export const MARGIN_RIGHT = 40;
+
 const DEFAULT_EXTENT_CONFIG: ExtentConfig = {
   includeZero: true,
   paddingFactor: 1.3,
@@ -119,7 +123,7 @@ export function computeChartConfig(
 ): ChartConfig {
   const margin = {
     top: 4, // Space for data readout labels
-    right: 40,
+    right: MARGIN_RIGHT,
     bottom: isExpanded ? 25 : 10,
     left: 0,
   };

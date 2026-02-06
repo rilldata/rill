@@ -17,9 +17,10 @@
 
 <style lang="postcss">
   .pan-button {
-    @apply cursor-pointer fill-gray-400;
+    @apply cursor-pointer fill-icon-muted;
+    @apply opacity-60;
   }
   .pan-button:hover {
-    @apply fill-gray-300;
+    @apply opacity-100;
   }
 </style>

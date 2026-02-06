@@ -6,10 +6,7 @@
     V1TimeGrainToOrder,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
-
-  const MARGIN_RIGHT = 40;
-  const X_PAD = 8;
-  const LINE_MODE_MIN_POINTS = 6;
+  import { LINE_MODE_MIN_POINTS, X_PAD, MARGIN_RIGHT } from "./scales";
   const DAY_GRAIN_ORDER = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY];
 
   export let interval: Interval<true> | undefined = undefined;

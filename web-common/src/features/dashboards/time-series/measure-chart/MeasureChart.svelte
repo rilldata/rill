@@ -53,10 +53,10 @@
     determineMode,
     computeTooltipDelta,
   } from "./chart-series";
+  import { X_PAD } from "./scales";
   import ComparisonTooltip from "./ComparisonTooltip.svelte";
 
   const chartId = Math.random().toString(36).slice(2, 11);
-  const X_PAD = 8;
   const CLICK_THRESHOLD_PX = 4;
   const VISIBILITY_ROOT_MARGIN = "120px";
 
@@ -109,6 +109,8 @@
   let mousePageY: number | null = null;
   let wasDragging = false; // Track if we just finished a drag (to skip click handler)
   let hoverState: HoverState = EMPTY_HOVER;
+
+  console.log("mount");
 
   onMount(() => {
     if (container) unobserve = observe(container);
@@ -754,7 +756,7 @@
         {isScrubbing}
         showLabels={showTimeDimensionDetail}
         formatLabel={formatScrubLabel}
-        on:reset={handleReset}
+        onReset={handleReset}
       />
 
       {#if isLocallyHovered}

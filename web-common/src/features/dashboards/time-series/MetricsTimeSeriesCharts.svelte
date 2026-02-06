@@ -172,6 +172,7 @@
 
   // Annotation stores per measure — keyed by measure name
   function getAnnotationsForMeasureStore(measureName: string) {
+    console.log("get");
     return getAnnotationsForMeasure({
       instanceId,
       exploreName,

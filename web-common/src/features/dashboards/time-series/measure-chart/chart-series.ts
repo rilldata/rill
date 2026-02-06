@@ -13,8 +13,7 @@ import {
 import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-
-const LINE_MODE_MIN_POINTS = 6;
+import { LINE_MODE_MIN_POINTS } from "./scales";
 
 export function buildChartSeries(
   data: TimeSeriesPoint[],

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import type { ChartScales, ChartConfig } from "./types";
   import {
     ScrubArea0Color,
@@ -8,6 +7,11 @@
     ScrubBoxColor,
   } from "../chart-colors";
 
+  const chartId = Math.random().toString(36).slice(2, 9);
+  const strokeWidth = 1;
+  const xLabelBuffer = 8;
+  const yLabelBuffer = 10;
+
   export let scales: ChartScales;
   export let config: ChartConfig;
   /** Scrub start/end as fractional indices */
@@ -15,17 +19,8 @@
   export let endIndex: number | null;
   export let isScrubbing: boolean = false;
   export let showLabels: boolean = false;
-  /** Format a date for display on scrub labels */
+  export let onReset: () => void;
   export let formatLabel: (index: number) => string = (i) => String(i);
-
-  const dispatch = createEventDispatcher<{
-    reset: void;
-  }>();
-
-  const chartId = Math.random().toString(36).slice(2, 9);
-  const strokeWidth = 1;
-  const xLabelBuffer = 8;
-  const yLabelBuffer = 10;
 
   $: y1 = config.plotBounds.top + 5;
   $: y2 = config.plotBounds.bottom - 5;
@@ -47,7 +42,7 @@
 
   function handleContextMenu(event: MouseEvent) {
     event.preventDefault();
-    if (hasSelection) dispatch("reset");
+    if (hasSelection) onReset();
   }
 </script>
 

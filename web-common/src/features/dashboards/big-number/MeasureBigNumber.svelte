@@ -57,7 +57,7 @@
     },
     {
       query: {
-        enabled: ready && !!timeStart && !!measureName,
+        enabled: ready && (!!timeStart || !timeDimension) && !!measureName,
         placeholderData: keepPreviousData,
         refetchOnMount: false,
       },
