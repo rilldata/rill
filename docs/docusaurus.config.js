@@ -1297,10 +1297,6 @@ const config = {
             to: '/developers/other/plans',
           },
           {
-            from: '/other/v50-dashboard-changes',
-            to: '/developers/other/v50-dashboard-changes',
-          },
-          {
             from: '/other/granting',
             to: '/developers/other/granting',
           },
