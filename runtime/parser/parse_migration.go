@@ -2,8 +2,6 @@ package parser
 
 import (
 	"strings"
-
-	"golang.org/x/exp/maps"
 )
 
 // MigrationYAML is the raw structure of a Migration resource defined in YAML (does not include common fields)
@@ -21,7 +19,7 @@ func (p *Parser) parseMigration(node *Node) error {
 	}
 
 	// Add resource
-	r, err := p.insertResource(ResourceKindMigration, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
+	r, err := p.insertResource(ResourceKindMigration, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
 	}

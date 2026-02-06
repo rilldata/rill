@@ -29,17 +29,6 @@ type Node struct {
 	SQLPath           string
 	SQLAnnotations    map[string]any
 	SQLUsesTemplating bool
-
-	postParseHooks map[string]postParseHook
-}
-
-func (n *Node) addPostParseHook(key string, hook postParseHook) {
-	if n.postParseHooks == nil {
-		n.postParseHooks = make(map[string]postParseHook)
-	}
-	if _, ok := n.postParseHooks[key]; !ok {
-		n.postParseHooks[key] = hook
-	}
 }
 
 // parseNode multiplexes to the appropriate parse function based on the node kind.

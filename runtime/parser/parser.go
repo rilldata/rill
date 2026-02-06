@@ -168,10 +168,6 @@ type Diff struct {
 	Deleted        []ResourceName
 }
 
-// postParseHook is run after all resources have been parsed.
-// It returns true if the resource was modified.
-type postParseHook func(r *Resource) bool
-
 // Parser parses a Rill project directory into a set of resources.
 // After the initial parse, the parser can be used to incrementally reparse a subset of files.
 // Parser is not concurrency safe.
@@ -195,8 +191,6 @@ type Parser struct {
 	insertedResources          []*Resource
 	updatedResources           []*Resource
 	deletedResources           []*Resource
-	postParseHooks             map[ResourceName][]postParseHook
-	resourcesForInferredRef    map[string]map[ResourceName]bool // Index of inferred refs to resources that reference them
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -338,8 +332,6 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.resourceNamesForDataPaths = make(map[string][]ResourceName)
 	p.resourcesForPath = make(map[string][]*Resource)
 	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
-	p.postParseHooks = make(map[ResourceName][]postParseHook)
-	p.resourcesForInferredRef = make(map[string]map[ResourceName]bool)
 	p.insertedResources = nil
 	p.updatedResources = nil
 	p.deletedResources = nil
@@ -370,7 +362,6 @@ func (p *Parser) reload(ctx context.Context) error {
 		p.inferUnspecifiedRefs(r)
 	}
 
-	p.runPostParseHooks(seenResources)
 	return nil
 }
 
@@ -544,9 +535,26 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			}
 		}
 	}
-
-	// Run post-parse hooks
-	p.runPostParseHooks(inferRefsSeen)
+	// ... any unchanged resource that might have a ref to a newly inserted connector
+	// since connectors are not frequently updates/inserted no lookups are used here and resources are simply iterated over
+	for _, r1 := range p.insertedResources {
+		if r1.Name.Kind != ResourceKindConnector {
+			continue
+		}
+		for _, r2 := range p.Resources {
+			n := r2.Name.Normalized()
+			if inferRefsSeen[n] {
+				continue
+			}
+			for _, ref := range r2.rawRefs {
+				if ref.Kind == ResourceKindConnector && strings.EqualFold(ref.Name, r1.Name.Name) {
+					inferRefsSeen[n] = true
+					p.inferUnspecifiedRefs(r2)
+					p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
+				}
+			}
+		}
+	}
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
 	diff := &Diff{
@@ -763,8 +771,19 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 // We may want to revisit this handling in the future.
 func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 	var refs []ResourceName
+	var mvRefsModel bool
 	for _, ref := range r.rawRefs {
 		if ref.Kind != ResourceKindUnspecified {
+			if ref.Kind == ResourceKindConnector {
+				// metrics views are handled separately below
+				if r.Name.Kind == ResourceKindMetricsView {
+					continue
+				}
+				// a connector may not be explicitly defined so only add ref if it exists
+				if _, ok := p.Resources[ref.Normalized()]; !ok {
+					continue
+				}
+			}
 			refs = append(refs, ref)
 			continue
 		}
@@ -783,11 +802,13 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 			n := ResourceName{Kind: ResourceKindModel, Name: ref.Name}
 			if _, ok := p.Resources[n.Normalized()]; ok {
 				refs = append(refs, n)
+				mvRefsModel = true
 				continue
 			}
 			n = ResourceName{Kind: ResourceKindSource, Name: ref.Name}
 			if _, ok := p.Resources[n.Normalized()]; ok {
 				refs = append(refs, n)
+				mvRefsModel = true
 				continue
 			}
 		}
@@ -803,6 +824,18 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 		}
 
 		// Rule 4: Skip it
+	}
+
+	if r.Name.Kind == ResourceKindMetricsView && !mvRefsModel {
+		// this is a metrics view that doesn't ref a model
+		// try to add a ref to the connector
+		for _, ref := range r.rawRefs {
+			if ref.Kind == ResourceKindConnector {
+				if _, ok := p.Resources[ref.Normalized()]; ok {
+					refs = append(refs, ref)
+				}
+			}
+		}
 	}
 
 	slices.SortFunc(refs, func(a, b ResourceName) int {
@@ -830,7 +863,7 @@ func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
 
 // insertResource inserts a resource in the parser's internal state.
 // After calling insertResource, the caller can directly modify the returned resource's spec.
-func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs []ResourceName, postParseHooks []postParseHook) (*Resource, error) {
+func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
 	// Create the resource if not already present (ensures the spec for its kind is never nil)
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
@@ -905,11 +938,6 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		}
 	}
 
-	// Track post-parse hooks
-	if len(postParseHooks) > 0 {
-		p.postParseHooks[r.Name.Normalized()] = postParseHooks
-	}
-
 	return r, nil
 }
 
@@ -976,30 +1004,6 @@ func (p *Parser) deleteResource(r *Resource) {
 			delete(p.resourceNamesForDataPaths, path)
 		} else {
 			p.resourceNamesForDataPaths[path] = slices.Delete(resources, idx, idx+1)
-		}
-	}
-
-	// Remove from postParseHooks
-	delete(p.postParseHooks, r.Name.Normalized())
-
-	// Remove from resourcesForInferredRef
-	// 1. If it is the resource which was inferred
-	delete(p.resourcesForInferredRef, strings.ToLower(r.Name.Name))
-	// 2. If it is a resource which had an inferred ref to another resource
-	for _, ref := range r.Refs {
-		c := strings.ToLower(ref.Name)
-		resMap, ok := p.resourcesForInferredRef[c]
-		if !ok {
-			continue
-		}
-		norm := r.Name.Normalized()
-		if _, ok := resMap[norm]; !ok {
-			continue
-		}
-		if len(resMap) == 1 {
-			delete(p.resourcesForInferredRef, c)
-		} else {
-			delete(resMap, norm)
 		}
 	}
 
@@ -1089,65 +1093,6 @@ func (p *Parser) defaultOLAPConnector() string {
 // Usually this means it's running on localhost with "rill start".
 func (p *Parser) isDev() bool {
 	return strings.EqualFold(p.Environment, "dev")
-}
-
-// addConnectorRef returns a post-parse hook to conditionally add a ref to the connector.
-// A connector ref can't be added until after all resources have been parsed, because the connector resource
-// may not be explicitly defined.
-func (p *Parser) addConnectorRef(connector string) postParseHook {
-	return func(r *Resource) bool {
-		// check if the connector exists
-		n := ResourceName{ResourceKindConnector, connector}
-		if _, ok := p.Resources[n.Normalized()]; !ok {
-			return false
-		}
-
-		c := strings.ToLower(connector)
-		if res, ok := p.resourcesForInferredRef[c]; ok {
-			if _, ok := res[r.Name.Normalized()]; ok {
-				// already has a ref
-				return false
-			}
-		}
-
-		// add a ref to the connector if it doesn't already exist (due to an explicit ref)
-		for _, ref := range r.Refs {
-			if ref.Normalized() == n.Normalized() {
-				return false
-			}
-		}
-		r.Refs = append(r.Refs, n)
-
-		// index in resourcesForInferredRef
-		resourceMap, ok := p.resourcesForInferredRef[c]
-		if !ok {
-			resourceMap = make(map[ResourceName]bool)
-			p.resourcesForInferredRef[c] = resourceMap
-		}
-		resourceMap[r.Name.Normalized()] = true
-		return true
-	}
-}
-
-func (p *Parser) runPostParseHooks(seenResources map[ResourceName]bool) {
-	for rn, hooks := range p.postParseHooks {
-		for _, hook := range hooks {
-			r := p.Resources[rn]
-			if r == nil {
-				continue
-			}
-			if !hook(r) {
-				continue
-			}
-			// If the hook modified the resource, track it in updatedResources
-			// check if the resource is already in updatedResources/insertedResources
-			if _, ok := seenResources[r.Name.Normalized()]; ok {
-				continue
-			}
-			// otherwise, add to updatedResources
-			p.updatedResources = append(p.updatedResources, r)
-		}
-	}
 }
 
 // pathIsSQL returns true if the path is a SQL file

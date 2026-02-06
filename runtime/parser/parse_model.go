@@ -11,7 +11,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -116,8 +115,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if inputProps == nil {
 		inputProps = map[string]any{}
 	}
-
-	node.addPostParseHook(inputConnector, p.addConnectorRef(inputConnector))
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: inputConnector}.Normalized())
 
 	// Special handling for adding SQL to the input properties
 	if sql := strings.TrimSpace(node.SQL); sql != "" {
@@ -157,7 +155,6 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if outputConnector == "" {
 		outputConnector = p.defaultOLAPConnector()
 	}
-	node.addPostParseHook(outputConnector, p.addConnectorRef(outputConnector))
 	outputProps := tmp.Output.Properties
 
 	// Backwards compatibility: materialize can be specified outside of the output properties
@@ -182,13 +179,11 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	var incrementalStateResolverProps *structpb.Struct
 	if tmp.State != nil {
 		var refs []ResourceName
-		var connector string
-		incrementalStateResolver, incrementalStateResolverProps, connector, refs, err = p.parseDataYAML(tmp.State, outputConnector)
+		incrementalStateResolver, incrementalStateResolverProps, refs, err = p.parseDataYAML(tmp.State, outputConnector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "state": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
-		node.addPostParseHook(connector, p.addConnectorRef(connector))
 	}
 
 	// Parse partitions resolver
@@ -202,13 +197,11 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 	if tmp.Partitions != nil {
 		var refs []ResourceName
-		var connector string
-		partitionsResolver, partitionsResolverProps, connector, refs, err = p.parseDataYAML(tmp.Partitions, inputConnector)
+		partitionsResolver, partitionsResolverProps, refs, err = p.parseDataYAML(tmp.Partitions, inputConnector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "partitions": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
-		node.addPostParseHook(connector, p.addConnectorRef(connector))
 
 		// As a small convenience, automatically set the watermark field for resolvers where we know a good default
 		if tmp.PartitionsWatermark == "" {
@@ -222,13 +215,12 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	var modelTests []*runtimev1.ModelTest
 	for i := range tmp.Tests {
 		t := tmp.Tests[i]
-		modelTest, connector, refs, err := p.parseModelTest(t.Name, &t.DataYAML, outputConnector, node.Name, t.Assert)
+		modelTest, refs, err := p.parseModelTest(t.Name, &t.DataYAML, outputConnector, node.Name, t.Assert)
 		if err != nil {
 			return fmt.Errorf(`failed to parse test %q: %w`, t.Name, err)
 		}
 		modelTests = append(modelTests, modelTest)
 		node.Refs = append(node.Refs, refs...)
-		node.addPostParseHook(connector, p.addConnectorRef(connector))
 	}
 
 	var retryDelay *uint32
@@ -242,7 +234,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 
 	// Insert the model
-	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
+	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -290,10 +282,10 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 }
 
 // parseModelTests parses the model tests from the YAML file
-func (p *Parser) parseModelTest(name string, data *DataYAML, connector, modelName, assert string) (*runtimev1.ModelTest, string, []ResourceName, error) {
+func (p *Parser) parseModelTest(name string, data *DataYAML, connector, modelName, assert string) (*runtimev1.ModelTest, []ResourceName, error) {
 	// Validate required name field
 	if name == "" {
-		return nil, "", nil, fmt.Errorf(`test must have a "name" defined`)
+		return nil, nil, fmt.Errorf(`test must have a "name" defined`)
 	}
 
 	hasSQL := data.SQL != ""
@@ -302,24 +294,24 @@ func (p *Parser) parseModelTest(name string, data *DataYAML, connector, modelNam
 	// Validate that exactly one of "sql" or "assert" is provided
 	switch {
 	case hasSQL && hasAssertion:
-		return nil, "", nil, fmt.Errorf(`test %q must not have both "sql" and "assert" defined`, name)
+		return nil, nil, fmt.Errorf(`test %q must not have both "sql" and "assert" defined`, name)
 	case !hasSQL && !hasAssertion:
-		return nil, "", nil, fmt.Errorf(`test %q must have either "sql" or "assert" defined`, name)
+		return nil, nil, fmt.Errorf(`test %q must have either "sql" or "assert" defined`, name)
 	case hasAssertion:
 		// Wrap assertion condition in a SQL query following SQLMesh audit pattern
 		// Query for rows that violate the assertion (bad data)
 		data.SQL = fmt.Sprintf("SELECT * FROM %s WHERE NOT (%s)", modelName, assert)
 	}
 
-	resolver, props, connector, refs, err := p.parseDataYAML(data, connector)
+	resolver, props, refs, err := p.parseDataYAML(data, connector)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 	return &runtimev1.ModelTest{
 		Name:               name,
 		Resolver:           resolver,
 		ResolverProperties: props,
-	}, connector, refs, nil
+	}, refs, nil
 }
 
 // inferSQLRefs attempts to infer table references from the node's SQL.

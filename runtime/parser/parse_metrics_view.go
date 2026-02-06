@@ -731,26 +731,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return err
 	}
 	node.Refs = append(node.Refs, securityRefs...)
-	node.addPostParseHook(node.Connector, func(r *Resource) bool {
-		// check if the model is actually a resource in which case no need to add a ref to the connector
-		// model's connector can be different and a ref to model will ensure correct DAG link
-		if tmp.Model != "" {
-			_, ok := p.Resources[ResourceName{Kind: ResourceKindModel, Name: tmp.Model}.Normalized()]
-			if ok {
-				// clear older refs to connector, if any
-				for i, ref := range r.Refs {
-					if ref.Kind == ResourceKindConnector && ref.Name == node.Connector {
-						// okay to modify r.Refs here as we return immediately after
-						r.Refs = append(r.Refs[:i], r.Refs[i+1:]...)
-						return true
-					}
-				}
-				return false
-			}
-		}
-		f := p.addConnectorRef(node.Connector)
-		return f(r)
-	})
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: node.Connector}.Normalized())
 
 	var cacheTTLDuration time.Duration
 	if tmp.Cache.KeyTTL != "" {
@@ -767,7 +748,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	// insert metrics view resource immediately after parsing the inline explore as it inserts the explore resource so we should not return an error now
-	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
+	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		// If we fail to insert the metrics view, we must delete the inline explore if it was created.
 		if exploreRes != nil {
@@ -853,7 +834,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if tmp.DefaultTheme != "" {
 		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
-	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, refs, maps.Values(node.postParseHooks))
+	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, refs...)
 	if err != nil {
 		// We mustn't error because we have already emitted one resource.
 		// Since this probably means an explore has been defined separately, we can just ignore this error.
@@ -1038,7 +1019,7 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 		name = tmp.Explore.Name
 	}
 	// Track explore
-	r, err := p.insertResource(ResourceKindExplore, name, mvPaths, refs, nil)
+	r, err := p.insertResource(ResourceKindExplore, name, mvPaths, refs...)
 	if err != nil {
 		return false, nil, err
 	}

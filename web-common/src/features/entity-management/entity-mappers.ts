@@ -135,6 +135,7 @@ export const ResourceShortNameToResourceKind: Record<string, ResourceKind> = {
   alert: ResourceKind.Alert,
   api: ResourceKind.API,
   component: ResourceKind.Component,
+  connector: ResourceKind.Connector,
   canvas: ResourceKind.Canvas,
   metrics_view: ResourceKind.MetricsView,
   metricsview: ResourceKind.MetricsView,
