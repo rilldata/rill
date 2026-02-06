@@ -2,7 +2,6 @@
   export let x: number;
   export let y: number;
   export let zeroY: number;
-  export let value: string;
   export let selected: boolean = false;
 </script>
 
@@ -24,21 +23,8 @@
   r={4}
 />
 
-<text
-  aria-label="main value"
-  class="text-xs font-semibold fill-fg-secondary"
-  class:fill-theme-500={selected}
-  style:paint-order="stroke"
-  stroke-width="3px"
-  x={x + 8}
-  y={y + 4}
->
-  {value}
-</text>
-
 <style lang="postcss">
-  circle,
-  text {
+  circle {
     @apply stroke-surface-background;
     paint-order: stroke;
   }

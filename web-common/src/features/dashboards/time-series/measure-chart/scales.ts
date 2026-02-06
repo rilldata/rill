@@ -18,6 +18,23 @@ export const LINE_MODE_MIN_POINTS = 6;
 export const X_PAD = 8;
 export const MARGIN_RIGHT = 40;
 
+/**
+ * Compute which data indices get x-axis tick marks.
+ * Bar mode shows every point; line mode shows start, middle, end.
+ */
+export function computeXTickIndices(
+  mode: "line" | "bar",
+  dataLength: number,
+): number[] {
+  const lastIndex = Math.max(0, dataLength - 1);
+  if (mode === "bar") {
+    return Array.from({ length: dataLength }, (_, i) => i);
+  }
+  if (lastIndex >= 2) return [0, Math.floor(lastIndex / 2), lastIndex];
+  if (lastIndex >= 1) return [0, lastIndex];
+  return [0];
+}
+
 const DEFAULT_EXTENT_CONFIG: ExtentConfig = {
   includeZero: true,
   paddingFactor: 1.3,

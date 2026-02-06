@@ -90,7 +90,8 @@
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
-  $: highlightedCol = $hoverIndex;
+  $: highlightedColStart = $hoverIndex?.start;
+  $: highlightedColEnd = $hoverIndex?.end;
 
   // Create a time formatter for the column headers
   $: timeFormatter = timeFormat(
@@ -238,7 +239,8 @@
       {timeFormatter}
       tableData={formattedData}
       highlightedRow={undefined}
-      {highlightedCol}
+      {highlightedColStart}
+      {highlightedColEnd}
       {pinIndex}
       onTogglePin={togglePin}
       onToggleFilter={toggleFilter}

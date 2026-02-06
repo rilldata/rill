@@ -20,7 +20,6 @@
   export let isBarMode: boolean = false;
   export let visibleStart: number = 0;
   export let visibleEnd: number = 0;
-  export let formatter: (value: number | null) => string;
 
   // Bar count: dimension comparison uses dimensionData.length, time comparison uses 2
   $: barCount = isComparingDimension
@@ -74,7 +73,6 @@
       x={$tweenedX}
       y={currentPointIsNull ? scales.y(0) : $tweenedY}
       zeroY={scales.y(0)}
-      value={currentPointIsNull ? "no current data" : formatter(y ?? null)}
     />
   {/if}
 

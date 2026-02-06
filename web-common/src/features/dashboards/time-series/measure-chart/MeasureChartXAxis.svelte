@@ -6,7 +6,12 @@
     V1TimeGrainToOrder,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
-  import { LINE_MODE_MIN_POINTS, X_PAD, MARGIN_RIGHT } from "./scales";
+  import {
+    LINE_MODE_MIN_POINTS,
+    X_PAD,
+    MARGIN_RIGHT,
+    computeXTickIndices,
+  } from "./scales";
   const DAY_GRAIN_ORDER = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY];
 
   export let interval: Interval<true> | undefined = undefined;
@@ -37,12 +42,7 @@
     .domain([0, lastIndex])
     .range([xRangeStart, xRangeEnd]);
 
-  $: tickIndices =
-    lastIndex >= 2
-      ? [0, Math.floor(lastIndex / 2), lastIndex]
-      : lastIndex >= 1
-        ? [0, lastIndex]
-        : [0];
+  $: tickIndices = computeXTickIndices(mode, bins.length);
 
   $: ticks = buildTicks(tickIndices, bins, xScale);
 

@@ -9,18 +9,13 @@
 
   const chartId = Math.random().toString(36).slice(2, 9);
   const strokeWidth = 1;
-  const xLabelBuffer = 8;
-  const yLabelBuffer = 10;
-
   export let scales: ChartScales;
   export let config: ChartConfig;
   /** Scrub start/end as fractional indices */
   export let startIndex: number | null;
   export let endIndex: number | null;
   export let isScrubbing: boolean = false;
-  export let showLabels: boolean = false;
   export let onReset: () => void;
-  export let formatLabel: (index: number) => string = (i) => String(i);
 
   $: y1 = config.plotBounds.top + 5;
   $: y2 = config.plotBounds.bottom - 5;
@@ -87,42 +82,6 @@
       stroke-width={strokeWidth}
     />
 
-    {#if showLabels}
-      <text
-        class="scrub-label"
-        text-anchor="end"
-        x={xStart - xLabelBuffer}
-        y={y1 + yLabelBuffer}
-      >
-        {formatLabel(Math.round(orderedStartIdx))}
-      </text>
-      <circle
-        cx={xStart}
-        cy={y1}
-        r={3}
-        paint-order="stroke"
-        class="fill-primary-700 stroke-surface-background"
-        stroke-width="3"
-      />
-
-      <text
-        class="scrub-label"
-        text-anchor="start"
-        x={xEnd + xLabelBuffer}
-        y={y1 + yLabelBuffer}
-      >
-        {formatLabel(Math.round(orderedEndIdx))}
-      </text>
-      <circle
-        cx={xEnd}
-        cy={y1}
-        r={3}
-        paint-order="stroke"
-        class="fill-primary-700 stroke-surface-background"
-        stroke-width="3"
-      />
-    {/if}
-
     <rect
       class="resize-handle"
       x={xStart - 5}
@@ -150,11 +109,6 @@
   .selection-rect.scrubbing {
     filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))
       drop-shadow(0px 10px 15px rgba(0, 0, 0, 0.2));
-  }
-
-  .scrub-label {
-    font-size: 11px;
-    fill: var(--color-gray-600);
   }
 
   .resize-handle {

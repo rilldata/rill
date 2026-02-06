@@ -6,6 +6,7 @@
     computeChartConfig,
     computeYExtent,
     computeNiceYExtent,
+    computeXTickIndices,
   } from "./scales";
   import { EMPTY_HOVER } from "./interactions";
   import { ScrubController } from "./ScrubController";
@@ -70,6 +71,7 @@
   export let onScrubClear: (() => void) | undefined;
   export let scrubController: ScrubController;
   export let metricsViewName: string;
+  export let connectNulls: boolean = true;
 
   const annotationPopover = new AnnotationPopoverController();
   const hoveredAnnotationGroup = annotationPopover.hoveredGroup;
@@ -122,12 +124,7 @@
     .range([pb.top + pb.height, pb.top]);
   $: scales = { x: xScale, y: yScale };
   $: yTicks = yScale.ticks(3);
-  $: xTickIndices =
-    dataLastIndex >= 2
-      ? [0, Math.floor(dataLastIndex / 2), dataLastIndex]
-      : dataLastIndex >= 1
-        ? [0, dataLastIndex]
-        : [0];
+  $: xTickIndices = computeXTickIndices(mode, data.length);
 
   // Keep scrub controller in sync with data length
   $: scrubController.setDataLength(data.length);
@@ -154,10 +151,18 @@
     hoverState.isHovered && hoverState.index !== null && data.length > 0;
   $: if (isLocallyHovered) {
     hoverIndex.set(snapIndex(hoverState.index!, data.length), chartId);
+  } else if (
+    hasScrubSelection &&
+    scrubStartIndex !== null &&
+    scrubEndIndex !== null
+  ) {
+    // Scrub active: highlight the full range in TDD table
+    hoverIndex.setRange(scrubStartIndex, scrubEndIndex, chartId);
   } else {
     hoverIndex.clear(chartId);
   }
-  $: hoveredIndex = $hoverIndex ?? -1;
+
+  $: hoveredIndex = $hoverIndex?.start ?? -1;
   $: hoveredPoint = data[hoveredIndex] ?? null;
   $: cursorStyle = scrubController.getCursorStyle(hoverState.screenX, xScale);
 
@@ -229,12 +234,6 @@
     if (idx === null || data.length === 0) return null;
     const dt = data[snapIndex(idx, data.length)]?.ts;
     return dt?.isValid ? dt : null;
-  }
-
-  function formatScrubLabel(idx: number): string {
-    const dt = indexToDateTime(idx);
-    if (!dt) return "";
-    return formatGrainBucket(dt, timeGranularity, interval);
   }
 
   function clampX(offsetX: number) {
@@ -323,7 +322,15 @@
     if (selectionKept && startIndex !== null && endIndex !== null) {
       finalizeScrubSelection(startIndex, endIndex);
     } else if (wasClick) {
-      handlePointClick(e.offsetX);
+      // Check external scrub (from store/URL), not the reactive hasScrubSelection
+      // which includes transient controller state from mousedown
+      const hasExternalScrub =
+        externalScrubStartIndex !== null && externalScrubEndIndex !== null;
+      if (!hasExternalScrub) {
+        handlePointClick(e.offsetX);
+      } else {
+        onScrubClear?.();
+      }
     } else {
       onScrubClear?.();
     }
@@ -433,6 +440,7 @@
           {hasScrubSelection}
           {scrubStartIndex}
           {scrubEndIndex}
+          {connectNulls}
         />
       {:else}
         <BarChart
@@ -461,20 +469,14 @@
         isBarMode={mode === "bar"}
         visibleStart={0}
         visibleEnd={dataLastIndex}
-        formatter={valueFormatter}
       />
     {/if}
 
-    <!-- Data readout in top-left corner (only for non-hovered charts, not in dimension comparison) -->
-    {#if !isScrubbing && hoveredPoint && (!showComparison || !isLocallyHovered) && !isComparingDimension}
-      {@const showDelta =
-        showComparison &&
-        tooltipComparisonValue !== null &&
-        !!tooltipDeltaLabel}
+    <!-- Date label in top-left corner -->
+    {#if !isScrubbing && hoveredPoint && !isComparingDimension}
       <g class="data-readout">
-        <!-- Date -->
         <text
-          class="fill-fg-muted text-outline text-[10px]"
+          class="fill-fg-muted text-outline text-[11px]"
           aria-label="{measureName} primary time label"
           x={pb.left + 6}
           y={pb.top + 10}
@@ -482,7 +484,10 @@
           {formatGrainBucket(hoveredPoint.ts, timeGranularity, interval)}
         </text>
 
-        {#if showComparison}
+        <!-- Comparison values only on non-hovered charts (hovered chart shows floating tooltip) -->
+        {#if showComparison && !isLocallyHovered}
+          {@const showDelta =
+            tooltipComparisonValue !== null && !!tooltipDeltaLabel}
           <ComparisonTooltip
             x={pb.left + 6}
             y={pb.top + 22}
@@ -505,7 +510,6 @@
           x={singleSelectX}
           y={scales.y(selPt.value)}
           zeroY={scales.y(0)}
-          value={valueFormatter(selPt.value)}
           selected
         />
       {/if}
@@ -517,8 +521,6 @@
       startIndex={scrubStartIndex}
       endIndex={scrubEndIndex}
       {isScrubbing}
-      showLabels={showTimeDimensionDetail}
-      formatLabel={formatScrubLabel}
       onReset={handleReset}
     />
 
@@ -541,8 +543,8 @@
     {/if}
   </svg>
 
-  <!-- Floating tooltip - only shown in comparison modes -->
-  {#if !isScrubbing && isLocallyHovered && hoveredPoint && mousePageX !== null && mousePageY !== null && (showComparison || isComparingDimension)}
+  <!-- Floating tooltip -->
+  {#if !isScrubbing && isLocallyHovered && hoveredPoint && mousePageX !== null && mousePageY !== null}
     <MeasureChartHoverTooltip
       mouseX={mousePageX}
       mouseY={mousePageY}
@@ -553,6 +555,7 @@
       {timeGranularity}
       {interval}
       {comparisonInterval}
+      {showComparison}
       {isComparingDimension}
       {dimTooltipEntries}
       deltaLabel={tooltipDeltaLabel}

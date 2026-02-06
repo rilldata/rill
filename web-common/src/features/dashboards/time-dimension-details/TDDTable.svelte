@@ -33,7 +33,8 @@
   export let sortType: SortType;
   export let measure: MetricsViewSpecMeasure;
   export let highlightedRow: number | undefined;
-  export let highlightedCol: number | undefined;
+  export let highlightedColStart: number | undefined;
+  export let highlightedColEnd: number | undefined;
   export let pinIndex: number;
   export let comparing: TDDComparison;
   export let tableData: TableData;
@@ -110,7 +111,8 @@
       getClassForCell(
         palette,
         rowIdxHover ?? highlightedRow,
-        colIdxHover ?? highlightedCol,
+        colIdxHover ?? highlightedColStart,
+        colIdxHover ?? highlightedColEnd,
         data.y,
         data.x,
       ),
@@ -128,7 +130,8 @@
 
   // Any time visible line list changes, redraw the table
   $: {
-    highlightedCol;
+    highlightedColStart;
+    highlightedColEnd;
     highlightedRow;
     tableData?.selectedValues;
     pivot?.draw();
@@ -197,7 +200,8 @@
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
-      colIdxHover ?? highlightedCol,
+      colIdxHover ?? highlightedColStart,
+      colIdxHover ?? highlightedColEnd,
       y,
       x - tableData?.fixedColCount,
     );

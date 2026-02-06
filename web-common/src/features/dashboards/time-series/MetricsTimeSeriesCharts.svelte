@@ -43,6 +43,14 @@
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { DateTime, Interval } from "luxon";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+  } from "@rilldata/web-common/components/popover";
 
   const { rillTime } = featureFlags;
 
@@ -70,6 +78,8 @@
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let grainDropdownOpen = false;
+  let connectNulls = true;
+  let chartSettingsOpen = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -315,6 +325,26 @@
         </DropdownMenu.Root>
       {/if}
 
+      <Popover bind:open={chartSettingsOpen}>
+        <PopoverTrigger>
+          <IconButton rounded active={chartSettingsOpen}>
+            <MoreHorizontal size="16px" />
+          </IconButton>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          side="bottom"
+          class="flex flex-row items-center justify-between gap-x-2 w-[200px] px-3.5 py-2.5"
+        >
+          <span>Connect sparse data</span>
+          <Switch
+            small
+            checked={connectNulls}
+            onCheckedChange={() => (connectNulls = !connectNulls)}
+          />
+        </PopoverContent>
+      </Popover>
+
       {#if !hideStartPivotButton}
         <div class="grow" />
         <Button
@@ -374,6 +404,7 @@
           <MeasureChart
             {measure}
             {scrubController}
+            {connectNulls}
             tddChartType={showTimeDimensionDetail
               ? (tddChartType ?? TDDChart.DEFAULT)
               : TDDChart.DEFAULT}

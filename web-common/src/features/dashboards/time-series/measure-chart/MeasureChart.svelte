@@ -60,6 +60,7 @@
   export let onPanLeft: (() => void) | undefined = undefined;
   export let onPanRight: (() => void) | undefined = undefined;
   export let scrubController: ScrubController;
+  export let connectNulls: boolean = true;
 
   const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
 
@@ -313,6 +314,7 @@
       {onScrubClear}
       {scrubController}
       {metricsViewName}
+      {connectNulls}
     />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">

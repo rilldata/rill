@@ -39,10 +39,11 @@ export function transposeArray(
 
 export function getClassForCell(
   palette: "fixed" | "default",
-  highlightedRow,
-  highlightedCol,
-  rowIdx,
-  colIdx,
+  highlightedRow: number | undefined,
+  highlightedColStart: number | undefined,
+  highlightedColEnd: number | undefined,
+  rowIdx: number,
+  colIdx: number,
 ) {
   const bgColors = {
     fixed: {
@@ -59,7 +60,11 @@ export function getClassForCell(
 
   // Determine background color based on store
   const isRowHighlighted = highlightedRow === rowIdx;
-  const isColHighlighted = highlightedCol === colIdx;
+  const isColHighlighted =
+    highlightedColStart !== undefined &&
+    highlightedColEnd !== undefined &&
+    colIdx >= highlightedColStart &&
+    colIdx <= highlightedColEnd;
   const isHighlighted = isRowHighlighted || isColHighlighted;
   const isDoubleHighlighted = isRowHighlighted && isColHighlighted;
 

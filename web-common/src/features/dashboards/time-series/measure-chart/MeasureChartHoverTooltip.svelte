@@ -19,13 +19,31 @@
   export let timeGranularity: V1TimeGrain | undefined;
   export let interval: Interval<true> | undefined = undefined;
   export let comparisonInterval: Interval<true> | undefined = undefined;
+  export let showComparison: boolean;
   export let isComparingDimension: boolean;
   export let dimTooltipEntries: DimTooltipEntry[] = [];
   export let deltaLabel: string | null;
   export let deltaPositive: boolean;
   export let formatter: (value: number | null) => string;
 
-  const offset = 4;
+  const GAP = 8;
+
+  let tooltipEl: HTMLDivElement;
+  let top = 0;
+  let left = 0;
+
+  $: if (tooltipEl) {
+    const rect = tooltipEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    left =
+      mouseX + GAP + rect.width > vw ? mouseX - GAP - rect.width : mouseX + GAP;
+    top =
+      mouseY + GAP + rect.height > vh
+        ? mouseY - GAP - rect.height
+        : mouseY + GAP;
+  }
 
   $: absoluteDelta =
     currentValue !== null && comparisonValue !== null
@@ -34,10 +52,11 @@
 </script>
 
 <div
+  bind:this={tooltipEl}
   use:portal
   class="tooltip-container"
-  style:top="{mouseY + offset}px"
-  style:left="{mouseX + offset}px"
+  style:top="{top}px"
+  style:left="{left}px"
 >
   {#if isComparingDimension}
     <div class="dimension-tooltip">
@@ -52,10 +71,12 @@
         </div>
       {/each}
     </div>
-  {:else}
+  {:else if showComparison}
     <div class="time-comparison">
       <div class="period current">
-        <span class="value primary-value">{formatter(currentValue)}</span>
+        <span class="value primary-value" aria-label="main value"
+          >{formatter(currentValue)}</span
+        >
         <span class="date">
           {formatGrainBucket(currentTs, timeGranularity, interval)}</span
         >
@@ -93,6 +114,15 @@
         <span class="delta-percent">({deltaLabel})</span>
       </div>
     {/if}
+  {:else}
+    <div class="simple-tooltip">
+      <span class="simple-value" aria-label="main value"
+        >{formatter(currentValue)}</span
+      >
+      <span class="simple-date">
+        {formatGrainBucket(currentTs, timeGranularity, interval)}
+      </span>
+    </div>
   {/if}
 </div>
 
@@ -124,6 +154,19 @@
 
   .dimension-value {
     @apply font-semibold text-fg-secondary ml-auto;
+  }
+
+  /* Simple (no comparison) styles */
+  .simple-tooltip {
+    @apply flex flex-col items-center px-2.5 py-1.5;
+  }
+
+  .simple-value {
+    @apply text-[12px] font-semibold text-theme-700;
+  }
+
+  .simple-date {
+    @apply text-[9px] text-fg-muted;
   }
 
   /* Time comparison styles */
