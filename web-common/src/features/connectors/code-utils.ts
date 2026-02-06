@@ -39,6 +39,84 @@ sql: {{ sql }}{{ dev_section }}
 `;
 }
 
+const SENSITIVE_HEADER_PATTERN =
+  /^(authorization|x-api-key|api-key|token|x-token|x-auth|x-secret|proxy-authorization)$/i;
+
+/**
+ * Returns true when a header key likely carries a secret value (e.g. tokens,
+ * API keys). Only these headers are stored in `.env`; the rest stay as plain
+ * text in the connector YAML.
+ */
+function isSensitiveHeaderKey(headerKey: string): boolean {
+  return SENSITIVE_HEADER_PATTERN.test(headerKey.trim());
+}
+
+/**
+ * Sanitize a header key into a valid .env variable segment.
+ * Lowercases, replaces non-alphanumeric characters with underscores, and
+ * collapses consecutive underscores.
+ */
+function headerKeyToEnvSegment(headerKey: string): string {
+  return headerKey
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+/**
+ * Convert header entries into a YAML map block.
+ * Accepts an array of {key, value} objects (new key-value input) or a legacy
+ * multi-line "Header-Name: value" string. Returns empty string when there are
+ * no valid entries.
+ *
+ * When `driverName` is provided, header values are replaced with
+ * `{{ .env.connector.<name>.<header_key> }}` references so that secrets are
+ * stored in `.env` rather than in the connector YAML file.
+ */
+function formatHeadersAsYamlMap(
+  value: Array<{ key: string; value: string }> | string,
+  driverName?: string,
+  connectorInstanceName?: string,
+): string {
+  const nameForEnv = connectorInstanceName || driverName;
+
+  if (typeof value === "string") {
+    // Legacy textarea format: parse "Key: Value" lines
+    const lines = value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.includes(":"));
+    if (lines.length === 0) return "";
+    const entries = lines.map((line) => {
+      const idx = line.indexOf(":");
+      const k = line.substring(0, idx).trim().replace(/^"|"$/g, "");
+      const raw = line
+        .substring(idx + 1)
+        .trim()
+        .replace(/^"|"$/g, "");
+      const v =
+        nameForEnv && isSensitiveHeaderKey(k)
+          ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
+          : raw;
+      return `    "${k}": "${v}"`;
+    });
+    return `headers:\n${entries.join("\n")}`;
+  }
+
+  // Array of {key, value} objects from key-value input
+  const valid = value.filter((e) => e.key.trim() !== "");
+  if (valid.length === 0) return "";
+  const entries = valid.map((e) => {
+    const k = e.key.trim();
+    const v =
+      nameForEnv && isSensitiveHeaderKey(k)
+        ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
+        : e.value.trim();
+    return `    "${k}": "${v}"`;
+  });
+  return `headers:\n${entries.join("\n")}`;
+}
+
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
@@ -88,6 +166,8 @@ driver: ${driverName}`;
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;
+      // Filter out empty arrays (e.g. key-value inputs with no entries)
+      if (Array.isArray(value) && value.length === 0) return false;
       // For ClickHouse, exclude managed: false as it's the default behavior
       // When managed=false, it's the default self-managed mode and doesn't need to be explicit
       if (
@@ -101,6 +181,14 @@ driver: ${driverName}`;
     .map((property) => {
       const key = property.key as string;
       const value = formValues[key] as string;
+
+      if (key === "headers") {
+        return formatHeadersAsYamlMap(
+          value as Array<{ key: string; value: string }> | string,
+          driverName,
+          options?.connectorInstanceName,
+        );
+      }
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
@@ -119,6 +207,7 @@ driver: ${driverName}`;
 
       return `${key}: ${value}`;
     })
+    .filter((line) => line !== "")
     .join("\n");
 
   // Return the compiled YAML
@@ -184,6 +273,23 @@ export async function updateDotEnvWithSecrets(
       formValues[key] as string,
     );
   });
+
+  // Persist sensitive header values (e.g. Authorization, API keys) as
+  // individual .env entries so tokens are not stored as raw text in YAML.
+  const headers = formValues.headers;
+  if (Array.isArray(headers)) {
+    for (const entry of headers as Array<{ key: string; value: string }>) {
+      if (!entry.key?.trim() || !entry.value?.trim()) continue;
+      if (!isSensitiveHeaderKey(entry.key)) continue;
+      const envSegment = headerKeyToEnvSegment(entry.key);
+      const envKey = makeDotEnvConnectorKey(
+        connector.name as string,
+        envSegment,
+        connectorInstanceName,
+      );
+      blob = replaceOrAddEnvVariable(blob, envKey, entry.value.trim());
+    }
+  }
 
   return blob;
 }

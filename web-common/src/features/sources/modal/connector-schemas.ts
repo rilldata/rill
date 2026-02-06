@@ -89,12 +89,19 @@ export function getBackendConnectorName(schemaName: string): string {
 
 /**
  * Determine if a connector has multi-step form flow (connector → source).
- * Object store connectors (S3, GCS, Azure) require separate auth and source steps.
+ * True for object store connectors (S3, GCS, Azure) and any schema that
+ * defines fields on both the "connector" and "source" steps.
  */
 export function isMultiStepConnector(
   schema: MultiStepFormSchema | null,
 ): boolean {
-  return schema?.["x-category"] === "objectStore";
+  if (!schema?.properties) return false;
+  if (schema["x-category"] === "objectStore") return true;
+  const fields = Object.values(schema.properties);
+  return (
+    fields.some((p) => p["x-step"] === "connector") &&
+    fields.some((p) => p["x-step"] === "source")
+  );
 }
 
 /**
