@@ -40,14 +40,34 @@ sql: {{ sql }}{{ dev_section }}
 }
 
 /**
+ * Sanitize a header key into a valid .env variable segment.
+ * Lowercases, replaces non-alphanumeric characters with underscores, and
+ * collapses consecutive underscores.
+ */
+function headerKeyToEnvSegment(headerKey: string): string {
+  return headerKey
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+/**
  * Convert header entries into a YAML map block.
  * Accepts an array of {key, value} objects (new key-value input) or a legacy
  * multi-line "Header-Name: value" string. Returns empty string when there are
  * no valid entries.
+ *
+ * When `driverName` is provided, header values are replaced with
+ * `{{ .env.connector.<name>.<header_key> }}` references so that secrets are
+ * stored in `.env` rather than in the connector YAML file.
  */
 function formatHeadersAsYamlMap(
   value: Array<{ key: string; value: string }> | string,
+  driverName?: string,
+  connectorInstanceName?: string,
 ): string {
+  const nameForEnv = connectorInstanceName || driverName;
+
   if (typeof value === "string") {
     // Legacy textarea format: parse "Key: Value" lines
     const lines = value
@@ -58,10 +78,12 @@ function formatHeadersAsYamlMap(
     const entries = lines.map((line) => {
       const idx = line.indexOf(":");
       const k = line.substring(0, idx).trim().replace(/^"|"$/g, "");
-      const v = line
-        .substring(idx + 1)
-        .trim()
-        .replace(/^"|"$/g, "");
+      const v = nameForEnv
+        ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
+        : line
+            .substring(idx + 1)
+            .trim()
+            .replace(/^"|"$/g, "");
       return `    "${k}": "${v}"`;
     });
     return `headers:\n${entries.join("\n")}`;
@@ -70,9 +92,13 @@ function formatHeadersAsYamlMap(
   // Array of {key, value} objects from key-value input
   const valid = value.filter((e) => e.key.trim() !== "");
   if (valid.length === 0) return "";
-  const entries = valid.map(
-    (e) => `    "${e.key.trim()}": "${e.value.trim()}"`,
-  );
+  const entries = valid.map((e) => {
+    const k = e.key.trim();
+    const v = nameForEnv
+      ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
+      : e.value.trim();
+    return `    "${k}": "${v}"`;
+  });
   return `headers:\n${entries.join("\n")}`;
 }
 
@@ -144,6 +170,8 @@ driver: ${driverName}`;
       if (key === "headers") {
         return formatHeadersAsYamlMap(
           value as Array<{ key: string; value: string }> | string,
+          driverName,
+          options?.connectorInstanceName,
         );
       }
 
@@ -230,6 +258,22 @@ export async function updateDotEnvWithSecrets(
       formValues[key] as string,
     );
   });
+
+  // Persist header values as individual .env entries so they are not stored
+  // as raw text in the connector YAML file.
+  const headers = formValues.headers;
+  if (Array.isArray(headers)) {
+    for (const entry of headers as Array<{ key: string; value: string }>) {
+      if (!entry.key?.trim() || !entry.value?.trim()) continue;
+      const envSegment = headerKeyToEnvSegment(entry.key);
+      const envKey = makeDotEnvConnectorKey(
+        connector.name as string,
+        envSegment,
+        connectorInstanceName,
+      );
+      blob = replaceOrAddEnvVariable(blob, envKey, entry.value.trim());
+    }
+  }
 
   return blob;
 }
