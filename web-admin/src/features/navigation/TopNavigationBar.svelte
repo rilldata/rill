@@ -20,7 +20,12 @@
     type V1Organization,
   } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
-  import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
+  import {
+    viewAsUserStore,
+    viewAsUserStateStore$,
+    isViewAsValidForProject,
+    clearViewAsUser,
+  } from "../../features/view-as-user/viewAsUserStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
@@ -68,6 +73,29 @@
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
+
+  // Determine if the current user is an org-level admin
+  $: isOrgAdmin = !!manageOrgMembers;
+
+  // Check if the current "View As" state is valid for the current context
+  // Clear it if navigating to a context where it's not valid (for project-level admins)
+  $: {
+    const viewAsState = $viewAsUserStateStore$;
+    if (viewAsState && !viewAsState.isOrgLevel) {
+      // For project-scoped view-as, clear when:
+      // - Navigating to org page (no project)
+      // - Navigating to a different project
+      if (!project || viewAsState.sourceProject !== project) {
+        clearViewAsUser();
+      }
+    }
+  }
+
+  // Determine if we should show the ViewAsUserChip
+  // Show if there's an active view-as AND it's valid for the current context
+  $: showViewAsChip =
+    $viewAsUserStore &&
+    isViewAsValidForProject($viewAsUserStateStore$, project);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -226,8 +254,8 @@
 
   <!-- Right side -->
   <div class="flex gap-x-2 items-center ml-auto">
-    {#if $viewAsUserStore}
-      <ViewAsUserChip />
+    {#if showViewAsChip}
+      <ViewAsUserChip {isOrgAdmin} />
     {/if}
     <!-- NOTE: only project admin and editor can manage project members -->
     <!-- https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions -->
@@ -277,7 +305,7 @@
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}
-        <AvatarButton />
+        <AvatarButton {isOrgAdmin} />
       {:else}
         <SignIn />
       {/if}
