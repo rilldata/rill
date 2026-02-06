@@ -352,6 +352,7 @@
       timeRange: {
         start: timeStart,
         end: timeEnd,
+        timeDimension,
       },
       timeGrain: timeGranularity,
       measures: [measureName],
