@@ -24,6 +24,7 @@
   import SummaryGraph from "../summary/SummaryGraph.svelte";
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
+  import { isGraphExpanded } from "../inspector/graph-inspector-store";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -253,6 +254,9 @@
 
   // Derive current expanded ID for template usage (computed from props/state)
   $: currentExpandedId = isControlledMode ? expandedId : internalExpandedId;
+
+  // Update the global expanded state store for components like GraphInspector
+  $: isGraphExpanded.set(!!currentExpandedId);
 
   // When the URL seeds change, re-open the first seeded graph in expanded view
   let lastSeedsSignature = "";

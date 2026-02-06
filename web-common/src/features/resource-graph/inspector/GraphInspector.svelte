@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { selectedGraphNode } from "./graph-inspector-store";
+  import { selectedGraphNode, isGraphExpanded } from "./graph-inspector-store";
   import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     resourceIconMapping,
@@ -7,8 +7,10 @@
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
-  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import {
+    V1ReconcileStatus,
+    createRuntimeServiceCreateTrigger,
+  } from "@rilldata/web-common/runtime-client";
   import { goto } from "$app/navigation";
   import {
     Database,
@@ -45,9 +47,20 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
+  import PartitionsTable from "@rilldata/web-common/features/models/partitions/PartitionsTable.svelte";
+  import PartitionsFilter from "@rilldata/web-common/features/models/partitions/PartitionsFilter.svelte";
+  import type { Selected } from "bits-ui";
 
   const DEFAULT_COLOR = "#6B7280";
   const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
+
+  // Partitions modal state
+  let selectedPartitionFilter = "all";
+
+  function onPartitionFilterChange(newSelection: Selected<string>) {
+    selectedPartitionFilter = newSelection.value;
+  }
 
   // Project info queries
   $: ({ instanceId } = $runtime);
@@ -81,13 +94,10 @@
           ?.replaceAll("_", " ")
       : undefined;
 
-  // Get artifact for navigation
+  // Get resource info for navigation and actions
   $: resourceName = resource?.meta?.name?.name ?? "";
-  $: originalKind = (resource?.meta?.name?.kind ?? kind) as ResourceKind;
-  $: artifact =
-    resourceName && originalKind
-      ? fileArtifacts.findFileArtifact(originalKind, resourceName)
-      : undefined;
+  // Use filePaths directly from resource meta (more reliable than artifact lookup)
+  $: filePath = resource?.meta?.filePaths?.[0];
 
   // Get connector-specific icon
   $: connectorIcon =
@@ -100,16 +110,29 @@
         ]
       : null;
 
+
+  // Model refresh mutation
+  const triggerMutation = createRuntimeServiceCreateTrigger();
+
+  function refreshModel() {
+    if (!resourceName) return;
+    $triggerMutation.mutate({
+      instanceId,
+      data: {
+        models: [{ model: resourceName, full: false }],
+      },
+    });
+  }
+
   function openFile() {
-    if (!artifact?.path) return;
+    if (!filePath) return;
     try {
-      const key = artifact.path;
-      const prefs = JSON.parse(localStorage.getItem(key) || "{}");
-      localStorage.setItem(key, JSON.stringify({ ...prefs, view: "code" }));
+      const prefs = JSON.parse(localStorage.getItem(filePath) || "{}");
+      localStorage.setItem(filePath, JSON.stringify({ ...prefs, view: "code" }));
     } catch (error) {
       console.warn(`Failed to save file view preference:`, error);
     }
-    goto(`/files${artifact.path}`);
+    goto(`/files${filePath}`);
   }
 
   function handleViewLineage() {
@@ -117,20 +140,12 @@
     const resourceKindName = resource.meta.name.kind;
     const resourceNameValue = resource.meta.name.name;
 
-    let kindToken = "models";
-    if (resourceKindName === "rill.runtime.v1.MetricsView") {
-      kindToken = "metrics";
-    } else if (
-      resourceKindName === "rill.runtime.v1.Explore" ||
-      resourceKindName === "rill.runtime.v1.Canvas"
-    ) {
-      kindToken = "dashboards";
-    }
-
-    const expandedId = encodeURIComponent(
+    // Use the resource ID as both the seed (via resource param) and expanded target
+    // This ensures the lineage group containing this resource is visible and expanded
+    const resourceId = encodeURIComponent(
       `${resourceKindName}:${resourceNameValue}`,
     );
-    goto(`/graph?kind=${kindToken}&expanded=${expandedId}`);
+    goto(`/graph?resource=${resourceId}&expanded=${resourceId}`);
   }
 </script>
 
@@ -156,7 +171,7 @@
     <!-- Connection Info -->
     {#if metadata?.connector || metadata?.sourcePath}
       <div class="section">
-        <h4 class="section-title">Connection Type</h4>
+        <h4 class="section-title">Connector</h4>
         {#if metadata?.connector}
           <div class="metadata-row">
             <span class="metadata-icon">
@@ -174,7 +189,10 @@
             <span class="metadata-icon file">
               <FileText size={14} />
             </span>
-            <span class="metadata-value source-path" title={metadata.sourcePath}>
+            <span
+              class="metadata-value source-path"
+              title={metadata.sourcePath}
+            >
               {metadata.sourcePath}
             </span>
           </div>
@@ -203,58 +221,56 @@
     <!-- Model/Source Information -->
     {#if kind === ResourceKind.Model || kind === ResourceKind.Source}
       <div class="section">
-        <h4 class="section-title">{displayResourceKind(kind)} Information</h4>
-
-        <!-- Icon row for quick indicators -->
-        <div class="icon-indicators">
-          {#if metadata?.isSqlModel}
-            <div class="indicator-badge sql" title="SQL Model">
-              <FileCode size={14} />
-              <span>SQL</span>
-            </div>
-          {/if}
-          {#if metadata?.incremental}
-            <div class="indicator-badge incremental" title="Incremental processing">
-              <RefreshCw size={14} />
-              <span>Incremental</span>
-            </div>
-          {/if}
-          {#if metadata?.partitioned}
-            <button
-              class="indicator-badge partitioned clickable"
-              title="View partitions in model inspector"
-              on:click={openFile}
-            >
-              <Layers size={14} />
-              <span>Partitioned</span>
-            </button>
-          {/if}
-          {#if metadata?.changeMode}
-            <div class="indicator-badge mode" title="Change mode: {metadata.changeMode}">
-              <Settings size={14} />
-              <span>{metadata.changeMode}</span>
-            </div>
-          {/if}
+        <div class="section-header-inline">
+          <h4 class="section-title">{displayResourceKind(kind)} Information</h4>
+          <span class="definition-type">{metadata?.isSqlModel ? "SQL" : "YAML"}</span>
         </div>
 
-        <!-- Partition details (inline) -->
-        {#if metadata?.partitioned}
-          <div class="partition-details">
-            {#if metadata?.partitionsWatermarkField}
-              <span class="detail-item">Watermark: {metadata.partitionsWatermarkField}</span>
+        <!-- Feature buttons row -->
+        {#if metadata?.partitioned || metadata?.incremental}
+          <div class="feature-buttons">
+            {#if metadata?.partitioned && resource}
+              <Dialog.Root>
+                <Dialog.Trigger asChild let:builder>
+                  <button
+                    use:builder.action
+                    {...builder}
+                    class="feature-btn"
+                    type="button"
+                  >
+                    <Layers size={14} />
+                    <span>Partitioned</span>
+                    {#if metadata?.partitionsHaveErrors}
+                      <span class="error-dot"></span>
+                    {/if}
+                  </button>
+                </Dialog.Trigger>
+                <Dialog.Content class="max-w-screen-xl">
+                  <Dialog.Header>
+                    <Dialog.Title>Model partitions</Dialog.Title>
+                  </Dialog.Header>
+                  <div class="flex justify-end">
+                    <PartitionsFilter
+                      selectedFilter={selectedPartitionFilter}
+                      onChange={onPartitionFilterChange}
+                    />
+                  </div>
+                  <PartitionsTable
+                    {resource}
+                    whereErrored={selectedPartitionFilter === "errors"}
+                    wherePending={selectedPartitionFilter === "pending"}
+                  />
+                </Dialog.Content>
+              </Dialog.Root>
             {/if}
-            {#if metadata?.partitionsConcurrencyLimit}
-              <span class="detail-item">Concurrency: {metadata.partitionsConcurrencyLimit}</span>
-            {/if}
-            {#if metadata?.partitionsHaveErrors}
-              <span class="detail-item error">
-                <AlertCircle size={12} />
-                Some partitions failed
-              </span>
+            {#if metadata?.incremental}
+              <button class="feature-btn" type="button">
+                <RefreshCw size={14} />
+                <span>Incremental</span>
+              </button>
             {/if}
           </div>
         {/if}
-
         <!-- Tests YAML -->
         {#if metadata?.testsYaml}
           <div class="yaml-section">
@@ -339,7 +355,9 @@
         <!-- Dimensions -->
         {#if metadata?.dimensions && metadata.dimensions.length > 0}
           <div class="subsection">
-            <span class="subsection-title">Dimensions ({metadata.dimensions.length})</span>
+            <span class="subsection-title"
+              >Dimensions ({metadata.dimensions.length})</span
+            >
             <div class="field-list">
               {#each metadata.dimensions as dim}
                 <div class="field-item">
@@ -359,11 +377,15 @@
         <!-- Measures -->
         {#if metadata?.measures && metadata.measures.length > 0}
           <div class="subsection">
-            <span class="subsection-title">Measures ({metadata.measures.length})</span>
+            <span class="subsection-title"
+              >Measures ({metadata.measures.length})</span
+            >
             <div class="field-list">
               {#each metadata.measures as measure}
                 <div class="field-item">
-                  <span class="field-name">{measure.displayName || measure.name}</span>
+                  <span class="field-name"
+                    >{measure.displayName || measure.name}</span
+                  >
                   {#if measure.expression}
                     <code class="field-expr">{measure.expression}</code>
                   {/if}
@@ -411,7 +433,9 @@
               <Component size={14} />
             </span>
             <span class="metadata-value">
-              {metadata.componentCount} component{metadata.componentCount > 1 ? "s" : ""}
+              {metadata.componentCount} component{metadata.componentCount > 1
+                ? "s"
+                : ""}
             </span>
           </div>
         {/if}
@@ -473,16 +497,24 @@
 
     <!-- Actions -->
     <div class="actions">
-      {#if artifact?.path}
-        <Button type="secondary" on:click={openFile}>
+      {#if (kind === ResourceKind.Model || kind === ResourceKind.Source) && resourceName}
+        <Button type="secondary" onClick={refreshModel}>
+          <RefreshCw size={14} />
+          Refresh
+        </Button>
+      {/if}
+      {#if filePath}
+        <Button type="secondary" onClick={openFile}>
           <ExternalLink size={14} />
           Edit YAML
         </Button>
       {/if}
-      <Button type="secondary" on:click={handleViewLineage}>
-        <GitFork size={14} />
-        View lineage
-      </Button>
+      {#if !$isGraphExpanded}
+        <Button type="secondary" onClick={handleViewLineage}>
+          <GitFork size={14} />
+          View lineage
+        </Button>
+      {/if}
     </div>
   {:else}
     <!-- Project Info (when no node selected) -->
@@ -529,7 +561,10 @@
         </div>
         {#if gitStatus?.githubUrl && !gitStatus?.managedGit}
           <div class="metadata-row sub">
-            <span class="metadata-value muted truncate" title={gitStatus.githubUrl}>
+            <span
+              class="metadata-value muted truncate"
+              title={gitStatus.githubUrl}
+            >
               {gitStatus.githubUrl.replace("https://github.com/", "")}
             </span>
           </div>
@@ -607,7 +642,11 @@
   }
 
   .header-info {
-    @apply flex flex-col min-w-0;
+    @apply flex flex-col min-w-0 flex-1;
+  }
+
+  .inspector-header :global(button) {
+    @apply flex-shrink-0 text-fg-muted;
   }
 
   .header-title {
@@ -627,6 +666,19 @@
 
   .section-title {
     @apply text-xs font-semibold text-fg-secondary uppercase tracking-wide mb-2;
+  }
+
+  .section-header-inline {
+    @apply flex items-center justify-between mb-2;
+  }
+
+  .section-header-inline .section-title {
+    @apply mb-0;
+  }
+
+  .definition-type {
+    @apply text-xs font-medium px-2 py-0.5 rounded;
+    @apply bg-gray-100 text-gray-600;
   }
 
   .metadata-row {
@@ -805,17 +857,51 @@
     @apply bg-purple-100;
   }
 
-  /* Partition details */
-  .partition-details {
-    @apply flex flex-wrap gap-x-4 gap-y-1 mb-3 text-xs text-fg-muted;
+  /* Property list (checkbox-style) */
+  .property-list {
+    @apply flex flex-col gap-1;
   }
 
-  .partition-details .detail-item {
-    @apply flex items-center gap-1;
+  .property-item {
+    @apply flex items-center gap-2 text-sm text-fg-primary py-1;
   }
 
-  .partition-details .detail-item.error {
-    @apply text-red-600;
+  .property-item.clickable {
+    @apply cursor-pointer rounded px-2 -mx-2 transition-colors;
+    @apply border-none bg-transparent;
+  }
+
+  .property-item.clickable:hover {
+    @apply bg-surface-subtle;
+  }
+
+  :global(.property-check) {
+    @apply text-green-600 flex-shrink-0;
+  }
+
+  /* Feature buttons row */
+  .feature-buttons {
+    @apply flex flex-wrap gap-2 mb-3;
+  }
+
+  .feature-btn {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5;
+    @apply text-xs font-medium text-fg-secondary;
+    @apply bg-surface-subtle rounded-md border border-gray-200;
+    @apply cursor-default transition-colors;
+  }
+
+  :global(button.feature-btn) {
+    @apply cursor-pointer;
+  }
+
+  :global(button.feature-btn:hover) {
+    @apply bg-gray-100 border-gray-300;
+  }
+
+  /* Source Model label */
+  .source-model-label {
+    @apply text-xs text-fg-muted mb-2;
   }
 
   /* YAML sections */
@@ -905,5 +991,39 @@
 
   .metadata-icon.layout {
     @apply text-slate-600;
+  }
+
+  /* Partitions dialog styles */
+  .error-dot {
+    @apply w-2 h-2 rounded-full bg-red-500;
+    margin-left: 2px;
+  }
+
+  :global(.partitions-model-name) {
+    @apply font-medium text-fg-primary;
+  }
+
+  :global(.partitions-status) {
+    @apply inline-flex items-center gap-1 text-xs ml-2;
+  }
+
+  :global(.partitions-status.error) {
+    @apply text-red-600;
+  }
+
+  :global(.partitions-status.success) {
+    @apply text-green-600;
+  }
+
+  .partitions-toolbar {
+    @apply flex items-center justify-between gap-4 mb-4;
+  }
+
+  .partitions-meta {
+    @apply flex items-center gap-4 text-xs text-fg-muted;
+  }
+
+  .partitions-meta .meta-item {
+    @apply inline-flex items-center gap-1;
   }
 </style>

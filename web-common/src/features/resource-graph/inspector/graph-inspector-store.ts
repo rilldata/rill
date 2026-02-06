@@ -8,6 +8,12 @@ import type { ResourceNodeData } from "../shared/types";
 export const selectedGraphNode = writable<ResourceNodeData | null>(null);
 
 /**
+ * Store for tracking whether the graph is in expanded view mode.
+ * This is needed because window.history.replaceState doesn't trigger $page updates.
+ */
+export const isGraphExpanded = writable<boolean>(false);
+
+/**
  * Select a node to display in the inspector
  */
 export function selectGraphNode(nodeData: ResourceNodeData | null) {

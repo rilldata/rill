@@ -95,7 +95,12 @@ function formatScheduleDescription(
  */
 function formatScheduleYaml(
   schedule:
-    | { cron?: string; tickerSeconds?: number; timeZone?: string; runInDev?: boolean }
+    | {
+        cron?: string;
+        tickerSeconds?: number;
+        timeZone?: string;
+        runInDev?: boolean;
+      }
     | undefined,
 ): string | undefined {
   if (!schedule) return undefined;
@@ -297,7 +302,10 @@ function extractResourceMetadata(
     }
 
     // Change mode
-    if (spec.changeMode && spec.changeMode !== "MODEL_CHANGE_MODE_UNSPECIFIED") {
+    if (
+      spec.changeMode &&
+      spec.changeMode !== "MODEL_CHANGE_MODE_UNSPECIFIED"
+    ) {
       metadata.changeMode = spec.changeMode.replace("MODEL_CHANGE_MODE_", "");
     }
 
