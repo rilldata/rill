@@ -107,6 +107,28 @@ export const rillDev = base.extend<MyFixtures>({
       }
     });
 
+    // Wait for all resources to finish reconciling so that tests navigating
+    // directly to explore URLs (via page.goto) don't hit a 404 error page.
+    if (project) {
+      await asyncWaitUntil(async () => {
+        try {
+          const response = await axios.get(
+            `http://localhost:${TEST_PORT}/v1/instances/default/resources`,
+          );
+          const resources = response.data?.resources ?? [];
+          return (
+            resources.length > 0 &&
+            resources.every(
+              (r: { meta?: { reconcileStatus?: string } }) =>
+                r.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE",
+            )
+          );
+        } catch {
+          return false;
+        }
+      }, 60000);
+    }
+
     const context = await browser.newContext({
       storageState: rillDevBrowserState ?? { cookies: [], origins: [] },
       ...(timezoneId ? { timezoneId } : {}),
@@ -116,8 +138,8 @@ export const rillDev = base.extend<MyFixtures>({
 
     await page.goto(`http://localhost:${TEST_PORT}`);
 
-    // Seems to help with issues related to DOM elements not being ready
-    await page.waitForTimeout(1500);
+    // Brief wait for DOM hydration after navigation
+    await page.waitForTimeout(1000);
 
     await use(page);
 
