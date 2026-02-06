@@ -8,6 +8,28 @@
     ChartScales,
   } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
 
+  /**
+   * Rendering sparse data with null gaps
+   *
+   * 1. Null bridging: `bridgeSmallGaps` linearly interpolates across small
+   *    gaps (< MAX_BRIDGE_GAP_PX) when `connectNulls` is on. Large gaps
+   *    remain as nulls and produce natural line breaks.
+   *
+   * 2. Clip paths: The primary series needs clip paths because its area
+   *    fill gradient would otherwise render across gaps (`defined` only
+   *    affects line generators, not the filled path).
+   *      - `seg-clip`:   real data segments only (connectNulls off)
+   *      - `full-clip`:  real + bridged segments (connectNulls on, area fill)
+   *      - `scrub-clip`: scrub selection rect — chart draws muted, then
+   *                      re-draws with original colors inside this clip
+   *    Secondary series have no area fill, so they rely on the line
+   *    generator's `defined` callback and only use `scrub-clip`.
+   *
+   * 3. Singletons: When `connectNulls` is off, isolated points (no adjacent
+   *    non-null neighbors) are drawn as circles since there's no line
+   *    segment to render.
+   */
+
   const MAX_BRIDGE_GAP_PX = 40;
 
   interface Segment {
@@ -17,8 +39,6 @@
 
   interface BridgeResult {
     values: (number | null)[];
-    bridges: Segment[];
-
     inputSegments: Segment[];
   }
 
@@ -31,7 +51,6 @@
   export let scrubEndIndex: number | null = null;
   export let connectNulls: boolean = true;
 
-  // Index-based line/area generators — x is just the index
   $: lineGen = createLineGenerator<number | null>({
     x: (_d, i) => scales.x(i),
     y: (d) => scales.y(d ?? 0),
@@ -47,22 +66,16 @@
 
   $: primarySeries = series[0];
 
-  // Bridge small gaps for smoother rendering
   $: primaryBridgeResult = primarySeries
     ? bridgeSmallGaps(primarySeries.values, scales.x, connectNulls)
-    : { values: [] as (number | null)[], bridges: [], inputSegments: [] };
+    : { values: [] as (number | null)[], inputSegments: [] };
   $: primaryBridged = primaryBridgeResult.values;
-  $: primaryBridges = primaryBridgeResult.bridges;
 
-  // Direct path computation — no tweening
   $: primaryLinePath = primarySeries ? (lineGen(primaryBridged) ?? "") : "";
   $: primaryAreaPath = primarySeries ? (areaGen(primaryBridged) ?? "") : "";
 
-  // Original segments (real data only) — reused from bridgeSmallGaps
   $: primaryRealSegments = primaryBridgeResult.inputSegments;
-  // Merged segments (real + bridged) — used for area fill clip
   $: primarySegments = primarySeries ? computeSegments(primaryBridged) : [];
-  // Singletons from bridged data — only shown when connectNulls is off
   $: primarySingletons =
     primarySeries && !connectNulls
       ? primarySegments
@@ -70,7 +83,16 @@
           .map((s) => s.startIndex)
       : [];
 
-  // Scrub clip region (index-based)
+  $: secondarySeries = series.slice(1).map((s) => {
+    const bridged = bridgeSmallGaps(s.values, scales.x, connectNulls);
+    const singletons = !connectNulls
+      ? computeSegments(bridged.values)
+          .filter((seg) => seg.startIndex === seg.endIndex)
+          .map((seg) => seg.startIndex)
+      : [];
+    return { ...s, bridgedValues: bridged.values, singletons };
+  });
+
   $: scrubClipX =
     scrubStartIndex !== null && scrubEndIndex !== null
       ? Math.min(scales.x(scrubStartIndex), scales.x(scrubEndIndex))
@@ -80,7 +102,6 @@
       ? Math.abs(scales.x(scrubEndIndex) - scales.x(scrubStartIndex))
       : 0;
 
-  // Muted colors for scrub state
   $: primaryLineColor = primarySeries
     ? hasScrubSelection
       ? "var(--color-gray-500)"
@@ -98,7 +119,6 @@
       : primarySeries.areaGradient.light
     : "transparent";
 
-  // Contiguous non-null segments as {startIndex, endIndex} pairs
   function computeSegments(values: (number | null)[]): Segment[] {
     const segments: Segment[] = [];
     let segStart = -1;
@@ -115,11 +135,6 @@
     return segments;
   }
 
-  /**
-   * Bridge small gaps between non-null segments by linearly interpolating.
-   * Returns the interpolated values, the bridged gap regions, and the
-   * original input segments (so callers don't need to recompute them).
-   */
   function bridgeSmallGaps(
     values: (number | null)[],
     xScale: (i: number) => number,
@@ -128,11 +143,10 @@
     const inputSegments = computeSegments(values);
 
     if (!shouldBridge || values.length < 3 || inputSegments.length <= 1) {
-      return { values, bridges: [], inputSegments };
+      return { values, inputSegments };
     }
 
     const result = [...values];
-    const bridges: Segment[] = [];
 
     for (let i = 0; i < inputSegments.length - 1; i++) {
       const prev = inputSegments[i];
@@ -147,11 +161,10 @@
           const t = (j - prev.endIndex) / span;
           result[j] = v0 + t * (v1 - v0);
         }
-        bridges.push({ startIndex: prev.endIndex, endIndex: next.startIndex });
       }
     }
 
-    return { values: result, bridges, inputSegments };
+    return { values: result, inputSegments };
   }
 </script>
 
@@ -176,7 +189,7 @@
   {/if}
 
   {#if primarySeries}
-    <!-- Clip for real data segments (solid line) -->
+    <!-- seg-clip: real data segments only (connectNulls off) -->
     <clipPath id="seg-clip-{chartId}">
       {#each primaryRealSegments as seg (seg.startIndex)}
         {@const x = scales.x(seg.startIndex)}
@@ -184,17 +197,7 @@
         <rect {x} y={0} height={scales.y.range()[0]} {width} />
       {/each}
     </clipPath>
-    <!-- Clip for bridged gap regions (dashed line) -->
-    {#if primaryBridges.length > 0}
-      <clipPath id="bridge-clip-{chartId}">
-        {#each primaryBridges as bridge (bridge.startIndex)}
-          {@const x = scales.x(bridge.startIndex)}
-          {@const width = scales.x(bridge.endIndex) - x}
-          <rect {x} y={0} height={scales.y.range()[0]} {width} />
-        {/each}
-      </clipPath>
-    {/if}
-    <!-- Clip for all rendered segments (real + bridged, for area fill) -->
+    <!-- full-clip: real + bridged segments (connectNulls on, area fill) -->
     <clipPath id="full-clip-{chartId}">
       {#each primarySegments as seg (seg.startIndex)}
         {@const x = scales.x(seg.startIndex)}
@@ -216,7 +219,7 @@
   {/if}
 </defs>
 
-<!-- Area fill for primary series -->
+<!-- Primary area fill (clipped to full-clip to avoid filling across large gaps) -->
 {#if primarySeries?.areaGradient}
   <path
     d={primaryAreaPath}
@@ -225,34 +228,53 @@
   />
 {/if}
 
-<!-- Secondary series -->
-{#each series.slice(1) as s (s.id)}
-  {@const bridged = bridgeSmallGaps(s.values, scales.x, connectNulls)}
+<!-- Secondary series (no clip paths — line breaks handled by `defined` callback) -->
+{#each secondarySeries as s (s.id)}
   <path
-    d={lineGen(bridged.values) ?? ""}
+    d={lineGen(s.bridgedValues) ?? ""}
     stroke={hasScrubSelection ? "var(--color-gray-400)" : s.color}
     stroke-width={s.strokeWidth ?? 1}
     stroke-dasharray={s.strokeDasharray ?? "none"}
     fill="none"
     opacity={s.opacity ?? 1}
   />
-  {#if hasScrubSelection && scrubStartIndex !== null && scrubEndIndex !== null}
-    <path
-      d={lineGen(bridged.values) ?? ""}
-      stroke={s.color}
-      stroke-width={s.strokeWidth ?? 1}
-      stroke-dasharray={s.strokeDasharray ?? "none"}
-      fill="none"
+  {#each s.singletons as idx (idx)}
+    {@const v = s.values[idx] ?? 0}
+    <circle
+      cx={scales.x(idx)}
+      cy={scales.y(v)}
+      r={1.5}
+      fill={hasScrubSelection ? "var(--color-gray-400)" : s.color}
       opacity={s.opacity ?? 1}
-      style="clip-path: url(#scrub-clip-{chartId})"
     />
+  {/each}
+  {#if hasScrubSelection && scrubStartIndex !== null && scrubEndIndex !== null}
+    <g style="clip-path: url(#scrub-clip-{chartId})">
+      <path
+        d={lineGen(s.bridgedValues) ?? ""}
+        stroke={s.color}
+        stroke-width={s.strokeWidth ?? 1}
+        stroke-dasharray={s.strokeDasharray ?? "none"}
+        fill="none"
+        opacity={s.opacity ?? 1}
+      />
+      {#each s.singletons as idx (idx)}
+        {@const v = s.values[idx] ?? 0}
+        <circle
+          cx={scales.x(idx)}
+          cy={scales.y(v)}
+          r={1.5}
+          fill={s.color}
+          opacity={s.opacity ?? 1}
+        />
+      {/each}
+    </g>
   {/if}
 {/each}
 
-<!-- Primary line (solid for real data) -->
+<!-- Primary line (clipped to seg-clip or full-clip depending on connectNulls) -->
 {#if primarySeries}
   {#if connectNulls}
-    <!-- When connecting nulls, draw the full bridged line as solid -->
     <path
       d={primaryLinePath}
       stroke={primaryLineColor}
@@ -270,7 +292,6 @@
     />
   {/if}
 
-  <!-- Singleton points -->
   {#each primarySingletons as idx (idx)}
     {@const v = primarySeries.values[idx] ?? 0}
     <circle
@@ -282,22 +303,31 @@
   {/each}
 {/if}
 
-<!-- Highlighted scrub region -->
+<!-- Scrub highlight: re-draws primary series with original colors, clipped to scrub-clip -->
 {#if hasScrubSelection && scrubStartIndex !== null && scrubEndIndex !== null && primarySeries}
-  {#if primarySeries.areaGradient}
+  <g style="clip-path: url(#scrub-clip-{chartId})">
+    {#if primarySeries.areaGradient}
+      <path
+        d={areaGen(primaryBridged) ?? ""}
+        fill="url(#scrub-area-grad-{chartId})"
+      />
+    {/if}
     <path
-      d={areaGen(primaryBridged) ?? ""}
-      fill="url(#scrub-area-grad-{chartId})"
-      style="clip-path: url(#scrub-clip-{chartId})"
+      d={lineGen(primaryBridged) ?? ""}
+      stroke={primarySeries.color}
+      stroke-width={1}
+      fill="none"
     />
-  {/if}
-  <path
-    d={lineGen(primaryBridged) ?? ""}
-    stroke={primarySeries.color}
-    stroke-width={1}
-    fill="none"
-    style="clip-path: url(#scrub-clip-{chartId})"
-  />
+    {#each primarySingletons as idx (idx)}
+      {@const v = primarySeries.values[idx] ?? 0}
+      <circle
+        cx={scales.x(idx)}
+        cy={scales.y(v)}
+        r={1.5}
+        fill={primarySeries.color}
+      />
+    {/each}
+  </g>
 {/if}
 
 <style lang="postcss">
