@@ -3,6 +3,7 @@ import ApacheDruidIcon from "../../components/icons/connectors/ApacheDruidIcon.s
 import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.svelte";
 import AzureBlobStorageIcon from "../../components/icons/connectors/AzureBlobStorageIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
+import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
 import GoogleCloudStorageIcon from "../../components/icons/connectors/GoogleCloudStorageIcon.svelte";
@@ -14,7 +15,7 @@ import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
 import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.svelte";
 import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte";
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
-import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
+import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
 
 export const connectorIconMapping = {
@@ -34,6 +35,12 @@ export const connectorIconMapping = {
   postgres: PostgresIcon,
   redshift: RedshiftIcon,
   s3: AmazonS3Icon,
+  salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
   starrocks: StarRocksIcon,
+};
+
+export const connectorLabelMapping = {
+  duckdb: "DuckDB",
+  clickhouse: "ClickHouse",
 };

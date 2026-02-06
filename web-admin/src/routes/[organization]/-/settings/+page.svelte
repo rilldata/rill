@@ -9,12 +9,13 @@
 
   export let data: PageData;
 
+  $: ({ showUpgradeDialog, organization: organizationObj } = data);
+
   $: ({
-    showUpgradeDialog,
-    organizationLogoUrl,
-    organizationLogoDarkUrl,
-    organizationFaviconUrl,
-  } = data);
+    logoUrl: organizationLogoUrl,
+    logoDarkUrl: organizationLogoDarkUrl,
+    faviconUrl: organizationFaviconUrl,
+  } = organizationObj ?? {});
 
   $: organization = $page.params.organization;
 </script>

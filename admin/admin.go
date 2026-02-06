@@ -13,7 +13,7 @@ import (
 	"github.com/rilldata/rill/admin/jobs"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/cli/pkg/version"
-	"github.com/rilldata/rill/runtime/pkg/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
@@ -43,7 +43,7 @@ type Service struct {
 	ProvisionerMaxConcurrency int
 	Email                     *email.Client
 	Github                    Github
-	AI                        ai.Client
+	AI                        drivers.AIService
 	Assets                    *storage.BucketHandle
 	Used                      *usedFlusher
 	Logger                    *zap.Logger
@@ -58,7 +58,7 @@ type Service struct {
 	PaymentProvider           payment.Provider
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiService drivers.AIService, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN, opts.DatabaseEncryptionKeyring)
 	if err != nil {
@@ -127,7 +127,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		ProvisionerMaxConcurrency: opts.ProvisionerMaxConcurrency,
 		Email:                     emailClient,
 		Github:                    github,
-		AI:                        aiClient,
+		AI:                        aiService,
 		Assets:                    assets,
 		Used:                      newUsedFlusher(logger, db),
 		Logger:                    logger,
