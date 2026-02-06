@@ -42,6 +42,7 @@ Request:
 • 'time_range' is inclusive of start time, exclusive of end time
 • 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 • Include 'sort' and 'limit' parameters to optimize query performance and avoid unbounded result sets
+• Results are capped to prevent context overflow; use filters and aggregations to reduce result size
 • For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
 
 Response:
@@ -177,11 +178,18 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
-	// Run the metrics query
+	// Get instance config for AI row limit
+	cfg, err := t.Runtime.InstanceConfig(ctx, session.InstanceID())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance config: %w", err)
+	}
+
+	// Run the metrics query with a limit cap to prevent AI queries from pulling too many rows
 	res, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         session.InstanceID(),
 		Resolver:           "metrics",
 		ResolverProperties: map[string]any(args),
+		Args:               map[string]any{"limit_cap": cfg.AIQueryRowLimit},
 		Claims:             session.Claims(),
 	})
 	if err != nil {

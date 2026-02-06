@@ -34,6 +34,7 @@ type metricsResolver struct {
 type metricsResolverArgs struct {
 	Priority      int        `mapstructure:"priority"`
 	ExecutionTime *time.Time `mapstructure:"execution_time"`
+	LimitCap      int64      `mapstructure:"limit_cap"` // If > 0, caps the query limit to this value
 }
 
 func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -142,6 +143,13 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 		err = r.executor.BindQuery(ctx, r.query, tsRes)
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	// Apply limit cap if configured (used by AI query tools to prevent excessive data retrieval)
+	if r.args.LimitCap > 0 {
+		if r.query.Limit == nil || *r.query.Limit > r.args.LimitCap {
+			r.query.Limit = &r.args.LimitCap
 		}
 	}
 

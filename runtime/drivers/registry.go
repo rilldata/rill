@@ -115,6 +115,9 @@ type InstanceConfig struct {
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
+	// AIQueryRowLimit is the maximum number of rows returned by AI query tools (query_metrics_view, query_sql).
+	// This prevents AI agents from pulling too much data into context. Defaults to 500.
+	AIQueryRowLimit int64 `mapstructure:"rill.ai.query_row_limit"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -177,6 +180,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
+		AIQueryRowLimit:                      500,
 	}
 
 	// Resolve variables
