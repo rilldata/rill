@@ -33,7 +33,8 @@
   // X scale — mirrors MeasureChart logic
   $: lastIndex = Math.max(0, bins.length - 1);
   $: plotWidth = Math.max(0, clientWidth - MARGIN_RIGHT);
-  $: mode = bins.length >= LINE_MODE_MIN_POINTS ? "line" : "bar";
+  $: mode =
+    bins.length >= LINE_MODE_MIN_POINTS ? ("line" as const) : ("bar" as const);
   $: barSlotWidth = plotWidth / Math.max(1, bins.length);
   $: xRangeStart = mode === "line" ? X_PAD : barSlotWidth / 2;
   $: xRangeEnd =
