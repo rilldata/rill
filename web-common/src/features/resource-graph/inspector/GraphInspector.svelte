@@ -222,8 +222,8 @@
           {#if metadata?.partitioned}
             <button
               class="indicator-badge partitioned clickable"
-              title="Click for partition details"
-              on:click={() => {/* TODO: Show partition details */}}
+              title="View partitions in model inspector"
+              on:click={openFile}
             >
               <Layers size={14} />
               <span>Partitioned</span>
