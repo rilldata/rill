@@ -63,6 +63,9 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
 		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
 	})
+	t.Run("testMetricsViewsAggregation_comparison_date_dimension", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_date_dimension(t, rt, instanceID)
+	})
 }
 
 func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
@@ -4997,4 +5000,50 @@ func fieldsToString(row *structpb.Struct, args ...string) string {
 		}
 	}
 	return strings.Join(s, ",")
+}
+
+// testMetricsViewsAggregation_comparison_date_dimension tests comparison queries with a DATE type dimension, they should not automatically convert to datetime type
+func testMetricsViewsAggregation_comparison_date_dimension(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "event_date",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "event_date",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Equal(t, "2022-01-01", q.Result.Data[0].Fields["event_date"].GetStringValue())
+	require.Equal(t, "2022-01-02", q.Result.Data[1].Fields["event_date"].GetStringValue())
 }
