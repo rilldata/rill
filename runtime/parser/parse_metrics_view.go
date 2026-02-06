@@ -379,6 +379,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			if strings.Contains(dim.Expression, "dictGet") {
 				return fmt.Errorf("dictGet expression and lookup fields cannot be used together")
 			}
+			if dim.Unnest {
+				return fmt.Errorf("unnest cannot be used with lookup fields")
+			}
 		}
 
 		// Validate the dimension name is unique

@@ -18,13 +18,13 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 ---
 Follow along, refer to the in-line linked documentation, and explore our product to make the most out of these guides! Please reach out to ask any questions or provide feedback on our Community Slack or Discord!
 
-- [**Source to Published Dashboard:**](/developers/guides/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
-- [**Visualize ClickHouse tables in Rill:**](/developers/guides/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course using ClickHouse!
-- [**Clone a Project:**](/developers/guides/clone-a-project) Step-by-step guide to clone an already deployed instance from Rill Cloud to your local machine
-- [**GitHub Analytics:**](/developers/guides/github-analytics) Analyze your own GitHub repository by modifying the Python file, download_commits.py
-- [**Cost Monitoring Analytics:**](/developers/guides/cost-monitoring-analytics) Analyze your cost and usage data
-- [**OpenRTB Analytics:**](/developers/guides/openrtb-analytics) Analyze real-time bidding data to track impressions, bids, wins and more
-- [**Set Up MCP**](/developers/guides/setting-up-mcp) Configure Model Context Protocol (MCP) to enable natural language queries with Claude integration
+- [**Source to Published Dashboard:**](/developers/tutorials/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
+- [**Visualize ClickHouse tables in Rill:**](/developers/tutorials/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course using ClickHouse!
+- [**Clone a Project:**](/developers/tutorials/clone-a-project) Step-by-step guide to clone an already deployed instance from Rill Cloud to your local machine
+- [**GitHub Analytics:**](/developers/tutorials/github-analytics) Analyze your own GitHub repository by modifying the Python file, download_commits.py
+- [**Cost Monitoring Analytics:**](/developers/tutorials/cost-monitoring-analytics) Analyze your cost and usage data
+- [**OpenRTB Analytics:**](/developers/tutorials/openrtb-analytics) Analyze real-time bidding data to track impressions, bids, wins and more
+- [**Set Up MCP**](/developers/tutorials/setting-up-mcp) Configure Model Context Protocol (MCP) to enable natural language queries with Claude integration
 
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!
