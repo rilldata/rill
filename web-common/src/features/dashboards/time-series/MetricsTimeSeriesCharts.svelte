@@ -37,7 +37,7 @@
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
   import { ScrubController } from "./measure-chart/ScrubController";
-  import { getAnnotationsForMeasure } from "./annotations-selectors";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ChartInteractions from "./ChartInteractions.svelte";
   import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -170,17 +170,10 @@
 
   $: chartReady = !!ready;
 
-  // Annotation stores per measure — keyed by measure name
-  function getAnnotationsForMeasureStore(measureName: string) {
-    console.log("get");
-    return getAnnotationsForMeasure({
-      instanceId,
-      exploreName,
-      measureName,
-      selectedTimeRange,
-      dashboardTimezone: selectedTimezone,
-    });
-  }
+  // Check if annotations are enabled for this explore
+  $: exploreValidSpec = useExploreValidSpec(instanceId, exploreName);
+  $: annotationsEnabled =
+    !!$exploreValidSpec.data?.metricsView?.annotations?.length;
 
   // Pan handler
   function handlePan(direction: "left" | "right") {
@@ -397,7 +390,7 @@
             {comparisonDimension}
             dimensionValues={chartDimensionValues}
             dimensionWhere={whereFilter}
-            annotations={getAnnotationsForMeasureStore(measure.name ?? "")}
+            {annotationsEnabled}
             canPanLeft={$canPanLeft}
             canPanRight={$canPanRight}
             onPanLeft={() => handlePan("left")}

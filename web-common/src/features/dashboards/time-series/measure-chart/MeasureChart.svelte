@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { get, type Readable } from "svelte/store";
+  import { get } from "svelte/store";
   import type { TimeSeriesPoint, HoverState } from "./types";
   import {
     computeChartConfig,
@@ -24,7 +24,9 @@
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import {
     createQueryServiceMetricsViewTimeSeries,
+    createQueryServiceMetricsViewAnnotations,
     type V1Expression,
+    type V1MetricsViewAnnotationsResponseAnnotation,
   } from "@rilldata/web-common/runtime-client";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { keepPreviousData } from "@tanstack/svelte-query";
@@ -40,6 +42,11 @@
   } from "./use-dimension-data";
   import type { Annotation } from "@rilldata/web-common/components/data-graphic/marks/annotations";
   import { groupAnnotations } from "./annotation-utils";
+  import {
+    convertV1AnnotationsResponseItemToAnnotation,
+    getPeriodFromTimeGrain,
+  } from "../annotations-selectors";
+  import type { Period } from "@rilldata/web-common/lib/time/types";
   import { AnnotationPopoverController } from "./AnnotationPopoverController";
   import MeasureChartGrid from "./MeasureChartGrid.svelte";
   import MeasureChartAnnotationMarkers from "./MeasureChartAnnotationMarkers.svelte";
@@ -72,7 +79,7 @@
   export let comparisonDimension: string | undefined = undefined;
   export let dimensionValues: (string | null)[] = [];
   export let dimensionWhere: V1Expression | undefined = undefined;
-  export let annotations: Readable<Annotation[]> | undefined = undefined;
+  export let annotationsEnabled: boolean = false;
   export let showComparison: boolean = false;
   export let showTimeDimensionDetail: boolean = false;
   export let ready: boolean = true;
@@ -109,8 +116,6 @@
   let mousePageY: number | null = null;
   let wasDragging = false; // Track if we just finished a drag (to skip click handler)
   let hoverState: HoverState = EMPTY_HOVER;
-
-  console.log("mount");
 
   onMount(() => {
     if (container) unobserve = observe(container);
@@ -340,15 +345,44 @@
   $: axisFormatter = createMeasureValueFormatter(measure, "axis");
 
   // Annotations
-  $: annotationGroups = annotations
-    ? groupAnnotations(
-        $annotations ?? [],
-        scales,
-        data,
-        config,
-        timeGranularity,
-      )
-    : [];
+  $: annotationsQuery = createQueryServiceMetricsViewAnnotations(
+    instanceId,
+    metricsViewName,
+    {
+      timeRange: {
+        start: timeStart,
+        end: timeEnd,
+      },
+      timeGrain: timeGranularity,
+      measures: [measureName],
+    },
+    {
+      query: {
+        enabled:
+          annotationsEnabled && !!timeStart && !!timeEnd && !!timeGranularity,
+        placeholderData: keepPreviousData,
+        refetchOnMount: false,
+      },
+    },
+  );
+
+  $: selectedPeriod = getPeriodFromTimeGrain(timeGranularity);
+
+  $: annotationRows = $annotationsQuery.data?.rows;
+  $: annotationsList = buildAnnotationsList(
+    annotationRows,
+    selectedPeriod,
+    timeGranularity,
+    timeZone,
+  );
+
+  $: annotationGroups = groupAnnotations(
+    annotationsList,
+    scales,
+    data,
+    config,
+    timeGranularity,
+  );
 
   // Tooltip data
   $: isComparingDimension = dimensionData.length > 0;
@@ -396,6 +430,25 @@
     if (singleSelectX !== null) return singleSelectX;
     return null;
   })();
+
+  function buildAnnotationsList(
+    rows: V1MetricsViewAnnotationsResponseAnnotation[] | undefined,
+    period: Period | undefined,
+    grain: V1TimeGrain | undefined,
+    tz: string,
+  ): Annotation[] {
+    if (!rows?.length) return [];
+    const list = rows.map((a) =>
+      convertV1AnnotationsResponseItemToAnnotation(
+        a,
+        period,
+        grain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+        tz,
+      ),
+    );
+    list.sort((a, b) => a.startTime.toMillis() - b.startTime.toMillis());
+    return list;
+  }
 
   function indexToDateTime(idx: number | null): DateTime | null {
     if (idx === null || data.length === 0) return null;
