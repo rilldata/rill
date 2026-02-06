@@ -352,7 +352,7 @@
         </div>
       {/if}
     </div>
-    <TooltipContent slot="tooltip-content" maxWidth="420px">
+    <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
       <div class="error-tooltip-content">
         <span class="error-tooltip-title">Error</span>
         <pre class="error-tooltip-message">{data?.resource?.meta
@@ -618,7 +618,7 @@
   }
 
   .error-tooltip-title {
-    @apply text-xs font-semibold text-red-400 uppercase tracking-wide;
+    @apply text-xs font-semibold uppercase tracking-wide text-red-500;
   }
 
   .error-tooltip-message {
