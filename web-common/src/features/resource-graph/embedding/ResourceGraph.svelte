@@ -36,6 +36,8 @@
   export let maxGroups: number | null = null;
   export let showControls = true;
   export let enableExpansion = true;
+  export let searchQuery = "";
+  export let statusFilter: "all" | "pending" | "errored" = "all";
 
   // New props for modularity
   export let onExpandedChange: ((id: string | null) => void) | null = null;
@@ -140,10 +142,42 @@
           filterKind,
         )
       : partitionResourcesByMetrics(normalizedResources);
+  // Filter groups by search query and status
+  $: filteredResourceGroups = (() => {
+    let groups = resourceGroups;
+
+    // Filter by search query (matches resource names)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      groups = groups.filter((group) =>
+        group.resources.some((r) =>
+          r.meta?.name?.name?.toLowerCase().includes(query),
+        ),
+      );
+    }
+
+    // Filter by status
+    if (statusFilter === "pending") {
+      groups = groups.filter((group) =>
+        group.resources.some(
+          (r) =>
+            r.meta?.reconcileStatus &&
+            r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE",
+        ),
+      );
+    } else if (statusFilter === "errored") {
+      groups = groups.filter((group) =>
+        group.resources.some((r) => !!r.meta?.reconcileError),
+      );
+    }
+
+    return groups;
+  })();
+
   $: visibleResourceGroups =
     typeof maxGroups === "number" && maxGroups >= 0
-      ? resourceGroups.slice(0, maxGroups)
-      : resourceGroups;
+      ? filteredResourceGroups.slice(0, maxGroups)
+      : filteredResourceGroups;
   $: hasGraphs = visibleResourceGroups.length > 0;
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
