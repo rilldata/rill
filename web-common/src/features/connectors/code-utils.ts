@@ -39,6 +39,18 @@ sql: {{ sql }}{{ dev_section }}
 `;
 }
 
+const SENSITIVE_HEADER_PATTERN =
+  /^(authorization|x-api-key|api-key|token|x-token|x-auth|x-secret|proxy-authorization)$/i;
+
+/**
+ * Returns true when a header key likely carries a secret value (e.g. tokens,
+ * API keys). Only these headers are stored in `.env`; the rest stay as plain
+ * text in the connector YAML.
+ */
+function isSensitiveHeaderKey(headerKey: string): boolean {
+  return SENSITIVE_HEADER_PATTERN.test(headerKey.trim());
+}
+
 /**
  * Sanitize a header key into a valid .env variable segment.
  * Lowercases, replaces non-alphanumeric characters with underscores, and
@@ -78,12 +90,14 @@ function formatHeadersAsYamlMap(
     const entries = lines.map((line) => {
       const idx = line.indexOf(":");
       const k = line.substring(0, idx).trim().replace(/^"|"$/g, "");
-      const v = nameForEnv
-        ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
-        : line
-            .substring(idx + 1)
-            .trim()
-            .replace(/^"|"$/g, "");
+      const raw = line
+        .substring(idx + 1)
+        .trim()
+        .replace(/^"|"$/g, "");
+      const v =
+        nameForEnv && isSensitiveHeaderKey(k)
+          ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
+          : raw;
       return `    "${k}": "${v}"`;
     });
     return `headers:\n${entries.join("\n")}`;
@@ -94,9 +108,10 @@ function formatHeadersAsYamlMap(
   if (valid.length === 0) return "";
   const entries = valid.map((e) => {
     const k = e.key.trim();
-    const v = nameForEnv
-      ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
-      : e.value.trim();
+    const v =
+      nameForEnv && isSensitiveHeaderKey(k)
+        ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
+        : e.value.trim();
     return `    "${k}": "${v}"`;
   });
   return `headers:\n${entries.join("\n")}`;
@@ -259,12 +274,13 @@ export async function updateDotEnvWithSecrets(
     );
   });
 
-  // Persist header values as individual .env entries so they are not stored
-  // as raw text in the connector YAML file.
+  // Persist sensitive header values (e.g. Authorization, API keys) as
+  // individual .env entries so tokens are not stored as raw text in YAML.
   const headers = formValues.headers;
   if (Array.isArray(headers)) {
     for (const entry of headers as Array<{ key: string; value: string }>) {
       if (!entry.key?.trim() || !entry.value?.trim()) continue;
+      if (!isSensitiveHeaderKey(entry.key)) continue;
       const envSegment = headerKeyToEnvSegment(entry.key);
       const envKey = makeDotEnvConnectorKey(
         connector.name as string,
