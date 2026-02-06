@@ -1,8 +1,8 @@
 <script lang="ts">
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
-  import type { PageData } from "./$types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { PageData } from "./$types";
 
   export let data: PageData;
 
