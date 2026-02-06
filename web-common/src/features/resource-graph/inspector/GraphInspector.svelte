@@ -99,14 +99,58 @@
   // Use filePaths directly from resource meta (more reliable than artifact lookup)
   $: filePath = resource?.meta?.filePaths?.[0];
 
+  // Derive connector name from partitions properties, sourcePath, SQL query, then fallback to metadata.connector
+  $: derivedConnector = (() => {
+    // Helper to detect connector from path/URL prefix
+    const detectFromPath = (path: string | undefined | null): string | null => {
+      if (!path) return null;
+      const lowerPath = path.toLowerCase();
+      if (lowerPath.startsWith("azure://")) return "azure";
+      if (lowerPath.startsWith("gcs://") || lowerPath.startsWith("gs://"))
+        return "gcs";
+      if (lowerPath.startsWith("s3://")) return "s3";
+      if (lowerPath.startsWith("https://") || lowerPath.startsWith("http://"))
+        return "https";
+      return null;
+    };
+
+    // Check partitions resolver properties (could be glob, path, or other keys)
+    const partitionsProps = resource?.model?.spec?.partitionsResolverProperties as
+      | Record<string, unknown>
+      | undefined;
+    if (partitionsProps) {
+      for (const value of Object.values(partitionsProps)) {
+        if (typeof value === "string") {
+          const detected = detectFromPath(value);
+          if (detected) return detected;
+        }
+      }
+    }
+
+    // Check sourcePath
+    const fromSourcePath = detectFromPath(metadata?.sourcePath);
+    if (fromSourcePath) return fromSourcePath;
+
+    // Check SQL query for URLs (e.g., read_json('https://...'))
+    const sqlQuery = metadata?.sqlQuery?.toLowerCase() ?? "";
+    if (sqlQuery.includes("https://") || sqlQuery.includes("http://"))
+      return "https";
+    if (sqlQuery.includes("s3://")) return "s3";
+    if (sqlQuery.includes("gs://") || sqlQuery.includes("gcs://")) return "gcs";
+    if (sqlQuery.includes("azure://")) return "azure";
+
+    if (metadata?.connector) return metadata.connector;
+    return "undefined";
+  })();
+
   // Get connector-specific icon
   $: connectorIcon =
-    metadata?.connector &&
+    derivedConnector &&
     connectorIconMapping[
-      metadata.connector.toLowerCase() as keyof typeof connectorIconMapping
+      derivedConnector.toLowerCase() as keyof typeof connectorIconMapping
     ]
       ? connectorIconMapping[
-          metadata.connector.toLowerCase() as keyof typeof connectorIconMapping
+          derivedConnector.toLowerCase() as keyof typeof connectorIconMapping
         ]
       : null;
 
@@ -126,13 +170,14 @@
 
   function openFile() {
     if (!filePath) return;
+    // Navigate immediately, handle localStorage async
+    goto(`/files${filePath}`);
     try {
       const prefs = JSON.parse(localStorage.getItem(filePath) || "{}");
       localStorage.setItem(filePath, JSON.stringify({ ...prefs, view: "code" }));
     } catch (error) {
       console.warn(`Failed to save file view preference:`, error);
     }
-    goto(`/files${filePath}`);
   }
 
   function handleViewLineage() {
@@ -169,21 +214,19 @@
     </div>
 
     <!-- Connection Info -->
-    {#if metadata?.connector || metadata?.sourcePath}
+    {#if derivedConnector !== "undefined" || metadata?.sourcePath}
       <div class="section">
         <h4 class="section-title">Connector</h4>
-        {#if metadata?.connector}
-          <div class="metadata-row">
-            <span class="metadata-icon">
-              {#if connectorIcon}
-                <svelte:component this={connectorIcon} size="16px" />
-              {:else}
-                <Database size={16} />
-              {/if}
-            </span>
-            <span class="metadata-value">{metadata.connector}</span>
-          </div>
-        {/if}
+        <div class="metadata-row">
+          <span class="metadata-icon">
+            {#if connectorIcon}
+              <svelte:component this={connectorIcon} size="16px" />
+            {:else}
+              <Database size={16} />
+            {/if}
+          </span>
+          <span class="metadata-value">{derivedConnector}</span>
+        </div>
         {#if metadata?.sourcePath}
           <div class="metadata-row">
             <span class="metadata-icon file">
