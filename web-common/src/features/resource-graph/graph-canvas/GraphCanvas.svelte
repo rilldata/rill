@@ -19,6 +19,7 @@
   import ResourceNode from "./ResourceNode.svelte";
   import type { ResourceNodeData } from "../shared/types";
   import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
+  import { selectGraphNode } from "../inspector/graph-inspector-store";
 
   export let resources: V1Resource[] = [];
   export let title: string | null = null;
@@ -181,6 +182,20 @@
     });
   }
 
+  // Handle pane click (background) to deselect all nodes
+  function handlePaneClick() {
+    nodesStore.update((nds) =>
+      nds.map((n) => ({
+        ...n,
+        selected: false,
+      })),
+    );
+    // Immediately clear inspector selection
+    if (!isOverlay) {
+      selectGraphNode(null);
+    }
+  }
+
   // Reactively compute highlighted edges tracing strictly upstream and downstream
   // from the selected node(s). We explore both directions only at the start node(s):
   // upstream explores only incoming edges (sources) and continues going up;
@@ -188,9 +203,21 @@
   $: (function updateHighlightedEdges() {
     const nodes = $nodesStore as Node<ResourceNodeData>[];
     const edges = $edgesStore as Edge[];
-    const selectedIds = new Set(
-      nodes.filter((n) => n.selected).map((n) => n.id),
-    );
+    const selectedNodes = nodes.filter((n) => n.selected);
+    const selectedIds = new Set(selectedNodes.map((n) => n.id));
+
+    // Update inspector with selected node data (only if not in overlay mode)
+    if (!isOverlay) {
+      if (selectedNodes.length === 1) {
+        selectGraphNode(selectedNodes[0].data);
+      } else if (selectedNodes.length === 0) {
+        selectGraphNode(null);
+      }
+      // For multiple selections, keep the first one for inspector
+      else {
+        selectGraphNode(selectedNodes[0].data);
+      }
+    }
 
     // No selection: apply default styling and clear highlights
     if (!selectedIds.size) {
@@ -344,6 +371,7 @@
           selectionOnDrag
           onlyRenderVisibleElements={false}
           defaultEdgeOptions={edgeOptions}
+          on:paneclick={handlePaneClick}
         >
           <Background gap={24} />
           {#if showControls}

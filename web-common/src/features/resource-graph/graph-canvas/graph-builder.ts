@@ -63,7 +63,7 @@ function estimateNodeWidth(label?: string | null) {
 }
 
 /**
- * Format a V1Schedule into a human-readable description.
+ * Format a V1Schedule into a short human-readable description for the header.
  */
 function formatScheduleDescription(
   schedule:
@@ -72,8 +72,8 @@ function formatScheduleDescription(
 ): string | undefined {
   if (!schedule) return undefined;
   if (schedule.cron) {
-    const tz = schedule.timeZone ? ` (${schedule.timeZone})` : "";
-    return `cron: ${schedule.cron}${tz}`;
+    // Just show the cron expression - timezone is in the YAML
+    return schedule.cron;
   }
   if (schedule.tickerSeconds) {
     const seconds = schedule.tickerSeconds;
@@ -88,6 +88,92 @@ function formatScheduleDescription(
     return `every ${seconds}s`;
   }
   return undefined;
+}
+
+/**
+ * Format a schedule as YAML.
+ */
+function formatScheduleYaml(
+  schedule:
+    | { cron?: string; tickerSeconds?: number; timeZone?: string; runInDev?: boolean }
+    | undefined,
+): string | undefined {
+  if (!schedule) return undefined;
+  const lines: string[] = [];
+  if (schedule.cron) {
+    lines.push(`cron: "${schedule.cron}"`);
+  }
+  if (schedule.tickerSeconds) {
+    lines.push(`ticker_seconds: ${schedule.tickerSeconds}`);
+  }
+  if (schedule.timeZone) {
+    lines.push(`time_zone: "${schedule.timeZone}"`);
+  }
+  if (schedule.runInDev !== undefined) {
+    lines.push(`run_in_dev: ${schedule.runInDev}`);
+  }
+  return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+/**
+ * Format retry configuration as YAML.
+ */
+function formatRetryYaml(
+  retryAttempts?: number,
+  retryDelaySeconds?: number,
+  retryExponentialBackoff?: boolean,
+): string | undefined {
+  if (!retryAttempts) return undefined;
+  const lines: string[] = [];
+  lines.push(`retry_attempts: ${retryAttempts}`);
+  if (retryDelaySeconds !== undefined) {
+    lines.push(`retry_delay_seconds: ${retryDelaySeconds}`);
+  }
+  if (retryExponentialBackoff !== undefined) {
+    lines.push(`retry_exponential_backoff: ${retryExponentialBackoff}`);
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Format tests as YAML.
+ * Tests have: name, resolver (type), and resolver_properties (containing sql/expression)
+ */
+function formatTestsYaml(
+  tests:
+    | Array<{
+        name?: string;
+        resolver?: string;
+        resolverProperties?: Record<string, unknown>;
+      }>
+    | undefined,
+): string | undefined {
+  if (!tests || tests.length === 0) return undefined;
+  const lines: string[] = [];
+  for (const test of tests) {
+    // Get the test name or use resolver type as fallback
+    const testName = test.name || test.resolver || "test";
+    lines.push(`- ${testName}:`);
+
+    // Extract sql or expression from resolver_properties
+    const props = test.resolverProperties as
+      | { sql?: string; expression?: string }
+      | undefined;
+    if (props?.sql) {
+      // Handle multi-line SQL
+      if (props.sql.includes("\n")) {
+        lines.push(`    sql: |`);
+        for (const sqlLine of props.sql.split("\n")) {
+          lines.push(`      ${sqlLine}`);
+        }
+      } else {
+        lines.push(`    sql: "${props.sql}"`);
+      }
+    } else if (props?.expression) {
+      lines.push(`    expression: "${props.expression}"`);
+    }
+  }
+  return lines.length > 0 ? lines.join("\n") : undefined;
 }
 
 /**
@@ -182,28 +268,83 @@ function extractResourceMetadata(
     let connector = spec.inputConnector;
 
     // For DuckDB connector, infer the actual source type from the path
+    const inputProps = spec.inputProperties as
+      | { path?: string; sql?: string }
+      | undefined;
     if (connector?.toLowerCase() === "duckdb") {
-      const inputProps = spec.inputProperties as
-        | { path?: string; sql?: string }
-        | undefined;
       const path = inputProps?.path || inputProps?.sql;
       connector = inferDuckDbSourceType(path);
     }
 
+    // Connector info
     metadata.connector = connector;
+    if (spec.outputConnector) metadata.outputConnector = spec.outputConnector;
+    if (spec.stageConnector) metadata.stageConnector = spec.stageConnector;
+
+    // Source path for file-based sources
+    if (inputProps?.path) {
+      metadata.sourcePath = inputProps.path;
+    }
+
+    // Processing configuration
     metadata.incremental = spec.incremental;
     metadata.partitioned = Boolean(spec.partitionsResolver);
+    if (spec.partitionsWatermarkField) {
+      metadata.partitionsWatermarkField = spec.partitionsWatermarkField;
+    }
+    if (spec.partitionsConcurrencyLimit) {
+      metadata.partitionsConcurrencyLimit = spec.partitionsConcurrencyLimit;
+    }
+
+    // Change mode
+    if (spec.changeMode && spec.changeMode !== "MODEL_CHANGE_MODE_UNSPECIFIED") {
+      metadata.changeMode = spec.changeMode.replace("MODEL_CHANGE_MODE_", "");
+    }
+
+    // Schedule configuration
     metadata.hasSchedule = Boolean(
       spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
     );
     metadata.scheduleDescription = formatScheduleDescription(
       spec.refreshSchedule,
     );
-    metadata.retryAttempts = spec.retryAttempts;
+    metadata.scheduleYaml = formatScheduleYaml(spec.refreshSchedule);
+    if (spec.timeoutSeconds) metadata.timeoutSeconds = spec.timeoutSeconds;
+
+    // Retry configuration
+    if (spec.retryAttempts) {
+      metadata.retryAttempts = spec.retryAttempts;
+      metadata.retryDelaySeconds = spec.retryDelaySeconds;
+      metadata.retryExponentialBackoff = spec.retryExponentialBackoff;
+      metadata.retryYaml = formatRetryYaml(
+        spec.retryAttempts,
+        spec.retryDelaySeconds,
+        spec.retryExponentialBackoff,
+      );
+    }
+
+    // Tests
+    if (spec.tests && spec.tests.length > 0) {
+      metadata.testCount = spec.tests.length;
+      metadata.testsYaml = formatTestsYaml(spec.tests);
+    }
+
+    // Extract SQL query
+    if (inputProps?.sql) {
+      metadata.sqlQuery = inputProps.sql;
+    }
 
     // Check if model is defined via SQL file
     const filePaths = resource.meta?.filePaths ?? [];
     metadata.isSqlModel = filePaths.some((fp) => fp.endsWith(".sql"));
+
+    // Model state info
+    if (model.state) {
+      metadata.refreshedOn = model.state.refreshedOn;
+      metadata.resultTable = model.state.resultTable;
+      metadata.executionDurationMs = model.state.latestExecutionDurationMs;
+      metadata.partitionsHaveErrors = model.state.partitionsHaveErrors;
+    }
   }
 
   if (source?.spec) {
@@ -228,15 +369,64 @@ function extractResourceMetadata(
     );
   }
 
+  // MetricsView metadata
+  const metricsView = resource.metricsView;
+  if (metricsView?.spec) {
+    const mvSpec = metricsView.spec;
+    metadata.metricsConnector = mvSpec.connector;
+    metadata.metricsTable = mvSpec.table;
+    metadata.metricsModel = mvSpec.model;
+    metadata.timeDimension = mvSpec.timeDimension;
+
+    // Extract dimensions
+    if (mvSpec.dimensions && mvSpec.dimensions.length > 0) {
+      metadata.dimensions = mvSpec.dimensions.map((d) => ({
+        name: d.name ?? "",
+        displayName: d.displayName,
+        description: d.description,
+        type: d.type?.replace("DIMENSION_TYPE_", ""),
+        column: d.column,
+        expression: d.expression,
+      }));
+    }
+
+    // Extract measures
+    if (mvSpec.measures && mvSpec.measures.length > 0) {
+      metadata.measures = mvSpec.measures.map((m) => ({
+        name: m.name ?? "",
+        displayName: m.displayName,
+        description: m.description,
+        expression: m.expression,
+        type: m.type?.replace("MEASURE_TYPE_", ""),
+      }));
+    }
+  }
+
   // Dashboard (Explore/Canvas) theme metadata
   const explore = resource.explore;
   const canvas = resource.canvas;
 
-  if (explore?.spec?.theme && !explore?.spec?.embeddedTheme) {
-    metadata.theme = explore.spec.theme;
+  if (explore?.spec) {
+    if (explore.spec.theme && !explore.spec.embeddedTheme) {
+      metadata.theme = explore.spec.theme;
+    }
+    metadata.metricsViewName = explore.spec.metricsView;
   }
-  if (canvas?.spec?.theme && !canvas?.spec?.embeddedTheme) {
-    metadata.theme = canvas.spec.theme;
+
+  if (canvas?.spec) {
+    if (canvas.spec.theme && !canvas.spec.embeddedTheme) {
+      metadata.theme = canvas.spec.theme;
+    }
+    // Count components across all rows
+    const rows = canvas.spec.rows ?? [];
+    metadata.rowCount = rows.length;
+    let componentCount = 0;
+    for (const row of rows) {
+      componentCount += row.items?.length ?? 0;
+    }
+    if (componentCount > 0) {
+      metadata.componentCount = componentCount;
+    }
   }
 
   // Count alerts and APIs that reference this resource

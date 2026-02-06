@@ -215,7 +215,10 @@
         }}
         preventScrolling={true}
         zoomOnScroll={false}
+        zoomOnPinch={false}
+        zoomOnDoubleClick={false}
         panOnScroll={false}
+        panOnDrag={false}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={false}

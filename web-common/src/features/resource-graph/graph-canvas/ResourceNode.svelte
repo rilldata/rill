@@ -7,34 +7,9 @@
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { ResourceNodeData } from "../shared/types";
-  import {
-    V1ReconcileStatus,
-    createRuntimeServiceCreateTrigger,
-  } from "@rilldata/web-common/runtime-client";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { goto } from "$app/navigation";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
-  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
-  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    GitFork,
-    Database,
-    RefreshCw,
-    Clock,
-    RotateCcw,
-    Palette,
-    Bell,
-    Plug,
-    Layers,
-    FileCode,
-  } from "lucide-svelte";
-  import { builderActions, getAttrs } from "bits-ui";
-  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
 
   export let id: string;
   export let type: string;
@@ -98,93 +73,6 @@
       : undefined;
   $: effectiveStatusLabel = hasError ? "error" : statusLabel;
   $: routeHighlighted = (data as any)?.routeHighlighted === true;
-
-  $: resourceName = data?.resource?.meta?.name?.name ?? "";
-  // Use original kind from resource meta for artifact lookup (not coerced kind)
-  // because file artifacts are stored by the resource's actual kind
-  $: originalKind = (data?.resource?.meta?.name?.kind ?? kind) as ResourceKind;
-  $: artifact =
-    resourceName && originalKind
-      ? fileArtifacts.findFileArtifact(originalKind, resourceName)
-      : undefined;
-
-  // Rich metadata for badge display
-  $: metadata = data?.metadata;
-
-  // Get connector-specific icon (falls back to Database icon)
-  $: connectorIcon =
-    metadata?.connector &&
-    connectorIconMapping[
-      metadata.connector.toLowerCase() as keyof typeof connectorIconMapping
-    ]
-      ? connectorIconMapping[
-          metadata.connector.toLowerCase() as keyof typeof connectorIconMapping
-        ]
-      : null;
-
-  // Dropdown menu state
-  let menuOpen = false;
-
-  // Refresh functionality
-  const triggerMutation = createRuntimeServiceCreateTrigger();
-  $: ({ instanceId } = $runtime);
-  // Source Models and Models can both be refreshed
-  $: isModelOrSource =
-    kind === ResourceKind.Model || kind === ResourceKind.Source;
-  $: isInOverlay = (data as any)?.isOverlay === true;
-  $: isRefreshing = $triggerMutation.isPending;
-
-  function openFile() {
-    if (!artifact?.path) return;
-
-    // Set code view preference for this file
-    try {
-      const key = artifact.path;
-      const prefs = JSON.parse(localStorage.getItem(key) || "{}");
-      localStorage.setItem(key, JSON.stringify({ ...prefs, view: "code" }));
-    } catch (error) {
-      console.warn(`Failed to save file view preference:`, error);
-    }
-
-    goto(`/files${artifact.path}`);
-  }
-
-  function handleRefresh() {
-    if (!isModelOrSource || !data?.resource?.meta?.name?.name || isRefreshing)
-      return;
-
-    void $triggerMutation.mutateAsync({
-      instanceId,
-      data: {
-        models: [{ model: data.resource.meta.name.name, full: true }],
-      },
-    });
-  }
-
-  function handleViewGraph() {
-    if (!data?.resource?.meta?.name) return;
-
-    const resourceKindName = data.resource.meta.name.kind;
-    const resourceNameValue = data.resource.meta.name.name;
-
-    // Determine kind token for URL
-    let kindToken = "models";
-    if (resourceKindName === "rill.runtime.v1.MetricsView") {
-      kindToken = "metrics";
-    } else if (
-      resourceKindName === "rill.runtime.v1.Explore" ||
-      resourceKindName === "rill.runtime.v1.Canvas"
-    ) {
-      kindToken = "dashboards";
-    }
-
-    // Build expanded ID (ResourceKind:Name format)
-    const expandedId = encodeURIComponent(
-      `${resourceKindName}:${resourceNameValue}`,
-    );
-
-    goto(`/graph?kind=${kindToken}&expanded=${expandedId}`);
-  }
 </script>
 
 {#if hasError}
@@ -217,47 +105,6 @@
         isConnectable={isConnectable ?? true}
       />
 
-      <!-- Dropdown menu in top-right -->
-      {#if !isInOverlay}
-        <div class="node-menu">
-          <DropdownMenu.Root bind:open={menuOpen}>
-            <DropdownMenu.Trigger asChild let:builder>
-              <button
-                class="menu-trigger"
-                class:visible={menuOpen}
-                aria-label="Node actions"
-                use:builderActions={{ builders: [builder] }}
-                {...getAttrs([builder])}
-                on:click|stopPropagation
-              >
-                <MoreHorizontal size="14px" />
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="start" side="right" sideOffset={4}>
-              {#if artifact?.path}
-                <NavigationMenuItem on:click={openFile}>
-                  <EditIcon slot="icon" />
-                  Edit YAML
-                </NavigationMenuItem>
-              {/if}
-              {#if isModelOrSource}
-                <NavigationMenuItem
-                  on:click={handleRefresh}
-                  disabled={isRefreshing}
-                >
-                  <RefreshIcon slot="icon" size="14px" />
-                  {isRefreshing ? "Refreshing..." : "Refresh"}
-                </NavigationMenuItem>
-              {/if}
-              <NavigationMenuItem on:click={handleViewGraph}>
-                <GitFork slot="icon" size="14px" />
-                View lineage
-              </NavigationMenuItem>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        </div>
-      {/if}
-
       <div class="icon-wrapper" style={`background:${color}20`}>
         <svelte:component this={icon} size="16px" {color} />
       </div>
@@ -272,85 +119,6 @@
         </p>
         <p class="status error">{effectiveStatusLabel}</p>
       </div>
-
-      <!-- Connector badge (bottom left) -->
-      {#if metadata?.connector}
-        <div class="badges-left">
-          <span class="badge connector" title="Connector: {metadata.connector}">
-            {#if connectorIcon}
-              <svelte:component this={connectorIcon} size="10px" />
-            {:else}
-              <Database size={10} />
-            {/if}
-          </span>
-        </div>
-      {/if}
-
-      <!-- Other badges (bottom right) -->
-      {#if metadata?.incremental || metadata?.partitioned || metadata?.hasSchedule || metadata?.retryAttempts || metadata?.isSqlModel || metadata?.theme || metadata?.alertCount || metadata?.apiCount}
-        <div class="badges-right">
-          {#if metadata?.incremental}
-            <span class="badge incremental" title="Incremental model">
-              <RefreshCw size={10} />
-              Inc
-            </span>
-          {/if}
-          {#if metadata?.partitioned}
-            <span class="badge partitioned" title="Partitioned model">
-              <Layers size={10} />
-              Part
-            </span>
-          {/if}
-          {#if metadata?.hasSchedule}
-            <span
-              class="badge scheduled"
-              title={metadata.scheduleDescription ?? "Scheduled"}
-            >
-              <Clock size={10} />
-            </span>
-          {/if}
-          {#if metadata?.retryAttempts}
-            <span
-              class="badge retry"
-              title="{metadata.retryAttempts} retry attempts"
-            >
-              <RotateCcw size={10} />
-              {metadata.retryAttempts}
-            </span>
-          {/if}
-          {#if metadata?.isSqlModel}
-            <span class="badge sql" title="SQL model">
-              <FileCode size={10} />
-              SQL
-            </span>
-          {/if}
-          {#if metadata?.theme}
-            <span class="badge theme" title="Theme: {metadata.theme}">
-              <Palette size={10} />
-            </span>
-          {/if}
-          {#if metadata?.alertCount}
-            <span
-              class="badge alert"
-              title="{metadata.alertCount} alert{metadata.alertCount > 1
-                ? 's'
-                : ''}"
-            >
-              <Bell size={10} />
-              {metadata.alertCount}
-            </span>
-          {/if}
-          {#if metadata?.apiCount}
-            <span
-              class="badge api"
-              title="{metadata.apiCount} API{metadata.apiCount > 1 ? 's' : ''}"
-            >
-              <Plug size={10} />
-              {metadata.apiCount}
-            </span>
-          {/if}
-        </div>
-      {/if}
     </div>
     <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
       <div class="error-tooltip-content">
@@ -388,47 +156,6 @@
       isConnectable={isConnectable ?? true}
     />
 
-    <!-- Dropdown menu in top-right -->
-    {#if !isInOverlay}
-      <div class="node-menu">
-        <DropdownMenu.Root bind:open={menuOpen}>
-          <DropdownMenu.Trigger asChild let:builder>
-            <button
-              class="menu-trigger"
-              class:visible={menuOpen}
-              aria-label="Node actions"
-              use:builderActions={{ builders: [builder] }}
-              {...getAttrs([builder])}
-              on:click|stopPropagation
-            >
-              <MoreHorizontal size="14px" />
-            </button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="start" side="right" sideOffset={4}>
-            {#if artifact?.path}
-              <NavigationMenuItem on:click={openFile}>
-                <EditIcon slot="icon" />
-                Edit YAML
-              </NavigationMenuItem>
-            {/if}
-            {#if isModelOrSource}
-              <NavigationMenuItem
-                on:click={handleRefresh}
-                disabled={isRefreshing}
-              >
-                <RefreshIcon slot="icon" size="14px" />
-                {isRefreshing ? "Refreshing..." : "Refresh"}
-              </NavigationMenuItem>
-            {/if}
-            <NavigationMenuItem on:click={handleViewGraph}>
-              <GitFork slot="icon" size="14px" />
-              View lineage
-            </NavigationMenuItem>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-      </div>
-    {/if}
-
     <div class="icon-wrapper" style={`background:${color}20`}>
       <svelte:component this={icon} size="16px" {color} />
     </div>
@@ -445,85 +172,6 @@
         <p class="status">{effectiveStatusLabel}</p>
       {/if}
     </div>
-
-    <!-- Connector badge (bottom left) -->
-    {#if metadata?.connector}
-      <div class="badges-left">
-        <span class="badge connector" title="Connector: {metadata.connector}">
-          {#if connectorIcon}
-            <svelte:component this={connectorIcon} size="10px" />
-          {:else}
-            <Database size={10} />
-          {/if}
-        </span>
-      </div>
-    {/if}
-
-    <!-- Other badges (bottom right) -->
-    {#if metadata?.incremental || metadata?.partitioned || metadata?.hasSchedule || metadata?.retryAttempts || metadata?.isSqlModel || metadata?.theme || metadata?.alertCount || metadata?.apiCount}
-      <div class="badges-right">
-        {#if metadata?.incremental}
-          <span class="badge incremental" title="Incremental model">
-            <RefreshCw size={10} />
-            Inc
-          </span>
-        {/if}
-        {#if metadata?.partitioned}
-          <span class="badge partitioned" title="Partitioned model">
-            <Layers size={10} />
-            Part
-          </span>
-        {/if}
-        {#if metadata?.hasSchedule}
-          <span
-            class="badge scheduled"
-            title={metadata.scheduleDescription ?? "Scheduled"}
-          >
-            <Clock size={10} />
-          </span>
-        {/if}
-        {#if metadata?.retryAttempts}
-          <span
-            class="badge retry"
-            title="{metadata.retryAttempts} retry attempts"
-          >
-            <RotateCcw size={10} />
-            {metadata.retryAttempts}
-          </span>
-        {/if}
-        {#if metadata?.isSqlModel}
-          <span class="badge sql" title="SQL model">
-            <FileCode size={10} />
-            SQL
-          </span>
-        {/if}
-        {#if metadata?.theme}
-          <span class="badge theme" title="Theme: {metadata.theme}">
-            <Palette size={10} />
-          </span>
-        {/if}
-        {#if metadata?.alertCount}
-          <span
-            class="badge alert"
-            title="{metadata.alertCount} alert{metadata.alertCount > 1
-              ? 's'
-              : ''}"
-          >
-            <Bell size={10} />
-            {metadata.alertCount}
-          </span>
-        {/if}
-        {#if metadata?.apiCount}
-          <span
-            class="badge api"
-            title="{metadata.apiCount} API{metadata.apiCount > 1 ? 's' : ''}"
-          >
-            <Plug size={10} />
-            {metadata.apiCount}
-          </span>
-        {/if}
-      </div>
-    {/if}
   </div>
 {/if}
 
@@ -583,35 +231,6 @@
     @apply not-italic text-red-600;
   }
 
-  /* Node menu (... dropdown) */
-  .node-menu {
-    @apply absolute top-1 right-1 z-10;
-  }
-
-  .menu-trigger {
-    @apply h-6 w-6 rounded flex items-center justify-center;
-    @apply text-fg-secondary bg-transparent;
-    @apply opacity-0 transition-opacity duration-150;
-  }
-
-  /* Show on hover or when menu is open */
-  .node:hover .menu-trigger,
-  .menu-trigger.visible {
-    @apply opacity-100;
-  }
-
-  .menu-trigger:hover {
-    @apply bg-surface-muted text-fg-primary;
-  }
-
-  .menu-trigger:focus {
-    @apply outline-none;
-  }
-
-  .menu-trigger:focus-visible {
-    @apply ring-2 ring-primary-400/60;
-  }
-
   /* Error tooltip styling */
   .error-tooltip-content {
     @apply flex flex-col gap-y-1;
@@ -636,61 +255,5 @@
     border: 1px solid color-mix(in srgb, var(--node-accent) 55%, #b1b1b7);
     box-shadow: 0 0 0 1px #ffffff;
     opacity: 1;
-  }
-
-  /* Metadata badges */
-  .badges-left {
-    @apply absolute -bottom-2 left-2 flex gap-1 z-10;
-  }
-
-  .badges-right {
-    @apply absolute -bottom-2 right-2 flex gap-1 z-10;
-  }
-
-  .badge {
-    @apply flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded;
-    @apply border shadow-sm cursor-default;
-    transition: transform 100ms ease;
-  }
-
-  .badge:hover {
-    transform: translateY(-1px);
-  }
-
-  /* Badge color variants */
-  .badge.connector {
-    @apply bg-indigo-50 text-indigo-700 border-indigo-200;
-  }
-
-  .badge.incremental {
-    @apply bg-cyan-50 text-cyan-700 border-cyan-200;
-  }
-
-  .badge.partitioned {
-    @apply bg-purple-50 text-purple-700 border-purple-200;
-  }
-
-  .badge.scheduled {
-    @apply bg-amber-50 text-amber-700 border-amber-200;
-  }
-
-  .badge.retry {
-    @apply bg-orange-50 text-orange-700 border-orange-200;
-  }
-
-  .badge.sql {
-    @apply bg-emerald-50 text-emerald-700 border-emerald-200;
-  }
-
-  .badge.theme {
-    @apply bg-pink-50 text-pink-700 border-pink-200;
-  }
-
-  .badge.alert {
-    @apply bg-red-50 text-red-700 border-red-200;
-  }
-
-  .badge.api {
-    @apply bg-blue-50 text-blue-700 border-blue-200;
   }
 </style>
