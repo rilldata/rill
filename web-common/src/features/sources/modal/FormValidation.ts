@@ -43,12 +43,14 @@ export function createConnectorForm(args: {
   // Get schema defaults (radio/tabs enums, explicit defaults)
   const schemaDefaults = schema ? getSchemaInitialValues(schema) : {};
 
-  // Initialize ALL string fields to empty string so superForm tracks them.
+  // Initialize ALL fields so superForm tracks them.
   // Without this, fields like `path` (no default) won't be in form.data on submit.
   const allFields: FormData = {};
   if (schema?.properties) {
     for (const [key, prop] of Object.entries(schema.properties)) {
-      if (prop.type === "string") {
+      if (prop["x-display"] === "key-value") {
+        allFields[key] = [];
+      } else if (prop.type === "string") {
         allFields[key] = "";
       }
     }

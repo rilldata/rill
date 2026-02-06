@@ -40,24 +40,39 @@ sql: {{ sql }}{{ dev_section }}
 }
 
 /**
- * Parse a multi-line "Header-Name: value" string into a YAML map block.
- * Returns an empty string when there are no valid entries.
+ * Convert header entries into a YAML map block.
+ * Accepts an array of {key, value} objects (new key-value input) or a legacy
+ * multi-line "Header-Name: value" string. Returns empty string when there are
+ * no valid entries.
  */
-function formatHeadersAsYamlMap(value: string): string {
-  const lines = value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.includes(":"));
-  if (lines.length === 0) return "";
-  const entries = lines.map((line) => {
-    const idx = line.indexOf(":");
-    const k = line.substring(0, idx).trim().replace(/^"|"$/g, "");
-    const v = line
-      .substring(idx + 1)
-      .trim()
-      .replace(/^"|"$/g, "");
-    return `    "${k}": "${v}"`;
-  });
+function formatHeadersAsYamlMap(
+  value: Array<{ key: string; value: string }> | string,
+): string {
+  if (typeof value === "string") {
+    // Legacy textarea format: parse "Key: Value" lines
+    const lines = value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.includes(":"));
+    if (lines.length === 0) return "";
+    const entries = lines.map((line) => {
+      const idx = line.indexOf(":");
+      const k = line.substring(0, idx).trim().replace(/^"|"$/g, "");
+      const v = line
+        .substring(idx + 1)
+        .trim()
+        .replace(/^"|"$/g, "");
+      return `    "${k}": "${v}"`;
+    });
+    return `headers:\n${entries.join("\n")}`;
+  }
+
+  // Array of {key, value} objects from key-value input
+  const valid = value.filter((e) => e.key.trim() !== "");
+  if (valid.length === 0) return "";
+  const entries = valid.map(
+    (e) => `    "${e.key.trim()}": "${e.value.trim()}"`,
+  );
   return `headers:\n${entries.join("\n")}`;
 }
 
@@ -110,6 +125,8 @@ driver: ${driverName}`;
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;
+      // Filter out empty arrays (e.g. key-value inputs with no entries)
+      if (Array.isArray(value) && value.length === 0) return false;
       // For ClickHouse, exclude managed: false as it's the default behavior
       // When managed=false, it's the default self-managed mode and doesn't need to be explicit
       if (
@@ -124,8 +141,10 @@ driver: ${driverName}`;
       const key = property.key as string;
       const value = formValues[key] as string;
 
-      if (key === "headers" && typeof value === "string") {
-        return formatHeadersAsYamlMap(value);
+      if (key === "headers") {
+        return formatHeadersAsYamlMap(
+          value as Array<{ key: string; value: string }> | string,
+        );
       }
 
       const isSecretProperty = secretPropertyKeys.includes(key);

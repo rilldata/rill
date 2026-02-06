@@ -7,6 +7,7 @@
   import {
     findRadioEnumKey,
     getRadioEnumOptions,
+    getSchemaButtonLabels,
     getSchemaInitialValues,
   } from "../../templates/schema-utils";
   import { getConnectorSchema } from "./connector-schemas";
@@ -167,18 +168,22 @@
     $paramsErrors,
     stepState.step,
   );
+  $: schemaButtonLabels = getSchemaButtonLabels(activeSchema, $form);
   $: primaryButtonLabel = formManager.getPrimaryButtonLabel({
     isConnectorForm: formManager.isConnectorForm,
     step: stepState.step,
     submitting,
+    schemaButtonLabels,
     selectedAuthMethod: activeAuthMethod ?? selectedAuthMethod,
   });
   $: primaryLoadingCopy =
     stepState.step === "source" || stepState.step === "explorer"
       ? "Importing data..."
-      : activeAuthMethod === "public"
-        ? "Continuing..."
-        : "Testing connection...";
+      : schemaButtonLabels?.loading
+        ? schemaButtonLabels.loading
+        : activeAuthMethod === "public"
+          ? "Continuing..."
+          : "Testing connection...";
   $: formId = baseFormId;
   $: shouldShowSkipLink =
     stepState.step === "connector" && formManager.isMultiStepConnector;

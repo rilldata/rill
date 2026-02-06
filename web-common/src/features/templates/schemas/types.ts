@@ -20,7 +20,7 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
+  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "key-value";
   /** Which modal step this field belongs to. */
   "x-step"?: "connector" | "source" | "explorer";
   /** Field holds a secret value that should be stored in .env, not in YAML. */

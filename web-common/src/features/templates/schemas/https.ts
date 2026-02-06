@@ -5,13 +5,16 @@ export const httpsSchema: MultiStepFormSchema = {
   type: "object",
   title: "HTTP(S)",
   "x-category": "fileStore",
+  "x-button-labels": {
+    "*": { "*": { idle: "Continue", loading: "Continuing..." } },
+  },
   properties: {
     headers: {
-      type: "string",
       title: "Headers",
       description: "HTTP headers to include in the request",
-      "x-display": "textarea",
-      "x-placeholder": "Authorization: Bearer <token>",
+      "x-display": "key-value",
+      "x-placeholder": "Header name",
+      "x-hint": "e.g. Authorization: Bearer &lt;token&gt;",
       "x-step": "connector",
     },
     path: {
@@ -33,5 +36,5 @@ export const httpsSchema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
-  required: ["headers", "path", "name"],
+  required: ["path", "name"],
 };
