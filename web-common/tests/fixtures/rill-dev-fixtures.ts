@@ -1,4 +1,4 @@
-import type { Page, TestInfo } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import axios from "axios";
 import { spawn } from "node:child_process";
@@ -41,12 +41,7 @@ export const rillDev = base.extend<MyFixtures>({
       locale,
     },
     use,
-    testInfo: TestInfo,
   ) => {
-    // Extend timeout to cover fixture setup (server start + reconciliation)
-    // and teardown (process kill + temp dir cleanup).
-    testInfo.setTimeout(testInfo.timeout + 30_000);
-
     const TEST_PORT = await getOpenPort();
     const TEST_GRPC_PORT = await getOpenPort();
     const TEST_PROJECT_DIRECTORY =
@@ -111,28 +106,6 @@ export const rillDev = base.extend<MyFixtures>({
         return false;
       }
     });
-
-    // Wait for all resources to finish reconciling so that tests navigating
-    // directly to explore URLs (via page.goto) don't hit a 404 error page.
-    if (project) {
-      await asyncWaitUntil(async () => {
-        try {
-          const response = await axios.get(
-            `http://localhost:${TEST_PORT}/v1/instances/default/resources`,
-          );
-          const resources = response.data?.resources ?? [];
-          return (
-            resources.length > 0 &&
-            resources.every(
-              (r: { meta?: { reconcileStatus?: string } }) =>
-                r.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE",
-            )
-          );
-        } catch {
-          return false;
-        }
-      }, 30_000);
-    }
 
     const context = await browser.newContext({
       storageState: rillDevBrowserState ?? { cookies: [], origins: [] },

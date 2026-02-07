@@ -1,13 +1,11 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
 import { gotoNavEntry } from "../utils/waitHelpers";
-import {
-  interactWithTimeRangeMenu,
-  setDashboardTimezone,
-} from "@rilldata/web-common/tests/utils/explore-interactions";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
 import { DateTime } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import axios from "axios";
 
 // Annotation timestamps as they'll be serialized from DuckDB (UTC).
 // All annotations that may be visible at day grain in "Last 7 days":
@@ -27,6 +25,100 @@ const HOUR_ANNOTATION_TIMES = [
   "2022-03-30T14:00:00Z", // Hour F
 ];
 
+const ANNOTATION_FILES: { path: string; blob: string }[] = [
+  {
+    path: "models/AdBids_point_annotations.sql",
+    blob: [
+      "select TIMESTAMP '2022-03-24' as time, 'Point annotation A' as description",
+      "union all",
+      "select TIMESTAMP '2022-03-26' as time, 'Point annotation B' as description",
+      "union all",
+      "select TIMESTAMP '2022-03-27' as time, 'Point annotation C' as description",
+      "union all",
+      "select TIMESTAMP '2022-03-28' as time, 'Point annotation D' as description",
+    ].join("\n"),
+  },
+  {
+    path: "models/AdBids_range_annotations.sql",
+    blob: [
+      "select TIMESTAMP '2022-03-25' as time,",
+      "       TIMESTAMP '2022-03-27' as time_end,",
+      "       'Range annotation C' as description",
+    ].join("\n"),
+  },
+  {
+    path: "models/AdBids_hour_annotations.sql",
+    blob: [
+      "select TIMESTAMP '2022-03-30 06:00:00' as time, 'Hour annotation E' as description",
+      "union all",
+      "select TIMESTAMP '2022-03-30 14:00:00' as time, 'Hour annotation F' as description",
+    ].join("\n"),
+  },
+];
+
+const METRICS_YAML_WITH_ANNOTATIONS = `# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
+
+version: 1
+type: metrics_view
+
+display_name: Adbids
+table: AdBids_model
+timeseries: timestamp
+
+dimensions:
+  - name: publisher
+    display_name: Publisher
+    column: publisher
+  - name: domain
+    display_name: Domain
+    column: domain
+  - name: timestamp
+    display_name: Timestamp
+    column: timestamp
+    type: time
+  - name: offset_timestamp
+    display_name: Offset Timestamp
+    column: offset_timestamp
+    type: time
+
+measures:
+  - name: total_records
+    display_name: Total records
+    expression: COUNT(*)
+    description: ""
+    format_preset: humanize
+  - name: bid_price_sum
+    display_name: Sum of Bid Price
+    expression: SUM(bid_price)
+    description: ""
+    format_preset: humanize
+
+annotations:
+  - model: AdBids_point_annotations
+    measures: ['total_records']
+  - model: AdBids_range_annotations
+    measures: ['total_records']
+  - model: AdBids_hour_annotations
+    measures: ['total_records']
+`;
+
+// Write annotation models + updated metrics YAML via the runtime API.
+async function installAnnotations(page: Page) {
+  const base = new URL(page.url()).origin;
+  const putFile = (path: string, blob: string) =>
+    axios.post(`${base}/v1/instances/default/files/entry`, {
+      path,
+      blob,
+      create: true,
+    });
+
+  for (const f of ANNOTATION_FILES) {
+    await putFile(f.path, f.blob);
+  }
+  await putFile("metrics/AdBids_metrics.yaml", METRICS_YAML_WITH_ANNOTATIONS);
+}
+
 // The app sets Settings.defaultLocale = "en" globally, so chart labels are
 // always English regardless of the browser's navigator.language.
 const CHART_LOCALE = "en";
@@ -45,19 +137,32 @@ function expectedDates(
   return new Set(dates);
 }
 
-async function setupDashboard(page: Page) {
+async function setupDashboard(page: Page, dashboardTZ: string) {
   await page.getByLabel("/dashboards").click();
   await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
+  // Wait for the base project to finish reconciling
   await expect(
     page.getByRole("button", { name: /Total records/ }).first(),
-  ).toBeVisible({ timeout: 10_000 });
+  ).toBeVisible({ timeout: 30_000 });
 
-  await page.getByRole("button", { name: "Preview" }).click();
+  // Write annotation files while still in the editor view. This triggers
+  // re-reconciliation in the background.
+  await installAnnotations(page);
+
+  // Navigate directly to the explore with the timezone already set.
+  const base = new URL(page.url()).origin;
+  const exploreUrl = `${base}/explore/AdBids_metrics_explore?tz=${encodeURIComponent(dashboardTZ)}`;
+  await page.goto(exploreUrl);
 
   await expect(
     page.getByRole("button", { name: /Total records/ }).first(),
-  ).toBeVisible({ timeout: 10_000 });
+  ).toBeVisible({ timeout: 30_000 });
+
+  // Wait for annotation query responses to arrive and the chart to
+  // finish re-rendering. Without this, menu interactions race against
+  // DOM element detachment from the annotation-triggered re-render.
+  await page.waitForTimeout(2000);
 }
 
 async function selectGrain(page: Page, grain: string) {
@@ -118,6 +223,7 @@ async function verifyDiamondDates(
     expect(dateText).toBeTruthy();
     expect(
       [...expected],
+
       `Diamond ${i} date "${dateText}" not in expected set`,
     ).toContain(dateText!);
     matchedDates.push(dateText!);
@@ -136,14 +242,15 @@ const DASHBOARD_TIMEZONES = ["UTC", "Asia/Kolkata", "America/Los_Angeles"];
 
 test.describe("annotations (rendering)", () => {
   test.use({ project: "AdBids", timezoneId: "UTC", locale: "en-US" });
+  // Extra time for installAnnotations (file writes + reconciliation).
+  test.setTimeout(60_000);
 
   for (const dashboardTZ of DASHBOARD_TIMEZONES) {
     test.describe(`dashboard: ${dashboardTZ}`, () => {
       test("day-level annotations placed at correct dates", async ({
         page,
       }) => {
-        await setupDashboard(page);
-        await setDashboardTimezone(page, dashboardTZ);
+        await setupDashboard(page, dashboardTZ);
 
         await interactWithTimeRangeMenu(page, async () => {
           await page.getByRole("menuitem", { name: "Last 7 days" }).click();
@@ -166,8 +273,7 @@ test.describe("annotations (rendering)", () => {
       test("hour-level annotations placed at correct times", async ({
         page,
       }) => {
-        await setupDashboard(page);
-        await setDashboardTimezone(page, dashboardTZ);
+        await setupDashboard(page, dashboardTZ);
 
         await interactWithTimeRangeMenu(page, async () => {
           await page.getByRole("menuitem", { name: "Last 24 hours" }).click();
@@ -190,8 +296,7 @@ test.describe("annotations (rendering)", () => {
       test("popover shows on hover over annotation diamond", async ({
         page,
       }) => {
-        await setupDashboard(page);
-        await setDashboardTimezone(page, dashboardTZ);
+        await setupDashboard(page, dashboardTZ);
 
         await interactWithTimeRangeMenu(page, async () => {
           await page.getByRole("menuitem", { name: "Last 7 days" }).click();
@@ -243,8 +348,7 @@ test.describe("annotations (rendering)", () => {
       });
 
       test("no diamond markers on bid_price_sum chart", async ({ page }) => {
-        await setupDashboard(page);
-        await setDashboardTimezone(page, dashboardTZ);
+        await setupDashboard(page, dashboardTZ);
 
         await interactWithTimeRangeMenu(page, async () => {
           await page.getByRole("menuitem", { name: "Last 7 days" }).click();
@@ -296,8 +400,7 @@ for (const sys of INDEPENDENCE_CONFIGS) {
     }) => {
       const dashboardTZ = "America/Los_Angeles";
 
-      await setupDashboard(page);
-      await setDashboardTimezone(page, dashboardTZ);
+      await setupDashboard(page, dashboardTZ);
 
       await interactWithTimeRangeMenu(page, async () => {
         await page.getByRole("menuitem", { name: "Last 7 days" }).click();
