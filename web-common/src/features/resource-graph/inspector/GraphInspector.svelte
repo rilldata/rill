@@ -40,20 +40,26 @@
     Settings,
     Zap,
   } from "lucide-svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import {
+    import {
     createLocalServiceGetCurrentProject,
     createLocalServiceGitStatus,
   } from "@rilldata/web-common/runtime-client/local-service";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import * as Dialog from "@rilldata/web-common/components/dialog";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
+  import { Button } from "@rilldata/web-common/components/button";
   import PartitionsTable from "@rilldata/web-common/features/models/partitions/PartitionsTable.svelte";
   import PartitionsFilter from "@rilldata/web-common/features/models/partitions/PartitionsFilter.svelte";
   import type { Selected } from "bits-ui";
 
   const DEFAULT_COLOR = "#6B7280";
   const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
+
+  // Refresh dropdown and confirmation state
+  let refreshDropdownOpen = false;
+  let fullRefreshConfirmOpen = false;
 
   // Partitions modal state
   let selectedPartitionFilter = "all";
@@ -158,14 +164,29 @@
   // Model refresh mutation
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
-  function refreshModel() {
+  function refreshModel(full: boolean) {
     if (!resourceName) return;
     $triggerMutation.mutate({
       instanceId,
       data: {
-        models: [{ model: resourceName, full: false }],
+        models: [{ model: resourceName, full }],
       },
     });
+  }
+
+  function handleIncrementalRefresh() {
+    refreshDropdownOpen = false;
+    refreshModel(false);
+  }
+
+  function handleFullRefreshClick() {
+    refreshDropdownOpen = false;
+    fullRefreshConfirmOpen = true;
+  }
+
+  function confirmFullRefresh() {
+    fullRefreshConfirmOpen = false;
+    refreshModel(true);
   }
 
   function openFile() {
@@ -210,6 +231,56 @@
             Unknown
           {/if}
         </p>
+      </div>
+      <div class="header-actions">
+        {#if (kind === ResourceKind.Model || kind === ResourceKind.Source) && resourceName}
+          <DropdownMenu.Root bind:open={refreshDropdownOpen}>
+            <DropdownMenu.Trigger asChild let:builder>
+              <button
+                use:builder.action
+                {...builder}
+                type="button"
+                class="icon-btn"
+                class:active={refreshDropdownOpen}
+                title="Refresh"
+              >
+                <RefreshCw size={14} />
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end">
+              {#if kind === ResourceKind.Model}
+                <DropdownMenu.Item on:click={handleIncrementalRefresh}>
+                  <RefreshCw size={12} />
+                  <span>Incremental Refresh</span>
+                </DropdownMenu.Item>
+              {/if}
+              <DropdownMenu.Item on:click={handleFullRefreshClick}>
+                <RotateCcw size={12} />
+                <span>Full Refresh</span>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        {/if}
+        {#if filePath}
+          <button
+            type="button"
+            class="icon-btn"
+            on:click={openFile}
+            title="Edit YAML"
+          >
+            <ExternalLink size={14} />
+          </button>
+        {/if}
+        {#if !$isGraphExpanded}
+          <button
+            type="button"
+            class="icon-btn"
+            on:click={handleViewLineage}
+            title="View lineage"
+          >
+            <GitFork size={14} />
+          </button>
+        {/if}
       </div>
     </div>
 
@@ -538,27 +609,6 @@
       </div>
     {/if}
 
-    <!-- Actions -->
-    <div class="actions">
-      {#if (kind === ResourceKind.Model || kind === ResourceKind.Source) && resourceName}
-        <Button type="secondary" onClick={refreshModel}>
-          <RefreshCw size={14} />
-          Refresh
-        </Button>
-      {/if}
-      {#if filePath}
-        <Button type="secondary" onClick={openFile}>
-          <ExternalLink size={14} />
-          Edit YAML
-        </Button>
-      {/if}
-      {#if !$isGraphExpanded}
-        <Button type="secondary" onClick={handleViewLineage}>
-          <GitFork size={14} />
-          View lineage
-        </Button>
-      {/if}
-    </div>
   {:else}
     <!-- Project Info (when no node selected) -->
     <div class="project-info">
@@ -667,6 +717,32 @@
   {/if}
 </div>
 
+<!-- Full Refresh Confirmation Dialog -->
+<AlertDialog.Root bind:open={fullRefreshConfirmOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Full Refresh {resourceName}?</AlertDialog.Title>
+      <AlertDialog.Description>
+        <div class="mt-1">
+          A full refresh will re-ingest ALL data from scratch.
+          This operation can take a significant amount of time and will update
+          all dependent resources. Only proceed if you're certain this is
+          necessary.
+        </div>
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <Button
+        type="secondary"
+        onClick={() => {
+          fullRefreshConfirmOpen = false;
+        }}>Cancel</Button
+      >
+      <Button type="primary" onClick={confirmFullRefresh}>Yes, refresh</Button>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
+
 <style lang="postcss">
   .inspector-panel {
     @apply h-full flex flex-col overflow-y-auto py-2;
@@ -688,8 +764,19 @@
     @apply flex flex-col min-w-0 flex-1;
   }
 
-  .inspector-header :global(button) {
-    @apply flex-shrink-0 text-fg-muted;
+  .header-actions {
+    @apply flex items-center gap-1 flex-shrink-0;
+  }
+
+  .icon-btn {
+    @apply flex items-center justify-center w-7 h-7 rounded;
+    @apply text-fg-muted bg-transparent border-none;
+    @apply hover:bg-surface-subtle hover:text-fg-primary;
+    @apply cursor-pointer transition-colors;
+  }
+
+  .icon-btn.active {
+    @apply bg-surface-subtle text-fg-primary;
   }
 
   .header-title {
@@ -848,14 +935,6 @@
 
   .status-item {
     @apply text-sm text-fg-primary capitalize;
-  }
-
-  .actions {
-    @apply flex flex-col gap-2 p-4 mt-auto;
-  }
-
-  .actions :global(button) {
-    @apply w-full justify-center gap-2;
   }
 
   .project-info {
