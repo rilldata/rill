@@ -3,12 +3,84 @@ package resolvers
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSQLLimit(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"foo.sql": "SELECT range AS val FROM range(100)",
+		},
+		Variables: map[string]string{
+			"rill.interactive_sql_row_limit": "10",
+		},
+	})
+
+	cases := []struct {
+		name          string
+		sql           string
+		limit         int
+		errorContains string
+	}{
+		{
+			name:          "bad unlimited",
+			sql:           "SELECT * FROM foo",
+			errorContains: "result cap exceeded",
+		},
+		{
+			name: "good unlimited",
+			sql:  "SELECT 1",
+		},
+		{
+			name:  "good limit",
+			sql:   "SELECT * FROM foo LIMIT 5",
+			limit: 5,
+		},
+		{
+			name:          "bad limit",
+			sql:           "SELECT * FROM foo",
+			limit:         15,
+			errorContains: "exceeds the maximum interactive limit",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+				InstanceID:         instanceID,
+				Resolver:           "sql",
+				ResolverProperties: map[string]any{"sql": tc.sql, "limit": tc.limit},
+				Claims:             &runtime.SecurityClaims{SkipChecks: true},
+			})
+			if tc.errorContains != "" {
+				require.ErrorContains(t, err, tc.errorContains)
+				return
+			}
+			require.NoError(t, err)
+			defer res.Close()
+
+			var rows []map[string]any
+			for {
+				row, err := res.Next()
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				require.NoError(t, err)
+				rows = append(rows, row)
+			}
+
+			if tc.limit > 0 {
+				require.Equal(t, tc.limit, len(rows))
+			}
+		})
+	}
+}
 
 func TestSimpleSQLApi(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
