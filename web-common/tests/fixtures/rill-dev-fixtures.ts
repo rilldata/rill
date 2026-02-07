@@ -116,6 +116,11 @@ export const rillDev = base.extend<MyFixtures>({
 
     await page.goto(`http://localhost:${TEST_PORT}`);
 
+    // Give the runtime time to reconcile initial resources. Tests that
+    // navigate directly to explore URLs (via page.goto) need the explore
+    // to exist before navigation.
+    await page.waitForTimeout(1500);
+
     await use(page);
 
     // Close browser context to release any connections/resources first
