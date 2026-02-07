@@ -12,7 +12,9 @@ export const bigquerySchema: MultiStepFormSchema = {
       description: "Service account JSON (uploaded or pasted)",
       format: "file",
       "x-display": "file",
-      "x-accept": ".json",
+      "x-file-accept": ".json",
+      "x-file-encoding": "json",
+      "x-file-extract": { project_id: "project_id" },
       "x-secret": true,
     },
     project_id: {
