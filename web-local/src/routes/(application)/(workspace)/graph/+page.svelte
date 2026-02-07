@@ -16,7 +16,7 @@
     parseGraphUrlParams,
     urlParamsToSeeds,
   } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
-  import { Search } from "lucide-svelte";
+  import { Search, X } from "lucide-svelte";
 
   // Use a static path for workspace store (persists inspector toggle state)
   const GRAPH_WORKSPACE_KEY = "/graph";
@@ -50,6 +50,20 @@
         <h1>Project graph</h1>
       </div>
       <div class="header-right">
+        <!-- Clear filters button -->
+        {#if searchQuery || statusFilter !== "all"}
+          <button
+            type="button"
+            class="clear-filters-btn"
+            on:click={() => {
+              searchQuery = "";
+              statusFilter = "all";
+            }}
+          >
+            <X size={12} />
+            <span>Clear Filters</span>
+          </button>
+        {/if}
         <!-- Search input -->
         <div class="search-container">
           <Search size={14} class="search-icon" />
@@ -62,7 +76,7 @@
         </div>
         <!-- Status filter dropdown -->
         <select bind:value={statusFilter} class="status-filter">
-          <option value="all">All</option>
+          <option value="all">All status</option>
           <option value="pending">Pending</option>
           <option value="errored">Errored</option>
         </select>
@@ -145,7 +159,7 @@
   }
 
   .search-input {
-    @apply h-7 w-48 pl-8 pr-3 text-xs rounded border bg-surface-background;
+    @apply h-7 w-48 pl-8 pr-2 text-xs rounded border bg-surface-background;
     @apply focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500;
   }
 
@@ -153,9 +167,19 @@
     @apply text-fg-muted;
   }
 
+  .clear-filters-btn {
+    @apply flex items-center gap-1.5 h-7 px-2 text-xs text-fg-muted;
+    @apply hover:text-fg-primary cursor-pointer transition-colors;
+    @apply border-none bg-transparent;
+  }
+
   .status-filter {
-    @apply h-7 px-2 text-xs rounded border bg-surface-background text-fg-primary;
+    @apply h-7 px-2.5 pr-7 text-xs rounded border bg-surface-background text-fg-primary;
     @apply focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500;
-    @apply cursor-pointer;
+    @apply cursor-pointer appearance-none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.25rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25rem 1.25rem;
   }
 </style>
