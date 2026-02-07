@@ -110,7 +110,7 @@
         type: "summary-count",
         selected: isActive("sources"),
         data: {
-          label: "Sources",
+          label: "Source Models",
           count: sources,
           kind: ResourceKind.Source,
           active: isActive("sources"),
@@ -183,7 +183,7 @@
   $: flowColorMode = ($themeControl === "dark" ? "dark" : "light") as
     | "dark"
     | "light";
-  $: flowKey = `overview|${sources}|${metrics}|${models}|${dashboards}|${containerKey}|${flowColorMode}`;
+  $: flowKey = `overview|${sources}|${models}|${metrics}|${dashboards}|${containerKey}|${flowColorMode}`;
 
   const edgeOptions = {
     type: "straight",
@@ -215,7 +215,10 @@
         }}
         preventScrolling={true}
         zoomOnScroll={false}
+        zoomOnPinch={false}
+        zoomOnDoubleClick={false}
         panOnScroll={false}
+        panOnDrag={false}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={false}

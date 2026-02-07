@@ -24,6 +24,7 @@
   import SummaryGraph from "../summary/SummaryGraph.svelte";
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
+  import { isGraphExpanded } from "../inspector/graph-inspector-store";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -35,6 +36,8 @@
   export let maxGroups: number | null = null;
   export let showControls = true;
   export let enableExpansion = true;
+  export let searchQuery = "";
+  export let statusFilter: "all" | "pending" | "errored" = "all";
 
   // New props for modularity
   export let onExpandedChange: ((id: string | null) => void) | null = null;
@@ -43,20 +46,21 @@
   export let gridColumns: number = UI_CONFIG.DEFAULT_GRID_COLUMNS;
   export let expandedHeightMobile: string = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
   export let expandedHeightDesktop: string = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
+  export let isOverlay = false;
 
   type SummaryMemo = {
     sources: number;
-    metrics: number;
     models: number;
+    metrics: number;
     dashboards: number;
     resources: V1Resource[];
-    activeToken: "metrics" | "sources" | "models" | "dashboards" | null;
+    activeToken: "sources" | "metrics" | "models" | "dashboards" | null;
   };
   function summaryEquals(a: SummaryMemo, b: SummaryMemo) {
     return (
       a.sources === b.sources &&
-      a.metrics === b.metrics &&
       a.models === b.models &&
+      a.metrics === b.metrics &&
       a.dashboards === b.dashboards &&
       a.resources === b.resources &&
       a.activeToken === b.activeToken
@@ -77,7 +81,8 @@
 
   // Determine if we're filtering by a specific kind (e.g., ?kind=metrics)
   // This is used to filter out groups that don't contain any resource of the filtered kind
-  $: filterKind = (function (): ResourceKind | undefined {
+  // Special case: "dashboards" includes both Explore and Canvas
+  $: filterKind = (function (): ResourceKind | "dashboards" | undefined {
     const rawSeeds = seeds ?? [];
     // Only apply kind filter if all seeds are kind tokens (e.g., ["metrics"] or ["sources"])
     if (rawSeeds.length === 0) return undefined;
@@ -85,18 +90,33 @@
       const kind = isKindToken((raw || "").toLowerCase());
       if (!kind) return undefined; // Mixed seeds, no single kind filter
     }
+    // Check if it's the dashboards token (which includes both Explore and Canvas)
+    const firstSeed = (rawSeeds[0] || "").toLowerCase();
+    if (firstSeed === "dashboards" || firstSeed === "dashboard") {
+      return "dashboards"; // Special token to indicate both Explore and Canvas
+    }
     // All seeds are kind tokens - return the first one's kind
-    return isKindToken((rawSeeds[0] || "").toLowerCase());
+    return isKindToken(firstSeed);
   })();
 
   // Determine which overview node should be highlighted based on current seeds
+  // For Canvas with MetricsView seeds, prioritize the Canvas token (dashboards) over MetricsView tokens
   $: overviewActiveToken = (function ():
-    | "metrics"
     | "sources"
+    | "metrics"
     | "models"
     | "dashboards"
     | null {
     const rawSeeds = seeds ?? [];
+
+    // Check the first seed first - this should be the anchor resource (e.g., Canvas)
+    // This ensures Canvas/Explore tokens are prioritized over MetricsView tokens
+    if (rawSeeds.length > 0) {
+      const firstToken = tokenForSeedString(rawSeeds[0]);
+      if (firstToken) return firstToken;
+    }
+
+    // Fall back to checking all seeds if first seed didn't yield a token
     for (const raw of rawSeeds) {
       const token = tokenForSeedString(raw);
       if (token) return token;
@@ -122,10 +142,42 @@
           filterKind,
         )
       : partitionResourcesByMetrics(normalizedResources);
+  // Filter groups by search query and status
+  $: filteredResourceGroups = (() => {
+    let groups = resourceGroups;
+
+    // Filter by search query (matches resource names)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      groups = groups.filter((group) =>
+        group.resources.some((r) =>
+          r.meta?.name?.name?.toLowerCase().includes(query),
+        ),
+      );
+    }
+
+    // Filter by status
+    if (statusFilter === "pending") {
+      groups = groups.filter((group) =>
+        group.resources.some(
+          (r) =>
+            r.meta?.reconcileStatus &&
+            r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE",
+        ),
+      );
+    } else if (statusFilter === "errored") {
+      groups = groups.filter((group) =>
+        group.resources.some((r) => !!r.meta?.reconcileError),
+      );
+    }
+
+    return groups;
+  })();
+
   $: visibleResourceGroups =
     typeof maxGroups === "number" && maxGroups >= 0
-      ? resourceGroups.slice(0, maxGroups)
-      : resourceGroups;
+      ? filteredResourceGroups.slice(0, maxGroups)
+      : filteredResourceGroups;
   $: hasGraphs = visibleResourceGroups.length > 0;
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
@@ -156,7 +208,8 @@
         if (k === ResourceKind.Source) sources++;
         else if (k === ResourceKind.Model) models++;
         else if (k === ResourceKind.MetricsView) metrics++;
-        else if (k === ResourceKind.Explore) dashboards++;
+        else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
+          dashboards++;
       }
       return {
         sourcesCount: sources,
@@ -181,8 +234,8 @@
   $: {
     const nextSummary: SummaryMemo = {
       sources: sourcesCount,
-      metrics: metricsCount,
       models: modelsCount,
+      metrics: metricsCount,
       dashboards: dashboardsCount,
       resources: normalizedResources,
       activeToken: overviewActiveToken,
@@ -235,6 +288,9 @@
 
   // Derive current expanded ID for template usage (computed from props/state)
   $: currentExpandedId = isControlledMode ? expandedId : internalExpandedId;
+
+  // Update the global expanded state store for components like GraphInspector
+  $: isGraphExpanded.set(!!currentExpandedId);
 
   // When the URL seeds change, re-open the first seeded graph in expanded view
   let lastSeedsSignature = "";
@@ -397,7 +453,7 @@
   {#if showSummary && currentExpandedId === null}
     <slot
       name="summary"
-      sources={sourcesCount}
+      {sourcesCount}
       {metricsCount}
       {modelsCount}
       dashboards={dashboardsCount}
@@ -479,6 +535,7 @@
               showLock={false}
               fillParent={true}
               enableExpand={enableExpansion}
+              {isOverlay}
               {fitViewPadding}
               {fitViewMinZoom}
               {fitViewMaxZoom}
@@ -505,6 +562,7 @@
                 showLock={true}
                 fillParent={false}
                 enableExpand={enableExpansion}
+                {isOverlay}
                 {fitViewPadding}
                 {fitViewMinZoom}
                 {fitViewMaxZoom}

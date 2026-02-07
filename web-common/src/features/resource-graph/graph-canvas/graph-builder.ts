@@ -13,7 +13,7 @@ import type {
   V1Resource,
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
-import type { ResourceNodeData } from "../shared/types";
+import type { ResourceNodeData, ResourceMetadata } from "../shared/types";
 import { graphCache } from "../shared/cache/position-cache";
 import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "../shared/config";
 
@@ -38,6 +38,7 @@ const ALLOWED_KINDS = new Set<ResourceKind>([
   ResourceKind.Model,
   ResourceKind.MetricsView,
   ResourceKind.Explore,
+  ResourceKind.Canvas,
 ]);
 
 function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
@@ -61,6 +62,413 @@ function estimateNodeWidth(label?: string | null) {
   );
 }
 
+/**
+ * Format a V1Schedule into a short human-readable description for the header.
+ */
+function formatScheduleDescription(
+  schedule:
+    | { cron?: string; tickerSeconds?: number; timeZone?: string }
+    | undefined,
+): string | undefined {
+  if (!schedule) return undefined;
+  if (schedule.cron) {
+    // Just show the cron expression - timezone is in the YAML
+    return schedule.cron;
+  }
+  if (schedule.tickerSeconds) {
+    const seconds = schedule.tickerSeconds;
+    if (seconds >= 3600 && seconds % 3600 === 0) {
+      const hours = seconds / 3600;
+      return `every ${hours}h`;
+    }
+    if (seconds >= 60 && seconds % 60 === 0) {
+      const minutes = seconds / 60;
+      return `every ${minutes}m`;
+    }
+    return `every ${seconds}s`;
+  }
+  return undefined;
+}
+
+/**
+ * Format a schedule as YAML.
+ */
+function formatScheduleYaml(
+  schedule:
+    | {
+        cron?: string;
+        tickerSeconds?: number;
+        timeZone?: string;
+        runInDev?: boolean;
+      }
+    | undefined,
+): string | undefined {
+  if (!schedule) return undefined;
+  const lines: string[] = [];
+  if (schedule.cron) {
+    lines.push(`cron: "${schedule.cron}"`);
+  }
+  if (schedule.tickerSeconds) {
+    lines.push(`ticker_seconds: ${schedule.tickerSeconds}`);
+  }
+  if (schedule.timeZone) {
+    lines.push(`time_zone: "${schedule.timeZone}"`);
+  }
+  if (schedule.runInDev !== undefined) {
+    lines.push(`run_in_dev: ${schedule.runInDev}`);
+  }
+  return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+/**
+ * Format retry configuration as YAML.
+ */
+function formatRetryYaml(
+  retryAttempts?: number,
+  retryDelaySeconds?: number,
+  retryExponentialBackoff?: boolean,
+): string | undefined {
+  if (!retryAttempts) return undefined;
+  const lines: string[] = [];
+  lines.push(`retry_attempts: ${retryAttempts}`);
+  if (retryDelaySeconds !== undefined) {
+    lines.push(`retry_delay_seconds: ${retryDelaySeconds}`);
+  }
+  if (retryExponentialBackoff !== undefined) {
+    lines.push(`retry_exponential_backoff: ${retryExponentialBackoff}`);
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Format tests as YAML.
+ * Tests have: name, resolver (type), and resolver_properties (containing sql/expression)
+ */
+function formatTestsYaml(
+  tests:
+    | Array<{
+        name?: string;
+        resolver?: string;
+        resolverProperties?: Record<string, unknown>;
+      }>
+    | undefined,
+): string | undefined {
+  if (!tests || tests.length === 0) return undefined;
+  const lines: string[] = [];
+  for (const test of tests) {
+    // Get the test name or use resolver type as fallback
+    const testName = test.name || test.resolver || "test";
+    lines.push(`- ${testName}:`);
+
+    // Extract sql or expression from resolver_properties
+    const props = test.resolverProperties as
+      | { sql?: string; expression?: string }
+      | undefined;
+    if (props?.sql) {
+      // Handle multi-line SQL
+      if (props.sql.includes("\n")) {
+        lines.push(`    sql: |`);
+        for (const sqlLine of props.sql.split("\n")) {
+          lines.push(`      ${sqlLine}`);
+        }
+      } else {
+        lines.push(`    sql: "${props.sql}"`);
+      }
+    } else if (props?.expression) {
+      lines.push(`    expression: "${props.expression}"`);
+    }
+  }
+  return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+/**
+ * Infer the actual data source type from a DuckDB path or SQL.
+ * DuckDB can read from various cloud storage providers, so we detect the
+ * underlying source from the path prefix to show the appropriate icon.
+ *
+ * The content can be either:
+ * - A direct path like "s3://bucket/file.parquet"
+ * - A SQL query like "SELECT * FROM read_parquet('s3://bucket/file.parquet')"
+ *
+ * We search for cloud storage URL patterns anywhere in the content.
+ *
+ * @param content - The path, URI, or SQL from the DuckDB source/model
+ * @returns The inferred connector type, or undefined if no external source detected
+ */
+function inferDuckDbSourceType(
+  content: string | undefined,
+): string | undefined {
+  if (!content) return undefined;
+
+  const normalized = content.toLowerCase();
+
+  // Check for cloud storage URL patterns anywhere in the content
+  // These patterns work for both direct paths and URLs embedded in SQL
+  if (normalized.includes("s3://") || normalized.includes("s3a://")) {
+    return "s3";
+  }
+  if (normalized.includes("gs://") || normalized.includes("gcs://")) {
+    return "gcs";
+  }
+  if (
+    normalized.includes("azure://") ||
+    normalized.includes("az://") ||
+    normalized.includes("abfs://") ||
+    normalized.includes("abfss://")
+  ) {
+    return "azure";
+  }
+
+  // For HTTP(S), only match if it looks like a data file URL (not documentation links)
+  // Check for common data file extensions near the URL
+  const httpMatch = normalized.match(/https?:\/\/[^\s'"]+/g);
+  if (httpMatch) {
+    const dataExtensions = [
+      ".parquet",
+      ".csv",
+      ".json",
+      ".ndjson",
+      ".jsonl",
+      ".xlsx",
+      ".xls",
+      ".tsv",
+    ];
+    for (const url of httpMatch) {
+      if (dataExtensions.some((ext) => url.includes(ext))) {
+        return "https";
+      }
+    }
+  }
+
+  // Check for explicit DuckDB read functions with local paths
+  if (
+    normalized.includes("read_parquet(") ||
+    normalized.includes("read_csv(") ||
+    normalized.includes("read_json(") ||
+    normalized.includes("read_ndjson(")
+  ) {
+    return "local_file";
+  }
+
+  // No external data source detected (e.g., SQL referencing other models)
+  return undefined;
+}
+
+/**
+ * Extract rich metadata from a resource for badge display.
+ */
+function extractResourceMetadata(
+  resource: V1Resource,
+  kind: ResourceKind | undefined,
+  allResources: V1Resource[],
+): ResourceMetadata {
+  const metadata: ResourceMetadata = {};
+
+  // Model/Source metadata
+  const model = resource.model;
+  const source = resource.source;
+
+  if (model?.spec) {
+    const spec = model.spec;
+    let connector = spec.inputConnector;
+
+    // For DuckDB connector, infer the actual source type from the path
+    const inputProps = spec.inputProperties as
+      | { path?: string; sql?: string }
+      | undefined;
+    if (connector?.toLowerCase() === "duckdb") {
+      const path = inputProps?.path || inputProps?.sql;
+      connector = inferDuckDbSourceType(path);
+    }
+
+    // Connector info
+    metadata.connector = connector;
+    if (spec.outputConnector) metadata.outputConnector = spec.outputConnector;
+    if (spec.stageConnector) metadata.stageConnector = spec.stageConnector;
+
+    // Source path for file-based sources
+    if (inputProps?.path) {
+      metadata.sourcePath = inputProps.path;
+    }
+
+    // Processing configuration
+    metadata.incremental = spec.incremental;
+    metadata.partitioned = Boolean(spec.partitionsResolver);
+    if (spec.partitionsWatermarkField) {
+      metadata.partitionsWatermarkField = spec.partitionsWatermarkField;
+    }
+    if (spec.partitionsConcurrencyLimit) {
+      metadata.partitionsConcurrencyLimit = spec.partitionsConcurrencyLimit;
+    }
+
+    // Change mode
+    if (
+      spec.changeMode &&
+      spec.changeMode !== "MODEL_CHANGE_MODE_UNSPECIFIED"
+    ) {
+      metadata.changeMode = spec.changeMode.replace("MODEL_CHANGE_MODE_", "");
+    }
+
+    // Schedule configuration
+    metadata.hasSchedule = Boolean(
+      spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
+    );
+    metadata.scheduleDescription = formatScheduleDescription(
+      spec.refreshSchedule,
+    );
+    metadata.scheduleYaml = formatScheduleYaml(spec.refreshSchedule);
+    if (spec.timeoutSeconds) metadata.timeoutSeconds = spec.timeoutSeconds;
+
+    // Retry configuration
+    if (spec.retryAttempts) {
+      metadata.retryAttempts = spec.retryAttempts;
+      metadata.retryDelaySeconds = spec.retryDelaySeconds;
+      metadata.retryExponentialBackoff = spec.retryExponentialBackoff;
+      metadata.retryYaml = formatRetryYaml(
+        spec.retryAttempts,
+        spec.retryDelaySeconds,
+        spec.retryExponentialBackoff,
+      );
+    }
+
+    // Tests
+    if (spec.tests && spec.tests.length > 0) {
+      metadata.testCount = spec.tests.length;
+      metadata.testsYaml = formatTestsYaml(spec.tests);
+    }
+
+    // Extract SQL query
+    if (inputProps?.sql) {
+      metadata.sqlQuery = inputProps.sql;
+    }
+
+    // Check if model is defined via SQL file
+    const filePaths = resource.meta?.filePaths ?? [];
+    metadata.isSqlModel = filePaths.some((fp) => fp.endsWith(".sql"));
+
+    // Model state info
+    if (model.state) {
+      metadata.refreshedOn = model.state.refreshedOn;
+      metadata.resultTable = model.state.resultTable;
+      metadata.executionDurationMs = model.state.latestExecutionDurationMs;
+      metadata.partitionsHaveErrors = model.state.partitionsHaveErrors;
+    }
+  }
+
+  if (source?.spec) {
+    const spec = source.spec;
+    let connector = spec.sourceConnector;
+
+    // For DuckDB connector, infer the actual source type from the path
+    if (connector?.toLowerCase() === "duckdb") {
+      const props = spec.properties as
+        | { path?: string; sql?: string }
+        | undefined;
+      const path = props?.path || props?.sql;
+      connector = inferDuckDbSourceType(path);
+    }
+
+    metadata.connector = connector;
+    metadata.hasSchedule = Boolean(
+      spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
+    );
+    metadata.scheduleDescription = formatScheduleDescription(
+      spec.refreshSchedule,
+    );
+  }
+
+  // MetricsView metadata
+  const metricsView = resource.metricsView;
+  if (metricsView?.spec) {
+    const mvSpec = metricsView.spec;
+    metadata.metricsConnector = mvSpec.connector;
+    metadata.metricsTable = mvSpec.table;
+    metadata.metricsModel = mvSpec.model;
+    metadata.timeDimension = mvSpec.timeDimension;
+
+    // Extract dimensions
+    if (mvSpec.dimensions && mvSpec.dimensions.length > 0) {
+      metadata.dimensions = mvSpec.dimensions.map((d) => ({
+        name: d.name ?? "",
+        displayName: d.displayName,
+        description: d.description,
+        type: d.type?.replace("DIMENSION_TYPE_", ""),
+        column: d.column,
+        expression: d.expression,
+      }));
+    }
+
+    // Extract measures
+    if (mvSpec.measures && mvSpec.measures.length > 0) {
+      metadata.measures = mvSpec.measures.map((m) => ({
+        name: m.name ?? "",
+        displayName: m.displayName,
+        description: m.description,
+        expression: m.expression,
+        type: m.type?.replace("MEASURE_TYPE_", ""),
+      }));
+    }
+  }
+
+  // Dashboard (Explore/Canvas) theme metadata
+  const explore = resource.explore;
+  const canvas = resource.canvas;
+
+  if (explore?.spec) {
+    if (explore.spec.theme && !explore.spec.embeddedTheme) {
+      metadata.theme = explore.spec.theme;
+    }
+    metadata.metricsViewName = explore.spec.metricsView;
+  }
+
+  if (canvas?.spec) {
+    if (canvas.spec.theme && !canvas.spec.embeddedTheme) {
+      metadata.theme = canvas.spec.theme;
+    }
+    // Count components across all rows
+    const rows = canvas.spec.rows ?? [];
+    metadata.rowCount = rows.length;
+    let componentCount = 0;
+    for (const row of rows) {
+      componentCount += row.items?.length ?? 0;
+    }
+    if (componentCount > 0) {
+      metadata.componentCount = componentCount;
+    }
+  }
+
+  // Count alerts and APIs that reference this resource
+  const resourceId = createResourceId(resource.meta);
+  if (resourceId) {
+    let alertCount = 0;
+    let apiCount = 0;
+
+    for (const res of allResources) {
+      const resKind = res.meta?.name?.kind;
+      const refs = res.meta?.refs ?? [];
+
+      // Check if this resource references our target
+      const refsTarget = refs.some((ref) => {
+        const refId = resourceNameToId(ref);
+        return refId === resourceId;
+      });
+
+      if (refsTarget) {
+        if (resKind === "rill.runtime.v1.Alert") {
+          alertCount++;
+        } else if (resKind === "rill.runtime.v1.API") {
+          apiCount++;
+        }
+      }
+    }
+
+    if (alertCount > 0) metadata.alertCount = alertCount;
+    if (apiCount > 0) metadata.apiCount = apiCount;
+  }
+
+  return metadata;
+}
+
 type BuildGraphOptions = {
   // Namespace for caching node positions. Using a per-graph id avoids reusing
   // coordinates from unrelated graphs, which can place nodes far away.
@@ -75,12 +483,13 @@ type BuildGraphOptions = {
  * Uses Dagre for automatic layout and maintains cached node positions for stability.
  *
  * This function:
- * - Filters resources to only allowed kinds (Source, Model, MetricsView, Explore)
+ * - Filters resources to only allowed kinds (Source, Model, MetricsView, Explore, Canvas)
+ *   Note: Sources and Models are merged in the UI (Source is deprecated)
  * - Creates nodes with dynamic widths based on label length
  * - Generates edges based on resource references
  * - Applies Dagre layout with configurable spacing
  * - Caches node positions per namespace for consistent placement
- * - Enforces rank constraints (Sources at top, Explores/Canvas at bottom)
+ * - Enforces rank constraints (Explores/Canvas at bottom, Sources/Models flow naturally)
  *
  * @param resources - Array of V1Resource objects to visualize
  * @param opts - Optional configuration for layout and caching
@@ -127,8 +536,11 @@ export function buildResourceGraph(
     const nodeWidth = estimateNodeWidth(label);
     let rankConstraint: "min" | "max" | undefined;
     switch (kind) {
+      // Sources and Models are merged (Source is deprecated), both treated the same
       case ResourceKind.Source:
-        rankConstraint = "min";
+      case ResourceKind.Model:
+        // No special rank constraint - let them flow naturally in the graph
+        rankConstraint = undefined;
         break;
       case ResourceKind.Explore:
       case ResourceKind.Canvas:
@@ -144,6 +556,8 @@ export function buildResourceGraph(
       rank: rankConstraint,
     });
 
+    const metadata = extractResourceMetadata(resource, kind, resources);
+
     const nodeDef: Node<ResourceNodeData> = {
       id,
       width: nodeWidth,
@@ -152,6 +566,7 @@ export function buildResourceGraph(
         resource,
         kind,
         label,
+        metadata,
       },
       type: "resource-node",
       position: { x: 0, y: 0 },
@@ -161,6 +576,8 @@ export function buildResourceGraph(
     nodeDefinitions.set(id, nodeDef);
   }
 
+  // Build adjacency map for edges
+  // dependentsMap: sourceId -> Set of dependentIds (outgoing edges from source)
   const dependentsMap = new Map<string, Set<string>>();
 
   for (const resource of resourceMap.values()) {
@@ -173,6 +590,7 @@ export function buildResourceGraph(
       if (!resourceMap.has(sourceId)) continue;
       if (sourceId === dependentId) continue;
 
+      // Track outgoing edges (source -> dependent)
       if (!dependentsMap.has(sourceId)) dependentsMap.set(sourceId, new Set());
       dependentsMap.get(sourceId)!.add(dependentId);
     }
@@ -509,7 +927,7 @@ function updateGroupingCaches(groups: ResourceGraphGrouping[]): void {
 export function partitionResourcesBySeeds(
   resources: V1Resource[],
   seeds: (string | V1ResourceName)[],
-  filterKind?: ResourceKind,
+  filterKind?: ResourceKind | "dashboards",
 ): ResourceGraphGrouping[] {
   const resourceMap = buildVisibleResourceMap(resources);
   const { incoming, outgoing } = buildDirectedAdjacency(resourceMap);
@@ -533,10 +951,14 @@ export function partitionResourcesBySeeds(
 
   // If filtering by a specific kind, remove groups that don't contain any resource of that kind
   // Use coerceResourceKind to handle "defined-as-source" models correctly
+  // Special case: "dashboards" includes both Explore and Canvas
   if (filterKind) {
     return groups.filter((group) =>
       group.resources.some((r) => {
         const kind = coerceResourceKind(r);
+        if (filterKind === "dashboards") {
+          return kind === ResourceKind.Explore || kind === ResourceKind.Canvas;
+        }
         return kind === filterKind;
       }),
     );
