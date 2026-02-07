@@ -4507,6 +4507,20 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   explore = "";
 
   /**
+   * Optional canvas dashboard.
+   *
+   * @generated from field: string canvas = 10;
+   */
+  canvas = "";
+
+  /**
+   * Optional canvas component within a dashboard.
+   *
+   * @generated from field: string canvas_component = 11;
+   */
+  canvasComponent = "";
+
+  /**
    * Optional dimensions.
    *
    * @generated from field: repeated string dimensions = 5;
@@ -4526,6 +4540,15 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
    * @generated from field: rill.runtime.v1.Expression where = 7;
    */
   where?: Expression;
+
+  /**
+   * Filter expressions as key-value pairs for the canvas.
+   * Key: Metrics view name
+   * Value: Expression object
+   *
+   * @generated from field: map<string, rill.runtime.v1.Expression> where_per_metrics_view = 12;
+   */
+  wherePerMetricsView: { [key: string]: Expression } = {};
 
   /**
    * Optional start of a time range.
@@ -4550,9 +4573,12 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   static readonly typeName = "rill.runtime.v1.AnalystAgentContext";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "canvas_component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 12, name: "where_per_metrics_view", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 8, name: "time_start", kind: "message", T: Timestamp },
     { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);
