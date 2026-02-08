@@ -20,6 +20,7 @@
   export let editable = true;
   export let showInspectorToggle = true;
   export let showTableToggle = false;
+  export let showIcon = true;
   export let hasUnsavedChanges: boolean;
   export let filePath: string;
   export let codeToggle = false;
@@ -48,9 +49,10 @@
 
   <div class="second-level-wrapper">
     <div class="flex gap-x-1 items-center w-full" class:truncate={!editing}>
+      <slot name="left" />
       {#if codeToggle && resourceKind}
         <CodeToggle bind:selectedView={$view} {resourceKind} />
-      {:else}
+      {:else if showIcon}
         <span class="flex-none">
           <svelte:component
             this={getIconComponent(resourceKind, filePath)}
