@@ -2699,7 +2699,6 @@ message DeleteVirtualFileResponse {}
 message GetReportMetaRequest {
   string project_id = 1;
   string report = 3;
-  string resolver = 13;
   string owner_id = 5;
   google.protobuf.Timestamp execution_time = 6;
   repeated string email_recipients = 7;
@@ -3312,12 +3311,10 @@ message ReportOptions {
   string refresh_cron = 2;
   string refresh_time_zone = 9;
   string interval_duration = 13;
-  // Generic resolver configuration (preferred for new reports)
   string resolver = 21;
   google.protobuf.Struct resolver_properties = 22;
-  // Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
-  string query_name = 3;
-  string query_args_json = 4;
+  string query_name = 3 [deprecated = true]; // use resolver/resolver_properties instead
+  string query_args_json = 4 [deprecated = true]; // use resolver/resolver_properties instead
   uint64 export_limit = 5;
   rill.runtime.v1.ExportFormat export_format = 6;
   bool export_include_header = 20;

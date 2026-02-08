@@ -1746,16 +1746,16 @@ components:
                 intervalDuration:
                     type: string
                 queryArgsJson:
+                    title: use resolver/resolver_properties instead
                     type: string
                 queryName:
-                    title: Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
+                    title: use resolver/resolver_properties instead
                     type: string
                 refreshCron:
                     type: string
                 refreshTimeZone:
                     type: string
                 resolver:
-                    title: Generic resolver configuration (preferred for new reports)
                     type: string
                 resolverProperties:
                     type: object
@@ -6760,8 +6760,6 @@ paths:
                                 ownerId:
                                     type: string
                                 report:
-                                    type: string
-                                resolver:
                                     type: string
                                 resources:
                                     items:

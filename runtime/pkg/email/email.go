@@ -38,12 +38,11 @@ type ScheduledReport struct {
 	ToName          string
 	DisplayName     string
 	ReportTime      time.Time
-	DownloadFormat  string // For standard reports (with file export)
+	DownloadFormat  string
 	OpenLink        string
-	DownloadLink    string // For standard reports (with file export)
+	DownloadLink    string
 	EditLink        string
 	UnsubscribeLink string
-	IsAIReport      bool   // Flag to indicate AI report (uses different template sections)
 	Summary         string // For AI reports
 }
 
@@ -55,7 +54,6 @@ type scheduledReportData struct {
 	DownloadLink     template.URL
 	EditLink         template.URL
 	UnsubscribeLink  template.URL
-	IsAIReport       bool   // Flag for template conditionals
 	Summary          string // For AI reports
 }
 
@@ -69,7 +67,6 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		DownloadLink:     template.URL(opts.DownloadLink),
 		EditLink:         template.URL(opts.EditLink),
 		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
-		IsAIReport:       opts.IsAIReport,
 		Summary:          opts.Summary,
 	}
 

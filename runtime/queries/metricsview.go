@@ -29,8 +29,8 @@ import (
 
 var ErrForbidden = errors.New("action not allowed")
 
-// ResolveMVAndSecurityFromAttributes resolves the metrics view and security policy from the attributes
-func ResolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
+// resolveMVAndSecurityFromAttributes resolves the metrics view and security policy from the attributes
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err

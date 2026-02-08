@@ -34625,8 +34625,6 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	// no validation rules for Report
 
-	// no validation rules for Resolver
-
 	// no validation rules for OwnerId
 
 	if all {

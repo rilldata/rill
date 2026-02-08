@@ -119,22 +119,13 @@ func (p *Parser) parseReport(node *Node) error {
 	isLegacyQuery := tmp.Data == nil
 
 	if !isLegacyQuery {
-		// Parse the data resolver
 		var refs []ResourceName
 		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, node.Connector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
-		if resolver != "ai" {
-			// supports ai resolver only as of now // TODO: support other resolvers
-			return fmt.Errorf("reports only support the AI resolver")
-		}
 		node.Refs = append(node.Refs, refs...)
-	}
-
-	// Parse legacy query-based report config
-	var exportFormat runtimev1.ExportFormat
-	if isLegacyQuery {
+	} else {
 		// Query name
 		if tmp.Query.Name == "" {
 			return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
@@ -158,14 +149,16 @@ func (p *Parser) parseReport(node *Node) error {
 			return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
 		}
 
-		// Parse export format
-		exportFormat, err = parseExportFormat(tmp.Export.Format)
-		if err != nil {
-			return err
-		}
-		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
-			return fmt.Errorf(`missing required property "export.format"`)
-		}
+		// TODO use legacy_metrics resolver here after adding support for resolver in ExportReport API, will be a fast follow up or done in this PR only
+	}
+
+	// Parse export format
+	exportFormat, err := parseExportFormat(tmp.Export.Format)
+	if err != nil {
+		return err
+	}
+	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED && (resolver == "legacy_metrics" || resolver == "sql" || resolver == "metrics") {
+		return fmt.Errorf(`missing required property "export.format"`)
 	}
 
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
@@ -202,9 +195,14 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	// AI resolver only supports email notifications (can't reliably get user attributes for slack)
-	if resolver == "ai" && (len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0) {
-		return errors.New(`AI reports only support email notifications`) // can't reliably fetch user attributes for slack webhooks/channels for enforcing access control
+	// get web open mode from annotations
+	mode := tmp.Annotations["web_open_mode"]
+	if mode == "" {
+		mode = "creator" // default
+	}
+	// AI resolver only supports non email notifications in creator mode as we can't reliably fetch user attributes for slack webhooks/channels for enforcing access control in other modes
+	if resolver == "ai" && mode != "creator" && (len(tmp.Notify.Slack.Users) > 0 || len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Webhooks) > 0) {
+		return errors.New(`ai reports only support email notifications in "creator" web open mode`)
 	}
 
 	// Track report
@@ -229,17 +227,16 @@ func (p *Parser) parseReport(node *Node) error {
 		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
 
-	// Set resolver or legacy query fields
-	if !isLegacyQuery {
+	if resolver != "" {
 		r.ReportSpec.Resolver = resolver
-		r.ReportSpec.ResolverProperties = resolverProps // TODO validate properties
-	} else {
+		r.ReportSpec.ResolverProperties = resolverProps
+	} else { // TODO remove when ExportReport API supports resolver
 		r.ReportSpec.QueryName = tmp.Query.Name
 		r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
-		r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
-		r.ReportSpec.ExportFormat = exportFormat
-		r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
 	}
+	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
+	r.ReportSpec.ExportFormat = exportFormat
+	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
 
 	if isLegacyEmailSyntax {
 		// Backwards compatibility

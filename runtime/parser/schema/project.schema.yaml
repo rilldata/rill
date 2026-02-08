@@ -2664,25 +2664,21 @@ definitions:
     type: object
     description: |
       Reports allow you to schedule and deliver data exports or AI-powered insights to recipients via email or Slack.
-      Reports can use either the legacy query-based format (with export settings) or the newer data resolver format.
-
-      AI-powered reports use the `ai` resolver to generate automated insights and analysis.
     examples:
-      - # Example: Legacy query-based report with CSV export
+      - # Example: query-based report with CSV export
         type: report
         display_name: Weekly Sales Report
         refresh:
           cron: "0 9 * * 1"
-        query:
-          name: MetricsViewAggregation
-          args:
+        data:
+          metrics:
             metrics_view: sales_metrics
             dimensions:
               - name: region
             measures:
               - name: total_sales
             time_range:
-              iso_duration: P7D
+              expression: "7D as of latest/D"
         export:
           format: csv
           limit: 1000
@@ -2702,10 +2698,9 @@ definitions:
           ai:
             prompt: "Analyze key metrics and identify significant changes"
             time_range:
-              iso_duration: P1D
+              expression: "1D as of latest/D"
             comparison_time_range:
-              iso_duration: P1D
-              iso_offset: P1D
+              expression: "1D as of latest/D offset -1D"
             context:
               explore: my_explore
         notify:

@@ -14,10 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
-	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
-	"github.com/rilldata/rill/runtime/pkg/timeutil"
-	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/server"
 )
 
 func init() {
@@ -33,17 +31,13 @@ type aiProps struct {
 	// Optional comparison time range
 	ComparisonTimeRange *metricsview.TimeRange `mapstructure:"comparison_time_range"`
 	TimeZone            string                 `mapstructure:"time_zone"`
-	// Optional dashboard context for the agent
-	Context *contextualProps `mapstructure:"context"`
-	// IsReport indicates if the AI resolver is used for an automated report.
-	IsReport bool `mapstructure:"is_report"`
-}
-
-type contextualProps struct {
+	// optional dashboard context for the agent
 	Explore    string         `mapstructure:"explore"`
 	Dimensions []string       `mapstructure:"dimensions"`
 	Measures   []string       `mapstructure:"measures"`
 	Where      map[string]any `mapstructure:"where"`
+	// IsReport indicates if the AI resolver is used for an automated report.
+	IsReport bool `mapstructure:"is_report"`
 }
 
 // aiArgs contains the dynamic arguments for the AI resolver.
@@ -81,27 +75,35 @@ func newAI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver
 		return nil, errors.New("prompt is required for non-report AI sessions")
 	}
 
+	if props.TimeRange != nil && (props.TimeRange.IsoDuration != "" || props.TimeRange.IsoOffset != "") {
+		return nil, errors.New("iso_duration and iso_offset are deprecated in favor of rilltime expressions")
+	}
+
+	if props.ComparisonTimeRange != nil && (props.ComparisonTimeRange.IsoDuration != "" || props.ComparisonTimeRange.IsoOffset != "") {
+		return nil, errors.New("iso_duration and iso_offset are deprecated in favor of rilltime expressions")
+	}
+
 	// Get metrics view if explore is provided
 	var mv string
-	if props.Context != nil && props.Context.Explore != "" {
+	if props.Explore != "" {
 		c, err := opts.Runtime.Controller(ctx, opts.InstanceID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get controller: %w", err)
 		}
 		e, err := c.Get(ctx, &runtimev1.ResourceName{
 			Kind: runtime.ResourceKindExplore,
-			Name: props.Context.Explore,
+			Name: props.Explore,
 		}, false)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get explore %q: %w", props.Context.Explore, err)
+			return nil, fmt.Errorf("failed to get explore %q: %w", props.Explore, err)
 		}
 		exp := e.GetExplore()
 		if exp == nil {
-			return nil, fmt.Errorf("resource %q is not an explore", props.Context.Explore)
+			return nil, fmt.Errorf("resource %q is not an explore", props.Explore)
 		}
 		spec := exp.State.ValidSpec
 		if spec == nil {
-			return nil, fmt.Errorf("explore %q has no valid spec", props.Context.Explore)
+			return nil, fmt.Errorf("explore %q has no valid spec", props.Explore)
 		}
 		mv = spec.MetricsView
 	}
@@ -140,20 +142,7 @@ func (r *aiResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 
 // Refs implements runtime.Resolver.
 func (r *aiResolver) Refs() []*runtimev1.ResourceName {
-	var refs []*runtimev1.ResourceName
-	if r.props.Context != nil && r.props.Context.Explore != "" {
-		refs = append(refs, &runtimev1.ResourceName{
-			Kind: runtime.ResourceKindExplore,
-			Name: r.props.Context.Explore,
-		})
-	}
-	if r.metricsView != "" {
-		refs = append(refs, &runtimev1.ResourceName{
-			Kind: runtime.ResourceKindMetricsView,
-			Name: r.metricsView,
-		})
-	}
-	return refs
+	return nil
 }
 
 // Validate implements runtime.Resolver.
@@ -181,18 +170,14 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		return nil, fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
 
-	var explore string
-	var dimensions, measures []string
 	var whereExpr *metricsview.Expression
-	if r.props.Context != nil {
-		explore = r.props.Context.Explore
-		dimensions = r.props.Context.Dimensions
-		measures = r.props.Context.Measures
-		if len(r.props.Context.Where) > 0 {
-			whereExpr = &metricsview.Expression{}
-			if err := mapstructure.Decode(r.props.Context.Where, whereExpr); err != nil {
-				return nil, fmt.Errorf("failed to parse where filter: %w", err)
-			}
+	explore := r.props.Explore
+	dimensions := r.props.Dimensions
+	measures := r.props.Measures
+	if len(r.props.Where) > 0 {
+		whereExpr = &metricsview.Expression{}
+		if err := mapstructure.Decode(r.props.Where, whereExpr); err != nil {
+			return nil, fmt.Errorf("failed to parse where filter: %w", err)
 		}
 	}
 
@@ -221,16 +206,10 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		ComparisonTimeEnd:   r.props.ComparisonTimeRange.End,
 		DisableCharts:       r.args.CreateSharedSession, // Disable charts if creating shared session
 		IsReport:            r.props.IsReport,
-		IsReportUserPrompt:  r.props.Prompt != "",
-	}
-
-	prompt := r.props.Prompt
-	if r.props.IsReport && prompt == "" {
-		prompt = "Generate the scheduled insight report."
 	}
 
 	routerArgs := &ai.RouterAgentArgs{
-		Prompt:           prompt,
+		Prompt:           r.props.Prompt,
 		Agent:            r.props.Agent,
 		AnalystAgentArgs: agentArgs,
 	}
@@ -314,7 +293,7 @@ func (r *aiResolver) resolveTimeRange(ctx context.Context, tr *metricsview.TimeR
 
 	// if metrics view is provided, we can get the metrics view's time bounds
 	if r.metricsView != "" {
-		mv, security, err := queries.ResolveMVAndSecurityFromAttributes(ctx, r.runtime, r.instanceID, r.metricsView, r.claims)
+		mv, security, err := server.ResolveMVAndSecurityFromAttributes(ctx, r.runtime, r.instanceID, r.metricsView, r.claims)
 		if err != nil {
 			return fmt.Errorf("failed to resolve metrics view %q: %w", r.metricsView, err)
 		}
@@ -356,67 +335,7 @@ func (r *aiResolver) resolveTimeRange(ctx context.Context, tr *metricsview.TimeR
 		return nil
 	}
 
-	// Fallback to start/end with ISO duration/offset // TODO how about we don't support ISO duration/offset as its deprecated in favor of rilltime expressions?
-	isISO := false
-	if tr.Start.IsZero() && tr.End.IsZero() {
-		tr.End = r.args.ExecutionTime
-	}
-
-	if tr.IsoDuration != "" {
-		d, err := duration.ParseISO8601(tr.IsoDuration)
-		if err != nil {
-			return fmt.Errorf("invalid iso_duration %q: %w", tr.IsoDuration, err)
-		}
-
-		if !tr.Start.IsZero() && !tr.End.IsZero() {
-			return errors.New(`cannot resolve "iso_duration" for a time range with fixed "start" and "end" timestamps`)
-		} else if !tr.Start.IsZero() {
-			tr.End = d.Add(tr.Start)
-		} else if !tr.End.IsZero() {
-			tr.Start = d.Sub(tr.End)
-		}
-		isISO = true
-	}
-
-	// Apply offset if provided
-	if tr.IsoOffset != "" {
-		d, err := duration.ParseISO8601(tr.IsoOffset)
-		if err != nil {
-			return fmt.Errorf("invalid iso_offset %q: %w", tr.IsoOffset, err)
-		}
-
-		if !tr.Start.IsZero() {
-			tr.Start = d.Sub(tr.Start)
-		}
-		if !tr.End.IsZero() {
-			tr.End = d.Sub(tr.End)
-		}
-		isISO = true
-	}
-
-	// Only modify the start and end if ISO duration or offset was sent.
-	// This is to maintain backwards compatibility for calls from the UI.
-	if isISO {
-		if !tr.RoundToGrain.Valid() {
-			return fmt.Errorf("invalid time grain %q", tr.RoundToGrain)
-		}
-		if tr.RoundToGrain != metricsview.TimeGrainUnspecified {
-			if !tr.Start.IsZero() {
-				tr.Start = timeutil.TruncateTime(tr.Start, tr.RoundToGrain.ToTimeutil(), timezone, 1, 1)
-			}
-			if !tr.End.IsZero() {
-				tr.End = timeutil.TruncateTime(tr.End, tr.RoundToGrain.ToTimeutil(), timezone, 1, 1)
-			}
-		}
-		// Clear other fields
-		tr.Expression = ""
-		tr.IsoDuration = ""
-		tr.IsoOffset = ""
-		tr.RoundToGrain = metricsview.TimeGrainUnspecified
-		return nil
-	}
-
-	return errors.New("time range must have expression, iso_duration, or start/end")
+	return errors.New("time range must have either start/end or expression")
 }
 
 // generateTitle generates a title for the AI session.
@@ -426,8 +345,8 @@ func (r *aiResolver) generateTitle() string {
 		title = "Report"
 	}
 	title = fmt.Sprintf("%s - %s", title, r.args.ExecutionTime.Format(time.RFC822))
-	if r.props.Context != nil && r.props.Context.Explore != "" {
-		return fmt.Sprintf("%s: %s", title, r.props.Context.Explore)
+	if r.props.Explore != "" {
+		return fmt.Sprintf("%s: %s", title, r.props.Explore)
 	}
 	return title
 }

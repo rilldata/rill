@@ -34,9 +34,7 @@ type AnalystAgentArgs struct {
 	ComparisonTimeStart time.Time               `json:"comparison_time_start" yaml:"comparison_time_start" jsonschema:"Optional comparison period start time."`
 	ComparisonTimeEnd   time.Time               `json:"comparison_time_end" yaml:"comparison_time_end" jsonschema:"Optional comparison period end time."`
 	DisableCharts       bool                    `json:"disable_charts" yaml:"disable_charts" jsonschema:"Flag indicating whether to disable chart creation in the analysis."`
-	// Report mode args (for scheduled/automated reports)
-	IsReport           bool `json:"is_report" yaml:"is_report" jsonschema:"Flag indicating this is an automated report."`
-	IsReportUserPrompt bool `json:"is_report_user_prompt" yaml:"is_report_user_prompt" jsonschema:"Flag indicating whether the user has provided a custom prompt for this report."`
+	IsReport            bool                    `json:"is_report" yaml:"is_report" jsonschema:"Flag indicating this is an automated report."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -191,16 +189,16 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 		ff["chat_charts"] = false
 	}
 	data := map[string]any{
-		"ai_instructions":       session.ProjectInstructions(),
-		"metrics_view":          metricsViewName,
-		"explore":               args.Explore,
-		"dimensions":            strings.Join(args.Dimensions, ", "),
-		"measures":              strings.Join(args.Measures, ", "),
-		"feature_flags":         ff,
-		"forked":                session.Forked(),
-		"is_report":             args.IsReport,
-		"is_report_user_prompt": args.IsReportUserPrompt,
-		"now":                   time.Now(),
+		"ai_instructions": session.ProjectInstructions(),
+		"is_prompt":       args.Prompt != "",
+		"metrics_view":    metricsViewName,
+		"explore":         args.Explore,
+		"dimensions":      strings.Join(args.Dimensions, ", "),
+		"measures":        strings.Join(args.Measures, ", "),
+		"feature_flags":   ff,
+		"forked":          session.Forked(),
+		"is_report":       args.IsReport,
+		"now":             time.Now(),
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
@@ -226,7 +224,7 @@ You are a data analysis agent specialized in uncovering actionable business insi
 You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
 {{ if .is_report }}
 You are operating in an automated scheduled insight report mode where you will come up with insights on your own without additional user input.
-{{ if .is_report_user_prompt }}The user has provided a custom prompt for this scheduled insight report. Tailor your analysis to address this prompt specifically. {{ end }}
+{{ if .is_prompt }}The user has provided a custom prompt for this scheduled insight report. Tailor your analysis to address this prompt specifically. {{ end }}
 {{ end }}
 
 Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
@@ -274,7 +272,7 @@ In an iterative OODA loop, you should repeatedly use the "query_metrics_view" to
 Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.
 Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20par queries.
 
-{{ if and .is_report (not .is_report_user_prompt) }}
+{{ if and .is_report (not .is_prompt) }}
 {{ if (and .comparison_start .comparison_end) }}
 <comparison_analysis>
 You are doing comparative analysis between two time periods in scheduled insight report mode, your analysis should:

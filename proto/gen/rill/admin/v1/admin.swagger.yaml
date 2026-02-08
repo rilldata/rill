@@ -3645,8 +3645,6 @@ paths:
             properties:
               report:
                 type: string
-              resolver:
-                type: string
               ownerId:
                 type: string
               executionTime:
@@ -6183,14 +6181,14 @@ definitions:
         type: string
       resolver:
         type: string
-        title: Generic resolver configuration (preferred for new reports)
       resolverProperties:
         type: object
       queryName:
         type: string
-        title: Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
+        title: use resolver/resolver_properties instead
       queryArgsJson:
         type: string
+        title: use resolver/resolver_properties instead
       exportLimit:
         type: string
         format: uint64

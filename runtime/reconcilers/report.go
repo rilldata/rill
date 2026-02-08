@@ -510,13 +510,6 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	if rep.Spec.Resolver != "" && rep.Spec.Resolver != "ai" {
-		return false, fmt.Errorf("unsupported report resolver: %q", rep.Spec.Resolver)
-	}
-
-	// Determine if this is an AI report (using ai resolver)
-	isAIReport := rep.Spec.Resolver == "ai"
-
 	var ownerID, webOpenMode string
 	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
 		ownerID = id
@@ -538,13 +531,60 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 	}
 
-	if anonRecipients && isAIReport {
-		return false, fmt.Errorf("AI reports can only have email notifiers") // as we cannot reliably fetch user attributes for slack webhooks/channels for enforcing access control in recipient mode
-	}
-
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Resolver, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
+	}
+
+	// recipient -> notification data
+	notificationsContent := make(map[string]*notificationData)
+
+	// generate report contents first depending on the resolver type and then send notifications
+	switch rep.Spec.Resolver {
+	case "ai": // generate ai sessions
+		aiReports := make(map[string]*aiReport)
+		// For AI reports, we require the metadata to contain user attributes for all recipients, since we'll need them to trigger the report and generate personalized content.
+		for recipient, delivery := range meta.ReportDelivery {
+			if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
+				r.C.Logger.Warn("Skipping recipient - no user attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			}
+			// Run report for each unique user - In creator mode, all recipients share the same session (so all recipients will have same userID which is the ownerID).
+			// For recipient mode, each user gets their own session.
+			report, exists := aiReports[delivery.UserID]
+			if !exists {
+				var err error
+				report, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
+				if err != nil {
+					return false, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
+				}
+				aiReports[delivery.UserID] = report
+			}
+
+			openLink, err := buildAISessionURL(delivery.OpenURL, report.sessionID)
+			if err != nil {
+				return false, fmt.Errorf("failed to build open link for %q: %w", recipient, err)
+			}
+			notificationsContent[recipient] = &notificationData{
+				openLink:        openLink,
+				editLink:        delivery.EditURL,
+				unsubscribeLink: delivery.UnsubscribeURL,
+				summary:         truncateSummary(report.summary, 500),
+			}
+		}
+	default: // add more resolvers here, for default just generate export links
+		for recipient, delivery := range meta.ReportDelivery {
+			downloadURL, err := createExportURL(delivery.ExportURL, t)
+			if err != nil {
+				return false, err
+			}
+			notificationsContent[recipient] = &notificationData{
+				openLink:        delivery.OpenURL,
+				editLink:        delivery.EditURL,
+				unsubscribeLink: delivery.UnsubscribeURL,
+				downloadLink:    downloadURL.String(),
+				downloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+			}
+		}
 	}
 
 	sent := false
@@ -552,18 +592,13 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		switch notifier.Connector {
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			var err error
-			if isAIReport {
-				sent, err = r.sendAIReportEmails(ctx, self, rep, t, webOpenMode, meta, recipients)
-			} else {
-				sent, err = r.sendStandardReportEmails(rep, t, meta, recipients)
-			}
+			sent, err = r.sendEmailNotification(ctx, self, rep, t, recipients, notificationsContent)
 			if err != nil {
 				return sent, err
 			}
 		default:
 			var err error
-			sent, err = r.sendNonEmailNotification(ctx, rep, t, meta, notifier)
+			sent, err = r.sendNonEmailNotification(ctx, rep, t, notifier, notificationsContent)
 			if err != nil {
 				return sent, err
 			}
@@ -573,35 +608,13 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	return false, nil
 }
 
-// sendAIReportEmails sends AI-powered report emails to recipients.
-// For creator mode, all recipients share the same AI session. For recipient mode, each user gets their own session.
-func (r *ReportReconciler) sendAIReportEmails(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode string, meta *drivers.ReportMetadata, recipients []string) (bool, error) {
-	reports := make(map[string]*aiReport)
+func (r *ReportReconciler) sendEmailNotification(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, recipients []string, notificationsContent map[string]*notificationData) (bool, error) {
 	sent := false
-
 	for _, recipient := range recipients {
-		delivery, ok := meta.ReportDelivery[recipient]
+		content, ok := notificationsContent[recipient]
 		if !ok {
-			r.C.Logger.Warn("Skipping recipient - failed to get recipient URLs", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			r.C.Logger.Warn("Skipping recipient - failed to get notification content", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
 			continue
-		}
-
-		// Skip recipients without user ID/attributes
-		if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
-			r.C.Logger.Warn("Skipping recipient - no user attributes found", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
-			continue
-		}
-
-		// Run report for each unique user - In creator mode, all recipients share the same session (so all recipients will have same userID which is the ownerID).
-		// For recipient mode, each user gets their own session.
-		report, exists := reports[delivery.UserID]
-		if !exists {
-			var err error
-			report, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
-			if err != nil {
-				return sent, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
-			}
-			reports[delivery.UserID] = report
 		}
 
 		opts := &email.ScheduledReport{
@@ -609,11 +622,12 @@ func (r *ReportReconciler) sendAIReportEmails(ctx context.Context, self *runtime
 			ToName:          "",
 			DisplayName:     rep.Spec.DisplayName,
 			ReportTime:      t,
-			IsAIReport:      true,
-			Summary:         truncateSummary(report.summary, 500),
-			OpenLink:        buildAISessionURL(delivery.OpenURL, report.sessionID),
-			EditLink:        delivery.EditURL,
-			UnsubscribeLink: delivery.UnsubscribeURL,
+			Summary:         content.summary,
+			OpenLink:        content.openLink,
+			EditLink:        content.editLink,
+			UnsubscribeLink: content.unsubscribeLink,
+			DownloadLink:    content.downloadLink,
+			DownloadFormat:  content.downloadFormat,
 		}
 		if err := r.C.Runtime.Email.SendScheduledReport(opts); err != nil {
 			return true, fmt.Errorf("failed to send AI report email to %q: %w", recipient, err)
@@ -624,43 +638,8 @@ func (r *ReportReconciler) sendAIReportEmails(ctx context.Context, self *runtime
 	return sent, nil
 }
 
-// sendStandardReportEmails sends standard scheduled report emails with export links.
-func (r *ReportReconciler) sendStandardReportEmails(rep *runtimev1.Report, t time.Time, meta *drivers.ReportMetadata, recipients []string) (bool, error) {
-	sent := false
-
-	for _, recipient := range recipients {
-		urls, ok := meta.ReportDelivery[recipient]
-		if !ok {
-			return sent, fmt.Errorf("failed to get recipient URLs for %q", recipient)
-		}
-
-		downloadURL, err := createExportURL(urls.ExportURL, t)
-		if err != nil {
-			return sent, err
-		}
-
-		opts := &email.ScheduledReport{
-			ToEmail:         recipient,
-			ToName:          "",
-			DisplayName:     rep.Spec.DisplayName,
-			ReportTime:      t,
-			DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
-			OpenLink:        urls.OpenURL,
-			DownloadLink:    downloadURL.String(),
-			EditLink:        urls.EditURL,
-			UnsubscribeLink: urls.UnsubscribeURL,
-		}
-		if err := r.C.Runtime.Email.SendScheduledReport(opts); err != nil {
-			return true, fmt.Errorf("failed to send report email to %q: %w", recipient, err)
-		}
-		sent = true
-	}
-
-	return sent, nil
-}
-
 // sendNonEmailNotification sends report via non-email notifiers (e.g., Slack).
-func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *runtimev1.Report, t time.Time, meta *drivers.ReportMetadata, notifier *runtimev1.Notifier) (bool, error) {
+func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *runtimev1.Report, t time.Time, notifier *runtimev1.Notifier, notificationsContent map[string]*notificationData) (bool, error) {
 	conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
 	if err != nil {
 		return false, err
@@ -672,23 +651,19 @@ func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *ru
 		return false, err
 	}
 
-	urls, ok := meta.ReportDelivery[""]
+	content, ok := notificationsContent[""]
 	if !ok {
 		return false, fmt.Errorf("failed to get recipient URLs for anon user")
-	}
-
-	downloadURL, err := createExportURL(urls.ExportURL, t)
-	if err != nil {
-		return false, err
 	}
 
 	msg := &drivers.ScheduledReport{
 		DisplayName:     rep.Spec.DisplayName,
 		ReportTime:      t,
-		DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
-		OpenLink:        urls.OpenURL,
-		DownloadLink:    downloadURL.String(),
-		UnsubscribeLink: urls.UnsubscribeURL,
+		DownloadFormat:  content.downloadFormat,
+		OpenLink:        content.openLink,
+		DownloadLink:    content.downloadLink,
+		UnsubscribeLink: content.unsubscribeLink,
+		Summary:         content.summary,
 	}
 
 	start := time.Now()
@@ -709,6 +684,16 @@ func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *ru
 
 	return true, nil
 }
+
+// common notification data used for reports
+type notificationData struct {
+	openLink        string
+	editLink        string
+	downloadLink    string
+	downloadFormat  string
+	unsubscribeLink string
+	summary         string
+} // add more fields as needed for new resolver types that reports will support
 
 type aiReport struct {
 	sessionID string
@@ -778,9 +763,16 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	}, nil
 }
 
-func buildAISessionURL(baseOpenURL, sessionID string) string {
-	// replace {session_id} in the baseOpenURL with the actual sessionID
-	return strings.ReplaceAll(baseOpenURL, "%7Bsession_id%7D", sessionID)
+func buildAISessionURL(baseOpenURL, sessionID string) (string, error) {
+	// add session_id as query param
+	u, err := url.Parse(baseOpenURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse open URL %q: %w", baseOpenURL, err)
+	}
+	q := u.Query()
+	q.Set("session_id", sessionID)
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }
 
 // truncateSummary truncates the summary to a maximum length, adding ellipsis if truncated.

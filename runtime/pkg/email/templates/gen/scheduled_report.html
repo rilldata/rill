@@ -91,7 +91,7 @@
       mso-hide: none;
     }
 
-    .ai-summary {
+    .summary {
       background-color: #F5F5F5;
       padding: 15px;
       border-radius: 4px;
@@ -137,16 +137,9 @@
                         <div style="font-family:Helvetica;font-size:20px;font-weight:bold;line-height:1.25;text-align:left;color:#000000;">{{ .DisplayName }}</div>
                       </td>
                     </tr>
-                    <!-- Standard report intro (hidden for AI reports) -->
                     <tr>
-                      <td align="left" class="{{ if .IsAIReport }}hidden{{ end }}" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
+                      <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
                         <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your report for <b>{{ .ReportTimeString }}</b> is ready to view.</div>
-                      </td>
-                    </tr>
-                    <!-- AI report intro (hidden for standard reports) -->
-                    <tr>
-                      <td align="left" class="{{ if not .IsAIReport }}hidden{{ end }}" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your report for <b>{{ .ReportTimeString }}</b> is ready.</div>
                       </td>
                     </tr>
                     <tr>
@@ -154,39 +147,26 @@
                         <div style="height:20px;line-height:20px;">&#8202;</div>
                       </td>
                     </tr>
-                    <!-- AI report summary (hidden for standard reports) -->
+                    <!-- optional summary -->
                     <tr>
-                      <td align="left" class="{{ if not .IsAIReport }}hidden{{ end }} ai-summary" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                      <td align="left" class="{{ if not .Summary }}hidden{{ end }} summary" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                         <div style="font-family:Helvetica;font-size:14px;line-height:1.5;text-align:left;color:#333333;">{{ .Summary }}</div>
                       </td>
                     </tr>
                     <tr>
-                      <td class="{{ if not .IsAIReport }}hidden{{ end }}" style="font-size:0px;word-break:break-word;">
+                      <td class="{{ if not .Summary }}hidden{{ end }}" style="font-size:0px;word-break:break-word;">
                         <div style="height:20px;line-height:20px;">&#8202;</div>
                       </td>
                     </tr>
-                    <!-- AI report button (hidden for standard reports) -->
                     <tr>
-                      <td align="center" class="{{ if not .IsAIReport }}hidden{{ else }}{{ if not .OpenLink }}hidden{{ end }}{{ end }}" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;line-height:100%;">
-                          <tbody>
-                            <tr>
-                              <td align="center" bgcolor="#3524C7" role="presentation" style="border:none;border-radius:3px;cursor:auto;mso-padding-alt:10px 25px;background:#3524C7;" valign="middle">
-                                <a href="{{ .OpenLink }}" style="display:inline-block;background:#3524C7;color:#FFFFFF;font-family:Helvetica;font-size:16px;font-weight:bold;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;" target="_blank"> View Full Analysis </a>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                    <!-- Standard report buttons (hidden for AI reports) -->
-                    <tr>
-                      <td align="center" class="{{ if .IsAIReport }}hidden{{ else }}{{ if not .OpenLink }}hidden{{ end }}{{ end }}" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                      <td align="center" class="{{ if not .OpenLink }}hidden{{ end }}" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                         <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;line-height:100%;">
                           <tbody>
                             <tr>
                               <td align="center" bgcolor="#ECF0FF" role="presentation" style="border:none;border-radius:3px;cursor:auto;mso-padding-alt:10px 25px;background:#ECF0FF;" valign="middle">
-                                <a href="{{ .OpenLink }}" style="display:inline-block;background:#ECF0FF;color:#3524C7;font-family:Helvetica;font-size:16px;font-weight:bold;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;" target="_blank"> Open in browser </a>
+                                <a href="{{ .OpenLink }}" style="display:inline-block;background:#ECF0FF;color:#3524C7;font-family:Helvetica;font-size:16px;font-weight:bold;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;" target="_blank">
+                                  {{ if .Summary }}View full analysis{{ else }}Open in browser{{ end }}
+                                </a>
                               </td>
                             </tr>
                           </tbody>
@@ -194,7 +174,7 @@
                       </td>
                     </tr>
                     <tr>
-                      <td align="center" class="{{ if .IsAIReport }}hidden{{ end }}" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                      <td align="center" class="{{ if not .DownloadLink }}hidden{{ end }}" style="font-size:0px;padding:10px 25px;word-break:break-word;">
                         <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;line-height:100%;">
                           <tbody>
                             <tr>

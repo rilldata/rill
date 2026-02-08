@@ -12488,11 +12488,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   report = "";
 
   /**
-   * @generated from field: string resolver = 13;
-   */
-  resolver = "";
-
-  /**
    * @generated from field: string owner_id = 5;
    */
   ownerId = "";
@@ -12544,7 +12539,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 13, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "execution_time", kind: "message", T: Timestamp },
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -17175,8 +17169,6 @@ export class ReportOptions extends Message<ReportOptions> {
   intervalDuration = "";
 
   /**
-   * Generic resolver configuration (preferred for new reports)
-   *
    * @generated from field: string resolver = 21;
    */
   resolver = "";
@@ -17187,14 +17179,18 @@ export class ReportOptions extends Message<ReportOptions> {
   resolverProperties?: Struct;
 
   /**
-   * Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
+   * use resolver/resolver_properties instead
    *
-   * @generated from field: string query_name = 3;
+   * @generated from field: string query_name = 3 [deprecated = true];
+   * @deprecated
    */
   queryName = "";
 
   /**
-   * @generated from field: string query_args_json = 4;
+   * use resolver/resolver_properties instead
+   *
+   * @generated from field: string query_args_json = 4 [deprecated = true];
+   * @deprecated
    */
   queryArgsJson = "";
 

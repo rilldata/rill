@@ -2184,7 +2184,6 @@ It is optional. If the call is made with a deployment access token, it defaults 
 
 export type AdminServiceGetReportMetaBody = {
   report?: string;
-  resolver?: string;
   ownerId?: string;
   executionTime?: string;
   emailRecipients?: string[];

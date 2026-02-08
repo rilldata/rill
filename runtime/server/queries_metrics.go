@@ -673,24 +673,7 @@ func (s *Server) ConvertExpressionToMetricsSQL(ctx context.Context, req *runtime
 	}, nil
 }
 
-func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
-	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, auth.GetClaims(ctx, instanceID), res)
-	if err != nil {
-		return nil, nil, err
-	}
-	if !resolvedSecurity.CanAccess() {
-		return nil, nil, ErrForbidden
-	}
-
-	return mv, resolvedSecurity, nil
-}
-
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
+func ResolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
@@ -701,6 +684,23 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 		return nil, nil, err
 	}
 
+	if !resolvedSecurity.CanAccess() {
+		return nil, nil, ErrForbidden
+	}
+
+	return mv, resolvedSecurity, nil
+}
+
+func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
+	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, auth.GetClaims(ctx, instanceID), res)
+	if err != nil {
+		return nil, nil, err
+	}
 	if !resolvedSecurity.CanAccess() {
 		return nil, nil, ErrForbidden
 	}
