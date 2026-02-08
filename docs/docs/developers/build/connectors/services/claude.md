@@ -2,7 +2,7 @@
 title: Claude
 description: Use Claude for AI features with your own API key
 sidebar_label: Claude
-sidebar_position: 41
+sidebar_position: 10
 ---
 
 [Claude](https://www.anthropic.com/claude) is Anthropic's AI assistant, designed to be helpful, harmless, and honest. Rill supports connecting to Claude using your own API key and configuration parameters to enable AI-powered conversations and data analysis features.
@@ -64,12 +64,12 @@ If your project has already been deployed to Rill Cloud with configured credenti
 
 The Claude connector supports additional configuration options for fine-tuning behavior:
 
-| Property | Description | Example |
-|----------|-------------|---------|
-| `model` | The Claude model to use | `claude-opus-4-5`, `claude-sonnet-4-20250514` |
-| `max_tokens` | Maximum number of tokens in the response | `8192` |
-| `temperature` | Sampling temperature (0.0 - 1.0) | `0.0` |
-| `base_url` | Custom base URL for the Claude API | `https://api.anthropic.com` |
+| Property      | Description                              | Example                                       |
+| ------------- | ---------------------------------------- | --------------------------------------------- |
+| `model`       | The Claude model to use                  | `claude-opus-4-5`, `claude-sonnet-4-20250514` |
+| `max_tokens`  | Maximum number of tokens in the response | `8192`                                        |
+| `temperature` | Sampling temperature (0.0 - 1.0)         | `0.0`                                         |
+| `base_url`    | Custom base URL for the Claude API       | `https://api.anthropic.com`                   |
 
 Example with all options:
 

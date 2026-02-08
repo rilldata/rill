@@ -2,7 +2,7 @@
 title: OpenAI
 description: Connect to OpenAI services for AI-powered features
 sidebar_label: OpenAI
-sidebar_position: 42
+sidebar_position: 30
 ---
 
 

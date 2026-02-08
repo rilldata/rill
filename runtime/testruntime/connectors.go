@@ -325,6 +325,12 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, apiKey)
 		return map[string]string{"api_key": apiKey}
 	},
+	"gemini": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		apiKey := os.Getenv("RILL_RUNTIME_GEMINI_TEST_API_KEY")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"api_key": apiKey}
+	},
 }
 
 func uploadDirectory(ctx context.Context, client *azblob.Client, containerName, localDir string) error {
