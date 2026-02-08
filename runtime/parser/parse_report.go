@@ -165,10 +165,10 @@ func (p *Parser) parseReport(node *Node) error {
 		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
 
-	isLegacyEmailSyntax := len(tmp.Email.Recipients) > 0
+	isLegacySyntax := len(tmp.Email.Recipients) > 0
 
 	// Validate recipients
-	if isLegacyEmailSyntax {
+	if isLegacySyntax {
 		// Backward compatibility
 		for _, email := range tmp.Email.Recipients {
 			_, err := mail.ParseAddress(email)
@@ -238,7 +238,7 @@ func (p *Parser) parseReport(node *Node) error {
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
 
-	if isLegacyEmailSyntax {
+	if isLegacySyntax {
 		// Backwards compatibility
 		// Email settings
 		notifier, err := structpb.NewStruct(map[string]any{

@@ -89,7 +89,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	var ownerAttrs *structpb.Struct
 	if req.OwnerId != "" {
-		attr, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
+		attr, _, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
 		if err != nil {
 			return nil, err
 		}
@@ -834,15 +834,11 @@ func (s *Server) getAttributesForProjectMember(ctx context.Context, email, orgID
 		return nil, "", nil
 	}
 
-	attr, id, err := s.getAttributesForUser(ctx, orgID, projID, user.ID, "")
+	attr, id, readProd, err := s.getAttributesForUser(ctx, orgID, projID, user.ID, "")
 	if err != nil {
 		return nil, "", err
 	}
-	member := false
-	if val, ok := attr["member"]; ok {
-		member, _ = val.(bool)
-	}
-	if !member {
+	if !readProd {
 		return nil, "", nil
 	}
 	return attr, id, nil
