@@ -1575,6 +1575,7 @@ export interface V1User {
   displayName?: string;
   photoUrl?: string;
   quotas?: V1UserQuotas;
+  pylonEmailHash?: string;
   createdOn?: string;
   updatedOn?: string;
 }

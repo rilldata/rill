@@ -2596,14 +2596,9 @@ func (c *connection) DeleteOrganizationInvite(ctx context.Context, id string) er
 
 func (c *connection) CountInvitesForOrganization(ctx context.Context, orgID string) (int, error) {
 	var count int
-	// count outstanding org invites as well as project invites for this org
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT COALESCE(SUM(total_count), 0) as total_count FROM (
-  			SELECT COUNT(*) as total_count FROM org_invites WHERE org_id = $1
-  			UNION ALL
-  			SELECT COUNT(*) as total_count FROM project_invites WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)
-		) as subquery
-		`, orgID).Scan(&count)
+		SELECT COUNT(*) as total_count FROM org_invites WHERE org_id = $1
+	`, orgID).Scan(&count)
 	if err != nil {
 		return 0, parseErr("invites count", err)
 	}

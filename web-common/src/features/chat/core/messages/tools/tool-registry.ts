@@ -14,6 +14,12 @@ import {
   createFileDiffBlock,
   type FileDiffBlock,
 } from "../file-diff/file-diff-block";
+import { goto } from "$app/navigation";
+import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+import {
+  createSimpleTooCall,
+  type SimpleToolCall,
+} from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 
 // =============================================================================
 // RENDER MODES
@@ -32,7 +38,7 @@ export type ToolRenderMode = "inline" | "block" | "hidden";
 // =============================================================================
 
 /** Block types that can be created by tools */
-export type ToolBlockType = ChartBlock | FileDiffBlock;
+export type ToolBlockType = ChartBlock | FileDiffBlock | SimpleToolCall;
 
 /**
  * Configuration for a tool's rendering behavior.
@@ -47,6 +53,9 @@ export interface ToolConfig {
     callMessage: V1Message,
     resultMessage: V1Message | undefined,
   ) => ToolBlockType | null;
+
+  /** Used to process any UI action or side effects from tool calls. */
+  onResult?: (callMessage: V1Message) => void;
 }
 
 /**
@@ -83,6 +92,12 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createFileDiffBlock,
   },
 
+  [ToolName.NAVIGATE]: {
+    renderMode: "block",
+    createBlock: createSimpleTooCall,
+    onResult: handleNavigateToolCall,
+  },
+
   // All other tools default to "inline" (shown in thinking blocks)
 };
 
@@ -104,4 +119,18 @@ export function getToolConfig(toolName: string | undefined): ToolConfig {
  */
 export function isHiddenTool(toolName: string | undefined): boolean {
   return getToolConfig(toolName).renderMode === "hidden";
+}
+
+function handleNavigateToolCall(callMessage: V1Message) {
+  if (!callMessage.contentData) return;
+  try {
+    const content = JSON.parse(callMessage.contentData);
+    if (!content.kind || !content.name) return;
+    switch (content.kind) {
+      case "file":
+        void goto(`/files${addLeadingSlash(content.name)}`);
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }

@@ -6653,6 +6653,8 @@ definitions:
         type: string
       quotas:
         $ref: '#/definitions/v1UserQuotas'
+      pylonEmailHash:
+        type: string
       createdOn:
         type: string
         format: date-time

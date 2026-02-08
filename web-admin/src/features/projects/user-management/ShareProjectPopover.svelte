@@ -8,6 +8,8 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils.ts";
   import { onMount } from "svelte";
 
@@ -33,7 +35,12 @@
 
 <Popover bind:open>
   <PopoverTrigger asChild let:builder>
-    <Button builders={[builder]} type="secondary" selected={open}>Share</Button>
+    <Tooltip distance={8} suppress={open}>
+      <Button builders={[builder]} type="secondary" selected={open}
+        >Share</Button
+      >
+      <TooltipContent slot="tooltip-content">Share project</TooltipContent>
+    </Tooltip>
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[520px]" padding="0">
     <ShareProjectForm

@@ -68,6 +68,8 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &ListBuckets{Runtime: rt})
 	RegisterTool(r, &ListBucketObjects{Runtime: rt})
 
+	RegisterTool(r, &Navigate{})
+
 	return r
 }
 
@@ -1076,7 +1078,7 @@ func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out,
 	})
 }
 
-const llmRequestTimeout = 90 * time.Second
+const llmRequestTimeout = 3 * time.Minute
 
 // CompleteOptions provides options for Session.Complete.
 type CompleteOptions struct {
@@ -1247,6 +1249,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 
 			// Handle LLM completion error
 			if err != nil {
+				if errors.Is(err, llmCtx.Err()) && errors.Is(err, context.DeadlineExceeded) {
+					return nil, fmt.Errorf("LLM request timed out after %s: %w", llmRequestTimeout, err)
+				}
 				return nil, fmt.Errorf("completion failed: %w", err)
 			}
 

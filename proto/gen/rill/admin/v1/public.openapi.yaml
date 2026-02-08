@@ -2205,6 +2205,8 @@ components:
                     type: string
                 photoUrl:
                     type: string
+                pylonEmailHash:
+                    type: string
                 quotas:
                     $ref: '#/components/schemas/v1UserQuotas'
                 updatedOn:

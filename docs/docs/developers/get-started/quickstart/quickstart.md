@@ -8,7 +8,7 @@ import Video from '@site/src/components/Video';
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 :::tip Rill's Default Engine
-This guide assumes you'll be using Rill's default embedded engine, DuckDB. If you're looking to set up Rill with ClickHouse, check out our [ClickHouse Guide](/developers/guides/rill-clickhouse)!
+This guide assumes you'll be using Rill's default embedded engine, DuckDB. If you're looking to set up Rill with ClickHouse, check out our [ClickHouse Guide](/developers/tutorials/rill-clickhouse)!
 :::
 
 ## What is Rill Developer?
@@ -129,4 +129,4 @@ This quick start covered the basics, but Rill offers much more:
 - **[Metrics Layer](/developers/build/metrics-view)** - Define business KPIs and calculations
 - **[Deployment](/developers/deploy/deploy-dashboard)** - Share your dashboards with your team
 
-Ready to build something more complex? Check out our [comprehensive tutorial](/developers/guides/rill-basics/launch) for a complete walkthrough of Rill's advanced features.
+Ready to build something more complex? Check out our [comprehensive tutorial](/developers/tutorials/rill-basics/launch) for a complete walkthrough of Rill's advanced features.

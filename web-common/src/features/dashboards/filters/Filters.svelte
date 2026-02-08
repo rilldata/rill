@@ -17,9 +17,9 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type {
-    V1ExploreTimeRange,
+  import {
     V1TimeGrain,
+    type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
@@ -36,6 +36,7 @@
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
+  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
@@ -300,6 +301,18 @@
       selectedTimeDimension,
     );
 
+    const allowedGrains = allowedGrainsForInterval(
+      interval,
+      minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE,
+    );
+
+    const finalGrain =
+      activeTimeGrain && allowedGrains.includes(activeTimeGrain)
+        ? activeTimeGrain
+        : grain && allowedGrains.includes(grain)
+          ? grain
+          : allowedGrains[0];
+
     if (interval.isValid) {
       const validInterval = interval as Interval<true>;
       const baseTimeRange: TimeRange = {
@@ -308,7 +321,7 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange, grain);
+      selectRange(baseTimeRange, finalGrain);
     }
   }
 
