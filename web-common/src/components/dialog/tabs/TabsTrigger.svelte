@@ -21,6 +21,6 @@
   {...$$restProps}
   disabled
 >
-  <NumberedCircle number={tabIndex + 1} bgColor="bg-surface-overlay" />
+  <NumberedCircle number={tabIndex + 1} bgColor="bg-primary-500" />
   <slot />
 </TabsPrimitive.Trigger>

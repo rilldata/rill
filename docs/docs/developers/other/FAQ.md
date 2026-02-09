@@ -36,7 +36,7 @@ Rill Developer is a local application used to preview your project and make any 
 
 ### How do I do XXX in Rill Developer? 
 
-Please refer to [our guided tutorial](/developers/guides/rill-basics/launch) to get started using Rill. In the tutorials, we walk you through first project creation, modeling, creating a metrics view and explore dashboard, and finally deploying to Rill Cloud. From there, we go through making local changes in Rill Developer and pushing your changes. In more advanced topics, we discuss custom APIs, Embed Dashboards, and more! 
+Please refer to [our guided tutorial](/developers/tutorials/rill-basics/launch) to get started using Rill. In the tutorials, we walk you through first project creation, modeling, creating a metrics view and explore dashboard, and finally deploying to Rill Cloud. From there, we go through making local changes in Rill Developer and pushing your changes. In more advanced topics, we discuss custom APIs, Embed Dashboards, and more! 
 If you still have any questions, please [contact us!](/contact)
 
 
