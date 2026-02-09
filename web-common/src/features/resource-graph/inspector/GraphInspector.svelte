@@ -277,7 +277,7 @@
         <div class="metadata-row">
           <span class="metadata-icon">
             {#if connectorIcon}
-              <svelte:component this={connectorIcon} size={16} />
+              <svelte:component this={connectorIcon} size="16" />
             {:else}
               <Database size={16} />
             {/if}
