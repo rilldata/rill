@@ -16,6 +16,7 @@ import type {
 import type { ResourceNodeData, ResourceMetadata } from "../shared/types";
 import { graphCache } from "../shared/cache/position-cache";
 import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "../shared/config";
+import { detectConnectorFromContent } from "@rilldata/web-common/features/connectors/connector-type-detector";
 
 // Use centralized configuration
 const MIN_NODE_WIDTH = NODE_CONFIG.MIN_WIDTH;
@@ -182,79 +183,6 @@ function formatTestsYaml(
 }
 
 /**
- * Infer the actual data source type from a DuckDB path or SQL.
- * DuckDB can read from various cloud storage providers, so we detect the
- * underlying source from the path prefix to show the appropriate icon.
- *
- * The content can be either:
- * - A direct path like "s3://bucket/file.parquet"
- * - A SQL query like "SELECT * FROM read_parquet('s3://bucket/file.parquet')"
- *
- * We search for cloud storage URL patterns anywhere in the content.
- *
- * @param content - The path, URI, or SQL from the DuckDB source/model
- * @returns The inferred connector type, or undefined if no external source detected
- */
-function inferDuckDbSourceType(
-  content: string | undefined,
-): string | undefined {
-  if (!content) return undefined;
-
-  const normalized = content.toLowerCase();
-
-  // Check for cloud storage URL patterns anywhere in the content
-  // These patterns work for both direct paths and URLs embedded in SQL
-  if (normalized.includes("s3://") || normalized.includes("s3a://")) {
-    return "s3";
-  }
-  if (normalized.includes("gs://") || normalized.includes("gcs://")) {
-    return "gcs";
-  }
-  if (
-    normalized.includes("azure://") ||
-    normalized.includes("az://") ||
-    normalized.includes("abfs://") ||
-    normalized.includes("abfss://")
-  ) {
-    return "azure";
-  }
-
-  // For HTTP(S), only match if it looks like a data file URL (not documentation links)
-  // Check for common data file extensions near the URL
-  const httpMatch = normalized.match(/https?:\/\/[^\s'"]+/g);
-  if (httpMatch) {
-    const dataExtensions = [
-      ".parquet",
-      ".csv",
-      ".json",
-      ".ndjson",
-      ".jsonl",
-      ".xlsx",
-      ".xls",
-      ".tsv",
-    ];
-    for (const url of httpMatch) {
-      if (dataExtensions.some((ext) => url.includes(ext))) {
-        return "https";
-      }
-    }
-  }
-
-  // Check for explicit DuckDB read functions with local paths
-  if (
-    normalized.includes("read_parquet(") ||
-    normalized.includes("read_csv(") ||
-    normalized.includes("read_json(") ||
-    normalized.includes("read_ndjson(")
-  ) {
-    return "local_file";
-  }
-
-  // No external data source detected (e.g., SQL referencing other models)
-  return undefined;
-}
-
-/**
  * Extract rich metadata from a resource for badge display.
  */
 function extractResourceMetadata(
@@ -277,8 +205,8 @@ function extractResourceMetadata(
       | { path?: string; sql?: string }
       | undefined;
     if (connector?.toLowerCase() === "duckdb") {
-      const path = inputProps?.path || inputProps?.sql;
-      connector = inferDuckDbSourceType(path);
+      const content = inputProps?.path || inputProps?.sql;
+      connector = detectConnectorFromContent(content);
     }
 
     // Connector info
@@ -364,8 +292,8 @@ function extractResourceMetadata(
       const props = spec.properties as
         | { path?: string; sql?: string }
         | undefined;
-      const path = props?.path || props?.sql;
-      connector = inferDuckDbSourceType(path);
+      const content = props?.path || props?.sql;
+      connector = detectConnectorFromContent(content);
     }
 
     metadata.connector = connector;

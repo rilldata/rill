@@ -16,6 +16,7 @@
     parseGraphUrlParams,
     urlParamsToSeeds,
   } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
+  import type { ResourceStatusFilter } from "@rilldata/web-common/features/resource-graph/shared/types";
   import { Search, X } from "lucide-svelte";
 
   // Use a static path for workspace store (persists inspector toggle state)
@@ -31,7 +32,7 @@
 
   // Search and filter state
   let searchQuery = "";
-  let statusFilter: "all" | "pending" | "errored" = "all";
+  let statusFilter: ResourceStatusFilter = "all";
 
   // Clear selection when leaving the page
   onDestroy(() => {

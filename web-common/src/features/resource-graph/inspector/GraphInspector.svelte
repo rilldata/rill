@@ -8,6 +8,10 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import {
+    detectConnectorFromPath,
+    detectConnectorFromContent,
+  } from "@rilldata/web-common/features/connectors/connector-type-detector";
+  import {
     V1ReconcileStatus,
     createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
@@ -21,7 +25,6 @@
     Bell,
     Plug,
     Layers,
-    FileCode,
     AlertCircle,
     ExternalLink,
     GitFork,
@@ -37,10 +40,9 @@
     LayoutGrid,
     Component,
     FileText,
-    Settings,
     Zap,
   } from "lucide-svelte";
-    import {
+  import {
     createLocalServiceGetCurrentProject,
     createLocalServiceGitStatus,
   } from "@rilldata/web-common/runtime-client/local-service";
@@ -107,43 +109,25 @@
 
   // Derive connector name from partitions properties, sourcePath, SQL query, then fallback to metadata.connector
   $: derivedConnector = (() => {
-    // Helper to detect connector from path/URL prefix
-    const detectFromPath = (path: string | undefined | null): string | null => {
-      if (!path) return null;
-      const lowerPath = path.toLowerCase();
-      if (lowerPath.startsWith("azure://")) return "azure";
-      if (lowerPath.startsWith("gcs://") || lowerPath.startsWith("gs://"))
-        return "gcs";
-      if (lowerPath.startsWith("s3://")) return "s3";
-      if (lowerPath.startsWith("https://") || lowerPath.startsWith("http://"))
-        return "https";
-      return null;
-    };
-
     // Check partitions resolver properties (could be glob, path, or other keys)
-    const partitionsProps = resource?.model?.spec?.partitionsResolverProperties as
-      | Record<string, unknown>
-      | undefined;
+    const partitionsProps = resource?.model?.spec
+      ?.partitionsResolverProperties as Record<string, unknown> | undefined;
     if (partitionsProps) {
       for (const value of Object.values(partitionsProps)) {
         if (typeof value === "string") {
-          const detected = detectFromPath(value);
+          const detected = detectConnectorFromPath(value);
           if (detected) return detected;
         }
       }
     }
 
     // Check sourcePath
-    const fromSourcePath = detectFromPath(metadata?.sourcePath);
+    const fromSourcePath = detectConnectorFromPath(metadata?.sourcePath);
     if (fromSourcePath) return fromSourcePath;
 
     // Check SQL query for URLs (e.g., read_json('https://...'))
-    const sqlQuery = metadata?.sqlQuery?.toLowerCase() ?? "";
-    if (sqlQuery.includes("https://") || sqlQuery.includes("http://"))
-      return "https";
-    if (sqlQuery.includes("s3://")) return "s3";
-    if (sqlQuery.includes("gs://") || sqlQuery.includes("gcs://")) return "gcs";
-    if (sqlQuery.includes("azure://")) return "azure";
+    const fromSqlQuery = detectConnectorFromContent(metadata?.sqlQuery);
+    if (fromSqlQuery) return fromSqlQuery;
 
     if (metadata?.connector) return metadata.connector;
     return "undefined";
@@ -159,7 +143,6 @@
           derivedConnector.toLowerCase() as keyof typeof connectorIconMapping
         ]
       : null;
-
 
   // Model refresh mutation
   const triggerMutation = createRuntimeServiceCreateTrigger();
@@ -195,7 +178,10 @@
     goto(`/files${filePath}`);
     try {
       const prefs = JSON.parse(localStorage.getItem(filePath) || "{}");
-      localStorage.setItem(filePath, JSON.stringify({ ...prefs, view: "code" }));
+      localStorage.setItem(
+        filePath,
+        JSON.stringify({ ...prefs, view: "code" }),
+      );
     } catch (error) {
       console.warn(`Failed to save file view preference:`, error);
     }
@@ -337,7 +323,9 @@
       <div class="section">
         <div class="section-header-inline">
           <h4 class="section-title">{displayResourceKind(kind)} Information</h4>
-          <span class="definition-type">{metadata?.isSqlModel ? "SQL" : "YAML"}</span>
+          <span class="definition-type"
+            >{metadata?.isSqlModel ? "SQL" : "YAML"}</span
+          >
         </div>
 
         <!-- Feature buttons row -->
@@ -608,7 +596,6 @@
         <pre class="sql-code-full">{metadata.sqlQuery}</pre>
       </div>
     {/if}
-
   {:else}
     <!-- Project Info (when no node selected) -->
     <div class="project-info">
@@ -724,10 +711,9 @@
       <AlertDialog.Title>Full Refresh {resourceName}?</AlertDialog.Title>
       <AlertDialog.Description>
         <div class="mt-1">
-          A full refresh will re-ingest ALL data from scratch.
-          This operation can take a significant amount of time and will update
-          all dependent resources. Only proceed if you're certain this is
-          necessary.
+          A full refresh will re-ingest ALL data from scratch. This operation
+          can take a significant amount of time and will update all dependent
+          resources. Only proceed if you're certain this is necessary.
         </div>
       </AlertDialog.Description>
     </AlertDialog.Header>

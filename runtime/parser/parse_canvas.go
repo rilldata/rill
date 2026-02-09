@@ -262,8 +262,11 @@ func (p *Parser) parseCanvas(node *Node) error {
 	// Collect metrics view refs from components for direct Canvas -> MetricsView links in the DAG
 	// This must be done BEFORE calling insertResource so the refs are included
 	metricsViewRefs := make(map[ResourceName]bool)
-	// Extract from inline components
+	// Pre-compute set of inline component names for O(1) lookup
+	inlineComponentNames := make(map[string]bool, len(inlineComponentDefs))
 	for _, def := range inlineComponentDefs {
+		inlineComponentNames[def.name] = true
+		// Also extract metrics view refs from inline components
 		for _, ref := range def.refs {
 			if ref.Kind == ResourceKindMetricsView {
 				metricsViewRefs[ref] = true
@@ -274,15 +277,8 @@ func (p *Parser) parseCanvas(node *Node) error {
 	for _, row := range tmp.Rows {
 		for _, item := range row.Items {
 			if item.Component != "" {
-				// Check if this is an external component (not inline)
-				isInline := false
-				for _, def := range inlineComponentDefs {
-					if def.name == item.Component {
-						isInline = true
-						break
-					}
-				}
-				if !isInline {
+				// Check if this is an external component (not inline) - O(1) lookup
+				if !inlineComponentNames[item.Component] {
 					// Look up the external component
 					componentName := ResourceName{Kind: ResourceKindComponent, Name: item.Component}
 					if component, ok := p.Resources[componentName.Normalized()]; ok {

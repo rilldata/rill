@@ -92,3 +92,11 @@ export interface ResourceNodeData extends Record<string, unknown> {
   // Rich metadata for badge indicators
   metadata?: ResourceMetadata;
 }
+
+/**
+ * Filter type for resource status in the graph view.
+ * - "all": Show all resources
+ * - "pending": Show only resources with non-idle reconcile status
+ * - "errored": Show only resources with reconcile errors
+ */
+export type ResourceStatusFilter = "all" | "pending" | "errored";

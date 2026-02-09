@@ -25,6 +25,7 @@
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
   import { isGraphExpanded } from "../inspector/graph-inspector-store";
+  import type { ResourceStatusFilter } from "../shared/types";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -37,7 +38,7 @@
   export let showControls = true;
   export let enableExpansion = true;
   export let searchQuery = "";
-  export let statusFilter: "all" | "pending" | "errored" = "all";
+  export let statusFilter: ResourceStatusFilter = "all";
 
   // New props for modularity
   export let onExpandedChange: ((id: string | null) => void) | null = null;

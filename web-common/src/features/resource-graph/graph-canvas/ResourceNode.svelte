@@ -8,7 +8,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { ResourceNodeData } from "../shared/types";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let id: string;
@@ -75,66 +75,14 @@
   $: routeHighlighted = (data as any)?.routeHighlighted === true;
 </script>
 
-{#if hasError}
-  <Tooltip location="top" distance={8} activeDelay={150}>
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div
-      class="node"
-      class:selected
-      class:route-highlighted={routeHighlighted}
-      class:error={hasError}
-      class:root={data?.isRoot}
-      style:--node-accent={color}
-      style:width={width ? `${width}px` : undefined}
-      style:height={height ? `${height}px` : undefined}
-      data-kind={kind}
-      role="button"
-      tabindex="0"
-    >
-      <Handle
-        id="target"
-        type="target"
-        position={Position.Top}
-        isConnectable={isConnectable ?? true}
-      />
-      <Handle
-        id="source"
-        type="source"
-        position={Position.Bottom}
-        isConnectable={isConnectable ?? true}
-      />
-
-      <div class="icon-wrapper" style={`background:${color}20`}>
-        <svelte:component this={icon} size="16px" {color} />
-      </div>
-      <div class="details">
-        <p class="title" title={data?.label}>{data?.label}</p>
-        <p class="meta">
-          {#if kind}
-            {displayResourceKind(kind)}
-          {:else}
-            Unknown
-          {/if}
-        </p>
-        <p class="status error">{effectiveStatusLabel}</p>
-      </div>
-    </div>
-    <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
-      <div class="error-tooltip-content">
-        <span class="error-tooltip-title">Error</span>
-        <pre class="error-tooltip-message">{data?.resource?.meta
-            ?.reconcileError}</pre>
-      </div>
-    </TooltipContent>
-  </Tooltip>
-{:else}
+<ConditionalTooltip showTooltip={hasError} location="top" distance={8} activeDelay={150}>
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div
     class="node"
     class:selected
     class:route-highlighted={routeHighlighted}
+    class:error={hasError}
     class:root={data?.isRoot}
     style:--node-accent={color}
     style:width={width ? `${width}px` : undefined}
@@ -169,11 +117,18 @@
         {/if}
       </p>
       {#if effectiveStatusLabel}
-        <p class="status">{effectiveStatusLabel}</p>
+        <p class="status" class:error={hasError}>{effectiveStatusLabel}</p>
       {/if}
     </div>
   </div>
-{/if}
+  <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
+    <div class="error-tooltip-content">
+      <span class="error-tooltip-title">Error</span>
+      <pre class="error-tooltip-message">{data?.resource?.meta
+          ?.reconcileError}</pre>
+    </div>
+  </TooltipContent>
+</ConditionalTooltip>
 
 <style lang="postcss">
   .node {
