@@ -62,7 +62,8 @@ export const ToolName = {
 // =============================================================================
 
 export type ChatConfig = {
-  agent: string;
+  // When omitted, the router agent uses LLM classification to pick the best agent per message
+  agent?: string;
   additionalContextStoreGetter: () => Readable<
     Partial<RuntimeServiceCompleteBody>
   >;
