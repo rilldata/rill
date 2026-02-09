@@ -43,9 +43,22 @@ function getActiveExploreContext(): Readable<
         explore: exploreName,
       };
 
-      if (timeControlsStore?.timeStart && timeControlsStore?.timeEnd) {
-        analystAgentContext.timeStart = timeControlsStore.timeStart;
-        analystAgentContext.timeEnd = timeControlsStore.timeEnd;
+      if (
+        timeControlsStore.selectedTimeRange?.start &&
+        timeControlsStore.selectedTimeRange?.end
+      ) {
+        analystAgentContext.timeStart =
+          timeControlsStore.selectedTimeRange.start.toISOString();
+        analystAgentContext.timeEnd =
+          timeControlsStore.selectedTimeRange.end.toISOString();
+      }
+
+      if (exploreState?.visibleDimensions?.length) {
+        analystAgentContext.dimensions = exploreState.visibleDimensions;
+      }
+
+      if (exploreState?.visibleMeasures?.length) {
+        analystAgentContext.measures = exploreState.visibleMeasures;
       }
 
       const filterIsAvailable = !isExpressionEmpty(exploreState?.whereFilter);
