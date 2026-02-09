@@ -99,7 +99,7 @@ It's never a good idea to commit sensitive information to Git and it goes agains
 
 If you cloned the project using `rill project clone <project-name>` and are an admin of that project, the credentials will be pulled automatically. Note that there are some limitations with monorepos where credentials may not be pulled correctly. In those cases, credentials are also pulled when running `rill start`, assuming you have already authenticated via the CLI with `rill login`.
 
-For a detailed guide, see our [clone a project guide](/developers/guides/clone-a-project).
+For a detailed guide, see our [clone a project guide](/developers/tutorials/clone-a-project).
  
 ## Pulling Credentials and Variables from a Deployed Project on Rill Cloud
 
