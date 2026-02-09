@@ -153,6 +153,13 @@ List of commands:
 <img src = '/img/explore/dashboard101/preview-value.png' class='rounded-gif' />
 <br />
 
+## Display Settings
+
+### Dark Mode
+
+Toggle between light and dark themes by clicking your profile icon in the top right and selecting your preferred theme.
+
+![Dark Mode Toggle](/img/guide/theme/dark-mode.png)
 
 ## Banners!
 Another additional feature that you can add to an Explore dashboard are banners. Whether it is to inform your end-users about specific guidelines on how to use Rill, or an informational post about the datasets being used, you can design the banner to whatever text you'd like.
