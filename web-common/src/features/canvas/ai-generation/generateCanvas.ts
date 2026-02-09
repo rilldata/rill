@@ -113,7 +113,7 @@ export async function createCanvasDashboardFromMetricsView(
     `${metricsViewName}_canvas`,
     fileArtifacts.getNamesForKind(ResourceKind.Canvas),
   );
-  const canvasFilePath = `/canvas/${canvasName}.yaml`;
+  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
 
   try {
     // Request AI-generated canvas dashboard
@@ -169,7 +169,7 @@ export async function createCanvasDashboardFromMetricsViewWithAgent(
     `${metricsViewName}_canvas`,
     fileArtifacts.getNamesForKind(ResourceKind.Canvas),
   );
-  const canvasFilePath = `/canvas/${canvasName}.yaml`;
+  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
 
   // 2. Construct prompt for developer agent
   const prompt = `Create a canvas dashboard at ${canvasFilePath} based on the "${metricsViewName}" metrics view. Include appropriate visualizations like KPI grids, charts, and leaderboards based on the available measures and dimensions.`;
@@ -290,7 +290,7 @@ export async function createCanvasDashboardWithoutNavigation(
     `${metricsViewName}_canvas`,
     fileArtifacts.getNamesForKind(ResourceKind.Canvas),
   );
-  const canvasFilePath = `/canvas/${canvasName}.yaml`;
+  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
 
   try {
     // Request AI-generated canvas dashboard
