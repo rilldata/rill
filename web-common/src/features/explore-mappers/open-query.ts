@@ -21,6 +21,9 @@ import { getTimeControlState } from "@rilldata/web-common/features/dashboards/ti
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
 import { createLinkError } from "@rilldata/web-common/features/explore-mappers/explore-validation.ts";
 import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mappers/types.ts";
+import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto.ts";
+import { StructType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/schema_pb.ts";
+import { Struct } from "google-protobuf/google/protobuf/struct_pb";
 
 export async function openQuery({
   url,
@@ -39,17 +42,26 @@ export async function openQuery({
     const queryParams = url.searchParams;
 
     // Get the JSON-encoded query parameters
-    const queryJSON = queryParams.get("query");
-    if (!queryJSON) {
+    const rawQuery = queryParams.get("query");
+    if (!rawQuery) {
       throw new Error("query parameter is required");
     }
 
     // Parse and validate the query with proper type safety
     let query: MetricsResolverQuery;
     try {
-      query = JSON.parse(queryJSON) as MetricsResolverQuery;
+      const binaryQuery = base64ToProto(rawQuery);
+      query = Struct.deserializeBinary(binaryQuery, {
+        readUnknownFields: true,
+      }).toJavaScript() as unknown as MetricsResolverQuery;
+      console.log(query);
     } catch (e) {
-      throw new Error(`Invalid query: ${e.message}`);
+      console.error(e);
+      try {
+        query = JSON.parse(rawQuery) as MetricsResolverQuery;
+      } catch (e) {
+        throw new Error(`Invalid query: ${e.message}`);
+      }
     }
 
     // Extract metrics view name (now type-safe)

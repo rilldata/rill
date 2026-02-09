@@ -53,6 +53,7 @@ import type {
   V1Expression,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { StructType } from "@rilldata/web-common/proto/gen/rill/runtime/v1/schema_pb.ts";
 
 // TODO: make a follow up PR to use the one from the proto directly
 const LeaderboardContextColumnReverseMap: Record<
@@ -83,8 +84,6 @@ export function getDashboardStateFromUrl(
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
 ): Partial<ExploreState> {
-  // backwards compatibility for older urls that had encoded state
-  urlState = urlState.includes("%") ? decodeURIComponent(urlState) : urlState;
   return getDashboardStateFromProto(
     base64ToProto(urlState),
     metricsView,
@@ -236,6 +235,7 @@ export function getDashboardStateFromProto(
 }
 
 export function base64ToProto(message: string) {
+  message = message.includes("%") ? decodeURIComponent(message) : message;
   return protoBase64.dec(message);
 }
 
