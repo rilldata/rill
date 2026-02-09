@@ -11,7 +11,6 @@
     buildEnumOptions,
     getConditionalValues,
     isDisabledForValues,
-    isEnumWithDisplay,
     isRadioEnum,
     isSelectEnum,
     isStepMatch,
