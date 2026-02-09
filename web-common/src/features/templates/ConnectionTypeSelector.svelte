@@ -16,16 +16,15 @@
   export let label: string = "";
   export let onChange: (value: string) => void = () => {};
 
-  // Map option values to icons
-  const ICONS: Record<string, ComponentType<SvelteComponent>> = {
+  // Icon and color maps can be passed as props for reusability
+  export let iconMap: Record<string, ComponentType<SvelteComponent>> = {
     cloud: Cloud,
     playground: Play,
     "self-managed": Server,
     "rill-managed": Sparkles,
   };
 
-  // Map option values to colors (bg, text)
-  const COLORS: Record<string, { bg: string; text: string }> = {
+  export let colorMap: Record<string, { bg: string; text: string }> = {
     cloud: { bg: "bg-yellow-100", text: "text-yellow-600" },
     playground: { bg: "bg-green-100", text: "text-green-600" },
     "self-managed": { bg: "bg-purple-100", text: "text-purple-600" },
@@ -33,11 +32,13 @@
   };
 
   function getIcon(optionValue: string): ComponentType<SvelteComponent> {
-    return ICONS[optionValue] ?? Server;
+    return iconMap[optionValue] ?? Server;
   }
 
   function getColors(optionValue: string): { bg: string; text: string } {
-    return COLORS[optionValue] ?? { bg: "bg-gray-100", text: "text-gray-500" };
+    return (
+      colorMap[optionValue] ?? { bg: "bg-gray-100", text: "text-gray-500" }
+    );
   }
 
   $: selectedOption = options.find((opt) => opt.value === value);

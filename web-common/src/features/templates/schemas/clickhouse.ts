@@ -19,7 +19,8 @@ export const clickhouseSchema: MultiStepFormSchema = {
       title: "Connection type",
       enum: ["cloud", "playground", "self-managed", "rill-managed"],
       default: "cloud",
-      "x-display": "connection-type",
+      "x-display": "select",
+      "x-select-style": "rich",
       "x-enum-labels": [
         "ClickHouse Cloud",
         "ClickHouse Playground",
@@ -248,6 +249,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
         required: ["host", "username"],
         properties: {
           managed: { const: false },
+          port: { default: "9000" },
           ssl: { default: true },
         },
       },

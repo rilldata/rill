@@ -111,6 +111,14 @@
     prevDeploymentType = currentDeploymentType;
   }
 
+  // Helper to clear error state (called on user input)
+  function clearErrorOnInput() {
+    if (paramsError) {
+      paramsError = null;
+      paramsErrorDetails = undefined;
+    }
+  }
+
   // Hide Save Anyway once we advance to the model step in step flow connectors.
   $: if (
     isStepFlowConnector &&
@@ -224,6 +232,7 @@
   }
 
   function onStringInputChange(event: Event) {
+    clearErrorOnInput();
     formManager.onStringInputChange(
       event,
       $paramsTainted as Record<string, boolean> | null | undefined,

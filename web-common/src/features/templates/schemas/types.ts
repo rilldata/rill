@@ -20,13 +20,9 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?:
-    | "radio"
-    | "select"
-    | "textarea"
-    | "file"
-    | "tabs"
-    | "connection-type";
+  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
+  /** Visual style for select fields. "rich" renders with icons and colored cards. */
+  "x-select-style"?: "standard" | "rich";
   /** Render the field value in a monospace font. */
   "x-monospace"?: boolean;
   /** Which modal step this field belongs to. */
@@ -102,21 +98,6 @@ export type ButtonLabels = {
   loading: string;
 };
 
-/**
- * Pre-defined form template that auto-populates fields with preset values.
- * Useful for common configurations like ClickHouse Playground.
- */
-export type FormTemplate = {
-  /** Unique identifier for the template */
-  id: string;
-  /** Display name shown in the template selector */
-  label: string;
-  /** Brief description of the template */
-  description?: string;
-  /** Field values to apply when the template is selected */
-  values: Record<string, unknown>;
-};
-
 export type JSONSchemaObject = {
   $schema?: string;
   type: "object";
@@ -156,11 +137,6 @@ export type JSONSchemaObject = {
    * Example: { "connector_type": { "rill-managed": { idle: "Connect", loading: "Connecting..." } } }
    */
   "x-button-labels"?: Record<string, Record<string, ButtonLabels>>;
-  /**
-   * Pre-defined templates for auto-populating form fields.
-   * Useful for common configurations like ClickHouse Playground.
-   */
-  "x-templates"?: FormTemplate[];
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;

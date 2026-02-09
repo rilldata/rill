@@ -4,15 +4,16 @@
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import SchemaField from "./SchemaField.svelte";
   import type { JSONSchemaField } from "./schemas/types";
-  import type { ComponentType, SvelteComponent } from "svelte";
+  import {
+    type EnumOption,
+    isRadioEnum,
+    isSelectEnum,
+    isTabsEnum,
+    radioOptions,
+    tabOptions,
+  } from "./schema-utils";
 
   type FieldEntry = [string, JSONSchemaField];
-  type EnumOption = {
-    value: string;
-    label: string;
-    description?: string;
-    icon?: ComponentType<SvelteComponent>;
-  };
 
   // Superforms-compatible store type (matches JSONSchemaFormRenderer)
   type FormStore = {
@@ -35,41 +36,15 @@
     optionValue: string | number | boolean,
   ) => FieldEntry[];
   export let tabGroupedFields: Map<string, Record<string, string[]>>;
+  // Passed from parent to include iconMap context
   export let buildEnumOptions: (
     prop: JSONSchemaField,
     includeDescription: boolean,
     includeIcons?: boolean,
   ) => EnumOption[];
 
-  function isEnumWithDisplay(
-    prop: JSONSchemaField,
-    displayType: "radio" | "tabs" | "select",
-  ) {
-    return Boolean(prop.enum && prop["x-display"] === displayType);
-  }
-
-  function isRadioEnum(prop: JSONSchemaField) {
-    return isEnumWithDisplay(prop, "radio");
-  }
-
-  function isTabsEnum(prop: JSONSchemaField) {
-    return isEnumWithDisplay(prop, "tabs");
-  }
-
-  function isSelectEnum(prop: JSONSchemaField) {
-    return isEnumWithDisplay(prop, "select");
-  }
-
-  function tabOptions(prop: JSONSchemaField) {
-    return buildEnumOptions(prop, false);
-  }
-
-  function selectOptions(prop: JSONSchemaField) {
+  function getSelectOptions(prop: JSONSchemaField) {
     return buildEnumOptions(prop, true, true);
-  }
-
-  function radioOptions(prop: JSONSchemaField) {
-    return buildEnumOptions(prop, true);
   }
 </script>
 
@@ -93,7 +68,7 @@
               {#each getTabFieldsForOption(childKey, childOption.value) as [tabKey, tabProp] (tabKey)}
                 <div class="py-1.5 first:pt-0 last:pb-0">
                   {#if isSelectEnum(tabProp)}
-                    {@const tabSelectOptions = selectOptions(tabProp)}
+                    {@const tabSelectOptions = getSelectOptions(tabProp)}
                     <Select
                       id={tabKey}
                       bind:value={$formStore[tabKey]}
@@ -130,7 +105,7 @@
         {/each}
       </Tabs>
     {:else if isSelectEnum(childProp)}
-      {@const childSelectOptions = selectOptions(childProp)}
+      {@const childSelectOptions = getSelectOptions(childProp)}
       <Select
         id={childKey}
         bind:value={$formStore[childKey]}

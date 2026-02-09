@@ -25,11 +25,11 @@ test.describe("Save Anyway feature", () => {
     await page.getByRole("textbox", { name: "Password" }).fill("asd");
 
     // Click "Test and Connect" - this should fail connection test and show "Save Anyway" button
-    // Scope to dialog and use force:true to handle viewport overflow in CI environments.
     const submitButton = page
       .getByRole("dialog")
       .getByRole("button", { name: /^(Test and Connect|Connect)$/ });
-    await submitButton.click({ force: true });
+    await submitButton.scrollIntoViewIfNeeded();
+    await submitButton.click();
 
     // Wait for "Save Anyway" button to appear
     const saveAnywayButton = page
@@ -37,8 +37,9 @@ test.describe("Save Anyway feature", () => {
       .getByRole("button", { name: "Save Anyway" });
     await expect(saveAnywayButton).toBeVisible();
 
-    // Click "Save Anyway" button (force:true for same viewport overflow reason)
-    await saveAnywayButton.click({ force: true });
+    // Click "Save Anyway" button
+    await saveAnywayButton.scrollIntoViewIfNeeded();
+    await saveAnywayButton.click();
 
     // Wait for navigation to connector file, then for the editor to appear
     await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/, {

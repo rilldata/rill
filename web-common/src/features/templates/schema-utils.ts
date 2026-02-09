@@ -1,3 +1,4 @@
+import type { ComponentType, SvelteComponent } from "svelte";
 import type {
   ButtonLabels,
   JSONSchemaConditional,
@@ -11,6 +12,111 @@ export type RadioEnumOption = {
   description: string;
   hint?: string;
 };
+
+/**
+ * Enum option type used by select, radio, and tabs components.
+ */
+export type EnumOption = {
+  value: string;
+  label: string;
+  description?: string;
+  icon?: ComponentType<SvelteComponent>;
+};
+
+/**
+ * Check if a field is an enum with a specific display type.
+ */
+export function isEnumWithDisplay(
+  prop: JSONSchemaField,
+  displayType: "radio" | "tabs" | "select",
+): boolean {
+  return Boolean(prop.enum && prop["x-display"] === displayType);
+}
+
+/**
+ * Check if a field is a radio enum (x-display: "radio").
+ */
+export function isRadioEnum(prop: JSONSchemaField): boolean {
+  return isEnumWithDisplay(prop, "radio");
+}
+
+/**
+ * Check if a field is a tabs enum (x-display: "tabs").
+ */
+export function isTabsEnum(prop: JSONSchemaField): boolean {
+  return isEnumWithDisplay(prop, "tabs");
+}
+
+/**
+ * Check if a field is a select enum (x-display: "select").
+ */
+export function isSelectEnum(prop: JSONSchemaField): boolean {
+  return isEnumWithDisplay(prop, "select");
+}
+
+/**
+ * Build enum options from a JSONSchemaField.
+ */
+export function buildEnumOptions(
+  prop: JSONSchemaField,
+  opts: {
+    includeDescription?: boolean;
+    includeIcons?: boolean;
+    iconMap?: Record<string, ComponentType<SvelteComponent>>;
+  } = {},
+): EnumOption[] {
+  const {
+    includeDescription = false,
+    includeIcons = false,
+    iconMap = {},
+  } = opts;
+  return (
+    prop.enum?.map((value, idx) => {
+      const option: EnumOption = {
+        value: String(value),
+        label: prop["x-enum-labels"]?.[idx] ?? String(value),
+      };
+      if (includeDescription) {
+        option.description = prop["x-enum-descriptions"]?.[idx];
+      }
+      if (includeIcons) {
+        const iconKey = prop["x-enum-icons"]?.[idx];
+        if (iconKey && iconMap[iconKey]) {
+          option.icon = iconMap[iconKey];
+        }
+      }
+      return option;
+    }) ?? []
+  );
+}
+
+/**
+ * Build radio options (includes descriptions).
+ */
+export function radioOptions(prop: JSONSchemaField): EnumOption[] {
+  return buildEnumOptions(prop, { includeDescription: true });
+}
+
+/**
+ * Build tab options (no descriptions).
+ */
+export function tabOptions(prop: JSONSchemaField): EnumOption[] {
+  return buildEnumOptions(prop, { includeDescription: false });
+}
+
+/**
+ * Build select options (includes descriptions and icons).
+ */
+export function selectOptions(
+  prop: JSONSchemaField,
+  iconMap?: Record<string, ComponentType<SvelteComponent>>,
+): EnumOption[] {
+  return buildEnumOptions(prop, {
+    includeDescription: true,
+    includeIcons: true,
+    iconMap,
+  });
+}
 
 export function isStepMatch(
   schema: MultiStepFormSchema | null,
