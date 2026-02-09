@@ -120,7 +120,7 @@ Create `connectors/my_postgres.yaml`:
 type: connector
 driver: postgres
 
-database_url: "{{ .env.connector.postgres.database_url }}"
+dsn: "{{ .env.connector.postgres.dsn }}"
 ```
 
 **Step 2: Create model configuration**
@@ -141,7 +141,7 @@ refresh:
 **Step 3: Add credentials to `.env`**
 
 ```bash
-connector.postgres.database_url=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
+connector.postgres.dsn=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 ```
 
 ## Using PostgreSQL Data in Models
