@@ -37,6 +37,7 @@ import {
 } from "@rilldata/web-common/features/components/charts/config.ts";
 import { readable } from "svelte/store";
 import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
+import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
@@ -218,19 +219,15 @@ export function getLabelForComponent(
   metricsViewSpec: V1MetricsViewSpec | undefined,
 ) {
   const renderer = componentSpec?.renderer as CanvasComponentType | undefined;
-  if (!renderer) return componentName;
+  const chartSpec = componentSpec?.rendererProperties as ChartSpec | undefined;
+  if (!renderer || !chartSpec) return componentName;
 
   if (CHART_CONFIG[renderer]?.provider) {
     const providerClass: ChartMetadataConfig["provider"] =
       CHART_CONFIG[renderer].provider;
-    const provider = new providerClass(
-      readable(componentSpec?.rendererProperties as any),
-    );
+    const provider = new providerClass(readable(chartSpec));
 
-    const fields = getFieldsForSpec(
-      componentSpec?.rendererProperties as any,
-      metricsViewSpec ?? {},
-    );
+    const fields = getFieldsForSpec(chartSpec, metricsViewSpec ?? {});
 
     return provider.chartTitle(fields);
   }

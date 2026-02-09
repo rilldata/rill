@@ -17,6 +17,7 @@ import {
   getIconForComponent,
   getLabelForComponent,
 } from "@rilldata/web-common/features/canvas/components/util.ts";
+import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
 
 type ContextConfigPerType = {
   editable: boolean;
@@ -66,9 +67,8 @@ export const InlineContextConfig: Record<
         ctx.canvasComponent!,
         componentSpec,
         meta.metricsViewSpecs[
-          (componentSpec?.rendererProperties?.metrics_view as
-            | string
-            | undefined) ?? ""
+          (componentSpec?.rendererProperties as ChartSpec | undefined)
+            ?.metrics_view ?? ""
         ]?.metricsViewSpec,
       );
     },
