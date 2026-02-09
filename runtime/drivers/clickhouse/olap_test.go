@@ -220,7 +220,7 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 		Typ:                    "TABLE",
 		Engine:                 "ReplacingMergeTree",
 		Table:                  "tbl",
-		DistributedShardingKey: "rand()",
+		DistributedShardingKey: "id",
 		IncrementalStrategy:    drivers.IncrementalStrategyMerge,
 		OrderBy:                "id",
 	}

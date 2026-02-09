@@ -2,7 +2,7 @@
 title: Slack Integration
 description: Connect to Slack for data extraction and analytics
 sidebar_label: Slack
-sidebar_position: 70
+sidebar_position: 43
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->

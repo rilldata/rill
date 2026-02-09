@@ -61,6 +61,8 @@ type Options struct {
 	GithubManagedAccount   string
 	// AssetsBucket is the path on gcs where rill managed project artifacts are stored.
 	AssetsBucket string
+	// PylonIdentitySecret is an optional secret for Pylon identity verification.
+	PylonIdentitySecret []byte
 }
 
 type Server struct {

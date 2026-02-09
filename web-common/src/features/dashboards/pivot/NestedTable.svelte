@@ -346,20 +346,8 @@
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
-            on:mouseover={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
-            on:focus={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
+            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component

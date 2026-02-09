@@ -136,6 +136,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.localFilters.onFilterStringChange(
         spec["dimension_filters"] as string,
       );
+
       this.localTimeControls.onUrlChange(
         new URLSearchParams(spec?.["time_filters"] ?? ""),
       );

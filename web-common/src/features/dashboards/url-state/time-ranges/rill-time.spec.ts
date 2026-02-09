@@ -149,7 +149,7 @@ function getLegacyDAXTestCases(): TestCase[] {
       "rill-QTD",
       "Quarter to Date",
       false,
-      V1TimeGrain.TIME_GRAIN_DAY,
+      V1TimeGrain.TIME_GRAIN_WEEK,
       undefined,
     ],
     ["rill-MTD", "Month to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],

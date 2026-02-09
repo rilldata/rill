@@ -481,6 +481,7 @@
       }}
       onComponentMouseDown={({ event, id }) => {
         if (event.button !== 0) return;
+        if (event.shiftKey) return;
         const component = componentsStore.getNonReactive(id);
         if (!component) return;
 
