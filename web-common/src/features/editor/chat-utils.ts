@@ -1,16 +1,12 @@
-import {
-  type ChatConfig,
-  ToolName,
-} from "@rilldata/web-common/features/chat/core/types.ts";
+import { type ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
 import type { RuntimeServiceCompleteBody } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
 import { page } from "$app/stores";
 
 export const developerChatConfig = {
-  agent: ToolName.DEVELOPER_AGENT,
   additionalContextStoreGetter: () => getActiveFileContext(),
-  emptyChatLabel: "Happy to assist you make changes to the project",
-  placeholder: "What change can I help you make...",
+  emptyChatLabel: "Ask me about your data or make changes to the project",
+  placeholder: "Ask a question or request a change...",
   minChatHeight: "min-h-[2.5rem]",
 } satisfies ChatConfig;
 
