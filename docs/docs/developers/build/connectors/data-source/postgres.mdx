@@ -5,7 +5,9 @@ sidebar_label: PostgreSQL
 sidebar_position: 50
 ---
 
-<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
 
 ## Overview
 
@@ -24,12 +26,11 @@ Choose the method that best fits your setup. Both methods work for local develop
 
 ## Using the Add Data UI
 
-When you add a PostgreSQL data model through the Rill UI, the process follows two steps:
-
-1. **Configure Authentication** - Set up your PostgreSQL connector with database credentials
-2. **Configure Data Model** - Define which table or query to execute
-
-This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
+<TwoStepFlowIntro
+  connector="PostgreSQL"
+  step1Description="Set up your PostgreSQL connector with database credentials"
+  step2Description="Define which table or query to execute"
+/>
 
 ## Method 1: Individual Parameters (Recommended)
 
@@ -90,9 +91,7 @@ refresh:
 connector.postgres.password=your_password_here
 ```
 
-:::tip Did you know?
-If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/developers/build/connectors/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
-:::
+<EnvPullTip />
 
 ## Method 2: Connection String/URI
 
@@ -144,57 +143,14 @@ refresh:
 connector.postgres.dsn=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 ```
 
-## Using PostgreSQL Data in Models
-
-Once your connector is configured, you can reference PostgreSQL tables and run queries in your model configurations.
-
-### Basic Example
-
-```yaml
-type: model
-connector: my_postgres
-
-sql: SELECT * FROM my_table
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-### Custom SQL Query
-
-```yaml
-type: model
-connector: my_postgres
-
-sql: |
-  SELECT
-    date_trunc('day', created_at) as event_date,
-    status,
-    COUNT(*) as order_count,
-    SUM(total_amount) as revenue
-  FROM orders
-  WHERE created_at >= NOW() - INTERVAL '30 days'
-  GROUP BY 1, 2
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
 ## Separating Dev and Prod Environments
 
-When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
-
-For more details, see our [Dev/Prod setup docs](/developers/build/connectors/templating).
+<DevProdSeparation />
 
 ## Deploy to Rill Cloud
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide the PostgreSQL connection credentials used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#postgres) for more information.
-
-If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
-```
-rill env push
-```
-
-:::tip Did you know?
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/developers/build/connectors/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
-:::
+<DeployToCloud
+  connector="PostgreSQL"
+  connectorId="postgres"
+  credentialDescription="the PostgreSQL connection credentials"
+/>

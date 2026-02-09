@@ -5,7 +5,9 @@ sidebar_label: MySQL
 sidebar_position: 40
 ---
 
-<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+import { TwoStepFlowIntro, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
 
 ## Overview
 
@@ -28,12 +30,11 @@ For more details, see the [MySQL documentation on DSN formats](https://dev.mysql
 
 ## Using the Add Data UI
 
-When you add a MySQL data model through the Rill UI, the process follows two steps:
-
-1. **Configure Authentication** - Set up your MySQL connector with connection credentials (host, port, user, password, database)
-2. **Configure Data Model** - Define which table or query to execute
-
-This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
+<TwoStepFlowIntro
+  connector="MySQL"
+  step1Description="Set up your MySQL connector with connection credentials (host, port, user, password, database)"
+  step2Description="Define which table or query to execute"
+/>
 
 ## Connect to MySQL
 
@@ -92,53 +93,14 @@ refresh:
 connector.mysql.password=your-secure-password
 ```
 
-## Using MySQL Data in Models
-
-Once your connector is configured, you can reference MySQL tables and run queries in your model configurations.
-
-### Basic Example
-
-```yaml
-type: model
-connector: my_mysql
-
-sql: SELECT * FROM customers
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-### Custom SQL Query
-
-```yaml
-type: model
-connector: my_mysql
-
-sql: |
-  SELECT
-    DATE(created_at) as order_date,
-    status,
-    COUNT(*) as order_count,
-    SUM(total_amount) as total_revenue
-  FROM orders
-  WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-  GROUP BY 1, 2
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
 ## Separating Dev and Prod Environments
 
-When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
-
-For more details, see our [Dev/Prod setup docs](/developers/build/connectors/templating).
+<DevProdSeparation />
 
 ## Deploy to Rill Cloud
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide the MySQL connection credentials used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#mysql) for more information.
-
-If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
-```
-rill env push
-```
+<DeployToCloud
+  connector="MySQL"
+  connectorId="mysql"
+  credentialDescription="the MySQL connection credentials"
+/>

@@ -5,7 +5,9 @@ sidebar_label: GCS
 sidebar_position: 15
 ---
 
-<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+import { DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
 
 ## Overview
 
@@ -214,36 +216,6 @@ Rill will automatically detect and use your local Google Cloud CLI credentials w
 This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Service Account JSON or HMAC keys for production deployments.
 :::
 
-## Using GCS Data in Models
-
-Once your connector is configured (or for public buckets, no connector needed), you can reference GCS paths in your model SQL queries using DuckDB's GCS functions.
-
-### Basic Example
-
-**With a connector (authenticated):**
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('gs://my-bucket/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Public bucket (no connector needed):**
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('gs://my-public-bucket/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
 ### Reading Multiple File Types
 
 ```yaml
@@ -283,12 +255,11 @@ SELECT * FROM read_parquet('gs://my-bucket/data/2024-*.parquet')
 
 ## Deploy to Rill Cloud
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide Service Account JSON or HMAC Keys for Google Cloud Storage used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#gcs) for more information.
-
-If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
-```
-rill env push
-```
+<DeployToCloud
+  connector="GCS"
+  connectorId="gcs"
+  credentialDescription="Service Account JSON or HMAC Keys"
+/>
 
 ## Appendix
 

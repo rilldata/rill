@@ -1,11 +1,13 @@
 ---
 title: Azure Blob Storage
 description: Connect to data in Azure Blob Storage
-sidebar_label: Azure Blob Storage 
+sidebar_label: Azure Blob Storage
 sidebar_position: 05
 ---
 
-<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+import { DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
 
 ## Overview
 [Azure Blob Storage (ABS)](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) is a scalable, fully managed, and highly reliable object storage solution offered by Microsoft Azure, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common storage formats such as CSV and Parquet. Rill supports connecting to and reading from Azure Blob Storage using the following Resource URI syntax:
@@ -276,36 +278,6 @@ Rill will automatically detect and use your local Azure CLI credentials when no 
 This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Storage Account Key, Connection String, or SAS tokens for production deployments.
 :::
 
-## Using Azure Blob Storage Data in Models
-
-Once your connector is configured (or for public containers, no connector needed), you can reference Azure Blob Storage paths in your model SQL queries using DuckDB's Azure functions.
-
-### Basic Example
-
-**With a connector (authenticated):**
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Public container (no connector needed):**
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('azure://publicaccount.blob.core.windows.net/my-public-container/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
 ### Path Patterns
 
 You can use wildcards to read multiple files:
@@ -326,10 +298,9 @@ SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data
 
 ## Deploy to Rill Cloud
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token for the containers used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#azure) for more information.
-
-If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
-```
-rill env push
-```
+<DeployToCloud
+  connector="Azure Blob Storage"
+  connectorId="azure"
+  credentialDescription="an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token"
+/>
 
