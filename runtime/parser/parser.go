@@ -758,7 +758,7 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	return nil
 }
 
-// inferUnspecifiedRefs populates r.Refs with 
+// inferUnspecifiedRefs populates r.Refs with
 // a) all explicit refs from r.rawRefs. A ref to a connector is only added if the connector is explicitly defined.
 // b) any implicit refs that we can infer from context.
 // An implicit ref is one where the kind is unspecified. They are common when extracted from SQL.
