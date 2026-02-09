@@ -7,8 +7,7 @@ sidebar_position: 20
 
 One of the most common advanced measure expressions is the use of [`case`](https://duckdb.org/docs/stable/sql/expressions/case.html) statements and [`filters`](https://duckdb.org/docs/stable/sql/query_syntax/filter.html) to filter or apply logic to part of the result set. Use cases for case statements include filtered sums (e.g., only sum if a flag is true) and bucketing data (e.g., if between threshold x and y, then apply an aggregate). While similar, case statements give you a bit more flexibility as they allow you to set a custom value depending on the case. See below for some examples!
 
-<img src = '/img/build/metrics-view/examples/case-example.png' class='rounded-gif' />
-<br />
+![Case Example](/img/build/metrics-view/examples/case-example.png)
 
 Please review the reference documentation, [here.](/reference/project-files/metrics-views)
 

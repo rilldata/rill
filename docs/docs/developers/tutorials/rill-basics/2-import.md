@@ -17,8 +17,7 @@ Let's start at the beginning of all data pipelines: **the source**.
 
 In Rill, a source model represents your raw data. See our list of [connectors](/developers/build/connectors) or select Add -> Add Data from Rill Developer to see the supported sources.
 
-<img src = '/img/tutorials/rill-basics/add_data.png' class='rounded-gif' style={{maxWidth: '400px', height: 'auto'}} />
-<br />
+![Add Data](/img/tutorials/rill-basics/add_data.png)
 
 :::tip Where is the data being imported?
 By default, Rill uses DuckDB as the underlying OLAP engine (see <a href='https://docs.rilldata.com/developers/build/olap/' target="_blank">Connect OLAP engines</a>).
@@ -31,8 +30,7 @@ We support various OLAP engines. If you have a different OLAP engine that you're
 
 Select the `+Add` dropdown and select `Data`. This will open a UI showing supported connectors.
 
-<img src = '/img/tutorials/rill-basics/Adding-Data.gif' class='rounded-gif' />
-<br />
+![Adding Data](/img/tutorials/rill-basics/Adding-Data.gif)
 
 For our tutorial, let's add two GCS storage sources from our public storage. 
 
@@ -54,8 +52,7 @@ Once imported, you'll see the UI change with several things:
 3. Within the DuckDB database, under main, the source table with a preview when selected.
 4. The right panel showing a summary of the data source and column values.
 
-<img src = '/img/tutorials/rill-basics/Add-GCS.gif' class='rounded-gif' />
-<br />
+![Add GCS](/img/tutorials/rill-basics/Add-GCS.gif)
 
 Now we're ready to create a `model`.
 

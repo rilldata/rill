@@ -28,13 +28,11 @@ Depending what you choose, the contents of your connection will change and I rec
 ### Connect to ClickHouse
 We can create the clickhouse connection by selection `+Add Data` > `ClickHouse` and fill in the components on the UI.
 
-<img src = '/img/tutorials/ch/clickhouse-connector.png' class='rounded-gif' />
-<br />
+![ClickHouse Connectionector](/img/tutorials/ch/clickhouse-connector.png)
 :::tip
 You can obtain the credentials from your ClickHouse Cloud account by clicking the `Connect` button in the left panel.:
 
-<img src = '/img/tutorials/ch/clickhouse-cloud-credential.png' class='rounded-gif' />
-<br />
+![ClickHouse Cloud Credential](/img/tutorials/ch/clickhouse-cloud-credential.png)
 ```
 "https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true"
 ```
@@ -137,4 +135,4 @@ If you connect to ClickHouse via the UI, this will automatically create a templa
 
 You should now be able to see the contents of your ClickHouse database in the left panel of your UI.
 
-<img src = '/img/tutorials/ch/olap-connector.png' class='rounded-gif' />
+![Olap Connectionector](/img/tutorials/ch/olap-connector.png)

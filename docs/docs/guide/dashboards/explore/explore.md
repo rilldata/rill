@@ -32,8 +32,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 
 ## Navigating the Dashboard
 
-<img src = '/img/explore/dashboard101/quickstart.png' class='rounded-gif' />
-<br />
+![Quickstart](/img/explore/dashboard101/quickstart.png)
 
 
 **Explore** 
@@ -126,8 +125,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ chart), rather than scrolling and finding an individual attribute (especially if the list is very long), you can also quickly search for a value and select / apply it to your dashboard by using the upper-right search box.
 
 
-<img src = '/img/explore/dashboard101/search-box.png' class='rounded-gif' />
-<br />
+![Search Box](/img/explore/dashboard101/search-box.png)
 
 :::
 
@@ -150,8 +148,7 @@ List of commands:
 - __*Value previewer*__ ( ``space`` ) - See the full text value of the row value.
 - __*Lock Insepector*__ ( ``L`` ) - Lock the inspector (allows scrolling through long values)
 
-<img src = '/img/explore/dashboard101/preview-value.png' class='rounded-gif' />
-<br />
+![Preview Value](/img/explore/dashboard101/preview-value.png)
 
 ## Display Settings
 
@@ -170,8 +167,7 @@ Simple add the following to your explore-dashboard.yaml
 banner: Your custom message here!
 ```
 
-<img src = '/img/explore/dashboard101/banner.png' class='rounded-gif' />
-<br />
+![Banner](/img/explore/dashboard101/banner.png)
 
 ## Reference
 

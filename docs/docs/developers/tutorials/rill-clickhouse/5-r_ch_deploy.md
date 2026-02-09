@@ -17,8 +17,7 @@ If this is the first time you have deployed a project onto Rill Cloud, you will 
 
 Select the `Deploy to share` button in the top right corner of a dashboard.
 
-<img src = '/img/tutorials/rill-basics/deploy-ui.gif' class='rounded-gif' />
-<br />
+![Deploy UI](/img/tutorials/rill-basics/deploy-ui.gif)
 
 Steps to deploy to Rill Cloud:
 1. Select the `Deploy to share` button.
@@ -29,8 +28,7 @@ Steps to deploy to Rill Cloud:
 
 
 Take note of the following features in the UI:
-<img src = '/img/tutorials/rill-basics/ui-explained.gif' class='rounded-gif' />
-
+![UI Explained](/img/tutorials/rill-basics/ui-explained.gif)
 ## In case of the following error:
 
 ```bash
