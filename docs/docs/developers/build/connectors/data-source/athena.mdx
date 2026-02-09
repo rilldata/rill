@@ -24,8 +24,6 @@ To connect to Amazon Athena, you need to provide authentication credentials. Ril
 Choose the method that best fits your setup. For production deployments to Rill Cloud, use Access Key/Secret Key. Local AWS credentials only work for local development and will cause deployment failures.
 :::
 
-## Using the Add Data UI
-
 <TwoStepFlowIntro
   connector="Athena"
   step1Description="Set up your Athena connector with AWS credentials (Access Key/Secret Key)"
@@ -107,7 +105,9 @@ Local AWS credentials only work for local development. If you deploy to Rill Clo
    aws iam get-user --no-cli-pager
    ```
 
-### Connector Configuration
+### Manual Configuration
+
+**Step 1: Create connector configuration**
 
 Create `connectors/my_athena.yaml`:
 
@@ -119,7 +119,7 @@ output_location: "s3://my-bucket/athena-results/"
 region: "us-east-1"
 ```
 
-### Model Configuration
+**Step 2: Create model configuration**
 
 Create `models/my_athena_data.yaml`:
 

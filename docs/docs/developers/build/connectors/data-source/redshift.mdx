@@ -24,8 +24,6 @@ To connect to Amazon Redshift, you need to provide authentication credentials. R
 Choose the method that best fits your setup. For production deployments to Rill Cloud, use Access Key/Secret Key. Local AWS credentials only work for local development and will cause deployment failures.
 :::
 
-## Using the Add Data UI
-
 <TwoStepFlowIntro
   connector="Redshift"
   step1Description="Set up your Redshift connector with AWS credentials (Access Key/Secret Key)"
@@ -110,7 +108,9 @@ Local AWS credentials only work for local development. If you deploy to Rill Clo
    aws iam get-user --no-cli-pager
    ```
 
-### Connector Configuration
+### Manual Configuration
+
+**Step 1: Create connector configuration**
 
 Create `connectors/my_redshift.yaml`:
 
@@ -121,7 +121,7 @@ driver: redshift
 database: "dev"
 ```
 
-### Model Configuration
+**Step 2: Create model configuration**
 
 Create `models/my_redshift_data.yaml`:
 

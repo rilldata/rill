@@ -25,8 +25,6 @@ To connect to Google Cloud Storage, you can choose from three authentication opt
 Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON or HMAC Keys. Public buckets don't require authentication and skip connector creation.
 :::
 
-## Using the Add Data UI
-
 When you add a GCS data model through the Rill UI, you'll see three authentication options:
 
 - **Service Account JSON** or **HMAC Keys**: The process follows two steps:
@@ -195,7 +193,7 @@ For local development, you can use credentials from the Google Cloud CLI. This m
    ```
 3. Create your model file (no connector needed)
 
-### Model Configuration
+### Manual Configuration
 
 Create `models/my_gcs_data.yaml`:
 

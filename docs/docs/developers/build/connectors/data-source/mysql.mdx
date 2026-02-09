@@ -13,9 +13,19 @@ import { TwoStepFlowIntro, DevProdSeparation, DeployToCloud } from '@site/src/co
 
 [MySQL](https://dev.mysql.com/doc/refman/8.0/en/introduction.html) is an open-source relational database management system (RDBMS) known for its reliability, performance, and ease of use. It is widely used for a variety of applications, from small to large enterprise projects, supporting structured data storage, retrieval, and management with SQL queries. MySQL offers a comprehensive ecosystem with support for advanced features such as replication, transactions, and full-text indexing, making it a versatile choice for integrating with BI tools. You can connect to and read from MySQL databases directly.
 
-## Connection String Format
+## Authentication Methods
 
-When connecting to MySQL, you need to specify an appropriate Data Source Name (DSN) using the following syntax:
+To connect to MySQL, you need to provide database connection credentials. Rill supports connecting via individual parameters (host, port, user, password, database).
+
+<TwoStepFlowIntro
+  connector="MySQL"
+  step1Description="Set up your MySQL connector with connection credentials (host, port, user, password, database)"
+  step2Description="Define which table or query to execute"
+/>
+
+### Connection String Format
+
+When connecting to MySQL, you can also specify an appropriate Data Source Name (DSN) using the following syntax:
 
 ```bash
 <scheme>://<user>:<password>@<host>:<port>/<database>
@@ -28,15 +38,7 @@ When connecting to MySQL, you need to specify an appropriate Data Source Name (D
 
 For more details, see the [MySQL documentation on DSN formats](https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri).
 
-## Using the Add Data UI
-
-<TwoStepFlowIntro
-  connector="MySQL"
-  step1Description="Set up your MySQL connector with connection credentials (host, port, user, password, database)"
-  step2Description="Define which table or query to execute"
-/>
-
-## Connect to MySQL
+## Method 1: Connection Credentials
 
 ### Using the UI
 

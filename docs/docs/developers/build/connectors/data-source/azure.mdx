@@ -30,8 +30,6 @@ To connect to Azure Blob Storage, you can choose from four authentication option
 Choose the method that best fits your setup. For production deployments to Rill Cloud, use Storage Account Key, Connection String, or SAS tokens. Public containers don't require authentication and skip connector creation. Azure CLI authentication only works for local development and will cause deployment failures.
 :::
 
-## Using the Add Data UI
-
 When you add an Azure Blob Storage data model through the Rill UI, you'll see four authentication options:
 
 - **Storage Account Key**, **Connection String**, or **SAS Token**: The process follows two steps:
@@ -258,7 +256,7 @@ For local development, you can use credentials from the Azure CLI. This method i
    ```
 4. Create your model file (no connector needed)
 
-### Model Configuration
+### Manual Configuration
 
 Create `models/my_azure_data.yaml`:
 
