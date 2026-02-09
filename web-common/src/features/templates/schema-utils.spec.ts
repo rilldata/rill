@@ -386,7 +386,10 @@ describe("schema-utils", () => {
       const options = buildEnumOptions(fieldWithLabels);
       expect(options).toHaveLength(3);
       expect(options[0]).toEqual({ value: "cloud", label: "Cloud" });
-      expect(options[1]).toEqual({ value: "self-managed", label: "Self Managed" });
+      expect(options[1]).toEqual({
+        value: "self-managed",
+        label: "Self Managed",
+      });
     });
 
     it("falls back to enum value when no label provided", () => {
@@ -395,7 +398,9 @@ describe("schema-utils", () => {
     });
 
     it("includes descriptions when includeDescription is true", () => {
-      const options = buildEnumOptions(fieldWithLabels, { includeDescription: true });
+      const options = buildEnumOptions(fieldWithLabels, {
+        includeDescription: true,
+      });
       expect(options[0].description).toBe("Cloud desc");
       expect(options[1].description).toBe("Self desc");
     });
