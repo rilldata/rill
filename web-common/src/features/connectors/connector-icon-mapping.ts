@@ -1,3 +1,4 @@
+import type { ComponentType, SvelteComponent } from "svelte";
 import AmazonS3Icon from "../../components/icons/connectors/AmazonS3Icon.svelte";
 import ApacheDruidIcon from "../../components/icons/connectors/ApacheDruidIcon.svelte";
 import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.svelte";
@@ -17,6 +18,8 @@ import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte"
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
+
+type IconComponent = ComponentType<SvelteComponent<{ size?: string }>>;
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -38,7 +41,7 @@ export const connectorIconMapping = {
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
   starrocks: StarRocksIcon,
-};
+} satisfies Record<string, IconComponent>;
 
 export const connectorLabelMapping = {
   duckdb: "DuckDB",
