@@ -4,6 +4,7 @@
     createAdminServiceHibernateProject,
     createAdminServiceRedeployProject,
     getAdminServiceGetProjectQueryKey,
+    type RpcStatus,
   } from "@rilldata/web-admin/client";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -18,6 +19,7 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import type { AxiosError } from "axios";
 
   export let organization: string;
   export let project: string;
@@ -35,42 +37,60 @@
   $: redeployResult = $redeployProjectMutation;
 
   async function hibernateProject() {
-    await $hibernateProjectMutation.mutateAsync({
-      org: organization,
-      project: project,
-    });
+    try {
+      await $hibernateProjectMutation.mutateAsync({
+        org: organization,
+        project: project,
+      });
 
-    dialogOpen = false;
+      dialogOpen = false;
 
-    await queryClient.refetchQueries({
-      queryKey: getAdminServiceGetProjectQueryKey(organization, project),
-    });
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+      });
 
-    eventBus.emit("notification", {
-      message: "Project hibernated",
-    });
+      eventBus.emit("notification", {
+        message: "Project hibernated",
+      });
+    } catch (err) {
+      const axiosError = err as AxiosError<RpcStatus>;
+      eventBus.emit("notification", {
+        message:
+          axiosError.response?.data?.message ?? "Failed to hibernate project",
+        type: "error",
+      });
+    }
   }
 
   async function wakeProject() {
-    await $redeployProjectMutation.mutateAsync({
-      org: organization,
-      project: project,
-    });
+    try {
+      await $redeployProjectMutation.mutateAsync({
+        org: organization,
+        project: project,
+      });
 
-    await queryClient.refetchQueries({
-      queryKey: getAdminServiceGetProjectQueryKey(organization, project),
-    });
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+      });
 
-    eventBus.emit("notification", {
-      message: "Project is waking up",
-    });
+      eventBus.emit("notification", {
+        message: "Project is waking up",
+      });
+    } catch (err) {
+      const axiosError = err as AxiosError<RpcStatus>;
+      eventBus.emit("notification", {
+        message: axiosError.response?.data?.message ?? "Failed to wake project",
+        type: "error",
+      });
+    }
   }
 </script>
 
 <SettingsContainer title="Hibernate Project">
   <svelte:fragment slot="body">
     {#if isHibernated}
-      This project is currently hibernated. To access, please wake the project.
+      This project is currently hibernated and is not consuming resources. Wake
+      the project to resume access.
     {:else}
       Put this project into hibernation mode. Hibernated projects are paused and
       do not consume resources. The project can be woken up at any time.
@@ -97,8 +117,8 @@
           <AlertDialogHeader>
             <AlertDialogTitle>Hibernate this project?</AlertDialogTitle>
             <AlertDialogDescription>
-              The project will be put into hibernation mode. It can be
-              reactivated by accessing it again.
+              The project will be paused and will not consume resources. It can
+              be woken up at any time.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

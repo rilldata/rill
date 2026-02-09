@@ -11,7 +11,7 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
+  import { sanitizeSlug } from "@rilldata/web-common/lib/string-utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { AxiosError } from "axios";
@@ -21,6 +21,9 @@
 
   export let organization: string;
   export let project: string;
+
+  // Track if form has been initialized to prevent overwriting user edits
+  let formInitialized = false;
 
   const initialValues: {
     name: string;
@@ -47,8 +50,7 @@
         if (!form.valid) return;
         const values = form.data;
 
-        // Sanitize the project name similar to org name sanitization
-        const newProject = sanitizeOrgName(values.name);
+        const newProject = sanitizeSlug(values.name);
 
         try {
           await $updateProjectMutation.mutateAsync({
@@ -93,9 +95,12 @@
   );
 
   $: projectResp = createAdminServiceGetProject(organization, project);
-  $: if ($projectResp.data?.project) {
+
+  // Only sync server data to form on initial load or when form hasn't been modified
+  $: if ($projectResp.data?.project && !formInitialized) {
     $form.name = $projectResp.data.project.name ?? "";
     $form.description = $projectResp.data.project.description ?? "";
+    formInitialized = true;
   }
 
   $: changed =
@@ -120,7 +125,7 @@
       errors={$errors?.name}
       id="name"
       label="Name"
-      description={`Your project URL will be https://ui.rilldata.com/${organization}/${sanitizeOrgName($form.name)}, to comply with our naming rules.`}
+      description={`Your project URL will be https://ui.rilldata.com/${organization}/${sanitizeSlug($form.name)}, to comply with our naming rules.`}
       textClass="text-sm"
       alwaysShowError
       additionalClass="max-w-[520px]"

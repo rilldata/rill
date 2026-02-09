@@ -27,6 +27,15 @@
   .danger-zone > :global(.settings-container .settings-footer) {
     @apply border-t;
     border-color: var(--color-red-200);
-    background-color: color-mix(in srgb, var(--color-red-400) 10%, transparent);
+    /* Fallback for browsers that don't support color-mix */
+    background-color: rgba(248, 113, 113, 0.1);
+    /* Modern browsers: use color-mix for theme-aware transparency */
+    @supports (background-color: color-mix(in srgb, red 50%, transparent)) {
+      background-color: color-mix(
+        in srgb,
+        var(--color-red-400) 10%,
+        transparent
+      );
+    }
   }
 </style>

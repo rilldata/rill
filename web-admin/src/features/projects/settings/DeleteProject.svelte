@@ -24,7 +24,7 @@
       project,
     });
 
-    void goto(`/${organization}`);
+    // Clean up cache before navigating to ensure the new page has fresh data
     queryClient.removeQueries({
       queryKey: getAdminServiceGetProjectQueryKey(organization, project),
     });
@@ -32,9 +32,12 @@
       queryKey:
         getAdminServiceListProjectsForOrganizationQueryKey(organization),
     });
+
     eventBus.emit("notification", {
       message: "Deleted project",
     });
+
+    await goto(`/${organization}`);
   }
 </script>
 
