@@ -35,5 +35,4 @@ For individuals who prefer a more traditional medium, you can open a support tic
 
 For logged-in users, Rill provides the ability to ask a question or report an issue to the Rill Support team directly from within the application via an embedded in-app chat widget. Select your user icon in the top right corner and choose "Contact Rill support"—a chat widget will appear on your screen!
 
-<img src='/img/contact/rill-developer-chat.png' class='rounded-gif' />
-<br />
+![Rill Developer Chat](/img/contact/rill-developer-chat.png)

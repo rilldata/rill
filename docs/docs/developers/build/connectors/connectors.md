@@ -46,7 +46,7 @@ Rill offers flexible connection strategies to fit different data architectures a
   />
 
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Clickhouse.svg" alt="ClickHouse" />}
+    icon={<img src="/img/build/connectors/icons/Logo-ClickHouse.svg" alt="ClickHouse" />}
     content="High-performance columnar database for real-time analytics and data warehousing."
     link="/developers/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
@@ -54,7 +54,7 @@ Rill offers flexible connection strategies to fit different data architectures a
   />
 
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Motherduck.svg" alt="MotherDuck" />}
+    icon={<img src="/img/build/connectors/icons/Logo-MotherDuck.svg" alt="MotherDuck" />}
     content="Cloud-native DuckDB service for scalable analytics and data processing."
     link="/developers/build/connectors/olap/motherduck"
     linkLabel="Learn more"
@@ -108,7 +108,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     referenceLink="athena"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Bigquery.svg" alt="BigQuery" />}
+    icon={<img src="/img/build/connectors/icons/Logo-BigQuery.svg" alt="BigQuery" />}
     header="BigQuery"
     content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
     link="/developers/build/connectors/data-source/bigquery"
@@ -142,7 +142,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-mysql.svg" alt="MySQL" />}
+    icon={<img src="/img/build/connectors/icons/Logo-MySQL.svg" alt="MySQL" />}
     header="MySQL"
     content="Connect to MySQL databases with support for various authentication methods and SSL connections."
     link="/developers/build/connectors/data-source/mysql"
