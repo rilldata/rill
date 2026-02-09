@@ -7,7 +7,6 @@ const blue = "var(--color-blue-800)";
 const purple = "var(--color-purple-700)";
 const invalid = "var(--color-red-600)";
 const emerald = "var(--color-emerald-700)";
-const emeraldHighlight = "var(--color-emerald-400)";
 const gray = "var(--fg-muted)";
 const amber = "var(--color-amber-600)";
 const highlightBackground = "var(--line-highlight)";
@@ -103,9 +102,13 @@ export const editorTheme = EditorView.theme(
       borderBottomColor: tooltipBackground,
     },
     ".cm-tooltip-autocomplete": {
-      padding: "0",
+      padding: "0.25rem",
+      backgroundColor: "var(--popover)",
+      color: "var(--popover-foreground)",
+      border: "solid 1px var(--border)",
       "& > ul > li[aria-selected]": {
-        color: emeraldHighlight,
+        backgroundColor: "var(--popover-accent)",
+        color: "var(--popover-foreground)",
       },
     },
   },
