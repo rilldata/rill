@@ -45,7 +45,9 @@ test.describe("Default olap_connector behavior", () => {
     await expectRillYAMLToContainOlapConnector(page, "duckdb");
   });
 
-  test("Should set default olap_connector to clickhouse for Rill-managed ClickHouse", async ({
+  // Test skipped: Rill-managed ClickHouse option is temporarily hidden (APP-728)
+  // The feature isn't complete yet - it doesn't create CH model files when OLAP is Rill-managed CH
+  test.skip("Should set default olap_connector to clickhouse for Rill-managed ClickHouse", async ({
     page,
   }) => {
     await page.getByRole("link", { name: "Empty Project" }).click();
