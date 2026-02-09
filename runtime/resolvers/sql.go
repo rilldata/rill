@@ -99,27 +99,27 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	refs = normalizeRefs(refs)
 
 	// Compute row cap (limit after which we return an error in interactive queries).
-	var cap int64
+	var rowCap int64
 	if !opts.ForExport {
 		cfg, err := inst.Config()
 		if err != nil {
 			return nil, err
 		}
-		cap = cfg.InteractiveSQLRowLimit
+		rowCap = cfg.InteractiveSQLRowLimit
 	}
 
 	// Compute limit (maximum number of rows to return; unlike cap, this doesn't error if exceeded).
 	limit := props.Limit
-	if cap != 0 {
-		if limit > cap {
-			return nil, fmt.Errorf("requested row limit %d exceeds the maximum interactive limit of %d", limit, cap)
-		} else if limit == 0 {
-			limit = cap + 1 // Optimization so the DB doesn't compute more rows than necessary to detect that we hit the cap.
+	if rowCap != 0 {
+		if limit > rowCap {
+			return nil, fmt.Errorf("requested row limit %d exceeds the maximum interactive limit of %d", limit, rowCap)
+		} else if limit <= 0 {
+			limit = rowCap + 1 // Optimization so the DB doesn't compute more rows than necessary to detect that we hit the cap.
 		}
 	}
 
 	// Wrap the SQL with an outer SELECT to apply the limit.
-	if limit != 0 {
+	if limit > 0 {
 		if olap.Dialect() == drivers.DialectMySQL {
 			// subqueries in MySQL require an alias
 			sql = fmt.Sprintf("SELECT * FROM (\n%s\n) AS subquery LIMIT %d", sql, limit)
@@ -133,7 +133,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		refs:        refs,
 		olap:        olap,
 		olapRelease: release,
-		rowCap:      cap,
+		rowCap:      rowCap,
 		priority:    args.Priority,
 	}, nil
 }

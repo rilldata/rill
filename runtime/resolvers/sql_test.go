@@ -23,30 +23,38 @@ func TestSQLLimit(t *testing.T) {
 	})
 
 	cases := []struct {
-		name          string
-		sql           string
-		limit         int
-		errorContains string
+		name      string
+		sql       string
+		limit     int
+		wantRows  int
+		wantError string
 	}{
 		{
-			name:          "bad unlimited",
-			sql:           "SELECT * FROM foo",
-			errorContains: "result cap exceeded",
+			name:      "bad unlimited",
+			sql:       "SELECT * FROM foo",
+			wantError: "result cap exceeded",
 		},
 		{
-			name: "good unlimited",
-			sql:  "SELECT 1",
+			name:      "bad explicit limit",
+			sql:       "SELECT * FROM foo",
+			limit:     15,
+			wantError: "exceeds the maximum interactive limit",
 		},
 		{
-			name:  "good limit",
-			sql:   "SELECT * FROM foo LIMIT 5",
-			limit: 5,
+			name:     "good unlimited",
+			sql:      "SELECT 1",
+			wantRows: 1,
 		},
 		{
-			name:          "bad limit",
-			sql:           "SELECT * FROM foo",
-			limit:         15,
-			errorContains: "exceeds the maximum interactive limit",
+			name:     "good normal limit",
+			sql:      "SELECT * FROM foo LIMIT 5",
+			wantRows: 5,
+		},
+		{
+			name:     "good explicit limit",
+			sql:      "SELECT * FROM foo",
+			limit:    5,
+			wantRows: 5,
 		},
 	}
 
@@ -58,8 +66,8 @@ func TestSQLLimit(t *testing.T) {
 				ResolverProperties: map[string]any{"sql": tc.sql, "limit": tc.limit},
 				Claims:             &runtime.SecurityClaims{SkipChecks: true},
 			})
-			if tc.errorContains != "" {
-				require.ErrorContains(t, err, tc.errorContains)
+			if tc.wantError != "" {
+				require.ErrorContains(t, err, tc.wantError)
 				return
 			}
 			require.NoError(t, err)
@@ -76,7 +84,7 @@ func TestSQLLimit(t *testing.T) {
 			}
 
 			if tc.limit > 0 {
-				require.Equal(t, tc.limit, len(rows))
+				require.Equal(t, tc.wantRows, len(rows))
 			}
 		})
 	}
