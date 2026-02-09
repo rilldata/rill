@@ -106,7 +106,9 @@ export function convertContextToInlinePrompt(ctx: InlineContext) {
     const isComputedKey = key === "value" || key === "label";
     const isNonStringKey = key === "values";
     if (isComputedKey || isNonStringKey) continue;
-    if (ctx[key] !== undefined) parts.push(`${key}="${ctx[key]}"`);
+    const value = ctx[key];
+    const hasValue = value !== undefined && value !== null;
+    if (hasValue) parts.push(`${key}="${value}"`);
   }
 
   // TODO: dimension value support
