@@ -71,6 +71,7 @@ explore:
 	expectedTools := []string{
 		ai.ListMetricsViewsName,
 		ai.GetMetricsViewName,
+		ai.GetCanvasName,
 		ai.QueryMetricsViewName,
 		ai.QueryMetricsViewSummaryName,
 		ai.ProjectStatusName,
