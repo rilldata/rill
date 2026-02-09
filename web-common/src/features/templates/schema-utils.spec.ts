@@ -3,8 +3,17 @@ import {
   isDisabledForValues,
   isVisibleForValues,
   getRequiredFieldsForValues,
+  isEnumWithDisplay,
+  isRadioEnum,
+  isTabsEnum,
+  isSelectEnum,
+  isRichSelectEnum,
+  buildEnumOptions,
+  radioOptions,
+  tabOptions,
+  selectOptions,
 } from "./schema-utils";
-import type { MultiStepFormSchema } from "./schemas/types";
+import type { MultiStepFormSchema, JSONSchemaField } from "./schemas/types";
 
 describe("schema-utils", () => {
   describe("isDisabledForValues", () => {
@@ -240,6 +249,215 @@ describe("schema-utils", () => {
         "connector",
       );
       expect(sourceRequired.has("name")).toBe(false);
+    });
+  });
+
+  describe("enum display type checks", () => {
+    const radioField: JSONSchemaField = {
+      type: "string",
+      enum: ["a", "b"],
+      "x-display": "radio",
+    };
+
+    const tabsField: JSONSchemaField = {
+      type: "string",
+      enum: ["x", "y"],
+      "x-display": "tabs",
+    };
+
+    const selectField: JSONSchemaField = {
+      type: "string",
+      enum: ["1", "2"],
+      "x-display": "select",
+    };
+
+    const plainField: JSONSchemaField = {
+      type: "string",
+    };
+
+    const enumNoDisplay: JSONSchemaField = {
+      type: "string",
+      enum: ["a", "b"],
+    };
+
+    describe("isEnumWithDisplay", () => {
+      it("returns true when enum and display type match", () => {
+        expect(isEnumWithDisplay(radioField, "radio")).toBe(true);
+        expect(isEnumWithDisplay(tabsField, "tabs")).toBe(true);
+        expect(isEnumWithDisplay(selectField, "select")).toBe(true);
+      });
+
+      it("returns false when display type does not match", () => {
+        expect(isEnumWithDisplay(radioField, "tabs")).toBe(false);
+        expect(isEnumWithDisplay(tabsField, "select")).toBe(false);
+      });
+
+      it("returns false when field has no enum", () => {
+        expect(isEnumWithDisplay(plainField, "radio")).toBe(false);
+      });
+
+      it("returns false when field has enum but no x-display", () => {
+        expect(isEnumWithDisplay(enumNoDisplay, "radio")).toBe(false);
+      });
+    });
+
+    describe("isRadioEnum", () => {
+      it("returns true for radio display", () => {
+        expect(isRadioEnum(radioField)).toBe(true);
+      });
+
+      it("returns false for other display types", () => {
+        expect(isRadioEnum(tabsField)).toBe(false);
+        expect(isRadioEnum(selectField)).toBe(false);
+        expect(isRadioEnum(plainField)).toBe(false);
+      });
+    });
+
+    describe("isTabsEnum", () => {
+      it("returns true for tabs display", () => {
+        expect(isTabsEnum(tabsField)).toBe(true);
+      });
+
+      it("returns false for other display types", () => {
+        expect(isTabsEnum(radioField)).toBe(false);
+        expect(isTabsEnum(selectField)).toBe(false);
+      });
+    });
+
+    describe("isSelectEnum", () => {
+      it("returns true for select display", () => {
+        expect(isSelectEnum(selectField)).toBe(true);
+      });
+
+      it("returns false for other display types", () => {
+        expect(isSelectEnum(radioField)).toBe(false);
+        expect(isSelectEnum(tabsField)).toBe(false);
+      });
+    });
+
+    describe("isRichSelectEnum", () => {
+      const richSelectField: JSONSchemaField = {
+        type: "string",
+        enum: ["a", "b"],
+        "x-display": "select",
+        "x-select-style": "rich",
+      };
+
+      const standardSelectField: JSONSchemaField = {
+        type: "string",
+        enum: ["a", "b"],
+        "x-display": "select",
+      };
+
+      it("returns true for select with rich style", () => {
+        expect(isRichSelectEnum(richSelectField)).toBe(true);
+      });
+
+      it("returns false for standard select without rich style", () => {
+        expect(isRichSelectEnum(standardSelectField)).toBe(false);
+      });
+
+      it("returns false for other display types", () => {
+        expect(isRichSelectEnum(radioField)).toBe(false);
+        expect(isRichSelectEnum(tabsField)).toBe(false);
+      });
+
+      it("returns false for field with no enum", () => {
+        expect(isRichSelectEnum(plainField)).toBe(false);
+      });
+    });
+  });
+
+  describe("buildEnumOptions", () => {
+    const fieldWithLabels: JSONSchemaField = {
+      type: "string",
+      enum: ["cloud", "self-managed", "rill-managed"],
+      "x-enum-labels": ["Cloud", "Self Managed", "Rill Managed"],
+      "x-enum-descriptions": ["Cloud desc", "Self desc", "Rill desc"],
+      "x-enum-icons": ["cloud-icon", "server-icon", "sparkles-icon"],
+    };
+
+    const fieldWithoutLabels: JSONSchemaField = {
+      type: "string",
+      enum: ["a", "b", "c"],
+    };
+
+    it("builds options with labels from x-enum-labels", () => {
+      const options = buildEnumOptions(fieldWithLabels);
+      expect(options).toHaveLength(3);
+      expect(options[0]).toEqual({ value: "cloud", label: "Cloud" });
+      expect(options[1]).toEqual({ value: "self-managed", label: "Self Managed" });
+    });
+
+    it("falls back to enum value when no label provided", () => {
+      const options = buildEnumOptions(fieldWithoutLabels);
+      expect(options[0]).toEqual({ value: "a", label: "a" });
+    });
+
+    it("includes descriptions when includeDescription is true", () => {
+      const options = buildEnumOptions(fieldWithLabels, { includeDescription: true });
+      expect(options[0].description).toBe("Cloud desc");
+      expect(options[1].description).toBe("Self desc");
+    });
+
+    it("excludes descriptions by default", () => {
+      const options = buildEnumOptions(fieldWithLabels);
+      expect(options[0].description).toBeUndefined();
+    });
+
+    it("includes icons when includeIcons is true and iconMap provided", () => {
+      const mockIcon = {} as any;
+      const iconMap = { "cloud-icon": mockIcon };
+      const options = buildEnumOptions(fieldWithLabels, {
+        includeIcons: true,
+        iconMap,
+      });
+      expect(options[0].icon).toBe(mockIcon);
+      expect(options[1].icon).toBeUndefined(); // server-icon not in map
+    });
+
+    it("returns empty array when field has no enum", () => {
+      const options = buildEnumOptions({ type: "string" });
+      expect(options).toEqual([]);
+    });
+  });
+
+  describe("radioOptions", () => {
+    it("includes descriptions", () => {
+      const field: JSONSchemaField = {
+        type: "string",
+        enum: ["a", "b"],
+        "x-enum-descriptions": ["Desc A", "Desc B"],
+      };
+      const options = radioOptions(field);
+      expect(options[0].description).toBe("Desc A");
+    });
+  });
+
+  describe("tabOptions", () => {
+    it("excludes descriptions", () => {
+      const field: JSONSchemaField = {
+        type: "string",
+        enum: ["a", "b"],
+        "x-enum-descriptions": ["Desc A", "Desc B"],
+      };
+      const options = tabOptions(field);
+      expect(options[0].description).toBeUndefined();
+    });
+  });
+
+  describe("selectOptions", () => {
+    it("includes descriptions and icons", () => {
+      const mockIcon = {} as any;
+      const field: JSONSchemaField = {
+        type: "string",
+        enum: ["a"],
+        "x-enum-descriptions": ["Desc A"],
+        "x-enum-icons": ["icon-a"],
+      };
+      const options = selectOptions(field, { "icon-a": mockIcon });
+      expect(options[0].description).toBe("Desc A");
+      expect(options[0].icon).toBe(mockIcon);
     });
   });
 });

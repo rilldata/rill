@@ -111,7 +111,16 @@
     prevDeploymentType = currentDeploymentType;
   }
 
-  // Helper to clear error state (called on user input)
+  /**
+   * Clears error state when user modifies form input.
+   * Called from onStringInputChange for text inputs.
+   *
+   * Note: Select/dropdown changes do NOT trigger this - errors only clear on:
+   * - Text input changes (via onStringInputChange)
+   * - Deployment type changes (via reactive statement above)
+   * This is intentional: changing a dropdown option (other than deployment_type)
+   * typically doesn't fix connection errors, so we keep the error visible.
+   */
   function clearErrorOnInput() {
     if (paramsError) {
       paramsError = null;

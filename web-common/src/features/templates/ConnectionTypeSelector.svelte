@@ -16,11 +16,13 @@
   export let label: string = "";
   export let onChange: (value: string) => void = () => {};
 
-  // Icon and color maps can be passed as props for reusability
+  // Icon and color maps for rich select display.
+  // Defaults support ClickHouse and DuckDB deployment types; override via props for other connectors.
   export let iconMap: Record<string, ComponentType<SvelteComponent>> = {
     cloud: Cloud,
     playground: Play,
     "self-managed": Server,
+    "self-hosted": Server,
     "rill-managed": Sparkles,
   };
 
@@ -28,6 +30,7 @@
     cloud: { bg: "bg-yellow-100", text: "text-yellow-600" },
     playground: { bg: "bg-green-100", text: "text-green-600" },
     "self-managed": { bg: "bg-purple-100", text: "text-purple-600" },
+    "self-hosted": { bg: "bg-purple-100", text: "text-purple-600" },
     "rill-managed": { bg: "bg-blue-100", text: "text-blue-600" },
   };
 

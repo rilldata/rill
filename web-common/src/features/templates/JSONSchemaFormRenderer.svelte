@@ -12,6 +12,7 @@
     getConditionalValues,
     isDisabledForValues,
     isRadioEnum,
+    isRichSelectEnum,
     isSelectEnum,
     isStepMatch,
     isTabsEnum,
@@ -155,14 +156,6 @@
         { taint: false },
       );
     }
-  }
-
-  function isRichSelectEnum(prop: JSONSchemaField) {
-    return Boolean(
-      prop.enum &&
-        prop["x-display"] === "select" &&
-        prop["x-select-style"] === "rich",
-    );
   }
 
   function computeVisibleEntries(
@@ -329,12 +322,22 @@
     return isDisabledForValues(schema, key, $form);
   }
 
+  /**
+   * Handles select/dropdown value changes and resets grouped fields.
+   *
+   * ORDERING IS CRITICAL - the steps must execute in this sequence:
+   * 1. Collect all child keys (from x-grouped-fields and nested x-tab-group)
+   * 2. Clear non-UI-only fields to empty string
+   * 3. Initialize UI-only enum fields (needed for conditional matching)
+   * 4. Set the new select value
+   * 5. Apply conditional defaults from allOf/if/then (e.g., port varies by deployment type)
+   * 6. Fall back to base defaults for any remaining empty fields
+   */
   function handleSelectChange(key: string, newValue: string) {
     if (!schema) return;
     const prop = schema.properties?.[key];
     if (!prop) return;
 
-    // Clear all grouped fields when select value changes
     const groupedFieldsMap = prop["x-grouped-fields"];
     if (groupedFieldsMap) {
       form.update(

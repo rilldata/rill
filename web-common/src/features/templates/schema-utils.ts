@@ -6,6 +6,10 @@ import type {
   MultiStepFormSchema,
 } from "./schemas/types";
 
+/**
+ * Radio option type used by getRadioEnumOptions() for multi-step connector flows.
+ * Has required description and optional hint for detailed radio button displays.
+ */
 export type RadioEnumOption = {
   value: string;
   label: string;
@@ -14,7 +18,8 @@ export type RadioEnumOption = {
 };
 
 /**
- * Enum option type used by select, radio, and tabs components.
+ * Enum option type used by select, tabs, and generic radio components.
+ * Has optional description and icon for flexible enum displays.
  */
 export type EnumOption = {
   value: string;
@@ -52,6 +57,18 @@ export function isTabsEnum(prop: JSONSchemaField): boolean {
  */
 export function isSelectEnum(prop: JSONSchemaField): boolean {
   return isEnumWithDisplay(prop, "select");
+}
+
+/**
+ * Check if a field is a rich select enum (x-display: "select" with x-select-style: "rich").
+ * Rich selects render as ConnectionTypeSelector with icons and descriptions.
+ */
+export function isRichSelectEnum(prop: JSONSchemaField): boolean {
+  return Boolean(
+    prop.enum &&
+      prop["x-display"] === "select" &&
+      prop["x-select-style"] === "rich",
+  );
 }
 
 /**
