@@ -44,5 +44,4 @@ test.describe("Default olap_connector behavior", () => {
     await page.waitForURL("**/files/rill.yaml");
     await expectRillYAMLToContainOlapConnector(page, "duckdb");
   });
-
 });
