@@ -12,6 +12,7 @@
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let store: ConnectorExplorerStore;
+  export let searchPattern: string = "";
 
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName, database);
@@ -64,6 +65,7 @@
               {connector}
               {database}
               {store}
+              {searchPattern}
               databaseSchema={schema ?? ""}
             />
           {/each}
