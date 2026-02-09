@@ -15,12 +15,12 @@
     type DimensionColumnProps,
     type MeasureColumnProps,
   } from "./pivot-column-definition";
-  import { isShowMoreRow } from "./pivot-utils";
   import {
     calculateMeasureWidth,
     calculateRowDimensionWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -457,12 +457,12 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    /* @apply bg-surface-subtle; */
+    @apply bg-surface-base;
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    /* @apply bg-surface-subtle; */
+    @apply bg-surface-base;
   }
 
   .with-row-dimension tr:hover > td:first-of-type {
