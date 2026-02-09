@@ -1,12 +1,13 @@
-import { EditorView } from "@codemirror/view";
-import type { Extension } from "@codemirror/state";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import type { Extension } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
 
 const blue = "var(--color-blue-800)";
 const purple = "var(--color-purple-700)";
 const invalid = "var(--color-red-600)";
 const emerald = "var(--color-emerald-700)";
+const emeraldHighlight = "var(--color-emerald-400)";
 const gray = "var(--fg-muted)";
 const amber = "var(--color-amber-600)";
 const highlightBackground = "var(--line-highlight)";
@@ -102,9 +103,9 @@ export const editorTheme = EditorView.theme(
       borderBottomColor: tooltipBackground,
     },
     ".cm-tooltip-autocomplete": {
+      padding: "0",
       "& > ul > li[aria-selected]": {
-        backgroundColor: highlightBackground,
-        color: emerald,
+        color: emeraldHighlight,
       },
     },
   },
