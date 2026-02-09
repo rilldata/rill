@@ -9,9 +9,9 @@
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
-  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import DashboardChat from "@rilldata/web-common/features/chat/DashboardChat.svelte";
   import {
     createIframeRPCHandler,
     emitNotification,
@@ -144,7 +144,7 @@
         <slot />
       </div>
       {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
-        <ExploreChat />
+        <DashboardChat />
       {/if}
     </div>
   </RuntimeProvider>

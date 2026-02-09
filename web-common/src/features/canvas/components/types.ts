@@ -1,5 +1,6 @@
 import type { CartesianCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import type { CircularCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/CircularChart";
+import type { ScatterPlotCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/ScatterPlotChart";
 import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type { ChartType } from "../../components/charts/types";
 import type { ImageSpec } from "./image";
@@ -11,6 +12,7 @@ import type { PivotSpec, TableSpec } from "./pivot";
 export type ComponentWithMetricsView =
   | CartesianCanvasChartSpec
   | CircularCanvasChartSpec
+  | ScatterPlotCanvasChartSpec
   | PivotSpec
   | TableSpec
   | KPISpec

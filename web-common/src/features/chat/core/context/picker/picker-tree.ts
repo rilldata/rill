@@ -39,8 +39,10 @@ export function buildPickerTree(pickerItems: PickerItem[]): PickerTree {
   // Calculate boundary indices to show border around.
   const boundaryIndices = new Set<string>();
   let prevItem: PickerItem | null = null;
+  let firstBoundary: string | null = null;
   rootNodes.forEach((rootNode) => {
     if (rootNode.item.currentlyActive || rootNode.item.recentlyUsed) {
+      if (!firstBoundary) firstBoundary = rootNode.item.id;
       boundaryIndices.add(rootNode.item.id);
       return;
     }
@@ -50,10 +52,12 @@ export function buildPickerTree(pickerItems: PickerItem[]): PickerTree {
       return;
     }
 
-    const isFirstBoundary = prevItem === null && boundaryIndices.size === 0;
-    if (!isFirstBoundary) boundaryIndices.add(rootNode.item.id);
+    if (!firstBoundary) firstBoundary = rootNode.item.id;
+    boundaryIndices.add(rootNode.item.id);
     prevItem = rootNode.item;
   });
+
+  if (firstBoundary) boundaryIndices.delete(firstBoundary);
 
   return {
     rootNodes,

@@ -283,7 +283,7 @@
   /* TOOLBAR STYLES */
 
   .toolbar {
-    @apply font-normal text-fg-muted;
+    @apply font-normal text-fg-secondary;
     @apply h-6 px-1.5 rounded-sm;
     @apply gap-x-1.5;
   }
