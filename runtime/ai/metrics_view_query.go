@@ -2,7 +2,6 @@ package ai
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,8 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
-	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"google.golang.org/protobuf/proto"
 )
 
 const QueryMetricsViewName = "query_metrics_view"
@@ -254,20 +251,14 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID strin
 		return "", fmt.Errorf("failed to join path: %w", err)
 	}
 
-	queryPb, err := pbutil.ToStruct(metricsQuery, nil)
+	queryJSON, err := json.Marshal(metricsQuery)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal MCP query to proto: %w", err)
+		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
 	}
-
-	bin, err := proto.Marshal(queryPb)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal MCP query to proto: %w", err)
-	}
-
-	encoded := base64.StdEncoding.EncodeToString(bin)
+	query := string(queryJSON)
 
 	values := make(url.Values)
-	values.Set("query", encoded)
+	values.Set("query", query)
 	openURL.RawQuery = values.Encode()
 
 	return openURL.String(), nil
