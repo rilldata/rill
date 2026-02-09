@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { ComponentType, SvelteComponent } from "svelte";
   import { selectedGraphNode, isGraphExpanded } from "./graph-inspector-store";
   import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
@@ -134,7 +135,7 @@
   })();
 
   // Get connector-specific icon
-  $: connectorIcon =
+  $: connectorIcon = (
     derivedConnector &&
     connectorIconMapping[
       derivedConnector.toLowerCase() as keyof typeof connectorIconMapping
@@ -142,7 +143,8 @@
       ? connectorIconMapping[
           derivedConnector.toLowerCase() as keyof typeof connectorIconMapping
         ]
-      : null;
+      : null
+  ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
 
   // Model refresh mutation
   const triggerMutation = createRuntimeServiceCreateTrigger();
