@@ -199,7 +199,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 }
 
 // UpdateInstanceConnector upserts or removes a connector from an instance
-// If connector is nil, the connector is removed; otherwise, it is upserted
+// If connector is nil, the connector is removed and the connections are closed; otherwise, it is upserted
 func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name string, connector *runtimev1.ConnectorSpec) error {
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
@@ -210,6 +210,11 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	projConns := make([]*runtimev1.Connector, 0, len(inst.ProjectConnectors))
 	for _, c := range inst.ProjectConnectors {
 		if c.Name == name {
+			// close the connection
+			r.connCache.EvictWhere(func(cfg any) bool {
+				x := cfg.(cachedConnectionConfig)
+				return x.instanceID == instanceID && x.name == name
+			})
 			continue
 		}
 		projConns = append(projConns, c)
