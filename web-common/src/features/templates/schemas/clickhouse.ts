@@ -17,7 +17,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
     deployment_type: {
       type: "string",
       title: "Connection type",
-      enum: ["cloud", "playground", "self-managed", "rill-managed"],
+      enum: ["cloud", "playground", "self-managed"], // removed rill-managed until SQL support is ready
       default: "cloud",
       "x-display": "select",
       "x-select-style": "rich",
