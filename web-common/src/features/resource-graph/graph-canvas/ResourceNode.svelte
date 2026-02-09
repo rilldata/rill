@@ -75,7 +75,12 @@
   $: routeHighlighted = (data as any)?.routeHighlighted === true;
 </script>
 
-<ConditionalTooltip showTooltip={hasError} location="top" distance={8} activeDelay={150}>
+<ConditionalTooltip
+  showTooltip={hasError}
+  location="top"
+  distance={8}
+  activeDelay={150}
+>
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div

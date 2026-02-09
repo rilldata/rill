@@ -277,7 +277,7 @@
         <div class="metadata-row">
           <span class="metadata-icon">
             {#if connectorIcon}
-              <svelte:component this={connectorIcon} size="16px" />
+              <svelte:component this={connectorIcon} size={16} />
             {:else}
               <Database size={16} />
             {/if}
@@ -757,8 +757,11 @@
   .icon-btn {
     @apply flex items-center justify-center w-7 h-7 rounded;
     @apply text-fg-muted bg-transparent border-none;
-    @apply hover:bg-surface-subtle hover:text-fg-primary;
     @apply cursor-pointer transition-colors;
+  }
+
+  .icon-btn:hover {
+    @apply bg-surface-subtle text-fg-primary;
   }
 
   .icon-btn.active {
@@ -1129,9 +1132,5 @@
 
   .partitions-meta {
     @apply flex items-center gap-4 text-xs text-fg-muted;
-  }
-
-  .partitions-meta .meta-item {
-    @apply inline-flex items-center gap-1;
   }
 </style>
