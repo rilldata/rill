@@ -127,6 +127,8 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
     return {
       type: createAttributeEntry(null, "type"),
       metricsView: createAttributeEntry(null, "metricsView"),
+      canvas: createAttributeEntry(null, "canvas"),
+      canvasComponent: createAttributeEntry(null, "canvasComponent"),
       measure: createAttributeEntry(null, "measure"),
       dimension: createAttributeEntry(null, "dimension"),
       timeRange: createAttributeEntry(null, "timeRange"),
@@ -322,6 +324,8 @@ function getTransactionForContext(
   return view.state.tr
     .setNodeAttribute(pos, "type", inlineChatContext.type)
     .setNodeAttribute(pos, "metricsView", inlineChatContext.metricsView)
+    .setNodeAttribute(pos, "canvas", inlineChatContext.canvas)
+    .setNodeAttribute(pos, "canvasComponent", inlineChatContext.canvasComponent)
     .setNodeAttribute(pos, "measure", inlineChatContext.measure)
     .setNodeAttribute(pos, "dimension", inlineChatContext.dimension)
     .setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange)
