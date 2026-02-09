@@ -10,11 +10,7 @@ A metrics view is a 'centralized framework' used to define and organize **key me
 
 Rill metrics views are analogous to the **semantic layer** and **metrics layer** concepts found in other business intelligence and analytics tools. It provides a consistent, reusable abstraction over your underlying data, enabling standardized definitions of business metrics that can be shared across different dashboards and reports.
 
-
-<div style={{ textAlign: 'center' }}>
-  ![Metrics View Components](/img/concepts/metrics-view/metrics-view-components.png)
-</div>
-
+![Metrics View Components](/img/concepts/metrics-view/metrics-view-components.png)
 
 In Rill, your metrics view is defined by _metric definitions_. Metric definitions are composed of:
 * [_**model/table**_](/developers/build/metrics-view/underlying-model) - A data model or underlying table created with the concept of [One Big Table](/developers/build/models/models-101#one-big-table-and-dashboarding) that will power the metrics view.

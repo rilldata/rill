@@ -11,8 +11,6 @@ sidebar_position: 65
 
 [Salesforce](https://www.salesforce.com/) is a leading cloud-based Customer Relationship Management (CRM) platform designed to help businesses connect with and understand their customers better. It offers a comprehensive suite of applications focused on sales, customer service, marketing automation, analytics, and application development. Salesforce enables organizations of all sizes to build stronger relationships with their customers through personalized experiences, streamlined communication, and predictive insights. Rill can ingest data from Salesforce as a source by utilizing the Bulk API, which requires a Salesforce username and password (and, in some cases, a token, depending on the org configuration) to authenticate against a Salesforce org.
 
-![Salesforce](/img/build/connectors/data-sources/salesforce.png)
-
 
 ## Local credentials
 
