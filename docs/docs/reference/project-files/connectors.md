@@ -700,7 +700,7 @@ _[string]_ - The base URL for the Claude API
 # Example: Claude connector configuration
 type: connector
 driver: claude
-api_key: "{{ .env.CLAUDE_API_KEY }}"
+api_key: "{{ .env.claude_api_key }}"
 model: claude-opus-4-5
 ```
 

@@ -783,7 +783,7 @@ definitions:
               host: "starrocks-fe.example.com"                # Hostname of the StarRocks FE server  
               port: 9030                                      # MySQL protocol port of StarRocks FE  
               username: "analyst"                             # Username for authentication  
-              password: "{{ .env.connector.starrocks.password }}"  # Password for authentication  
+              password: "{{ .env.STARROCKS_PASSWORD }}"  # Password for authentication  
               catalog: "default_catalog"                      # StarRocks catalog name  
               database: "my_database"                         # StarRocks database name  
               ssl: false                                      # Enable SSL/TLS encryption

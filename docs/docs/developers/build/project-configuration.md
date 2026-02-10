@@ -217,7 +217,7 @@ Once defined, these variables can be referenced in your project files using temp
 SELECT *
 FROM users
 WHERE status = "{{ .env.string_var }}"
-  AND score > {{ .env.numeric_var }}
+  AND score > "{{ .env.numeric_var }}"
 ```
 
 ## AI Configuration
