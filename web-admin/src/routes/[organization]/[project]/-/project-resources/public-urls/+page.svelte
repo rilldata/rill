@@ -55,15 +55,12 @@
 
   function useValidDashboardTitle(dashboard: V1Resource) {
     return (
-      dashboard?.explore?.spec?.displayName ||
-      dashboard?.meta?.name?.name ||
-      ""
+      dashboard?.explore?.spec?.displayName || dashboard?.meta?.name?.name || ""
     );
   }
 
   $: sortedAllRowsWithDashboardTitle = allRowsWithDashboardTitle.sort(
-    (a, b) =>
-      new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
+    (a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime(),
   );
 
   const queryClient = useQueryClient();

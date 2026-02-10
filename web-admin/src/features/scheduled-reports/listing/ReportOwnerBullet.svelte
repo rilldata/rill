@@ -10,6 +10,6 @@
 
 {#if $ownerName.isSuccess}
   <span>
-    {$ownerName.data ? `Created by ${$ownerName.data}` : "Created through code"}
+    {$ownerName.data || "Via code"}
   </span>
 {/if}

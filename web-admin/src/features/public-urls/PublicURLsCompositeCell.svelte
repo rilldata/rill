@@ -11,9 +11,8 @@
   export let expiresOn: string | undefined;
   export let id: string;
   export let onDelete: (deletedTokenId: string) => void;
-  export let metricsViewFilters:
-    | { [key: string]: V1Expression }
-    | undefined = undefined;
+  export let metricsViewFilters: { [key: string]: V1Expression } | undefined =
+    undefined;
 
   function formatDate(value: string) {
     return new Date(value).toLocaleDateString(undefined, {

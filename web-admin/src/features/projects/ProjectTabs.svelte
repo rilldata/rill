@@ -35,7 +35,7 @@
       label: "Query",
       hasPermission: false,
     },
-      {
+    {
       route: `/${organization}/${project}/-/project-resources`,
       label: "Project Resources",
       hasPermission: projectPermissions.manageProject,

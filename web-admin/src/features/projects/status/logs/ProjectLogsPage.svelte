@@ -43,8 +43,7 @@
 
   $: filteredLogs = logs.filter((log) => {
     const matchesLevel =
-      selectedLevels.length === 0 ||
-      selectedLevels.includes(log.level ?? "");
+      selectedLevels.length === 0 || selectedLevels.includes(log.level ?? "");
     const matchesSearch =
       !searchText ||
       (log.message?.toLowerCase().includes(searchText.toLowerCase()) ??
@@ -251,9 +250,7 @@
     {#if hasConnectionError}
       <div class="error-state">
         <span class="text-red-600">Connection failed: {connectionError}</span>
-        <button class="retry-button" on:click={retryConnection}>
-          Retry
-        </button>
+        <button class="retry-button" on:click={retryConnection}> Retry </button>
       </div>
     {:else if logs.length === 0}
       <div class="empty-state">Waiting for logs...</div>
@@ -293,6 +290,7 @@
     @apply flex-1 overflow-y-auto overflow-x-hidden font-mono text-xs;
     @apply bg-surface-background border border-gray-200 rounded-md p-2;
     min-height: 300px;
+    max-height: 70vh;
   }
 
   .empty-state {
