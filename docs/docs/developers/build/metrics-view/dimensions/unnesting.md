@@ -11,8 +11,7 @@ sidebar_position: 50
 ## Example 
 In this example, the data contains an array column that has the value `['deal_one', 'deal_two', 'deal_three']`. Setting the unnest property enables the user to filter on each value in the array. Measures split by unnested values are non-additive, so that in this example the “Total Impressions” measure is applied equally across each value. Totals in Pivot Tables and the Time Dimension Detail view are calculated correctly, avoiding issues with double counted values when splitting multi-value dimensions.
 
-<img src = '/img/build/metrics-view/examples/unnested-dimension.png' class='rounded-gif' />
-<br /> 
+![Unnested Dimension](/img/build/metrics-view/examples/unnested-dimension.png) 
 
  ```yaml
   - display_name: "Deal Name"
@@ -22,8 +21,7 @@ In this example, the data contains an array column that has the value `['deal_on
 ```
 
 In another example, we are provided with a directory_path column that gives us information on which path was edited. Using DuckDB's `regexp_split_to_array`, we have converted the string into an array. Using `unnest`, we can see which top directories are being updated more than others. 
-<img src = '/img/build/metrics-view/examples/tutorial-unnest.png' class='rounded-gif' />
-<br /> 
+![Tutorial Unnest](/img/build/metrics-view/examples/tutorial-unnest.png) 
 
 ```yaml
   - expression: regexp_split_to_array(directory_path, '/')
