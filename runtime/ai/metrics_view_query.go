@@ -41,7 +41,7 @@ Perform an arbitrary aggregation on a metrics view.
 The JSON schema defines all available parameters. Key considerations:
 
 Request:
-- Include 'limit' and 'sort' parameters to optimize performance. Keep the limit as low as realistically possible for your task (ideally below 100 rows). Regardless of whether you include a limit, the server will truncate large results (and return a warning if it does)."
+- Include 'limit' and 'sort' parameters to optimize performance. Keep the limit as low as realistically possible for your task (ideally below 100 rows). Regardless of whether you include a limit, the server will truncate large results (and return a warning if it does).
 - 'time_range' is inclusive of start time, exclusive of end time
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
@@ -120,7 +120,7 @@ Example: Get the total revenue by country and month for order shipped in 2024:
         "time_range": {
             "start": "2024-01-01T00:00:00Z",
             "end": "2025-01-01T00:00:00Z",
-            "time_dimension"": "order_shipped_time"
+            "time_dimension": "order_shipped_time"
         },
         "sort": [
             {"name": "event_time"},
