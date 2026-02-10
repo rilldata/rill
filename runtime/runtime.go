@@ -210,11 +210,6 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	projConns := make([]*runtimev1.Connector, 0, len(inst.ProjectConnectors))
 	for _, c := range inst.ProjectConnectors {
 		if c.Name == name {
-			// close the connection
-			r.connCache.EvictWhere(func(cfg any) bool {
-				x := cfg.(cachedConnectionConfig)
-				return x.instanceID == instanceID && x.name == name
-			})
 			continue
 		}
 		projConns = append(projConns, c)
@@ -236,7 +231,19 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	inst = &tmp
 	inst.ProjectConnectors = projConns
 
-	return r.EditInstance(ctx, inst, false)
+	err = r.EditInstance(ctx, inst, false)
+	if err != nil {
+		return err
+	}
+
+	// close the connection
+	if connector == nil {
+		r.connCache.EvictWhere(func(cfg any) bool {
+			x := cfg.(cachedConnectionConfig)
+			return x.instanceID == instanceID && x.name == name
+		})
+	}
+	return nil
 }
 
 func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) error {
