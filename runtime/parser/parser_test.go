@@ -893,6 +893,39 @@ SELECT 1
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestConnectorDeletion(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`connectors/duckdb.yaml`: `
+type: connector
+driver: duckdb
+`,
+		`models/m1.sql`: `SELECT 1`,
+	})
+
+	// Initial parse - model should ref the connector
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+
+	m1 := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
+	require.NotNil(t, m1)
+	require.Contains(t, m1.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"})
+
+	// Delete the connector file
+	deleteRepo(t, repo, "/connectors/duckdb.yaml")
+
+	// Reparse - model should no longer ref the deleted connector
+	diff, err := p.Reparse(ctx, []string{"/connectors/duckdb.yaml"})
+	require.NoError(t, err)
+	require.Contains(t, diff.Deleted, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"})
+	require.Contains(t, diff.Modified, ResourceName{Kind: ResourceKindModel, Name: "m1"}, "model should be modified when connector is deleted")
+
+	m1Updated := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
+	require.NotNil(t, m1Updated)
+	require.NotContains(t, m1Updated.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"}, "model should not ref deleted connector")
+}
+
 func BenchmarkReparse(b *testing.B) {
 	ctx := context.Background()
 	files := map[string]string{

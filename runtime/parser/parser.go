@@ -185,12 +185,12 @@ type Parser struct {
 	Errors    []*runtimev1.ParseError
 
 	// Internal state
-	resourcesForPath           map[string][]*Resource    // Reverse index of Resource.Paths
-	resourcesForUnspecifiedRef map[string][]*Resource    // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
-	resourceNamesForDataPaths  map[string][]ResourceName // Index of local data files to resources that depend on them
-	insertedResources          []*Resource
-	updatedResources           []*Resource
-	deletedResources           []*Resource
+	resourcesForPath          map[string][]*Resource       // Reverse index of Resource.Paths
+	resourcesForAmbiguousRef  map[ResourceName][]*Resource // Reverse index of Resource.rawRefs where refs are explicit. Currently Kind=ResourceKindUnspecified and Kind=ResourceKindConnector
+	resourceNamesForDataPaths map[string][]ResourceName    // Index of local data files to resources that depend on them
+	insertedResources         []*Resource
+	updatedResources          []*Resource
+	deletedResources          []*Resource
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -331,7 +331,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.Errors = nil
 	p.resourceNamesForDataPaths = make(map[string][]ResourceName)
 	p.resourcesForPath = make(map[string][]*Resource)
-	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
+	p.resourcesForAmbiguousRef = make(map[ResourceName][]*Resource)
 	p.insertedResources = nil
 	p.updatedResources = nil
 	p.deletedResources = nil
@@ -354,9 +354,9 @@ func (p *Parser) reload(ctx context.Context) error {
 		return err
 	}
 
-	// Infer unspecified refs for all inserted resources
+	// Infer ambiguous refs for all inserted resources
 	for _, r := range p.insertedResources {
-		p.inferUnspecifiedRefs(r)
+		p.inferAmbiguousRefs(r)
 	}
 
 	return nil
@@ -503,52 +503,54 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 	// ... all inserted resources
 	for _, r := range p.insertedResources {
 		inferRefsSeen[r.Name.Normalized()] = true
-		p.inferUnspecifiedRefs(r)
+		p.inferAmbiguousRefs(r)
 	}
 	// ... all updated resources
 	for _, r := range p.updatedResources {
 		inferRefsSeen[r.Name.Normalized()] = true
-		p.inferUnspecifiedRefs(r)
+		p.inferAmbiguousRefs(r)
 	}
 	// ... any unchanged resource that may have an unspecified ref to a deleted resource
 	for _, r1 := range p.deletedResources {
-		for _, r2 := range p.resourcesForUnspecifiedRef[strings.ToLower(r1.Name.Name)] {
+		nr1 := r1.Name.Normalized()
+		for _, r2 := range p.resourcesForAmbiguousRef[nr1] {
 			n := r2.Name.Normalized()
 			if !inferRefsSeen[n] {
 				inferRefsSeen[n] = true
-				p.inferUnspecifiedRefs(r2)
+				p.inferAmbiguousRefs(r2)
+				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
+			}
+		}
+		// Also check for resources with unspecified refs (Kind == ResourceKindUnspecified) that may match this deleted resource by name
+		unspecifiedRef := ResourceName{Kind: ResourceKindUnspecified, Name: r1.Name.Name}.Normalized()
+		for _, r2 := range p.resourcesForAmbiguousRef[unspecifiedRef] {
+			n := r2.Name.Normalized()
+			if !inferRefsSeen[n] {
+				inferRefsSeen[n] = true
+				p.inferAmbiguousRefs(r2)
 				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
 			}
 		}
 	}
 	// ... any unchanged resource that might have an unspecified ref (previously unmatched) that now matches a newly inserted resource
 	for _, r1 := range p.insertedResources {
-		for _, r2 := range p.resourcesForUnspecifiedRef[strings.ToLower(r1.Name.Name)] {
+		nr1 := r1.Name.Normalized()
+		for _, r2 := range p.resourcesForAmbiguousRef[nr1] {
 			n := r2.Name.Normalized()
 			if !inferRefsSeen[n] {
 				inferRefsSeen[n] = true
-				p.inferUnspecifiedRefs(r2)
+				p.inferAmbiguousRefs(r2)
 				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
 			}
 		}
-	}
-	// ... any unchanged resource that might have a ref to a newly inserted connector
-	// since connectors are not frequently updates/inserted no lookups are used here and resources are simply iterated over
-	for _, r1 := range p.insertedResources {
-		if r1.Name.Kind != ResourceKindConnector {
-			continue
-		}
-		for _, r2 := range p.Resources {
+		// Also check for resources with unspecified refs (Kind == ResourceKindUnspecified) that may match this inserted resource by name
+		unspecifiedRef := ResourceName{Kind: ResourceKindUnspecified, Name: r1.Name.Name}.Normalized()
+		for _, r2 := range p.resourcesForAmbiguousRef[unspecifiedRef] {
 			n := r2.Name.Normalized()
-			if inferRefsSeen[n] {
-				continue
-			}
-			for _, ref := range r2.rawRefs {
-				if ref.Kind == ResourceKindConnector && strings.EqualFold(ref.Name, r1.Name.Name) {
-					inferRefsSeen[n] = true
-					p.inferUnspecifiedRefs(r2)
-					p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
-				}
+			if !inferRefsSeen[n] {
+				inferRefsSeen[n] = true
+				p.inferAmbiguousRefs(r2)
+				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
 			}
 		}
 	}
@@ -758,74 +760,48 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	return nil
 }
 
-// inferUnspecifiedRefs populates r.Refs with
+// inferAmbiguousRefs populates r.Refs with
 // a) all explicit refs from r.rawRefs. A ref to a connector is only added if the connector is explicitly defined.
 // b) any implicit refs that we can infer from context.
 // An implicit ref is one where the kind is unspecified. They are common when extracted from SQL.
-// For example, if a model contains "SELECT * FROM foo", we add "foo" to r.rawRefs, and need to infer whether "foo" is a source or a model.
+// For example, if a model contains "SELECT * FROM foo", we add "foo" to r.rawRefs, and need to infer whether "foo" is a model.
 //
 // If an unspecified ref can't be matched to another resource, it is not added to r.Refs.
 // That allows, for example, a model like "SELECT * FROM foo", to parse successfully even when no other model or source is named "foo" exists.
 // This is necessary to support referencing existing tables in a database. Errors for such cases will be thrown from the downstream reconciliation logic instead.
-// We may want to revisit this handling in the future.
-func (p *Parser) inferUnspecifiedRefs(r *Resource) {
+func (p *Parser) inferAmbiguousRefs(r *Resource) {
 	var refs []ResourceName
-	var mvRefsModel bool
+	var hasModelRef bool
 	for _, ref := range r.rawRefs {
-		if ref.Kind != ResourceKindUnspecified {
-			if ref.Kind == ResourceKindConnector {
-				// metrics views are handled separately below
-				if r.Name.Kind == ResourceKindMetricsView {
-					continue
-				}
-				// a connector may not be explicitly defined so only add ref if it exists
-				if _, ok := p.Resources[ref.Normalized()]; !ok {
-					continue
-				}
+		if ref.Kind == ResourceKindConnector {
+			// metrics view are handled separately below
+			if r.Name.Kind == ResourceKindMetricsView {
+				continue
 			}
+			// a connector may not be explicitly defined so only add ref if it exists
+			if _, ok := p.Resources[ref.Normalized()]; !ok {
+				continue
+			}
+		}
+		if ref.Kind != ResourceKindUnspecified {
 			refs = append(refs, ref)
 			continue
 		}
 
-		// Rule 1: If it's a model and there's a source with that name, use it
-		if r.Name.Kind == ResourceKindModel {
-			n := ResourceName{Kind: ResourceKindSource, Name: ref.Name}
-			if _, ok := p.Resources[n.Normalized()]; ok {
-				refs = append(refs, n)
-				continue
-			}
-		}
-
-		// Rule 2: If it's a metrics view and there's a model or source with that name, use it
-		if r.Name.Kind == ResourceKindMetricsView {
+		// If it's a metrics view or model and there's a model with that name, use it
+		if r.Name.Kind == ResourceKindMetricsView || r.Name.Kind == ResourceKindModel {
 			n := ResourceName{Kind: ResourceKindModel, Name: ref.Name}
 			if _, ok := p.Resources[n.Normalized()]; ok {
 				refs = append(refs, n)
-				mvRefsModel = true
-				continue
-			}
-			n = ResourceName{Kind: ResourceKindSource, Name: ref.Name}
-			if _, ok := p.Resources[n.Normalized()]; ok {
-				refs = append(refs, n)
-				mvRefsModel = true
+				hasModelRef = true
 				continue
 			}
 		}
 
-		// Rule 3: If it's a model and there's another model with that name, use it
-		if r.Name.Kind == ResourceKindModel {
-			n := ResourceName{Kind: r.Name.Kind, Name: ref.Name}
-			if _, ok := p.Resources[n.Normalized()]; ok {
-				// NOTE: Not skipping self-references because we'd rather add them and error during cyclic dependency check
-				refs = append(refs, n)
-				continue
-			}
-		}
-
-		// Rule 4: Skip it
+		// Otherwise, skip it
 	}
 
-	if r.Name.Kind == ResourceKindMetricsView && !mvRefsModel {
+	if r.Name.Kind == ResourceKindMetricsView && !hasModelRef {
 		// this is a metrics view that doesn't ref a model
 		// try to add a ref to the connector
 		for _, ref := range r.rawRefs {
@@ -929,11 +905,11 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		p.resourcesForPath[path] = append(p.resourcesForPath[path], r)
 	}
 
-	// Index unspecified refs in p.resourcesForUnspecifiedRef
+	// Index ambiguous refs in p.resourcesForAmbiguousRef
 	for _, ref := range refs {
-		if ref.Kind == ResourceKindUnspecified {
-			n := strings.ToLower(ref.Name)
-			p.resourcesForUnspecifiedRef[n] = append(p.resourcesForUnspecifiedRef[n], r)
+		if ambiguousRef(ref) {
+			n := ref.Normalized()
+			p.resourcesForAmbiguousRef[n] = append(p.resourcesForAmbiguousRef[n], r)
 		}
 	}
 
@@ -975,21 +951,21 @@ func (p *Parser) deleteResource(r *Resource) {
 		}
 	}
 
-	// Remove pointers indexed in resourcesForUnspecifiedRef
+	// Remove pointers indexed in resourcesForAmbiguousRef
 	for _, ref := range r.rawRefs {
-		if ref.Kind != ResourceKindUnspecified {
+		if !ambiguousRef(ref) {
 			continue
 		}
-		n := strings.ToLower(ref.Name)
-		rs := p.resourcesForUnspecifiedRef[n]
+		n := ref.Normalized()
+		rs := p.resourcesForAmbiguousRef[n]
 		idx := slices.Index(rs, r)
 		if idx < 0 {
-			panic(fmt.Errorf("resource %q not found in resourcesForUnspecifiedRef for ref %q", r.Name, ref.Name))
+			panic(fmt.Errorf("resource %q not found in resourcesForAmbiguousRef for ref %q", r.Name, ref.Name))
 		}
 		if len(rs) == 1 {
-			delete(p.resourcesForUnspecifiedRef, n)
+			delete(p.resourcesForAmbiguousRef, n)
 		} else {
-			p.resourcesForUnspecifiedRef[n] = slices.Delete(rs, idx, idx+1)
+			p.resourcesForAmbiguousRef[n] = slices.Delete(rs, idx, idx+1)
 		}
 	}
 
@@ -1141,6 +1117,10 @@ func pathStem(path string) string {
 		return path
 	}
 	return path[:i]
+}
+
+func ambiguousRef(n ResourceName) bool {
+	return n.Kind == ResourceKindUnspecified || n.Kind == ResourceKindConnector
 }
 
 // locationError wraps an error with source file character location information
