@@ -19,6 +19,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const defaultTemperature = 0.1
+
 func init() {
 	drivers.Register("openai", driver{})
 	drivers.RegisterAsConnector("openai", driver{})
@@ -133,12 +135,12 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 }
 
 type configProperties struct {
-	APIKey      string  `mapstructure:"api_key"`
-	Model       string  `mapstructure:"model"`
-	Temperature float32 `mapstructure:"temperature"`
-	BaseURL     string  `mapstructure:"base_url"`
-	APIType     string  `mapstructure:"api_type"`
-	APIVersion  string  `mapstructure:"api_version"`
+	APIKey      string   `mapstructure:"api_key"`
+	Model       string   `mapstructure:"model"`
+	Temperature *float64 `mapstructure:"temperature"`
+	BaseURL     string   `mapstructure:"base_url"`
+	APIType     string   `mapstructure:"api_type"`
+	APIVersion  string   `mapstructure:"api_version"`
 }
 
 func (c *configProperties) getModel() string {
@@ -146,6 +148,13 @@ func (c *configProperties) getModel() string {
 		return c.Model
 	}
 	return openai.ChatModelGPT5_2
+}
+
+func (c *configProperties) getTemperature() float64 {
+	if c.Temperature != nil {
+		return *c.Temperature
+	}
+	return defaultTemperature
 }
 
 type openaiHandle struct {
@@ -276,12 +285,10 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 
 	// Prepare request parameters
 	params := openai.ChatCompletionNewParams{
-		Model:    o.config.getModel(),
-		Messages: reqMsgs,
-		Tools:    openaiTools,
-	}
-	if o.config.Temperature > 0 {
-		params.Temperature = openai.Float(float64(o.config.Temperature))
+		Model:       o.config.getModel(),
+		Messages:    reqMsgs,
+		Tools:       openaiTools,
+		Temperature: openai.Float(o.config.getTemperature()),
 	}
 
 	// Set response format based on output schema
