@@ -64,6 +64,36 @@ function headerKeyToEnvSegment(headerKey: string): string {
 }
 
 /**
+ * Common HTTP authentication scheme prefixes.
+ * When a sensitive header value starts with one of these (case-insensitive),
+ * only the token portion after the prefix is stored in `.env`, while the
+ * scheme keyword is kept as plain text in the connector YAML.
+ */
+const AUTH_SCHEME_PREFIXES = ["Bearer ", "Basic ", "Token ", "Bot "];
+
+/**
+ * If `value` begins with a recognised auth scheme prefix (e.g. "Bearer "),
+ * returns `{ scheme, secret }` where `scheme` includes the trailing space.
+ * Returns `null` when no known prefix is detected.
+ */
+function splitAuthSchemePrefix(
+  value: string,
+): { scheme: string; secret: string } | null {
+  for (const prefix of AUTH_SCHEME_PREFIXES) {
+    if (
+      value.length > prefix.length &&
+      value.slice(0, prefix.length).toLowerCase() === prefix.toLowerCase()
+    ) {
+      return {
+        scheme: value.slice(0, prefix.length),
+        secret: value.slice(prefix.length),
+      };
+    }
+  }
+  return null;
+}
+
+/**
  * Convert header entries into a YAML map block.
  * Accepts an array of {key, value} objects (new key-value input) or a legacy
  * multi-line "Header-Name: value" string. Returns empty string when there are
@@ -94,10 +124,14 @@ function formatHeadersAsYamlMap(
         .substring(idx + 1)
         .trim()
         .replace(/^"|"$/g, "");
-      const v =
-        nameForEnv && isSensitiveHeaderKey(k)
-          ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
-          : raw;
+      let v: string;
+      if (nameForEnv && isSensitiveHeaderKey(k)) {
+        const envRef = `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`;
+        const split = splitAuthSchemePrefix(raw);
+        v = split ? `${split.scheme}${envRef}` : envRef;
+      } else {
+        v = raw;
+      }
       return `    "${k}": "${v}"`;
     });
     return `headers:\n${entries.join("\n")}`;
@@ -108,10 +142,14 @@ function formatHeadersAsYamlMap(
   if (valid.length === 0) return "";
   const entries = valid.map((e) => {
     const k = e.key.trim();
-    const v =
-      nameForEnv && isSensitiveHeaderKey(k)
-        ? `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`
-        : e.value.trim();
+    let v: string;
+    if (nameForEnv && isSensitiveHeaderKey(k)) {
+      const envRef = `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`;
+      const split = splitAuthSchemePrefix(e.value.trim());
+      v = split ? `${split.scheme}${envRef}` : envRef;
+    } else {
+      v = e.value.trim();
+    }
     return `    "${k}": "${v}"`;
   });
   return `headers:\n${entries.join("\n")}`;
@@ -287,7 +325,9 @@ export async function updateDotEnvWithSecrets(
         envSegment,
         connectorInstanceName,
       );
-      blob = replaceOrAddEnvVariable(blob, envKey, entry.value.trim());
+      const raw = entry.value.trim();
+      const split = splitAuthSchemePrefix(raw);
+      blob = replaceOrAddEnvVariable(blob, envKey, split ? split.secret : raw);
     }
   }
 
