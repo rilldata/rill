@@ -68,12 +68,12 @@ export function compileSourceYAML(
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
         // For source files, we include secret properties
-        return `${key}: '{{ env "${makeDotEnvConnectorKey(
+        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
           opts?.existingEnvBlob,
           schema ?? undefined,
-        )}" }}'`;
+        )} }}"`;// uses standard Go template syntax
       }
 
       if (key === "sql") {
