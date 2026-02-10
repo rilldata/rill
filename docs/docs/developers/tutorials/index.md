@@ -18,12 +18,16 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 ---
 Follow along, refer to the in-line linked documentation, and explore our product to make the most out of these tutorials! Please reach out to ask any questions or provide feedback on our Community Slack or Discord!
 
-- [**Source to Published Dashboard:**](/developers/tutorials/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
+- [**Source to Published Dashboard:**](/developers/tutorials/rill-basics/1-launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
 - [**Visualize ClickHouse tables in Rill:**](/developers/tutorials/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course using ClickHouse!
 - [**Clone a Project:**](/developers/tutorials/clone-a-project) Step-by-step guide to clone an already deployed instance from Rill Cloud to your local machine
 - [**GitHub Analytics:**](/developers/tutorials/github-analytics) Analyze your own GitHub repository by modifying the Python file, download_commits.py
 - [**Cost Monitoring Analytics:**](/developers/tutorials/cost-monitoring-analytics) Analyze your cost and usage data
 - [**OpenRTB Analytics:**](/developers/tutorials/openrtb-analytics) Analyze real-time bidding data to track impressions, bids, wins and more
+- [**GitHub Basics:**](/developers/tutorials/github-101) GitHub basics for deployment with Rill Cloud
+- [**Deploy from Gitlab:**](/developers/tutorials/deploy-from-cli) Set up continuous deploys to Rill Cloud from Gitlab
+- [**Optimize Performance in Rill:**](/developers/tutorials/performance) Best practices and guidelines to keep your dashboards performant
+- [**Integrating with Rill's Admin API:**](/developers/tutorials/integrating-with-rill) Build custom integrations using Rill's Admin API
 
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!

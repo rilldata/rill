@@ -67,7 +67,7 @@ notify:
 
 This will give you a good idea of what object has an issue, and you can browse the [status page](/guide/administration/project-settings#checking-deployment-status) for more information.
 
-After making these changes, you should commit and [push these changes](/developers/guides/github-101#pushing-changes) to your git repository.
+After making these changes, you should commit and [push these changes](/developers/tutorials/github-101#pushing-changes) to your git repository.
 
 ### Configure a Slack alert
 
@@ -93,4 +93,4 @@ notify:
     channels: [rill-alerts]
 ```
 
-After making these changes, you should commit and [push these changes](/developers/guides/github-101#pushing-changes) to your git repository or update your Rill project via the Deploy button.
+After making these changes, you should commit and [push these changes](/developers/tutorials/github-101#pushing-changes) to your git repository or update your Rill project via the Deploy button.

@@ -64,7 +64,7 @@ Rill will either create a new repository or connect to an existing one, then set
 - `--subpath path/to/project` — If your Rill project lives inside a larger repo
 
 :::tip New to Git?
-No problem! Check out our [GitHub Basics](/developers/guides/github-101) guide, which walks you through everything using GitHub Desktop — no command line required.
+No problem! Check out our [GitHub Basics](/developers/tutorials/github-101) guide, which walks you through everything using GitHub Desktop — no command line required.
 :::
 
 ## Connect GitHub to an Existing Project
@@ -96,5 +96,5 @@ rill project status
 You can also view detailed status information on the Status page in Rill Cloud.
 
 :::tip Using GitLab?
-We've got you covered. See [Deploy from CLI](/developers/guides/deploy-from-cli) for GitLab instructions.
+We've got you covered. See [Deploy from CLI](/developers/tutorials/deploy-from-cli) for GitLab instructions.
 :::
