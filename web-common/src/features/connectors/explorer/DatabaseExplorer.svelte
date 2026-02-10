@@ -13,13 +13,7 @@
   $: connectorName = connector?.name as string;
   $: hasError = !!connector?.errorMessage;
 
-  // Managed connectors without host/dsn config aren't ready for queries yet
-  $: isAwaitingConfig =
-    connector?.provision === true &&
-    !connector?.config?.dsn &&
-    !connector?.config?.host;
-
-  $: queryEnabled = !hasError && !isAwaitingConfig;
+  $: queryEnabled = !hasError;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
     instanceId,
@@ -37,8 +31,6 @@
 <div class="wrapper">
   {#if hasError}
     <span class="message pl-6">Error: {connector.errorMessage}</span>
-  {:else if isAwaitingConfig}
-    <span class="message pl-6">Configure connector to browse tables</span>
   {:else if isLoading && queryEnabled}
     <span class="message pl-6">Loading tables...</span>
   {:else if error && queryEnabled}
