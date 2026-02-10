@@ -13,13 +13,21 @@ import {
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import type { InlineContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+import {
+  getIconForComponent,
+  getLabelForComponent,
+} from "@rilldata/web-common/features/canvas/components/util.ts";
+import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
 
 type ContextConfigPerType = {
   editable: boolean;
   typeLabel?: string;
   getLabel: (ctx: InlineContext, meta: InlineContextMetadata) => string;
   getTooltip?: (ctx: InlineContext, meta: InlineContextMetadata) => string;
-  getIcon?: (ctx: InlineContext) => any | undefined;
+  getIcon?: (
+    ctx: InlineContext,
+    meta: InlineContextMetadata,
+  ) => any | undefined;
 };
 
 /**
@@ -37,8 +45,39 @@ export const InlineContextConfig: Record<
     editable: true,
     typeLabel: "Metrics View",
     getLabel: (ctx, meta) =>
-      meta[ctx.metricsView!]?.metricsViewSpec?.displayName || ctx.metricsView!,
+      meta.metricsViewSpecs[ctx.metricsView!]?.metricsViewSpec?.displayName ||
+      ctx.metricsView!,
     getIcon: () => resourceIconMapping[ResourceKind.MetricsView],
+  },
+
+  [InlineContextType.Canvas]: {
+    editable: true,
+    typeLabel: "Canvas",
+    getLabel: (ctx, meta) =>
+      meta.canvasSpecs[ctx.canvas!]?.displayName || ctx.canvas!,
+    getIcon: () => resourceIconMapping[ResourceKind.Canvas],
+  },
+
+  [InlineContextType.CanvasComponent]: {
+    editable: true,
+    typeLabel: "Canvas Component",
+    getLabel: (ctx, meta) => {
+      const componentSpec = meta.componentSpecs[ctx.canvasComponent!];
+      return getLabelForComponent(
+        ctx.canvasComponent!,
+        componentSpec,
+        meta.metricsViewSpecs[
+          (componentSpec?.rendererProperties as ChartSpec | undefined)
+            ?.metrics_view ?? ""
+        ]?.metricsViewSpec,
+      );
+    },
+    getIcon: (ctx, meta) => {
+      const componentSpec = meta.componentSpecs[ctx.canvasComponent!];
+      return getIconForComponent(componentSpec?.renderer as any);
+    },
+    getTooltip: (ctx, meta) =>
+      `For ${InlineContextConfig[InlineContextType.Canvas].getLabel(ctx, meta)}`,
   },
 
   [InlineContextType.TimeRange]: {
@@ -58,7 +97,8 @@ export const InlineContextConfig: Record<
   [InlineContextType.Measure]: {
     editable: true,
     getLabel: (ctx, meta) => {
-      const mes = meta[ctx.metricsView!]?.measures[ctx.measure!];
+      const mes =
+        meta.metricsViewSpecs[ctx.metricsView!]?.measures[ctx.measure!];
       return getMeasureDisplayName(mes) || ctx.measure!;
     },
     getTooltip: (ctx, meta) =>
@@ -69,7 +109,8 @@ export const InlineContextConfig: Record<
   [InlineContextType.Dimension]: {
     editable: true,
     getLabel: (ctx, meta) => {
-      const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
+      const dim =
+        meta.metricsViewSpecs[ctx.metricsView!]?.dimensions[ctx.dimension!];
       return getDimensionDisplayName(dim) || ctx.dimension!;
     },
     getTooltip: (ctx, meta) =>
@@ -80,7 +121,8 @@ export const InlineContextConfig: Record<
   [InlineContextType.DimensionValues]: {
     editable: true,
     getLabel: (ctx, meta) => {
-      const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
+      const dim =
+        meta.metricsViewSpecs[ctx.metricsView!]?.dimensions[ctx.dimension!];
       const dimLabel = getDimensionDisplayName(dim) || ctx.dimension!;
       return dimLabel + ": " + (ctx.values ?? []).join(", ");
     },

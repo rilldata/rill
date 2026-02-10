@@ -19,8 +19,7 @@ Rill projects consist of:
 
 You can edit these files in any IDE, and Rill will automatically detect changes and provide real-time feedback.
 
-<img src='https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif' class='rounded-gif' />
-<br />
+![](https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif)
 
 ## Using AI Agents to Help Build Rill Projects
 

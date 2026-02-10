@@ -72,6 +72,7 @@ definitions:
       ### Service Integrations
       - [**Claude**](#claude) - Claude connector for chat with your own API key
       - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
+      - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
       - [**Slack**](#slack) - Slack data
 
       ### _Other_
@@ -680,8 +681,47 @@ definitions:
 
               api_key: "{{ .env.claude_api_key }}"
               model: claude-opus-4-5
-          required: 
-            - api_key      
+          required:
+            - api_key
+        - type: object
+          title: Gemini
+          properties:
+            driver:
+              type: string
+              description: The driver type, must be set to "gemini"
+            api_key:
+              type: string
+              description: API key for connecting to Gemini
+            model:
+              type: string
+              description: The Gemini model to use (e.g., 'gemini-2.5-pro-preview-05-06')
+            include_thoughts:
+              type: boolean
+              description: Whether to include thinking/reasoning in the response
+            thinking_level:
+              type: string
+              description: Level of 'thinking' for the model's response (e.g., 'MINIMAL', 'LOW', 'MEDIUM', 'HIGH'). Default is 'LOW'.
+            max_output_tokens:
+              type: number
+              description: Maximum number of tokens in the response (e.g., 8192)
+            temperature:
+              type: number
+              description: Sampling temperature to use (0.0-2.0)
+            top_p:
+              type: number
+              description: Nucleus sampling parameter
+            top_k:
+              type: number
+              description: Top-K sampling parameter
+          examples:
+            - # Example: Gemini connector configuration
+              type: connector
+              driver: gemini
+
+              api_key: "{{ .env.gemini_api_key }}"
+              model: gemini-2.5-pro-preview-05-06
+          required:
+            - api_key
         - type: object
           title: Pinot
           properties:

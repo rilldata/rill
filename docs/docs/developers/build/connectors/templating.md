@@ -109,7 +109,7 @@ dsn: "postgres://user:password@localhost:5432/database"
 ```
 
 ## Additional Resources
-- [Performance Optimization Guide](/developers/guides/performance)
+- [Performance Optimization Guide](/developers/tutorials/performance)
 - [Official docs](https://pkg.go.dev/text/template) (Go)
 - [Learn Go Template Syntax](https://developer.hashicorp.com/nomad/tutorials/templates/go-template-syntax) (HashiCorp)
 - [Sprig Function Documentation](http://masterminds.github.io/sprig/)
