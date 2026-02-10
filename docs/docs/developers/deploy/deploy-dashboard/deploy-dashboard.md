@@ -5,12 +5,13 @@ sidebar_position: 00
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+import ThemedImage from '@theme/ThemedImage';
 
 Once you've built your dashboards locally, deploying to Rill Cloud lets you share them with your team, set up [alerts and scheduled reports](/guide/dashboards/explore), [embed dashboards](/developers/integrate/embedding) in other apps, and collaborate with others.
 
 - [Deploy from the UI](#deploy-from-the-ui) — The quickest way to get started
 - [Deploy from the CLI](#deploy-from-the-cli) — For scripting and automation
-- [Deploy with GitHub](#deploy-with-github) — Best for teams and ongoing projects
+- [Deploy with GitHub](#deploy-from-cli-with-github) — Best for teams and ongoing projects
 - [Connect GitHub later](#connect-github-to-an-existing-project) — Add version control after your first deploy
 - [Managing access](#managing-access) — Invite your team
 
@@ -23,7 +24,13 @@ The fastest way to deploy is right from Rill Developer. Just click the **Deploy*
 
 Made some changes? Click **Update** to push them to the cloud.
 
-<img src='/img/deploy/existing-project/redeploy.gif' class='rounded-gif' />
+<ThemedImage
+  alt="Description"
+  sources={{
+    light: '/img/deploy/update-light.png',
+    dark: '/img/deploy/update-dark.png',
+  }}
+/>
 
 ## Deploy from the CLI
 
@@ -53,7 +60,7 @@ rill project connect-github
 Rill will either create a new repository or connect to an existing one, then set up continuous deployment for you.
 
 **Helpful options:**
-- `--prod-branch [BRANCH]` — Deploy from a branch other than main
+- `--primary-branch string` - Git branch to deploy from (default: the default Git branch)
 - `--subpath path/to/project` — If your Rill project lives inside a larger repo
 
 :::tip New to Git?
