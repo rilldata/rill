@@ -201,6 +201,16 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
+
+	instance, err := t.Runtime.Instance(ctx, session.InstanceID())
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance: %w", err)
+	}
+	instanceCfg, err := instance.Config()
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance config: %w", err)
+	}
+
 	ff, err := t.Runtime.FeatureFlags(ctx, session.InstanceID(), session.Claims())
 	if err != nil {
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
@@ -221,6 +231,7 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		"measures":         strings.Join(args.Measures, ", "),
 		"feature_flags":    ff,
 		"now":              time.Now(),
+		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
@@ -348,6 +359,8 @@ Choose the appropriate chart type based on your data:
 - Focus on insights that are surprising, actionable, and quantified
 - Never repeat identical queries - each should explore new analytical angles
 - Use <thinking> tags between queries to evaluate results and plan next steps
+- Keep query limits low and aim for high information density; be mindful of the system's hard limit per query (current value: {{ .max_query_limit }})
+- The combined data you load across all queries should be below 10000 rows, ideally much less
 
 **Quality Standards**:
 - Prioritize findings that contradict expectations or reveal hidden patterns
