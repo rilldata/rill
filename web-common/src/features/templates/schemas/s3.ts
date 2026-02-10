@@ -5,6 +5,13 @@ export const s3Schema: MultiStepFormSchema = {
   type: "object",
   title: "Amazon S3",
   "x-category": "objectStore",
+  "x-olap": {
+    duckdb: { formType: "connector" },
+    clickhouse: {
+      formType: "source",
+      hiddenFields: ["region", "endpoint", "aws_role_arn"],
+    },
+  },
   properties: {
     auth_method: {
       type: "string",

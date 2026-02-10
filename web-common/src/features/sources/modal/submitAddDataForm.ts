@@ -454,6 +454,33 @@ export async function submitAddSourceForm(
   await beforeSubmitForm(instanceId, connector);
   const newSourceName = formValues.name as string;
 
+  // For source-only forms (e.g., ClickHouse), save connector-step secrets to .env
+  // BEFORE prepareSourceFormData strips them. The generated SQL references these
+  // secrets via {{ .env.connector.<name>.<key> }} templates.
+  const originalSchema = getConnectorSchema(connector.name ?? "");
+  const olapConfig = originalSchema?.["x-olap"]?.[olapEngine ?? "duckdb"];
+  if (olapConfig?.formType === "source") {
+    const connectorSecretKeys = originalSchema
+      ? getSchemaSecretKeys(originalSchema, { step: "connector" })
+      : [];
+    if (connectorSecretKeys.length > 0) {
+      const envBlob = await updateDotEnvWithSecrets(
+        queryClient,
+        connector,
+        formValues,
+        "connector",
+        undefined,
+        { secretKeys: connectorSecretKeys },
+      );
+      await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+        path: ".env",
+        blob: envBlob,
+        create: true,
+        createOnly: false,
+      });
+    }
+  }
+
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
     formValues,
@@ -507,46 +534,57 @@ export async function submitAddSourceForm(
     { secretKeys: schemaSecretKeys },
   );
 
-  // Make sure the file has reconciled before testing the connection
-  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
-    path: ".env",
-    blob: newEnvBlob,
-    create: true,
-    createOnly: false,
-  });
+  // Save .env — for ClickHouse source-only forms, skip reconciliation/connection test
+  // and just create the files. The ClickHouse server will validate on first query.
+  if (olapConfig?.formType === "source") {
+    await runtimeServicePutFile(instanceId, {
+      path: ".env",
+      blob: newEnvBlob,
+      create: true,
+      createOnly: false,
+    });
+  } else {
+    // Make sure the file has reconciled before testing the connection
+    await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+      path: ".env",
+      blob: newEnvBlob,
+      create: true,
+      createOnly: false,
+    });
 
-  // Wait for source resource-level reconciliation
-  // This must happen after .env reconciliation since sources depend on secrets
-  try {
-    await waitForResourceReconciliation(
+    // Wait for source resource-level reconciliation
+    // This must happen after .env reconciliation since sources depend on secrets
+    try {
+      await waitForResourceReconciliation(
+        instanceId,
+        newSourceName,
+        ResourceKind.Model,
+      );
+    } catch (error) {
+      // The source file was already created, so we need to delete it
+      await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+      const errorDetails = (error as any).details;
+
+      throw {
+        message: error.message || "Unable to establish a connection",
+        details:
+          errorDetails && errorDetails !== error.message
+            ? errorDetails
+            : undefined,
+      };
+    }
+
+    // Check for file errors
+    // If the model file has errors, rollback the changes
+    const errorMessage = await fileArtifacts.checkFileErrors(
+      queryClient,
       instanceId,
-      newSourceName,
-      ResourceKind.Model,
+      newSourceFilePath,
     );
-  } catch (error) {
-    // The source file was already created, so we need to delete it
-    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
-
-    throw {
-      message: error.message || "Unable to establish a connection",
-      details:
-        errorDetails && errorDetails !== error.message
-          ? errorDetails
-          : undefined,
-    };
-  }
-
-  // Check for file errors
-  // If the model file has errors, rollback the changes
-  const errorMessage = await fileArtifacts.checkFileErrors(
-    queryClient,
-    instanceId,
-    newSourceFilePath,
-  );
-  if (errorMessage) {
-    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
-    throw new Error(errorMessage);
+    if (errorMessage) {
+      await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+      throw new Error(errorMessage);
+    }
   }
 
   await goto(`/files/${newSourceFilePath}`);

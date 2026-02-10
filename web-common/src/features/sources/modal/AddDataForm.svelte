@@ -97,6 +97,10 @@
   let paramsErrorDetails: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
+  const olapHiddenFields = connectorSchema?.["x-olap"]?.[olapDriver]?.hiddenFields;
+  const hiddenFieldSet = olapHiddenFields
+    ? new Set(olapHiddenFields)
+    : null;
 
   // Hide Save Anyway once we advance to the model step in step flow connectors.
   $: if (
@@ -119,10 +123,11 @@
     const requiredFields = getRequiredFieldsForValues(
       connectorSchema,
       $form,
-      isConnectorForm ? "connector" : "source",
+      isSourceForm ? undefined : "connector",
     );
     for (const field of requiredFields) {
       if (!isVisibleForValues(connectorSchema, field, $form)) continue;
+      if (hiddenFieldSet?.has(field)) continue;
       const value = $form[field];
       const errorsForField = $paramsErrors[field] as any;
       if (isEmpty(value) || errorsForField?.length) return true;
@@ -150,6 +155,7 @@
   $: primaryLoadingCopy = (() => {
     if (isStepFlowConnector) return multiStepLoadingCopy;
     if (schemaButtonLabels?.loading) return schemaButtonLabels.loading;
+    if (isSourceForm) return "Importing data...";
     return activeAuthMethod === "public"
       ? "Continuing..."
       : "Testing connection...";
@@ -256,7 +262,8 @@
         >
           <JSONSchemaFormRenderer
             schema={connectorSchema}
-            step={isConnectorForm ? "connector" : "source"}
+            step={isSourceForm ? undefined : "connector"}
+            {olapDriver}
             {form}
             errors={$paramsErrors}
             {onStringInputChange}

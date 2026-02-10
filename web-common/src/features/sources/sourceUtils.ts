@@ -209,39 +209,129 @@ function getClickHouseFormat(path: string): string {
 }
 
 /**
+ * Build a multi-line ClickHouse SQL function call for readability.
+ * Each argument is placed on its own indented line.
+ */
+function chFn(name: string, args: string[]): string {
+  if (args.length <= 2) {
+    return `SELECT * FROM ${name}(${args.map((a) => `'${a}'`).join(", ")})`;
+  }
+  const indentedArgs = args.map((a) => `  '${a}'`).join(",\n");
+  return `SELECT * FROM ${name}(\n${indentedArgs}\n)`;
+}
+
+/**
  * Build a ClickHouse SQL query for reading data from various sources.
  * ClickHouse uses table functions like s3(), gcs(), url(), file() instead of DuckDB's read_* functions.
+ * Credentials are referenced via {{ .env.connector.<name>.<key> }} templates that Rill resolves at runtime.
  */
 function buildClickHouseQuery(
   connector: string,
   formValues: Record<string, unknown>,
+  options?: { authMethod?: string },
 ): string {
+  const isPublic = options?.authMethod === "public";
+  const envRef = (key: string) =>
+    `{{ .env.${makeDotEnvConnectorKey(connector, key)} }}`;
+
   switch (connector) {
     case "s3": {
       const path = typeof formValues.path === "string" ? formValues.path : "";
-      return `SELECT * FROM s3('${path}', '${getClickHouseFormat(path)}')`;
+      const fmt = getClickHouseFormat(path);
+      if (isPublic) {
+        return chFn("s3", [path, fmt]);
+      }
+      return chFn("s3", [
+        path,
+        envRef("aws_access_key_id"),
+        envRef("aws_secret_access_key"),
+        fmt,
+      ]);
     }
     case "gcs": {
       const path = typeof formValues.path === "string" ? formValues.path : "";
-      return `SELECT * FROM gcs('${path}', '${getClickHouseFormat(path)}')`;
+      const fmt = getClickHouseFormat(path);
+      if (isPublic) {
+        return chFn("gcs", [path, fmt]);
+      }
+      // ClickHouse GCS only supports HMAC keys (not JSON credentials)
+      return chFn("gcs", [path, envRef("key_id"), envRef("secret"), fmt]);
     }
     case "azure": {
       const path = typeof formValues.path === "string" ? formValues.path : "";
-      return `SELECT * FROM azureBlobStorage('${path}', '${getClickHouseFormat(path)}')`;
+      const fmt = getClickHouseFormat(path);
+      const authMethod = options?.authMethod;
+      if (isPublic) {
+        return chFn("azureBlobStorage", [path, fmt]);
+      }
+      if (authMethod === "connection_string") {
+        return chFn("azureBlobStorage", [
+          envRef("azure_storage_connection_string"),
+          path,
+          fmt,
+        ]);
+      }
+      if (authMethod === "sas_token") {
+        return chFn("azureBlobStorage", [
+          path,
+          envRef("azure_storage_account"),
+          envRef("azure_storage_sas_token"),
+          fmt,
+        ]);
+      }
+      // account_key (default)
+      return chFn("azureBlobStorage", [
+        path,
+        envRef("azure_storage_account"),
+        envRef("azure_storage_key"),
+        fmt,
+      ]);
     }
     case "https": {
       const path = typeof formValues.path === "string" ? formValues.path : "";
-      return `SELECT * FROM url('${path}', '${getClickHouseFormat(path)}')`;
+      return chFn("url", [path, getClickHouseFormat(path)]);
     }
     case "local_file": {
       const path = typeof formValues.path === "string" ? formValues.path : "";
-      return `SELECT * FROM file('${path}', '${getClickHouseFormat(path)}')`;
+      return chFn("file", [path, getClickHouseFormat(path)]);
     }
     case "sqlite": {
       const db = typeof formValues.db === "string" ? formValues.db : "";
       const table =
         typeof formValues.table === "string" ? formValues.table : "";
-      return `SELECT * FROM sqlite('${db}', '${table}')`;
+      return chFn("sqlite", [db, table]);
+    }
+    case "mysql": {
+      const host = typeof formValues.host === "string" ? formValues.host : "";
+      const port = typeof formValues.port === "string" ? formValues.port : "3306";
+      const database =
+        typeof formValues.database === "string" ? formValues.database : "";
+      const user = typeof formValues.user === "string" ? formValues.user : "";
+      const table =
+        typeof formValues.table === "string" ? formValues.table : "";
+      return chFn("mysql", [
+        `${host}:${port}`,
+        database,
+        table,
+        user,
+        envRef("password"),
+      ]);
+    }
+    case "postgres": {
+      const host = typeof formValues.host === "string" ? formValues.host : "";
+      const port = typeof formValues.port === "string" ? formValues.port : "5432";
+      const dbname =
+        typeof formValues.dbname === "string" ? formValues.dbname : "";
+      const user = typeof formValues.user === "string" ? formValues.user : "";
+      const table =
+        typeof formValues.table === "string" ? formValues.table : "";
+      return chFn("postgresql", [
+        `${host}:${port}`,
+        dbname,
+        table,
+        user,
+        envRef("password"),
+      ]);
     }
     default: {
       const path = typeof formValues.path === "string" ? formValues.path : "";
@@ -257,7 +347,7 @@ function buildClickHouseQuery(
 export function maybeRewriteToClickHouse(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
-  options?: { connectorInstanceName?: string },
+  options?: { connectorInstanceName?: string; authMethod?: string },
 ): [V1ConnectorDriver, Record<string, unknown>] {
   const connectorCopy = { ...connector };
   const originalConnectorName = connector.name ?? "";
@@ -269,18 +359,72 @@ export function maybeRewriteToClickHouse(
     case "https":
     case "local_file":
       connectorCopy.name = "clickhouse";
-      formValues.sql = buildClickHouseQuery(originalConnectorName, formValues);
+      formValues.sql = buildClickHouseQuery(originalConnectorName, formValues, {
+        authMethod: options?.authMethod,
+      });
       delete formValues.path;
       break;
     case "sqlite":
       connectorCopy.name = "clickhouse";
-      formValues.sql = buildClickHouseQuery(originalConnectorName, formValues);
+      formValues.sql = buildClickHouseQuery(originalConnectorName, formValues, {
+        authMethod: options?.authMethod,
+      });
       delete formValues.db;
       delete formValues.table;
       break;
-    // postgres, mysql: these connectors use ClickHouse's mysql()/postgresql()
-    // table functions. Form schema changes are needed to add a table name field
-    // before SQL generation can be implemented here.
+    case "mysql":
+      connectorCopy.name = "clickhouse";
+      formValues.sql = buildClickHouseQuery(originalConnectorName, formValues, {
+        authMethod: options?.authMethod,
+      });
+      delete formValues.host;
+      delete formValues.port;
+      delete formValues.database;
+      delete formValues.user;
+      delete formValues.password;
+      delete formValues["ssl-mode"];
+      delete formValues.dsn;
+      delete formValues.connection_mode;
+      delete formValues.table;
+      break;
+    case "postgres":
+      connectorCopy.name = "clickhouse";
+      formValues.sql = buildClickHouseQuery(originalConnectorName, formValues, {
+        authMethod: options?.authMethod,
+      });
+      delete formValues.host;
+      delete formValues.port;
+      delete formValues.dbname;
+      delete formValues.user;
+      delete formValues.password;
+      delete formValues.sslmode;
+      delete formValues.dsn;
+      delete formValues.connection_mode;
+      delete formValues.table;
+      break;
+  }
+
+  // Clean up any remaining connector-step / UI-only fields that shouldn't
+  // appear in the model YAML. The case handlers above delete the fields they
+  // consume for SQL generation, but credentials and other connector fields
+  // may still be present for source-only forms (where prepareSourceFormData
+  // skips the connector-field stripping).
+  if (
+    connectorCopy.name === "clickhouse" &&
+    originalConnectorName !== "clickhouse"
+  ) {
+    const schema = getConnectorSchema(originalConnectorName);
+    if (schema?.properties) {
+      for (const [key, prop] of Object.entries(schema.properties)) {
+        if (key === "sql" || key === "name") continue;
+        const step = prop["x-step"];
+        // Remove connector-step fields, UI-only fields, and fields without x-step
+        // (which default to connector behavior). Keep only source/explorer fields.
+        if (step !== "source" && step !== "explorer") {
+          delete formValues[key];
+        }
+      }
+    }
   }
 
   return [connectorCopy, formValues];
@@ -293,7 +437,7 @@ export function maybeRewriteForOlapEngine(
   olapEngine: string,
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
-  options?: { connectorInstanceName?: string },
+  options?: { connectorInstanceName?: string; authMethod?: string },
 ): [V1ConnectorDriver, Record<string, unknown>] {
   switch (olapEngine) {
     case "clickhouse":
@@ -378,14 +522,26 @@ export function prepareSourceFormData(
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
 
+  // Extract auth method before stripping (needed for ClickHouse SQL credential refs)
+  const authMethod =
+    typeof processedValues.auth_method === "string"
+      ? processedValues.auth_method
+      : undefined;
+
   // Never carry connector auth selection into the source/model layer.
   delete processedValues.auth_method;
 
   // Strip connector configuration keys from the source form values to prevent
   // leaking connector-level fields (e.g., credentials) into the model file.
+  // For source-only forms (x-olap formType "source"), skip stripping here —
+  // the rewrite function (e.g., maybeRewriteToClickHouse) needs these fields
+  // for SQL generation and handles cleanup itself.
   const schema = getConnectorSchema(connector.name ?? "");
+  const olapEngine = options?.olapEngine ?? "duckdb";
+  const olapConfig = schema?.["x-olap"]?.[olapEngine];
+  const isSourceOnlyForm = olapConfig?.formType === "source";
   const connectorPropertyKeys = new Set<string>();
-  if (schema) {
+  if (schema && !isSourceOnlyForm) {
     const connectorFields = getSchemaFieldMetaList(schema, {
       step: "connector",
     })
@@ -413,12 +569,11 @@ export function prepareSourceFormData(
   }
 
   // Apply OLAP-engine-aware rewrite logic (defaults to DuckDB)
-  const olapEngine = options?.olapEngine ?? "duckdb";
   const [rewrittenConnector, rewrittenFormValues] = maybeRewriteForOlapEngine(
     olapEngine,
     connector,
     processedValues,
-    options,
+    { ...options, authMethod },
   );
 
   return [rewrittenConnector, rewrittenFormValues];

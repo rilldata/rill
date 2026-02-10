@@ -5,6 +5,10 @@ export const httpsSchema: MultiStepFormSchema = {
   type: "object",
   title: "HTTP(S)",
   "x-category": "fileStore",
+  "x-olap": {
+    duckdb: { formType: "source" },
+    clickhouse: { formType: "source" },
+  },
   properties: {
     path: {
       type: "string",

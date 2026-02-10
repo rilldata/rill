@@ -138,11 +138,17 @@ export class AddDataFormManager {
 
   get isMultiStepConnector(): boolean {
     const schema = getConnectorSchema(this.schemaName);
+    // x-olap formType "source" means single-page form — no multi-step
+    const olapConfig = schema?.["x-olap"]?.[this.olapEngine];
+    if (olapConfig?.formType === "source") return false;
     return isMultiStepConnectorSchema(schema);
   }
 
   get hasExplorerStep(): boolean {
     const schema = getConnectorSchema(this.schemaName);
+    // x-olap formType "source" means single-page form — no explorer step
+    const olapConfig = schema?.["x-olap"]?.[this.olapEngine];
+    if (olapConfig?.formType === "source") return false;
     return hasExplorerStepSchema(schema);
   }
 
@@ -243,7 +249,9 @@ export class AddDataFormManager {
     }
 
     // Source-only form (no connector step)
-    return "Test and Add data";
+    return submitting
+      ? BUTTON_LABELS.source.submitting
+      : BUTTON_LABELS.source.idle;
   }
 
   makeOnUpdate(args: {
@@ -262,8 +270,8 @@ export class AddDataFormManager {
     } = args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
-    const isMultiStep = isMultiStepConnectorSchema(schema);
-    const isExplorer = hasExplorerStepSchema(schema);
+    const isMultiStep = this.isMultiStepConnector;
+    const isExplorer = this.hasExplorerStep;
     const isStepFlowConnector = isMultiStep || isExplorer;
     const isConnectorForm = this.formType === "connector";
 
@@ -288,12 +296,16 @@ export class AddDataFormManager {
         "";
       const isPublicAuth = selectedAuthMethod === "public";
 
-      // Filter form values to only include fields for the current step
+      // Filter form values to only include fields for the current step.
+      // Source-only forms (e.g., ClickHouse) show all fields on one page,
+      // so use undefined to include everything.
+      const isSourceOnly =
+        !isStepFlowConnector && this.formType === "source";
       const stepForFilter =
         isStepFlowConnector && isOnSourceOrExplorerStep
           ? stepState.step
-          : this.formType === "source"
-            ? "source"
+          : isSourceOnly
+            ? undefined
             : "connector";
       const submitValues = schema
         ? filterSchemaValuesForSubmit(schema, values, { step: stepForFilter })
@@ -588,7 +600,7 @@ export class AddDataFormManager {
       const rewrittenStringKeys = rewrittenSchema
         ? getSchemaStringKeys(rewrittenSchema, { step: sourceStep })
         : undefined;
-      if (wasRewritten || isExplorerStep) {
+      if (wasRewritten || isExplorerStep || this.formType === "source") {
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
           secretKeys: rewrittenSecretKeys,
           stringKeys: rewrittenStringKeys,

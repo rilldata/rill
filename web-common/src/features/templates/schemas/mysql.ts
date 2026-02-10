@@ -5,6 +5,13 @@ export const mysqlSchema: MultiStepFormSchema = {
   type: "object",
   title: "MySQL",
   "x-category": "sqlStore",
+  "x-olap": {
+    duckdb: { formType: "connector", hiddenFields: ["table"] },
+    clickhouse: {
+      formType: "source",
+      hiddenFields: ["ssl-mode", "sql", "connection_mode", "dsn"],
+    },
+  },
   properties: {
     connection_mode: {
       type: "string",
@@ -77,6 +84,13 @@ export const mysqlSchema: MultiStepFormSchema = {
       enum: ["DISABLED", "PREFERRED", "REQUIRED"],
       "x-placeholder": "PREFERRED",
     },
+    table: {
+      type: "string",
+      title: "Table",
+      description: "Name of the table to read from",
+      "x-placeholder": "my_table",
+      "x-step": "explorer",
+    },
     sql: {
       type: "string",
       title: "SQL",
@@ -93,7 +107,7 @@ export const mysqlSchema: MultiStepFormSchema = {
       "x-step": "explorer",
     },
   },
-  required: ["sql", "name"],
+  required: ["sql", "table", "name"],
   oneOf: [
     {
       title: "Use DSN",

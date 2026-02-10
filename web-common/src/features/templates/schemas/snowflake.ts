@@ -6,6 +6,9 @@ export const snowflakeSchema: MultiStepFormSchema = {
   title: "Snowflake",
   "x-category": "warehouse",
   "x-form-height": "tall",
+  "x-olap": {
+    duckdb: { formType: "connector" },
+  },
   properties: {
     connection_mode: {
       type: "string",

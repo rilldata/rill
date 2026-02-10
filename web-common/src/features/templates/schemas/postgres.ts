@@ -5,6 +5,13 @@ export const postgresSchema: MultiStepFormSchema = {
   type: "object",
   title: "PostgreSQL",
   "x-category": "sqlStore",
+  "x-olap": {
+    duckdb: { formType: "connector", hiddenFields: ["table"] },
+    clickhouse: {
+      formType: "source",
+      hiddenFields: ["sslmode", "sql", "connection_mode", "dsn"],
+    },
+  },
   properties: {
     connection_mode: {
       type: "string",
@@ -70,6 +77,13 @@ export const postgresSchema: MultiStepFormSchema = {
       enum: ["disable", "allow", "prefer", "require"],
       "x-placeholder": "require",
     },
+    table: {
+      type: "string",
+      title: "Table",
+      description: "Name of the table to read from",
+      "x-placeholder": "my_table",
+      "x-step": "explorer",
+    },
     sql: {
       type: "string",
       title: "SQL",
@@ -86,7 +100,7 @@ export const postgresSchema: MultiStepFormSchema = {
       "x-step": "explorer",
     },
   },
-  required: ["sql", "name"],
+  required: ["sql", "table", "name"],
   oneOf: [
     {
       title: "Use DSN",

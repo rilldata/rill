@@ -24,11 +24,21 @@
 
   export let schema: MultiStepFormSchema | null = null;
   export let step: string | undefined = undefined;
+  export let olapDriver: string | undefined = undefined;
   export let form: SuperFormStore;
   // Use `any` to be compatible with superforms' complex ValidationErrors type
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
+
+  // Resolve OLAP-specific overrides for the current engine.
+  $: olapConfig = schema && olapDriver
+    ? schema["x-olap"]?.[olapDriver]
+    : undefined;
+  $: enumOverrides = olapConfig?.enumOverrides;
+  $: hiddenFieldSet = olapConfig?.hiddenFields
+    ? new Set(olapConfig.hiddenFields)
+    : null;
 
   $: stepFilter = step;
   $: groupedFields = schema
@@ -57,6 +67,14 @@
 
   // Seed defaults for initial render: use explicit defaults, and for radio enums
   // fall back to first option when no value is set.
+  // Returns the effective enum values for a field, applying OLAP-specific overrides.
+  function getEffectiveEnum(key: string, prop: JSONSchemaField) {
+    const allowed = enumOverrides?.[key];
+    if (!allowed) return prop.enum;
+    const allowedSet = new Set(allowed.map(String));
+    return prop.enum?.filter((v) => allowedSet.has(String(v)));
+  }
+
   $: if (schema) {
     form.update(
       ($form) => {
@@ -66,13 +84,29 @@
           const current = $form[key];
           const isUnset =
             current === undefined || current === null || current === "";
+          const effectiveEnum = getEffectiveEnum(key, prop);
 
-          if (isUnset && prop.default !== undefined) {
-            $form[key] = prop.default;
-          } else if (isUnset && isRadioEnum(prop) && prop.enum?.length) {
-            $form[key] = String(prop.enum[0]);
-          } else if (isUnset && isTabsEnum(prop) && prop.enum?.length) {
-            $form[key] = String(prop.enum[0]);
+          // If the current value was filtered out by enumOverrides, reset it
+          if (
+            !isUnset &&
+            effectiveEnum &&
+            !effectiveEnum.some((v) => String(v) === String(current))
+          ) {
+            $form[key] = String(effectiveEnum[0]);
+          } else if (isUnset && prop.default !== undefined) {
+            // Use the default if it's still in the allowed set
+            const isDefaultAllowed =
+              !effectiveEnum ||
+              effectiveEnum.some((v) => String(v) === String(prop.default));
+            if (isDefaultAllowed) {
+              $form[key] = prop.default;
+            } else if (effectiveEnum?.length) {
+              $form[key] = String(effectiveEnum[0]);
+            }
+          } else if (isUnset && isRadioEnum(prop) && effectiveEnum?.length) {
+            $form[key] = String(effectiveEnum[0]);
+          } else if (isUnset && isTabsEnum(prop) && effectiveEnum?.length) {
+            $form[key] = String(effectiveEnum[0]);
           }
         }
         return $form;
@@ -160,6 +194,7 @@
   ) {
     const properties = currentSchema.properties ?? {};
     return Object.entries(properties).filter(([key]) => {
+      if (hiddenFieldSet?.has(key)) return false;
       if (!isStepMatch(currentSchema, key, currentStep)) return false;
       return isVisibleForValues(currentSchema, key, values);
     });
@@ -224,6 +259,8 @@
       const grouped = prop[groupKey];
       if (!grouped) continue;
       if (!isStepMatch(currentSchema, key, currentStep)) continue;
+      // Skip hidden parent fields — their children will render as top-level fields
+      if (hiddenFieldSet?.has(key)) continue;
 
       const filteredOptions: Record<string, string[]> = {};
       const groupedEntries = Object.entries(grouped) as Array<
@@ -272,7 +309,9 @@
       >((childKey) => [childKey, properties[childKey]])
       .filter(
         (entry): entry is [string, JSONSchemaField] =>
-          Boolean(entry[1]) && isVisibleForValues(schema, entry[0], values),
+          Boolean(entry[1]) &&
+          !hiddenFieldSet?.has(entry[0]) &&
+          isVisibleForValues(schema, entry[0], values),
       );
   }
 
@@ -291,32 +330,39 @@
   }
 
   function buildEnumOptions(
+    key: string,
     prop: JSONSchemaField,
     includeDescription: boolean,
   ) {
+    const allowedValues = enumOverrides?.[key];
+    const allowedSet = allowedValues ? new Set(allowedValues.map(String)) : null;
+
     return (
-      prop.enum?.map((value, idx) => {
-        const option = {
-          value: String(value),
-          label: prop["x-enum-labels"]?.[idx] ?? String(value),
-        };
-        if (includeDescription) {
-          return {
-            ...option,
-            description: prop["x-enum-descriptions"]?.[idx],
+      prop.enum
+        ?.map((value, idx) => {
+          if (allowedSet && !allowedSet.has(String(value))) return null;
+          const option = {
+            value: String(value),
+            label: prop["x-enum-labels"]?.[idx] ?? String(value),
           };
-        }
-        return option;
-      }) ?? []
+          if (includeDescription) {
+            return {
+              ...option,
+              description: prop["x-enum-descriptions"]?.[idx],
+            };
+          }
+          return option;
+        })
+        .filter(Boolean) ?? []
     );
   }
 
-  function radioOptions(prop: JSONSchemaField) {
-    return buildEnumOptions(prop, true);
+  function radioOptions(key: string, prop: JSONSchemaField) {
+    return buildEnumOptions(key, prop, true);
   }
 
-  function tabOptions(prop: JSONSchemaField) {
-    return buildEnumOptions(prop, false);
+  function tabOptions(key: string, prop: JSONSchemaField) {
+    return buildEnumOptions(key, prop, false);
   }
 
   function isRequired(key: string) {
@@ -333,7 +379,7 @@
         {/if}
         <Radio
           bind:value={$form[key]}
-          options={radioOptions(prop)}
+          options={radioOptions(key, prop)}
           name={`${key}-radio`}
         >
           <svelte:fragment slot="custom-content" let:option>
@@ -341,7 +387,7 @@
               {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
                 <div class="py-1.5 first:pt-0 last:pb-0">
                   {#if isTabsEnum(childProp)}
-                    {@const childOptions = tabOptions(childProp)}
+                    {@const childOptions = tabOptions(childKey, childProp)}
                     {#if childProp.title}
                       <div class="text-sm font-medium mb-3">
                         {childProp.title}
@@ -367,7 +413,7 @@
                                   {onStringInputChange}
                                   {handleFileUpload}
                                   options={isRadioEnum(tabProp)
-                                    ? radioOptions(tabProp)
+                                    ? radioOptions(tabKey, tabProp)
                                     : undefined}
                                   name={`${tabKey}-radio`}
                                 />
@@ -388,7 +434,7 @@
                       {onStringInputChange}
                       {handleFileUpload}
                       options={isRadioEnum(childProp)
-                        ? radioOptions(childProp)
+                        ? radioOptions(childKey, childProp)
                         : undefined}
                       name={`${childKey}-radio`}
                     />
@@ -400,7 +446,7 @@
         </Radio>
       </div>
     {:else if isTabsEnum(prop)}
-      {@const options = tabOptions(prop)}
+      {@const options = tabOptions(key, prop)}
       <div class="py-1.5 first:pt-0 last:pb-0">
         {#if prop.title}
           <div class="text-sm font-medium mb-3">{prop.title}</div>
@@ -421,7 +467,7 @@
                       {onStringInputChange}
                       {handleFileUpload}
                       options={isRadioEnum(childProp)
-                        ? radioOptions(childProp)
+                        ? radioOptions(childKey, childProp)
                         : undefined}
                       name={`${childKey}-radio`}
                     />
@@ -443,7 +489,7 @@
           bind:checked={$form[key]}
           {onStringInputChange}
           {handleFileUpload}
-          options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
+          options={isRadioEnum(prop) ? radioOptions(key, prop) : undefined}
           name={`${key}-radio`}
         />
       </div>

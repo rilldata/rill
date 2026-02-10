@@ -5,6 +5,9 @@ export const athenaSchema: MultiStepFormSchema = {
   type: "object",
   title: "Amazon Athena",
   "x-category": "warehouse",
+  "x-olap": {
+    duckdb: { formType: "connector" },
+  },
   properties: {
     aws_access_key_id: {
       type: "string",

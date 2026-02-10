@@ -5,6 +5,10 @@ export const azureSchema: MultiStepFormSchema = {
   type: "object",
   title: "Azure Blob Storage",
   "x-category": "objectStore",
+  "x-olap": {
+    duckdb: { formType: "connector" },
+    clickhouse: { formType: "source" },
+  },
   properties: {
     auth_method: {
       type: "string",

@@ -5,6 +5,10 @@ export const sqliteSchema: MultiStepFormSchema = {
   type: "object",
   title: "SQLite",
   "x-category": "sqlStore",
+  "x-olap": {
+    duckdb: { formType: "connector" },
+    clickhouse: { formType: "source" },
+  },
   properties: {
     db: {
       type: "string",

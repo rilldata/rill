@@ -249,13 +249,14 @@
           <div class="p-6">
             <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
           </div>
-        {:else if selectedConnector.name === "local_file"}
+        {:else if selectedConnector.name === "local_file" && olapDriver === "duckdb"}
           <LocalSourceUpload onClose={resetModal} onBack={back} />
         {:else if selectedConnector.name}
+          {@const olapConfig = schema?.["x-olap"]?.[olapDriver]}
           <AddDataForm
             connector={selectedConnector}
             schemaName={selectedSchemaName}
-            formType={isConnectorType ? "connector" : "source"}
+            formType={olapConfig?.formType ?? (isConnectorType ? "connector" : "source")}
             {olapDriver}
             onClose={resetModal}
             onBack={back}

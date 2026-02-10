@@ -5,6 +5,10 @@ export const localFileSchema: MultiStepFormSchema = {
   type: "object",
   title: "Local File",
   "x-category": "fileStore",
+  "x-olap": {
+    duckdb: { formType: "source" },
+    clickhouse: { formType: "source" },
+  },
   properties: {
     path: {
       type: "string",

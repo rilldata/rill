@@ -5,6 +5,9 @@ export const redshiftSchema: MultiStepFormSchema = {
   type: "object",
   title: "Amazon Redshift",
   "x-category": "warehouse",
+  "x-olap": {
+    duckdb: { formType: "connector" },
+  },
   properties: {
     aws_access_key_id: {
       type: "string",

@@ -123,6 +123,28 @@ export type JSONSchemaObject = {
    * Example: { "connector_type": { "rill-managed": { idle: "Connect", loading: "Connecting..." } } }
    */
   "x-button-labels"?: Record<string, Record<string, ButtonLabels>>;
+  /**
+   * Per-OLAP-engine behavior for this connector schema.
+   * Presence of an engine key means the connector is supported for that engine.
+   * formType: "connector" = multi-step (connector.yaml + model.yaml)
+   * formType: "source" = single-page (model.yaml only)
+   */
+  "x-olap"?: Record<
+    string,
+    {
+      formType: "source" | "connector";
+      /**
+       * Override which enum values are available for a field on this OLAP engine.
+       * Maps field key → allowed enum values. Unlisted values are hidden from the UI.
+       */
+      enumOverrides?: Record<string, (string | number | boolean)[]>;
+      /**
+       * Fields to hide from the form on this OLAP engine.
+       * These fields won't render or be included in form validation.
+       */
+      hiddenFields?: string[];
+    }
+  >;
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;

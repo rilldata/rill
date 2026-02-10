@@ -5,6 +5,9 @@ export const bigquerySchema: MultiStepFormSchema = {
   type: "object",
   title: "BigQuery",
   "x-category": "warehouse",
+  "x-olap": {
+    duckdb: { formType: "connector" },
+  },
   properties: {
     google_application_credentials: {
       type: "string",

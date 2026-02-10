@@ -6,6 +6,9 @@ export const salesforceSchema: MultiStepFormSchema = {
   title: "Salesforce",
   "x-category": "warehouse",
   "x-form-height": "tall",
+  "x-olap": {
+    duckdb: { formType: "source" },
+  },
   properties: {
     soql: {
       type: "string",

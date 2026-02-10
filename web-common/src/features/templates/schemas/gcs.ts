@@ -5,6 +5,13 @@ export const gcsSchema: MultiStepFormSchema = {
   type: "object",
   title: "Google Cloud Storage",
   "x-category": "objectStore",
+  "x-olap": {
+    duckdb: { formType: "connector" },
+    clickhouse: {
+      formType: "source",
+      enumOverrides: { auth_method: ["hmac", "public"] },
+    },
+  },
   properties: {
     auth_method: {
       type: "string",
