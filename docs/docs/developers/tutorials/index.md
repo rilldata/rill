@@ -18,7 +18,7 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 ---
 Follow along, refer to the in-line linked documentation, and explore our product to make the most out of these tutorials! Please reach out to ask any questions or provide feedback on our Community Slack or Discord!
 
-- [**Source to Published Dashboard:**](/developers/tutorials/rill-basics/1-launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
+- [**Source to Published Dashboard:**](/developers/tutorials/rill-basics/launch) Learn the basics, understand the core concepts of Rill, and deploy to Cloud!
 - [**Visualize ClickHouse tables in Rill:**](/developers/tutorials/rill-clickhouse) For our friends from **ClickHouse**, we have created a dedicated course using ClickHouse!
 - [**Clone a Project:**](/developers/tutorials/clone-a-project) Step-by-step guide to clone an already deployed instance from Rill Cloud to your local machine
 - [**GitHub Analytics:**](/developers/tutorials/github-analytics) Analyze your own GitHub repository by modifying the Python file, download_commits.py

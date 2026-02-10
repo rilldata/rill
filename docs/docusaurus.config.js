@@ -1058,11 +1058,11 @@ const config = {
           },
           {
             from: '/deploy/deploy-dashboard/deploy-from-cli',
-            to: '/developers/guides/deploy-from-cli',
+            to: '/developers/tutorials/deploy-from-cli',
           },
           {
             from: '/deploy/deploy-dashboard/github-101',
-            to: '/developers/guides/github-101',
+            to: '/developers/tutorials/github-101',
           },
           {
             from: '/deploy/project-errors',
@@ -1184,7 +1184,7 @@ const config = {
           },
           {
             from: '/guides/setting-up-mcp',
-            to: '/developers/tutorials/setting-up-mcp',
+            to: '/guide/ai/mcp',
           },
           {
             from: '/guides/rill-basics',
