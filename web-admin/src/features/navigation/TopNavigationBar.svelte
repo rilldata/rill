@@ -43,8 +43,8 @@
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
-  export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
+  export let organizationLogoUrl: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const {
@@ -71,6 +71,7 @@
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
+  $: logoUrl = organizationLogoUrl;
 
   $: organizationQuery = listOrgs(
     { pageSize: 100 },
@@ -203,18 +204,16 @@
 </script>
 
 <div
-  class="flex items-center w-full pr-4 pl-2 py-1"
+  class="flex items-center w-full pr-4 pl-2 py-1 bg-surface-base"
   class:border-b={!onProjectPage && !onOrgPage}
 >
   <!-- Left side -->
   <a
     href={rillLogoHref}
-    class="grid place-content-center rounded {organizationLogoUrl
-      ? 'pl-2 pr-2'
-      : 'p-2'}"
+    class="grid place-content-center rounded {logoUrl ? 'pl-2 pr-2' : 'p-2'}"
   >
-    {#if organizationLogoUrl}
-      <img src={organizationLogoUrl} alt="logo" class="h-7" />
+    {#if logoUrl}
+      <img src={logoUrl} alt="logo" class="h-7" />
     {:else}
       <Rill />
     {/if}
@@ -273,6 +272,9 @@
     {/if}
 
     {#if onCanvasDashboardPage && hasUserAccess}
+      {#if $dashboardChat && !onPublicURLPage}
+        <ChatToggle />
+      {/if}
       <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}

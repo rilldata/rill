@@ -48,10 +48,7 @@
   function onFocus() {
     onInspect(row.index);
     cellActive = true;
-    // Update the cell inspector store with the cell value
-    if (value !== undefined && value !== null) {
-      cellInspectorStore.updateValue(value.toString());
-    }
+    cellInspectorStore.updateValue(value);
   }
 
   function onSelect(e: MouseEvent) {
@@ -79,15 +76,13 @@
   let activityStatus;
   $: {
     if (cellActive) {
-      // Specific cell active color, used to be bg-gray-200
-      // bg-gray-100 to match the hover color, and not too hard on the eyes
-      activityStatus = "bg-gray-100 ";
+      activityStatus = "bg-surface-hover";
     } else if (rowActive && !cellActive) {
-      activityStatus = "bg-gray-100 ";
+      activityStatus = "bg-surface-hover ";
     } else if (colSelected) {
-      activityStatus = "bg-surface";
+      activityStatus = "bg-transparent";
     } else {
-      activityStatus = "bg-surface";
+      activityStatus = "bg-transparent";
     }
   }
 
@@ -112,10 +107,10 @@
       : value;
 
   $: formattedDataTypeStyle = excluded
-    ? "font-normal ui-copy-disabled-faint"
+    ? "font-normal text-fg-muted"
     : rowSelected
-      ? "font-normal ui-copy-strong"
-      : "font-normal ui-copy";
+      ? "font-normal text-fg-primary font-semibold"
+      : "font-normal text-fg-primary";
 
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);
@@ -175,7 +170,7 @@
           isNull={value === null || value === undefined}
           {type}
           value={formattedValue || value}
-          color="text-gray-500"
+          color="text-fg-secondary"
         />
       </button>
     </BarAndLabel>

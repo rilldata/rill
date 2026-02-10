@@ -13,7 +13,7 @@ curl https://rill.sh | sh
 ```
 
 :::tip Why am I installing locally?
-Installing Rill Developer locally is required to create a new project, or [clone a project](/developers/guides/clone-a-project) from Rill Cloud. For key differences between Rill Cloud and Rill Developer, see [Rill Cloud vs. Rill Developer](/developers/deploy/cloud-vs-developer).
+Installing Rill Developer locally is required to create a new project, or [clone a project](/developers/tutorials/clone-a-project) from Rill Cloud. For key differences between Rill Cloud and Rill Developer, see [Rill Cloud vs. Rill Developer](/developers/deploy/cloud-vs-developer).
 :::
 
 

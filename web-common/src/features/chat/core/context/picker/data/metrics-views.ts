@@ -8,18 +8,9 @@ import {
   type InlineContext,
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import {
-  getDimensionDisplayName,
-  getMeasureDisplayName,
-} from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import {
-  getRuntimeServiceGetConversationQueryOptions,
-  getRuntimeServiceListConversationsQueryOptions,
-  type V1Message,
-} from "@rilldata/web-common/runtime-client";
 import { MessageType } from "@rilldata/web-common/features/chat/core/types.ts";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
+import { getLatestConversationQueryOptions } from "@rilldata/web-common/features/chat/core/utils.ts";
 
 /**
  * Creates a store that contains a 2-level list of options for each valid metrics view.
@@ -42,11 +33,9 @@ export function getMetricsViewPickerOptions(): Readable<PickerItem[]> {
       return metricsViews.flatMap((mv) => {
         const mvName = mv.meta?.name?.name ?? "";
         const metricsViewSpec = mv.metricsView?.state?.validSpec ?? {};
-        const mvDisplayName = metricsViewSpec?.displayName || mvName;
         const mvContext = {
           type: InlineContextType.MetricsView,
           value: mvName,
-          label: mvDisplayName,
           metricsView: mvName,
         } satisfies InlineContext;
         const mvPickerItem = {
@@ -61,7 +50,6 @@ export function getMetricsViewPickerOptions(): Readable<PickerItem[]> {
         const measurePickerItems = measures.map((m) => {
           const measureContext = {
             type: InlineContextType.Measure,
-            label: getMeasureDisplayName(m),
             value: m.name!,
             metricsView: mvName,
             measure: m.name!,
@@ -77,7 +65,6 @@ export function getMetricsViewPickerOptions(): Readable<PickerItem[]> {
         const dimensionPickerItems = dimensions.map((d) => {
           const dimensionContext = {
             type: InlineContextType.Dimension,
-            label: getDimensionDisplayName(d),
             value: d.name!,
             metricsView: mvName,
             dimension: d.name!,
@@ -98,7 +85,7 @@ export function getMetricsViewPickerOptions(): Readable<PickerItem[]> {
 /**
  * Looks at the last conversation and returns the metrics view used in the last message or tool call.
  */
-export function getLastUsedMetricsViewNameStore() {
+function getLastUsedMetricsViewNameStore() {
   const lastConversationQuery = createQuery(
     getLatestConversationQueryOptions(),
     queryClient,
@@ -108,49 +95,13 @@ export function getLastUsedMetricsViewNameStore() {
     if (!latestConversation.data?.messages) return null;
 
     for (const message of latestConversation.data.messages) {
-      const metricsView = getMetricsViewInMessage(message);
-      if (metricsView) return metricsView;
+      if (message.type === MessageType.CALL) continue;
+      const content = message.content?.[0];
+      if (content?.toolCall?.input?.metrics_view) {
+        return content.toolCall.input.metrics_view as string;
+      }
     }
 
     return null;
   });
-}
-
-/**
- * Returns the last updated conversation ID.
- */
-function getLatestConversationQueryOptions() {
-  const listConversationsQueryOptions = derived(runtime, ({ instanceId }) =>
-    getRuntimeServiceListConversationsQueryOptions(instanceId, {
-      // Filter to only show Rill client conversations, excluding MCP conversations
-      userAgentPattern: "rill%",
-    }),
-  );
-  const lastConversationId = derived(
-    createQuery(listConversationsQueryOptions, queryClient),
-    (conversationsResp) => {
-      return conversationsResp?.data?.conversations?.[0]?.id;
-    },
-  );
-
-  return derived(
-    [lastConversationId, runtime],
-    ([lastConversationId, { instanceId }]) => {
-      return getRuntimeServiceGetConversationQueryOptions(
-        instanceId,
-        lastConversationId ?? "",
-        {
-          query: {
-            enabled: !!lastConversationId,
-          },
-        },
-      );
-    },
-  );
-}
-
-function getMetricsViewInMessage(message: V1Message) {
-  if (message.type !== MessageType.CALL) return null;
-  const content = message.content?.[0];
-  return (content?.toolCall?.input?.metrics_view as string) ?? null;
 }

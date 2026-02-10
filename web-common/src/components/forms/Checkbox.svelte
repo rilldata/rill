@@ -41,7 +41,10 @@
     )}
   >
     <CheckboxPrimitive.Indicator
-      class={cn("flex items-center justify-center text-white")}
+      class={cn(
+        "flex items-center justify-center text-white",
+        "data-[state=unchecked]:hidden",
+      )}
     >
       <Check class="h-3.5 w-3.5" />
     </CheckboxPrimitive.Indicator>
@@ -51,13 +54,13 @@
     <label for={$$props.id} class="flex items-center text-sm gap-x-1">
       {label}
       {#if optional}
-        <span class="text-gray-500 text-[12px] font-normal capitalize"
+        <span class="text-fg-secondary text-[12px] font-normal capitalize"
           >(optional)</span
         >
       {/if}
       {#if hint}
         <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500">
+          <div class="text-fg-secondary">
             <InfoCircle size="13px" />
           </div>
           <TooltipContent maxWidth="240px" slot="tooltip-content">

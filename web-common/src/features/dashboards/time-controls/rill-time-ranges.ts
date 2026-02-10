@@ -14,6 +14,7 @@ export async function resolveTimeRanges(
   timeRanges: (DashboardTimeControls | undefined)[],
   timeZone: string | undefined,
   executionTime: string | undefined = undefined,
+  timeDimension: string | undefined = undefined,
 ) {
   const rillTimes: string[] = [];
   const rillTimeToTimeRange = new Map<number, number>();
@@ -48,6 +49,7 @@ export async function resolveTimeRanges(
       metricsViewName,
       rillTimes,
       timeZone,
+      timeDimension,
       executionTime,
     });
 
@@ -73,12 +75,14 @@ export async function fetchTimeRanges({
   metricsViewName,
   rillTimes,
   timeZone,
+  timeDimension,
   executionTime,
   cacheBust = false,
 }: {
   instanceId: string;
   metricsViewName: string;
   rillTimes: string[];
+  timeDimension?: string | undefined;
   timeZone: string | undefined;
   executionTime?: string;
   cacheBust?: boolean;
@@ -88,6 +92,7 @@ export async function fetchTimeRanges({
     timeZone,
     executionTime,
     priority: 100,
+    timeDimension,
   };
 
   const queryKey = getQueryServiceMetricsViewTimeRangesQueryKey(

@@ -53,8 +53,7 @@ Controls the reference point for your time calculations. This determines whether
 ### 4. Comparing
 Enables time comparison functionality, allowing you to compare current data against previous periods (e.g., "vs. previous period" or "vs. same period last year").
 
-<img src='/img/build/metrics-view/time-series/time-pill.png' class='rounded-gif' />
-<br />
+![Time Pill](/img/build/metrics-view/time-series/time-pill.png)
 
 ## Key Concepts
 
@@ -209,12 +208,47 @@ Along with setting time ranges, you have the ability to set a comparison period 
 
 Once comparison is enabled, you'll see slightly different information in your dashboard. Along with the current value, you'll see both change in value as well as % change over periods. This gives you a quick glance at how your metrics are performing compared to the previous period.
 
-<img src = '/img/explore/filters/comparison.png' class='rounded-gif' />
-<br />
+![Comparison](/img/explore/filters/comparison.png)
 
-## Filter by Scrubbing 
+## Filter by Scrubbing
 
 For a specific view into your time series graph, you can interactively scrub directly on the time series graph. This feature allows you to zoom into specific time periods by clicking and dragging across the chart.
 
-<img src = '/img/explore/filters/scrub.png' class='rounded-gif' />
-<br />
+![Scrub](/img/explore/filters/scrub.png)
+
+## Multiple Time Dimensions
+
+Your dashboard may have multiple time dimensions available for filtering, beyond the primary time series. These appear as additional filter options and allow you to analyze data across different temporal perspectives.
+
+![Multiple Time Dimensions](/img/build/metrics-view/time-series/mulitple-time-series.png)
+
+### Common Use Cases
+
+- **Order vs. Ship Date**: Filter by when orders were placed or when they were fulfilled
+- **Created vs. Updated**: Analyze records by original creation or last modification
+- **Event vs. Processing Time**: Distinguish between when something happened and when it was recorded
+
+### Using Time Dimension Filters
+
+Time dimensions appear in the filter panel alongside your other dimensions. When you select a time dimension filter:
+
+1. **Choose the time dimension** from the filter panel
+2. **Select a time range** using the same duration syntax as the main time series
+3. **Combine with other filters** to create complex queries
+
+:::tip
+Time dimension filters work independently from the main time series selector. This means you can view your time series chart by order date while filtering to only show records with a ship date in the last 7 days.
+:::
+
+### Example: Analyzing Fulfillment Delays
+
+To find orders placed last month that haven't shipped yet:
+
+1. Set the main time series to "Last 30 days" (viewing by order date)
+2. Add a filter on Ship Date dimension
+3. Set the Ship Date filter to exclude records (or filter to null values)
+
+This combination lets you identify orders that are still pending fulfillment.
+
+For more details on configuring time dimensions, see the [Time Dimensions](/developers/build/metrics-view/dimensions/time-dimensions) developer documentation.
+
