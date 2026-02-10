@@ -193,6 +193,118 @@ export function getFileTypeFromPath(fileName) {
 }
 
 /**
+ * Detect the ClickHouse format name from a file path extension.
+ * Maps common extensions to ClickHouse input format identifiers.
+ */
+function getClickHouseFormat(path: string): string {
+  const extension = extractFileExtension(path);
+  if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
+    return "CSVWithNames";
+  } else if (extensionContainsParts(extension, [".parquet"])) {
+    return "Parquet";
+  } else if (extensionContainsParts(extension, [".json", ".ndjson"])) {
+    return "JSONEachRow";
+  }
+  return "CSVWithNames";
+}
+
+/**
+ * Build a ClickHouse SQL query for reading data from various sources.
+ * ClickHouse uses table functions like s3(), gcs(), url(), file() instead of DuckDB's read_* functions.
+ */
+function buildClickHouseQuery(
+  connector: string,
+  formValues: Record<string, unknown>,
+): string {
+  switch (connector) {
+    case "s3": {
+      const path = typeof formValues.path === "string" ? formValues.path : "";
+      return `SELECT * FROM s3('${path}', '${getClickHouseFormat(path)}')`;
+    }
+    case "gcs": {
+      const path = typeof formValues.path === "string" ? formValues.path : "";
+      return `SELECT * FROM gcs('${path}', '${getClickHouseFormat(path)}')`;
+    }
+    case "azure": {
+      const path = typeof formValues.path === "string" ? formValues.path : "";
+      return `SELECT * FROM azureBlobStorage('${path}', '${getClickHouseFormat(path)}')`;
+    }
+    case "https": {
+      const path = typeof formValues.path === "string" ? formValues.path : "";
+      return `SELECT * FROM url('${path}', '${getClickHouseFormat(path)}')`;
+    }
+    case "local_file": {
+      const path = typeof formValues.path === "string" ? formValues.path : "";
+      return `SELECT * FROM file('${path}', '${getClickHouseFormat(path)}')`;
+    }
+    case "sqlite": {
+      const db = typeof formValues.db === "string" ? formValues.db : "";
+      const table =
+        typeof formValues.table === "string" ? formValues.table : "";
+      return `SELECT * FROM sqlite('${db}', '${table}')`;
+    }
+    default: {
+      const path = typeof formValues.path === "string" ? formValues.path : "";
+      return `SELECT * FROM '${path}'`;
+    }
+  }
+}
+
+/**
+ * Convert applicable connectors to ClickHouse SQL when the OLAP engine is managed ClickHouse.
+ * Parallel to maybeRewriteToDuckDb() but generates ClickHouse-dialect SQL.
+ */
+export function maybeRewriteToClickHouse(
+  connector: V1ConnectorDriver,
+  formValues: Record<string, unknown>,
+  options?: { connectorInstanceName?: string },
+): [V1ConnectorDriver, Record<string, unknown>] {
+  const connectorCopy = { ...connector };
+  const originalConnectorName = connector.name ?? "";
+
+  switch (originalConnectorName) {
+    case "s3":
+    case "gcs":
+    case "azure":
+    case "https":
+    case "local_file":
+      connectorCopy.name = "clickhouse";
+      formValues.sql = buildClickHouseQuery(originalConnectorName, formValues);
+      delete formValues.path;
+      break;
+    case "sqlite":
+      connectorCopy.name = "clickhouse";
+      formValues.sql = buildClickHouseQuery(originalConnectorName, formValues);
+      delete formValues.db;
+      delete formValues.table;
+      break;
+    // postgres, mysql: these connectors use ClickHouse's mysql()/postgresql()
+    // table functions. Form schema changes are needed to add a table name field
+    // before SQL generation can be implemented here.
+  }
+
+  return [connectorCopy, formValues];
+}
+
+/**
+ * Dispatches to the appropriate rewrite function based on the OLAP engine.
+ */
+export function maybeRewriteForOlapEngine(
+  olapEngine: string,
+  connector: V1ConnectorDriver,
+  formValues: Record<string, unknown>,
+  options?: { connectorInstanceName?: string },
+): [V1ConnectorDriver, Record<string, unknown>] {
+  switch (olapEngine) {
+    case "clickhouse":
+      return maybeRewriteToClickHouse(connector, formValues, options);
+    case "duckdb":
+    default:
+      return maybeRewriteToDuckDb(connector, formValues, options);
+  }
+}
+
+/**
  * Convert applicable connectors to DuckDB. We do this to leverage DuckDB's native,
  * well-documented file reading capabilities.
  */
@@ -255,13 +367,13 @@ export function maybeRewriteToDuckDb(
 }
 
 /**
- * Process form data for sources, including DuckDB rewrite logic and placeholder handling.
+ * Process form data for sources, including OLAP-engine-aware rewrite logic and placeholder handling.
  * This serves as a single source of truth for both preview and submission.
  */
 export function prepareSourceFormData(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
-  options?: { connectorInstanceName?: string },
+  options?: { connectorInstanceName?: string; olapEngine?: string },
 ): [V1ConnectorDriver, Record<string, unknown>] {
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
@@ -300,8 +412,10 @@ export function prepareSourceFormData(
     }
   }
 
-  // Apply DuckDB rewrite logic
-  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+  // Apply OLAP-engine-aware rewrite logic (defaults to DuckDB)
+  const olapEngine = options?.olapEngine ?? "duckdb";
+  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteForOlapEngine(
+    olapEngine,
     connector,
     processedValues,
     options,

@@ -72,6 +72,7 @@ export class AddDataFormManager {
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
   private schemaName: string;
+  private olapEngine: string;
 
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
@@ -97,6 +98,7 @@ export class AddDataFormManager {
     errorsStore: ErrorsStore;
     getSelectedAuthMethod?: () => string | undefined;
     schemaName?: string; // Override connector.name for schema/validation lookup
+    olapEngine?: string; // Active OLAP engine (defaults to "duckdb")
   }) {
     const {
       connector,
@@ -111,6 +113,7 @@ export class AddDataFormManager {
     this.formStore = formStore;
     this.errorsStore = errorsStore;
     this.getSelectedAuthMethod = getSelectedAuthMethod;
+    this.olapEngine = args.olapEngine ?? "duckdb";
 
     // Use schemaName if provided, otherwise fall back to connector.name
     this.schemaName = schemaName ?? connector.name ?? "";
@@ -352,6 +355,7 @@ export class AddDataFormManager {
             connector,
             submitValues,
             stepState.connectorInstanceName ?? undefined,
+            this.olapEngine,
           );
           onClose();
         } else if (isStepFlowConnector && isOnConnectorStep) {
@@ -365,7 +369,13 @@ export class AddDataFormManager {
           });
         } else if (this.formType === "source") {
           // Single-step source form
-          await submitAddSourceForm(queryClient, connector, submitValues);
+          await submitAddSourceForm(
+            queryClient,
+            connector,
+            submitValues,
+            undefined,
+            this.olapEngine,
+          );
           onClose();
         } else {
           // Single-step connector form
@@ -561,10 +571,15 @@ export class AddDataFormManager {
         filteredValues,
         {
           connectorInstanceName: stepState?.connectorInstanceName || undefined,
+          olapEngine: this.olapEngine,
         },
       );
       const isExplorerStep = stepState?.step === "explorer";
-      const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+      const wasRewritten =
+        (rewrittenConnector.name === "duckdb" &&
+          connector.name !== "duckdb") ||
+        (rewrittenConnector.name === "clickhouse" &&
+          connector.name !== "clickhouse");
       const rewrittenSchema = getConnectorSchema(rewrittenConnector.name ?? "");
       const sourceStep = isExplorerStep ? "explorer" : "source";
       const rewrittenSecretKeys = rewrittenSchema
@@ -573,7 +588,7 @@ export class AddDataFormManager {
       const rewrittenStringKeys = rewrittenSchema
         ? getSchemaStringKeys(rewrittenSchema, { step: sourceStep })
         : undefined;
-      if (isRewrittenToDuckDb || isExplorerStep) {
+      if (wasRewritten || isExplorerStep) {
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
           secretKeys: rewrittenSecretKeys,
           stringKeys: rewrittenStringKeys,

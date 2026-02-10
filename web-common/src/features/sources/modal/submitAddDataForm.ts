@@ -448,6 +448,7 @@ export async function submitAddSourceForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   connectorInstanceName?: string,
+  olapEngine?: string,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -456,7 +457,7 @@ export async function submitAddSourceForm(
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
     formValues,
-    { connectorInstanceName },
+    { connectorInstanceName, olapEngine },
   );
   const schema = getConnectorSchema(rewrittenConnector.name ?? "");
   const schemaSecretKeys = schema
@@ -466,12 +467,14 @@ export async function submitAddSourceForm(
     ? getSchemaStringKeys(schema, { step: "source" })
     : [];
 
-  // When connector is rewritten to DuckDB (e.g., S3 -> DuckDB), don't use
-  // the original connectorInstanceName in YAML. The original connector is
-  // referenced via create_secrets_from_connectors for credential access.
-  const isRewrittenToDuckDb =
-    rewrittenConnector.name === "duckdb" && connector.name !== "duckdb";
-  const yamlConnectorInstanceName = isRewrittenToDuckDb
+  // When connector is rewritten to DuckDB or ClickHouse (e.g., S3 -> DuckDB),
+  // don't use the original connectorInstanceName in YAML. The original connector
+  // is referenced via create_secrets_from_connectors for credential access.
+  const wasRewritten =
+    (rewrittenConnector.name === "duckdb" && connector.name !== "duckdb") ||
+    (rewrittenConnector.name === "clickhouse" &&
+      connector.name !== "clickhouse");
+  const yamlConnectorInstanceName = wasRewritten
     ? undefined
     : connectorInstanceName;
 

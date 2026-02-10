@@ -3,6 +3,7 @@
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
@@ -24,6 +25,7 @@
     getConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
+  import { getSourcesForOlapEngine } from "./constants";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
 
@@ -33,8 +35,18 @@
   let requestConnector = false;
   let isSubmittingForm = false;
 
-  // Filter connectors by category from JSON schemas
-  $: sourceConnectors = connectors.filter((c) => c.category !== "olap");
+  // Derive the current OLAP engine from the runtime instance
+  $: instanceQuery = createRuntimeServiceGetInstance($runtime.instanceId, {
+    sensitive: true,
+  });
+  $: olapDriver =
+    $instanceQuery.data?.instance?.olapConnector ?? "duckdb";
+
+  // Filter connectors by category and OLAP engine
+  $: allowedSources = new Set(getSourcesForOlapEngine(olapDriver));
+  $: sourceConnectors = connectors.filter(
+    (c) => c.category !== "olap" && allowedSources.has(c.name),
+  );
   $: olapConnectors = connectors.filter((c) => c.category === "olap");
 
   /**
@@ -244,6 +256,7 @@
             connector={selectedConnector}
             schemaName={selectedSchemaName}
             formType={isConnectorType ? "connector" : "source"}
+            {olapDriver}
             onClose={resetModal}
             onBack={back}
             bind:isSubmitting={isSubmittingForm}

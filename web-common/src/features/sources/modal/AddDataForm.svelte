@@ -28,6 +28,7 @@
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
   export let formType: AddDataFormType;
+  export let olapDriver: string = "duckdb";
   export let isSubmitting: boolean;
   export let onBack: () => void;
   export let onClose: () => void;
@@ -69,6 +70,7 @@
     getSelectedAuthMethod: () =>
       get(connectorStepStore).selectedAuthMethod ?? undefined,
     schemaName,
+    olapEngine: olapDriver,
   });
 
   const isMultiStepConnector = formManager.isMultiStepConnector;

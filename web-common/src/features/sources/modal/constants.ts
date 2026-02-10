@@ -79,7 +79,7 @@ export const AZURE_AUTH_OPTIONS: {
   },
 ];
 
-// pre-defined order for sources
+// pre-defined order for sources (superset used for schema registration)
 export const SOURCES = [
   "athena",
   "azure",
@@ -95,6 +95,51 @@ export const SOURCES = [
   "https",
   "local_file",
 ];
+
+// Sources supported when OLAP engine is DuckDB
+export const DUCKDB_SOURCES = [
+  "athena",
+  "azure",
+  "bigquery",
+  "gcs",
+  "mysql",
+  "postgres",
+  "redshift",
+  "s3",
+  "salesforce",
+  "snowflake",
+  "sqlite",
+  "https",
+  "local_file",
+];
+
+// Sources supported when OLAP engine is managed ClickHouse
+export const CLICKHOUSE_SOURCES = [
+  "s3",
+  "gcs",
+  "azure",
+  "https",
+  "local_file",
+  "sqlite",
+  "postgres",
+  "mysql",
+];
+
+/**
+ * Returns the list of supported source connectors for the given OLAP engine.
+ * Defaults to DUCKDB_SOURCES when the engine is unknown.
+ */
+export function getSourcesForOlapEngine(
+  olapDriver: string | undefined,
+): string[] {
+  switch (olapDriver) {
+    case "clickhouse":
+      return CLICKHOUSE_SOURCES;
+    case "duckdb":
+    default:
+      return DUCKDB_SOURCES;
+  }
+}
 
 export const OLAP_ENGINES = [
   "clickhouse",
