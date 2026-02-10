@@ -493,35 +493,7 @@ export class AddDataFormManager {
       }
     }
 
-    // Legacy fallback for fields without x-file-encoding
-    const fileName = file.name.toLowerCase();
-    if (fileName.endsWith(".pem") || fileName.endsWith(".p8")) {
-      return btoa(content);
-    }
-
-    try {
-      const parsed = JSON.parse(content);
-      const sanitized = JSON.stringify(parsed);
-      if (this.connector.name === "bigquery" && parsed.project_id) {
-        this.formStore.update(
-          ($form) => {
-            $form.project_id = parsed.project_id;
-            return $form;
-          },
-          { taint: false },
-        );
-      }
-      return sanitized;
-    } catch (error: unknown) {
-      if (error instanceof SyntaxError) {
-        throw new Error(`Invalid JSON file: ${error.message}`);
-      }
-      const message =
-        error && typeof error === "object" && "message" in error
-          ? String((error as { message: unknown }).message)
-          : "Unknown error";
-      throw new Error(`Failed to read file: ${message}`);
-    }
+    return content;
   }
 
   /**
