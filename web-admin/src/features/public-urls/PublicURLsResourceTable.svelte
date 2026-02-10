@@ -21,7 +21,7 @@
     const q = searchText.toLowerCase();
     const label = (row.displayName || row.dashboardTitle || "").toLowerCase();
     const dashboard = (row.dashboardTitle || "").toLowerCase();
-    const creator = (String(row.attributes?.name || "")).toLowerCase();
+    const creator = String(row.attributes?.name || "").toLowerCase();
     return label.includes(q) || dashboard.includes(q) || creator.includes(q);
   });
 
