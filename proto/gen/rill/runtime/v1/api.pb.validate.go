@@ -10804,6 +10804,10 @@ func (m *AnalystAgentContext) validate(all bool) error {
 
 	// no validation rules for Explore
 
+	// no validation rules for Canvas
+
+	// no validation rules for CanvasComponent
+
 	if all {
 		switch v := interface{}(m.GetWhere()).(type) {
 		case interface{ ValidateAll() error }:
@@ -10830,6 +10834,52 @@ func (m *AnalystAgentContext) validate(all bool) error {
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
+		}
+	}
+
+	{
+		sorted_keys := make([]string, len(m.GetWherePerMetricsView()))
+		i := 0
+		for key := range m.GetWherePerMetricsView() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetWherePerMetricsView()[key]
+			_ = val
+
+			// no validation rules for WherePerMetricsView[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, AnalystAgentContextValidationError{
+							field:  fmt.Sprintf("WherePerMetricsView[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, AnalystAgentContextValidationError{
+							field:  fmt.Sprintf("WherePerMetricsView[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return AnalystAgentContextValidationError{
+						field:  fmt.Sprintf("WherePerMetricsView[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		}
 	}
 

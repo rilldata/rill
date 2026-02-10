@@ -75,6 +75,7 @@ export class Conversation {
     V1GetConversationResponse,
     RpcStatus
   >;
+  private readonly messageById = new Map<string, V1Message>();
 
   // Reactive store for conversationId - enables query to auto-update when ID changes
   private readonly conversationIdStore: Writable<string>;
@@ -423,6 +424,9 @@ export class Conversation {
     }
 
     if (response.message) {
+      if (response.message.id)
+        this.messageById.set(response.message.id, response.message);
+
       // Skip ALL user messages from the stream
       // Server echoes back the user message
       // We've already added it optimistically, so we don't want duplicates
@@ -434,7 +438,13 @@ export class Conversation {
       this.addMessageToCache(response.message);
       if (response.message.type === MessageType.CALL) {
         const config = getToolConfig(response.message.tool);
-        config?.onResult?.(response.message);
+        config?.onCall?.(response.message);
+      } else if (response.message.type === MessageType.RESULT) {
+        const config = getToolConfig(response.message.tool);
+        config?.onResult?.(
+          this.messageById.get(response.message.parentId ?? ""),
+          response.message,
+        );
       }
     }
   }

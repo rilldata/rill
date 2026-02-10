@@ -300,7 +300,7 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName || fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
-		return time.Minute * 5
+		return time.Minute * 10
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Health_FullMethodName || fullMethodName == runtimev1.RuntimeService_InstanceHealth_FullMethodName {

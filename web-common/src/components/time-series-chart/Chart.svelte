@@ -243,7 +243,7 @@
           hasComparison && hoveredPoints[1] ? hoveredPoints[1] : null}
         {#if interval.isValid}
           <span
-            class="relative flex line-clamp-1 gap-x-1"
+            class="absolute flex whitespace-nowrap gap-x-1"
             style:transform="translateX(-{percentage}%)"
             style:left="{percentage}%"
           >

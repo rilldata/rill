@@ -41,7 +41,7 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	if err != nil {
 		return nil, err
 	}
-	resProps := &drivers.ObjectStoreModelResultProperties{Path: outputLocation, Format: string(drivers.FileFormatParquet)}
+	resProps := &drivers.ObjectStoreModelResultProperties{Path: outputLocation, Format: string(format)}
 	res := make(map[string]any)
 	err = mapstructure.Decode(resProps, &res)
 	if err != nil {

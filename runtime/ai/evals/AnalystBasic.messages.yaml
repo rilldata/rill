@@ -1,158 +1,198 @@
-- id: c56bf69a-6616-4b82-82e1-5e5203a97874
+- id: 523be98f-70e7-4b24-92ea-80717d990c46
   parent_id: ""
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:09.072916Z
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:46.088133Z
   index: 0
   role: user
   type: call
   tool: router_agent
   content_type: json
   content: '{"prompt":"What country has the highest revenue? Answer with a single country name and nothing else."}'
-- id: 72d0aa20-062a-4b3b-9442-208cb375286a
-  parent_id: c56bf69a-6616-4b82-82e1-5e5203a97874
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:09.072928Z
+- id: ca607146-eef8-44b4-9a43-4ffaaff151dd
+  parent_id: 523be98f-70e7-4b24-92ea-80717d990c46
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:46.088542Z
   index: 1
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: ef4e7941-c75a-4b11-8a88-b30b3f1ec3a0
+  parent_id: ca607146-eef8-44b4-9a43-4ffaaff151dd
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:47.257863Z
+  index: 2
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"analyst_agent"}'
+- id: be061ff6-19d3-4d63-bd52-4756ab731253
+  parent_id: 523be98f-70e7-4b24-92ea-80717d990c46
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:47.257919Z
+  index: 3
   role: user
   type: call
   tool: analyst_agent
   content_type: json
-  content: '{"prompt":"What country has the highest revenue? Answer with a single country name and nothing else."}'
-- id: 20dc51ab-24f4-486a-997a-545375ee61e3
-  parent_id: 72d0aa20-062a-4b3b-9442-208cb375286a
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:09.072932Z
-  index: 2
+  content: '{"prompt":"What country has the highest revenue? Answer with a single country name and nothing else.","explore":"","dimensions":null,"measures":null,"where":null,"time_start":"0001-01-01T00:00:00Z","time_end":"0001-01-01T00:00:00Z"}'
+- id: aa7aab51-8cf9-4c5c-b209-2b6a935c9225
+  parent_id: be061ff6-19d3-4d63-bd52-4756ab731253
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:47.257966Z
+  index: 4
   role: assistant
   type: call
   tool: list_metrics_views
   content_type: json
   content: '{}'
-- id: 3098ccfe-b805-4b93-a398-60784869e306
-  parent_id: 20dc51ab-24f4-486a-997a-545375ee61e3
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:09.072941Z
-  index: 3
+- id: 7ca95429-c03c-4004-90f7-030780e6cdbf
+  parent_id: aa7aab51-8cf9-4c5c-b209-2b6a935c9225
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:47.258065Z
+  index: 5
   role: assistant
   type: result
   tool: list_metrics_views
   content_type: json
   content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
-- id: 5b7a3f88-fa2c-4d91-be2f-e02a5809d8d9
-  parent_id: 72d0aa20-062a-4b3b-9442-208cb375286a
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:10.425574Z
-  index: 4
+- id: 2e0b0075-504e-4536-ad04-e615f79846f4
+  parent_id: be061ff6-19d3-4d63-bd52-4756ab731253
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:48.593803Z
+  index: 6
   role: assistant
   type: call
   tool: get_metrics_view
   content_type: json
   content: '{"metrics_view":"orders"}'
-- id: 432b48f0-885a-465c-88a9-d91eb9bb49b7
-  parent_id: 5b7a3f88-fa2c-4d91-be2f-e02a5809d8d9
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:10.426029Z
-  index: 5
+- id: bb251408-75c3-48ff-bc3b-c6c15d4feaf4
+  parent_id: 2e0b0075-504e-4536-ad04-e615f79846f4
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:48.59406Z
+  index: 7
   role: assistant
   type: result
   tool: get_metrics_view
   content_type: json
-  content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
-- id: cd651a84-ec83-46f7-b021-4f6f7d2cad8b
-  parent_id: 72d0aa20-062a-4b3b-9442-208cb375286a
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:11.294218Z
-  index: 6
+  content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"event_time","dataType":{"code":"CODE_TIMESTAMP","nullable":true},"displayName":"Event Time","name":"event_time","smallestTimeGrain":"TIME_GRAIN_SECOND","type":"DIMENSION_TYPE_TIME"},{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country","type":"DIMENSION_TYPE_CATEGORICAL"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","smallestTimeGrain":"TIME_GRAIN_SECOND","table":"orders","timeDimension":"event_time"}}'
+- id: 9c1ef6e3-f1a0-44a1-80dd-d2c2bd590ae7
+  parent_id: be061ff6-19d3-4d63-bd52-4756ab731253
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:50.22996Z
+  index: 8
   role: assistant
   type: call
   tool: query_metrics_view_summary
   content_type: json
   content: '{"metrics_view":"orders"}'
-- id: 53dfa6cd-53ad-4fa7-9f08-ef1616fb74ea
-  parent_id: cd651a84-ec83-46f7-b021-4f6f7d2cad8b
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:11.301925Z
-  index: 7
+- id: f5d44f8a-caad-438d-8a55-737b56d397b0
+  parent_id: 9c1ef6e3-f1a0-44a1-80dd-d2c2bd590ae7
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:50.238729Z
+  index: 9
   role: assistant
   type: result
   tool: query_metrics_view_summary
   content_type: json
   content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
-- id: 9e16977c-366f-4626-afc9-7df31f9eda2f
-  parent_id: 72d0aa20-062a-4b3b-9442-208cb375286a
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:13.631066Z
-  index: 8
+- id: eef5b34c-1741-4017-a70c-609589e29f9e
+  parent_id: be061ff6-19d3-4d63-bd52-4756ab731253
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:52.124215Z
+  index: 10
   role: assistant
   type: call
   tool: query_metrics_view
   content_type: json
   content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
-- id: 545b34c2-9d38-497f-af6e-e455f1bc9b11
-  parent_id: 9e16977c-366f-4626-afc9-7df31f9eda2f
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:13.638197Z
-  index: 9
+- id: 7bf04d0b-d4ed-46a6-96aa-da0300f81f3d
+  parent_id: eef5b34c-1741-4017-a70c-609589e29f9e
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:52.131374Z
+  index: 11
   role: assistant
   type: result
   tool: query_metrics_view
   content_type: json
   content: '{"data":[{"country":"United States","revenue":100}]}'
-- id: d3b060d2-0fe9-4479-8c1c-887ec2da833e
-  parent_id: 72d0aa20-062a-4b3b-9442-208cb375286a
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:14.672154Z
-  index: 10
+- id: 591c59d4-4178-4474-89ec-3457203ec700
+  parent_id: be061ff6-19d3-4d63-bd52-4756ab731253
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:54.020672Z
+  index: 12
   role: user
   type: result
   tool: analyst_agent
   content_type: json
   content: '{"response":"United States"}'
-- id: fb096b63-d3bc-4358-8884-413ec3e3a35d
-  parent_id: c56bf69a-6616-4b82-82e1-5e5203a97874
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:14.672193Z
-  index: 11
+- id: bc0e3793-1615-47b0-a428-243e494f231f
+  parent_id: 523be98f-70e7-4b24-92ea-80717d990c46
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:54.020722Z
+  index: 13
   role: user
   type: result
   tool: router_agent
   content_type: json
   content: '{"response":"United States","agent":"analyst_agent"}'
-- id: 16fb28f8-8bb1-43b2-8c1a-3a2561ebec88
+- id: 69d96d2f-6a04-4d80-ad21-4790ea74e6ad
   parent_id: ""
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:14.672255Z
-  index: 12
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:54.021918Z
+  index: 14
   role: user
   type: call
   tool: router_agent
   content_type: json
   content: '{"prompt":"Repeat the answer you gave to my last question."}'
-- id: 29d1c830-1ee1-4c85-925f-5dd8a5420592
-  parent_id: 16fb28f8-8bb1-43b2-8c1a-3a2561ebec88
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:14.672285Z
-  index: 13
+- id: 311f19a0-16a6-4498-a991-0e4ef7e377a1
+  parent_id: 69d96d2f-6a04-4d80-ad21-4790ea74e6ad
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:54.027131Z
+  index: 15
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: 92bc0140-47f3-4872-b6ec-252ce8acee2e
+  parent_id: 311f19a0-16a6-4498-a991-0e4ef7e377a1
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:54.881303Z
+  index: 16
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"analyst_agent"}'
+- id: 6649758d-109d-46d2-a1c4-461c1192d9a6
+  parent_id: 69d96d2f-6a04-4d80-ad21-4790ea74e6ad
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:54.881375Z
+  index: 17
   role: user
   type: call
   tool: analyst_agent
   content_type: json
-  content: '{"prompt":"Repeat the answer you gave to my last question."}'
-- id: 1b1ae95f-e37c-45bc-bff1-e21ba7f4794c
-  parent_id: 29d1c830-1ee1-4c85-925f-5dd8a5420592
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:15.416856Z
-  index: 14
+  content: '{"prompt":"Repeat the answer you gave to my last question.","explore":"","dimensions":null,"measures":null,"where":null,"time_start":"0001-01-01T00:00:00Z","time_end":"0001-01-01T00:00:00Z"}'
+- id: 52e9ce3a-ae42-418e-97fb-8b75597b3d0b
+  parent_id: 6649758d-109d-46d2-a1c4-461c1192d9a6
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:56.089153Z
+  index: 18
   role: user
   type: result
   tool: analyst_agent
   content_type: json
   content: '{"response":"United States"}'
-- id: fb5cd039-2b07-4017-a3a4-c0ee034bb541
-  parent_id: 16fb28f8-8bb1-43b2-8c1a-3a2561ebec88
-  session_id: 6269dec9-89e2-4aae-b847-e65b19d2f7cd
-  time: 2025-10-29T18:17:15.416886Z
-  index: 15
+- id: 8ed43b02-a091-4ee5-a234-ebc1770d3051
+  parent_id: 69d96d2f-6a04-4d80-ad21-4790ea74e6ad
+  session_id: 9df9bbce-dfcc-497d-a407-179ab07a6102
+  time: 2026-02-05T13:22:56.089172Z
+  index: 19
   role: user
   type: result
   tool: router_agent

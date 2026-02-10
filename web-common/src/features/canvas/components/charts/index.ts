@@ -24,6 +24,10 @@ import {
   HeatmapChartComponent,
   type HeatmapCanvasChartSpec,
 } from "./variants/HeatmapChart";
+import {
+  ScatterPlotChartComponent,
+  type ScatterPlotCanvasChartSpec,
+} from "./variants/ScatterPlotChart";
 
 export { default as Chart } from "./CanvasChart.svelte";
 
@@ -32,14 +36,16 @@ export type ChartComponent =
   | typeof CircularChartComponent
   | typeof FunnelChartComponent
   | typeof HeatmapChartComponent
-  | typeof ComboChartComponent;
+  | typeof ComboChartComponent
+  | typeof ScatterPlotChartComponent;
 
 export type CanvasChartSpec =
   | CartesianCanvasChartSpec
   | CircularCanvasChartSpec
   | FunnelCanvasChartSpec
   | HeatmapCanvasChartSpec
-  | ComboCanvasChartSpec;
+  | ComboCanvasChartSpec
+  | ScatterPlotCanvasChartSpec;
 
 export function getCanvasChartComponent(
   type: ChartType,
@@ -60,6 +66,8 @@ export function getCanvasChartComponent(
       return HeatmapChartComponent;
     case "combo_chart":
       return ComboChartComponent;
+    case "scatter_plot":
+      return ScatterPlotChartComponent;
     default:
       throw new Error("Unsupported chart type: " + type);
   }

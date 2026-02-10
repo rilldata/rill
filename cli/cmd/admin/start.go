@@ -41,6 +41,7 @@ import (
 	_ "github.com/rilldata/rill/admin/provisioner/kubernetes"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
 	_ "github.com/rilldata/rill/runtime/drivers/claude"
+	_ "github.com/rilldata/rill/runtime/drivers/gemini"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
 )
@@ -96,6 +97,7 @@ type Config struct {
 	AIDriver                          string `default:"" split_words:"true"`
 	OpenAIAPIKey                      string `envconfig:"openai_api_key"`
 	ClaudeAPIKey                      string `envconfig:"claude_api_key"`
+	GeminiAPIKey                      string `envconfig:"gemini_api_key"`
 	ActivitySinkType                  string `default:"" split_words:"true"`
 	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic          string `default:"" split_words:"true"`
@@ -107,6 +109,7 @@ type Config struct {
 	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
+	PylonIdentitySecret               string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -251,6 +254,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					logger.Fatal("RILL_ADMIN_CLAUDE_API_KEY is required when AI driver is 'claude'")
 				}
 				aiConfig["api_key"] = conf.ClaudeAPIKey
+			case "gemini":
+				if conf.GeminiAPIKey == "" {
+					logger.Fatal("RILL_ADMIN_GEMINI_API_KEY is required when AI driver is 'gemini'")
+				}
+				aiConfig["api_key"] = conf.GeminiAPIKey
 			case "mock_ai":
 				// Nothing more to do
 			case "":
@@ -350,6 +358,15 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				keyPairs[idx] = key
 			}
 
+			// Parse Pylon identity secret
+			var pylonIdentitySecret []byte
+			if conf.PylonIdentitySecret != "" {
+				pylonIdentitySecret, err = hex.DecodeString(conf.PylonIdentitySecret)
+				if err != nil {
+					logger.Fatal("failed to parse pylon identity secret from hex string to bytes")
+				}
+			}
+
 			// Make errgroup for running the processes
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
@@ -388,6 +405,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubClientSecret:     conf.GithubClientSecret,
 					GithubManagedAccount:   conf.GithubManagedAccount,
 					AssetsBucket:           conf.AssetsBucket,
+					PylonIdentitySecret:    pylonIdentitySecret,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
