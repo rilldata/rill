@@ -1,5 +1,6 @@
 <script lang="ts">
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import SchemaField from "./SchemaField.svelte";
@@ -30,6 +31,14 @@
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
+  /**
+   * Dynamic options for fields with `x-display: "select"`.
+   * Keyed by field name; values are option arrays for the Select component.
+   */
+  export let selectOptions: Record<
+    string,
+    Array<{ value: string; label: string }>
+  > = {};
 
   // Resolve OLAP-specific overrides for the current engine.
   $: olapConfig = schema && olapDriver
@@ -185,6 +194,10 @@
 
   function isTabsEnum(prop: JSONSchemaField) {
     return isEnumWithDisplay(prop, "tabs");
+  }
+
+  function isSelectField(prop: JSONSchemaField) {
+    return prop["x-display"] === "select";
   }
 
   function computeVisibleEntries(
@@ -372,7 +385,21 @@
 
 {#if schema}
   {#each renderOrder as [key, prop] (key)}
-    {#if isRadioEnum(prop)}
+    {#if isSelectField(prop)}
+      {@const options = selectOptions[key] ?? []}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        <Select
+          id={key}
+          label={prop.title ?? key}
+          bind:value={$form[key]}
+          {options}
+          placeholder={prop["x-placeholder"] ?? `Select ${prop.title ?? key}...`}
+          optional={!isRequired(key)}
+          tooltip={prop.description ?? ""}
+          full
+        />
+      </div>
+    {:else if isRadioEnum(prop)}
       <div class="py-1.5 first:pt-0 last:pb-0">
         {#if prop.title}
           <div class="text-sm font-medium mb-3">{prop.title}</div>

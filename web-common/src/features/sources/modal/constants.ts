@@ -94,6 +94,7 @@ export const SOURCES = [
   "sqlite",
   "https",
   "local_file",
+  "staging",
 ];
 
 // Sources supported when OLAP engine is DuckDB
@@ -115,6 +116,7 @@ export const DUCKDB_SOURCES = [
 
 // Sources supported when OLAP engine is managed ClickHouse
 export const CLICKHOUSE_SOURCES = [
+  "staging",
   "s3",
   "gcs",
   "azure",

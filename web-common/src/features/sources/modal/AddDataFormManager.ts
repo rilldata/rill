@@ -24,7 +24,11 @@ import {
 } from "./connectorStepStore";
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
-import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import {
+  compileSourceYAML,
+  compileStagingYAML,
+  prepareSourceFormData,
+} from "../sourceUtils";
 import type { ActionResult } from "@sveltejs/kit";
 import type { QueryClient } from "@tanstack/query-core";
 import {
@@ -558,6 +562,11 @@ export class AddDataFormManager {
     };
 
     const getSourceYamlPreview = (values: Record<string, unknown>) => {
+      // Staging connector uses its own YAML format
+      if (this.schemaName === "staging") {
+        return compileStagingYAML(values);
+      }
+
       // For multi-step connectors in step 2, filter out connector properties
       let filteredValues = values;
       if (

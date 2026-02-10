@@ -17,6 +17,7 @@ import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
 import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
 import SQLite from "../../../components/icons/connectors/SQLite.svelte";
 import ClickHouseCloud from "../../../components/icons/connectors/ClickHouseCloud.svelte";
+import Staging from "../../../components/icons/connectors/Staging.svelte";
 import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
 
 export const ICONS = {
@@ -37,6 +38,7 @@ export const ICONS = {
   https: Https,
   clickhouse: ClickHouse,
   clickhousecloud: ClickHouseCloud,
+  staging: Staging,
   druid: ApacheDruid,
   pinot: ApachePinot,
   starrocks: StarRocks,

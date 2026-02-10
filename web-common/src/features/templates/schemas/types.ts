@@ -44,6 +44,12 @@ export type JSONSchemaField = {
   /** Field controls UI behavior only and is excluded from generated YAML. */
   "x-ui-only"?: boolean;
   /**
+   * Filter for existing runtime connectors by driver name.
+   * Used with `x-display: "select"` to populate dropdown options
+   * from already-configured project connectors.
+   */
+  "x-connector-drivers"?: string[];
+  /**
    * Explicit grouping for radio/select options: maps an option value to the
    * child field keys that should render beneath that option.
    */
@@ -83,7 +89,8 @@ export type ConnectorCategory =
   | "olap"
   | "objectStore"
   | "fileStore"
-  | "warehouse";
+  | "warehouse"
+  | "staging";
 
 export type ButtonLabels = {
   idle: string;

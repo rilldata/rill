@@ -341,6 +341,46 @@ function buildClickHouseQuery(
 }
 
 /**
+ * Compile a staging model YAML for ClickHouse.
+ * Stages data from a warehouse (Snowflake/Redshift/BigQuery) through cloud storage
+ * into ClickHouse.
+ */
+export function compileStagingYAML(
+  formValues: Record<string, unknown>,
+): string {
+  const warehouse = String(formValues.warehouse ?? "snowflake");
+  const sql = String(formValues.sql ?? "");
+  const stagingConnector = String(formValues.staging_connector ?? "s3");
+  const stagingPath = String(formValues.staging_path ?? "");
+  const name = String(formValues.name ?? "");
+
+  const formatSqlBlock = (s: string, indent: string) =>
+    `sql: |\n${s
+      .split("\n")
+      .map((line) => `${indent}${line}`)
+      .join("\n")}`;
+
+  const lines: string[] = [
+    `# Staging Model: ${warehouse} → ${stagingConnector} → ClickHouse`,
+    "",
+    "type: model",
+    "materialize: true",
+    "",
+    `connector: ${warehouse}`,
+    formatSqlBlock(sql, "  "),
+    "",
+    "stage:",
+    `  connector: ${stagingConnector}`,
+    `  path: ${stagingPath}`,
+    "",
+    "output:",
+    "  connector: clickhouse",
+  ];
+
+  return lines.join("\n");
+}
+
+/**
  * Convert applicable connectors to ClickHouse SQL when the OLAP engine is managed ClickHouse.
  * Parallel to maybeRewriteToDuckDb() but generates ClickHouse-dialect SQL.
  */

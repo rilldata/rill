@@ -33,7 +33,11 @@ import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
-import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import {
+  compileSourceYAML,
+  compileStagingYAML,
+  prepareSourceFormData,
+} from "../sourceUtils";
 import { OLAP_ENGINES } from "./constants";
 import { getConnectorSchema } from "./connector-schemas";
 import {
@@ -479,6 +483,23 @@ export async function submitAddSourceForm(
         createOnly: false,
       });
     }
+  }
+
+  // Staging connector: uses its own YAML format, references existing connectors
+  if (connector.name === "staging") {
+    const newSourceFilePath = getFileAPIPathFromNameAndType(
+      newSourceName,
+      EntityType.Table,
+    );
+    await runtimeServicePutFile(instanceId, {
+      path: newSourceFilePath,
+      blob: compileStagingYAML(formValues),
+      create: true,
+      createOnly: false,
+    });
+
+    await goto(`/files/${newSourceFilePath}`);
+    return;
   }
 
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(

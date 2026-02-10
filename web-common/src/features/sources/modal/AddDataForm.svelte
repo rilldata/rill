@@ -24,6 +24,12 @@
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
+  import {
+    ResourceKind,
+    useFilteredResources,
+  } from "../../entity-management/resource-selectors";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import type { V1Resource } from "../../../runtime-client";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -101,6 +107,42 @@
   const hiddenFieldSet = olapHiddenFields
     ? new Set(olapHiddenFields)
     : null;
+
+  // Query existing project connectors for fields with x-connector-drivers.
+  $: connectorResourcesQuery = useFilteredResources(
+    $runtime.instanceId,
+    ResourceKind.Connector,
+  );
+
+  // Build dynamic select options for fields with x-connector-drivers
+  $: dynamicSelectOptions = buildSelectOptionsFromConnectors(
+    connectorSchema,
+    $connectorResourcesQuery.data as V1Resource[] | undefined,
+  );
+
+  function buildSelectOptionsFromConnectors(
+    schema: ReturnType<typeof getConnectorSchema>,
+    resources: V1Resource[] | undefined,
+  ): Record<string, Array<{ value: string; label: string }>> {
+    if (!schema?.properties || !resources) return {};
+    const result: Record<string, Array<{ value: string; label: string }>> = {};
+    for (const [key, prop] of Object.entries(schema.properties)) {
+      const drivers = prop["x-connector-drivers"] as string[] | undefined;
+      if (!drivers?.length) continue;
+      const driverSet = new Set(drivers);
+      result[key] = resources
+        .filter((r) => {
+          const driver = r.connector?.spec?.driver;
+          return driver && driverSet.has(driver);
+        })
+        .map((r) => {
+          const name = r.meta?.name?.name ?? "";
+          const driver = r.connector?.spec?.driver ?? "";
+          return { value: name, label: `${name} (${driver})` };
+        });
+    }
+    return result;
+  }
 
   // Hide Save Anyway once we advance to the model step in step flow connectors.
   $: if (
@@ -268,6 +310,7 @@
             errors={$paramsErrors}
             {onStringInputChange}
             {handleFileUpload}
+            selectOptions={dynamicSelectOptions}
           />
         </AddDataFormSection>
       {:else}
