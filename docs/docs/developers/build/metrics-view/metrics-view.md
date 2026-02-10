@@ -16,6 +16,7 @@ Metrics Views are a key part of defining your measures and dimensions.
 - [**Dimensions**](/developers/build/metrics-view/dimensions) - Categorize and segment your data for analysis and filtering
 - [**Navigatable Dimensions**](/developers/build/metrics-view/dimensions/dimension-uri) - Generate navigable URIs for your dimension values
 - [**Unnesting Arrays**](/developers/build/metrics-view/dimensions/unnesting) - Work with array data by expanding nested structures
+- [**Time Dimensions**](/developers/build/metrics-view/dimensions/time-dimensions) - Add multiple time-based dimensions for filtering across different date columns
 - [**Lookup Dimensions**](/developers/build/metrics-view/dimensions/lookup) - Create dimensions that reference data from other sources
 
 ### Measures

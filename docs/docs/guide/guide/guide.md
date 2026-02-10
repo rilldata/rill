@@ -12,7 +12,6 @@ import ThemedImage from '@theme/ThemedImage';
 
 Rill Cloud is a fully-managed platform that brings powerful, interactive analytics directly to your fingertips. Explore your data through instant dashboards, ask questions in plain English with AI Chat, and share insights with your team—all without writing SQL or waiting for custom reports. Your data team has already set up the metrics and dashboards you need; you simply explore, analyze, and collaborate.
 
-<img src='' class='rounded-gif' />
 <ThemedImage
   alt="Dark Mode"
   sources={{
@@ -20,8 +19,6 @@ Rill Cloud is a fully-managed platform that brings powerful, interactive analyti
     dark: '/img/guide/home/project-home-dark.png',
   }}
 />
-
-
 
 <div className="tile-icon-grid">
 <TileIcon

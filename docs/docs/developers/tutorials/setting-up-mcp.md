@@ -21,8 +21,7 @@ For detailed steps, please refer to our documentation on [MCP Servers](/guide/ai
 
 ## Step 1: Access your Rill Project's AI tab.
 
-<img src='/img/explore/mcp/project-ai.png' class='rounded-gif'/>
-<br />
+![Project AI](/img/explore/mcp/project-ai.png)
 
 In your project's AI tab, you'll be able to create a user token (personal access token) and copy the MCP config.json directly in the UI. Simply paste this into your application of choice.
 
@@ -53,8 +52,7 @@ To use Rill with OpenAI's ChatGPT, you'll need to follow the same steps as above
 
 A below is an example chat with Claude using our MCP server to get information on the commit history for one of our demo projects.
 
-<img src='/img/explore/mcp/mcp-main.gif' class='rounded-gif'/>
-<br />
+![MCP Main](/img/explore/mcp/mcp-main.gif)
 
 
 
