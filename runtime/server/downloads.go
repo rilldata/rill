@@ -221,7 +221,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	case *runtimev1.Query_MetricsViewRowsRequest:
 		r := v.MetricsViewRowsRequest
-		mv, security, err := ResolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, claims)
+		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, claims)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)

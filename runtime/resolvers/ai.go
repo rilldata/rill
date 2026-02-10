@@ -15,7 +15,8 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
-	"github.com/rilldata/rill/runtime/server"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func init() {
@@ -293,7 +294,7 @@ func (r *aiResolver) resolveTimeRange(ctx context.Context, tr *metricsview.TimeR
 
 	// if metrics view is provided, we can get the metrics view's time bounds
 	if r.metricsView != "" {
-		mv, security, err := server.ResolveMVAndSecurityFromAttributes(ctx, r.runtime, r.instanceID, r.metricsView, r.claims)
+		mv, security, err := resolveMVAndSecurityFromAttributes(ctx, r.runtime, r.instanceID, r.metricsView, r.claims)
 		if err != nil {
 			return fmt.Errorf("failed to resolve metrics view %q: %w", r.metricsView, err)
 		}
@@ -349,6 +350,45 @@ func (r *aiResolver) generateTitle() string {
 		return fmt.Sprintf("%s: %s", title, r.props.Explore)
 	}
 	return title
+}
+
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
+	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, claims, res)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !resolvedSecurity.CanAccess() {
+		return nil, nil, status.Error(codes.Unauthenticated, "action not allowed")
+	}
+
+	return mv, resolvedSecurity, nil
+}
+
+// returns the metrics view and the time the catalog was last updated
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewState, error) {
+	ctrl, err := rt.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+	if err != nil {
+		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	mv := res.GetMetricsView()
+	spec := mv.State.ValidSpec
+	if spec == nil {
+		return nil, nil, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
+	}
+
+	return res, mv.State, nil
 }
 
 // extractSummary extracts the summary from the <summary> tag in the AI response.
