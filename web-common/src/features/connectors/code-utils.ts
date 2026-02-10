@@ -112,7 +112,7 @@ driver: ${driverName}`;
           options?.existingEnvBlob,
           options?.schema,
         );
-        return `${key}: "{{ .env.${envVarName} }}"`;// uses standard Go template syntax
+        return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);

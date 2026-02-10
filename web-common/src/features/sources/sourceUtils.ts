@@ -73,7 +73,7 @@ export function compileSourceYAML(
           key,
           opts?.existingEnvBlob,
           schema ?? undefined,
-        )} }}"`;// uses standard Go template syntax
+        )} }}"`; // uses standard Go template syntax
       }
 
       if (key === "sql") {
