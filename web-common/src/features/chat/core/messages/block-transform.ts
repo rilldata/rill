@@ -67,7 +67,10 @@ export function transformToBlocks(
 ): Block[] {
   const blocks: Block[] = [];
 
-  // Build lookup maps
+  // Build lookup maps.
+  // Feedback is pre-built (unlike other blocks) because it attaches to a different
+  // message — the target assistant message appears before its feedback CALL/RESULT
+  // messages in the array, so we need the data ready before we encounter the target.
   const resultMap = buildResultMessageMap(messages);
   const feedbackMap = buildFeedbackMap(messages);
 
@@ -194,8 +197,9 @@ function shouldHideMessage(msg: V1Message): boolean {
     return true;
   }
 
-  // Feedback-related router_agent messages → feedback is shown inline on the target message
-  // The backend sets agent: "feedback_agent" in router_agent content for feedback requests
+  // Feedback goes through router_agent, producing both feedback_agent messages (hidden by
+  // the registry above) AND router_agent wrapper messages. Without this check, those wrapper
+  // messages would render as text blocks since router_agent is normally the main conversation.
   if (msg.tool === ToolName.ROUTER_AGENT && isFeedbackRouterMessage(msg)) {
     return true;
   }
@@ -253,40 +257,40 @@ function buildFeedbackMap(messages: V1Message[]): Map<string, FeedbackData> {
   const feedbackMap = new Map<string, FeedbackData>();
 
   for (const msg of messages) {
-    // Find feedback_agent CALL messages
-    if (msg.tool === ToolName.FEEDBACK_AGENT && msg.type === MessageType.CALL) {
-      try {
-        const content = JSON.parse(
-          msg.contentData || "",
-        ) as FeedbackCallContent;
-        if (content.target_message_id && content.sentiment) {
-          // Find the corresponding RESULT
-          const resultMsg = messages.find(
-            (m) =>
-              m.tool === ToolName.FEEDBACK_AGENT &&
-              m.type === MessageType.RESULT &&
-              m.parentId === msg.id,
-          );
+    const isFeedbackCall =
+      msg.tool === ToolName.FEEDBACK_AGENT && msg.type === MessageType.CALL;
+    if (!isFeedbackCall) continue;
 
-          let response: string | null = null;
-          if (resultMsg) {
-            try {
-              const resultContent = JSON.parse(resultMsg.contentData || "");
-              response = resultContent.response || null;
-            } catch {
-              // Skip malformed result
-            }
-          }
+    try {
+      const content = JSON.parse(msg.contentData || "") as FeedbackCallContent;
 
-          feedbackMap.set(content.target_message_id, {
-            sentiment: content.sentiment,
-            response,
-            isPending: !resultMsg,
-          });
+      if (!content.target_message_id || !content.sentiment) continue;
+
+      // Find the corresponding RESULT
+      const resultMsg = messages.find(
+        (m) =>
+          m.tool === ToolName.FEEDBACK_AGENT &&
+          m.type === MessageType.RESULT &&
+          m.parentId === msg.id,
+      );
+
+      let response: string | null = null;
+      if (resultMsg) {
+        try {
+          const resultContent = JSON.parse(resultMsg.contentData || "");
+          response = resultContent.response || null;
+        } catch {
+          // Skip malformed result
         }
-      } catch {
-        // Skip malformed feedback messages
       }
+
+      feedbackMap.set(content.target_message_id, {
+        sentiment: content.sentiment,
+        response,
+        isPending: !resultMsg,
+      });
+    } catch {
+      // Skip malformed feedback messages
     }
   }
 

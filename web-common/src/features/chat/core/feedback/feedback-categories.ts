@@ -32,16 +32,17 @@ export const FEEDBACK_CATEGORIES = [
 
 export type FeedbackCategory = (typeof FEEDBACK_CATEGORIES)[number]["id"];
 
+const FEEDBACK_CATEGORIES_BY_AGENT: Record<
+  string,
+  typeof ANALYST_CATEGORIES | typeof DEVELOPER_CATEGORIES
+> = {
+  [ToolName.DEVELOPER_AGENT]: DEVELOPER_CATEGORIES,
+  [ToolName.ANALYST_AGENT]: ANALYST_CATEGORIES,
+};
+
 /**
  * Get feedback categories applicable to the given agent.
  */
 export function getCategoriesForAgent(agent: string) {
-  if (agent === ToolName.DEVELOPER_AGENT) {
-    return DEVELOPER_CATEGORIES;
-  }
-  if (agent === ToolName.ANALYST_AGENT) {
-    return ANALYST_CATEGORIES;
-  }
-  // Default to analyst categories for unknown agents
-  return ANALYST_CATEGORIES;
+  return FEEDBACK_CATEGORIES_BY_AGENT[agent] ?? ANALYST_CATEGORIES;
 }
