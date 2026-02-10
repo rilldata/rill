@@ -359,7 +359,7 @@ Choose the appropriate chart type based on your data:
 - Focus on insights that are surprising, actionable, and quantified
 - Never repeat identical queries - each should explore new analytical angles
 - Use <thinking> tags between queries to evaluate results and plan next steps
-- Keep query limits low and aim for high information density; be mindful of the system's hard limit per query (current value: {{ .max_query_limit }})
+- Aim to make queries with high information density; keep row limits as low as possible and avoid pagination
 - The combined data you load across all queries should be below 10000 rows, ideally much less
 
 **Quality Standards**:
@@ -413,11 +413,14 @@ Based on the data analysis, here are the key insights:
 - When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph
 </output_format>
 
+<additional_context>
+The system allows a max row limit of {{ .max_query_limit }} per query.
+
 {{ if .ai_instructions }}
-<additional_user_provided_instructions>
+The administrator has provided the following project-wide instructions, which may or may not be relevant to this task:
 {{ .ai_instructions }}
-</additional_user_provided_instructions>
 {{ end }}
+</additional_context>
 `, data)
 }
 

@@ -115,9 +115,9 @@ type InstanceConfig struct {
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
-	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified. If set to 0, the default of 20 is used.
+	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
-	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries. If set to 0, the default of 250 is used.
+	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
 	AIMaxQueryLimit int64 `mapstructure:"rill.ai.max_query_limit"`
 }
 
@@ -181,7 +181,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
-		AIDefaultQueryLimit:                  20,
+		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 	}
 
