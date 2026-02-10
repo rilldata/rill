@@ -13,7 +13,7 @@
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
+  import { clearExploreViewState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
   export let organization: string;
@@ -39,7 +39,7 @@
   function goToDashboardHome() {
     if (resourceKind === ResourceKind.Explore) {
       // Without clearing sessions empty, DashboardStateDataLoader will load from session for explore view
-      clearExploreSessionStore(resourceName, `${organization}__${project}__`);
+      clearExploreViewState(resourceName, `${organization}__${project}__`);
     }
   }
 

@@ -74,7 +74,7 @@
       },
 
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
-      filters: { clearAllFilters, setTemporaryFilterName },
+      filters: { clearAllFilters, setTemporaryFilterName, toggleFilterPin },
     },
     selectors: {
       dimensions: { allDimensions, timeDimensions },
@@ -528,6 +528,7 @@
               {timeEnd}
               timeDimension={selectedTimeDimension}
               {timeControlsReady}
+              toggleFilterPin={async (name) => toggleFilterPin(name)}
               removeDimensionFilter={async (name) =>
                 removeDimensionFilter(name)}
               toggleDimensionFilterMode={async (name) => {
@@ -558,6 +559,7 @@
                   oldDimension,
                   filter,
                 )}
+              toggleFilterPin={(name) => toggleFilterPin(name)}
             />
           </div>
         {/each}

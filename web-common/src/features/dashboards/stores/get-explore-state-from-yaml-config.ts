@@ -1,5 +1,10 @@
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import {
+  createAndExpression,
+  flattenExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { getGrainForRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -17,6 +22,7 @@ import {
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreComparisonMode,
+  V1Operation,
   V1TimeGrain,
   type V1ExploreSpec,
   type V1TimeRangeSummary,
@@ -33,10 +39,10 @@ export function getExploreStateFromYAMLConfig(
   timeRangeSummary: V1TimeRangeSummary | undefined,
   smallestTimeGrain: V1TimeGrain | undefined = undefined,
 ) {
-  // TODO: support all fields from V1ExplorePreset. Not urgent since we do not parse them in backend.
   return <Partial<ExploreState>>{
     activePage: DashboardState_ActivePage.DEFAULT,
 
+    ...getExploreFilterStateFromYAMLConfig(exploreSpec),
     ...getExploreTimeStateFromYAMLConfig(
       exploreSpec,
       timeRangeSummary,
@@ -85,6 +91,39 @@ export function createUrlForExploreYAMLDefaultState(
       return `?${urlParams.toString()}`;
     },
   );
+}
+
+export function getExploreFilterStateFromYAMLConfig(
+  exploreSpec: V1ExploreSpec,
+): Partial<ExploreState> {
+  const filter = exploreSpec.defaultPreset?.filter?.expression;
+  if (!filter && !exploreSpec.defaultPreset?.pinned?.length) {
+    return {};
+  }
+
+  const flattened = filter
+    ? flattenExpression(filter)
+    : createAndExpression([]);
+
+  const { dimensionThresholdFilters, dimensionFilters } =
+    splitWhereFilter(flattened);
+
+  // Build dimensionFilterExcludeMode from the parsed filter expressions.
+  // NIN (NOT IN) operations indicate exclude mode for that dimension.
+  const dimensionFilterExcludeMode = new Map<string, boolean>();
+  for (const expr of dimensionFilters.cond?.exprs ?? []) {
+    const ident = expr.cond?.exprs?.[0]?.ident;
+    if (ident && expr.cond?.op === V1Operation.OPERATION_NIN) {
+      dimensionFilterExcludeMode.set(ident, true);
+    }
+  }
+
+  return {
+    whereFilter: dimensionFilters,
+    dimensionThresholdFilters,
+    dimensionFilterExcludeMode,
+    pinnedFilters: new Set(exploreSpec.defaultPreset?.pinned ?? []),
+  };
 }
 
 function getExploreTimeStateFromYAMLConfig(

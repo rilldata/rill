@@ -35,6 +35,21 @@ const TestCases: {
     expectedCleanedSearch:
       "view=pivot&tr=P7D&cols=publisher%2Cimpressions&sort_by=impressions&sort_dir=DESC&table_mode=flat",
   },
+  {
+    title:
+      "should treat array and non-array IN filter values as equal (Go backend uses arrays)",
+    defaultSearch:
+      "tr=P14D&grain=day&f=customer+IN+%28%5B%27Airtable%27%5D%29+AND+location+IN+%28%5B%27us-east1%27%5D%29",
+    search:
+      "tr=P14D&grain=day&f=customer+IN+%28%5B%27Airtable%27%5D%29+AND+location+IN+%28%27us-east1%27%29",
+    expectedCleanedSearch: "",
+  },
+  {
+    title: "should treat IN LIST and IN as equal for filter comparison",
+    defaultSearch: "tr=P7D&grain=day&f=customer+IN+%28%27Airtable%27%29",
+    search: "tr=P7D&grain=day&f=customer+IN+LIST+%28%5B%27Airtable%27%5D%29",
+    expectedCleanedSearch: "",
+  },
 ];
 
 describe("clean-url-params", () => {

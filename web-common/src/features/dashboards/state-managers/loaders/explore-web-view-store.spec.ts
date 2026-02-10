@@ -1,8 +1,10 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
+import { clearExploreViewState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import {
   type HoistedPageForExploreTests,
   PageMockForExploreTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
+import { clearLastVisitedState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/last-visited-state";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_EXPLORE_INIT,
@@ -170,8 +172,9 @@ describe("Explore web view store", () => {
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary!,
     );
 
-    localStorage.clear();
-    sessionStorage.clear();
+    // Clear in-memory state stores
+    clearExploreViewState(AD_BIDS_EXPLORE_NAME, undefined);
+    clearLastVisitedState(AD_BIDS_EXPLORE_NAME);
     queryClient.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });

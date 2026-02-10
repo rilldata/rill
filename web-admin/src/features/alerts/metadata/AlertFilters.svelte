@@ -54,7 +54,11 @@
     dimensionsWithInlistFilter,
     metricsViewName,
   );
-  $: currentMeasureFilters = getMeasureFilters(measureIdMap, havingFilter);
+  $: currentMeasureFilters = getMeasureFilters(
+    measureIdMap,
+    havingFilter,
+    new Set(),
+  );
 </script>
 
 <div class="flex flex-col gap-y-3" aria-label="Alert filters">

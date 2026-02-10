@@ -74,6 +74,10 @@ export function convertPresetToExploreState(
     );
   }
 
+  if (preset.pinned) {
+    partialExploreState.pinnedFilters = new Set(preset.pinned);
+  }
+
   if (preset.where) {
     const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
       preset.where,
