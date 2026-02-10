@@ -30,7 +30,7 @@ This creates several issues:
 
 ### Root Cause
 
-The fundamental problem is that the query payload travels *through* the LLM. The backend encodes the full JSON into the URL, hands it to the LLM in a tool result, and hopes the LLM reproduces it faithfully in its markdown output. The LLM is being used as a lossy transport for structured data.
+The fundamental problem is that the query payload travels _through_ the LLM. The backend encodes the full JSON into the URL, hands it to the LLM in a tool result, and hopes the LLM reproduces it faithfully in its markdown output. The LLM is being used as a lossy transport for structured data.
 
 ## Proposed Solution: Short Links
 
@@ -39,7 +39,7 @@ Replace the long `open-query?query={json}` URLs with short links that reference 
 ```
 Before: https://ui.rilldata.com/org/proj/-/open-query?query=%7B%22metrics_view%22%3A%22revenue%22%2C%22dimensions%22%3A%5B%7B%22name%22%3A%22country%22%7D%5D%2C%22measures%22%3A...%7D
 
-After:  https://ui.rilldata.com/org/proj/-/ai/call/550e8400-e29b-41d4-a716-446655440000
+After:  https://ui.rilldata.com/org/proj/-/ai/{session_id}/call/{tool_call_id}
 ```
 
 The query payload bypasses the LLM entirely. The backend stores it (which it already does — every tool call is persisted in the `ai_messages` table), gives the LLM a short reference to it, and resolves the reference deterministically at click time.
@@ -74,21 +74,48 @@ Today, `query_metrics_view` already persists the full query arguments in the `ai
 │ Intercepts link, │  │                    │  │                      │
 │ resolves tool    │  │ Uses open_url from │  │ LLM emits short link │
 │ call from conv   │  │ tool result as-is  │  │ User clicks → browser│
-│ in memory.       │  │ (short link works  │  │ → backend redirect   │
-│ Renders as full  │  │  in any context)   │  │ → dashboard          │
-│ dashboard URL.   │  │                    │  │                      │
+│ in memory.       │  │ (short link works  │  │ → frontend route     │
+│ Renders as full  │  │  in any context)   │  │ → gRPC API → resolve │
+│ dashboard URL.   │  │                    │  │ → dashboard          │
 │ Embed-aware.     │  │                    │  │                      │
 └──────────────────┘  └────────────────────┘  └──────────────────────┘
 ```
 
 ## Implementation Approach
 
-### 1. Backend: Change `generateOpenURL` to Produce Short Links
+### 1. Backend: gRPC Endpoint to Resolve Tool Calls
 
-In `runtime/ai/metrics_view_query.go`, the `generateOpenURL` function currently serializes the full query as JSON in the URL. Change it to use the tool call's message ID:
+Add a gRPC endpoint in `proto/rill/runtime/v1/api.proto` alongside the existing AI endpoints (`ListConversations`, `GetConversation`, `Complete`):
+
+```proto
+// Resolves an AI tool call to its query arguments.
+// Returns the query_metrics_view arguments for the given tool call,
+// enabling the frontend to build a dashboard URL.
+rpc GetAIToolCall(GetAIToolCallRequest) returns (GetAIToolCallResponse) {
+  option (google.api.http) = {
+    get: "/v1/instances/{instance_id}/ai/sessions/{session_id}/calls/{call_id}"
+  };
+}
+
+message GetAIToolCallRequest {
+  string instance_id = 1;
+  string session_id = 2;
+  string call_id = 3;
+}
+
+message GetAIToolCallResponse {
+  google.protobuf.Struct query = 1;  // MetricsResolverQuery as JSON
+}
+```
+
+The handler verifies that the caller has access to the AI session (either as owner or via sharing) before returning the tool call contents. This prevents unauthorized access to dimension names and filter values.
+
+### 2. Backend: Change `generateOpenURL` to Produce Short Links
+
+In `runtime/ai/metrics_view_query.go`, the `generateOpenURL` function currently serializes the full query as JSON in the URL. Change it to use the session ID and tool call message ID:
 
 ```go
-func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID string, messageID string) (string, error) {
+func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID string, sessionID string, messageID string) (string, error) {
     instance, err := t.Runtime.Instance(ctx, instanceID)
     if err != nil {
         return "", fmt.Errorf("failed to get instance: %w", err)
@@ -102,7 +129,7 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID strin
         return "", fmt.Errorf("failed to parse frontend URL %q: %w", instance.FrontendURL, err)
     }
 
-    openURL.Path, err = url.JoinPath(openURL.Path, "-", "ai", "call", messageID)
+    openURL.Path, err = url.JoinPath(openURL.Path, "-", "ai", sessionID, "call", messageID)
     if err != nil {
         return "", fmt.Errorf("failed to join path: %w", err)
     }
@@ -111,60 +138,57 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID strin
 }
 ```
 
-The message ID is already available — each tool call message gets a UUID when created (`uuid.NewString()` in `runtime/ai/ai.go`). The function signature changes to accept the message ID instead of the query map.
+The session ID and message ID are both already available — each tool call message gets a UUID when created (`uuid.NewString()` in `runtime/ai/ai.go`), and the session ID is available from the session context.
 
-### 2. Backend: Add Redirect Endpoint
+### 3. Frontend: Add Route for Short Links
 
-Add an HTTP endpoint that resolves a tool call ID to the existing `/-/open-query` route. This keeps all state management (finding the explore, mapping query to dashboard state) in the existing `open-query` infrastructure.
+Add a SvelteKit route in both `web-local` and `web-admin` at `/-/ai/{session_id}/call/{tool_call_id}`. This route:
 
+1. Calls the `GetAIToolCall` gRPC endpoint (which handles auth/access control)
+2. Receives the query arguments
+3. Delegates to the existing `openQuery()` function to resolve the explore and redirect to the dashboard
+
+```typescript
+// web-admin: src/routes/[organization]/[project]/-/ai/[session_id]/call/[call_id]/+page.ts
+export const load: PageLoad = async ({ params, parent }) => {
+  await parent();
+
+  // Call the gRPC endpoint to resolve the tool call
+  const response = await runtimeServiceGetAIToolCall(
+    params.instance_id,
+    params.session_id,
+    params.call_id,
+  );
+
+  // Delegate to existing open-query resolution logic
+  const query = response.query as MetricsResolverQuery;
+  await openQueryFromMetricsResolverQuery({
+    query,
+    organization: params.organization,
+    project: params.project,
+  });
+};
 ```
-GET /-/ai/call/{tool_call_id}
-  → Look up tool call message by ID
-  → Extract query args from message content
-  → Build /-/open-query?query={json} URL
-  → 302 redirect
-```
 
-```go
-// In runtime/server/ — register alongside existing AI routes
-func (s *Server) handleAICallRedirect(w http.ResponseWriter, r *http.Request) {
-    toolCallID := r.PathValue("tool_call_id")
+This keeps the `/-/open-query` route unchanged and avoids mixing stateful (call ID lookup) and stateless (inline JSON) operations on the same route. The shared resolution logic (find explore, map query to ExploreState, redirect to dashboard) should be extracted from the existing `openQuery()` function so both routes can use it. The `/-/open-query` route remains for backwards compatibility with any existing bookmarked or shared links that use the old `?query={json}` format.
 
-    // Look up the tool call message
-    msg, err := s.findAIMessage(r.Context(), toolCallID)
-    if err != nil || msg.Tool != "query_metrics_view" {
-        http.NotFound(w, r)
-        return
-    }
+### 4. Update AI Prompt
 
-    // Build the open-query redirect URL
-    redirectURL := buildOpenQueryURL(r, msg.Content)
-    http.Redirect(w, r, redirectURL, http.StatusFound)
-}
-```
-
-This endpoint is intentionally thin — it's a lookup and redirect. The `open-query` route handles all the complex state resolution (finding the explore for the metrics view, converting the query to ExploreState, generating the final dashboard URL).
-
-**Note:** This requires adding a `FindAIMessage(ctx, messageID)` method to the catalog interface. Currently, messages can only be queried by session ID. A direct lookup by message ID is needed for this endpoint.
-
-### 3. Update AI Prompt
-
-The prompt change is minimal. The citation format stays as standard markdown links — only the URL changes:
+No change to the prompt instructions. The `open_url` field in the tool result will now contain a short link instead of a long one, but the LLM's instructions are the same: "use the `open_url` as a markdown link."
 
 ```diff
  **Citation Requirements**:
  - Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user
 ```
 
-No change to the prompt instructions. The `open_url` field in the tool result will now contain a short link instead of a long one, but the LLM's instructions are the same: "use the `open_url` as a markdown link."
-
-### 4. Frontend: Rill Chat UI — Intercept Short Links
+### 5. Frontend: Rill Chat UI — Intercept Short Links
 
 In `AssistantMessage.svelte`, the existing `rewrite-citation-urls.ts` logic changes from "extract JSON from URL and map to dashboard params" to "look up tool call ID from conversation and map to dashboard params."
 
 ```typescript
 // rewrite-citation-urls.ts (revised)
-const CITATION_SHORT_LINK_REGEX = /\/-\/ai\/call\/([a-f0-9-]+)\/?$/;
+const CITATION_SHORT_LINK_REGEX =
+  /\/-\/ai\/([a-f0-9-]+)\/call\/([a-f0-9-]+)\/?$/;
 
 export function getCitationUrlRewriter(
   conversation: Conversation,
@@ -178,13 +202,13 @@ export function getCitationUrlRewriter(
           const match = url?.pathname?.match(CITATION_SHORT_LINK_REGEX);
           if (!match) return false;
 
-          const toolCallID = match[1];
+          const toolCallID = match[2];
           // Look up the tool call from the conversation already in memory
           const toolCall = conversation.messages.find(
-            (m) => m.id === toolCallID && m.tool === "query_metrics_view"
+            (m) => m.id === toolCallID && m.tool === "query_metrics_view",
           );
           if (!toolCall) {
-            // Fallback: render as standard link (backend redirect will handle it)
+            // Fallback: render as standard link (frontend route will handle it)
             return false;
           }
 
@@ -203,13 +227,23 @@ export function getCitationUrlRewriter(
 ```
 
 Key behaviors:
-- **In Explore context**: Intercepts short links, resolves the tool call from the conversation in memory, renders `<a>` with the full dashboard URL. Right-click + copy gives a self-contained, shareable URL.
-- **Outside Explore context**: Short links pass through as standard `<a>` elements pointing to the short URL. Clicking triggers the backend redirect.
-- **Fallback**: If the tool call ID isn't found in the conversation (edge case), the link renders as-is. Clicking follows the backend redirect endpoint.
 
-### 5. Frontend: Embed-Aware Rendering (Future)
+- **In Explore context**: Intercepts short links, resolves the tool call from the conversation in memory, renders `<a>` with the full dashboard URL. Right-click + copy gives a self-contained, shareable URL. No network request needed.
+- **Outside Explore context**: Short links pass through as standard `<a>` elements pointing to the short URL. Clicking navigates to the frontend route, which calls the gRPC endpoint and redirects.
+- **Fallback**: If the tool call ID isn't found in the conversation (edge case), the link renders as-is and the frontend route handles resolution.
 
-The existing embed/app branching problem and the icon button rendering request are separate from the short link change. They can be addressed in a follow-up by enhancing the citation link renderer in the `marked` extension — the short link approach doesn't block or change this. With citations now identifiable via a URL pattern (`/-/ai/call/`), the markdown renderer has a clean hook point for custom rendering (buttons in embeds, icon buttons, hover previews, etc.).
+### 6. Frontend: Embed-Aware Rendering (Future)
+
+The existing embed/app branching problem and the icon button rendering request are separate from the short link change. They can be addressed in a follow-up by enhancing the citation link renderer in the `marked` extension — the short link approach doesn't block or change this. With citations now identifiable via a URL pattern (`/-/ai/.../call/...`), the markdown renderer has a clean hook point for custom rendering (buttons in embeds, icon buttons, hover previews, etc.).
+
+## Access Control
+
+The gRPC endpoint verifies that the caller has access to the AI session before returning tool call contents. This prevents unauthorized access to potentially sensitive data (dimension names, filter values, query structure).
+
+- The session ID in the URL enables efficient lookup and access control in a single query
+- Callers must be the session owner or have shared access
+- Unauthenticated requests return 401; unauthorized requests return 403
+- The Rill Chat UI's in-memory resolution path bypasses this entirely (no network request), since the user already has the conversation loaded
 
 ## Compatibility
 
@@ -219,13 +253,13 @@ External MCP clients (Claude Desktop, Cursor) call `query_metrics_view` directly
 
 ### External MCP Clients (Future: Agent Exposure)
 
-When agents are exposed to external MCP clients, the agent's markdown output will contain short links. These work as standard URLs — clicking opens the browser, the backend resolves the tool call, and redirects to the dashboard. No special client-side handling required.
+When agents are exposed to external MCP clients, the agent's markdown output will contain short links. These work as standard URLs — clicking opens the browser, the frontend route calls the gRPC endpoint (with auth), and redirects to the dashboard. No special client-side handling required.
 
-| Consumer | How they get citations | Click behavior | Right-click copy |
-|---|---|---|---|
-| Rill Chat UI | Intercepts short link, resolves from conversation in memory | Native navigation, embed-aware | Full dashboard URL |
-| External MCP (direct tools) | `open_url` from tool result | Browser → backend redirect → dashboard | Short link URL (functional) |
-| External MCP (future agent exposure) | Short links in agent markdown output | Browser → backend redirect → dashboard | Short link URL (functional) |
+| Consumer                             | How they get citations                                      | Click behavior                              | Right-click copy            |
+| ------------------------------------ | ----------------------------------------------------------- | ------------------------------------------- | --------------------------- |
+| Rill Chat UI                         | Intercepts short link, resolves from conversation in memory | Native navigation, embed-aware              | Full dashboard URL          |
+| External MCP (direct tools)          | `open_url` from tool result                                 | Browser → frontend route → gRPC → dashboard | Short link URL (functional) |
+| External MCP (future agent exposure) | Short links in agent markdown output                        | Browser → frontend route → gRPC → dashboard | Short link URL (functional) |
 
 ## Alternatives Considered
 
@@ -234,6 +268,7 @@ When agents are exposed to external MCP clients, the agent's markdown output wil
 Have the LLM output `<cite id="tool_call_id">label</cite>` instead of markdown links. The backend parses cite tags and builds a structured citations array as a sidecar on the message proto.
 
 **Rejected because:**
+
 - Introduces a new output format that only the Rill Chat UI can interpret. External MCP clients (current or future) would see raw `<cite>` tags in the agent's response.
 - Requires the backend to regex-parse LLM output and match IDs to tool calls — a fragile contract.
 - Requires proto changes (`Citation` message, `citations` field on `Message`).
@@ -244,11 +279,22 @@ Have the LLM output `<cite id="tool_call_id">label</cite>` instead of markdown l
 Encode the query as proto+base64 instead of JSON+URL-encoding, making the URL shorter and avoiding characters that confuse markdown parsing.
 
 **Rejected because:**
+
 - The payload still travels through the LLM, just in a different encoding. A typical metrics query base64-encodes to 200-500+ opaque characters.
 - Base64 corruption is catastrophic — a single wrong character makes the entire payload undecodable. With the current JSON URLs, partial corruption is sometimes recoverable (e.g., stripping a trailing bracket). With base64, there's no graceful degradation.
 - Doesn't address the root cause: asking the LLM to be a faithful transport for structured data.
 
-### 3. Sanitize Malformed URLs (PR #8792)
+### 3. Extend `/-/open-query` with a `call_id` Parameter
+
+Add `call_id` as an alternative query parameter on the existing `/-/open-query` route, avoiding a new frontend route.
+
+**Not chosen because:**
+
+- `/-/open-query` is stateless today (the query is self-contained in the URL). Adding `call_id` mixes stateful and stateless operations on the same route.
+- The two operations are conceptually different: "here's a query, open it" vs. "here's a reference to a query executed in a conversation, resolve it with auth."
+- Path-based URLs (`/-/ai/{session_id}/call/{tool_call_id}`) map naturally to the resource hierarchy and keep the session ID visible for access control, rather than stuffing both IDs into query parameters.
+
+### 4. Sanitize Malformed URLs (PR #8792)
 
 Parse citation URLs defensively, stripping trailing brackets that the LLM appends (`maybeSanitiseQuery` in PR #8792).
 
@@ -257,15 +303,18 @@ Parse citation URLs defensively, stripping trailing brackets that the LLM append
 ## Migration Path
 
 1. **Phase 1: Backend changes**
-   - Add `FindAIMessage(ctx, messageID)` method to the catalog interface
-   - Add `/-/ai/call/{tool_call_id}` redirect endpoint
-   - Change `generateOpenURL` to produce short links using the tool call message ID
-   - Add frontend route for `/-/ai/call/{tool_call_id}` (delegates to backend redirect for direct navigation, or is intercepted by Rill Chat UI)
+
+   - Add `GetAIToolCall` gRPC endpoint in `api.proto` with access control
+   - Run `make proto.generate`
+   - Implement handler in `runtime/server/`
+   - Change `generateOpenURL` to produce short links using session ID and tool call message ID
 
 2. **Phase 2: Frontend changes**
+
+   - Add `/-/ai/{session_id}/call/{tool_call_id}` route in both `web-local` and `web-admin`
    - Update `rewrite-citation-urls.ts` to recognize short link pattern and resolve from conversation in memory
    - Remove JSON-from-URL extraction logic
-   - Existing `open-query` route remains as the backend redirect target (no changes needed)
+   - Existing `/-/open-query` route remains unchanged (no migration needed)
 
 3. **Phase 3: Enhanced rendering (future)**
    - Icon button rendering for citations
