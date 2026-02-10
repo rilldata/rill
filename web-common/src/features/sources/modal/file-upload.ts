@@ -1,7 +1,9 @@
 import { goto } from "$app/navigation";
+import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   PossibleFileExtensions,
   PossibleZipExtensions,
@@ -63,7 +65,11 @@ export async function* uploadTableFiles(
   }
 
   if (lastTableName && goToIfSuccessful) {
-    await goto(`/files/models/${lastTableName}.yaml`);
+    const newFilePath = getFilePathFromNameAndType(
+      lastTableName,
+      EntityType.Table,
+    );
+    await goto(`/files${newFilePath}`);
   }
 
   if (invalidFiles.length) {

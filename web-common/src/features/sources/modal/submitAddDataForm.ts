@@ -454,8 +454,11 @@ export async function submitAddSourceForm(
     ? undefined
     : connectorInstanceName;
 
-  // Create model YAML file in models/ directory
-  const newSourceFilePath = `models/${newSourceName}.yaml`;
+  // Create model YAML file
+  const newSourceFilePath = getFileAPIPathFromNameAndType(
+    newSourceName,
+    EntityType.Table,
+  );
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
     blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
