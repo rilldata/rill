@@ -190,21 +190,20 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	// Compute a hard limit to prevent large results that bloat the context
 	var limit int64
 	var isSystemLimit bool
-	if v, ok := args["limit"]; ok {
+	if v, ok := args["limit"]; ok { // Hackily extracting the query's 'limit' to avoid parsing the entire query outside of the resolver
 		limit, err = strconv.ParseInt(fmt.Sprintf("%v", v), 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid limit value: %w", err)
 		}
 		if limit > cfg.AIMaxQueryLimit {
-			return nil, fmt.Errorf("requested limit %d exceeds maximum allowed query limit of %d", limit, cfg.AIMaxQueryLimit)
+			limit = cfg.AIMaxQueryLimit
+			isSystemLimit = true
 		}
 	} else {
 		limit = cfg.AIDefaultQueryLimit
 		isSystemLimit = true
-		if args != nil {
-			args["limit"] = limit
-		}
 	}
+	args["limit"] = limit
 
 	// Apply a timeout to prevent runaway queries
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -260,7 +259,11 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		OpenURL: openURL,
 	}
 	if isSystemLimit && len(data) >= int(limit) { // Add a warning if we hit the hard limit
-		result.TruncationWarning = fmt.Sprintf("The result was truncated to %d rows (max allowed limit: %d)", limit, cfg.AIMaxQueryLimit)
+		msg := fmt.Sprintf("The system truncated the result to %d rows", limit)
+		if limit != cfg.AIMaxQueryLimit {
+			msg += fmt.Sprintf("; to fetch more rows, explicitly set a limit (max allowed limit: %d)", cfg.AIMaxQueryLimit)
+		}
+		result.TruncationWarning = msg
 	}
 	return result, nil
 }
