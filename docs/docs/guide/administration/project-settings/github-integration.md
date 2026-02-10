@@ -17,8 +17,7 @@ On first deployment, if you've deployed via the UI, your project will not be con
 2. Select **Connect to GitHub**
 3. Follow the steps to connect your repository
 
-<img src = '/img/deploy/existing-project/select-repo.png' class='rounded-gif' />
-<br />
+![Select Repo](/img/deploy/existing-project/select-repo.png)
 
 ## Modifying GitHub Repository Connection
 
@@ -28,8 +27,7 @@ In some cases, you will need to change the repository that your project is synce
 2. Select the dropdown next to the repository name
 3. Choose **Disconnect** to remove the current connection
 
-<img src = '/img/manage/project-management/disconnect-github.png' class='rounded-gif' />
-<br />
+![Disconnect Github](/img/manage/project-management/disconnect-github.png)
 
 This action has no effect on your current deployment and will not require a source re-ingest. After disconnecting, you can follow the same steps as [connecting to a GitHub repository](#connecting-to-a-github-repository) to re-connect your project to a new repository.
 
@@ -41,8 +39,7 @@ By default, Rill Cloud deploys from the `main` branch of your connected reposito
 
 If you have already [setup your connection to GitHub](/developers/deploy/deploy-dashboard/#connect-github-to-an-existing-project), you can edit the branch from the project settings:
 
-<img src = '/img/manage/project-management/main-branch.png' class='rounded-gif' />
-<br />
+![Main Branch](/img/manage/project-management/main-branch.png)
 
 ### Via CLI
 

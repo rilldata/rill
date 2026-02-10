@@ -7,8 +7,7 @@ sidebar_position: 15
 
 When creating your measures in Rill, you have the option to pick from a preset of formats that we provide to you or use the [d3-format](https://d3js.org/d3-format) parameter to format your data in any way you like. While the big number in the explore dashboard won't apply all the decimals changes (it will add currency or percentage if that is the type), you will be able to see the changes in the dimension leaderboard and pivot tables. 
 
-<img src = '/img/build/metrics-view/metrics-editor.png' class='rounded-gif' />
-<br />
+![Metrics Editor](/img/build/metrics-view/metrics-editor.png)
 
 
 
@@ -41,8 +40,7 @@ As explained in the introduction, you'll notice that in each of the screenshots 
 If you have any questions, please review our [reference documentation.](/reference/project-files/metrics-views)
 
 ### Format a measure to include specific amount of decimals
-<img src = '/img/build/metrics-view/examples/decimal-example.png' class='rounded-gif' />
-<br />
+![Decimal Example](/img/build/metrics-view/examples/decimal-example.png)
 
 In the case that you need to view more granular values of your data, you can set the decimal places to whatever value you need. In the above example, we are setting the average voltage measure to 4 decimal places to get a more accurate representation for each dimension.
 
@@ -52,8 +50,7 @@ format_d3: ".4f"
 
 
 ### Format currency with different ',' locations. IE: Indian Rupee 
-<img src = '/img/build/metrics-view/examples/currency-example.png' class='rounded-gif' />
-<br />
+![Currency Example](/img/build/metrics-view/examples/currency-example.png)
 
 
 ```yaml
@@ -65,8 +62,7 @@ format_d3_locale:
 As Indian Rupees are formatted in a different way than USD and EUR, you'll need to use the `format_d3_locale` parameter to set the exact grouping and currency. Likewise, if the currency symbol is written after the numeric value, you can set the currency to `["", "$"]`. 
 
 ### Percentages 
-<img src = '/img/build/metrics-view/examples/percent-example.png' class='rounded-gif' />
-<br />
+![Percent Example](/img/build/metrics-view/examples/percent-example.png)
 
 ```yaml
 format_d3: '.4%'

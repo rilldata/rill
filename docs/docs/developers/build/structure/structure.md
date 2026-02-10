@@ -15,8 +15,7 @@ By default, any new sources, models, metrics views, and dashboards will be creat
 
 Within Rill Developer, from the left-hand side (file explorer), you should be able to click on the `Add` button to add a new resource, such as a new source, model, or dashboard. Furthermore, you will also have the ability to add a new parent folder to store groups of resources (which can be mixed). If you choose to add a new folder, you should see the folder structure reflected when you check the project directory via the CLI. 
 
-<img src = '/img/build/structure/adding-objects.png' class='rounded-gif' />
-<br />
+![Adding Objects](/img/build/structure/adding-objects.png)
 
 :::warning Make sure to include the `type` property
 
@@ -28,8 +27,7 @@ However, if you'd like to create a resource outside one of these native folders,
 
 ## Navigating Upstream / Downstream Objects
 
-<img src = '/img/build/structure/breadcrumb.png' class='rounded-gif' />
-<br />
+![Breadcrumb](/img/build/structure/breadcrumb.png)
 When selecting between a source, model, metrics view, and dashboard, you can view the upstream/downstream objects to the current view. For example, if you are selecting a metrics view, you can see all of the dashboards (in a dropdown) that are built on the metrics view. Likewise, if your model references several sources, these will be available to select. 
 
 ## Moving resources within your project
@@ -46,5 +44,4 @@ For developers who prefer to use the CLI, the project structure can still be con
 
 Rather than creating a parent folder and moving it into another folder manually, there is a shortcut to create a nested folder by directly hovering over an existing folder in the file explorer, clicking on the "triple dots," and selecting `New folder`.
 
-<img src = '/img/build/structure/adding-nested-folder.png' class='rounded-gif' />
-<br />
+![Adding Nested Folder](/img/build/structure/adding-nested-folder.png)

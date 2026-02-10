@@ -44,8 +44,7 @@ With the release of v0.52, we have introduced an easy way to craft specific view
 
 Users can add or hide dimensions and metrics to a subset of fields they wish to see at any given time. At the top left, above the time series and above the top left leaderboard, you'll find the Measures & Dimensions selectors to add or hide from the page. In the example below, `network` and `country` are deselected so would be hidden from view.
 
-<img src = '/img/explore/filters/hide.png' class='rounded-gif' />
-<br />
+![Hide](/img/explore/filters/hide.png)
 
 
 :::tip hiding metrics and dimensions by default
@@ -65,8 +64,7 @@ You can also expand each dimension table to see all metrics and full list of tho
 
 Any filter applied in the Leaderboard will also show up in the filter bar at next to the time picker. You can apply the same search capabilities and select features in the filter bar as well.
 
-<img src = '/img/explore/filters/filter.gif' class='rounded-gif' />
-<br />
+![Filter](/img/explore/filters/filter.gif)
 
 ### Dimension Comparisons
 
@@ -74,8 +72,7 @@ In addition to time comparisons, you can select multiple dimension values to com
 
 Deselect the comparison option or clear the filter bar to remove your comparisons.
 
-<img src = '/img/explore/filters/comparison.gif' class='rounded-gif' />
-<br />
+![Comparison](/img/explore/filters/comparison.gif)
 :::note
 For more advanced time and dimension comparisons, visit the [Time Dimension Detail](/guide/dashboards/explore/tdd) page.
 :::
@@ -98,8 +95,7 @@ These metric filters can be applied from the filter bar. To apply a metric filte
 - Input your Threshold amount and Click Enter
 
 
-<img src = '/img/explore/filters/image.png' class='centered' />
-<br />
+![Image](/img/explore/filters/image.png)
 
 
 :::tip

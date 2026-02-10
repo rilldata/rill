@@ -27,8 +27,7 @@ Rill is optimized for Google Chrome. While other browsers may work, we recommend
 
 ## Rill Developer
 
-<img src = '/img/concepts/rcvsrd/empty-project.png' class='rounded-gif' />
-<br />
+![Empty Project](/img/concepts/rcvsrd/empty-project.png)
 
 
 ### What is Rill Developer?
@@ -36,7 +35,7 @@ Rill Developer is a local application used to preview your project and make any 
 
 ### How do I do XXX in Rill Developer? 
 
-Please refer to [our guided tutorial](/developers/guides/rill-basics/launch) to get started using Rill. In the tutorials, we walk you through first project creation, modeling, creating a metrics view and explore dashboard, and finally deploying to Rill Cloud. From there, we go through making local changes in Rill Developer and pushing your changes. In more advanced topics, we discuss custom APIs, Embed Dashboards, and more! 
+Please refer to [our guided tutorial](/developers/tutorials/rill-basics/launch) to get started using Rill. In the tutorials, we walk you through first project creation, modeling, creating a metrics view and explore dashboard, and finally deploying to Rill Cloud. From there, we go through making local changes in Rill Developer and pushing your changes. In more advanced topics, we discuss custom APIs, Embed Dashboards, and more! 
 If you still have any questions, please [contact us!](/contact)
 
 
@@ -58,8 +57,7 @@ To share your dashboards with your colleagues, you need to [deploy your dashboar
 
 ## Rill Cloud
 
-<img src = '/img/concepts/rcvsrd/Rill-Cloud.png' class='rounded-gif' />
-<br />
+![Rill Cloud](/img/concepts/rcvsrd/Rill-Cloud.png)
 
 
 
@@ -69,8 +67,7 @@ Rill Cloud is where your deployed Rill project exists and can be shared with you
 ### How do I deploy to Rill Cloud?
 You can deploy your project directly from the UI by selecting [the Deploy button](/developers/deploy/deploy-dashboard). Upon deployment, an organization will be automatically created with your Rill project inside. Each organization can have multiple projects that house multiple sources, models, metrics views, and dashboards. Note that sources are not cross-project compatible. When creating your first project, we will automatically start your 30-day free trial. In order to extend usage, you will need to sign up for a [Team Plan](#rill-team-plan).
 
-<img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
-<br />
+![Deploy UI](/img/deploy/existing-project/deploy-ui.gif)
 
 
 ### How do I make changes to my dashboard in Rill Cloud?
@@ -91,8 +88,7 @@ There are no feature limitations in a free trial, but we have set the limit for 
 :::note 
 The banner will show you the remaining days for your trial and will update as the expiration gets closer! Upgrade to a Team plan to continue using Rill!
 :::
-<img src = '/img/FAQ/rill-trial-banner.png' class='rounded-gif' />
-<br />
+![Rill Trial Banner](/img/FAQ/rill-trial-banner.png)
 
 
 ### When does my trial start?
@@ -107,8 +103,7 @@ The free trial is limited to 2 projects and up to 10 GB of data each. You can in
 ### What happens to my project if I do not upgrade to a Team plan?
 Your projects will hibernate. Your project metadata will still be available once you've activated your team plan. If you'd like to delete your deployment from Rill Cloud, you can do so via the [CLI commands.](https://docs.rilldata.com/reference/cli/org/delete)
 
-<img src = '/img/FAQ/expired-project.png' class='rounded-gif' />
-<br />
+![Expired Project](/img/FAQ/expired-project.png)
 
 
 ### What is project hibernation?

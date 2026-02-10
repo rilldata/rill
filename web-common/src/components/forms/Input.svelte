@@ -139,7 +139,7 @@
 
   {#if !options}
     <div
-      class="input-wrapper {textClass}"
+      class="input-wrapper {textClass} bg-input"
       style:width
       class:error-input-wrapper={!!errors?.length}
       style:font-family={fontFamily}
@@ -148,7 +148,7 @@
       {#if textInputPrefix}
         <div
           class:text-sm={size !== "xl"}
-          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-gray-500 border-r border-gray-300 text-base px-2 mr-2"
+          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-fg-secondary border-r border-gray-300 text-base px-2 mr-2"
         >
           {textInputPrefix}
         </div>
@@ -166,7 +166,8 @@
           contenteditable
           class="multiline-input"
           class:pointer-events-none={disabled}
-          {placeholder}
+          data-placeholder={placeholder}
+          aria-label={label || title || placeholder}
           role="textbox"
           tabindex="0"
           aria-multiline="true"
@@ -215,9 +216,9 @@
           }}
         >
           {#if showPassword}
-            <EyeOffIcon size="14px" class="text-muted-foreground" />
+            <EyeOffIcon size="14px" class="text-fg-secondary" />
           {:else}
-            <EyeIcon size="14px" class="text-muted-foreground" />
+            <EyeIcon size="14px" class="text-fg-secondary" />
           {/if}
         </IconButton>
       {/if}
@@ -269,7 +270,7 @@
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex flex-col h-fit justify-center;
+    @apply flex flex-col h-fit justify-center text-fg-primary;
   }
 
   .sm {
@@ -293,27 +294,31 @@
   .input-wrapper {
     @apply overflow-hidden;
     @apply flex justify-center items-center pr-1;
-    @apply bg-surface justify-center;
-    @apply border border-gray-300 rounded-[2px];
+    @apply justify-center;
+    @apply border  rounded-[2px];
     @apply cursor-pointer;
     @apply h-fit w-fit;
   }
 
   .input-wrapper:has(input:disabled) {
-    @apply bg-gray-50 border-gray-200 cursor-not-allowed;
+    @apply bg-surface-background border-gray-200 cursor-not-allowed;
+  }
+
+  input {
+    @apply bg-transparent;
   }
 
   input,
   .multiline-input {
-    @apply bg-surface p-0;
+    @apply p-0;
     @apply size-full;
-    @apply outline-none border-0;
+    @apply outline-none border-0 placeholder-fg-muted;
     @apply cursor-text;
     vertical-align: middle;
   }
 
   input:disabled {
-    @apply bg-gray-50 text-gray-500 cursor-not-allowed;
+    @apply bg-surface-background text-fg-secondary cursor-not-allowed;
   }
 
   input {
@@ -325,6 +330,12 @@
     @apply py-1;
     line-height: 1.58;
     word-wrap: break-word;
+  }
+
+  .multiline-input:empty::before {
+    content: attr(data-placeholder);
+    @apply text-fg-muted;
+    pointer-events: none;
   }
 
   .input-wrapper:focus-within {
@@ -356,6 +367,6 @@
   }
 
   .description {
-    @apply text-xs text-gray-500;
+    @apply text-xs text-fg-secondary;
   }
 </style>

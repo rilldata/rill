@@ -61,7 +61,6 @@ class FeatureFlags {
   exportHeader = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
-  darkMode = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
   developerChat = new FeatureFlag("user", false);

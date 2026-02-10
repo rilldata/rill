@@ -220,6 +220,62 @@ iframe.contentWindow.postMessage({
 
 **Note:** The theme name must correspond to an existing theme resource in your Rill project. Setting an invalid theme name will not cause an error, but the theme will not be applied.
 
+### `getAiPane()`
+
+Fetches the current visibility state of the AI chat pane.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 7,
+  method: "getAiPane"
+}, "*");
+```
+
+**Response:**
+
+```json
+{ "id": 7, "result": {"open": false} }
+```
+
+The `open` value will be `true` if the AI pane is currently visible, or `false` if it is hidden.
+
+**Note:** The AI pane is only available for Explore dashboards when the chat feature is enabled. If the AI pane is not available, the method will still return the current state (which will typically be `false`).
+
+### `setAiPane(open)`
+
+Sets the visibility state of the AI chat pane.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 8,
+  method: "setAiPane",
+  params: true
+}, "*");
+```
+
+**Parameters:**
+- `open` (boolean): Whether to show (`true`) or hide (`false`) the AI chat pane.
+
+**Response:**
+
+```json
+{ "id": 8, "result": true }
+```
+
+**Error Response (if invalid parameter):**
+
+```json
+{
+  "id": 8,
+  "error": {
+    "code": -32603,
+    "message": "Expected open to be a boolean"
+  }
+}
+```
+
+**Note:** The AI pane is only available for dashboards when the chat feature is enabled. If the AI pane is not available, calling this method will not cause an error, but the pane will not be shown.
+
 ## Notifications
 
 Notifications are sent **from the iframe** to the parent window. These do not include an `id`.
@@ -275,6 +331,28 @@ Fired whenever the iframe content is resized.
 ```json
 { "method": "resized", "params": { "width": 1200, "height": 800 } }
 ```
+
+### `aiPaneChanged({ open: boolean })`
+
+Fired whenever the AI pane visibility state changes (opened or closed).
+
+- `open`: `true` if the AI pane is now open, `false` if it is now closed
+
+This event fires when:
+- The AI pane is opened or closed by the user clicking the AI button
+- The AI pane state is changed programmatically via the `setAiPane()` method
+- The AI pane state changes for any other reason
+
+```json
+{ "method": "aiPaneChanged", "params": { "open": true } }
+```
+
+Example when the AI pane is closed:
+```json
+{ "method": "aiPaneChanged", "params": { "open": false } }
+```
+
+**Note:** This notification is only emitted for Explore dashboards when the chat feature is enabled.
 
 
 ## Error Handling
@@ -338,6 +416,10 @@ window.addEventListener("message", async (event) => {
     const currentTheme = await sendRequest("getTheme");
     console.log("Current theme:", currentTheme.theme);
     await sendRequest("setTheme", "my-custom-theme");
+
+    const aiPaneState = await sendRequest("getAiPane");
+    console.log("AI pane open:", aiPaneState.open);
+    await sendRequest("setAiPane", true);
   }
 
   if (event.data?.method === "stateChanged") {
@@ -350,6 +432,10 @@ window.addEventListener("message", async (event) => {
 
   if (event.data?.method === "resized") {
     console.log("Iframe resized:", event.data.params.width, "x", event.data.params.height);
+  }
+
+  if (event.data?.method === "aiPaneChanged") {
+    console.log("AI pane changed:", event.data.params.open ? "opened" : "closed");
   }
 });
 ```

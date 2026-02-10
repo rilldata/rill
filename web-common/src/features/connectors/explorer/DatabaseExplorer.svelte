@@ -11,16 +11,37 @@
   export let store: ConnectorExplorerStore;
 
   $: connectorName = connector?.name as string;
+  $: hasError = !!connector?.errorMessage;
 
-  $: databaseSchemasQuery = useListDatabaseSchemas(instanceId, connectorName);
+  // Managed connectors without host/dsn config aren't ready for queries yet
+  $: isAwaitingConfig =
+    connector?.provision === true &&
+    !connector?.config?.dsn &&
+    !connector?.config?.host;
 
-  $: ({ data, error, isLoading } = $databaseSchemasQuery);
+  $: queryEnabled = !hasError && !isAwaitingConfig;
+
+  $: databaseSchemasQuery = useListDatabaseSchemas(
+    instanceId,
+    connectorName,
+    undefined,
+    queryEnabled,
+  );
+
+  $: ({ data: rawData, error, isLoading } = $databaseSchemasQuery);
+
+  // TanStack Query returns cached data even when disabled
+  $: data = queryEnabled ? rawData : undefined;
 </script>
 
 <div class="wrapper">
-  {#if isLoading}
+  {#if hasError}
+    <span class="message pl-6">Error: {connector.errorMessage}</span>
+  {:else if isAwaitingConfig}
+    <span class="message pl-6">Configure connector to browse tables</span>
+  {:else if isLoading && queryEnabled}
     <span class="message pl-6">Loading tables...</span>
-  {:else if error}
+  {:else if error && queryEnabled}
     <span class="message pl-6"
       >Error: {error.message || error.response?.data?.message}</span
     >
@@ -44,6 +65,6 @@
 
   .message {
     @apply pr-3.5 py-2; /* left-padding is set inline above */
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 </style>

@@ -301,17 +301,26 @@ export interface V1AlertState {
   executionCount?: number;
 }
 
+export type V1AnalystAgentContextWherePerMetricsView = {
+  [key: string]: V1Expression;
+};
+
 /**
  * Context for prompts handled by the analyst_agent.
  */
 export interface V1AnalystAgentContext {
   /** Optional explore dashboard. */
   explore?: string;
+  /** Optional canvas dashboard. */
+  canvas?: string;
+  /** Optional canvas component within a dashboard. */
+  canvasComponent?: string;
   /** Optional dimensions. */
   dimensions?: string[];
   /** Optional measures. */
   measures?: string[];
   where?: V1Expression;
+  wherePerMetricsView?: V1AnalystAgentContextWherePerMetricsView;
   /** Optional start of a time range. */
   timeStart?: string;
   /** Optional end of a time range. */
@@ -884,6 +893,7 @@ If not found in `time_ranges`, it should be added to the list. */
   timezone?: string;
   timeGrain?: string;
   selectTimeRange?: string;
+  timeDimension?: string;
   comparisonMode?: V1ExploreComparisonMode;
   compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
@@ -1209,6 +1219,7 @@ export interface V1Instance {
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
   frontendUrl?: string;
+  theme?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };

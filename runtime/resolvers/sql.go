@@ -25,12 +25,12 @@ func init() {
 }
 
 type sqlResolver struct {
-	sql                 string
-	refs                []*runtimev1.ResourceName
-	olap                drivers.OLAPStore
-	olapRelease         func()
-	interactiveRowLimit int64
-	priority            int
+	sql         string
+	refs        []*runtimev1.ResourceName
+	olap        drivers.OLAPStore
+	olapRelease func()
+	rowCap      int64
+	priority    int
 }
 
 type sqlProps struct {
@@ -70,35 +70,71 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
-	cfg, err := inst.Config()
-	if err != nil {
-		return nil, err
-	}
-
-	var interactiveRowLimit int64
-	if props.Limit != 0 {
-		interactiveRowLimit = props.Limit
-	} else if cfg.InteractiveSQLRowLimit != 0 {
-		interactiveRowLimit = cfg.InteractiveSQLRowLimit
-	}
-
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
 	if err != nil {
 		return nil, err
 	}
 
-	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, inst, opts.Claims.UserAttributes, opts.ForExport)
+	// Resolve the SQL template
+	sql, refs, err := resolveTemplate(props.SQL, opts.Args, inst, opts.Claims.UserAttributes, opts.ForExport)
 	if err != nil {
 		return nil, err
 	}
 
+	// For DuckDB, we can do ref inference using the SQL AST (similar to the parser).
+	if olap.Dialect() == drivers.DialectDuckDB {
+		ast, err := duckdbsql.Parse(sql)
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range ast.GetTableRefs() {
+			if !t.LocalAlias && t.Name != "" && t.Function == "" && len(t.Paths) == 0 {
+				// We don't know if it's a model, but add it anyway. Refs are just approximate.
+				refs = append(refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: t.Name})
+			}
+		}
+	}
+
+	// Normalize the refs
+	refs = normalizeRefs(refs)
+
+	// Compute row cap (limit after which we return an error in interactive queries).
+	var rowCap int64
+	if !opts.ForExport {
+		cfg, err := inst.Config()
+		if err != nil {
+			return nil, err
+		}
+		rowCap = cfg.InteractiveSQLRowLimit
+	}
+
+	// Compute limit (maximum number of rows to return; unlike cap, this doesn't error if exceeded).
+	limit := props.Limit
+	if rowCap != 0 {
+		if limit > rowCap {
+			return nil, fmt.Errorf("requested row limit %d exceeds the maximum interactive limit of %d", limit, rowCap)
+		} else if limit <= 0 {
+			limit = rowCap + 1 // Optimization so the DB doesn't compute more rows than necessary to detect that we hit the cap.
+		}
+	}
+
+	// Wrap the SQL with an outer SELECT to apply the limit.
+	if limit > 0 {
+		if olap.Dialect() == drivers.DialectMySQL {
+			// subqueries in MySQL require an alias
+			sql = fmt.Sprintf("SELECT * FROM (\n%s\n) AS subquery LIMIT %d", sql, limit)
+		} else {
+			sql = fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", sql, limit)
+		}
+	}
+
 	return &sqlResolver{
-		sql:                 resolvedSQL,
-		refs:                refs,
-		olap:                olap,
-		olapRelease:         release,
-		interactiveRowLimit: interactiveRowLimit,
-		priority:            args.Priority,
+		sql:         sql,
+		refs:        refs,
+		olap:        olap,
+		olapRelease: release,
+		rowCap:      rowCap,
+		priority:    args.Priority,
 	}, nil
 }
 
@@ -127,32 +163,18 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 }
 
 func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
-	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
-	var sql string
-	if r.interactiveRowLimit != 0 {
-		if r.olap.Dialect() == drivers.DialectMySQL {
-			// subqueries in MySQL require an alias
-			sql = fmt.Sprintf("SELECT * FROM (\n%s\n) AS subquery LIMIT %d", r.sql, r.interactiveRowLimit+1)
-		} else {
-			sql = fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
-		}
-	} else {
-		sql = r.sql
-	}
-
 	res, err := r.olap.Query(ctx, &drivers.Statement{
-		Query:    sql,
+		Query:    r.sql,
 		Priority: r.priority,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// This is a little hacky, but for now we only cache results from DuckDB queries that have refs.
-	if r.interactiveRowLimit != 0 {
-		res.SetCap(r.interactiveRowLimit)
+	if r.rowCap != 0 {
+		res.SetCap(r.rowCap)
 	}
+
 	return runtime.NewDriverResolverResult(res, nil), nil
 }
 
@@ -234,34 +256,6 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 	}
 
 	return nil
-}
-
-// buildSQL resolves the SQL template and returns the resolved SQL and the resource names it references.
-func buildSQL(sqlTemplate string, dialect drivers.Dialect, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {
-	// Resolve the SQL template
-	sql, refs, err := resolveTemplate(sqlTemplate, args, inst, userAttributes, forExport)
-	if err != nil {
-		return "", nil, err
-	}
-
-	// For DuckDB, we can do ref inference using the SQL AST (similar to the parser).
-	if dialect == drivers.DialectDuckDB {
-		ast, err := duckdbsql.Parse(sql)
-		if err != nil {
-			return "", nil, err
-		}
-		for _, t := range ast.GetTableRefs() {
-			if !t.LocalAlias && t.Name != "" && t.Function == "" && len(t.Paths) == 0 {
-				// We don't know if it's a source or model (or neither), so we add both. Refs are just approximate.
-				refs = append(refs,
-					&runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: t.Name},
-					&runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: t.Name},
-				)
-			}
-		}
-	}
-
-	return sql, normalizeRefs(refs), nil
 }
 
 func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Instance, userAttributes map[string]any, forExport bool) (string, []*runtimev1.ResourceName, error) {

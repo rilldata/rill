@@ -1,140 +1,120 @@
-- id: be58520e-7b0a-4402-8614-c5fcf0a70fe3
+- id: 01339f59-9699-4d31-a8a2-cdd36838ef9d
   parent_id: ""
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:21.368418+01:00
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:39.415569Z
   index: 0
   role: user
   type: call
   tool: router_agent
   content_type: json
   content: '{"prompt":"I have some data in S3. Can you tell me what buckets are available? And also show me a little preview of what files are available at s3://integration-test.rilldata.com/glob_test/?","agent":"developer_agent"}'
-- id: 725d5ee6-5620-40f9-8dae-f662d88c060e
-  parent_id: be58520e-7b0a-4402-8614-c5fcf0a70fe3
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:21.380958+01:00
+- id: e97647a9-d77a-4714-b844-a79e42674034
+  parent_id: 01339f59-9699-4d31-a8a2-cdd36838ef9d
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:39.418133Z
   index: 1
   role: user
   type: call
   tool: developer_agent
   content_type: json
   content: '{"prompt":"I have some data in S3. Can you tell me what buckets are available? And also show me a little preview of what files are available at s3://integration-test.rilldata.com/glob_test/?"}'
-- id: b7532e5a-52a5-4e68-9ed6-0721da1186a8
-  parent_id: 725d5ee6-5620-40f9-8dae-f662d88c060e
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:21.381635+01:00
+- id: f0e60ce0-f6b7-4589-9fc9-c6fa0ed2400b
+  parent_id: e97647a9-d77a-4714-b844-a79e42674034
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:39.419356Z
   index: 2
   role: assistant
   type: call
   tool: list_files
   content_type: json
   content: '{}'
-- id: 2474133a-0214-4289-b37d-570c214c69b5
-  parent_id: b7532e5a-52a5-4e68-9ed6-0721da1186a8
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:21.382255+01:00
+- id: c0ff248b-e7ee-41b1-8315-329555f1f55f
+  parent_id: f0e60ce0-f6b7-4589-9fc9-c6fa0ed2400b
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:39.42051Z
   index: 3
   role: assistant
   type: result
   tool: list_files
   content_type: json
   content: '{"files":[{"path":"/connectors/duckdb.yaml","resources":[{"kind":"rill.runtime.v1.Connector","name":"duckdb","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]},{"path":"/connectors/s3.yaml","resources":[{"kind":"rill.runtime.v1.Connector","name":"s3","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]},{"path":"/rill.yaml"}]}'
-- id: 407973ab-7508-49a3-8cfb-f59937842f89
-  parent_id: 725d5ee6-5620-40f9-8dae-f662d88c060e
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:21.382264+01:00
+- id: 86310e05-0127-4a22-8c86-bb389407df4a
+  parent_id: e97647a9-d77a-4714-b844-a79e42674034
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:39.420515Z
   index: 4
   role: assistant
   type: call
   tool: project_status
   content_type: json
   content: '{}'
-- id: 01c073ba-cbfe-4355-accd-0023d34fda16
-  parent_id: 407973ab-7508-49a3-8cfb-f59937842f89
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:21.382749+01:00
+- id: bbdfb8ad-28f8-4e30-ad5c-f7031a269d86
+  parent_id: 86310e05-0127-4a22-8c86-bb389407df4a
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:39.421131Z
   index: 5
   role: assistant
   type: result
   tool: project_status
   content_type: json
   content: '{"default_olap_connector":"duckdb","env":["connector.s3.aws_access_key_id","connector.s3.aws_secret_access_key","connector.openai.api_key"],"resources":[{"kind":"rill.runtime.v1.ProjectParser","name":"parser","path":"","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE","refs":[]},{"kind":"rill.runtime.v1.Connector","name":"duckdb","path":"/connectors/duckdb.yaml","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE","refs":[]},{"kind":"rill.runtime.v1.Connector","name":"s3","path":"/connectors/s3.yaml","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE","refs":[]}],"parse_errors":[]}'
-- id: 4bc881f3-5e6c-43d1-bfb2-7f7951e08f21
-  parent_id: 725d5ee6-5620-40f9-8dae-f662d88c060e
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:23.154493+01:00
+- id: bbbf02fe-4fd5-4f55-8b94-418ef9556f0b
+  parent_id: e97647a9-d77a-4714-b844-a79e42674034
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:40.846083Z
   index: 6
   role: assistant
   type: call
   tool: list_buckets
   content_type: json
   content: '{"connector":"s3"}'
-- id: 61789a79-034a-46c4-a046-6ca0602a6c9c
-  parent_id: 4bc881f3-5e6c-43d1-bfb2-7f7951e08f21
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:23.15749+01:00
+- id: 2f5eead7-0d70-4b74-b741-eaa879a283d0
+  parent_id: bbbf02fe-4fd5-4f55-8b94-418ef9556f0b
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:40.850155Z
   index: 7
   role: assistant
   type: result
   tool: list_buckets
   content_type: json
   content: '{"buckets":["integration-test.rilldata.com"]}'
-- id: bd8caa88-e727-4904-b9e9-78c6001409ba
-  parent_id: 725d5ee6-5620-40f9-8dae-f662d88c060e
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:23.157531+01:00
+- id: 45e6cd2e-f77d-4db9-965b-7c9384efa8f1
+  parent_id: e97647a9-d77a-4714-b844-a79e42674034
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:40.850204Z
   index: 8
   role: assistant
   type: call
   tool: list_bucket_objects
   content_type: json
   content: '{"bucket":"integration-test.rilldata.com","connector":"s3","page_size":10,"path":"glob_test/"}'
-- id: 7296fd46-5bae-43cc-83f1-08683c3333ca
-  parent_id: bd8caa88-e727-4904-b9e9-78c6001409ba
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:23.544388+01:00
+- id: 912b7be7-ea89-4294-a4b1-61e7331153f0
+  parent_id: 45e6cd2e-f77d-4db9-965b-7c9384efa8f1
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:41.369429Z
   index: 9
   role: assistant
   type: result
   tool: list_bucket_objects
   content_type: json
   content: '{"objects":[{"path":"glob_test/y=2010/","is_dir":true},{"path":"glob_test/y=2023/","is_dir":true},{"path":"glob_test/y=2024/","is_dir":true}]}'
-- id: e854cf92-1cf3-4324-969f-c5b8db1a6138
-  parent_id: 725d5ee6-5620-40f9-8dae-f662d88c060e
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:24.687777+01:00
+- id: ff8f039d-a49a-4927-bb29-2d985a902fdf
+  parent_id: e97647a9-d77a-4714-b844-a79e42674034
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:45.557578Z
   index: 10
-  role: assistant
-  type: call
-  tool: list_bucket_objects
-  content_type: json
-  content: '{"bucket":"integration-test.rilldata.com","connector":"s3","page_size":50,"path":"glob_test/y=2024/"}'
-- id: 9d0d9da7-b05f-4f48-9fde-86fde5e3e21d
-  parent_id: e854cf92-1cf3-4324-969f-c5b8db1a6138
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:25.048984+01:00
-  index: 11
-  role: assistant
-  type: result
-  tool: list_bucket_objects
-  content_type: json
-  content: '{"objects":[{"path":"glob_test/y=2024/aaa.csv","is_dir":false,"size":843,"modified_on":"2025-03-11T06:44:28Z"},{"path":"glob_test/y=2024/bbb.csv","is_dir":false,"size":843,"modified_on":"2025-03-11T06:44:28Z"}]}'
-- id: 2214beb2-526e-4142-accc-7c00605f0fb2
-  parent_id: 725d5ee6-5620-40f9-8dae-f662d88c060e
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:29.261474+01:00
-  index: 12
   role: user
   type: result
   tool: developer_agent
   content_type: json
-  content: '{"response":"Buckets available via the `s3` connector:\n\n- `integration-test.rilldata.com`\n\nPreview of `s3://integration-test.rilldata.com/glob_test/`:\n\nTop-level under `glob_test/`:\n- `glob_test/y=2010/` (dir)\n- `glob_test/y=2023/` (dir)\n- `glob_test/y=2024/` (dir)\n\nFiles under `glob_test/y=2024/`:\n- `glob_test/y=2024/aaa.csv` (843 bytes, modified 2025-03-11T06:44:28Z)\n- `glob_test/y=2024/bbb.csv` (843 bytes, modified 2025-03-11T06:44:28Z)\n\nIf you want, tell me which subfolder(s) to inspect next (e.g. `y=2023/`), or I can also preview file *contents* by loading one of these CSVs into DuckDB with a small model and querying the first few rows."}'
-- id: 348d0ac4-d32d-4fa9-82f1-00a51766f63d
-  parent_id: be58520e-7b0a-4402-8614-c5fcf0a70fe3
-  session_id: b5ba04d4-25b2-4ece-851d-7e34150ae66e
-  time: 2026-01-09T21:33:29.26149+01:00
-  index: 13
+  content: '{"response":"Buckets available via the `s3` connector:\n- `integration-test.rilldata.com`\n\nPreview of objects under `s3://integration-test.rilldata.com/glob_test/` (top-level):\n- `glob_test/y=2010/` (dir)\n- `glob_test/y=2023/` (dir)\n- `glob_test/y=2024/` (dir)"}'
+- id: 0670f803-e49a-4e10-9bec-82ca1ee7d75b
+  parent_id: 01339f59-9699-4d31-a8a2-cdd36838ef9d
+  session_id: 492567b2-4fa7-4ba1-9102-ec7791b8626f
+  time: 2026-02-05T13:26:45.55763Z
+  index: 11
   role: user
   type: result
   tool: router_agent
   content_type: json
-  content: '{"response":"Buckets available via the `s3` connector:\n\n- `integration-test.rilldata.com`\n\nPreview of `s3://integration-test.rilldata.com/glob_test/`:\n\nTop-level under `glob_test/`:\n- `glob_test/y=2010/` (dir)\n- `glob_test/y=2023/` (dir)\n- `glob_test/y=2024/` (dir)\n\nFiles under `glob_test/y=2024/`:\n- `glob_test/y=2024/aaa.csv` (843 bytes, modified 2025-03-11T06:44:28Z)\n- `glob_test/y=2024/bbb.csv` (843 bytes, modified 2025-03-11T06:44:28Z)\n\nIf you want, tell me which subfolder(s) to inspect next (e.g. `y=2023/`), or I can also preview file *contents* by loading one of these CSVs into DuckDB with a small model and querying the first few rows.","agent":"developer_agent"}'
+  content: '{"response":"Buckets available via the `s3` connector:\n- `integration-test.rilldata.com`\n\nPreview of objects under `s3://integration-test.rilldata.com/glob_test/` (top-level):\n- `glob_test/y=2010/` (dir)\n- `glob_test/y=2023/` (dir)\n- `glob_test/y=2024/` (dir)","agent":"developer_agent"}'

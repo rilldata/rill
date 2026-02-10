@@ -139,8 +139,7 @@ Note: If you select this option, you must have Node.js installed on your system 
 
 Navigate to the AI tab in your project to retrieve both the JSON config and create a personal access token automatically:
 
-<img src='/img/explore/mcp/project-ai.png' class='rounded-gif'/>
-<br />
+![Project AI](/img/explore/mcp/project-ai.png)
 
 **Via CLI:**
 
@@ -249,8 +248,7 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 
 ## Using Rill MCP Server in Claude
 
-<img src='/img/explore/mcp/mcp-main.gif' class='rounded-gif'/>
-<br />
+![MCP Main](/img/explore/mcp/mcp-main.gif)
 
 ### Supported Actions
 

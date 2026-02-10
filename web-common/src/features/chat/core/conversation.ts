@@ -2,6 +2,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
+  runtimeServiceForkConversation,
   type RpcStatus,
   type RuntimeServiceCompleteBody,
   type V1CompleteStreamingResponse,
@@ -15,7 +16,13 @@ import {
   type SSEMessage,
 } from "@rilldata/web-common/runtime-client/sse-fetch-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get, writable, type Readable } from "svelte/store";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
 import { transformToBlocks, type Block } from "./messages/block-transform";
 import { MessageContentType, MessageType, ToolName } from "./types";
@@ -25,9 +32,11 @@ import {
   NEW_CONVERSATION_ID,
 } from "./utils";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+import { getToolConfig } from "@rilldata/web-common/features/chat/core/messages/tools/tool-registry.ts";
 
 type ConversationEvents = {
   "conversation-created": string;
+  "conversation-forked": string;
   "stream-start": void;
   message: V1Message;
   "stream-complete": string;
@@ -58,33 +67,71 @@ export class Conversation {
   private sseClient: SSEFetchClient | null = null;
   private hasReceivedFirstMessage = false;
 
+  // Reactive conversation ID - enables query to auto-update when ID changes (e.g., after fork)
+  private readonly conversationIdStore: Writable<string>;
+  private readonly conversationQuery: CreateQueryResult<
+    V1GetConversationResponse,
+    RpcStatus
+  >;
+  private readonly messageById = new Map<string, V1Message>();
+
+  public get conversationId(): string {
+    return get(this.conversationIdStore);
+  }
+
+  private set conversationId(value: string) {
+    this.conversationIdStore.set(value);
+  }
+
   constructor(
     private readonly instanceId: string,
-    public conversationId: string,
-    private readonly agent: string = ToolName.ANALYST_AGENT, // Hardcoded default for now
-  ) {}
+    initialConversationId: string,
+    private readonly agent: string = ToolName.ANALYST_AGENT,
+  ) {
+    this.conversationIdStore = writable(initialConversationId);
+
+    // Create query with reactive options that respond to conversationId changes
+    const queryOptionsStore = derived(
+      this.conversationIdStore,
+      ($conversationId) =>
+        getRuntimeServiceGetConversationQueryOptions(
+          this.instanceId,
+          $conversationId,
+          {
+            query: {
+              enabled: $conversationId !== NEW_CONVERSATION_ID,
+              staleTime: Infinity, // We manage cache manually during streaming
+            },
+          },
+        ),
+    );
+    this.conversationQuery = createQuery(queryOptionsStore, queryClient);
+  }
+
+  /**
+   * Get ownership status from the conversation query.
+   * Returns true if the current user owns this conversation or if ownership is unknown.
+   */
+  private getIsOwner(): boolean {
+    if (this.conversationId === NEW_CONVERSATION_ID) {
+      return true; // New conversations are always owned by the creator
+    }
+
+    // Default to true if query hasn't loaded yet (optimistic assumption)
+    return get(this.conversationQuery).data?.isOwner ?? true;
+  }
 
   // ===== PUBLIC API =====
 
   /**
-   * Get a reactive query for this conversation's data
+   * Get a reactive query for this conversation's data.
+   * The query reacts to conversationId changes (e.g., after fork).
    */
   public getConversationQuery(): CreateQueryResult<
     V1GetConversationResponse,
     RpcStatus
   > {
-    return createQuery(
-      getRuntimeServiceGetConversationQueryOptions(
-        this.instanceId,
-        this.conversationId,
-        {
-          query: {
-            enabled: this.conversationId !== NEW_CONVERSATION_ID,
-          },
-        },
-      ),
-      queryClient,
-    );
+    return this.conversationQuery;
   }
 
   /**
@@ -139,6 +186,24 @@ export class Conversation {
     this.streamError.set(null);
     this.isStreaming.set(true);
     this.hasReceivedFirstMessage = false;
+
+    // Fork conversation if user is not the owner (viewing a shared conversation)
+    const isOwner = this.getIsOwner();
+    if (!isOwner && this.conversationId !== NEW_CONVERSATION_ID) {
+      try {
+        const forkedConversationId = await this.forkConversation();
+        // Update to the forked conversation (setter updates the reactive store)
+        this.conversationId = forkedConversationId;
+        this.events.emit("conversation-forked", forkedConversationId);
+      } catch (error) {
+        console.error("[Conversation] Fork failed:", error);
+        this.isStreaming.set(false);
+        this.streamError.set(
+          "Failed to create your copy of this conversation. Please try again.",
+        );
+        return;
+      }
+    }
 
     const userMessage = this.addOptimisticUserMessage(prompt);
 
@@ -309,6 +374,9 @@ export class Conversation {
     }
 
     if (response.message) {
+      if (response.message.id)
+        this.messageById.set(response.message.id, response.message);
+
       // Skip ALL user messages from the stream
       // Server echoes back the user message
       // We've already added it optimistically, so we don't want duplicates
@@ -318,10 +386,75 @@ export class Conversation {
       }
 
       this.addMessageToCache(response.message);
+      if (response.message.type === MessageType.CALL) {
+        const config = getToolConfig(response.message.tool);
+        config?.onCall?.(response.message);
+      } else if (response.message.type === MessageType.RESULT) {
+        const config = getToolConfig(response.message.tool);
+        config?.onResult?.(
+          this.messageById.get(response.message.parentId ?? ""),
+          response.message,
+        );
+      }
     }
   }
 
   // ----- Conversation Lifecycle -----
+
+  /**
+   * Fork the current conversation to create a copy owned by the current user.
+   * Used when a non-owner wants to continue a shared conversation.
+   *
+   * Note: The cache copying logic here follows the pattern established by
+   * `transitionToRealConversation`—both read from an old cache key and write
+   * to a new one with an updated conversation ID. However, since forking
+   * conceptually creates a new conversation from an existing one, this
+   * responsibility might be better suited for ConversationManager in the future.
+   */
+  private async forkConversation(): Promise<string> {
+    const originalConversationId = this.conversationId;
+
+    const response = await runtimeServiceForkConversation(
+      this.instanceId,
+      this.conversationId,
+      {},
+    );
+
+    if (!response.conversationId) {
+      throw new Error("Fork response missing conversation ID");
+    }
+
+    const forkedConversationId = response.conversationId;
+
+    // Copy cached messages from original conversation to forked conversation
+    // This ensures the UI shows the conversation history immediately
+    const originalCacheKey = getRuntimeServiceGetConversationQueryKey(
+      this.instanceId,
+      originalConversationId,
+    );
+    const forkedCacheKey = getRuntimeServiceGetConversationQueryKey(
+      this.instanceId,
+      forkedConversationId,
+    );
+    const originalData =
+      queryClient.getQueryData<V1GetConversationResponse>(originalCacheKey);
+
+    if (originalData) {
+      queryClient.setQueryData<V1GetConversationResponse>(forkedCacheKey, {
+        conversation: {
+          ...originalData.conversation,
+          id: forkedConversationId,
+        },
+        messages: originalData.messages || [],
+        isOwner: true, // User now owns the forked conversation
+      });
+    }
+
+    // Invalidate the conversations list to show the new forked conversation
+    void invalidateConversationsList(this.instanceId);
+
+    return forkedConversationId;
+  }
 
   /**
    * Transition from NEW_CONVERSATION_ID to real conversation ID
@@ -356,7 +489,7 @@ export class Conversation {
     // Clean up the old "new" conversation cache
     queryClient.removeQueries({ queryKey: oldCacheKey });
 
-    // Update the conversation ID
+    // Update the conversation ID (setter updates the reactive store)
     this.conversationId = realConversationId;
 
     // Notify that conversation was created

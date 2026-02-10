@@ -28,20 +28,31 @@
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import "@rilldata/web-common/app.css";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
+  import type { V1Organization } from "@rilldata/web-admin/client";
 
   export let data;
 
   $: ({
     projectPermissions,
     organizationPermissions,
-    organizationLogoUrl,
-    organizationFaviconUrl,
+    organization: organizationObj,
     planDisplayName,
   } = data);
+
+  $: organizationFaviconUrl = organizationObj?.faviconUrl;
+  $: organizationLogoUrl = getThemedLogoUrl(
+    $themeControl,
+    organizationObj as V1Organization | undefined,
+  );
+
   $: ({
-    params: { organization },
+    params: { organization: organizationName },
     url: { pathname },
   } = $page);
+
+  $: organization = organizationName;
 
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -128,7 +139,7 @@
 
 <QueryClientProvider client={queryClient}>
   <main
-    class="flex flex-col bg-surface"
+    class="flex flex-col bg-surface-subtle"
     class:min-h-screen={!$dynamicHeight}
     class:h-screen={!$dynamicHeight}
     use:pageContentSizeHandler
@@ -145,8 +156,8 @@
         manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
         manageOrgMembers={organizationPermissions?.manageOrgMembers}
         readProjects={organizationPermissions?.readProjects}
-        {organizationLogoUrl}
         {planDisplayName}
+        {organizationLogoUrl}
       />
 
       {#if withinOnlyOrg}

@@ -12,23 +12,27 @@
 
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
-  import type { Readable } from "svelte/store";
+  import ThemeProvider, {
+    THEME_STORE_CONTEXT_KEY,
+  } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
+  import { getContext, hasContext } from "svelte";
+  import type { Readable, Writable } from "svelte/store";
   import { derived, readable } from "svelte/store";
   import { Theme } from "../../themes/theme";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
   import type { ChartProvider, ChartSpec, ChartType } from "./types";
 
+  const hasParentTheme = hasContext(THEME_STORE_CONTEXT_KEY);
+  const parentThemeStore = getContext<Writable<Theme | undefined>>(
+    THEME_STORE_CONTEXT_KEY,
+  );
+
   export let chartType: ChartType;
   export let spec: Readable<ChartSpec>;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let themeMode: "light" | "dark" = "light";
-  /**
-   * Full theme object with all CSS variables for current mode
-   * If not provided, chart will fall back to defaults
-   */
-  export let theme: Record<string, string> | undefined = undefined;
-  export let themeStore: Readable<Theme> = readable(new Theme(undefined));
+  export let theme: Theme = new Theme(undefined);
   export let showExploreLink: boolean = false;
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
@@ -38,6 +42,18 @@
     const chartConfig = CHART_CONFIG[chartType];
     chartProvider = new chartConfig.provider(spec, {});
   }
+
+  // Use parent theme from context if available, otherwise use the prop
+  $: effectiveTheme = hasParentTheme ? $parentThemeStore : theme;
+
+  /**
+   * Full theme object with all CSS variables for current mode
+   * If not provided, chart will fall back to defaults
+   */
+  $: currentTheme =
+    effectiveTheme?.resolvedThemeObject?.[
+      themeMode === "dark" ? "dark" : "light"
+    ];
 
   $: metricsViewSelectors = new MetricsViewSelectors($runtime.instanceId);
 
@@ -61,7 +77,7 @@
     config: $spec,
     chartDataQuery,
     metricsView: metricsViewSelectors,
-    themeStore,
+    themeStore: readable(effectiveTheme),
     timeAndFilterStore,
     getDomainValues: () => chartProvider.getChartDomainValues($measures),
     isThemeModeDark: themeMode === "dark",
@@ -108,54 +124,56 @@
 </script>
 
 {#if $spec}
-  <div class="size-full flex flex-col">
-    {#if chartTitle}
-      <div class="flex items-center justify-between px-4 py-2">
-        <div
-          class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto chip-scroll-container"
-        >
-          <h4 class="title">{chartTitle}</h4>
-          {#if "metrics_view" in $spec}
-            <Filter size="16px" className="text-gray-400 flex-shrink-0" />
-            <FilterChipsReadOnly
-              metricsViewNames={[$spec.metrics_view]}
-              dimensions={$dimensions}
-              measures={$measures}
-              {dimensionThresholdFilters}
-              dimensionsWithInlistFilter={[]}
-              filters={whereFilter}
-              displayTimeRange={$timeAndFilterStore.timeRange}
-              queryTimeStart={$timeAndFilterStore.timeRange.start}
-              queryTimeEnd={$timeAndFilterStore.timeRange.end}
-              hasBoldTimeRange={false}
-              chipLayout="scroll"
+  <ThemeProvider theme={effectiveTheme}>
+    <div class="size-full flex flex-col">
+      {#if chartTitle}
+        <div class="flex items-center justify-between px-4 py-2">
+          <div
+            class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto chip-scroll-container"
+          >
+            <h4 class="title">{chartTitle}</h4>
+            {#if "metrics_view" in $spec}
+              <Filter size="16px" className="text-fg-secondary flex-shrink-0" />
+              <FilterChipsReadOnly
+                metricsViewNames={[$spec.metrics_view]}
+                dimensions={$dimensions}
+                measures={$measures}
+                {dimensionThresholdFilters}
+                dimensionsWithInlistFilter={[]}
+                filters={whereFilter}
+                displayTimeRange={$timeAndFilterStore.timeRange}
+                queryTimeStart={$timeAndFilterStore.timeRange.start}
+                queryTimeEnd={$timeAndFilterStore.timeRange.end}
+                hasBoldTimeRange={false}
+                chipLayout="scroll"
+              />
+            {/if}
+          </div>
+          {#if showExploreLink && $exploreAvailability.isAvailable}
+            <ExploreLink
+              exploreName={$exploreName}
+              displayName={$exploreAvailability.displayName}
+              {organization}
+              {project}
+              exploreState={$exploreState}
+              mode="icon-button"
             />
           {/if}
         </div>
-        {#if showExploreLink && $exploreAvailability.isAvailable}
-          <ExploreLink
-            exploreName={$exploreName}
-            displayName={$exploreAvailability.displayName}
-            {organization}
-            {project}
-            exploreState={$exploreState}
-            mode="icon-button"
-          />
-        {/if}
+      {/if}
+      <div class="flex-1">
+        <Chart
+          {chartType}
+          chartSpec={$spec}
+          {chartData}
+          measures={$measures}
+          {themeMode}
+          theme={currentTheme}
+          isCanvas={true}
+        />
       </div>
-    {/if}
-    <div class="flex-1">
-      <Chart
-        {chartType}
-        chartSpec={$spec}
-        {chartData}
-        measures={$measures}
-        {themeMode}
-        {theme}
-        isCanvas={true}
-      />
     </div>
-  </div>
+  </ThemeProvider>
 {/if}
 
 <style lang="postcss">
@@ -163,7 +181,7 @@
     font-size: 15px;
     line-height: 26px;
     @apply flex-shrink-0;
-    @apply font-medium text-gray-800 truncate;
+    @apply font-medium text-fg-primary truncate;
   }
 
   .chip-scroll-container {

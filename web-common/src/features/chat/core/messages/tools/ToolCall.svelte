@@ -148,11 +148,11 @@
   .tool-button {
     @apply w-full flex items-center gap-1.5 py-1;
     @apply bg-transparent border-none cursor-pointer;
-    @apply text-xs text-gray-500 transition-colors;
+    @apply text-xs text-fg-secondary transition-colors;
   }
 
   .tool-button:hover {
-    @apply text-gray-600;
+    @apply text-fg-secondary;
   }
 
   .tool-icon {
@@ -173,21 +173,21 @@
   }
 
   .tool-tab {
-    @apply px-2 py-1 text-[0.625rem] font-normal text-gray-500;
+    @apply px-2 py-1 text-[0.625rem] font-normal text-fg-secondary;
     @apply bg-transparent border-none cursor-pointer;
     @apply transition-colors rounded;
   }
 
   .tool-tab:hover {
-    @apply text-gray-600 bg-gray-50;
+    @apply text-fg-secondary bg-surface-background;
   }
 
   .tool-tab.active {
-    @apply text-gray-700 bg-gray-100;
+    @apply text-fg-primary bg-gray-100;
   }
 
   .tool-tab-content {
-    @apply bg-gray-50/50 border border-gray-100;
+    @apply bg-surface-background/50 border border-gray-100;
     @apply rounded-md overflow-hidden;
   }
 
@@ -196,11 +196,11 @@
   }
 
   .tool-code :global(pre) {
-    @apply font-mono text-[0.625rem] leading-snug text-gray-500;
+    @apply font-mono text-[0.625rem] leading-snug text-fg-secondary;
     @apply m-0 overflow-x-auto whitespace-pre-wrap break-all;
   }
 
   .tool-loading {
-    @apply p-2 flex items-center gap-2 text-[0.625rem] text-gray-500;
+    @apply p-2 flex items-center gap-2 text-[0.625rem] text-fg-secondary;
   }
 </style>

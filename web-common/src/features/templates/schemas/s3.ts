@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const s3Schema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "Amazon S3",
+  "x-category": "objectStore",
   properties: {
     auth_method: {
       type: "string",
@@ -16,6 +18,7 @@ export const s3Schema: MultiStepFormSchema = {
         "Use AWS access key ID and secret access key.",
         "Access publicly readable buckets without credentials.",
       ],
+      "x-ui-only": true,
       "x-grouped-fields": {
         access_keys: [
           "aws_access_key_id",

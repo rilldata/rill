@@ -1,9 +1,6 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "../entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import type { ResourceKind } from "../entity-management/resource-selectors";
   import { Code2Icon } from "lucide-svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -23,7 +20,7 @@
       <button
         aria-label="Switch to {view === 'viz' ? 'visual' : view} editor"
         id="{view}-toggle"
-        class="size-[22px] z-10 hover:brightness-75"
+        class="size-[22px] z-10 hover:brightness-75 p-0"
         on:click={() => {
           if (selectedView === "code") {
             selectedView = "viz";
@@ -32,12 +29,7 @@
           }
         }}
       >
-        <Icon
-          size="15px"
-          color={view === selectedView && resourceKind
-            ? resourceColorMapping[resourceKind]
-            : "#9CA3AF"}
-        />
+        <Icon size="15px" />
       </button>
       <TooltipContent slot="tooltip-content">
         {view === "code" ? "Code view" : "No-code view"}
@@ -57,10 +49,14 @@
   }
 
   .toggle {
-    @apply bg-surface outline outline-slate-200 outline-[1px];
+    @apply bg-surface-hover;
+  }
+
+  .toggle:hover {
+    @apply bg-surface-hover;
   }
 
   .radio {
-    @apply h-fit bg-slate-100 p-[2px] rounded-[6px] flex;
+    @apply h-fit bg-surface-subtle border p-0.5 rounded-[6px] flex;
   }
 </style>
