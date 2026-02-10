@@ -49,17 +49,17 @@ test.describe("MotherDuck welcome flow", () => {
       .getByRole("textbox");
     await expect(connectorEditor).toContainText("type: connector");
     await expect(connectorEditor).toContainText("driver: duckdb");
-    // Confirm the new {{ env "MOTHERDUCK_TOKEN" }} format exists
+    // Confirm the new {{ .env.VAR }} format exists
     await expect(connectorEditor).toContainText(
-      "token: '{{ env \"MOTHERDUCK_TOKEN\" }}'",
+      'token: "{{ .env.MOTHERDUCK_TOKEN }}"',
     );
     await expect(connectorEditor).toContainText(`path: "${path}"`);
 
     // Now update the connector file to use mixed-case env var name to test case-insensitivity
     const currentContent = await connectorEditor.textContent();
     const updatedContent = currentContent!.replace(
-      `'{{ env "MOTHERDUCK_TOKEN" }}'`,
-      `'{{ env "motherduck_TOKEN" }}'`,
+      `"{{ .env.MOTHERDUCK_TOKEN }}"`,
+      `"{{ .env.motherduck_TOKEN }}"`,
     );
     await updateCodeEditor(page, updatedContent);
     await page.getByRole("button", { name: "Save" }).click();
@@ -67,7 +67,7 @@ test.describe("MotherDuck welcome flow", () => {
 
     // Verify the updated syntax is now in the file
     await expect(connectorEditor).toContainText(
-      `token: '{{ env "motherduck_TOKEN" }}'`,
+      `token: "{{ .env.motherduck_TOKEN }}"`,
     );
 
     // Verify no errors appear (case-insensitive env function should resolve correctly)

@@ -49,7 +49,7 @@ For more information on supported parameters, see our [MotherDuck connector YAML
 type: connector 
 driver: duckdb 
 
-token: '{{ env "MOTHERDUCK_TOKEN" }}' 
+token: "{{ .env.MOTHERDUCK_TOKEN }}" 
 path: "md:my_database" 
 schema_name: "my_schema"
 ```

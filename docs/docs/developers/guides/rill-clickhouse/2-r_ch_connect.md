@@ -102,8 +102,8 @@ Afterwards, create a file called clickhouse.yaml and add the following contents:
 type: connector
 driver: clickhouse
 
-host: '{{ env "host" }}'
-port: '{{ env "port" }}'
+host: "{{ .env.host }}"
+port: "{{ .env.port }}"
 ```
 
 

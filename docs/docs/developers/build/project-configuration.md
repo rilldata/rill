@@ -210,14 +210,14 @@ env:
   api_endpoint: "https://api.example.com"
 ```
 
-Once defined, these variables can be referenced in your project files using template syntax: `{{ env "variable_name" }}`
+Once defined, these variables can be referenced in your project files using template syntax: `{{ .env.variable_name }}`
 
 **Example usage in a model:**
 ```sql
 SELECT *
 FROM users
-WHERE status = '{{ env "string_var" }}'
-  AND score > {{ env "numeric_var" }}
+WHERE status = "{{ .env.string_var }}"
+  AND score > {{ .env.numeric_var }}
 ```
 
 ## AI Configuration

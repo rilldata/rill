@@ -48,7 +48,7 @@ For example, to use the `AWS_ACCESS_KEY_ID` environment variable:
 rill start --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 ```
 
-This will pull in the value of AWS_ACCESS_KEY_ID from your environment and make it available to your Rill project without exposing the credential value in your command or .env file. In Rill, you would reference it using: `'{{ env "AWS_ACCESS_KEY_ID" }}'`.
+This will pull in the value of AWS_ACCESS_KEY_ID from your environment and make it available to your Rill project without exposing the credential value in your command or .env file. In Rill, you would reference it using: `"{{ .env.AWS_ACCESS_KEY_ID }}"`.
 
 :::warning Development Only
 
@@ -64,7 +64,7 @@ The `.env` file serves several important purposes:
 
 - **Security**: Keeps sensitive credentials out of your codebase and Git repository (`.env` files are automatically ignored by `.gitignore`)
 - **Consistency**: Provides a standardized way to manage credentials across different environments (local development, staging, production)
-- **Integration**: Works seamlessly with Rill's templating system, allowing YAML files to reference credentials using `{{ env "VARIABLE_NAME" }}` syntax
+- **Integration**: Works seamlessly with Rill's templating system, allowing YAML files to reference credentials using `"{{ .env.VARIABLE_NAME }}"` syntax
 
 Example `.env` file:
 ```bash
@@ -135,23 +135,23 @@ This ensures each connector can reference its own credentials without overwritin
 
 #### Referencing Variables in YAML
 
-Use the `{{ env "VARIABLE_NAME" }}` syntax to reference environment variables in your connector YAML files:
+Use the `{{ .env.VARIABLE_NAME }}` syntax to reference environment variables in your connector YAML files:
 
 ```yaml
-google_application_credentials: '{{ env "GOOGLE_APPLICATION_CREDENTIALS" }}'
-password: '{{ env "POSTGRES_PASSWORD" }}'
-aws_access_key_id: '{{ env "AWS_ACCESS_KEY_ID" }}'
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
+password: "{{ .env.POSTGRES_PASSWORD }}"
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
 ```
 
 #### Case-Insensitive Variable Lookups
 
-The `{{ env "VAR_NAME" }}` function provides case-insensitive variable lookups, which can be useful when variable names may have inconsistent casing:
+The `{{ .env.VAR_NAME }}` function provides case-insensitive variable lookups, which can be useful when variable names may have inconsistent casing:
 
 ```yaml
 # All of these will match POSTGRES_PASSWORD in your .env file:
-password: '{{ env "POSTGRES_PASSWORD" }}'
-password: '{{ env "postgres_password" }}'
-password: '{{ env "Postgres_Password" }}'
+password: "{{ .env.POSTGRES_PASSWORD }}"
+password: "{{ .env.postgres_password }}"
+password: "{{ .env.Postgres_Password }}"
 ```
 
 :::note Legacy Naming Convention

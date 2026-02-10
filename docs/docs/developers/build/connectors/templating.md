@@ -23,16 +23,16 @@ You can set up environmental variables in several locations in Rill. Please revi
 
 ## Referencing Environment Variables
 
-Reference environment variables in your YAML files using the `{{ env "VARIABLE_NAME" }}` syntax:
+Reference environment variables in your YAML files using the `{{ .env.VARIABLE_NAME }}` syntax:
 
 ```yaml
-password: '{{ env "POSTGRES_PASSWORD" }}'
-google_application_credentials: '{{ env "GOOGLE_APPLICATION_CREDENTIALS" }}'
-aws_access_key_id: '{{ env "AWS_ACCESS_KEY_ID" }}'
+password: "{{ .env.POSTGRES_PASSWORD }}"
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
 ```
 
 :::tip Case-Insensitive Lookups
-The `{{ env "VAR_NAME" }}` function provides case-insensitive variable lookups, so `{{ env "my_var" }}` will match `MY_VAR` in your `.env` file.
+The `'{{ env "VAR_NAME" }}'` function provides case-insensitive variable lookups, so `'{{ env "my_var" }}'` will match `MY_VAR` in your `.env` file.
 
 **Note:** If your `.env` file contains multiple variables that differ only by case (e.g., both `my_var` and `MY_VAR`), the behavior is undefined. Avoid defining variables with the same name in different cases.
 :::
@@ -54,13 +54,13 @@ dev:
 
 # Production environment configuration
 prod:
-  host: '{{ env "CLICKHOUSE_HOST" }}'
-  port: '{{ env "CLICKHOUSE_PORT" }}'
-  database: '{{ env "CLICKHOUSE_DATABASE" }}'
-  username: '{{ env "CLICKHOUSE_USERNAME" }}'
-  password: '{{ env "CLICKHOUSE_PASSWORD" }}'
+  host: "{{ .env.CLICKHOUSE_HOST }}"
+  port: "{{ .env.CLICKHOUSE_PORT }}"
+  database: "{{ .env.CLICKHOUSE_DATABASE }}"
+  username: "{{ .env.CLICKHOUSE_USERNAME }}"
+  password: "{{ .env.CLICKHOUSE_PASSWORD }}"
   ssl: true
-  cluster: '{{ env "CLICKHOUSE_CLUSTER" }}'
+  cluster: "{{ .env.CLICKHOUSE_CLUSTER }}"
 ```
 
 In this example:
@@ -73,8 +73,8 @@ Some connectors will reference two unique databases and require two unique crede
 
 For example:
 ```yaml
-'{{ env "DEV_CLICKHOUSE_USERNAME" }}'
-'{{ env "PROD_CLICKHOUSE_USERNAME" }}'
+"{{ .env.DEV_CLICKHOUSE_USERNAME }}"
+"{{ .env.PROD_CLICKHOUSE_USERNAME }}"
 ```
 
 Or, by creating a separate connector altogether.
@@ -97,7 +97,7 @@ dev:
   project_id: rilldata_dev
 project_id: rilldata
 
-google_application_credentials: '{{ env "GOOGLE_APPLICATION_CREDENTIALS" }}'
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
 ```
 
 ```yaml

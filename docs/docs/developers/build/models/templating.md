@@ -138,8 +138,8 @@ Furthermore, our `model.sql` file contains the following SQL:
 
 ```sql
 SELECT * FROM {{ ref "snowflake" }}
-WHERE original_language = '{{ env "language" }}'
-{{if dev}} LIMIT {{ env "local_limit" }} {{end}}
+WHERE original_language = "{{ .env.language }}"
+{{if dev}} LIMIT {{ .env.local_limit }} {{end}}
 ```
 
 :::warning When applying templated logic to model SQL, make sure to leverage the `ref` function

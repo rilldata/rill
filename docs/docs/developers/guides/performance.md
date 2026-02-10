@@ -107,13 +107,13 @@ dev:
 
 # Production environment configuration
 prod:
-  host: '{{ env "CLICKHOUSE_HOST" }}'
-  port: '{{ env "CLICKHOUSE_PORT" }}'
-  database: '{{ env "CLICKHOUSE_DATABASE" }}'
-  username: '{{ env "CLICKHOUSE_USERNAME" }}'
-  password: '{{ env "CLICKHOUSE_PASSWORD" }}'
+  host: "{{ .env.CLICKHOUSE_HOST }}"
+  port: "{{ .env.CLICKHOUSE_PORT }}"
+  database: "{{ .env.CLICKHOUSE_DATABASE }}"
+  username: "{{ .env.CLICKHOUSE_USERNAME }}"
+  password: "{{ .env.CLICKHOUSE_PASSWORD }}"
   ssl: true
-  cluster: '{{ env "CLICKHOUSE_CLUSTER" }}'
+  cluster: "{{ .env.CLICKHOUSE_CLUSTER }}"
 ```
 #### Limiting the source data to a smaller time range
 

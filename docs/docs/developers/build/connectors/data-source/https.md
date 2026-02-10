@@ -31,7 +31,7 @@ driver: https
 path: "https://api.endpoint.com/v1" 
 
 headers:
-    Authorization: 'Bearer {{ env "HTTPS_TOKEN" }}'
+    Authorization: 'Bearer {{ .env.HTTPS_TOKEN }}'
 ```
 
 ### Public URLs

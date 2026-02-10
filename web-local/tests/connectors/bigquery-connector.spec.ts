@@ -261,7 +261,7 @@ test.describe("BigQuery connector", () => {
     // Using mixed case: my_TEST_table should resolve to MY_TEST_TABLE
     const modelContent = `-- Test case insensitive env resolution
 -- @connector: duckdb
-SELECT '{{ env "my_TEST_table" }}' as table_name`;
+SELECT '{{ .env.my_TEST_table }}' as table_name`;
     await updateCodeEditor(page, modelContent);
     await page.getByRole("button", { name: "Save" }).click();
 

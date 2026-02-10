@@ -27,12 +27,12 @@ To configure Claude access, you'll need to obtain an API key from your Anthropic
    ```yaml
    type: connector
    driver: claude
-   api_key: '{{ env "CLAUDE_API_KEY" }}'
+   api_key: "{{ .env.CLAUDE_API_KEY }}"
    ```
 
 :::tip Security Best Practice
 
-Never commit your Claude API key directly to your connector YAML files or version control. Always use environment variables with the `{{ env "CLAUDE_API_KEY" }}` syntax to keep sensitive credentials secure.
+Never commit your Claude API key directly to your connector YAML files or version control. Always use environment variables with the `{{ .env.CLAUDE_API_KEY }}` syntax to keep sensitive credentials secure.
 
 :::
 
@@ -76,7 +76,7 @@ Example with all options:
 ```yaml
 type: connector
 driver: claude
-api_key: '{{ env "CLAUDE_API_KEY" }}'
+api_key: "{{ .env.CLAUDE_API_KEY }}"
 model: claude-sonnet-4-20250514
 max_tokens: 8192
 temperature: 0.0

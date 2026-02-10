@@ -28,11 +28,11 @@ To configure OpenAI access, you'll need to obtain an API key from your OpenAI ac
    ```yaml
    type: connector
    driver: openai
-   api_key: '{{ env "OPENAI_API_KEY" }}'
+   api_key: "{{ .env.OPENAI_API_KEY }}"
    ```
 :::tip Security Best Practice
 
-Never commit your OpenAI API key directly to your connector YAML files or version control. Always use environment variables with the `{{ env "OPENAI_API_KEY" }}` syntax to keep sensitive credentials secure.
+Never commit your OpenAI API key directly to your connector YAML files or version control. Always use environment variables with the `{{ .env.OPENAI_API_KEY }}` syntax to keep sensitive credentials secure.
 
 :::
 3. **Set up environment variable:**
