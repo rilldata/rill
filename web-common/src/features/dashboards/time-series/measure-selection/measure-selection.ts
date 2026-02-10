@@ -37,8 +37,7 @@ export class MeasureSelection {
   /**
    * Calculate the point on the graph where the measure selection should be drawn.
    * scaler and config are only available within the `MeasureSelection` wrapped in `SimpleDataGraphic`.
-   * But it is used in `ExplainButton` that is outside the `SimpleDataGraphic` wrapper to avoid click issues.
-   * That is why this updates the x & y stores directly.
+   * This updates the x & y stores directly for components outside the `SimpleDataGraphic` wrapper.
    *
    * @param start
    * @param end

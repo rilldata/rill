@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
-  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
@@ -12,14 +10,14 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
-  import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
+  import ScrubActionMenu from "./ScrubActionMenu.svelte";
 
   export let exploreName: string;
   export let showComparison = false;
   export let timeGrain: V1TimeGrain | undefined;
+  export let measureSelectionEnabled = false;
 
   let priorRange: DashboardTimeControls | null = null;
-  let button: HTMLButtonElement;
 
   const StateManagers = getStateManagers();
   const {
@@ -78,7 +76,7 @@
         e.key === "Escape"
       ) {
         metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
-      } else if (isExplainKey) {
+      } else if (isExplainKey && measureSelectionEnabled) {
         measureSelection.startAnomalyExplanationChat($metricsViewName);
       }
     } else if (
@@ -88,7 +86,7 @@
     ) {
       e.preventDefault();
       undoZoom();
-    } else if (isExplainKey) {
+    } else if (isExplainKey && measureSelectionEnabled) {
       measureSelection.startAnomalyExplanationChat($metricsViewName);
     }
   }
@@ -153,62 +151,21 @@
   function cancelUndo(e: MouseEvent) {
     window.removeEventListener("click", cancelUndo, true);
 
-    if (
-      !priorRange ||
-      (e.target instanceof HTMLElement && e.target === button)
-    ) {
+    if (!priorRange) {
       return;
     }
 
     clearPriorRange();
   }
-
-  function handleClick() {
-    if (priorRange) {
-      undoZoom();
-    } else {
-      zoomScrub();
-    }
-  }
 </script>
 
-{#if priorRange || (subInterval?.isValid && !subInterval.start.equals(subInterval.end))}
-  <button
-    bind:this={button}
-    on:click|stopPropagation={handleClick}
-    aria-label={priorRange ? "Undo zoom" : "Zoom"}
-  >
-    <div class="content-wrapper">
-      <span class="flex-none text-icon-muted">
-        <Zoom size="16px" />
-      </span>
-
-      {#if subInterval?.isValid && timeGrain}
-        <RangeDisplay interval={subInterval} {timeGrain} />
-      {/if}
-
-      <span class="font-medium line-clamp-1 flex-none whitespace-nowrap">
-        {#if priorRange}
-          Undo Zoom (<MetaKey plusses={false} action="Z" />)
-        {:else}
-          Zoom (Z)
-        {/if}
-      </span>
-    </div>
-  </button>
-{/if}
+<ScrubActionMenu
+  {subInterval}
+  {timeGrain}
+  metricsViewName={$metricsViewName}
+  {measureSelectionEnabled}
+  onZoom={zoomScrub}
+/>
 
 <!-- Only to be used on singleton components to avoid multiple state dispatches -->
 <svelte:window on:keydown={onKeyDown} />
-
-<style lang="postcss">
-  button {
-    @apply border rounded-[2px] bg-surface-subtle pointer-events-auto;
-    @apply absolute left-1/2 -top-8 -translate-x-1/2 z-50;
-  }
-
-  .content-wrapper {
-    @apply py-1 px-2 flex gap-x-1 w-fit flex-none;
-    @apply pointer-events-none;
-  }
-</style>

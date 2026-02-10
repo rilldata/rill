@@ -55,7 +55,6 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-  import ExplainButton from "@rilldata/web-common/features/dashboards/time-series/measure-selection/ExplainButton.svelte";
 
   export let measure: MetricsViewSpecMeasure;
   export let exploreName: string;
@@ -453,11 +452,4 @@
 
   <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->
   <AnnotationGroupPopover {annotationsStore} />
-
-  {#if measureSelectionEnabled}
-    <ExplainButton
-      measureName={measure.name ?? ""}
-      metricsViewName={$metricsViewName}
-    />
-  {/if}
 </div>

@@ -132,6 +132,9 @@
   );
   $: isAlternateChart = tddChartType !== TDDChart.DEFAULT;
 
+  const measureSelectionEnabledStore = measureSelection.getEnabledStore();
+  $: measureSelectionEnabled = $measureSelectionEnabledStore;
+
   $: expandedMeasure = $getMeasureByName(expandedMeasureName);
   let renderedMeasures: MetricsViewSpecMeasure[];
   $: {
@@ -423,6 +426,7 @@
           {exploreName}
           {showComparison}
           timeGrain={activeTimeGrain}
+          {measureSelectionEnabled}
         />
         {#if tddChartType === TDDChart.DEFAULT}
           <div class="translate-x-5">
