@@ -23,10 +23,18 @@
   $: uploading = {};
   $: uploadErrors = {};
 
-  // File validation function
   function validateFile(file: File): string | null {
-    if (!file.name.toLowerCase().endsWith(".json")) {
-      return "File must be a JSON file";
+    if (!accept) return null;
+
+    const fileName = file.name.toLowerCase();
+    const acceptedExtensions = accept
+      .split(",")
+      .map((ext) => ext.trim().toLowerCase());
+
+    const isValid = acceptedExtensions.some((ext) => fileName.endsWith(ext));
+    if (!isValid) {
+      const extList = acceptedExtensions.join(", ");
+      return `File must be one of: ${extList}`;
     }
     return null;
   }
