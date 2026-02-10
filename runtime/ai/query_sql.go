@@ -23,7 +23,7 @@ var _ Tool[*QuerySQLArgs, *QuerySQLResult] = (*QuerySQL)(nil)
 
 type QuerySQLArgs struct {
 	Connector      string `json:"connector,omitempty" jsonschema:"Optional OLAP connector name. Defaults to the instance's default OLAP connector."`
-	SQL            string `json:"sql" jsonschema:"The SQL query to execute. You are strongly encouraged to use LIMIT in your query and to keep it as low as realistically possible for your task (ideally keep it below 100 rows). Regardless of whether you include a limit, the server will truncate large results (and return a warning if it does)."`
+	SQL            string `json:"sql" jsonschema:"The SQL query to execute. You are strongly encouraged to use LIMIT in your query and to keep it as low as possible for your task (ideally below 100 rows). The server will truncate large results regardless of the limit (and return a warning if it does)."`
 	TimeoutSeconds int    `json:"timeout_seconds,omitempty" jsonschema:"Query timeout in seconds. Defaults to 30."`
 }
 
@@ -76,7 +76,7 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	// Build resolver properties with configurable max limit
+	// Build resolver properties with system limit
 	props := map[string]any{
 		"sql":   args.SQL,
 		"limit": hardLimit,
@@ -123,7 +123,7 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 	}
 
 	result := &QuerySQLResult{Data: data}
-	if len(data) >= int(hardLimit) { // Add a warning if we hit the hard limit
+	if len(data) >= int(hardLimit) { // Add a warning if we hit the system limit
 		result.TruncationWarning = fmt.Sprintf("The system truncated the result to %d rows", hardLimit)
 	}
 	return result, nil

@@ -258,7 +258,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		Data:    data,
 		OpenURL: openURL,
 	}
-	if isSystemLimit && len(data) >= int(limit) { // Add a warning if we hit the hard limit
+	if isSystemLimit && len(data) >= int(limit) { // Add a warning if we hit the system limit
 		msg := fmt.Sprintf("The system truncated the result to %d rows", limit)
 		if limit != cfg.AIMaxQueryLimit {
 			msg += fmt.Sprintf("; to fetch more rows, explicitly set a limit (max allowed limit: %d)", cfg.AIMaxQueryLimit)
