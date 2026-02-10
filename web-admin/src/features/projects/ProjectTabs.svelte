@@ -12,7 +12,7 @@
   export let project: string;
   export let pathname: string;
 
-  const { chat, reports, alerts } = featureFlags;
+  const { chat } = featureFlags;
 
   $: tabs = [
     {
@@ -31,14 +31,14 @@
       hasPermission: true,
     },
     {
-      route: `/${organization}/${project}/-/reports`,
-      label: "Reports",
-      hasPermission: $reports,
+      route: `/${organization}/${project}/-/query`,
+      label: "Query",
+      hasPermission: false,
     },
-    {
-      route: `/${organization}/${project}/-/alerts`,
-      label: "Alerts",
-      hasPermission: $alerts,
+      {
+      route: `/${organization}/${project}/-/project-resources`,
+      label: "Project Resources",
+      hasPermission: projectPermissions.manageProject,
     },
     {
       route: `/${organization}/${project}/-/status`,
@@ -46,9 +46,7 @@
       hasPermission: projectPermissions.manageProject,
     },
     {
-      // TODO: Change this back to `/${organization}/${project}/-/settings`
-      // Once project settings are implemented
-      route: `/${organization}/${project}/-/settings/environment-variables`,
+      route: `/${organization}/${project}/-/settings`,
       label: "Settings",
       hasPermission: projectPermissions.manageProject,
     },

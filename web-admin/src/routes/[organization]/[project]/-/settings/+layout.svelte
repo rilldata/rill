@@ -11,14 +11,24 @@
 
   const navItems = [
     {
+      label: "General",
+      route: "/general",
+      hasPermission: false,
+    },
+    {
       label: "Environment Variables",
       route: "/environment-variables",
       hasPermission: true,
     },
     {
-      label: "Public URLs",
-      route: "/public-urls",
-      hasPermission: true,
+      label: "Token Management",
+      route: "/token-management",
+      hasPermission: false,
+    },
+    {
+      label: "Console",
+      route: "/console",
+      hasPermission: false,
     },
   ];
 </script>
