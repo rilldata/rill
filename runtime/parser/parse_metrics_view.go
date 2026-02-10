@@ -731,7 +731,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return err
 	}
 	node.Refs = append(node.Refs, securityRefs...)
-	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: node.Connector}.Normalized())
+
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: node.Connector})
 
 	var cacheTTLDuration time.Duration
 	if tmp.Cache.KeyTTL != "" {

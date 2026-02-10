@@ -115,7 +115,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if inputProps == nil {
 		inputProps = map[string]any{}
 	}
-	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: inputConnector}.Normalized())
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: inputConnector})
 
 	// Special handling for adding SQL to the input properties
 	if sql := strings.TrimSpace(node.SQL); sql != "" {
@@ -155,7 +155,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if outputConnector == "" {
 		outputConnector = p.defaultOLAPConnector()
 	}
-	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: outputConnector}.Normalized())
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: outputConnector})
 	outputProps := tmp.Output.Properties
 
 	// Backwards compatibility: materialize can be specified outside of the output properties
