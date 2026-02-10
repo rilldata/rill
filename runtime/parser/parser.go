@@ -186,7 +186,7 @@ type Parser struct {
 
 	// Internal state
 	resourcesForPath          map[string][]*Resource       // Reverse index of Resource.Paths
-	resourcesForAmbiguousRef  map[ResourceName][]*Resource // Reverse index of Resource.rawRefs where refs are explicit. Currently Kind=ResourceKindUnspecified and Kind=ResourceKindConnector
+	resourcesForAmbiguousRef  map[ResourceName][]*Resource // Reverse index of Resource.rawRefs where refs are not explicit. Refer to ambiguousRef for such refs.
 	resourceNamesForDataPaths map[string][]ResourceName    // Index of local data files to resources that depend on them
 	insertedResources         []*Resource
 	updatedResources          []*Resource
