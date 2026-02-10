@@ -365,7 +365,7 @@ export class FileAndResourceWatcher {
 
             // If it's a new source, show the "Source imported successfully" modal
             const isSourceModel =
-              res.resource.meta?.filePaths?.[0]?.startsWith("/sources/");
+              res.resource.meta?.filePaths?.[0]?.startsWith("/models/");
             const isNewSource =
               res.name.kind === ResourceKind.Model &&
               isSourceModel &&

@@ -8,7 +8,7 @@ export function getFilePathFromPagePath(path: string): string {
 
   switch (entityType) {
     case "source":
-      return `/files/sources/${entityName}.yaml`;
+      return `/files/models/${entityName}.yaml`;
     case "model":
       return `/files/models/${entityName}.sql`;
     case "dashboard":
