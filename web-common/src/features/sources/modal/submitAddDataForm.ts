@@ -427,6 +427,7 @@ export async function submitAddSourceForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   connectorInstanceName?: string,
+  options?: { step?: "connector" | "source" | "explorer" },
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -454,11 +455,11 @@ export async function submitAddSourceForm(
     ? undefined
     : connectorInstanceName;
 
-  // Make a new <source>.yaml file
-  const newSourceFilePath = getFileAPIPathFromNameAndType(
-    newSourceName,
-    EntityType.Table,
-  );
+  // Make a new model YAML file in the appropriate directory
+  const isExplorerStep = options?.step === "explorer";
+  const newSourceFilePath = isExplorerStep
+    ? `models/${newSourceName}.yaml`
+    : getFileAPIPathFromNameAndType(newSourceName, EntityType.Table);
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
     blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {

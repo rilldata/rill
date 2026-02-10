@@ -353,6 +353,7 @@ export class AddDataFormManager {
             connector,
             submitValues,
             stepState.connectorInstanceName ?? undefined,
+            { step: stepState.step },
           );
           onClose();
         } else if (isStepFlowConnector && isOnConnectorStep) {
