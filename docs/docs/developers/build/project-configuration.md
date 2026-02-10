@@ -298,8 +298,7 @@ You can create a test mock user to ensure that this dashboard is working as desi
   pub_name: 'MobilityWare'
 ```
 
-<img src = '/img/tutorials/admin/custom-attribute-mock-user.png' class='rounded-gif' />
-<br />
+![Custom Attribute Mock User](/img/tutorials/admin/custom-attribute-mock-user.png)
 
 ## Feature Flags
 
@@ -326,7 +325,6 @@ features:
 - `exportHeader`: Enables export header functionality (default: `false`)
 - `alerts`: Enables alerting features (default: `true`)
 - `reports`: Enables reporting functionality (default: `true`)
-- `darkMode`: Enables dark mode interface (default: `true`)
 - `chat`: Enables chat functionality (default: `true`)
 - `dashboardChat`: Enables chat features within dashboards (default: `false`)
 

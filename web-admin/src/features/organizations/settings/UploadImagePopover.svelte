@@ -18,6 +18,7 @@
   export let organization: string;
   export let loading: boolean;
   export let error: string;
+  export let dark = false;
   export let onSave: (assetId: string) => Promise<void>;
   export let onRemove: () => Promise<void>;
 
@@ -76,7 +77,8 @@
 >
   <PopoverTrigger asChild let:builder>
     <button
-      class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-slate-100 w-fit"
+      class:dark
+      class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-surface-hover w-fit"
       {...getAttrs([builder])}
       use:builderActions={{ builders: [builder] }}
       class:w-24={!imageUrl}
@@ -91,11 +93,11 @@
       </div>
       {#if !open}
         <div
-          class="absolute -bottom-2 -right-2 rounded-2xl bg-slate-200 group-hover:bg-slate-500 w-6 h-6 px-1.5 py-[5px]"
+          class="absolute -bottom-2 -right-2 rounded-2xl bg-surface-subtle group-hover:bg-surface-hover w-6 h-6 px-1.5 py-[5px]"
         >
           <EditIcon
             size="16px"
-            className="text-slate-600 group-hover:text-slate-50"
+            className="text-fg-secondary group-hover:text-fg-secondary"
           />
         </div>
       {/if}
@@ -136,3 +138,9 @@
     </div>
   </PopoverContent>
 </Popover>
+
+<style lang="postcss">
+  .dark {
+    background-color: var(--color-rill-gray-dark-50);
+  }
+</style>

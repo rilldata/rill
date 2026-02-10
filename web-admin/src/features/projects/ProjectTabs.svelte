@@ -69,7 +69,7 @@
   }
 </script>
 
-<div>
+<div class="bg-surface-base">
   <nav>
     {#each tabs as tab, i (tab.route)}
       {#if tab.hasPermission}

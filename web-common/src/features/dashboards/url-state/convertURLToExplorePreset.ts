@@ -33,9 +33,9 @@ import {
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import {
   DateTimeUnitToV1TimeGrain,
-  getAggregationGrain,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
+import { getAggregationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -411,6 +411,17 @@ export function fromTimeRangesParams(
       preset.selectTimeRange = selectTr;
     } else {
       errors.push(getSingleFieldError("highlighted time range", selectTr));
+    }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.TimeDimension)) {
+    const timeDimension = searchParams.get(
+      ExploreStateURLParams.TimeDimension,
+    ) as string;
+
+    // Simply remove from the URL for now
+    if (dimensions.has(timeDimension)) {
+      preset.timeDimension = timeDimension;
     }
   }
   return { preset, errors };

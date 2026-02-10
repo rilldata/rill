@@ -23,7 +23,7 @@ While Rill **can** infer credentials from your local environment (AWS CLI, Azure
 :::
 
 1. **Credentials referenced in connection strings or DSN within YAML files (RECOMMENDED)** - The UI creates YAML configurations that reference credentials from your `.env` file using templating (see [Connector YAML](/reference/project-files/connectors) for more details)
-2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [templating](/developers/build/connectors/templating) for more details)
+2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [passing environmental variables](/developers/build/connectors/templating) for more details)
 3. **Credentials configured via CLI** - For [AWS](/developers/build/connectors/data-source/s3#method-4-local-aws-credentials-local-development-only) / [Azure](/developers/build/connectors/data-source/azure#method-5-azure-cli-authentication-local-development-only) / [Google Cloud](/developers/build/connectors/data-source/gcs#method-4-local-google-cloud-cli-credentials) - **NOT RECOMMENDED for production use**
 
 For more details, please refer to the corresponding [connector](/developers/build/connectors) or [OLAP engine](/developers/build/connectors/olap) page.
@@ -37,6 +37,24 @@ If you plan to deploy a project (to Rill Cloud), it is not recommended to pass i
 ## Variables
 
 Project variables work exactly the same way as credentials and can be defined when starting rill via `--env key=value`, set in the `.env` file in the project directory, or defined in the rill.yaml.
+
+### Passing Environment Variables
+
+Environment variables in your local shell are not automatically passed to Rill Developer. You can pass these to Rill Developer using the `--env` flag. This is useful for referencing existing environment variables without exposing their values in your command history or configuration files.
+
+For example, to use the `AWS_ACCESS_KEY_ID` environment variable:
+
+```bash
+rill start --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+```
+
+This will pull in the value of AWS_ACCESS_KEY_ID from your environment and make it available to your Rill project without exposing the credential value in your command or .env file. In Rill, you would reference it using: `"{{ .env.AWS_ACCESS_KEY_ID }}"`.
+
+:::warning Development Only
+
+Passing environment variables via rill start --env is intended for local development purposes only. These credentials are not automatically passed to Rill Cloud when you deploy your project. For production deployments, you must configure credentials separately in Rill Cloud using the project settings or rill env push.
+
+:::
 
 ### What is a `.env` file?
 
@@ -81,7 +99,7 @@ It's never a good idea to commit sensitive information to Git and it goes agains
 
 If you cloned the project using `rill project clone <project-name>` and are an admin of that project, the credentials will be pulled automatically. Note that there are some limitations with monorepos where credentials may not be pulled correctly. In those cases, credentials are also pulled when running `rill start`, assuming you have already authenticated via the CLI with `rill login`.
 
-For a detailed guide, see our [clone a project guide](/developers/guides/clone-a-project).
+For a detailed guide, see our [clone a project guide](/developers/tutorials/clone-a-project).
  
 ## Pulling Credentials and Variables from a Deployed Project on Rill Cloud
 
@@ -91,7 +109,7 @@ If you are making changes to an already deployed instance from Rill Cloud, it is
 
 For projects that have been deployed to Rill Cloud, an added benefit of our Rill Developer-Cloud architecture is that credentials that have been configured can be pulled locally for easier reuse (instead of having to manually reconfigure these credentials in Rill Developer). To do this, you can run `rill env pull` from your project's root directory to retrieve the latest credentials (after cloning the project's git repository to your local environment).
 
-![img](/img/build/credentials/rill-env-pull.png)
+![Rill Environment Pull](/img/build/credentials/rill-env-pull.png)
 
 :::info Overriding local credentials
 
@@ -108,6 +126,6 @@ As a project admin, you can use `rill env push` to push your credentials to your
 :::warning Overriding Cloud credentials
 
 If a credential and/or variable has already been configured in Rill Cloud, Rill will warn you about overriding if you attempt to push a new value in your `.env` file. This is because overriding credentials can impact your deployed project and/or other users (if they pull these credentials locally).
-![img](/img/build/credentials/rill-env-push.png)
+![Rill Environment Push](/img/build/credentials/rill-env-push.png)
 
 :::

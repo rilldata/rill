@@ -27,7 +27,7 @@
   <DropdownMenu.Content align="start">
     {#if url}
       <DropdownMenu.Item
-        class="text-gray-800 font-normal flex items-center"
+        class="text-fg-primary font-normal flex items-center"
         on:click={handleCopy}
       >
         <CopyIcon size="12px" />

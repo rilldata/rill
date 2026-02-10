@@ -91,7 +91,7 @@
       small
     />
   </div>
-  <div class="text-gray-500">
+  <div class="text-fg-secondary">
     {#if localFiltersEnabled}
       Overriding inherited time filters from canvas.
     {:else}

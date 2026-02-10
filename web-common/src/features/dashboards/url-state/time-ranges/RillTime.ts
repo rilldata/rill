@@ -1,7 +1,7 @@
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime, Duration } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 import {

@@ -39,8 +39,8 @@
   <Dropdown.Root bind:open={isDropdownOpen}>
     <Dropdown.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
-        ? 'bg-slate-200'
-        : 'hover:bg-slate-100'} px-2 py-1"
+        ? 'bg-gray-200'
+        : 'hover:bg-surface-hover'} px-2 py-1"
     >
       <span class="capitalize">
         {projectCount} Project{projectCount !== 1 ? "s" : ""}
@@ -66,5 +66,5 @@
     </Dropdown.Content>
   </Dropdown.Root>
 {:else}
-  <div class="w-18 rounded-sm px-2 py-1 text-gray-400">No projects</div>
+  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">No projects</div>
 {/if}

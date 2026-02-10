@@ -214,10 +214,16 @@
     if (!hovering) return;
 
     if (e.shiftKey) {
-      let exportedValue = formatDataTypeAsDuckDbQueryString(
-        hovering.value,
-        hovering.type,
-      );
+      let exportedValue = "";
+      if (hovering?.isHeader) {
+        exportedValue =
+          hovering.value === null ? "null" : hovering.value.toString();
+      } else {
+        exportedValue = formatDataTypeAsDuckDbQueryString(
+          hovering.value,
+          hovering.type,
+        );
+      }
 
       copyToClipboard(exportedValue);
 
@@ -400,11 +406,11 @@
   }
 
   .table-wrapper {
-    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-surface;
+    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-surface-base;
   }
 
   .has-selection tbody {
-    @apply text-gray-400;
+    @apply text-fg-secondary;
     --bar-color: #f0f0f0;
   }
 </style>

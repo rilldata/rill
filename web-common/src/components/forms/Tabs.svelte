@@ -16,15 +16,15 @@
 
 <Tabs {value} onValueChange={handleValueChange} class="w-full">
   <TabsList
-    class="bg-muted h-9 rounded-[10px] w-full border border-gray-200 flex my-4 {disableMarginTop
+    class="bg-surface-muted h-9 rounded-[10px] w-full border border-gray-200 flex my-4 {disableMarginTop
       ? 'mt-0'
       : ''}"
   >
     {#each options as opt}
       <TabsTrigger
         value={opt.value}
-        class="flex-1 h-7 rounded-[8px] py-2 border border-gray-200 text-sm text-[#09090B] transition-all relative z-0
-              data-[state=active]:bg-white data-[state=active]:shadow-lg  data-[state=active]:z-10 data-[state=active]:outline-2 data-[state=active]:outline-gray-200
+        class="flex-1 h-7 rounded-[8px] py-2 border border-gray-200 text-sm text-fg-primary transition-all relative z-0
+              data-[state=active]:bg-surface-subtle data-[state=active]:shadow-lg  data-[state=active]:z-10 data-[state=active]:outline-2 data-[state=active]:outline-gray-200
               data-[state=inactive]:bg-transparent data-[state=inactive]:z-0 data-[state=inactive]:outline-none data-[state=inactive]:border-none
               focus-visible:outline-none"
         style="box-shadow: none;"
