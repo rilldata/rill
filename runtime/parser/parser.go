@@ -510,49 +510,27 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		inferRefsSeen[r.Name.Normalized()] = true
 		p.inferAmbiguousRefs(r)
 	}
-	// ... any unchanged resource that may have an unspecified ref to a deleted resource
-	for _, r1 := range p.deletedResources {
-		nr1 := r1.Name.Normalized()
-		for _, r2 := range p.resourcesForAmbiguousRef[nr1] {
-			n := r2.Name.Normalized()
-			if !inferRefsSeen[n] {
-				inferRefsSeen[n] = true
-				p.inferAmbiguousRefs(r2)
-				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
-			}
-		}
-		// Also check for resources with unspecified refs (Kind == ResourceKindUnspecified) that may match this deleted resource by name
-		unspecifiedRef := ResourceName{Kind: ResourceKindUnspecified, Name: r1.Name.Name}.Normalized()
-		for _, r2 := range p.resourcesForAmbiguousRef[unspecifiedRef] {
-			n := r2.Name.Normalized()
-			if !inferRefsSeen[n] {
-				inferRefsSeen[n] = true
-				p.inferAmbiguousRefs(r2)
-				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
+	// reinferFor re-infers ambiguous refs for all resources that have an ambiguous ref matching r1.
+	// It looks up both the exact normalized name and the unspecified-kind variant.
+	reinferFor := func(r1 *Resource) {
+		for _, key := range []ResourceName{r1.Name.Normalized(), {Kind: ResourceKindUnspecified, Name: strings.ToLower(r1.Name.Name)}} {
+			for _, r2 := range p.resourcesForAmbiguousRef[key] {
+				n := r2.Name.Normalized()
+				if !inferRefsSeen[n] {
+					inferRefsSeen[n] = true
+					p.inferAmbiguousRefs(r2)
+					p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
+				}
 			}
 		}
 	}
-	// ... any unchanged resource that might have an unspecified ref (previously unmatched) that now matches a newly inserted resource
+	// ... any unchanged resource that may have an ambiguous ref to a deleted resource
+	for _, r1 := range p.deletedResources {
+		reinferFor(r1)
+	}
+	// ... any unchanged resource that might have an ambiguous ref (previously unmatched) that now matches a newly inserted resource
 	for _, r1 := range p.insertedResources {
-		nr1 := r1.Name.Normalized()
-		for _, r2 := range p.resourcesForAmbiguousRef[nr1] {
-			n := r2.Name.Normalized()
-			if !inferRefsSeen[n] {
-				inferRefsSeen[n] = true
-				p.inferAmbiguousRefs(r2)
-				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
-			}
-		}
-		// Also check for resources with unspecified refs (Kind == ResourceKindUnspecified) that may match this inserted resource by name
-		unspecifiedRef := ResourceName{Kind: ResourceKindUnspecified, Name: r1.Name.Name}.Normalized()
-		for _, r2 := range p.resourcesForAmbiguousRef[unspecifiedRef] {
-			n := r2.Name.Normalized()
-			if !inferRefsSeen[n] {
-				inferRefsSeen[n] = true
-				p.inferAmbiguousRefs(r2)
-				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
-			}
-		}
+		reinferFor(r1)
 	}
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
