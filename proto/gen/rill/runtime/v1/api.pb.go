@@ -3595,6 +3595,8 @@ type ModelPartition struct {
 	ExecutedOn *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=executed_on,json=executedOn,proto3" json:"executed_on,omitempty"`
 	Error      string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
 	ElapsedMs  uint32                 `protobuf:"varint,6,opt,name=elapsed_ms,json=elapsedMs,proto3" json:"elapsed_ms,omitempty"`
+	RetryUsed  uint32                 `protobuf:"varint,7,opt,name=retry_used,json=retryUsed,proto3" json:"retry_used,omitempty"`
+	RetryMax   uint32                 `protobuf:"varint,8,opt,name=retry_max,json=retryMax,proto3" json:"retry_max,omitempty"`
 }
 
 func (x *ModelPartition) Reset() {
@@ -3667,6 +3669,20 @@ func (x *ModelPartition) GetError() string {
 func (x *ModelPartition) GetElapsedMs() uint32 {
 	if x != nil {
 		return x.ElapsedMs
+	}
+	return 0
+}
+
+func (x *ModelPartition) GetRetryUsed() uint32 {
+	if x != nil {
+		return x.RetryUsed
+	}
+	return 0
+}
+
+func (x *ModelPartition) GetRetryMax() uint32 {
+	if x != nil {
+		return x.RetryMax
 	}
 	return 0
 }

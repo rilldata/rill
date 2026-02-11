@@ -6641,6 +6641,12 @@ definitions:
       elapsedMs:
         type: integer
         format: int64
+      retryUsed:
+        type: integer
+        format: int64
+      retryMax:
+        type: integer
+        format: int64
   v1ModelSpec:
     type: object
     properties:

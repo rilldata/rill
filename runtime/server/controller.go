@@ -450,6 +450,8 @@ func modelPartitionToPB(partition drivers.ModelPartition) *runtimev1.ModelPartit
 		ExecutedOn: executedOn,
 		Error:      partition.Error,
 		ElapsedMs:  uint32(partition.Elapsed.Milliseconds()),
+		RetryUsed:  partition.RetryUsed,
+		RetryMax:   partition.RetryMax,
 	}
 }
 

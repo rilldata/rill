@@ -86,6 +86,10 @@ type ModelPartition struct {
 	Error string
 	// Elapsed is the duration of the last execution of the partition.
 	Elapsed time.Duration
+	// RetryUsed is the number of retries used in the last execution (attempts beyond the initial run).
+	RetryUsed uint32
+	// RetryMax is the max attempts configured for the last execution.
+	RetryMax uint32
 }
 
 // FindModelPartitionsOptions is used to filter model partitions.

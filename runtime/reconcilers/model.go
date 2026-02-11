@@ -1032,10 +1032,11 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// If we're not partitionting execution, run the executor directly and return
 	if !usePartitions {
-		res, err := r.executeSingle(ctx, executor, self, model, incrementalRun, incrementalState, "", nil)
+		outcome, err := r.executeSingle(ctx, executor, self, model, incrementalRun, incrementalState, "", nil)
 		if err != nil {
 			return "", nil, false, err
 		}
+		res := outcome.Result
 		return executor.finalConnector, res, incrementalRun, err
 	}
 
@@ -1248,7 +1249,13 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	// Execute the partition.
 	start := time.Now()
 	errStr := ""
-	res, err := r.executeSingle(ctx, executor, self, mdl, incrementalRun, incrementalState, partition.Key, data)
+	outcome, err := r.executeSingle(ctx, executor, self, mdl, incrementalRun, incrementalState, partition.Key, data)
+	var res *drivers.ModelResult
+	var retryStats modelRetryStats
+	if outcome != nil {
+		res = outcome.Result
+		retryStats = outcome.Retry
+	}
 	if err != nil {
 		// Unless cancelled or explicitly told to return the error, we save the error in the partition and continue.
 		if returnErr {
@@ -1266,6 +1273,8 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	partition.ExecutedOn = &now
 	partition.Error = errStr
 	partition.Elapsed = time.Since(start)
+	partition.RetryUsed = retryStats.Used
+	partition.RetryMax = retryStats.Max
 	logArgs = append(logArgs, zap.Duration("elapsed", partition.Elapsed))
 
 	err = catalog.UpdateModelPartition(ctx, mdl.State.PartitionsModelId, partition)
@@ -1276,7 +1285,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 }
 
 // executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a partition is optional.
-func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalRun bool, incrementalState map[string]any, partitionKey string, partitionData map[string]any) (*drivers.ModelResult, error) {
+func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalRun bool, incrementalState map[string]any, partitionKey string, partitionData map[string]any) (*modelExecutionOutcome, error) {
 	// Resolve templating in the input and output props
 	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
 	if err != nil {
@@ -1354,8 +1363,18 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	})
 }
 
+type modelRetryStats struct {
+	Used uint32
+	Max  uint32
+}
+
+type modelExecutionOutcome struct {
+	Result *drivers.ModelResult
+	Retry  modelRetryStats
+}
+
 // executeWithRetry applies retry logic around the provided execution function.
-func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.Model, executeFunc func(context.Context) (*drivers.ModelResult, error)) (*drivers.ModelResult, error) {
+func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.Model, executeFunc func(context.Context) (*drivers.ModelResult, error)) (*modelExecutionOutcome, error) {
 	// Apply defaults for retry options
 	var defaultAttempts uint32 = 3
 	var defaultDelay uint32 = 5
@@ -1383,6 +1402,9 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	if attempts == 0 {
 		attempts = 1
 	}
+	stats := modelRetryStats{
+		Max: uint32(attempts),
+	}
 
 	// maxRetries is not used, so remove its assignment
 	backoff := time.Duration(*retryDelay) * time.Second
@@ -1393,7 +1415,7 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	for attempt := 1; attempt <= attempts; attempt++ {
 		res, err := executeFunc(ctx)
 		if err == nil {
-			return res, nil
+			return &modelExecutionOutcome{Result: res, Retry: stats}, nil
 		}
 
 		lastErr = err
@@ -1415,6 +1437,7 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 		if attempt >= attempts || !shouldRetry {
 			break
 		}
+		stats.Used++
 
 		r.C.Logger.Warn("Model execution failed, retrying", zap.String("model", self.Meta.Name.Name), zap.Int("attempt", attempt), zap.Int("max_attempts", attempts), zap.Error(err), observability.ZapCtx(ctx))
 
@@ -1435,7 +1458,7 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 		}
 	}
 
-	return finalResult, lastErr
+	return &modelExecutionOutcome{Result: finalResult, Retry: stats}, lastErr
 }
 
 // markPartitionsExecutedExceptFirst marks all partitions (except the first) as executed.
