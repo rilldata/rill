@@ -17,6 +17,7 @@
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName, database);
   $: expanded = $expandedStore;
+  $: effectiveExpanded = expanded || !!searchPattern;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
     instanceId,
@@ -31,11 +32,11 @@
   {#if database}
     <button
       class="database-entry-header"
-      class:open={expanded}
+      class:open={effectiveExpanded}
       on:click={() => store.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
-        className="transform transition-transform text-fg-secondary {expanded
+        className="transform transition-transform text-fg-secondary {effectiveExpanded
           ? 'rotate-0'
           : '-rotate-90'}"
         size="14px"
@@ -48,7 +49,7 @@
   {/if}
 
   <ol transition:slide={{ duration }}>
-    {#if expanded}
+    {#if effectiveExpanded}
       {#if error}
         <span class="message"
           >Error: {error.message || error.response?.data?.message}</span
