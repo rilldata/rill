@@ -23,16 +23,13 @@
   $: ({ instanceId } = $runtime);
   $: ({ open, connector: initialConnector } = $dataExplorerStore);
 
-  // Track the currently selected connector (can be different from initial)
   let selectedConnector: V1AnalyzedConnector | null = null;
 
-  // Query all connectors and filter by same driver
   $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
     query: {
       enabled: open && !!initialConnector?.driver?.name,
       select: (data) => {
         if (!data?.connectors || !initialConnector?.driver?.name) return [];
-        // Filter connectors with the same driver
         return data.connectors
           .filter((c) => c?.driver?.name === initialConnector.driver?.name)
           .sort((a, b) => (a?.name ?? "").localeCompare(b?.name ?? ""));
@@ -42,7 +39,6 @@
 
   $: sameDriverConnectors = $connectorsQuery.data ?? [];
 
-  // Auto-select connector: prefer initialConnector if in list, otherwise first available
   $: if (open && sameDriverConnectors.length > 0) {
     const isCurrentValid =
       selectedConnector &&
@@ -64,7 +60,6 @@
   let isGenerating = false;
   let searchQuery = "";
 
-  // Create selection-mode store with onToggleItem callback
   const selectionStore = new ConnectorExplorerStore(
     {
       allowSelectTable: true,
@@ -94,8 +89,8 @@
 
   function handleSelectConnector(connector: V1AnalyzedConnector) {
     selectedConnector = connector;
-    selectedTable = null; // Clear table selection when switching connectors
-    searchQuery = ""; // Clear search when switching connectors
+    selectedTable = null;
+    searchQuery = "";
   }
 
   async function handleGenerateMetrics() {
@@ -117,7 +112,6 @@
       handleClose();
     } catch (error) {
       console.error("Failed to generate metrics:", error);
-      // Error is handled by generateMetricsFromTable which shows a toast
     } finally {
       isGenerating = false;
     }
@@ -134,7 +128,6 @@
   function handleAddNewConnector() {
     if (!initialConnector?.driver) return;
     const driver = initialConnector.driver;
-    // Close this modal and open the connector form for the same driver type
     handleClose();
     addSourceModal.openForConnector(driver.name ?? "", driver);
   }
@@ -158,12 +151,14 @@
 
     <div class="flex {FORM_HEIGHT_DEFAULT}">
       <!-- Left panel: Connector list -->
-      <div class="w-64 border-r border-border overflow-y-auto flex-shrink-0 bg-surface-subtle">
+      <div
+        class="w-64 border-r border-border overflow-y-auto flex-shrink-0 bg-surface-subtle"
+      >
         <div class="p-4">
           <div class="text-sm font-semibold text-fg-primary">
             Existing connectors
           </div>
-          <div class="text-xs text-fg-secondary mt-1">
+          <div class="text-xs text-fg-muted mt-1">
             Choose data from an existing connection or create a new connector.
           </div>
 
@@ -189,13 +184,10 @@
               </button>
             {/each}
             {#if sameDriverConnectors.length === 0}
-              <div class="text-sm text-fg-secondary">
-                No connectors found
-              </div>
+              <div class="text-sm text-fg-secondary">No connectors found</div>
             {/if}
           </div>
 
-          <!-- Add new connector button -->
           <button
             class="w-full text-left px-3 py-1.5 rounded text-sm font-medium text-primary-500 hover:bg-surface-hover flex items-center gap-1.5 mt-3"
             on:click={handleAddNewConnector}
@@ -207,22 +199,27 @@
       </div>
 
       <!-- Right panel: Table browser -->
-      <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Search input -->
-        <div class="px-2 py-2 border-b border-border">
-          <div class="relative flex items-center">
-            <Search size="16" class="absolute left-2.5 text-fg-muted" />
-            <input
-              type="text"
-              placeholder="Search tables..."
-              bind:value={searchQuery}
-              class="w-full pl-8 pr-3 py-1.5 bg-transparent border-none text-fg-primary placeholder:text-fg-muted focus:outline-none"
-            />
+      <div class="flex-1 flex flex-col overflow-hidden p-4 gap-3">
+        <div>
+          <div class="text-sm font-semibold text-fg-primary">Data explorer</div>
+          <div class="text-xs text-fg-muted mt-1">
+            Pick a table to explore your data.
           </div>
         </div>
 
-        <!-- Table list -->
-        <div class="flex-1 overflow-y-auto">
+        <div class="relative flex items-center border border-border rounded-md">
+          <Search size="14" class="absolute left-3 text-fg-muted" />
+          <input
+            type="text"
+            placeholder="Search"
+            bind:value={searchQuery}
+            class="w-full pl-8 pr-3 py-1.5 bg-transparent border-none rounded-md text-sm text-fg-primary placeholder:text-fg-muted focus:outline-none"
+          />
+        </div>
+
+        <div
+          class="flex-1 overflow-y-auto border border-border rounded-lg min-h-0"
+        >
           {#if selectedConnector}
             <DatabaseExplorer
               {instanceId}
@@ -236,9 +233,7 @@
     </div>
 
     <div class="p-4 border-t border-border flex items-center">
-      <div class="flex items-center gap-3">
-        <Button type="secondary" onClick={handleClose}>Back</Button>
-      </div>
+      <Button type="secondary" onClick={handleClose}>Back</Button>
 
       <Button
         type="primary"
