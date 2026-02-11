@@ -169,6 +169,15 @@ export class ConnectorExplorerStore {
     this.store.update((state) => ({ ...state, selectedKey: null }));
   };
 
+  hasExpandedChildren = (connector: string, database?: string) => {
+    const prefix = getItemKey(connector, database);
+    return derived(this.store, ($state) =>
+      Object.entries($state.expandedItems).some(
+        ([key, value]) => key !== prefix && key.startsWith(prefix) && value,
+      ),
+    );
+  };
+
   // Not used yet. Currently, the reconciler does not track connector renames.
   renameItem = (
     oldConnector: string,

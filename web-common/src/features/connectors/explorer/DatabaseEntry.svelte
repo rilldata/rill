@@ -19,6 +19,12 @@
   $: expanded = $expandedStore;
   $: effectiveExpanded = expanded || !!searchPattern;
 
+  $: hasExpandedSchemasStore = store.hasExpandedChildren(
+    connectorName,
+    database,
+  );
+  $: hasExpandedSchemas = $hasExpandedSchemasStore;
+
   $: databaseSchemasQuery = useListDatabaseSchemas(
     instanceId,
     connectorName,
@@ -67,6 +73,7 @@
               {database}
               {store}
               {searchPattern}
+              autoExpandOnSearch={!hasExpandedSchemas}
               databaseSchema={schema ?? ""}
             />
           {/each}
