@@ -7,7 +7,7 @@ export type DataExplorerState = {
 };
 
 function createDataExplorerStore() {
-  const { subscribe, set, update } = writable<DataExplorerState>({
+  const { subscribe, set } = writable<DataExplorerState>({
     open: false,
     connector: null,
   });
