@@ -164,7 +164,14 @@ export function useInfiniteListTables(
   return createInfiniteQuery({
     queryKey: [
       "/v1/connectors/tables",
-      { instanceId, connector, database, databaseSchema, pageSize, searchPattern },
+      {
+        instanceId,
+        connector,
+        database,
+        databaseSchema,
+        pageSize,
+        searchPattern,
+      },
     ],
     enabled:
       enabled &&

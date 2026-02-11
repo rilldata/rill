@@ -44,7 +44,9 @@
 
   // Auto-select connector: prefer initialConnector if in list, otherwise first available
   $: if (open && sameDriverConnectors.length > 0) {
-    const isCurrentValid = selectedConnector && sameDriverConnectors.some((c) => c.name === selectedConnector?.name);
+    const isCurrentValid =
+      selectedConnector &&
+      sameDriverConnectors.some((c) => c.name === selectedConnector?.name);
     if (!isCurrentValid) {
       selectedConnector =
         sameDriverConnectors.find((c) => c.name === initialConnector?.name) ??
@@ -125,7 +127,9 @@
     ? connectorIconMapping[getConnectorIconKey(initialConnector)]
     : null;
   $: driverDisplayName =
-    initialConnector?.driver?.displayName ?? initialConnector?.driver?.name ?? "OLAP";
+    initialConnector?.driver?.displayName ??
+    initialConnector?.driver?.name ??
+    "OLAP";
 
   function handleAddNewConnector() {
     if (!initialConnector?.driver) return;
@@ -159,15 +163,20 @@
       <!-- Left panel: Connector list -->
       <div class="w-64 border-r border-border overflow-y-auto flex-shrink-0">
         <div class="p-2">
-          <div class="text-xs font-medium text-fg-secondary uppercase tracking-wide px-2 py-1">
+          <div
+            class="text-xs font-medium text-fg-secondary uppercase tracking-wide px-2 py-1"
+          >
             Existing Connectors
           </div>
-          <div class="text-xs font-medium text-fg-secondary tracking-wide px-2 py-1">
+          <div
+            class="text-xs font-medium text-fg-secondary tracking-wide px-2 py-1"
+          >
             Choose data from an existing connection or create a new connector.
           </div>
           {#each sameDriverConnectors as conn (conn.name)}
             <button
-              class="w-full text-left px-2 py-1.5 rounded text-sm truncate {selectedConnector?.name === conn.name
+              class="w-full text-left px-2 py-1.5 rounded text-sm truncate {selectedConnector?.name ===
+              conn.name
                 ? 'bg-primary-100 text-primary-600 dark:bg-primary-900 dark:text-primary-400 font-medium'
                 : 'text-fg-primary hover:bg-surface-hover'}"
               on:click={() => handleSelectConnector(conn)}
@@ -197,10 +206,7 @@
         <!-- Search input -->
         <div class="px-2 py-2 border-b border-border">
           <div class="relative flex items-center">
-            <Search
-              size="16"
-              class="absolute left-2.5 text-fg-muted"
-            />
+            <Search size="16" class="absolute left-2.5 text-fg-muted" />
             <input
               type="text"
               placeholder="Search tables..."
