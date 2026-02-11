@@ -217,7 +217,7 @@ func TestDirectoryAccess(t *testing.T) {
 
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE other_test AS SELECT * FROM read_csv_auto(%s)", safeSQLString(otherPath))})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "ile system operations are disabled by configuration")
+	require.Contains(t, err.Error(), "file system operations are disabled by configuration")
 
 	err = handle.Close()
 	require.NoError(t, err)
