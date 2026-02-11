@@ -48,6 +48,10 @@ The query payload bypasses the LLM entirely. The backend stores it (which it alr
 
 Today, `query_metrics_view` already persists the full query arguments in the `ai_messages` table as part of normal tool call tracking. The tool *call* message (the assistant's request to invoke `query_metrics_view`) is created and assigned a UUID *before* the tool handler executes. The short link uses this existing call message ID — the handler receives it, embeds it in the URL, and the query arguments can be retrieved directly from the call message at click time.
 
+### Conversation Forks
+
+`ForkSession` clones messages with **new IDs** (including tool call IDs) and copies content verbatim. Without any additional handling, citation URLs in cloned messages would still reference the original conversation and original call IDs. See step 7 below for the optional rewrite approach and its tradeoffs.
+
 ## Architecture
 
 ```
@@ -241,6 +245,25 @@ Note: the `call_id` here is the tool *call* message ID — the assistant's reque
 
 The existing embed/app branching problem and the icon button rendering request are separate from the short link change. They can be addressed in a follow-up by enhancing the citation link renderer in the `marked` extension — the short link approach doesn't block or change this. With citations now identifiable via a URL pattern (`/-/ai/.../call/...`), the markdown renderer has a clean hook point for custom rendering (buttons in embeds, icon buttons, hover previews, etc.).
 
+### 7. Optional: Rewrite Citation URLs During Fork
+
+`ForkSession` clones messages with new IDs using an `oldToNewMessageID` map (already present in the code). Citation URLs in cloned content still reference the original conversation and call IDs. This step rewrites them to be fork-local.
+
+**Without this step**, citations in a forked conversation resolve against the original conversation. This works as long as the user has access to the original — which they do, since they forked it. The edge cases are:
+- If the original owner later revokes the forker's access, citations in the fork return 403.
+- If the forker shares the fork with a third party, that person may not have access to the original conversation's citations.
+
+These are narrow scenarios and may be acceptable for now.
+
+**With this step**, citations in the fork are fully self-contained. The rewrite touches two message types during the existing clone loop:
+
+1. **Tool result messages** (JSON content): Parse the JSON, update the `open_url` field with the new conversation ID and remapped call ID, re-serialize.
+2. **Assistant messages** (markdown content): Regex replace on the short link URL pattern (`/-/ai/conversations/{uuid}/call/{uuid}`) with remapped IDs.
+
+If a call ID is not found in `oldToNewMessageID` (unexpected edge case), the original link is kept as a fallback.
+
+**Performance impact**: Negligible. The fork operation already iterates all messages and does a database insert per message. The added work is a `strings.Contains` check per message, plus an occasional JSON round-trip or regex replace for messages that contain citations. Single-digit milliseconds even for long conversations.
+
 ## Access Control
 
 The gRPC endpoint verifies that the caller has access to the conversation before returning tool call contents. This prevents unauthorized access to potentially sensitive data (dimension names, filter values, query structure).
@@ -314,6 +337,7 @@ Parse citation URLs defensively, stripping trailing brackets that the LLM append
    - Implement handler in `runtime/server/`
    - Change `generateOpenURL` to produce short links using conversation ID and tool call message ID
    - Pass the tool call message ID into the handler (it's already available — the call message is created before the handler executes)
+   - (Optional) Update `ForkSession` cloning to rewrite citation URLs in copied messages to fork-local IDs using `oldToNewMessageID` (see step 7)
 
 2. **Phase 2: Frontend changes**
 
