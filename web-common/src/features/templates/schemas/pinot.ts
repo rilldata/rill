@@ -85,6 +85,21 @@ export const pinotSchema: MultiStepFormSchema = {
       description: "Use SSL",
       default: true,
     },
+    sql: {
+      type: "string",
+      title: "SQL",
+      description: "SQL query to run against Pinot",
+      "x-placeholder": "SELECT * FROM my_table",
+      "x-step": "explorer",
+    },
+    name: {
+      type: "string",
+      title: "Model name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z0-9_]+$",
+      "x-placeholder": "my_model",
+      "x-step": "explorer",
+    },
   },
   required: [],
   oneOf: [
