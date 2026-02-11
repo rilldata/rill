@@ -26,8 +26,6 @@ func TestToModelPartitionRow_IncludesRetryFields(t *testing.T) {
 	require.Equal(t, `{"country":"US"}`, row.DataJSON)
 	require.Equal(t, "boom", row.Error)
 	require.Equal(t, "1.25s", row.Elapsed)
-	require.Equal(t, uint32(2), row.RetryUsed)
-	require.Equal(t, uint32(3), row.RetryMax)
 	require.Equal(t, "2/3", row.Retries)
 }
 

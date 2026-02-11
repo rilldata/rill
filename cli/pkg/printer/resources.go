@@ -666,8 +666,6 @@ func toModelPartitionRow(s *runtimev1.ModelPartition) *modelPartition {
 		ExecutedOn: executedOn,
 		Elapsed:    (time.Duration(s.ElapsedMs) * time.Millisecond).String(),
 		Error:      s.Error,
-		RetryUsed:  s.RetryUsed,
-		RetryMax:   s.RetryMax,
 		Retries:    fmt.Sprintf("%d/%d", s.RetryUsed, s.RetryMax),
 	}
 }
@@ -677,8 +675,6 @@ type modelPartition struct {
 	DataJSON   string `header:"data" json:"data"`
 	ExecutedOn string `header:"executed_on,timestamp(ms|utc|human)" json:"executed_on"`
 	Elapsed    string `header:"elapsed" json:"elapsed"`
-	RetryUsed  uint32 `header:"retry_used" json:"retry_used"`
-	RetryMax   uint32 `header:"retry_max" json:"retry_max"`
 	Retries    string `header:"retries" json:"retries"`
 	Error      string `header:"error" json:"error"`
 }
