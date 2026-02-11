@@ -22,6 +22,7 @@
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
+  $: effectiveExpanded = expanded || !!searchPattern;
 
   $: tablesQuery = useInfiniteListTables(
     instanceId,
@@ -29,7 +30,7 @@
     database,
     databaseSchema,
     100,
-    expanded,
+    effectiveExpanded,
     searchPattern,
   );
 
@@ -70,11 +71,11 @@
     style="padding-left: calc({database
       ? 40
       : 22}px + var(--explorer-indent-offset, 0px))"
-    class:open={expanded}
+    class:open={effectiveExpanded}
     on:click={() => store.toggleItem(connectorName, database, databaseSchema)}
   >
     <CaretDownIcon
-      className="transform transition-transform text-fg-secondary {expanded
+      className="transform transition-transform text-fg-secondary {effectiveExpanded
         ? 'rotate-0'
         : '-rotate-90'}"
       size="14px"
@@ -92,7 +93,7 @@
     </span>
   </button>
 
-  {#if expanded}
+  {#if effectiveExpanded}
     {#if error && (!typedData || typedData.length === 0)}
       <div
         class="message"
