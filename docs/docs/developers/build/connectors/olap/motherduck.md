@@ -8,8 +8,7 @@ sidebar_position: 15
 [MotherDuck](https://motherduck.com/) is a cloud-native DuckDB service that provides scalable analytics and data processing capabilities. Built on the same core engine as DuckDB, MotherDuck offers the familiar SQL interface and performance characteristics while adding cloud-native features like serverless compute, automatic scaling, and collaborative data sharing.
 
 
-<img src='/img/build/connectors/olap-engines/motherduck/rill-developer.png' class='rounded-gif' />
-<br />
+![Rill Developer](/img/build/connectors/olap-engines/motherduck/rill-developer.png)
 
 
 
@@ -28,8 +27,7 @@ To connect to MotherDuck, you'll need a access token from your MotherDuck accoun
 3. Go to **Access Tokens**
 4. Create a new access token or copy an existing one
    
-<img src='/img/build/connectors/olap-engines/motherduck/service-token.png' class='rounded-gif' />
-<br />
+![Service Token](/img/build/connectors/olap-engines/motherduck/service-token.png)
 
 :::warning Keep Your Token Secure
 

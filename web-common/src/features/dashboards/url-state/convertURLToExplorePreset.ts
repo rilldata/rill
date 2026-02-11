@@ -33,9 +33,9 @@ import {
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import {
   DateTimeUnitToV1TimeGrain,
-  getAggregationGrain,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
+import { getAggregationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,

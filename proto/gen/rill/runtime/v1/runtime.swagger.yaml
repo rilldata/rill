@@ -4055,6 +4055,12 @@ definitions:
       explore:
         type: string
         description: Optional explore dashboard.
+      canvas:
+        type: string
+        description: Optional canvas dashboard.
+      canvasComponent:
+        type: string
+        description: Optional canvas component within a dashboard.
       dimensions:
         type: array
         items:
@@ -4068,6 +4074,14 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         description: Optional filters.
+      wherePerMetricsView:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
+        title: |-
+          Filter expressions as key-value pairs for the canvas.
+          Key: Metrics view name
+          Value: Expression object
       timeStart:
         type: string
         format: date-time

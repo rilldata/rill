@@ -17,9 +17,9 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type {
-    V1ExploreTimeRange,
+  import {
     V1TimeGrain,
+    type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
@@ -36,6 +36,7 @@
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
+  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
@@ -275,7 +276,7 @@
     );
   }
 
-  async function onSelectRange(alias: string) {
+  async function onSelectRange(alias: string, tz = activeTimeZone) {
     // If we don't have a valid time range, early return
     if (!allTimeRange?.end) return;
 
@@ -296,9 +297,21 @@
     const { interval, grain } = await deriveInterval(
       alias,
       metricsViewName,
-      activeTimeZone,
+      tz,
       selectedTimeDimension,
     );
+
+    const allowedGrains = allowedGrainsForInterval(
+      interval,
+      minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE,
+    );
+
+    const finalGrain =
+      activeTimeGrain && allowedGrains.includes(activeTimeGrain)
+        ? activeTimeGrain
+        : grain && allowedGrains.includes(grain)
+          ? grain
+          : allowedGrains[0];
 
     if (interval.isValid) {
       const validInterval = interval as Interval<true>;
@@ -308,7 +321,7 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange, grain);
+      selectRange(baseTimeRange, finalGrain);
     }
   }
 
@@ -353,7 +366,7 @@
     } as DashboardTimeControls);
   }
 
-  function onSelectTimeZone(timeZone: string) {
+  async function onSelectTimeZone(timeZone: string) {
     if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
@@ -366,8 +379,10 @@
           ?.setZone(timeZone, { keepLocalTime: true })
           .toJSDate(),
       });
+    } else if (selectedRangeAlias) {
+      // Trigger range selection so that MetricsViewTimeRanges is called with the new time zone
+      await onSelectRange(selectedRangeAlias, timeZone);
     }
-
     metricsExplorerStore.setTimeZone($exploreName, timeZone);
   }
 
