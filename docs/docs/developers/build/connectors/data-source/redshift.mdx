@@ -50,7 +50,7 @@ If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_redshift.yaml`:
+Create `connectors/redshift.yaml`:
 
 ```yaml
 type: connector
@@ -93,7 +93,7 @@ Local AWS credentials only work for local development. If you deploy to Rill Clo
 
 ### Manual Configuration
 
-Create `connectors/my_redshift.yaml`:
+Create `connectors/redshift.yaml`:
 
 ```yaml
 type: connector
@@ -108,11 +108,11 @@ When no explicit credentials are provided in the connector, Rill will automatica
 
 Once your connector is configured using any method above, create a model to define what data to pull.
 
-Create `models/my_redshift_data.yaml`:
+Create `models/redshift_data.yaml`:
 
 ```yaml
 type: model
-connector: my_redshift
+connector: redshift
 dev:
   sql: SELECT * FROM my_schema.my_table limit 10000
 

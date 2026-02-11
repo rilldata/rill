@@ -51,7 +51,7 @@ If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_postgres.yaml`:
+Create `connectors/postgres.yaml`:
 
 ```yaml
 type: connector
@@ -94,7 +94,7 @@ postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_postgres.yaml`:
+Create `connectors/postgres.yaml`:
 
 ```yaml
 type: connector
@@ -113,11 +113,11 @@ connector.postgres.dsn=postgresql://postgres_user:postgres_pass@localhost:5432/p
 
 Once your connector is configured using any method above, create a model to define what data to pull.
 
-Create `models/my_postgres_data.yaml`:
+Create `models/postgres_data.yaml`:
 
 ```yaml
 type: model
-connector: my_mysql
+connector: postgres
 dev:
   sql: SELECT * FROM my_table limit 10000
 
