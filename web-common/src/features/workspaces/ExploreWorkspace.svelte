@@ -19,7 +19,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
-  import { mapParseErrorsToLines } from "../metrics-views/errors";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "../dashboards/state-managers/loaders/DashboardStateManager.svelte";
@@ -34,7 +33,6 @@
     path: filePath,
     resourceName,
     fileName,
-    getAllErrors,
     remoteContent,
   } = fileArtifact);
 
@@ -47,8 +45,6 @@
   $: exploreResource = resources?.explore;
   $: metricsViewResource = resources?.metricsView;
 
-  $: allErrorsQuery = getAllErrors(queryClient, instanceId);
-  $: allErrors = $allErrorsQuery;
   $: resourceIsReconciling = resourceIsLoading(exploreResource);
 
   $: workspace = workspaces.get(filePath);
@@ -58,19 +54,21 @@
 
   $: metricsViewName = metricsViewResource?.meta?.name?.name;
 
-  $: lineBasedRuntimeErrors = mapParseErrorsToLines(
-    allErrors,
-    $remoteContent ?? "",
-  );
+  // Parse error for the editor gutter and banner
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient, instanceId);
+  $: parseError = $parseErrorQuery;
 
-  $: mainError = lineBasedRuntimeErrors?.at(0);
-
+  // Reconcile error resolved to root cause for the banner
+  $: reconcileError = (exploreResource ?? metricsViewResource)?.meta
+    ?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
     instanceId,
     exploreResource ?? metricsViewResource,
-    mainError?.message,
+    reconcileError,
   );
-  $: errorBody = $rootCauseQuery?.data ?? mainError?.message ?? "";
+  $: rootCauseReconcileError = reconcileError
+    ? ($rootCauseQuery?.data ?? reconcileError)
+    : undefined;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -104,7 +102,7 @@
         <div class="flex gap-x-2" slot="cta">
           <PreviewButton
             href="/explore/{exploreName}"
-            disabled={allErrors.length > 0 || resourceIsReconciling}
+            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
             reconciling={resourceIsReconciling}
           />
         </div>
@@ -112,7 +110,7 @@
 
       <WorkspaceEditorContainer
         slot="body"
-        error={mainError}
+        error={parseError?.message ?? rootCauseReconcileError}
         showError={!!$remoteContent && selectedView === "code"}
       >
         {#if selectedView === "code"}
@@ -120,12 +118,12 @@
             bind:autoSave={$autoSave}
             {exploreName}
             {fileArtifact}
-            {lineBasedRuntimeErrors}
+            {parseError}
           />
         {:else if selectedView === "viz"}
-          {#if mainError}
+          {#if parseError || rootCauseReconcileError}
             <ErrorPage
-              body={errorBody}
+              body={parseError?.message ?? rootCauseReconcileError ?? ""}
               fatal
               header="Unable to load dashboard preview"
               statusCode={404}
