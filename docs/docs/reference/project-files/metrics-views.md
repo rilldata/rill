@@ -18,7 +18,7 @@ _[string]_ - Refers to the resource type and must be `metrics_view`
 
 ### `connector`
 
-_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/build/connectors/olap) for more information 
+_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/developers/build/connectors/olap) for more information 
 
 ### `display_name`
 
@@ -30,7 +30,7 @@ _[string]_ - Refers to the description for the metrics view
 
 ### `ai_instructions`
 
-_[string]_ - Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for [AI agents](/guide/ai/mcp). Used to guide natural language question answering and routing. 
 
 ### `parent`
 
@@ -84,6 +84,8 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`tags`** - _[array of string]_ - optional list of tags for categorizing the dimension (defaults to empty) 
 
+  - **`type`** - _[string]_ - Dimension type: "geo" for geospatial dimensions, "time" for time dimensions or "categorical" for categorial dimensions. Default is undefined and the type will be inferred instead 
+
   - **`column`** - _[string]_ - a categorical column 
 
   - **`expression`** - _[string]_ - a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time 
@@ -110,7 +112,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`expression`** - _[string]_ - a combination of operators and functions for aggregations _(required)_
 
-  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/measures/windows) documentation. 
+  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation. 
 
     - **option 1** - _[string]_ - Shorthand: `time` or `true` means time-partitioned, `all` means non-partitioned.
 
@@ -148,7 +150,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
-  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/measures/referencing) for more information. 
+  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/developers/build/metrics-view/measures/referencing) for more information. 
 
     - **option 1** - _[string]_ - Simple field name as a string.
 
@@ -256,7 +258,7 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/build/metrics-view/security) for resources 
+_[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
@@ -344,11 +346,11 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
   - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'. 
 
-    - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+    - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection
 
     - **option 2** - _[object]_ - Object containing time range and comparison configuration
 
-      - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
+      - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection _(required)_
 
       - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
 

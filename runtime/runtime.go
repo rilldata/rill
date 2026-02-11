@@ -32,6 +32,7 @@ type Options struct {
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
 	Version                      version.Version
+	EnableConfigReloader         bool
 }
 
 type Runtime struct {
@@ -45,6 +46,7 @@ type Runtime struct {
 	connCache      conncache.Cache
 	queryCache     *queryCache
 	securityEngine *securityEngine
+	configReloader *configReloader
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Client, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
@@ -80,6 +82,10 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 		return nil, err
 	}
 
+	if opts.EnableConfigReloader {
+		rt.configReloader = newConfigReloader(rt)
+	}
+
 	return rt, nil
 }
 
@@ -94,6 +100,9 @@ func (r *Runtime) Version() version.Version {
 func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
+	if r.configReloader != nil {
+		r.configReloader.close()
+	}
 	r.registryCache.close(ctx)
 	err1 := r.queryCache.close()
 	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
@@ -184,11 +193,13 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.PublicPaths = rillYAML.PublicPaths
 	inst.AIInstructions = rillYAML.AIInstructions
 	inst.ProjectAIConnector = rillYAML.AIConnector
+	inst.Theme = rillYAML.Theme
+
 	return r.EditInstance(ctx, inst, restartController)
 }
 
 // UpdateInstanceConnector upserts or removes a connector from an instance
-// If connector is nil, the connector is removed; otherwise, it is upserted
+// If connector is nil, the connector is removed and the handle is closed; otherwise, it is upserted
 func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name string, connector *runtimev1.ConnectorSpec) error {
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
@@ -220,7 +231,26 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	inst = &tmp
 	inst.ProjectConnectors = projConns
 
-	return r.EditInstance(ctx, inst, false)
+	err = r.EditInstance(ctx, inst, false)
+	if err != nil {
+		return err
+	}
+
+	// close the connection
+	if connector == nil {
+		r.connCache.EvictWhere(func(cfg any) bool {
+			x := cfg.(cachedConnectionConfig)
+			return x.instanceID == instanceID && x.name == name
+		})
+	}
+	return nil
+}
+
+func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) error {
+	if r.configReloader != nil {
+		return r.configReloader.reloadConfig(ctx, instanceID)
+	}
+	return nil
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

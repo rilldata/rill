@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	goruntime "runtime"
@@ -290,9 +292,42 @@ var Connectors = map[string]ConnectorAcquireFunc{
 
 		return map[string]string{"dsn": dsn}
 	},
+	"https": func(t TestingT) map[string]string {
+		_, currentFile, _, _ := goruntime.Caller(0)
+		testdataPath := filepath.Join(currentFile, "..", "testdata")
+		csvPath := filepath.Join(testdataPath, "init_data", "azure", "csv_test", "all_datatypes.csv")
+		csvBytes, err := os.ReadFile(csvPath)
+		require.NoError(t, err)
+		const pagePath = "/data"
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != pagePath {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "text/csv")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(csvBytes)
+		}))
+		t.Cleanup(server.Close)
+		return map[string]string{
+			"endpoint": server.URL + pagePath,
+		}
+	},
 	"openai": func(t TestingT) map[string]string {
 		loadDotEnv(t)
 		apiKey := os.Getenv("RILL_RUNTIME_OPENAI_TEST_API_KEY")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"api_key": apiKey}
+	},
+	"claude": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		apiKey := os.Getenv("RILL_RUNTIME_CLAUDE_TEST_API_KEY")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"api_key": apiKey}
+	},
+	"gemini": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		apiKey := os.Getenv("RILL_RUNTIME_GEMINI_TEST_API_KEY")
 		require.NotEmpty(t, apiKey)
 		return map[string]string{"api_key": apiKey}
 	},

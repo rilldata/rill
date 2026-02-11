@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/r3labs/sse/v2"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -21,7 +20,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -63,6 +61,7 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 
 func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversationRequest) (*runtimev1.GetConversationResponse, error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
+
 	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
@@ -89,6 +88,96 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	return &runtimev1.GetConversationResponse{
 		Conversation: sessionToPB(session.CatalogSession(), messagePBs),
 		Messages:     messagePBs,
+		IsOwner:      session.CatalogSession().OwnerID == claims.UserID,
+	}, nil
+}
+
+func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConversationRequest) (*runtimev1.ShareConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// This check prevents changing sharing boundaries on already shared conversations by non-owners.
+	if session.CatalogSession().OwnerID != claims.UserID && !claims.SkipChecks {
+		return nil, ErrForbidden
+	}
+
+	// unshare conversation
+	if req.UntilMessageId == "none" {
+		err = session.UpdateSharedUntilMessageID(ctx, "")
+		if err != nil {
+			return nil, err
+		}
+		err = session.Flush(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &runtimev1.ShareConversationResponse{}, nil
+	}
+
+	var preds []ai.Predicate
+	if req.UntilMessageId == "" {
+		preds = []ai.Predicate{ai.FilterByTool(ai.RouterAgentName), ai.FilterByType(ai.MessageTypeResult)}
+	} else {
+		preds = []ai.Predicate{ai.FilterByID(req.UntilMessageId)}
+	}
+	msg, ok := session.LatestMessage(preds...)
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.UntilMessageId, req.ConversationId)
+	}
+	if req.UntilMessageId != "" && !(msg.Tool == ai.RouterAgentName && msg.Type == ai.MessageTypeResult) {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot share incomplete conversation as message with id %q is not a router agent result message", req.UntilMessageId)
+	}
+
+	// now save the session with the shared until message id and flush immediately
+	err = session.UpdateSharedUntilMessageID(ctx, msg.ID)
+	if err != nil {
+		return nil, err
+	}
+	err = session.Flush(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.ShareConversationResponse{}, nil
+}
+
+func (s *Server) ForkConversation(ctx context.Context, req *runtimev1.ForkConversationRequest) (*runtimev1.ForkConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	// Setup user agent
+	version := s.runtime.Version().Number
+	if version == "" {
+		version = "unknown"
+	}
+	userAgent := fmt.Sprintf("rill/%s", version)
+
+	// Open the existing AI session, this will only contain messages the user has access to
+	id, err := s.ai.ForkSession(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+		UserAgent:  userAgent,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.ForkConversationResponse{
+		ConversationId: id,
 	}, nil
 }
 
@@ -157,13 +246,21 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
+		wherePerMetricsView := map[string]*metricsview.Expression{}
+		for m, e := range req.AnalystAgentContext.WherePerMetricsView {
+			wherePerMetricsView[m] = metricsview.NewExpressionFromProto(e)
+		}
+
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.AnalystAgentContext.Explore,
-			Dimensions: req.AnalystAgentContext.Dimensions,
-			Measures:   req.AnalystAgentContext.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
-			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
-			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+			Explore:             req.AnalystAgentContext.Explore,
+			Canvas:              req.AnalystAgentContext.Canvas,
+			CanvasComponent:     req.AnalystAgentContext.CanvasComponent,
+			WherePerMetricsView: wherePerMetricsView,
+			Dimensions:          req.AnalystAgentContext.Dimensions,
+			Measures:            req.AnalystAgentContext.Measures,
+			Where:               metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:           req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:             req.AnalystAgentContext.TimeEnd.AsTime(),
 		}
 	}
 	var developerAgentArgs *ai.DeveloperAgentArgs
@@ -278,13 +375,21 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
+		wherePerMetricsView := map[string]*metricsview.Expression{}
+		for m, e := range req.AnalystAgentContext.WherePerMetricsView {
+			wherePerMetricsView[m] = metricsview.NewExpressionFromProto(e)
+		}
+
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.AnalystAgentContext.Explore,
-			Dimensions: req.AnalystAgentContext.Dimensions,
-			Measures:   req.AnalystAgentContext.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
-			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
-			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+			Explore:             req.AnalystAgentContext.Explore,
+			Canvas:              req.AnalystAgentContext.Canvas,
+			CanvasComponent:     req.AnalystAgentContext.CanvasComponent,
+			WherePerMetricsView: wherePerMetricsView,
+			Dimensions:          req.AnalystAgentContext.Dimensions,
+			Measures:            req.AnalystAgentContext.Measures,
+			Where:               metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:           req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:             req.AnalystAgentContext.TimeEnd.AsTime(),
 		}
 	}
 	var developerAgentArgs *ai.DeveloperAgentArgs
@@ -313,16 +418,13 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.
 // This is required as vanguard doesn't currently map streaming RPCs to SSE, so we register this handler manually override the behavior
 func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	instanceID := req.PathValue("instance_id")
-
 	// Add timeout for AI completion
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
+	ctx, cancel := context.WithTimeout(req.Context(), time.Minute*5)
 	defer cancel()
+	req = req.WithContext(ctx) // Replace request context with the timed context
 
-	// Replace request context with the timed context
-	req = req.WithContext(ctx)
-
+	// Observability
+	instanceID := req.PathValue("instance_id")
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),
 	)
@@ -353,83 +455,46 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	}
 	completeReq.InstanceId = instanceID // Set instance ID from path
 
-	// Initialize SSE server
-	eventServer := sse.New()
-	eventServer.CreateStream("messages")
-	eventServer.Headers = map[string]string{
-		"Content-Type":  "text/event-stream",
-		"Cache-Control": "no-cache",
-		"Connection":    "keep-alive",
-	}
-
-	// Create the shim that implements RuntimeService_CompleteStreamingServer
-	shim := &completeStreamingServerShim{
-		r: req,
-		s: eventServer,
-	}
-
-	// Create a goroutine to handle the streaming
+	// Start goroutine that calls CompleteStreaming and publishes responses to a channel
+	events := make(chan *sseEvent)
 	go func() {
+		// We must close the events channel when done to make sure the SSE handler returns
+		defer close(events)
+
+		// Create the shim that implements RuntimeService_CompleteStreamingServer
+		shim := &grpcStreamingShim[*runtimev1.CompleteStreamingResponse]{
+			ctx: ctx,
+			fn: func(data []byte) error {
+				events <- &sseEvent{Data: data}
+				return nil
+			},
+		}
+
 		// Call the existing CompleteStreaming implementation with our shim
 		err := s.CompleteStreaming(completeReq, shim)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				s.logger.Warn("complete streaming error", zap.String("instance_id", instanceID), zap.Error(err))
+			code := codes.Unknown
+			msg := err.Error()
+			if s, ok := status.FromError(err); ok {
+				code = s.Code()
+				msg = s.Message()
 			}
 
-			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
+			errJSON, err := json.Marshal(map[string]string{"code": code.String(), "error": msg})
 			if err != nil {
 				s.logger.Error("failed to marshal error as json", zap.Error(err))
 			}
 
-			eventServer.Publish("messages", &sse.Event{
+			events <- &sseEvent{
+				Event: "error",
 				Data:  errJSON,
-				Event: []byte("error"),
-			})
+			}
 		}
-		eventServer.Close()
 	}()
 
-	// Serve the SSE stream
-	eventServer.ServeHTTP(w, req)
-}
-
-// completeStreamingServerShim is a shim for runtimev1.RuntimeService_CompleteStreamingServer
-type completeStreamingServerShim struct {
-	r *http.Request
-	s *sse.Server
-}
-
-func (ss *completeStreamingServerShim) Context() context.Context {
-	return ss.r.Context()
-}
-
-func (ss *completeStreamingServerShim) Send(e *runtimev1.CompleteStreamingResponse) error {
-	data, err := protojson.Marshal(e)
-	if err != nil {
-		return err
-	}
-
-	ss.s.Publish("messages", &sse.Event{Data: data})
-	return nil
-}
-
-func (ss *completeStreamingServerShim) SetHeader(metadata.MD) error {
-	return errors.New("not implemented")
-}
-
-func (ss *completeStreamingServerShim) SendHeader(metadata.MD) error {
-	return errors.New("not implemented")
-}
-
-func (ss *completeStreamingServerShim) SetTrailer(metadata.MD) {}
-
-func (ss *completeStreamingServerShim) SendMsg(m any) error {
-	return errors.New("not implemented")
-}
-
-func (ss *completeStreamingServerShim) RecvMsg(m any) error {
-	return errors.New("not implemented")
+	// Serve the SSE stream.
+	// This will only return when the background goroutine calls close(events).
+	serveSSEUntilClose(w, events)
 }
 
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.

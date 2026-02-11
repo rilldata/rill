@@ -13,6 +13,12 @@
 
   $: connectors = createRuntimeServiceAnalyzeConnectors(instanceId, {
     query: {
+      // Retry transient 500s during runtime resets (e.g. project initialization)
+      retry: (failureCount, error) =>
+        !!error?.response?.status &&
+        error.response.status >= 500 &&
+        failureCount < 3,
+      retryDelay: 1000,
       // sort alphabetically
       select: (data) => {
         if (!data?.connectors) return;
@@ -55,6 +61,6 @@
   .message {
     @apply pl-2 pr-3.5 py-2;
     @apply flex flex-none;
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 </style>

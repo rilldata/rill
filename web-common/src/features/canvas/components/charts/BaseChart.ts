@@ -73,6 +73,10 @@ export abstract class BaseChart<
     return typeof spec.metrics_view === "string";
   }
 
+  protected supportsComparison(): boolean {
+    return false;
+  }
+
   inputParams(): InputParams<TConfig> {
     return {
       options: {
@@ -82,7 +86,7 @@ export abstract class BaseChart<
         ...this.getChartSpecificOptions(),
         ...commonOptions,
       },
-      filter: getFilterOptions(false),
+      filter: getFilterOptions(this.supportsComparison()),
     };
   }
 
@@ -186,7 +190,7 @@ export abstract class BaseChart<
       this.pathInYAML,
     );
 
-    this.parent.components.set(newComponent.id, newComponent);
+    this.parent.componentsStore.set(newComponent.id, newComponent);
     this.parent.selectedComponent.set(newComponent.id);
     this.parent._rows.refresh();
 

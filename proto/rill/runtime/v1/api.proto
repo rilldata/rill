@@ -64,6 +64,15 @@ service RuntimeService {
     };
   }
 
+  // ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+  // If the instance doesn't have an admin connector, this RPC does nothing.
+  rpc ReloadConfig(ReloadConfigRequest) returns (ReloadConfigResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/reload-config",
+      body: "*"
+    };
+  }
+
   // Repos
 
   // ListFiles lists all the files matching a glob in a repo.
@@ -249,6 +258,23 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
+  // ShareConversation enables sharing of the conversation by adding metadata.
+  rpc ShareConversation(ShareConversationRequest) returns (ShareConversationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/share",
+      body: "*"
+    };
+  }
+
+  // ForkConversation creates a new conversation by copying messages from an existing one.
+  // If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+  rpc ForkConversation(ForkConversationRequest) returns (ForkConversationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/fork",
+      body: "*"
+    };
+  }
+
   // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
   // Note that it covers all registered tools, but the current user may not have access to all of them.
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
@@ -286,6 +312,74 @@ service RuntimeService {
   // AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
   rpc AnalyzeVariables(AnalyzeVariablesRequest) returns (AnalyzeVariablesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/variables/analyze"};
+  }
+
+  // Git APIs
+
+  rpc ListGitCommits(ListGitCommitsRequest) returns (ListGitCommitsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/commits"};
+  }
+
+  // GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
+  }
+
+  rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/branches"};
+  }
+
+  // GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+  rpc GitCommit(GitCommitRequest) returns (GitCommitResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/commit",
+      body: "*"
+    };
+  }
+
+  // RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+  // This effectively discards all the changes made after the specified commit.
+  rpc RestoreGitCommit(RestoreGitCommitRequest) returns (RestoreGitCommitResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/restore/{commit_sha}",
+      body: "*"
+    };
+  }
+
+  // GitMergeToBranch merges current branch to the specified branch.
+  // Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+  // It restores back to the original branch after the merge.
+  rpc GitMergeToBranch(GitMergeToBranchRequest) returns (GitMergeToBranchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/merge",
+      body: "*"
+    };
+  }
+
+  rpc GitSwitchBranch(GitSwitchBranchRequest) returns (GitSwitchBranchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/branches/switch",
+      body: "*"
+    };
+  }
+
+  // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+  // If there are any merge conflicts the pull is aborted.
+  // Force can be set to true to force the pull and overwrite any local changes.
+  rpc GitPull(GitPullRequest) returns (GitPullResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/pull",
+      body: "*"
+    };
+  }
+  
+  // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+  // It only pushes the changes to the existing remote repo.
+  rpc GitPush(GitPushRequest) returns (GitPushResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/push",
+      body: "*"
+    };
   }
 }
 
@@ -356,6 +450,7 @@ message Instance {
   map<string, string> annotations = 14;
   string ai_instructions = 23;
   string frontend_url = 24;
+  string theme = 26;
 }
  
 message Connector {
@@ -436,15 +531,20 @@ message EditInstanceRequest {
   optional string admin_connector = 16;
   optional string ai_connector = 18;
   repeated Connector connectors = 9;
-  map<string, string> variables = 15;
-  map<string, string> annotations = 10;
-  optional string frontend_url = 19;
 }
 
 // Response message for RuntimeService.EditInstance
 message EditInstanceResponse {
   Instance instance = 1;
 }
+
+// Request message for RuntimeService.ReloadConfig
+message ReloadConfigRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+// Response message for RuntimeService.ReloadConfig
+message ReloadConfigResponse {}
 
 // **********
 // Repos
@@ -603,6 +703,8 @@ message GenerateMetricsViewFileRequest {
   // If true, the AI will be used to generate the metrics view file.
   // Otherwise, it falls back to a simpler heuristic approach.
   bool use_ai = 5;
+  // Optional prompt to guide AI generation.
+  string prompt = 9;
 }
 
 // Response message for RuntimeService.GenerateMetricsViewFile
@@ -746,7 +848,6 @@ message WatchResourcesRequest {
   string instance_id = 1;
   string kind = 2;
   bool replay = 3;
-  string level = 4;
 }
 
 message WatchResourcesResponse {
@@ -965,12 +1066,20 @@ message Message {
 message AnalystAgentContext {
   // Optional explore dashboard.
   string explore = 4;
+  // Optional canvas dashboard.
+  string canvas = 10;
+  // Optional canvas component within a dashboard.
+  string canvas_component = 11;
   // Optional dimensions.
   repeated string dimensions = 5;
   // Optional measures.
   repeated string measures = 6;
   // Optional filters.
   rill.runtime.v1.Expression where = 7;
+  // Filter expressions as key-value pairs for the canvas.
+  // Key: Metrics view name
+  // Value: Expression object
+  map<string, rill.runtime.v1.Expression> where_per_metrics_view = 12;
   // Optional start of a time range.
   google.protobuf.Timestamp time_start = 8;
   // Optional end of a time range.
@@ -1009,6 +1118,31 @@ message GetConversationRequest {
 message GetConversationResponse {
   Conversation conversation = 1;
   repeated Message messages = 2;
+  bool is_owner = 3; // would be false for shared conversations accessed by non-owners
+}
+
+// Request message for RuntimeService.ShareConversation
+message ShareConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+  // optional message ID up to which to share otherwise share all current messages
+  // only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+  // It supports a special value of "none" to unshare the conversation.
+  string until_message_id = 3;
+}
+
+// Response message for RuntimeService.ShareConversation
+message ShareConversationResponse {}
+
+// Request message for RuntimeService.ForkConversation
+message ForkConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.ForkConversation
+message ForkConversationResponse {
+  string conversation_id = 1; // new conversation ID
 }
 
 // Request message for RuntimeService.ListTools
@@ -1109,3 +1243,115 @@ message AnalyzedVariable {
   // List of resources that appear to use the connector.
   repeated ResourceName used_by = 8;
 }
+
+message ListGitCommitsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  uint32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListGitCommitsResponse {
+  repeated GitCommit commits = 1;
+  string next_page_token = 2;
+}
+
+message GitCommit {
+  string commit_sha = 1;
+  string author_name = 2;
+  string author_email = 3;
+  google.protobuf.Timestamp committed_on = 4;
+  string message = 5;
+}
+
+message GitStatusRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message GitStatusResponse {
+  // The current branch of the git repo.
+  string branch = 1;
+  // The remote url of the git repo.
+  string github_url = 2;
+  // If the repo is managed by Rill.
+  bool managed_git = 3;
+  // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+  bool local_changes = 4;
+  // local_commits returns number of local commits that are not pushed to the remote git repo.
+  int32 local_commits = 5;
+  // remote_commits returns number of remote commits not pulled yet.
+  int32 remote_commits = 6;
+}
+
+message ListGitBranchesRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message ListGitBranchesResponse {
+  string current_branch = 1;
+  repeated GitBranch branches = 2;
+}
+
+message GitBranch {
+  string name = 1;
+  bool has_deployment = 2;
+  bool editable_deployment = 3;
+}
+
+message GitCommitRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string commit_message = 2;
+}
+
+message GitCommitResponse {
+  string commit_sha = 1;
+}
+
+// Request message for RuntimeService.RestoreGitCommit
+message RestoreGitCommitRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string commit_sha = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.RestoreGitCommit
+message RestoreGitCommitResponse {
+  string new_commit_sha = 1;
+}
+
+message GitMergeToBranchRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string branch = 2;
+  // In case of merge conflicts, prefer current changes.
+  bool force = 3;
+}
+
+message GitMergeToBranchResponse {
+  // The output of the git merge command. Only set for unsuccessful merges.
+  string output = 1;
+}
+
+message GitSwitchBranchRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string branch = 2;
+  bool create = 3;
+  bool ignore_local_changes = 4;
+}
+
+message GitSwitchBranchResponse {}
+
+message GitPullRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  bool discard_local = 2;
+}
+
+message GitPullResponse {
+  // The output of the git pull command. Only set for unsuccessful pulls.
+  string output = 1;
+}
+
+message GitPushRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string commit_message = 2;
+  bool force = 3;
+}
+
+message GitPushResponse {}

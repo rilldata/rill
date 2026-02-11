@@ -95,7 +95,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 
 	// Parse refresh schedule
-	schedule, err := p.parseScheduleYAML(tmp.Refresh)
+	schedule, err := p.parseScheduleYAML(tmp.Refresh, true)
 	if err != nil {
 		return err
 	}
@@ -115,6 +115,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if inputProps == nil {
 		inputProps = map[string]any{}
 	}
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: inputConnector})
 
 	// Special handling for adding SQL to the input properties
 	if sql := strings.TrimSpace(node.SQL); sql != "" {
@@ -129,7 +130,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 	// special handling to mark model as updated when local file changes
 	if inputConnector == "local_file" {
-		err = p.trackResourceNamesForDataPaths(ctx, ResourceName{Name: node.Name, Kind: ResourceKindModel}.Normalized(), inputProps)
+		err = p.trackResourceNamesForDataPaths(ctx, ResourceName{Kind: ResourceKindModel, Name: node.Name}.Normalized(), inputProps)
 		if err != nil {
 			return err
 		}
@@ -154,6 +155,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if outputConnector == "" {
 		outputConnector = p.defaultOLAPConnector()
 	}
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: outputConnector})
 	outputProps := tmp.Output.Properties
 
 	// Backwards compatibility: materialize can be specified outside of the output properties

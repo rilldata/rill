@@ -5,8 +5,11 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
+import type { CanvasEntity } from "../../canvas/stores/canvas-entity";
+import { primary, secondary } from "../../themes/colors";
 import type {
   ChartDataQuery,
   ChartDataResult,
@@ -15,8 +18,6 @@ import type {
   TimeDimensionDefinition,
 } from "./types";
 import { adjustDataForTimeZone, getFieldsByType } from "./util";
-import type { CanvasEntity } from "../../canvas/stores/canvas-entity";
-import { primary, secondary } from "../../themes/colors";
 
 export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
   config: T;
@@ -108,12 +109,12 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         data = adjustDataForTimeZone(
           data,
           timeDimensions,
-          $timeAndFilterStore.timeGrain,
           $timeAndFilterStore.timeRange.timeZone || "UTC",
         );
       }
 
       const domainValues = getDomainValues();
+      const hasComparison = $timeAndFilterStore.showTimeComparison;
 
       return {
         data: data || [],
@@ -122,6 +123,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         fields: fieldSpecMap,
         domainValues,
         isDarkMode: isThemeModeDark,
+        hasComparison,
         theme: {
           primary:
             theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.primary ||
@@ -145,7 +147,7 @@ export function getTimeDimensionDefinition(
 
     if (grain) {
       const timeUnit = timeGrainToVegaTimeUnitMap[grain];
-      const format = TIME_GRAIN[grain]?.d3format as string;
+      const format = TIME_GRAIN[grain]?.d3format;
       return {
         field,
         timeUnit,
@@ -158,4 +160,38 @@ export function getTimeDimensionDefinition(
       displayName,
     };
   });
+}
+
+export function getFieldsForSpec<T extends ChartSpec = ChartSpec>(
+  config: ChartDataDependencies<T>["config"],
+  metricsView: V1MetricsViewSpec,
+) {
+  const { measures, dimensions, timeDimensions } = getFieldsByType(config);
+
+  const fields = {} as Record<
+    string,
+    | MetricsViewSpecMeasure
+    | MetricsViewSpecDimension
+    | TimeDimensionDefinition
+    | undefined
+  >;
+
+  measures.forEach((measure) => {
+    fields[measure] = metricsView.measures?.find((m) => m.name === measure);
+  });
+
+  dimensions.forEach((dimension) => {
+    fields[dimension] = metricsView.dimensions?.find(
+      (d) => d.name === dimension,
+    );
+  });
+
+  timeDimensions.forEach((timeDimension) => {
+    fields[timeDimension] = {
+      field: timeDimension,
+      displayName: "Time",
+    };
+  });
+
+  return fields;
 }

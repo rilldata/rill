@@ -1,16 +1,20 @@
 <script lang="ts">
-  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { onDestroy } from "svelte";
+  import { readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { activeDashboardTheme } from "../../themes/active-dashboard-theme";
+  import { createResolvedThemeStore } from "../../themes/selectors";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
@@ -18,17 +22,15 @@
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
+  import ThemeProvider from "../ThemeProvider.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
-  import ThemeProvider from "../ThemeProvider.svelte";
-  import { page } from "$app/stores";
-  import { createResolvedThemeStore } from "../../themes/selectors";
-  import { writable, type Writable } from "svelte/store";
 
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
+  export let embedThemeName: Readable<string | null> | null = null;
 
   const DEFAULT_TIMESERIES_WIDTH = 580;
   const MIN_TIMESERIES_WIDTH = 440;
@@ -52,7 +54,8 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
+  $: ({ whereFilter, dimensionThresholdFilters, selectedTimeDimension } =
+    $dashboardStore);
 
   $: extraLeftPadding = !$navigationOpen;
 
@@ -99,12 +102,14 @@
   $: timeRange = {
     start,
     end,
+    timeDimension: selectedTimeDimension,
   };
 
   $: comparisonTimeRange = showTimeComparison
     ? {
         start: comparisonTimeStart,
         end: comparisonTimeEnd,
+        timeDimension: selectedTimeDimension,
       }
     : undefined;
 
@@ -112,22 +117,35 @@
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
-  const urlThemeName: Writable<string | null> = writable(null);
-  $: urlThemeName.set($page.url.searchParams.get("theme"));
+  // For non-embedded dashboards, theme can come from URL params.
+  // For embedded dashboards, embedThemeName prop takes precedence.
+  const urlThemeName = readable<string | null>(null, (set) => {
+    set(null);
+    return () => {};
+  });
 
-  $: theme = createResolvedThemeStore(urlThemeName, exploreQuery, instanceId);
+  let themeSource: Readable<string | null> = urlThemeName;
+  $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
+
+  $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
+
+  // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
+  $: activeDashboardTheme.set($theme);
+
+  // Clear the active theme when this dashboard is destroyed
+  onDestroy(() => activeDashboardTheme.set(undefined));
 </script>
 
 <ThemeProvider theme={$theme}>
   <article
-    class="flex flex-col overflow-y-hidden"
+    class="flex flex-col overflow-y-hidden bg-surface-background"
     bind:clientWidth={exploreContainerWidth}
     class:w-full={$dynamicHeight}
     class:size-full={!$dynamicHeight}
   >
     <div
       id="header"
-      class="border-b w-fit min-w-full flex flex-col bg-background slide"
+      class="border-b w-fit min-w-full flex flex-col bg-surface-subtle slide"
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}
@@ -155,7 +173,8 @@
       <PivotDisplay {isEmbedded} />
     {:else}
       <div
-        class="flex gap-x-1 gap-y-2 overflow-hidden pl-4 slide bg-surface"
+        class="flex gap-x-1 overflow-hidden slide pb-0"
+        class:gap-y-2={showTimeDimensionDetail}
         class:flex-col={showTimeDimensionDetail}
         class:flex-row={!showTimeDimensionDetail}
         class:left-shift={extraLeftPadding}
@@ -163,7 +182,8 @@
         class:size-full={!$dynamicHeight}
       >
         <div
-          class="pt-2 flex-none"
+          class="flex-none pl-4"
+          class:pt-2={!showTimeDimensionDetail}
           style:width={showTimeDimensionDetail ? "auto" : `${metricsWidth}px`}
         >
           {#key exploreName}
@@ -181,14 +201,13 @@
         </div>
 
         {#if showTimeDimensionDetail && expandedMeasureName}
-          <hr class="border-t -ml-4" />
           <TimeDimensionDisplay
             {exploreName}
             {expandedMeasureName}
             hideStartPivotButton={hidePivot}
           />
         {:else}
-          <div class="relative flex-none bg-gray-200 w-[1px]">
+          <div class="relative flex-none bg-border w-[1px]">
             <Resizer
               dimension={metricsWidth}
               min={MIN_TIMESERIES_WIDTH}

@@ -14,11 +14,11 @@ import type {
 } from "@tanstack/svelte-table";
 import type { Readable } from "svelte/motion";
 
-export const COMPARISON_VALUE = "__comparison_value";
-export const COMPARISON_DELTA = "__comparison_delta";
-export const COMPARISON_PERCENT = "__comparison_percent";
+export const COMPARISON_VALUE = "__previous";
+export const COMPARISON_DELTA = "__delta_abs";
+export const COMPARISON_PERCENT = "__delta_rel";
 export const ComparisonModifierSuffixRegex =
-  /__comparison_(?:value|delta|percent)/;
+  /__(?:previous|delta_abs|delta_rel)/;
 
 export interface PivotDataState {
   isFetching: boolean;
@@ -55,6 +55,9 @@ export interface PivotState {
   enableComparison: boolean;
   tableMode: PivotTableMode;
   activeCell: PivotCell | null;
+  rowLimit?: number;
+  outermostRowLimit?: number; // Local limit for outermost dimension only
+  nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by expand index (e.g., "0.1.2")
 }
 
 export type PivotTableMode = "flat" | "nest";
@@ -82,6 +85,7 @@ export interface PivotTimeConfig {
 export interface PivotQueryError {
   statusCode: number | null;
   message?: string;
+  traceId?: string;
 }
 
 /**

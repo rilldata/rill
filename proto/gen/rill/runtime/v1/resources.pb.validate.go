@@ -5483,6 +5483,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for SelectTimeRange
 	}
 
+	if m.TimeDimension != nil {
+		// no validation rules for TimeDimension
+	}
+
 	if m.CompareTimeRange != nil {
 		// no validation rules for CompareTimeRange
 	}
@@ -5541,6 +5545,10 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	if m.PivotTableMode != nil {
 		// no validation rules for PivotTableMode
+	}
+
+	if m.PivotRowLimit != nil {
+		// no validation rules for PivotRowLimit
 	}
 
 	if len(errors) > 0 {

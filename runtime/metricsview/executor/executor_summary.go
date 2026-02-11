@@ -130,8 +130,8 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		// Add select clauses for min, max, has_nulls, and sample value
 		dialect := e.olap.Dialect()
 		selectClauses = append(selectClauses,
-			fmt.Sprintf("MIN(%s) AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__min")),
-			fmt.Sprintf("MAX(%s) AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__max")),
+			fmt.Sprintf("%s AS %s", dialect.MinDimensionExpression(expr), dialect.EscapeIdentifier(dim.Name+"__min")),
+			fmt.Sprintf("%s AS %s", dialect.MaxDimensionExpression(expr), dialect.EscapeIdentifier(dim.Name+"__max")),
 			fmt.Sprintf("COUNT(*) - COUNT(%s) > 0 AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__has_nulls")),
 			fmt.Sprintf("ANY_VALUE(%s) AS %s", expr, dialect.EscapeIdentifier(dim.Name+"__example")),
 		)

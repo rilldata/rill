@@ -39,11 +39,15 @@
 
 <ul class="table-schema-list">
   {#if isError}
-    <div class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-gray-500">
+    <div
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
+    >
       Error loading schema: {error?.response?.data?.message || error?.message}
     </div>
   {:else if isLoading}
-    <div class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-gray-500">
+    <div
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
+    >
       Loading schema...
     </div>
   {:else if columns && columns.length > 0}
@@ -55,13 +59,15 @@
             {column.name}
           </TooltipContent>
         </Tooltip>
-        <span class="uppercase text-gray-800">
+        <span class="uppercase text-fg-primary">
           {prettyPrintType(column.type ?? "")}
         </span>
       </li>
     {/each}
   {:else}
-    <div class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-gray-500">
+    <div
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
+    >
       No columns found
     </div>
   {/if}

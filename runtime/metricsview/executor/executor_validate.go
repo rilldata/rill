@@ -77,6 +77,30 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		}
 		return nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
 	}
+
+	// Populate empty database/databaseSchema from table metadata for StarRocks only.
+	// StarRocks requires fully qualified table names (catalog.database.table),
+	// even when the metrics view YAML doesn't explicitly specify them (e.g., when using models).
+	if e.olap.Dialect() == drivers.DialectStarRocks {
+		if mv.Database == "" && t.Database != "" {
+			mv.Database = t.Database
+		}
+		if mv.DatabaseSchema == "" && t.DatabaseSchema != "" {
+			mv.DatabaseSchema = t.DatabaseSchema
+		}
+	}
+
+	// db and schema validation
+	// make sure for olaps like Druid and Pinot both database and database_schema are not set
+	// for Clickhouse we allow only database_schema as we already use that in OLAPInformationSchema.Lookup(...)
+	// not doing any validation for duckdb as we ignore database and database_schema in Dialect.EscapeTable(...) so not to break any existing metrics view
+	if (e.olap.Dialect() == drivers.DialectDruid || e.olap.Dialect() == drivers.DialectPinot) && mv.Database != "" && mv.DatabaseSchema != "" {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("only one of database or database_schema can be set for %s as it only supports one level of namespacing", e.olap.Dialect().String()))
+	}
+	if e.olap.Dialect() == drivers.DialectClickHouse && mv.Database != "" {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("database cannot be set for clickHouse, set database_schema instead"))
+	}
+
 	cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
 	for _, f := range t.Schema.Fields {
 		cols[strings.ToLower(f.Name)] = f
@@ -140,9 +164,14 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		return res, err
 	}
 
-	// Pinot does have any native support for time shift using time grain specifiers
+	// Pinot does not have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
+	}
+
+	// StarRocks does not support time shift using time grain specifiers
+	if e.olap.Dialect() == drivers.DialectStarRocks && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for StarRocks dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
 	// Validate the metrics view schema.
@@ -711,6 +740,8 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 			} else {
 				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
 			}
+		case runtimev1.Type_CODE_POINT, runtimev1.Type_CODE_POLYGON:
+			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_GEOSPATIAL
 		default:
 			// All other types default to CATEGORICAL
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL

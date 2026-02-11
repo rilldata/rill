@@ -56,7 +56,7 @@ func (b *sqlExprBuilder) writeExpression(e *Expression) error {
 	if e.Condition != nil {
 		return b.writeCondition(e.Condition)
 	}
-	return errors.New("invalid expression")
+	return errors.New("invalid expression (must contain one of name, val, cond, subquery)")
 }
 
 func (b *sqlExprBuilder) writeName(name string) error {
@@ -131,12 +131,51 @@ func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
 		return b.writeJoinedExpressions(cond.Expressions, " OR ")
 	case OperatorAnd:
 		return b.writeJoinedExpressions(cond.Expressions, " AND ")
+	case OperatorCast:
+		return b.writeCast(cond)
 	default:
 		if !cond.Operator.Valid() {
 			return fmt.Errorf("invalid expression operator %q", cond.Operator)
 		}
 		return b.writeBinaryCondition(cond.Expressions, cond.Operator)
 	}
+}
+
+func (b *sqlExprBuilder) writeCast(cond *Condition) error {
+	b.writeString("CAST(")
+	err := b.writeExpression(cond.Expressions[0])
+	if err != nil {
+		return err
+	}
+	b.writeString(" AS ")
+	switch v := cond.Expressions[1].Value.(type) {
+	case runtimev1.Type:
+		typeStr, err := b.ast.Dialect.CastToDataType(v.Code)
+		if err != nil {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		b.writeString(typeStr)
+	case map[string]any:
+		// runtimev1.Type will be serialized as map[string]any
+		codeVal, ok := v["code"]
+		if !ok {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		codeFloat, ok := codeVal.(float64)
+		if !ok {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		code := runtimev1.Type_Code(int32(codeFloat))
+		typeStr, err := b.ast.Dialect.CastToDataType(code)
+		if err != nil {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		b.writeString(typeStr)
+	default:
+		return fmt.Errorf("unsupported cast type: %T", cond.Expressions[1].Value)
+	}
+	b.writeByte(')')
+	return nil
 }
 
 func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
@@ -638,7 +677,7 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 			if f.Name == name {
 				// Note that we return "false" even though it may be an unnest dimension because it will already have been unnested since it's one of the dimensions included in the query.
 				// So we can filter against it as if it's a normal dimension.
-				return f.Expr, false, nil, nil
+				return f.Expr, false, f.LookupMeta, nil
 			}
 		}
 
@@ -653,19 +692,13 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
 
-		if dim.Unnest && dim.LookupTable != "" {
-			return "", false, nil, fmt.Errorf("dimension %q is unnested and also has a lookup. This is not supported", name)
-		}
-
 		var lm *lookupMeta
 		if dim.LookupTable != "" {
 			var keyExpr string
 			if dim.Column != "" {
 				keyExpr = b.ast.Dialect.EscapeIdentifier(dim.Column)
-			} else if dim.Expression != "" {
-				keyExpr = dim.Expression
 			} else {
-				return "", false, nil, fmt.Errorf("dimension %q has a lookup table but no column or expression defined", name)
+				keyExpr = dim.Expression
 			}
 			lm = &lookupMeta{
 				table:    dim.LookupTable,
@@ -713,13 +746,6 @@ func convertLikeExpressionToRegexExpression(like *Expression) (*Expression, erro
 	pattern := strings.ReplaceAll(val, "%", ".*")
 	pattern = fmt.Sprintf("^(?i)%s$", pattern)
 	return &Expression{Value: pattern}, nil
-}
-
-type lookupMeta struct {
-	table    string
-	keyExpr  string
-	keyCol   string
-	valueCol string
 }
 
 // skipMetricsViewSecurity implements the MetricsViewSecurity interface in a way that allows all access.

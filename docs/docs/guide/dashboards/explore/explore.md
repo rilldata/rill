@@ -1,0 +1,178 @@
+---
+title: "Explore Dashboard Quickstart"
+description: Dashboard Quickstart
+sidebar_label: "Explore Dashboards"
+sidebar_position: 15
+---
+
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/wTP46eOzoCk?si=9JzY-CuzqQU4uMiR"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
+
+## Navigating the Dashboard
+
+![Quickstart](/img/explore/dashboard101/quickstart.png)
+
+
+**Explore** 
+The main screen of any Rill dashboard is called the _Explore_ page. As seen above, this is divided into three section. 
+
+- Navigation Bar
+- Measures panel (Left)
+- Dimensions Leaderboard (Right)
+
+### Navigation Bar
+
+- _**Time Selector and Time Selector Comparison:**_ You can change the period of analysis to different ranges of time (see `red` box), either by selecting from a pre-defined period (such as last week) or choosing a custom date range. Along with this, you can enable a comparison filter to compare range of dates with 1 click.
+
+- _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/guide/dashboards/filters) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`).
+
+- _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](/guide/dashboards/explore/pivot) by selecting either from the UI (see `pink` box)
+
+- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/guide/dashboards/bookmarks), or share the dashboard ([internally by clicking the `Share` button](/guide/administration/users-and-access/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/guide/dashboards/public-urls)) .
+
+
+### KPI Widget (Measures) Panel
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/Dqkfp6F_9y4?si=z-22kqFd5dhQA6w8"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+
+
+
+- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards)). You can add, remove or reorder your metrics from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](/guide/dashboards/explore/tdd).
+
+- _**Time Dimension Detail:**_ A detailed view of a single specific measure that can be further drilled down to understand minute details in your data. As with the Explore page, you can add comparison dimensions to visualize the value for several specific dimension values. For more information see: [Time Dimension Detail](/guide/dashboards/explore/tdd).
+
+:::note Big Number Formatting
+
+[Formatting of your measures](/developers/build/metrics-view#measures) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
+:::
+
+### Dimensions Leaderboard Panel
+
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/aQQBFHbLrMQ?si=il-w_ssQmGrqCfsO"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+
+
+- _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add, remove or re-order any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](/guide/reports/exports). It is also possible to display [multiple measures in the dimension leaderboard](/guide/dashboards/explore/multi-metrics).
+
+
+:::info Search for individual attributes
+
+
+After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ chart), rather than scrolling and finding an individual attribute (especially if the list is very long), you can also quickly search for a value and select / apply it to your dashboard by using the upper-right search box.
+
+
+![Search Box](/img/explore/dashboard101/search-box.png)
+
+:::
+
+
+
+
+:::tip Don't have a Rill project or dashboard deployed yet?
+If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/#examples) are also available on GitHub and can be deployed locally using Rill Developer.
+:::
+
+
+For more details about additional capabilities and/or how to utilize more advanced functionality within Rill dashboards, please see the [reference](#reference) section.
+
+
+### Keyboard shortcuts
+Whether you need to see the full value of a long JSON, or copy a value, there are some available keyboard shortcuts in the Rill Cloud Dashboards. More coming soon!
+
+List of commands:
+- __*Copy values*__ ( ``shift + click`` ) - Copy the value of the row value. 
+- __*Value previewer*__ ( ``space`` ) - See the full text value of the row value.
+- __*Lock Insepector*__ ( ``L`` ) - Lock the inspector (allows scrolling through long values)
+
+![Preview Value](/img/explore/dashboard101/preview-value.png)
+
+## Display Settings
+
+### Dark Mode
+
+Toggle between light and dark themes by clicking your profile icon in the top right and selecting your preferred theme.
+
+![Dark Mode Toggle](/img/guide/theme/dark-mode.png)
+
+## Banners!
+Another additional feature that you can add to an Explore dashboard are banners. Whether it is to inform your end-users about specific guidelines on how to use Rill, or an informational post about the datasets being used, you can design the banner to whatever text you'd like.
+
+Simple add the following to your explore-dashboard.yaml 
+
+```yaml
+banner: Your custom message here!
+```
+
+![Banner](/img/explore/dashboard101/banner.png)
+
+## Reference
+
+- [Filters & Comparisons](/guide/dashboards/filters)
+- [Bookmarks & Sharing](/guide/dashboards/bookmarks)
+- [Exports & Scheduled Reports](/guide/reports/exports)
+- [Public URL](/guide/dashboards/public-urls)
+- [Alerts](/guide/alerts)
