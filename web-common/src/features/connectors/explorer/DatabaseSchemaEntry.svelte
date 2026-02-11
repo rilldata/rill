@@ -17,12 +17,13 @@
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;
   export let searchPattern: string = "";
+  export let autoExpandOnSearch: boolean = true;
 
   $: connectorName = connector?.name as string;
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
-  $: effectiveExpanded = expanded || !!searchPattern;
+  $: effectiveExpanded = expanded || (!!searchPattern && autoExpandOnSearch);
 
   $: tablesQuery = useInfiniteListTables(
     instanceId,
