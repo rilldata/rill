@@ -3,10 +3,14 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
     createRuntimeServiceCreateTrigger,
+    createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
+  import {
+    SingletonProjectParserName,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -62,6 +66,18 @@
   $: ({ instanceId } = $runtime);
 
   $: resources = useResources(instanceId);
+
+  // Parse errors
+  $: projectParserQuery = createRuntimeServiceGetResource(
+    instanceId,
+    {
+      "name.kind": ResourceKind.ProjectParser,
+      "name.name": SingletonProjectParserName,
+    },
+    { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
+  );
+  $: parseErrors =
+    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
 
   $: hasReconcilingResources = $resources.data?.resources?.some(
     isResourceReconciling,
@@ -275,6 +291,25 @@
     {:else if $resources.data}
       <ProjectResourcesTable data={filteredResources} />
     {/if}
+
+    {#if parseErrors.length > 0}
+      <div class="parse-errors">
+        <h3 class="parse-errors-header">
+          Parse Errors
+          <span class="parse-errors-badge">{parseErrors.length}</span>
+        </h3>
+        <div class="parse-errors-list">
+          {#each parseErrors as error}
+            <div class="parse-error-item">
+              {#if error.filePath}
+                <span class="parse-error-file">{error.filePath}</span>
+              {/if}
+              <span class="parse-error-message">{error.message}</span>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
   {/if}
 </section>
 
@@ -282,3 +317,27 @@
   bind:open={isConfirmDialogOpen}
   onRefresh={refreshAllSourcesAndModels}
 />
+
+<style lang="postcss">
+  .parse-errors {
+    @apply border border-red-300 rounded-lg p-4 mt-2;
+  }
+  .parse-errors-header {
+    @apply text-sm font-semibold text-fg-primary flex items-center gap-2 mb-3;
+  }
+  .parse-errors-badge {
+    @apply text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 min-w-[20px] text-center;
+  }
+  .parse-errors-list {
+    @apply flex flex-col gap-2;
+  }
+  .parse-error-item {
+    @apply flex flex-col gap-0.5 px-3 py-2 rounded-md bg-red-50 text-sm;
+  }
+  .parse-error-file {
+    @apply font-mono text-xs text-fg-secondary;
+  }
+  .parse-error-message {
+    @apply text-red-700;
+  }
+</style>
