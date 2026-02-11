@@ -152,51 +152,56 @@
         {#if displayIcon}
           <svelte:component this={displayIcon} size="18px" />
         {/if}
-        <span class="text-lg font-semibold">Select a table</span>
+        <span class="text-lg font-semibold">{driverDisplayName}</span>
       </div>
-      <p class="text-sm text-fg-secondary mt-1 font-normal">
-        Choose a table to generate a metrics view
-      </p>
     </Dialog.Title>
 
     <div class="flex {FORM_HEIGHT_DEFAULT}">
       <!-- Left panel: Connector list -->
-      <div class="w-64 border-r border-border overflow-y-auto flex-shrink-0">
-        <div class="p-2">
-          <div
-            class="text-xs font-medium text-fg-secondary uppercase tracking-wide px-2 py-1"
-          >
-            Existing Connectors
+      <div class="w-64 border-r border-border overflow-y-auto flex-shrink-0 bg-surface-subtle">
+        <div class="p-4">
+          <div class="text-sm font-semibold text-fg-primary">
+            Existing connectors
           </div>
-          <div
-            class="text-xs font-medium text-fg-secondary tracking-wide px-2 py-1"
-          >
+          <div class="text-xs text-fg-secondary mt-1">
             Choose data from an existing connection or create a new connector.
           </div>
-          {#each sameDriverConnectors as conn (conn.name)}
-            <button
-              class="w-full text-left px-2 py-1.5 rounded text-sm truncate {selectedConnector?.name ===
-              conn.name
-                ? 'bg-primary-100 text-primary-600 dark:bg-primary-900 dark:text-primary-400 font-medium'
-                : 'text-fg-primary hover:bg-surface-hover'}"
-              on:click={() => handleSelectConnector(conn)}
-            >
-              {conn.name}
-            </button>
-          {/each}
-          {#if sameDriverConnectors.length === 0}
-            <div class="px-2 py-1 text-sm text-fg-secondary">
-              No connectors found
-            </div>
-          {/if}
+
+          <div class="flex flex-col gap-2 mt-4">
+            {#each sameDriverConnectors as conn (conn.name)}
+              {@const isSelected = selectedConnector?.name === conn.name}
+              <button
+                class="w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 {isSelected
+                  ? 'border border-primary-300 bg-primary-50 dark:border-primary-700 dark:bg-primary-950'
+                  : 'border border-transparent hover:bg-surface-hover'}"
+                on:click={() => handleSelectConnector(conn)}
+              >
+                <span
+                  class="shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center {isSelected
+                    ? 'border-primary-500'
+                    : 'border-gray-300 dark:border-gray-600'}"
+                >
+                  {#if isSelected}
+                    <span class="w-2 h-2 rounded-full bg-primary-500"></span>
+                  {/if}
+                </span>
+                <span class="truncate">{conn.name}</span>
+              </button>
+            {/each}
+            {#if sameDriverConnectors.length === 0}
+              <div class="text-sm text-fg-secondary">
+                No connectors found
+              </div>
+            {/if}
+          </div>
 
           <!-- Add new connector button -->
           <button
-            class="w-full text-left px-2 py-1.5 rounded text-sm text-primary-500 hover:bg-surface-hover flex items-center gap-1.5 mt-2"
+            class="w-full text-left px-3 py-1.5 rounded text-sm font-medium text-primary-500 hover:bg-surface-hover flex items-center gap-1.5 mt-3"
             on:click={handleAddNewConnector}
           >
             <Plus size="14" />
-            New {driverDisplayName} connector
+            New connector
           </button>
         </div>
       </div>
