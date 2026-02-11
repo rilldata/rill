@@ -18,6 +18,7 @@
   import { getConnectorIconKey } from "../connectors-utils";
   import { FORM_HEIGHT_DEFAULT } from "../../sources/modal/connector-schemas";
   import { addSourceModal } from "../../sources/modal/add-source-visibility";
+  import { debounce } from "../../../lib/create-debouncer";
 
   const { ai } = featureFlags;
   $: ({ instanceId } = $runtime);
@@ -25,13 +26,17 @@
 
   let selectedConnector: V1AnalyzedConnector | null = null;
 
+  $: initialIconKey = initialConnector
+    ? getConnectorIconKey(initialConnector)
+    : null;
+
   $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
     query: {
-      enabled: open && !!initialConnector?.driver?.name,
+      enabled: open && !!initialIconKey,
       select: (data) => {
-        if (!data?.connectors || !initialConnector?.driver?.name) return [];
+        if (!data?.connectors || !initialIconKey) return [];
         return data.connectors
-          .filter((c) => c?.driver?.name === initialConnector.driver?.name)
+          .filter((c) => getConnectorIconKey(c) === initialIconKey)
           .sort((a, b) => (a?.name ?? "").localeCompare(b?.name ?? ""));
       },
     },
@@ -58,14 +63,21 @@
   } | null = null;
 
   let isGenerating = false;
+  let searchInput = "";
   let searchQuery = "";
+
+  const updateSearch = debounce((value: string) => {
+    searchQuery = value;
+  }, 200);
+
+  $: updateSearch(searchInput);
 
   const selectionStore = new ConnectorExplorerStore(
     {
       allowSelectTable: true,
       allowContextMenu: false,
       allowNavigateToTable: false,
-      allowShowSchema: false,
+      allowShowSchema: true,
       localStorage: false,
     },
     (connectorName, database, schema, table) => {
@@ -84,6 +96,7 @@
     dataExplorerStore.close();
     selectedTable = null;
     selectedConnector = null;
+    searchInput = "";
     searchQuery = "";
     selectionStore.clearSelection();
   }
@@ -91,6 +104,7 @@
   function handleSelectConnector(connector: V1AnalyzedConnector) {
     selectedConnector = connector;
     selectedTable = null;
+    searchInput = "";
     searchQuery = "";
     selectionStore.clearSelection();
   }
@@ -214,7 +228,7 @@
           <input
             type="text"
             placeholder="Search"
-            bind:value={searchQuery}
+            bind:value={searchInput}
             class="w-full pl-8 pr-3 py-1.5 bg-transparent border-none rounded-md text-sm text-fg-primary placeholder:text-fg-muted focus:outline-none"
           />
         </div>
