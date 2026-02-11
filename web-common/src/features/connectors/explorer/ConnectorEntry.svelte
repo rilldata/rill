@@ -101,7 +101,10 @@
   .add-button {
     @apply p-0.5 rounded;
     @apply text-fg-secondary;
-    @apply hover:bg-surface-hover hover:text-fg-primary;
+  }
+
+  .add-button:hover {
+    @apply bg-surface-hover text-fg-primary;
   }
 
   h4 {
