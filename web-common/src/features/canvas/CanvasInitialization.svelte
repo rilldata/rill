@@ -14,6 +14,7 @@
   import { writable } from "svelte/store";
   import {
     createQueryServiceResolveCanvas,
+    createRuntimeServiceListResources,
     type V1MetricsView,
     type V1ResolveCanvasResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -21,6 +22,7 @@
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
+  import { findRootCause } from "../entity-management/error-utils";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
@@ -80,6 +82,21 @@
   $: errorMessage = !validSpec
     ? reconcileError || resource?.meta?.reconcileError
     : undefined;
+
+  // Fetch all resources only when there's an error, to find the root cause
+  $: allResourcesQuery = errorMessage
+    ? createRuntimeServiceListResources(instanceId)
+    : undefined;
+
+  $: rootCause =
+    errorMessage && resource && $allResourcesQuery?.data
+      ? findRootCause(resource, $allResourcesQuery.data.resources ?? [])
+      : undefined;
+
+  // Replace the error message body with the root cause if found
+  $: resolvedErrorMessage = rootCause?.meta?.reconcileError
+    ? `${rootCause.meta.name?.name}: ${rootCause.meta.reconcileError}`
+    : errorMessage;
 
   $: resolvedStore = getResolvedStore(
     fetchedCanvas,
@@ -180,4 +197,4 @@
   <title>{canvasTitle || `${canvasName} - Rill`}</title>
 </svelte:head>
 
-<slot {ready} {errorMessage} {isLoading} {isReconciling} />
+<slot {ready} errorMessage={resolvedErrorMessage} {isLoading} {isReconciling} />
