@@ -123,7 +123,7 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 	}
 
 	result := &QuerySQLResult{Data: data}
-	if len(data) >= int(hardLimit) { // Add a warning if we hit the system limit
+	if int64(len(data)) >= hardLimit { // Add a warning if we hit the system limit
 		result.TruncationWarning = fmt.Sprintf("The system truncated the result to %d rows", hardLimit)
 	}
 	return result, nil
