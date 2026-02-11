@@ -23,12 +23,13 @@ var _ Tool[*QuerySQLArgs, *QuerySQLResult] = (*QuerySQL)(nil)
 
 type QuerySQLArgs struct {
 	Connector      string `json:"connector,omitempty" jsonschema:"Optional OLAP connector name. Defaults to the instance's default OLAP connector."`
-	SQL            string `json:"sql" jsonschema:"The SQL query to execute."`
+	SQL            string `json:"sql" jsonschema:"The SQL query to execute. You are strongly encouraged to use LIMIT in your query and to keep it as low as possible for your task (ideally below 100 rows). The server will truncate large results regardless of the limit (and return a warning if it does)."`
 	TimeoutSeconds int    `json:"timeout_seconds,omitempty" jsonschema:"Query timeout in seconds. Defaults to 30."`
 }
 
 type QuerySQLResult struct {
-	Data []map[string]any `json:"data"`
+	Data              []map[string]any `json:"data"`
+	TruncationWarning string           `json:"truncation_warning,omitempty"`
 }
 
 func (t *QuerySQL) Spec() *mcp.Tool {
@@ -60,14 +61,25 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 		timeoutSeconds = 30
 	}
 
+	// Apply a hard limit to prevent large results that bloat the context
+	instance, err := t.Runtime.Instance(ctx, s.InstanceID())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance: %w", err)
+	}
+	cfg, err := instance.Config()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance config: %w", err)
+	}
+	hardLimit := cfg.AIMaxQueryLimit
+
 	// Apply timeout
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	// Build resolver properties with hard-coded limit
+	// Build resolver properties with system limit
 	props := map[string]any{
 		"sql":   args.SQL,
-		"limit": int64(1000),
+		"limit": hardLimit,
 	}
 	if args.Connector != "" {
 		props["connector"] = args.Connector
@@ -110,5 +122,9 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 		data = append(data, row)
 	}
 
-	return &QuerySQLResult{Data: data}, nil
+	result := &QuerySQLResult{Data: data}
+	if int64(len(data)) >= hardLimit { // Add a warning if we hit the system limit
+		result.TruncationWarning = fmt.Sprintf("The system truncated the result to %d rows", hardLimit)
+	}
+	return result, nil
 }
