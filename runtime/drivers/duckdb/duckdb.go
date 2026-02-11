@@ -572,7 +572,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 				}
 				tempDir = filepath.Dir(tempDir)
 			}
-			dbInitQueries = append(dbInitQueries, fmt.Sprintf(`SET allowed_directories=[%s, %s, %s, 'http://', 'https://']`,
+			dbInitQueries = append(dbInitQueries, fmt.Sprintf(`SET allowed_directories=[%s, %s, 'http://', 'https://']`,
 				safeSQLString(dataDir+string(filepath.Separator)),
 				safeSQLString(tempDir+string(filepath.Separator)),
 			),
