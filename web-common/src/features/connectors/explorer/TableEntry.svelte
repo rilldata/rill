@@ -178,7 +178,11 @@
   }
 
   .table-entry-header.selected {
-    @apply bg-primary-100 dark:bg-primary-900;
+    @apply bg-primary-100;
+  }
+
+  :global(.dark) .table-entry-header.selected {
+    @apply bg-primary-900;
   }
 
   .clickable-text {
