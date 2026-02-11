@@ -82,7 +82,8 @@
   }
 
   .database-entry-header {
-    @apply h-6 pl-[22px] pr-2;
+    @apply h-6 pr-2;
+    padding-left: calc(22px + var(--explorer-indent-offset, 0px));
     @apply flex items-center gap-x-1;
   }
 

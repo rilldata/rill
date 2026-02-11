@@ -31,16 +31,30 @@
 
 <div class="wrapper">
   {#if hasError}
-    <span class="message pl-6">Error: {connector.errorMessage}</span>
+    <span
+      class="message"
+      style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
+      >Error: {connector.errorMessage}</span
+    >
   {:else if isLoading && queryEnabled}
-    <span class="message pl-6">Loading tables...</span>
+    <span
+      class="message"
+      style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
+      >Loading tables...</span
+    >
   {:else if error && queryEnabled}
-    <span class="message pl-6"
+    <span
+      class="message"
+      style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
       >Error: {error.message || error.response?.data?.message}</span
     >
   {:else if data}
     {#if data.length === 0}
-      <span class="message pl-6">No tables found</span>
+      <span
+        class="message"
+        style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
+        >No tables found</span
+      >
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}

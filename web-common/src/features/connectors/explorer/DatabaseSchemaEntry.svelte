@@ -66,7 +66,10 @@
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
   <button
-    class="database-schema-entry-header {database ? 'pl-[40px]' : 'pl-[22px]'}"
+    class="database-schema-entry-header"
+    style="padding-left: calc({database
+      ? 40
+      : 22}px + var(--explorer-indent-offset, 0px))"
     class:open={expanded}
     on:click={() => store.toggleItem(connectorName, database, databaseSchema)}
   >
@@ -91,23 +94,48 @@
 
   {#if expanded}
     {#if error && (!typedData || typedData.length === 0)}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+      <div
+        class="message"
+        style="padding-left: calc({database
+          ? 78
+          : 60}px + var(--explorer-indent-offset, 0px))"
+      >
         Error: {error.message}
       </div>
     {:else if isLoading && (!typedData || typedData.length === 0)}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+      <div
+        class="message"
+        style="padding-left: calc({database
+          ? 78
+          : 60}px + var(--explorer-indent-offset, 0px))"
+      >
         Loading tables...
       </div>
     {:else if connector?.errorMessage}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+      <div
+        class="message"
+        style="padding-left: calc({database
+          ? 78
+          : 60}px + var(--explorer-indent-offset, 0px))"
+      >
         {connector.errorMessage}
       </div>
     {:else if !connector.driver || !connector.driver.name}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+      <div
+        class="message"
+        style="padding-left: calc({database
+          ? 78
+          : 60}px + var(--explorer-indent-offset, 0px))"
+      >
         Connector not found
       </div>
     {:else if !typedData || typedData.length === 0}
-      <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
+      <div
+        class="message"
+        style="padding-left: calc({database
+          ? 78
+          : 60}px + var(--explorer-indent-offset, 0px))"
+      >
         No tables found
       </div>
     {:else if typedData.length > 0}
@@ -134,7 +162,10 @@
 
       {#if hasNextPage}
         <div
-          class="load-more {database ? 'pl-[78px]' : 'pl-[60px]'}"
+          class="load-more"
+          style="padding-left: calc({database
+            ? 78
+            : 60}px + var(--explorer-indent-offset, 0px))"
           bind:this={loadMoreContainer}
         >
           {#if error}
