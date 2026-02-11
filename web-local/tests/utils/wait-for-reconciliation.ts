@@ -1,13 +1,10 @@
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  V1ReconcileStatus,
+  type V1Resource,
+} from "@rilldata/web-common/runtime-client";
 import type { Page } from "playwright";
-
-interface Resource {
-  meta?: {
-    reconcileStatus?: string;
-    reconcileError?: string;
-    name?: { kind?: string; name?: string };
-  };
-}
 
 /**
  * Waits for all resources in the instance to finish reconciling,
@@ -15,7 +12,7 @@ interface Resource {
  */
 export async function waitForReconciliation(page: Page, timeoutMs = 60_000) {
   const baseUrl = new URL(page.url()).origin;
-  let resources: Resource[] = [];
+  let resources: V1Resource[] = [];
 
   const settled = await asyncWaitUntil(async () => {
     try {
@@ -30,11 +27,12 @@ export async function waitForReconciliation(page: Page, timeoutMs = 60_000) {
       // Exclude the ProjectParser — it's a meta-resource that stays
       // running while watching the repo and doesn't represent data errors.
       const dataResources = resources.filter(
-        (r) => r.meta?.name?.kind !== "rill.runtime.v1.ProjectParser",
+        (r) => r.meta?.name?.kind !== ResourceKind.ProjectParser,
       );
 
       return dataResources.every(
-        (r) => r.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE",
+        (r) =>
+          r.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE,
       );
     } catch {
       return false;
@@ -42,12 +40,13 @@ export async function waitForReconciliation(page: Page, timeoutMs = 60_000) {
   }, timeoutMs);
 
   const dataResources = resources.filter(
-    (r) => r.meta?.name?.kind !== "rill.runtime.v1.ProjectParser",
+    (r) => r.meta?.name?.kind !== ResourceKind.ProjectParser,
   );
 
   if (!settled) {
     const pending = dataResources.filter(
-      (r) => r.meta?.reconcileStatus !== "RECONCILE_STATUS_IDLE",
+      (r) =>
+        r.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE,
     );
     const details = pending
       .map(
