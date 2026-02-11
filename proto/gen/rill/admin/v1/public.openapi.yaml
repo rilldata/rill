@@ -1,83 +1,22 @@
 components:
     schemas:
-        ListGithubUserReposResponseRepo:
-            properties:
-                defaultBranch:
-                    type: string
-                description:
-                    type: string
-                name:
-                    type: string
-                owner:
-                    type: string
-                remote:
-                    type: string
-            type: object
-        protobufAny:
-            additionalProperties: {}
-            properties:
-                '@type':
-                    type: string
-            type: object
-        protobufNullValue:
-            default: NULL_VALUE
-            description: |-
-                `NullValue` is a singleton enumeration to represent the null value for the
-                `Value` type union.
-
-                The JSON representation for `NullValue` is JSON `null`.
-
-                 - NULL_VALUE: Null value.
-            enum:
-                - NULL_VALUE
-            type: string
-        rpcStatus:
-            properties:
-                code:
-                    format: int32
-                    type: integer
-                details:
-                    items:
-                        $ref: '#/components/schemas/protobufAny'
-                    type: array
-                message:
-                    type: string
-            type: object
-        runtimev1Operation:
-            default: OPERATION_UNSPECIFIED
-            enum:
-                - OPERATION_UNSPECIFIED
-                - OPERATION_EQ
-                - OPERATION_NEQ
-                - OPERATION_LT
-                - OPERATION_LTE
-                - OPERATION_GT
-                - OPERATION_GTE
-                - OPERATION_OR
-                - OPERATION_AND
-                - OPERATION_IN
-                - OPERATION_NIN
-                - OPERATION_LIKE
-                - OPERATION_NLIKE
-                - OPERATION_CAST
-            type: string
-        v1AddOrganizationMemberUserResponse:
+        AddOrganizationMemberUserResponse:
             properties:
                 pendingSignup:
                     type: boolean
             type: object
-        v1AddOrganizationMemberUsergroupResponse:
+        AddOrganizationMemberUsergroupResponse:
             type: object
-        v1AddProjectMemberUserResponse:
+        AddProjectMemberUserResponse:
             properties:
                 pendingSignup:
                     type: boolean
             type: object
-        v1AddProjectMemberUsergroupResponse:
+        AddProjectMemberUsergroupResponse:
             type: object
-        v1AddUsergroupMemberUserResponse:
+        AddUsergroupMemberUserResponse:
             type: object
-        v1AlertOptions:
+        AlertOptions:
             properties:
                 displayName:
                     type: string
@@ -127,9 +66,15 @@ components:
                     description: Annotation for the base64-encoded UI state to open for the report.
                     type: string
             type: object
-        v1ApproveProjectAccessResponse:
+        Any:
+            additionalProperties: {}
+            properties:
+                '@type':
+                    type: string
             type: object
-        v1BillingIssue:
+        ApproveProjectAccessResponse:
+            type: object
+        BillingIssue:
             properties:
                 createdOn:
                     format: date-time
@@ -138,45 +83,45 @@ components:
                     format: date-time
                     type: string
                 level:
-                    $ref: '#/components/schemas/v1BillingIssueLevel'
+                    $ref: '#/components/schemas/BillingIssueLevel'
                 metadata:
-                    $ref: '#/components/schemas/v1BillingIssueMetadata'
+                    $ref: '#/components/schemas/BillingIssueMetadata'
                 org:
                     type: string
                 type:
-                    $ref: '#/components/schemas/v1BillingIssueType'
+                    $ref: '#/components/schemas/BillingIssueType'
             type: object
-        v1BillingIssueLevel:
+        BillingIssueLevel:
             default: BILLING_ISSUE_LEVEL_UNSPECIFIED
             enum:
                 - BILLING_ISSUE_LEVEL_UNSPECIFIED
                 - BILLING_ISSUE_LEVEL_WARNING
                 - BILLING_ISSUE_LEVEL_ERROR
             type: string
-        v1BillingIssueMetadata:
+        BillingIssueMetadata:
             properties:
                 neverSubscribed:
-                    $ref: '#/components/schemas/v1BillingIssueMetadataNeverSubscribed'
+                    $ref: '#/components/schemas/BillingIssueMetadataNeverSubscribed'
                 noBillableAddress:
-                    $ref: '#/components/schemas/v1BillingIssueMetadataNoBillableAddress'
+                    $ref: '#/components/schemas/BillingIssueMetadataNoBillableAddress'
                 noPaymentMethod:
-                    $ref: '#/components/schemas/v1BillingIssueMetadataNoPaymentMethod'
+                    $ref: '#/components/schemas/BillingIssueMetadataNoPaymentMethod'
                 onTrial:
-                    $ref: '#/components/schemas/v1BillingIssueMetadataOnTrial'
+                    $ref: '#/components/schemas/BillingIssueMetadataOnTrial'
                 paymentFailed:
-                    $ref: '#/components/schemas/v1BillingIssueMetadataPaymentFailed'
+                    $ref: '#/components/schemas/BillingIssueMetadataPaymentFailed'
                 subscriptionCancelled:
-                    $ref: '#/components/schemas/v1BillingIssueMetadataSubscriptionCancelled'
+                    $ref: '#/components/schemas/BillingIssueMetadataSubscriptionCancelled'
                 trialEnded:
-                    $ref: '#/components/schemas/v1BillingIssueMetadataTrialEnded'
+                    $ref: '#/components/schemas/BillingIssueMetadataTrialEnded'
             type: object
-        v1BillingIssueMetadataNeverSubscribed:
+        BillingIssueMetadataNeverSubscribed:
             type: object
-        v1BillingIssueMetadataNoBillableAddress:
+        BillingIssueMetadataNoBillableAddress:
             type: object
-        v1BillingIssueMetadataNoPaymentMethod:
+        BillingIssueMetadataNoPaymentMethod:
             type: object
-        v1BillingIssueMetadataOnTrial:
+        BillingIssueMetadataOnTrial:
             properties:
                 endDate:
                     format: date-time
@@ -185,14 +130,14 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1BillingIssueMetadataPaymentFailed:
+        BillingIssueMetadataPaymentFailed:
             properties:
                 invoices:
                     items:
-                        $ref: '#/components/schemas/v1BillingIssueMetadataPaymentFailedMeta'
+                        $ref: '#/components/schemas/BillingIssueMetadataPaymentFailedMeta'
                     type: array
             type: object
-        v1BillingIssueMetadataPaymentFailedMeta:
+        BillingIssueMetadataPaymentFailedMeta:
             properties:
                 amountDue:
                     type: string
@@ -214,13 +159,13 @@ components:
                 invoiceUrl:
                     type: string
             type: object
-        v1BillingIssueMetadataSubscriptionCancelled:
+        BillingIssueMetadataSubscriptionCancelled:
             properties:
                 endDate:
                     format: date-time
                     type: string
             type: object
-        v1BillingIssueMetadataTrialEnded:
+        BillingIssueMetadataTrialEnded:
             properties:
                 endDate:
                     format: date-time
@@ -229,7 +174,7 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1BillingIssueType:
+        BillingIssueType:
             default: BILLING_ISSUE_TYPE_UNSPECIFIED
             enum:
                 - BILLING_ISSUE_TYPE_UNSPECIFIED
@@ -241,7 +186,7 @@ components:
                 - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
                 - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
             type: string
-        v1BillingPlan:
+        BillingPlan:
             properties:
                 default:
                     type: boolean
@@ -254,17 +199,17 @@ components:
                 name:
                     type: string
                 planType:
-                    $ref: '#/components/schemas/v1BillingPlanType'
+                    $ref: '#/components/schemas/BillingPlanType'
                 public:
                     title: TODO expose pricing information
                     type: boolean
                 quotas:
-                    $ref: '#/components/schemas/v1Quotas'
+                    $ref: '#/components/schemas/Quotas'
                 trialPeriodDays:
                     format: int64
                     type: integer
             type: object
-        v1BillingPlanType:
+        BillingPlanType:
             default: BILLING_PLAN_TYPE_UNSPECIFIED
             enum:
                 - BILLING_PLAN_TYPE_UNSPECIFIED
@@ -273,7 +218,7 @@ components:
                 - BILLING_PLAN_TYPE_MANAGED
                 - BILLING_PLAN_TYPE_ENTERPRISE
             type: string
-        v1Bookmark:
+        Bookmark:
             properties:
                 createdOn:
                     format: date-time
@@ -305,42 +250,42 @@ components:
                 userId:
                     type: string
             type: object
-        v1CancelBillingSubscriptionResponse:
+        CancelBillingSubscriptionResponse:
             type: object
-        v1CompleteRequest:
+        CompleteRequest:
             properties:
                 messages:
                     description: Input message(s) for the AI to complete.
                     items:
-                        $ref: '#/components/schemas/v1CompletionMessage'
+                        $ref: '#/components/schemas/CompletionMessage'
                     type: array
                 outputJsonSchema:
                     title: Optional output JSON schema
                     type: string
                 tools:
                     items:
-                        $ref: '#/components/schemas/v1Tool'
+                        $ref: '#/components/schemas/Tool'
                     title: Optional list of tools that the AI can use during completion
                     type: array
             type: object
-        v1CompleteResponse:
+        CompleteResponse:
             properties:
                 inputTokens:
                     description: Number of tokens in the input.
                     format: int64
                     type: integer
                 message:
-                    $ref: '#/components/schemas/v1CompletionMessage'
+                    $ref: '#/components/schemas/CompletionMessage'
                 outputTokens:
                     description: Number of tokens in the output.
                     format: int64
                     type: integer
             type: object
-        v1CompletionMessage:
+        CompletionMessage:
             properties:
                 content:
                     items:
-                        $ref: '#/components/schemas/v1ContentBlock'
+                        $ref: '#/components/schemas/ContentBlock'
                     type: array
                 data:
                     title: Deprecated in favor of content
@@ -349,33 +294,35 @@ components:
                     type: string
             title: Completion message for AI API calls
             type: object
-        v1Condition:
+        Condition:
+            description: Condition represents a comparison or logical operation applied to one or more expressions.
             properties:
                 exprs:
+                    description: Operand expressions. Binary ops (EQ, LT, etc.) expect 2 operands; logical ops (AND, OR) accept multiple; IN/NIN expect ident + list.
                     items:
-                        $ref: '#/components/schemas/v1Expression'
+                        $ref: '#/components/schemas/Expression'
                     type: array
                 op:
-                    $ref: '#/components/schemas/runtimev1Operation'
+                    $ref: '#/components/schemas/v1.Operation'
             type: object
-        v1ConnectProjectToGithubResponse:
+        ConnectProjectToGithubResponse:
             type: object
-        v1ContentBlock:
+        ContentBlock:
             properties:
                 text:
                     type: string
                 toolCall:
-                    $ref: '#/components/schemas/v1ToolCall'
+                    $ref: '#/components/schemas/ToolCall'
                 toolResult:
-                    $ref: '#/components/schemas/v1ToolResult'
+                    $ref: '#/components/schemas/ToolResult'
             title: Content block within a message
             type: object
-        v1CreateAlertResponse:
+        CreateAlertResponse:
             properties:
                 name:
                     type: string
             type: object
-        v1CreateAssetResponse:
+        CreateAssetResponse:
             properties:
                 assetId:
                     type: string
@@ -386,7 +333,7 @@ components:
                         type: string
                     type: object
             type: object
-        v1CreateBookmarkRequest:
+        CreateBookmarkRequest:
             properties:
                 default:
                     type: boolean
@@ -405,17 +352,17 @@ components:
                 urlSearch:
                     type: string
             type: object
-        v1CreateBookmarkResponse:
+        CreateBookmarkResponse:
             properties:
                 bookmark:
-                    $ref: '#/components/schemas/v1Bookmark'
+                    $ref: '#/components/schemas/Bookmark'
             type: object
-        v1CreateDeploymentResponse:
+        CreateDeploymentResponse:
             properties:
                 deployment:
-                    $ref: '#/components/schemas/v1Deployment'
+                    $ref: '#/components/schemas/Deployment'
             type: object
-        v1CreateManagedGitRepoResponse:
+        CreateManagedGitRepoResponse:
             properties:
                 defaultBranch:
                     type: string
@@ -429,74 +376,83 @@ components:
                 username:
                     type: string
             type: object
-        v1CreateOrganizationRequest:
+        CreateOrganizationRequest:
+            description: Create a new organization.
+            example:
+                description: Acme Corporation analytics
+                display_name: Acme Corp
+                name: acme-corp
             properties:
                 description:
+                    description: Optional description of the organization.
                     type: string
                 displayName:
+                    description: Optional human-readable display name.
                     type: string
                 name:
+                    description: Unique organization identifier (required). Used in URLs and API paths.
                     type: string
+            title: CreateOrganizationRequest
             type: object
-        v1CreateOrganizationResponse:
+        CreateOrganizationResponse:
             properties:
                 organization:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
             type: object
-        v1CreateProjectResponse:
+        CreateProjectResponse:
             properties:
                 project:
-                    $ref: '#/components/schemas/v1Project'
+                    $ref: '#/components/schemas/Project'
             type: object
-        v1CreateProjectWhitelistedDomainResponse:
+        CreateProjectWhitelistedDomainResponse:
             type: object
-        v1CreateReportResponse:
+        CreateReportResponse:
             properties:
                 name:
                     type: string
             type: object
-        v1CreateServiceResponse:
+        CreateServiceResponse:
             properties:
                 service:
-                    $ref: '#/components/schemas/v1Service'
+                    $ref: '#/components/schemas/Service'
             type: object
-        v1CreateUsergroupResponse:
+        CreateUsergroupResponse:
             properties:
                 usergroup:
-                    $ref: '#/components/schemas/v1Usergroup'
+                    $ref: '#/components/schemas/Usergroup'
             type: object
-        v1CreateWhitelistedDomainResponse:
+        CreateWhitelistedDomainResponse:
             type: object
-        v1DeleteAlertResponse:
+        DeleteAlertResponse:
             type: object
-        v1DeleteDeploymentResponse:
+        DeleteDeploymentResponse:
             properties:
                 deploymentId:
                     type: string
             type: object
-        v1DeleteOrganizationResponse:
+        DeleteOrganizationResponse:
             type: object
-        v1DeleteProjectResponse:
+        DeleteProjectResponse:
             properties:
                 id:
                     type: string
             type: object
-        v1DeleteReportResponse:
+        DeleteReportResponse:
             type: object
-        v1DeleteServiceResponse:
+        DeleteServiceResponse:
             properties:
                 service:
-                    $ref: '#/components/schemas/v1Service'
+                    $ref: '#/components/schemas/Service'
             type: object
-        v1DeleteUserResponse:
+        DeleteUserResponse:
             type: object
-        v1DeleteUsergroupResponse:
+        DeleteUsergroupResponse:
             type: object
-        v1DeleteVirtualFileResponse:
+        DeleteVirtualFileResponse:
             type: object
-        v1DenyProjectAccessResponse:
+        DenyProjectAccessResponse:
             type: object
-        v1Deployment:
+        Deployment:
             properties:
                 branch:
                     type: string
@@ -518,14 +474,14 @@ components:
                 runtimeInstanceId:
                     type: string
                 status:
-                    $ref: '#/components/schemas/v1DeploymentStatus'
+                    $ref: '#/components/schemas/DeploymentStatus'
                 statusMessage:
                     type: string
                 updatedOn:
                     format: date-time
                     type: string
             type: object
-        v1DeploymentStatus:
+        DeploymentStatus:
             default: DEPLOYMENT_STATUS_UNSPECIFIED
             enum:
                 - DEPLOYMENT_STATUS_UNSPECIFIED
@@ -538,13 +494,13 @@ components:
                 - DEPLOYMENT_STATUS_DELETING
                 - DEPLOYMENT_STATUS_DELETED
             type: string
-        v1EditAlertResponse:
+        EditAlertResponse:
             type: object
-        v1EditReportResponse:
+        EditReportResponse:
             type: object
-        v1EditUsergroupResponse:
+        EditUsergroupResponse:
             type: object
-        v1ExportFormat:
+        ExportFormat:
             default: EXPORT_FORMAT_UNSPECIFIED
             enum:
                 - EXPORT_FORMAT_UNSPECIFIED
@@ -552,36 +508,41 @@ components:
                 - EXPORT_FORMAT_XLSX
                 - EXPORT_FORMAT_PARQUET
             type: string
-        v1Expression:
+        Expression:
+            description: |-
+                Expression represents a filter expression tree used to filter data in queries.
+                Expressions can be identifiers (column references), literal values, conditions (comparisons/logical ops), or subqueries.
             properties:
                 cond:
-                    $ref: '#/components/schemas/v1Condition'
+                    $ref: '#/components/schemas/Condition'
                 ident:
+                    description: Column or dimension name reference.
                     type: string
                 subquery:
-                    $ref: '#/components/schemas/v1Subquery'
-                val: {}
+                    $ref: '#/components/schemas/Subquery'
+                val:
+                    description: Literal value (string, number, bool, null, or list).
             type: object
-        v1GenerateAlertYAMLResponse:
+        GenerateAlertYAMLResponse:
             properties:
                 yaml:
                     type: string
             type: object
-        v1GenerateReportYAMLResponse:
+        GenerateReportYAMLResponse:
             properties:
                 yaml:
                     type: string
             type: object
-        v1GetAlertMetaResponse:
+        GetAlertMetaResponse:
             properties:
                 queryForAttributes:
                     type: object
                 recipientUrls:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1GetAlertMetaResponseURLs'
+                        $ref: '#/components/schemas/GetAlertMetaResponse.URLs'
                     type: object
             type: object
-        v1GetAlertMetaResponseURLs:
+        GetAlertMetaResponse.URLs:
             properties:
                 editUrl:
                     type: string
@@ -590,17 +551,17 @@ components:
                 unsubscribeUrl:
                     type: string
             type: object
-        v1GetAlertYAMLResponse:
+        GetAlertYAMLResponse:
             properties:
                 yaml:
                     type: string
             type: object
-        v1GetBillingProjectCredentialsRequest:
+        GetBillingProjectCredentialsRequest:
             properties:
                 org:
                     type: string
             type: object
-        v1GetBillingProjectCredentialsResponse:
+        GetBillingProjectCredentialsResponse:
             properties:
                 accessToken:
                     type: string
@@ -612,21 +573,21 @@ components:
                     format: int64
                     type: integer
             type: object
-        v1GetBillingSubscriptionResponse:
+        GetBillingSubscriptionResponse:
             properties:
                 billingPortalUrl:
                     type: string
                 organization:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
                 subscription:
-                    $ref: '#/components/schemas/v1Subscription'
+                    $ref: '#/components/schemas/Subscription'
             type: object
-        v1GetBookmarkResponse:
+        GetBookmarkResponse:
             properties:
                 bookmark:
-                    $ref: '#/components/schemas/v1Bookmark'
+                    $ref: '#/components/schemas/Bookmark'
             type: object
-        v1GetCloneCredentialsResponse:
+        GetCloneCredentialsResponse:
             properties:
                 archiveDownloadUrl:
                     title: either archive_download_url or git related details will be set
@@ -647,19 +608,19 @@ components:
                 gitUsername:
                     type: string
             type: object
-        v1GetCurrentMagicAuthTokenResponse:
+        GetCurrentMagicAuthTokenResponse:
             properties:
                 token:
-                    $ref: '#/components/schemas/v1MagicAuthToken'
+                    $ref: '#/components/schemas/MagicAuthToken'
             type: object
-        v1GetCurrentUserResponse:
+        GetCurrentUserResponse:
             properties:
                 preferences:
-                    $ref: '#/components/schemas/v1UserPreferences'
+                    $ref: '#/components/schemas/UserPreferences'
                 user:
-                    $ref: '#/components/schemas/v1User'
+                    $ref: '#/components/schemas/User'
             type: object
-        v1GetDeploymentConfigResponse:
+        GetDeploymentConfigResponse:
             properties:
                 annotations:
                     additionalProperties:
@@ -685,7 +646,7 @@ components:
                     title: Variables for the deployment (connector credentials, etc.)
                     type: object
             type: object
-        v1GetDeploymentCredentialsResponse:
+        GetDeploymentCredentialsResponse:
             properties:
                 accessToken:
                     type: string
@@ -697,7 +658,7 @@ components:
                     format: int64
                     type: integer
             type: object
-        v1GetDeploymentResponse:
+        GetDeploymentResponse:
             properties:
                 accessToken:
                     type: string
@@ -709,7 +670,7 @@ components:
                     format: int64
                     type: integer
             type: object
-        v1GetGithubRepoStatusResponse:
+        GetGithubRepoStatusResponse:
             properties:
                 defaultBranch:
                     type: string
@@ -718,7 +679,7 @@ components:
                 hasAccess:
                     type: boolean
             type: object
-        v1GetGithubUserStatusResponse:
+        GetGithubUserStatusResponse:
             properties:
                 accessToken:
                     type: string
@@ -730,7 +691,7 @@ components:
                     type: boolean
                 organizationInstallationPermissions:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1GithubPermission'
+                        $ref: '#/components/schemas/GithubPermission'
                     type: object
                 orgs:
                     description: 'DEPRECATED: Use organization_installation_permissions instead.'
@@ -738,9 +699,9 @@ components:
                         type: string
                     type: array
                 userInstallationPermission:
-                    $ref: '#/components/schemas/v1GithubPermission'
+                    $ref: '#/components/schemas/GithubPermission'
             type: object
-        v1GetIFrameResponse:
+        GetIFrameResponse:
             properties:
                 accessToken:
                     type: string
@@ -754,59 +715,59 @@ components:
                     format: int64
                     type: integer
             type: object
-        v1GetOrganizationMemberUserResponse:
+        GetOrganizationMemberUserResponse:
             properties:
                 member:
-                    $ref: '#/components/schemas/v1OrganizationMemberUser'
+                    $ref: '#/components/schemas/OrganizationMemberUser'
             type: object
-        v1GetOrganizationNameForDomainResponse:
+        GetOrganizationNameForDomainResponse:
             properties:
                 name:
                     type: string
             type: object
-        v1GetOrganizationResponse:
+        GetOrganizationResponse:
             properties:
                 organization:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
                 permissions:
-                    $ref: '#/components/schemas/v1OrganizationPermissions'
+                    $ref: '#/components/schemas/OrganizationPermissions'
             type: object
-        v1GetPaymentsPortalURLResponse:
+        GetPaymentsPortalURLResponse:
             properties:
                 url:
                     type: string
             type: object
-        v1GetProjectAccessRequestResponse:
+        GetProjectAccessRequestResponse:
             properties:
                 email:
                     type: string
             type: object
-        v1GetProjectByIDResponse:
+        GetProjectByIDResponse:
             properties:
                 project:
-                    $ref: '#/components/schemas/v1Project'
+                    $ref: '#/components/schemas/Project'
             type: object
-        v1GetProjectMemberUserResponse:
+        GetProjectMemberUserResponse:
             properties:
                 member:
-                    $ref: '#/components/schemas/v1ProjectMemberUser'
+                    $ref: '#/components/schemas/ProjectMemberUser'
             type: object
-        v1GetProjectResponse:
+        GetProjectResponse:
             properties:
                 deployment:
-                    $ref: '#/components/schemas/v1Deployment'
+                    $ref: '#/components/schemas/Deployment'
                 jwt:
                     type: string
                 project:
-                    $ref: '#/components/schemas/v1Project'
+                    $ref: '#/components/schemas/Project'
                 projectPermissions:
-                    $ref: '#/components/schemas/v1ProjectPermissions'
+                    $ref: '#/components/schemas/ProjectPermissions'
             type: object
-        v1GetProjectVariablesResponse:
+        GetProjectVariablesResponse:
             properties:
                 variables:
                     items:
-                        $ref: '#/components/schemas/v1ProjectVariable'
+                        $ref: '#/components/schemas/ProjectVariable'
                     type: array
                 variablesMap:
                     additionalProperties:
@@ -816,7 +777,7 @@ components:
                         (Renamed from "variables" to "variables_map").
                     type: object
             type: object
-        v1GetRepoMetaResponse:
+        GetRepoMetaResponse:
             properties:
                 archiveCreatedOn:
                     description: The creation time of the archive returned from archive_download_url.
@@ -857,14 +818,14 @@ components:
                     description: Primary branch of the project.
                     type: string
             type: object
-        v1GetReportMetaResponse:
+        GetReportMetaResponse:
             properties:
                 recipientUrls:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1GetReportMetaResponseURLs'
+                        $ref: '#/components/schemas/GetReportMetaResponse.URLs'
                     type: object
             type: object
-        v1GetReportMetaResponseURLs:
+        GetReportMetaResponse.URLs:
             properties:
                 editUrl:
                     type: string
@@ -875,50 +836,50 @@ components:
                 unsubscribeUrl:
                     type: string
             type: object
-        v1GetServiceResponse:
+        GetServiceResponse:
             properties:
                 projectMemberships:
                     items:
-                        $ref: '#/components/schemas/v1ProjectMemberService'
+                        $ref: '#/components/schemas/ProjectMemberService'
                     title: All projects that the service is a member of
                     type: array
                 service:
-                    $ref: '#/components/schemas/v1OrganizationMemberService'
+                    $ref: '#/components/schemas/OrganizationMemberService'
             type: object
-        v1GetUserResponse:
+        GetUserResponse:
             properties:
                 user:
-                    $ref: '#/components/schemas/v1User'
+                    $ref: '#/components/schemas/User'
             type: object
-        v1GetUsergroupResponse:
+        GetUsergroupResponse:
             properties:
                 nextPageToken:
                     type: string
                 usergroup:
-                    $ref: '#/components/schemas/v1Usergroup'
+                    $ref: '#/components/schemas/Usergroup'
             type: object
-        v1GetVirtualFileResponse:
+        GetVirtualFileResponse:
             properties:
                 file:
-                    $ref: '#/components/schemas/v1VirtualFile'
+                    $ref: '#/components/schemas/VirtualFile'
             type: object
-        v1GithubPermission:
+        GithubPermission:
             default: GITHUB_PERMISSION_UNSPECIFIED
             enum:
                 - GITHUB_PERMISSION_UNSPECIFIED
                 - GITHUB_PERMISSION_READ
                 - GITHUB_PERMISSION_WRITE
             type: string
-        v1HibernateProjectResponse:
+        HibernateProjectResponse:
             type: object
-        v1IssueMagicAuthTokenResponse:
+        IssueMagicAuthTokenResponse:
             properties:
                 token:
                     type: string
                 url:
                     type: string
             type: object
-        v1IssueRepresentativeAuthTokenRequest:
+        IssueRepresentativeAuthTokenRequest:
             properties:
                 email:
                     type: string
@@ -926,66 +887,66 @@ components:
                     format: int64
                     type: string
             type: object
-        v1IssueRepresentativeAuthTokenResponse:
+        IssueRepresentativeAuthTokenResponse:
             properties:
                 token:
                     type: string
             type: object
-        v1IssueServiceAuthTokenResponse:
+        IssueServiceAuthTokenResponse:
             properties:
                 token:
                     type: string
             type: object
-        v1IssueUserAuthTokenResponse:
+        IssueUserAuthTokenResponse:
             properties:
                 token:
                     description: Newly issued auth token.
                     type: string
             type: object
-        v1LeaveOrganizationResponse:
+        LeaveOrganizationResponse:
             type: object
-        v1ListBookmarksResponse:
+        ListBookmarksResponse:
             properties:
                 bookmarks:
                     items:
-                        $ref: '#/components/schemas/v1Bookmark'
+                        $ref: '#/components/schemas/Bookmark'
                     type: array
             type: object
-        v1ListDeploymentsResponse:
+        ListDeploymentsResponse:
             properties:
                 deployments:
                     items:
-                        $ref: '#/components/schemas/v1Deployment'
+                        $ref: '#/components/schemas/Deployment'
                     type: array
             type: object
-        v1ListGithubUserReposResponse:
+        ListGithubUserReposResponse:
             properties:
                 repos:
                     items:
-                        $ref: '#/components/schemas/ListGithubUserReposResponseRepo'
+                        $ref: '#/components/schemas/Repo'
                     type: array
             type: object
-        v1ListMagicAuthTokensResponse:
+        ListMagicAuthTokensResponse:
             properties:
                 nextPageToken:
                     type: string
                 tokens:
                     items:
-                        $ref: '#/components/schemas/v1MagicAuthToken'
+                        $ref: '#/components/schemas/MagicAuthToken'
                     type: array
             type: object
-        v1ListOrganizationBillingIssuesResponse:
+        ListOrganizationBillingIssuesResponse:
             properties:
                 issues:
                     items:
-                        $ref: '#/components/schemas/v1BillingIssue'
+                        $ref: '#/components/schemas/BillingIssue'
                     type: array
             type: object
-        v1ListOrganizationInvitesResponse:
+        ListOrganizationInvitesResponse:
             properties:
                 invites:
                     items:
-                        $ref: '#/components/schemas/v1OrganizationInvite'
+                        $ref: '#/components/schemas/OrganizationInvite'
                     type: array
                 nextPageToken:
                     type: string
@@ -994,20 +955,20 @@ components:
                     title: Total number of invites in the organization
                     type: integer
             type: object
-        v1ListOrganizationMemberUsergroupsResponse:
+        ListOrganizationMemberUsergroupsResponse:
             properties:
                 members:
                     items:
-                        $ref: '#/components/schemas/v1MemberUsergroup'
+                        $ref: '#/components/schemas/MemberUsergroup'
                     type: array
                 nextPageToken:
                     type: string
             type: object
-        v1ListOrganizationMemberUsersResponse:
+        ListOrganizationMemberUsersResponse:
             properties:
                 members:
                     items:
-                        $ref: '#/components/schemas/v1OrganizationMemberUser'
+                        $ref: '#/components/schemas/OrganizationMemberUser'
                     type: array
                 nextPageToken:
                     type: string
@@ -1016,131 +977,131 @@ components:
                     title: Total number of members in the organization
                     type: integer
             type: object
-        v1ListOrganizationsResponse:
+        ListOrganizationsResponse:
             properties:
                 nextPageToken:
                     type: string
                 organizations:
                     items:
-                        $ref: '#/components/schemas/v1Organization'
+                        $ref: '#/components/schemas/Organization'
                     type: array
             type: object
-        v1ListProjectInvitesResponse:
+        ListProjectInvitesResponse:
             properties:
                 invites:
                     items:
-                        $ref: '#/components/schemas/v1ProjectInvite'
+                        $ref: '#/components/schemas/ProjectInvite'
                     type: array
                 nextPageToken:
                     type: string
             type: object
-        v1ListProjectMemberServicesResponse:
+        ListProjectMemberServicesResponse:
             properties:
                 services:
                     items:
-                        $ref: '#/components/schemas/v1ProjectMemberService'
+                        $ref: '#/components/schemas/ProjectMemberService'
                     type: array
             type: object
-        v1ListProjectMemberUsergroupsResponse:
+        ListProjectMemberUsergroupsResponse:
             properties:
                 members:
                     items:
-                        $ref: '#/components/schemas/v1MemberUsergroup'
+                        $ref: '#/components/schemas/MemberUsergroup'
                     type: array
                 nextPageToken:
                     type: string
             type: object
-        v1ListProjectMemberUsersResponse:
+        ListProjectMemberUsersResponse:
             properties:
                 members:
                     items:
-                        $ref: '#/components/schemas/v1ProjectMemberUser'
+                        $ref: '#/components/schemas/ProjectMemberUser'
                     type: array
                 nextPageToken:
                     type: string
             type: object
-        v1ListProjectWhitelistedDomainsResponse:
+        ListProjectWhitelistedDomainsResponse:
             properties:
                 domains:
                     items:
-                        $ref: '#/components/schemas/v1WhitelistedDomain'
+                        $ref: '#/components/schemas/WhitelistedDomain'
                     type: array
             type: object
-        v1ListProjectsForFingerprintResponse:
+        ListProjectsForFingerprintResponse:
             properties:
                 projects:
                     items:
-                        $ref: '#/components/schemas/v1Project'
+                        $ref: '#/components/schemas/Project'
                     type: array
                 unauthorizedProject:
                     description: unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
                     type: string
             type: object
-        v1ListProjectsForOrganizationAndUserResponse:
+        ListProjectsForOrganizationAndUserResponse:
             properties:
                 nextPageToken:
                     type: string
                 projects:
                     items:
-                        $ref: '#/components/schemas/v1Project'
+                        $ref: '#/components/schemas/Project'
                     type: array
             type: object
-        v1ListProjectsForOrganizationResponse:
+        ListProjectsForOrganizationResponse:
             properties:
                 nextPageToken:
                     type: string
                 projects:
                     items:
-                        $ref: '#/components/schemas/v1Project'
+                        $ref: '#/components/schemas/Project'
                     type: array
             type: object
-        v1ListProjectsForUserByNameResponse:
+        ListProjectsForUserByNameResponse:
             properties:
                 projects:
                     items:
-                        $ref: '#/components/schemas/v1Project'
+                        $ref: '#/components/schemas/Project'
                     type: array
             type: object
-        v1ListPublicBillingPlansResponse:
+        ListPublicBillingPlansResponse:
             properties:
                 plans:
                     items:
-                        $ref: '#/components/schemas/v1BillingPlan'
+                        $ref: '#/components/schemas/BillingPlan'
                     type: array
             type: object
-        v1ListRolesResponse:
+        ListRolesResponse:
             properties:
                 organizationRoles:
                     items:
-                        $ref: '#/components/schemas/v1OrganizationRole'
+                        $ref: '#/components/schemas/OrganizationRole'
                     type: array
                 projectRoles:
                     items:
-                        $ref: '#/components/schemas/v1ProjectRole'
+                        $ref: '#/components/schemas/ProjectRole'
                     type: array
             type: object
-        v1ListServiceAuthTokensResponse:
+        ListServiceAuthTokensResponse:
             properties:
                 tokens:
                     items:
-                        $ref: '#/components/schemas/v1ServiceToken'
+                        $ref: '#/components/schemas/ServiceToken'
                     type: array
             type: object
-        v1ListServicesResponse:
+        ListServicesResponse:
             properties:
                 services:
                     items:
-                        $ref: '#/components/schemas/v1OrganizationMemberService'
+                        $ref: '#/components/schemas/OrganizationMemberService'
                     type: array
             type: object
-        v1ListSuperusersResponse:
+        ListSuperusersResponse:
             properties:
                 users:
                     items:
-                        $ref: '#/components/schemas/v1User'
+                        $ref: '#/components/schemas/User'
                     type: array
             type: object
-        v1ListUserAuthTokensResponse:
+        ListUserAuthTokensResponse:
             properties:
                 nextPageToken:
                     description: Page token for the next page of results. If empty, there are no more pages.
@@ -1148,42 +1109,42 @@ components:
                 tokens:
                     description: List of auth tokens for the user.
                     items:
-                        $ref: '#/components/schemas/v1UserAuthToken'
+                        $ref: '#/components/schemas/UserAuthToken'
                     type: array
             type: object
-        v1ListUsergroupMemberUsersResponse:
+        ListUsergroupMemberUsersResponse:
             properties:
                 members:
                     items:
-                        $ref: '#/components/schemas/v1UsergroupMemberUser'
+                        $ref: '#/components/schemas/UsergroupMemberUser'
                     type: array
                 nextPageToken:
                     type: string
             type: object
-        v1ListUsergroupsForOrganizationAndUserResponse:
+        ListUsergroupsForOrganizationAndUserResponse:
             properties:
                 nextPageToken:
                     type: string
                 usergroups:
                     items:
-                        $ref: '#/components/schemas/v1Usergroup'
+                        $ref: '#/components/schemas/Usergroup'
                     type: array
             type: object
-        v1ListUsergroupsForProjectAndUserResponse:
+        ListUsergroupsForProjectAndUserResponse:
             properties:
                 usergroups:
                     items:
-                        $ref: '#/components/schemas/v1MemberUsergroup'
+                        $ref: '#/components/schemas/MemberUsergroup'
                     type: array
             type: object
-        v1ListWhitelistedDomainsResponse:
+        ListWhitelistedDomainsResponse:
             properties:
                 domains:
                     items:
-                        $ref: '#/components/schemas/v1WhitelistedDomain'
+                        $ref: '#/components/schemas/WhitelistedDomain'
                     type: array
             type: object
-        v1MagicAuthToken:
+        MagicAuthToken:
             properties:
                 attributes:
                     type: object
@@ -1207,7 +1168,7 @@ components:
                     type: string
                 metricsViewFilters:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1Expression'
+                        $ref: '#/components/schemas/Expression'
                     type: object
                 projectId:
                     type: string
@@ -1217,7 +1178,7 @@ components:
                     type: string
                 resources:
                     items:
-                        $ref: '#/components/schemas/v1ResourceName'
+                        $ref: '#/components/schemas/ResourceName'
                     type: array
                 state:
                     type: string
@@ -1229,7 +1190,7 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1MemberUsergroup:
+        MemberUsergroup:
             properties:
                 createdOn:
                     format: date-time
@@ -1242,7 +1203,7 @@ components:
                     type: string
                 resources:
                     items:
-                        $ref: '#/components/schemas/v1ResourceName'
+                        $ref: '#/components/schemas/ResourceName'
                     type: array
                 restrictResources:
                     type: boolean
@@ -1255,7 +1216,19 @@ components:
                     format: int64
                     type: integer
             type: object
-        v1Organization:
+        NullValue:
+            default: NULL_VALUE
+            description: |-
+                `NullValue` is a singleton enumeration to represent the null value for the
+                `Value` type union.
+
+                The JSON representation for `NullValue` is JSON `null`.
+
+                 - NULL_VALUE: Null value.
+            enum:
+                - NULL_VALUE
+            type: string
+        Organization:
             properties:
                 billingCustomerId:
                     type: string
@@ -1290,14 +1263,14 @@ components:
                 paymentCustomerId:
                     type: string
                 quotas:
-                    $ref: '#/components/schemas/v1OrganizationQuotas'
+                    $ref: '#/components/schemas/OrganizationQuotas'
                 thumbnailUrl:
                     type: string
                 updatedOn:
                     format: date-time
                     type: string
             type: object
-        v1OrganizationInvite:
+        OrganizationInvite:
             properties:
                 email:
                     type: string
@@ -1306,7 +1279,7 @@ components:
                 roleName:
                     type: string
             type: object
-        v1OrganizationMemberService:
+        OrganizationMemberService:
             properties:
                 attributes:
                     type: object
@@ -1330,7 +1303,7 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1OrganizationMemberUser:
+        OrganizationMemberUser:
             properties:
                 attributes:
                     type: object
@@ -1357,7 +1330,7 @@ components:
                     format: int64
                     type: integer
             type: object
-        v1OrganizationPermissions:
+        OrganizationPermissions:
             properties:
                 admin:
                     type: boolean
@@ -1380,7 +1353,7 @@ components:
                 readProjects:
                     type: boolean
             type: object
-        v1OrganizationQuotas:
+        OrganizationQuotas:
             properties:
                 deployments:
                     format: int32
@@ -1401,16 +1374,16 @@ components:
                     format: int64
                     type: string
             type: object
-        v1OrganizationRole:
+        OrganizationRole:
             properties:
                 id:
                     type: string
                 name:
                     type: string
                 permissions:
-                    $ref: '#/components/schemas/v1OrganizationPermissions'
+                    $ref: '#/components/schemas/OrganizationPermissions'
             type: object
-        v1PingResponse:
+        PingResponse:
             properties:
                 time:
                     format: date-time
@@ -1418,7 +1391,7 @@ components:
                 version:
                     type: string
             type: object
-        v1Project:
+        Project:
             properties:
                 annotations:
                     additionalProperties:
@@ -1477,7 +1450,7 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1ProjectInvite:
+        ProjectInvite:
             properties:
                 email:
                     type: string
@@ -1487,14 +1460,14 @@ components:
                     type: string
                 resources:
                     items:
-                        $ref: '#/components/schemas/v1ResourceName'
+                        $ref: '#/components/schemas/ResourceName'
                     type: array
                 restrictResources:
                     type: boolean
                 roleName:
                     type: string
             type: object
-        v1ProjectMemberService:
+        ProjectMemberService:
             properties:
                 attributes:
                     type: object
@@ -1521,7 +1494,7 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1ProjectMemberUser:
+        ProjectMemberUser:
             properties:
                 createdOn:
                     format: date-time
@@ -1530,7 +1503,7 @@ components:
                     type: string
                 resources:
                     items:
-                        $ref: '#/components/schemas/v1ResourceName'
+                        $ref: '#/components/schemas/ResourceName'
                     type: array
                 restrictResources:
                     type: boolean
@@ -1548,7 +1521,7 @@ components:
                 userPhotoUrl:
                     type: string
             type: object
-        v1ProjectPermissions:
+        ProjectPermissions:
             properties:
                 admin:
                     type: boolean
@@ -1595,16 +1568,16 @@ components:
                 readProvisionerResources:
                     type: boolean
             type: object
-        v1ProjectRole:
+        ProjectRole:
             properties:
                 id:
                     type: string
                 name:
                     type: string
                 permissions:
-                    $ref: '#/components/schemas/v1ProjectPermissions'
+                    $ref: '#/components/schemas/ProjectPermissions'
             type: object
-        v1ProjectVariable:
+        ProjectVariable:
             properties:
                 createdOn:
                     description: Timestamp when the variable was created.
@@ -1632,12 +1605,12 @@ components:
                     description: Variable value.
                     type: string
             type: object
-        v1ProvisionResponse:
+        ProvisionResponse:
             properties:
                 resource:
-                    $ref: '#/components/schemas/v1ProvisionerResource'
+                    $ref: '#/components/schemas/ProvisionerResource'
             type: object
-        v1ProvisionerResource:
+        ProvisionerResource:
             properties:
                 args:
                     type: object
@@ -1652,18 +1625,18 @@ components:
                 type:
                     type: string
             type: object
-        v1PullVirtualRepoResponse:
+        PullVirtualRepoResponse:
             properties:
                 files:
                     description: List of virtual files ordered by update time, most recent last.
                     items:
-                        $ref: '#/components/schemas/v1VirtualFile'
+                        $ref: '#/components/schemas/VirtualFile'
                     type: array
                 nextPageToken:
                     description: Next page token for pagination.
                     type: string
             type: object
-        v1Quotas:
+        Quotas:
             properties:
                 deployments:
                     type: string
@@ -1678,47 +1651,61 @@ components:
                 storageLimitBytesPerDeployment:
                     type: string
             type: object
-        v1RecordEventsRequest:
+        RecordEventsRequest:
             properties:
                 events:
+                    description: Batch of telemetry events to record. Each event is a freeform JSON object.
                     items:
                         type: object
                     type: array
             type: object
-        v1RecordEventsResponse:
+        RecordEventsResponse:
             type: object
-        v1RedeployProjectResponse:
+        RedeployProjectResponse:
             type: object
-        v1RemoveBookmarkResponse:
+        RemoveBookmarkResponse:
             type: object
-        v1RemoveOrganizationMemberServiceResponse:
+        RemoveOrganizationMemberServiceResponse:
             type: object
-        v1RemoveOrganizationMemberUserResponse:
+        RemoveOrganizationMemberUserResponse:
             type: object
-        v1RemoveOrganizationMemberUsergroupResponse:
+        RemoveOrganizationMemberUsergroupResponse:
             type: object
-        v1RemoveProjectMemberServiceResponse:
+        RemoveProjectMemberServiceResponse:
             type: object
-        v1RemoveProjectMemberUserResponse:
+        RemoveProjectMemberUserResponse:
             type: object
-        v1RemoveProjectMemberUsergroupResponse:
+        RemoveProjectMemberUsergroupResponse:
             type: object
-        v1RemoveProjectWhitelistedDomainResponse:
+        RemoveProjectWhitelistedDomainResponse:
             type: object
-        v1RemoveUsergroupMemberUserResponse:
+        RemoveUsergroupMemberUserResponse:
             type: object
-        v1RemoveWhitelistedDomainResponse:
+        RemoveWhitelistedDomainResponse:
             type: object
-        v1RenameUsergroupResponse:
+        RenameUsergroupResponse:
             type: object
-        v1RenewBillingSubscriptionResponse:
+        RenewBillingSubscriptionResponse:
             properties:
                 organization:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
                 subscription:
-                    $ref: '#/components/schemas/v1Subscription'
+                    $ref: '#/components/schemas/Subscription'
             type: object
-        v1ReportOptions:
+        Repo:
+            properties:
+                defaultBranch:
+                    type: string
+                description:
+                    type: string
+                name:
+                    type: string
+                owner:
+                    type: string
+                remote:
+                    type: string
+            type: object
+        ReportOptions:
             properties:
                 canvas:
                     type: string
@@ -1732,14 +1719,14 @@ components:
                     title: either canvas or explore should be set
                     type: string
                 exportFormat:
-                    $ref: '#/components/schemas/v1ExportFormat'
+                    $ref: '#/components/schemas/ExportFormat'
                 exportIncludeHeader:
                     type: boolean
                 exportLimit:
                     format: uint64
                     type: string
                 filter:
-                    $ref: '#/components/schemas/v1Expression'
+                    $ref: '#/components/schemas/Expression'
                 intervalDuration:
                     type: string
                 queryArgsJson:
@@ -1777,33 +1764,33 @@ components:
                     description: Annotation for the base64-encoded UI state to open for the report.
                     type: string
             type: object
-        v1RequestProjectAccessResponse:
+        RequestProjectAccessResponse:
             type: object
-        v1ResourceName:
+        ResourceName:
             properties:
                 name:
                     type: string
                 type:
                     type: string
             type: object
-        v1RevokeAllUserAuthTokensResponse:
+        RevokeAllUserAuthTokensResponse:
             properties:
                 tokensRevoked:
                     description: Number of tokens revoked.
                     format: int32
                     type: integer
             type: object
-        v1RevokeCurrentAuthTokenResponse:
+        RevokeCurrentAuthTokenResponse:
             type: object
-        v1RevokeMagicAuthTokenResponse:
+        RevokeMagicAuthTokenResponse:
             type: object
-        v1RevokeRepresentativeAuthTokensResponse:
+        RevokeRepresentativeAuthTokensResponse:
             type: object
-        v1RevokeServiceAuthTokenResponse:
+        RevokeServiceAuthTokenResponse:
             type: object
-        v1RevokeUserAuthTokenResponse:
+        RevokeUserAuthTokenResponse:
             type: object
-        v1SearchProjectNamesResponse:
+        SearchProjectNamesResponse:
             properties:
                 names:
                     items:
@@ -1812,25 +1799,25 @@ components:
                 nextPageToken:
                     type: string
             type: object
-        v1SearchProjectUsersResponse:
+        SearchProjectUsersResponse:
             properties:
                 nextPageToken:
                     type: string
                 users:
                     items:
-                        $ref: '#/components/schemas/v1User'
+                        $ref: '#/components/schemas/User'
                     type: array
             type: object
-        v1SearchUsersResponse:
+        SearchUsersResponse:
             properties:
                 nextPageToken:
                     type: string
                 users:
                     items:
-                        $ref: '#/components/schemas/v1User'
+                        $ref: '#/components/schemas/User'
                     type: array
             type: object
-        v1Service:
+        Service:
             properties:
                 attributes:
                     type: object
@@ -1849,7 +1836,7 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1ServiceToken:
+        ServiceToken:
             properties:
                 createdOn:
                     format: date-time
@@ -1862,51 +1849,66 @@ components:
                 prefix:
                     type: string
             type: object
-        v1SetOrganizationMemberServiceRoleResponse:
+        SetOrganizationMemberServiceRoleResponse:
             type: object
-        v1SetOrganizationMemberUserRoleResponse:
+        SetOrganizationMemberUserRoleResponse:
             type: object
-        v1SetOrganizationMemberUsergroupRoleResponse:
+        SetOrganizationMemberUsergroupRoleResponse:
             type: object
-        v1SetProjectMemberServiceRoleResponse:
+        SetProjectMemberServiceRoleResponse:
             type: object
-        v1SetProjectMemberUserRoleResponse:
+        SetProjectMemberUserRoleResponse:
             type: object
-        v1SetProjectMemberUsergroupRoleResponse:
+        SetProjectMemberUsergroupRoleResponse:
             type: object
-        v1SetSuperuserRequest:
+        SetSuperuserRequest:
             properties:
                 email:
                     type: string
                 superuser:
                     type: boolean
             type: object
-        v1SetSuperuserResponse:
+        SetSuperuserResponse:
             type: object
-        v1StartDeploymentResponse:
+        StartDeploymentResponse:
             properties:
                 deployment:
-                    $ref: '#/components/schemas/v1Deployment'
+                    $ref: '#/components/schemas/Deployment'
             type: object
-        v1StopDeploymentResponse:
+        Status:
+            properties:
+                code:
+                    format: int32
+                    type: integer
+                details:
+                    items:
+                        $ref: '#/components/schemas/Any'
+                    type: array
+                message:
+                    type: string
+            type: object
+        StopDeploymentResponse:
             properties:
                 deploymentId:
                     type: string
             type: object
-        v1Subquery:
+        Subquery:
+            description: Subquery defines a nested query used for measure-based filtering (e.g., "where sum(revenue) > 1000").
             properties:
                 dimension:
+                    description: The dimension to group by in the subquery.
                     type: string
                 having:
-                    $ref: '#/components/schemas/v1Expression'
+                    $ref: '#/components/schemas/Expression'
                 measures:
+                    description: The measures to compute in the subquery.
                     items:
                         type: string
                     type: array
                 where:
-                    $ref: '#/components/schemas/v1Expression'
+                    $ref: '#/components/schemas/Expression'
             type: object
-        v1Subscription:
+        Subscription:
             properties:
                 currentBillingCycleEndDate:
                     format: date-time
@@ -1920,7 +1922,7 @@ components:
                 id:
                     type: string
                 plan:
-                    $ref: '#/components/schemas/v1BillingPlan'
+                    $ref: '#/components/schemas/BillingPlan'
                 startDate:
                     format: date-time
                     type: string
@@ -1928,9 +1930,9 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1SudoDeleteOrganizationBillingIssueResponse:
+        SudoDeleteOrganizationBillingIssueResponse:
             type: object
-        v1SudoExtendTrialRequest:
+        SudoExtendTrialRequest:
             properties:
                 days:
                     format: int32
@@ -1938,40 +1940,40 @@ components:
                 org:
                     type: string
             type: object
-        v1SudoExtendTrialResponse:
+        SudoExtendTrialResponse:
             properties:
                 trialEnd:
                     format: date-time
                     type: string
             type: object
-        v1SudoGetResourceResponse:
+        SudoGetResourceResponse:
             properties:
                 deployment:
-                    $ref: '#/components/schemas/v1Deployment'
+                    $ref: '#/components/schemas/Deployment'
                 instance:
-                    $ref: '#/components/schemas/v1Deployment'
+                    $ref: '#/components/schemas/Deployment'
                 org:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
                 project:
-                    $ref: '#/components/schemas/v1Project'
+                    $ref: '#/components/schemas/Project'
                 user:
-                    $ref: '#/components/schemas/v1User'
+                    $ref: '#/components/schemas/User'
             type: object
-        v1SudoIssueRuntimeManagerTokenRequest:
+        SudoIssueRuntimeManagerTokenRequest:
             properties:
                 host:
                     type: string
             type: object
-        v1SudoIssueRuntimeManagerTokenResponse:
+        SudoIssueRuntimeManagerTokenResponse:
             properties:
                 token:
                     type: string
             type: object
-        v1SudoTriggerBillingRepairRequest:
+        SudoTriggerBillingRepairRequest:
             type: object
-        v1SudoTriggerBillingRepairResponse:
+        SudoTriggerBillingRepairResponse:
             type: object
-        v1SudoUpdateAnnotationsRequest:
+        SudoUpdateAnnotationsRequest:
             properties:
                 annotations:
                     additionalProperties:
@@ -1982,12 +1984,12 @@ components:
                 project:
                     type: string
             type: object
-        v1SudoUpdateAnnotationsResponse:
+        SudoUpdateAnnotationsResponse:
             properties:
                 project:
-                    $ref: '#/components/schemas/v1Project'
+                    $ref: '#/components/schemas/Project'
             type: object
-        v1SudoUpdateOrganizationBillingCustomerRequest:
+        SudoUpdateOrganizationBillingCustomerRequest:
             properties:
                 billingCustomerId:
                     type: string
@@ -1996,26 +1998,26 @@ components:
                 paymentCustomerId:
                     type: string
             type: object
-        v1SudoUpdateOrganizationBillingCustomerResponse:
+        SudoUpdateOrganizationBillingCustomerResponse:
             properties:
                 organization:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
                 subscription:
-                    $ref: '#/components/schemas/v1Subscription'
+                    $ref: '#/components/schemas/Subscription'
             type: object
-        v1SudoUpdateOrganizationCustomDomainRequest:
+        SudoUpdateOrganizationCustomDomainRequest:
             properties:
                 customDomain:
                     type: string
                 name:
                     type: string
             type: object
-        v1SudoUpdateOrganizationCustomDomainResponse:
+        SudoUpdateOrganizationCustomDomainResponse:
             properties:
                 organization:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
             type: object
-        v1SudoUpdateOrganizationQuotasRequest:
+        SudoUpdateOrganizationQuotasRequest:
             properties:
                 deployments:
                     format: int32
@@ -2038,12 +2040,12 @@ components:
                     format: int64
                     type: string
             type: object
-        v1SudoUpdateOrganizationQuotasResponse:
+        SudoUpdateOrganizationQuotasResponse:
             properties:
                 organization:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
             type: object
-        v1SudoUpdateUserQuotasRequest:
+        SudoUpdateUserQuotasRequest:
             properties:
                 email:
                     type: string
@@ -2054,12 +2056,12 @@ components:
                     format: int32
                     type: integer
             type: object
-        v1SudoUpdateUserQuotasResponse:
+        SudoUpdateUserQuotasResponse:
             properties:
                 user:
-                    $ref: '#/components/schemas/v1User'
+                    $ref: '#/components/schemas/User'
             type: object
-        v1Tool:
+        Tool:
             properties:
                 description:
                     title: A human-readable description of the tool
@@ -2081,7 +2083,7 @@ components:
                     type: string
             title: Tool represents a tool definition for AI usage
             type: object
-        v1ToolCall:
+        ToolCall:
             properties:
                 id:
                     type: string
@@ -2091,7 +2093,7 @@ components:
                     type: string
             title: Tool call specification
             type: object
-        v1ToolResult:
+        ToolResult:
             properties:
                 content:
                     type: string
@@ -2101,9 +2103,9 @@ components:
                     type: boolean
             title: Tool execution result
             type: object
-        v1TriggerReconcileResponse:
+        TriggerReconcileResponse:
             type: object
-        v1TriggerRedeployRequest:
+        TriggerRedeployRequest:
             properties:
                 deploymentId:
                     type: string
@@ -2115,24 +2117,24 @@ components:
                 project:
                     type: string
             type: object
-        v1TriggerRedeployResponse:
+        TriggerRedeployResponse:
             type: object
-        v1TriggerRefreshSourcesResponse:
+        TriggerRefreshSourcesResponse:
             type: object
-        v1TriggerReportResponse:
+        TriggerReportResponse:
             type: object
-        v1UnsubscribeAlertResponse:
+        UnsubscribeAlertResponse:
             type: object
-        v1UnsubscribeReportResponse:
+        UnsubscribeReportResponse:
             type: object
-        v1UpdateBillingSubscriptionResponse:
+        UpdateBillingSubscriptionResponse:
             properties:
                 organization:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
                 subscription:
-                    $ref: '#/components/schemas/v1Subscription'
+                    $ref: '#/components/schemas/Subscription'
             type: object
-        v1UpdateBookmarkRequest:
+        UpdateBookmarkRequest:
             properties:
                 bookmarkId:
                     type: string
@@ -2147,44 +2149,44 @@ components:
                 urlSearch:
                     type: string
             type: object
-        v1UpdateBookmarkResponse:
+        UpdateBookmarkResponse:
             type: object
-        v1UpdateOrganizationMemberUserAttributesResponse:
+        UpdateOrganizationMemberUserAttributesResponse:
             type: object
-        v1UpdateOrganizationResponse:
+        UpdateOrganizationResponse:
             properties:
                 organization:
-                    $ref: '#/components/schemas/v1Organization'
+                    $ref: '#/components/schemas/Organization'
             type: object
-        v1UpdateProjectResponse:
+        UpdateProjectResponse:
             properties:
                 project:
-                    $ref: '#/components/schemas/v1Project'
+                    $ref: '#/components/schemas/Project'
             type: object
-        v1UpdateProjectVariablesResponse:
+        UpdateProjectVariablesResponse:
             properties:
                 variables:
                     description: Variables that were created or updated by the request.
                     items:
-                        $ref: '#/components/schemas/v1ProjectVariable'
+                        $ref: '#/components/schemas/ProjectVariable'
                     type: array
             type: object
-        v1UpdateServiceResponse:
+        UpdateServiceResponse:
             properties:
                 service:
-                    $ref: '#/components/schemas/v1Service'
+                    $ref: '#/components/schemas/Service'
             type: object
-        v1UpdateUserPreferencesRequest:
+        UpdateUserPreferencesRequest:
             properties:
                 preferences:
-                    $ref: '#/components/schemas/v1UserPreferences'
+                    $ref: '#/components/schemas/UserPreferences'
             type: object
-        v1UpdateUserPreferencesResponse:
+        UpdateUserPreferencesResponse:
             properties:
                 preferences:
-                    $ref: '#/components/schemas/v1UserPreferences'
+                    $ref: '#/components/schemas/UserPreferences'
             type: object
-        v1User:
+        User:
             properties:
                 createdOn:
                     format: date-time
@@ -2200,12 +2202,12 @@ components:
                 pylonEmailHash:
                     type: string
                 quotas:
-                    $ref: '#/components/schemas/v1UserQuotas'
+                    $ref: '#/components/schemas/UserQuotas'
                 updatedOn:
                     format: date-time
                     type: string
             type: object
-        v1UserAuthToken:
+        UserAuthToken:
             properties:
                 attributes:
                     type: object
@@ -2233,12 +2235,12 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1UserPreferences:
+        UserPreferences:
             properties:
                 timeZone:
                     type: string
             type: object
-        v1UserQuotas:
+        UserQuotas:
             properties:
                 singleuserOrgs:
                     format: int32
@@ -2247,7 +2249,7 @@ components:
                     format: int32
                     type: integer
             type: object
-        v1Usergroup:
+        Usergroup:
             properties:
                 createdOn:
                     format: date-time
@@ -2264,7 +2266,7 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1UsergroupMemberUser:
+        UsergroupMemberUser:
             properties:
                 createdOn:
                     format: date-time
@@ -2281,7 +2283,7 @@ components:
                 userPhotoUrl:
                     type: string
             type: object
-        v1VirtualFile:
+        VirtualFile:
             properties:
                 data:
                     format: byte
@@ -2294,20 +2296,73 @@ components:
                     format: date-time
                     type: string
             type: object
-        v1WhitelistedDomain:
+        WhitelistedDomain:
             properties:
                 domain:
                     type: string
                 role:
                     type: string
             type: object
+        v1.Operation:
+            default: OPERATION_UNSPECIFIED
+            description: |-
+                Operation enumerates the comparison and logical operators available for filter expressions.
+
+                 - OPERATION_EQ: Equals (==)
+                 - OPERATION_NEQ: Not equals (!=)
+                 - OPERATION_LT: Less than (<)
+                 - OPERATION_LTE: Less than or equal (<=)
+                 - OPERATION_GT: Greater than (>)
+                 - OPERATION_GTE: Greater than or equal (>=)
+                 - OPERATION_OR: Logical OR
+                 - OPERATION_AND: Logical AND
+                 - OPERATION_IN: Value is in a list
+                 - OPERATION_NIN: Value is not in a list
+                 - OPERATION_LIKE: SQL LIKE pattern matching
+                 - OPERATION_NLIKE: SQL NOT LIKE pattern matching
+                 - OPERATION_CAST: Type cast operation
+            enum:
+                - OPERATION_UNSPECIFIED
+                - OPERATION_EQ
+                - OPERATION_NEQ
+                - OPERATION_LT
+                - OPERATION_LTE
+                - OPERATION_GT
+                - OPERATION_GTE
+                - OPERATION_OR
+                - OPERATION_AND
+                - OPERATION_IN
+                - OPERATION_NIN
+                - OPERATION_LIKE
+                - OPERATION_NLIKE
+                - OPERATION_CAST
+            type: string
+    securitySchemes:
+        BearerAuth:
+            description: 'Bearer token authentication. Format: ''Bearer <token>''. Obtain tokens via `rill service token issue` CLI command or the IssueServiceAuthToken/IssueUserAuthToken endpoints.'
+            in: header
+            name: Authorization
+            type: apiKey
 externalDocs:
     description: Rill API Documentation
     url: https://docs.rilldata.com
 info:
-    description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
+    contact:
+        name: Rill Data
+        url: https://www.rilldata.com
+    description: |-
+        The Rill Admin API enables programmatic management of Rill Cloud resources including organizations, projects, deployments, and user access.
+
+        All endpoints require authentication via a Bearer token unless otherwise noted. Tokens can be obtained using the Rill CLI (`rill service token issue`) or via the authentication endpoints.
+
+        Common error codes:
+        - 400: Invalid request parameters
+        - 401: Missing or invalid authentication
+        - 403: Insufficient permissions
+        - 404: Resource not found
+        - 429: Rate limit exceeded
     title: Rill Admin API
-    version: v0.79.5
+    version: v0.81.0
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
@@ -2345,15 +2400,27 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1ListOrganizationsResponse'
+                                $ref: '#/components/schemas/ListOrganizationsResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: ListOrganizations lists all the organizations currently managed by the admin
+            tags:
+                - Organizations
             x-visibility: public
         post:
             operationId: AdminService_CreateOrganization
@@ -2361,7 +2428,8 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/v1CreateOrganizationRequest'
+                            $ref: '#/components/schemas/CreateOrganizationRequest'
+                description: Create a new organization.
                 required: true
                 x-originalParamName: body
             responses:
@@ -2369,15 +2437,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1CreateOrganizationResponse'
+                                $ref: '#/components/schemas/CreateOrganizationResponse'
                     description: A successful response.
+                "400":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Bad request - invalid organization parameters
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: CreateOrganization creates a new organization
+            tags:
+                - Organizations
             x-visibility: public
     /v1/orgs/{org}:
         delete:
@@ -2393,15 +2478,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1DeleteOrganizationResponse'
+                                $ref: '#/components/schemas/DeleteOrganizationResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
+                "404":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Organization not found
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: DeleteOrganization deletes an organization
+            tags:
+                - Organizations
             x-visibility: public
         get:
             operationId: AdminService_GetOrganization
@@ -2420,15 +2522,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1GetOrganizationResponse'
+                                $ref: '#/components/schemas/GetOrganizationResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
+                "404":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Organization not found
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: GetOrganization returns information about a specific organization
+            tags:
+                - Organizations
             x-visibility: public
         patch:
             operationId: AdminService_UpdateOrganization
@@ -2469,15 +2588,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1UpdateOrganizationResponse'
+                                $ref: '#/components/schemas/UpdateOrganizationResponse'
                     description: A successful response.
+                "400":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Bad request - invalid organization parameters
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: UpdateOrganization deletes an organizations
+            tags:
+                - Organizations
             x-visibility: public
     /v1/orgs/{org}/billing/issues: {}
     /v1/orgs/{org}/billing/payments/portal-url: {}
@@ -2508,15 +2644,27 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1ListOrganizationInvitesResponse'
+                                $ref: '#/components/schemas/ListOrganizationInvitesResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: ListOrganizationInvites lists all the org invites
+            tags:
+                - Organization Members
             x-visibility: public
     /v1/orgs/{org}/members:
         get:
@@ -2560,15 +2708,27 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1ListOrganizationMemberUsersResponse'
+                                $ref: '#/components/schemas/ListOrganizationMemberUsersResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: ListOrganizationMemberUsers lists all the org members
+            tags:
+                - Organization Members
             x-visibility: public
         post:
             operationId: AdminService_AddOrganizationMemberUser
@@ -2597,15 +2757,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1AddOrganizationMemberUserResponse'
+                                $ref: '#/components/schemas/AddOrganizationMemberUserResponse'
                     description: A successful response.
+                "400":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Bad request - invalid member parameters
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: AddOrganizationMemberUser adds a user to the organization
+            tags:
+                - Organization Members
             x-visibility: public
     /v1/orgs/{org}/members/{email}:
         delete:
@@ -2626,15 +2803,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1RemoveOrganizationMemberUserResponse'
+                                $ref: '#/components/schemas/RemoveOrganizationMemberUserResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
+                "404":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Member not found
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: RemoveOrganizationMemberUser removes member from the organization
+            tags:
+                - Organization Members
             x-visibility: public
     /v1/orgs/{org}/members/{email}/attributes: {}
     /v1/orgs/{org}/members/current: {}
@@ -2662,20 +2856,33 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1ListProjectsForOrganizationResponse'
+                                $ref: '#/components/schemas/ListProjectsForOrganizationResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
+            tags:
+                - Projects
             x-visibility: public
         post:
             operationId: AdminService_CreateProject
             parameters:
-                - in: path
+                - description: Organization name (required).
+                  in: path
                   name: org
                   required: true
                   schema:
@@ -2684,11 +2891,18 @@ paths:
                 content:
                     application/json:
                         schema:
+                            description: Create a new project in an organization.
+                            example:
+                                description: Sales dashboard project
+                                org: my-org
+                                project: sales-analytics
+                                public: false
                             properties:
                                 archiveAssetId:
                                     description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
                                     type: string
                                 description:
+                                    description: Optional human-readable description of the project.
                                     type: string
                                 directoryName:
                                     description: |-
@@ -2709,15 +2923,18 @@ paths:
                                 prodVersion:
                                     type: string
                                 project:
+                                    description: Project name (required). Must be unique within the organization.
                                     type: string
                                 provisioner:
                                     type: string
                                 public:
+                                    description: Whether the project is publicly accessible.
                                     type: boolean
                                 skipDeploy:
                                     type: boolean
                                 subpath:
                                     type: string
+                            title: CreateProjectRequest
                             type: object
                 required: true
                 x-originalParamName: body
@@ -2726,15 +2943,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1CreateProjectResponse'
+                                $ref: '#/components/schemas/CreateProjectResponse'
                     description: A successful response.
+                "400":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Bad request - invalid project parameters
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: CreateProject creates a new project
+            tags:
+                - Projects
             x-visibility: public
     /v1/orgs/{org}/projects-for-user: {}
     /v1/orgs/{org}/projects/{project}:
@@ -2756,15 +2990,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1DeleteProjectResponse'
+                                $ref: '#/components/schemas/DeleteProjectResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
+                "404":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Project not found
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: DeleteProject deletes an project
+            tags:
+                - Projects
             x-visibility: public
         get:
             operationId: AdminService_GetProject
@@ -2802,15 +3053,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1GetProjectResponse'
+                                $ref: '#/components/schemas/GetProjectResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
+                "404":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Project not found
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: GetProject returns information about a specific project
+            tags:
+                - Projects
             x-visibility: public
         patch:
             operationId: AdminService_UpdateProject
@@ -2866,15 +3134,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1UpdateProjectResponse'
+                                $ref: '#/components/schemas/UpdateProjectResponse'
                     description: A successful response.
+                "400":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Bad request - invalid project parameters
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: UpdateProject updates a project
+            tags:
+                - Projects
             x-visibility: public
     /v1/orgs/{org}/projects/{project}/alerts: {}
     /v1/orgs/{org}/projects/{project}/alerts/-/yaml: {}
@@ -2939,15 +3224,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1GetProjectVariablesResponse'
+                                $ref: '#/components/schemas/GetProjectVariablesResponse'
                     description: A successful response.
+                "401":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Unauthenticated - missing or invalid token
+                "403":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Permission denied - insufficient permissions
+                "404":
+                    content:
+                        application/json:
+                            schema: {}
+                    description: Project not found
                 default:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/rpcStatus'
+                                $ref: '#/components/schemas/Status'
                     description: An unexpected error response.
             summary: GetProjectVariables returns project variables.
+            tags:
+                - Projects
             x-visibility: public
     /v1/orgs/{org}/projects/{project}/whitelisted: {}
     /v1/orgs/{org}/projects/{project}/whitelisted/{domain}: {}
@@ -3003,3 +3305,45 @@ paths:
     /v1/users/current: {}
     /v1/users/preferences: {}
     /v1/users/search: {}
+security:
+    - BearerAuth: []
+tags:
+    - name: AdminService
+    - name: AIService
+    - name: TelemetryService
+    - description: Create, read, update, and delete organizations. Organizations are the top-level grouping for projects and users.
+      name: Organizations
+    - description: Manage projects within an organization. Projects contain data models, dashboards, and other resources.
+      name: Projects
+    - description: Manage project deployments. Deployments represent running instances of a project in the cloud.
+      name: Deployments
+    - description: Manage user accounts, preferences, and authentication tokens.
+      name: Users
+    - description: Manage organization membership, roles, and invitations.
+      name: Organization Members
+    - description: Manage project-level membership, roles, and invitations.
+      name: Project Members
+    - description: Manage user groups for bulk role assignment across organizations and projects.
+      name: User Groups
+    - description: Manage service accounts and their authentication tokens for programmatic API access.
+      name: Service Accounts
+    - description: Issue, list, and revoke authentication tokens including user tokens, magic auth tokens, and representative tokens.
+      name: Auth Tokens
+    - description: GitHub integration endpoints for connecting projects to repositories and managing Git credentials.
+      name: GitHub
+    - description: Create, edit, and manage metric alerts that notify users when conditions are met.
+      name: Alerts
+    - description: Create, edit, and manage scheduled reports for automated delivery of dashboard snapshots.
+      name: Reports
+    - description: Save and manage bookmarked dashboard states for quick access.
+      name: Bookmarks
+    - description: Manage billing subscriptions, payment methods, and billing plans.
+      name: Billing
+    - description: Request, approve, or deny access to projects.
+      name: Access Requests
+    - description: Manage whitelisted email domains for automatic membership at the organization or project level.
+      name: Whitelisted Domains
+    - description: Manage virtual repository files and metadata.
+      name: Virtual Files
+    - description: Administrative endpoints requiring superuser privileges. Used for platform-level management operations.
+      name: Superuser

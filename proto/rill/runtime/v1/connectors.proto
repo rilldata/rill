@@ -5,12 +5,18 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/schema.proto";
 import "validate/validate.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 service ConnectorService {
- // ListBuckets lists buckets accessible with the configured credentials.
+  // ListBuckets lists buckets accessible with the configured credentials.
   rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/connectors/{connector}/buckets"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -19,70 +25,124 @@ service ConnectorService {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/connectors/{connector}/buckets/{bucket}/objects"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Bucket not found"}};
+    };
   }
 
-  // OLAPListTables list all tables across all databases in an OLAP
+  // OLAPListTables lists all tables across all databases in an OLAP connector.
   rpc OLAPListTables(OLAPListTablesRequest) returns (OLAPListTablesResponse) {
     option (google.api.http) = {get: "/v1/olap/tables"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
-  // OLAPGetTable returns metadata about a table or view in an OLAP
+  // OLAPGetTable returns metadata about a specific table or view in an OLAP connector, including its schema and unsupported columns.
   rpc OLAPGetTable(OLAPGetTableRequest) returns (OLAPGetTableResponse) {
     option (google.api.http) = {get: "/v1/connectors/olap/table"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Table not found"}};
+    };
   }
 
-  // ListDatabaseSchemas list all schemas across databases 
+  // ListDatabaseSchemas lists all schemas across databases for a given connector.
   rpc ListDatabaseSchemas(ListDatabaseSchemasRequest) returns (ListDatabaseSchemasResponse) {
     option (google.api.http) = {get: "/v1/connectors/database_schemas"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
-  // ListTables list all tables for database and database_schema provided
+  // ListTables lists all tables for the specified database and schema.
   rpc ListTables(ListTablesRequest) returns (ListTablesResponse) {
     option (google.api.http) = {get: "/v1/connectors/tables"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
-  // GetTable returns metadata about a table or view
+  // GetTable returns column-level metadata about a specific table or view.
   rpc GetTable(GetTableRequest) returns (GetTableResponse) {
     option (google.api.http) = {get: "/v1/connectors/table_metadata"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Table not found"}};
+    };
   }
 
 }
 
 message ListBucketsRequest {
+  // Runtime instance ID.
   string instance_id = 1;
+  // Connector name to list buckets from.
   string connector = 2;
+  // Maximum number of buckets to return per page.
   uint32 page_size = 3;
+  // Pagination token from a previous response.
   string page_token = 4;
 }
 
 message ListBucketsResponse {
+  // Token to retrieve the next page of results. Empty if no more pages.
   string next_page_token = 1;
+  // List of bucket names.
   repeated string buckets = 2;
 }
 
 message ListObjectsRequest {
+  // Runtime instance ID.
   string instance_id = 1;
+  // Connector name.
   string connector = 2;
+  // Bucket name (required).
   string bucket = 3 [(validate.rules).string.min_len = 1];
+  // Path prefix to filter objects by.
   string path = 4;
+  // Delimiter for hierarchical listing (typically "/").
   string delimiter = 5;
+  // Maximum number of objects to return per page (max 100).
   uint32 page_size = 6 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  // Pagination token from a previous response.
   string page_token = 7;
 }
 
 message ListObjectsResponse {
+  // Token to retrieve the next page of results. Empty if no more pages.
   string next_page_token = 1;
+  // List of objects in the bucket.
   repeated Object objects = 2;
 }
 
+// Object represents a file or directory in an object store bucket.
 message Object {
+  // Object name (file or directory path).
   string name = 1;
+  // Last modification timestamp.
   google.protobuf.Timestamp modified_on = 2;
+  // Size in bytes (0 for directories).
   int64 size = 3;
+  // Whether this object represents a directory.
   bool is_dir = 4;
 }
 
 message OLAPListTablesRequest {
+  // Runtime instance ID.
   string instance_id = 1;
   // Connector to list tables from.
   string connector = 2;
@@ -90,89 +150,131 @@ message OLAPListTablesRequest {
   // Has the same syntax and behavior as ILIKE in SQL.
   // If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
   string search_pattern = 3;
+  // Maximum number of tables to return per page (max 100).
   uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  // Pagination token from a previous response.
   string page_token = 5;
-
 }
 
 message OLAPListTablesResponse {
+  // List of tables matching the request.
   repeated OlapTableInfo tables = 1;
+  // Token to retrieve the next page of results. Empty if no more pages.
   string next_page_token = 2;
 }
 
-message OlapTableInfo { 
+// OlapTableInfo contains summary information about a table in an OLAP connector.
+message OlapTableInfo {
+  // Database name the table belongs to.
   string database = 1;
+  // Schema name within the database.
   string database_schema = 4;
+  // Whether this is the default database for the connector.
   bool is_default_database = 5;
+  // Whether this is the default schema for the connector.
   bool is_default_database_schema = 6;
+  // Table name.
   string name = 2;
-  // has_unsupported_data_types indicates if the underlying table has any column with an unsupported OLAP engine datatype
+  // Whether the table has any columns with unsupported OLAP engine datatypes.
   bool has_unsupported_data_types = 3;
-  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+  // Physical size of the table in bytes. Set to -1 if the size cannot be determined.
   int64 physical_size_bytes = 7;
 }
 
 message OLAPGetTableRequest {
+  // Runtime instance ID.
   string instance_id = 1;
+  // Connector name.
   string connector = 2;
+  // Database name.
   string database = 4;
+  // Schema name within the database.
   string database_schema = 5;
+  // Table name to retrieve metadata for.
   string table = 3;
 }
 
 message OLAPGetTableResponse {
+  // Column schema of the table.
   StructType schema = 1;
-  // unsupported_columns are columns having datatypes which are not supported by Rill
+  // Map of column name to datatype string for columns with unsupported datatypes.
   map<string, string> unsupported_columns = 3;
+  // Whether the table is a view.
   bool view = 2;
-  // physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined.
+  // Physical size of the table in bytes. Set to -1 if the size cannot be determined.
   int64 physical_size_bytes = 4;
 }
 
 message ListDatabaseSchemasRequest {
+  // Runtime instance ID.
   string instance_id = 1;
+  // Connector name.
   string connector = 2;
+  // Maximum number of schemas to return per page (max 100).
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  // Pagination token from a previous response.
   string page_token = 4;
 }
 
 message ListDatabaseSchemasResponse {
+  // List of database schemas.
   repeated DatabaseSchemaInfo database_schemas = 1;
+  // Token to retrieve the next page of results. Empty if no more pages.
   string next_page_token = 2;
 }
 
+// DatabaseSchemaInfo represents a database + schema pair.
 message DatabaseSchemaInfo {
+  // Database name.
   string database = 1;
+  // Schema name within the database.
   string database_schema = 2;
 }
 
 message ListTablesRequest {
+  // Runtime instance ID.
   string instance_id = 1;
+  // Connector name.
   string connector = 2;
+  // Database name to list tables from.
   string database = 3;
+  // Schema name within the database.
   string database_schema = 4;
+  // Maximum number of tables to return per page (max 100).
   uint32 page_size = 5 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  // Pagination token from a previous response.
   string page_token = 6;
 }
 
 message ListTablesResponse {
+  // List of tables.
   repeated TableInfo tables = 1;
+  // Token to retrieve the next page of results. Empty if no more pages.
   string next_page_token = 2;
 }
 
-message TableInfo { 
+// TableInfo contains summary information about a database table.
+message TableInfo {
+  // Table name.
   string name = 1;
+  // Whether the table is a view.
   bool view = 2;
 }
 
 message GetTableRequest {
+  // Runtime instance ID.
   string instance_id = 1;
+  // Connector name.
   string connector = 2;
+  // Database name.
   string database = 4;
+  // Schema name within the database.
   string database_schema = 5;
+  // Table name to retrieve metadata for.
   string table = 3;
 }
 
 message GetTableResponse {
+  // Map of column name to column type string.
   map<string, string> schema = 1;
 }

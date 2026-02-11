@@ -9,55 +9,95 @@ import "rill/runtime/v1/expression.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 
+// ReconcileStatus indicates the current reconciliation state of a resource.
 enum ReconcileStatus {
   RECONCILE_STATUS_UNSPECIFIED = 0;
+  // Resource is idle and up to date.
   RECONCILE_STATUS_IDLE = 1;
+  // Resource is queued for reconciliation.
   RECONCILE_STATUS_PENDING = 2;
+  // Resource is currently being reconciled.
   RECONCILE_STATUS_RUNNING = 3;
 }
 
+// Resource represents a runtime resource parsed from a project file (e.g., source, model, metrics view).
+// Each resource has metadata and exactly one type-specific payload.
 message Resource {
+  // Common metadata for the resource (name, status, timestamps, etc.).
   ResourceMeta meta = 1;
   oneof resource {
-    // Well-known types only, for now. If required, we can add support for a google.protobuf.Any later.
+    // Project parser state and errors.
     ProjectParser project_parser = 2;
+    // Data source (ingestion from external connectors).
     Source source = 3;
+    // Data model (SQL transformation).
     Model model = 4;
+    // Metrics view definition (measures and dimensions for analytics).
     MetricsView metrics_view = 5;
+    // Explore configuration (dashboard UI settings for a metrics view).
     Explore explore = 17;
+    // Schema migration.
     Migration migration = 9;
+    // Scheduled report definition.
     Report report = 10;
+    // Alert definition (triggered notifications based on metric conditions).
     Alert alert = 12;
+    // Manual refresh trigger for sources/models.
     RefreshTrigger refresh_trigger = 7;
+    // Theme configuration for dashboard styling.
     Theme theme = 11;
+    // Reusable UI component for canvases.
     Component component = 13;
+    // Canvas layout definition (multi-component dashboard).
     Canvas canvas = 14;
+    // Custom API endpoint (resolver-backed).
     API api = 15;
+    // Connector configuration.
     ConnectorV2 connector = 16;
   }
 }
 
+// ResourceMeta contains common metadata shared by all resource types.
 message ResourceMeta {
+  // Unique identifier for the resource (kind + name).
   ResourceName name = 1;
+  // Resources this resource depends on (e.g., a model depends on a source).
   repeated ResourceName refs = 2;
+  // The resource that owns/manages this resource, if any.
   optional ResourceName owner = 3;
+  // Project file paths that define this resource.
   repeated string file_paths = 4;
+  // Whether the resource is hidden from UI listings.
   bool hidden = 7;
+  // Monotonically increasing version number, incremented on any change.
   int64 version = 15;
+  // Version number for the spec (definition), incremented when the spec changes.
   int64 spec_version = 5;
+  // Version number for the state (runtime status), incremented when the state changes.
   int64 state_version = 6;
+  // Timestamp when the resource was first created.
   google.protobuf.Timestamp created_on = 9;
+  // Timestamp when the spec was last updated.
   google.protobuf.Timestamp spec_updated_on = 10;
+  // Timestamp when the state was last updated.
   google.protobuf.Timestamp state_updated_on = 11;
+  // Timestamp when the resource was soft-deleted, if applicable.
   optional google.protobuf.Timestamp deleted_on = 12;
+  // Current reconciliation status (idle, pending, running).
   ReconcileStatus reconcile_status = 16;
+  // Error message from the last reconciliation attempt, if any.
   string reconcile_error = 8;
+  // Timestamp of the last reconciliation.
   google.protobuf.Timestamp reconcile_on = 17;
+  // Previous name if the resource was renamed.
   optional ResourceName renamed_from = 13;
 }
 
+// ResourceName uniquely identifies a resource by its kind and name.
 message ResourceName {
+  // Resource kind (e.g., "rill.runtime.v1.Source", "rill.runtime.v1.Model").
   string kind = 1;
+  // Human-readable name of the resource.
   string name = 2;
 }
 

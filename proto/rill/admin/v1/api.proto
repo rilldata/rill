@@ -14,11 +14,105 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
     title: "Rill Admin API";
-    description: "Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions."
+    version: "v1";
+    description: "The Rill Admin API enables programmatic management of Rill Cloud resources including organizations, projects, deployments, and user access.\n\nAll endpoints require authentication via a Bearer token unless otherwise noted. Tokens can be obtained using the Rill CLI (`rill service token issue`) or via the authentication endpoints.\n\nCommon error codes:\n- 400: Invalid request parameters\n- 401: Missing or invalid authentication\n- 403: Insufficient permissions\n- 404: Resource not found\n- 429: Rate limit exceeded";
+    contact: {
+      name: "Rill Data";
+      url: "https://www.rilldata.com";
+    };
   };
   external_docs: {
     description: "Rill API Documentation";
     url: "https://docs.rilldata.com";
+  };
+  security_definitions: {
+    security: {
+      key: "BearerAuth";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+        description: "Bearer token authentication. Format: 'Bearer <token>'. Obtain tokens via `rill service token issue` CLI command or the IssueServiceAuthToken/IssueUserAuthToken endpoints.";
+      };
+    };
+  };
+  security: {
+    security_requirement: {
+      key: "BearerAuth";
+      value: {};
+    };
+  };
+  tags: {
+    name: "Organizations";
+    description: "Create, read, update, and delete organizations. Organizations are the top-level grouping for projects and users.";
+  };
+  tags: {
+    name: "Projects";
+    description: "Manage projects within an organization. Projects contain data models, dashboards, and other resources.";
+  };
+  tags: {
+    name: "Deployments";
+    description: "Manage project deployments. Deployments represent running instances of a project in the cloud.";
+  };
+  tags: {
+    name: "Users";
+    description: "Manage user accounts, preferences, and authentication tokens.";
+  };
+  tags: {
+    name: "Organization Members";
+    description: "Manage organization membership, roles, and invitations.";
+  };
+  tags: {
+    name: "Project Members";
+    description: "Manage project-level membership, roles, and invitations.";
+  };
+  tags: {
+    name: "User Groups";
+    description: "Manage user groups for bulk role assignment across organizations and projects.";
+  };
+  tags: {
+    name: "Service Accounts";
+    description: "Manage service accounts and their authentication tokens for programmatic API access.";
+  };
+  tags: {
+    name: "Auth Tokens";
+    description: "Issue, list, and revoke authentication tokens including user tokens, magic auth tokens, and representative tokens.";
+  };
+  tags: {
+    name: "GitHub";
+    description: "GitHub integration endpoints for connecting projects to repositories and managing Git credentials.";
+  };
+  tags: {
+    name: "Alerts";
+    description: "Create, edit, and manage metric alerts that notify users when conditions are met.";
+  };
+  tags: {
+    name: "Reports";
+    description: "Create, edit, and manage scheduled reports for automated delivery of dashboard snapshots.";
+  };
+  tags: {
+    name: "Bookmarks";
+    description: "Save and manage bookmarked dashboard states for quick access.";
+  };
+  tags: {
+    name: "Billing";
+    description: "Manage billing subscriptions, payment methods, and billing plans.";
+  };
+  tags: {
+    name: "Access Requests";
+    description: "Request, approve, or deny access to projects.";
+  };
+  tags: {
+    name: "Whitelisted Domains";
+    description: "Manage whitelisted email domains for automatic membership at the organization or project level.";
+  };
+  tags: {
+    name: "Virtual Files";
+    description: "Manage virtual repository files and metadata.";
+  };
+  tags: {
+    name: "Superuser";
+    description: "Administrative endpoints requiring superuser privileges. Used for platform-level management operations.";
   };
 };
 
@@ -26,12 +120,19 @@ service AdminService {
   // Ping returns information about the server
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {get: "/v1/ping"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organizations";
+      security: {};
+    };
   }
 
   // ListOrganizations lists all the organizations currently managed by the admin
   rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
     option (google.api.http) = {get: "/v1/orgs"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organizations";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -45,6 +146,10 @@ service AdminService {
   rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organizations";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Organization not found"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -59,6 +164,12 @@ service AdminService {
   // It can be called without being authenticated.
   rpc GetOrganizationNameForDomain(GetOrganizationNameForDomainRequest) returns (GetOrganizationNameForDomainResponse) {
     option (google.api.http) = {get: "/v1/organization-for-domain/{domain}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organizations";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Organization not found for domain"}};
+    };
   }
 
   // CreateOrganization creates a new organization
@@ -68,6 +179,10 @@ service AdminService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organizations";
+      responses: {key: "400"; value: {description: "Bad request - invalid organization parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -81,6 +196,10 @@ service AdminService {
   rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organizations";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Organization not found"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -97,6 +216,10 @@ service AdminService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organizations";
+      responses: {key: "400"; value: {description: "Bad request - invalid organization parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -110,6 +233,9 @@ service AdminService {
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -123,18 +249,32 @@ service AdminService {
   // It does not include projects that the user has access to through a usergroup.
   rpc ListProjectsForOrganizationAndUser(ListProjectsForOrganizationAndUserRequest) returns (ListProjectsForOrganizationAndUserResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects-for-user"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
   // This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
   rpc ListProjectsForFingerprint(ListProjectsForFingerprintRequest) returns (ListProjectsForFingerprintResponse) {
     option (google.api.http) = {get: "/v1/projects-for-fingerprint"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Project not found"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -147,16 +287,33 @@ service AdminService {
   // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
   rpc ListProjectsForUserByName(ListProjectsForUserByNameRequest) returns (ListProjectsForUserByNameResponse) {
     option (google.api.http) = {get: "/v1/projects"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetProject returns information about a specific project
   rpc GetProjectByID(GetProjectByIDRequest) returns (GetProjectByIDResponse) {
     option (google.api.http) = {get: "/v1/projects/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Project not found"}};
+    };
   }
 
   // SearchProjectNames returns project names matching the pattern
   rpc SearchProjectNames(SearchProjectNamesRequest) returns (SearchProjectNamesResponse) {
     option (google.api.http) = {get: "/v1/superuser/projects/search"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Project not found"}};
+    };
   }
 
   // CreateProject creates a new project
@@ -166,6 +323,10 @@ service AdminService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "400"; value: {description: "Bad request - invalid project parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -179,6 +340,10 @@ service AdminService {
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Project not found"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -195,6 +360,10 @@ service AdminService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "400"; value: {description: "Bad request - invalid project parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -208,6 +377,10 @@ service AdminService {
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/variables"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Project not found"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -223,6 +396,12 @@ service AdminService {
       put: "/v1/orgs/{org}/projects/{project}/variables",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "400"; value: {description: "Bad request - invalid variable parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // CreateAsset returns a one time signed URL using which any asset can be uploaded.
@@ -231,6 +410,12 @@ service AdminService {
       post: "/v1/orgs/{org}/create_asset",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "400"; value: {description: "Bad request - invalid asset parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RedeployProject creates a new production deployment for a project.
@@ -238,17 +423,32 @@ service AdminService {
   // This RPC can be used to redeploy a project that has been hibernated.
   rpc RedeployProject(RedeployProjectRequest) returns (RedeployProjectResponse) {
     option (google.api.http) = {post: "/v1/orgs/{org}/projects/{project}/redeploy"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // HibernateProject hibernates a project by tearing down its deployments.
   rpc HibernateProject(HibernateProjectRequest) returns (HibernateProjectResponse) {
     option (google.api.http) = {post: "/v1/orgs/{org}/projects/{project}/hibernate"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Projects";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListDeployments lists deployments for a project.
   rpc ListDeployments(ListDeploymentsRequest) returns (ListDeploymentsResponse) {
     option (google.api.http) = {
       get: "/v1/orgs/{org}/projects/{project}/deployments"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -258,6 +458,12 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/deployments",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "400"; value: {description: "Bad request - invalid deployment parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -265,6 +471,12 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/credentials",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Deployment not found"}};
     };
   }
 
@@ -274,6 +486,11 @@ service AdminService {
       post: "/v1/deployments/{deployment_id}/start",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // StopDeployment stops a deployment.
@@ -282,12 +499,23 @@ service AdminService {
       post: "/v1/deployments/{deployment_id}/stop",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // DeleteDeployment deletes a deployment.
   rpc DeleteDeployment(DeleteDeploymentRequest) returns (DeleteDeploymentResponse) {
     option (google.api.http) = {
       delete: "/v1/deployments/{deployment_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Deployment not found"}};
     };
   }
 
@@ -298,6 +526,11 @@ service AdminService {
       post: "/v1/deployments/{deployment_id}/reconcile",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // TriggerRefreshSources refresh the source for production deployment.
@@ -306,6 +539,11 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/deployments/{deployment_id}/refresh",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -316,6 +554,11 @@ service AdminService {
       post: "/v1/projects/-/redeploy",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Provision provisions a new resource for a deployment.
@@ -325,23 +568,42 @@ service AdminService {
       post: "/v1/deployments/{deployment_id}/provision",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
   // This is called by the runtime to pull its Variables and Annotations from the admin service.
   rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (GetDeploymentConfigResponse) {
     option (google.api.http) = {get: "/v1/deployments/{deployment_id}/config"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Deployment not found"}};
+    };
   }
 
   // ListRoles lists all the roles available for orgs and projects.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Users";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListOrganizationMemberUsers lists all the org members
   rpc ListOrganizationMemberUsers(ListOrganizationMemberUsersRequest) returns (ListOrganizationMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/members"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -355,6 +617,9 @@ service AdminService {
   rpc ListOrganizationInvites(ListOrganizationInvitesRequest) returns (ListOrganizationInvitesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/invites"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -371,6 +636,10 @@ service AdminService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "400"; value: {description: "Bad request - invalid member parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -384,6 +653,10 @@ service AdminService {
   rpc RemoveOrganizationMemberUser(RemoveOrganizationMemberUserRequest) returns (RemoveOrganizationMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/members/{email}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Member not found"}};
       extensions: {
         key: "x-visibility"
         value: {
@@ -396,6 +669,11 @@ service AdminService {
   // LeaveOrganization removes the current user from the organization
   rpc LeaveOrganization(LeaveOrganizationRequest) returns (LeaveOrganizationResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/members/current"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // SetOrganizationMemberUserRole sets the role for the member
@@ -404,16 +682,33 @@ service AdminService {
       put: "/v1/orgs/{org}/members/{email}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "400"; value: {description: "Bad request - invalid role parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetOrganizationMemberUser gets the member details
   rpc GetOrganizationMemberUser(GetOrganizationMemberUserRequest) returns (GetOrganizationMemberUserResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/members/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Member not found"}};
+    };
   }
 
   // ListUsergroupsForProjectAndUser returns the user groups for a user within a project
   rpc ListUsergroupsForProjectAndUser(ListUsergroupsForProjectAndUserRequest) returns (ListUsergroupsForProjectAndUserResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members/{email}/usergroups"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // UpdateOrganizationMemberUserAttributes updates the attributes for a member
@@ -422,16 +717,32 @@ service AdminService {
       put: "/v1/orgs/{org}/members/{email}/attributes",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "400"; value: {description: "Bad request - invalid attribute parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListProjectMemberUsers lists all the project members
   rpc ListProjectMemberUsers(ListProjectMemberUsersRequest) returns (ListProjectMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Project Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListProjectInvites lists all the project invites
   rpc ListProjectInvites(ListProjectInvitesRequest) returns (ListProjectInvitesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/invites"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Project Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // AddProjectMemberUser adds a member to the project
@@ -440,11 +751,23 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/members",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Project Members";
+      responses: {key: "400"; value: {description: "Bad request - invalid member parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RemoveProjectMemberUser removes member from the project
   rpc RemoveProjectMemberUser(RemoveProjectMemberUserRequest) returns (RemoveProjectMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/members/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Project Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Member not found"}};
+    };
   }
 
   // SetProjectMemberUserRole sets the role for the member
@@ -453,16 +776,33 @@ service AdminService {
       put: "/v1/orgs/{org}/projects/{project}/members/{email}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Project Members";
+      responses: {key: "400"; value: {description: "Bad request - invalid role parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetProjectMemberUser gets the member details
   rpc GetProjectMemberUser(GetProjectMemberUserRequest) returns (GetProjectMemberUserResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Project Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Member not found"}};
+    };
   }
 
   // ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
   rpc ListUsergroupsForOrganizationAndUser(ListUsergroupsForOrganizationAndUserRequest) returns (ListUsergroupsForOrganizationAndUserResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/usergroups-for-user"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Organization Members";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // CreateUsergroup creates a user group in the organization
@@ -471,11 +811,23 @@ service AdminService {
       post: "/v1/orgs/{org}/usergroups",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "400"; value: {description: "Bad request - invalid usergroup parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetUsergroups returns the user group details
   rpc GetUsergroup(GetUsergroupRequest) returns (GetUsergroupResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/usergroups/{usergroup}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "User group not found"}};
+    };
   }
 
   // RenameUsergroup renames the user group
@@ -483,6 +835,12 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/orgs/{org}/usergroups/{usergroup}",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "400"; value: {description: "Bad request - invalid usergroup parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -492,21 +850,43 @@ service AdminService {
       put: "/v1/orgs/{org}/usergroups/{usergroup}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "400"; value: {description: "Bad request - invalid usergroup parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListOrganizationMemberUsergroups lists the org's user groups
   rpc ListOrganizationMemberUsergroups(ListOrganizationMemberUsergroupsRequest) returns (ListOrganizationMemberUsergroupsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/usergroups"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListProjectMemberUsergroups lists the project's user groups
   rpc ListProjectMemberUsergroups(ListProjectMemberUsergroupsRequest) returns (ListProjectMemberUsergroupsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/project/{project}/usergroups"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // DeleteUsergroup deletes the user group from the organization
   rpc DeleteUsergroup(DeleteUsergroupRequest) returns (DeleteUsergroupResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/usergroups/{usergroup}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "User group not found"}};
+    };
   }
 
   // AddOrganizationMemberUsergroupRole adds the role for the user group
@@ -514,6 +894,12 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/orgs/{org}/usergroups/{usergroup}/role",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "400"; value: {description: "Bad request - invalid role parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -523,11 +909,23 @@ service AdminService {
       put: "/v1/orgs/{org}/usergroups/{usergroup}/role",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "400"; value: {description: "Bad request - invalid role parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
   rpc RemoveOrganizationMemberUsergroup(RemoveOrganizationMemberUsergroupRequest) returns (RemoveOrganizationMemberUsergroupResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/usergroups/{usergroup}/role"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "User group role not found"}};
+    };
   }
 
   // AddProjectMemberUsergroupRole adds the role for the user group
@@ -535,6 +933,12 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "400"; value: {description: "Bad request - invalid role parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -544,12 +948,24 @@ service AdminService {
       put: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "400"; value: {description: "Bad request - invalid role parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RemoveProjectMemberUsergroup revokes the project-level role for the user group
   rpc RemoveProjectMemberUsergroup(RemoveProjectMemberUsergroupRequest) returns (RemoveProjectMemberUsergroupResponse) {
     option (google.api.http) = {
       delete: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "User group role not found"}};
     };
   }
 
@@ -559,21 +975,44 @@ service AdminService {
       put: "/v1/orgs/{org}/usergroups/{usergroup}/members/{email}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "400"; value: {description: "Bad request - invalid member parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListUsergroupMemberUsers lists all the user group members
   rpc ListUsergroupMemberUsers(ListUsergroupMemberUsersRequest) returns (ListUsergroupMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/usergroups/{usergroup}/members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RemoveUsergroupMemberUser removes member from the user group
   rpc RemoveUsergroupMemberUser(RemoveUsergroupMemberUserRequest) returns (RemoveUsergroupMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/usergroups/{usergroup}/members/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "User Groups";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Member not found in user group"}};
+    };
   }
 
   // GetUser returns user by email
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {
     option (google.api.http) = {get: "/v1/users"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Users";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "User not found"}};
+    };
   }
 
   // GetCurrentUser returns the currently authenticated user (if any)
@@ -581,17 +1020,34 @@ service AdminService {
     option (google.api.http) = {
       get: "/v1/users/current"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Users";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "User not found"}};
+    };
   }
 
   // DeleteUser deletes the user from the organization by email
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
     option (google.api.http) = {delete: "/v1/users/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Users";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "User not found"}};
+    };
   }
 
   // ListUserAuthTokens lists the current user's auth tokens.
   // You can optionally pass "current" instead of the user ID to list the current user's tokens.
   rpc ListUserAuthTokens(ListUserAuthTokensRequest) returns (ListUserAuthTokensResponse) {
     option (google.api.http) = {get: "/v1/users/{user_id}/tokens"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // IssueUserAuthToken issues an access token for the current user.
@@ -601,18 +1057,35 @@ service AdminService {
       post: "/v1/users/{user_id}/tokens",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "400"; value: {description: "Bad request - invalid token parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RevokeUserAuthToken revokes a user access token.
   // You can optionally pass "current" instead of the token ID to revoke the current token.
   rpc RevokeUserAuthToken(RevokeUserAuthTokenRequest) returns (RevokeUserAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/users/-/tokens/{token_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Token not found"}};
+    };
   }
 
   // RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
   // You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
   rpc RevokeAllUserAuthTokens(RevokeAllUserAuthTokensRequest) returns (RevokeAllUserAuthTokensResponse) {
     option (google.api.http) = {delete: "/v1/users/{user_id}/tokens"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
@@ -620,6 +1093,11 @@ service AdminService {
   rpc RevokeRepresentativeAuthTokens(RevokeRepresentativeAuthTokensRequest) returns (RevokeRepresentativeAuthTokensResponse) {
     option (google.api.http) = {
       delete: "/v1/users/-/tokens/representing/{email}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -630,28 +1108,56 @@ service AdminService {
       post: "/v1/tokens/represent",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "400"; value: {description: "Bad request - invalid token parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RevokeCurrentAuthToken revoke the current auth token.
   // Deprecated: Use RevokeUserAuthToken with ID set to "current" instead.
   rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/tokens/current"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
   // If the caller has not granted access to the repository, instructions for granting access are returned.
   rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
     option (google.api.http) = {get: "/v1/github/repositories"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "GitHub";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Repository not found"}};
+    };
   }
 
   // GetGithubUserStatus returns info about a Github user account based on the caller's installations.
   // If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
   rpc GetGithubUserStatus(GetGithubUserStatusRequest) returns (GetGithubUserStatusResponse) {
     option (google.api.http) = {get: "/v1/github/user"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "GitHub";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "GitHub user status not found"}};
+    };
   }
 
   rpc ListGithubUserRepos(ListGithubUserReposRequest) returns (ListGithubUserReposResponse) {
     option (google.api.http) = {get: "/v1/github/user/repositories"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "GitHub";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Connects a rill managed project to github.
@@ -661,6 +1167,11 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/connect-to-github",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "GitHub";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // CreateManagedGitRepo creates a new rill managed git repo for the organization.
@@ -669,11 +1180,23 @@ service AdminService {
       put: "/v1/orgs/{org}/create-managed-git-repo",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "GitHub";
+      responses: {key: "400"; value: {description: "Bad request - invalid repository parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/clone-credentials"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "GitHub";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Project or credentials not found"}};
+    };
   }
 
   // CreateWhitelistedDomain adds a domain to the whitelist
@@ -682,31 +1205,65 @@ service AdminService {
       post: "/v1/orgs/{org}/whitelisted",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Whitelisted Domains";
+      responses: {key: "400"; value: {description: "Bad request - invalid domain parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RemoveWhitelistedDomain removes a domain from the whitelist list
   rpc RemoveWhitelistedDomain(RemoveWhitelistedDomainRequest) returns (RemoveWhitelistedDomainResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/whitelisted/{domain}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Whitelisted Domains";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Whitelisted domain not found"}};
+    };
   }
 
   // ListWhitelistedDomains lists all the whitelisted domains for the organization
   rpc ListWhitelistedDomains(ListWhitelistedDomainsRequest) returns (ListWhitelistedDomainsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/whitelisted"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Whitelisted Domains";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetUsersByEmail returns users by email
   rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {
     option (google.api.http) = {get: "/v1/users/search"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Users";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "User not found"}};
+    };
   }
 
   // SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
   rpc SearchProjectUsers(SearchProjectUsersRequest) returns (SearchProjectUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/users/search"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Users";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Project not found"}};
+    };
   }
 
   // ListSuperusers lists all the superusers
   rpc ListSuperusers(ListSuperusersRequest) returns (ListSuperusersResponse) {
     option (google.api.http) = {get: "/v1/superuser/members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -716,6 +1273,12 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/credentials",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Project or deployment not found"}};
+    };
   }
 
   // GetIFrame returns the iframe URL for the given project
@@ -723,6 +1286,12 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/orgs/{org}/projects/{project}/iframe",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Deployments";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Project not found"}};
     };
   }
 
@@ -732,11 +1301,23 @@ service AdminService {
       post: "/v1/superuser/members",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "400"; value: {description: "Bad request - invalid superuser parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // SudoGetResource returns details about a resource by ID lookup
   rpc SudoGetResource(SudoGetResourceRequest) returns (SudoGetResourceResponse) {
     option (google.api.http) = {get: "/v1/superuser/resource"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // SudoUpdateUserQuotas update the quotas for users
@@ -744,6 +1325,12 @@ service AdminService {
     option (google.api.http) = {
       patch: "/v1/superuser/quotas/user",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "400"; value: {description: "Bad request - invalid quota parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -753,6 +1340,12 @@ service AdminService {
       patch: "/v1/superuser/quotas/organization",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "400"; value: {description: "Bad request - invalid quota parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
@@ -761,6 +1354,12 @@ service AdminService {
       patch: "/v1/superuser/organization/billing/customer_id",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "400"; value: {description: "Bad request - invalid billing customer parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // SudoExtendTrial extends the trial period for an organization
@@ -768,6 +1367,11 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/superuser/organization/trial/extend",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -779,6 +1383,12 @@ service AdminService {
       patch: "/v1/superuser/organization/custom-domain",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "400"; value: {description: "Bad request - invalid custom domain parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
 
@@ -788,6 +1398,12 @@ service AdminService {
       patch: "/v1/superuser/projects/annotations",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "400"; value: {description: "Bad request - invalid annotation parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
@@ -796,12 +1412,23 @@ service AdminService {
       post: "/v1/superuser/deployments/manager-token",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
   rpc SudoDeleteOrganizationBillingIssue(SudoDeleteOrganizationBillingIssueRequest) returns (SudoDeleteOrganizationBillingIssueResponse) {
     option (google.api.http) = {
       delete: "/v1/superuser/organizations/{org}/billing/issues/{type}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Billing issue not found"}};
     };
   }
 
@@ -811,6 +1438,11 @@ service AdminService {
       post: "/v1/superuser/billing/repair",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Superuser";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
@@ -819,26 +1451,53 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/whitelisted",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Whitelisted Domains";
+      responses: {key: "400"; value: {description: "Bad request - invalid domain parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
   rpc RemoveProjectWhitelistedDomain(RemoveProjectWhitelistedDomainRequest) returns (RemoveProjectWhitelistedDomainResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/whitelisted/{domain}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Whitelisted Domains";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Whitelisted domain not found"}};
+    };
   }
 
   // ListWhitelistedDomains lists all the whitelisted domains of the project
   rpc ListProjectWhitelistedDomains(ListProjectWhitelistedDomainsRequest) returns (ListProjectWhitelistedDomainsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/whitelisted"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Whitelisted Domains";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListService returns all the services per organization
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/services"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListProjectMemberServices returns all the services for the project for an organization
   rpc ListProjectMemberServices(ListProjectMemberServicesRequest) returns (ListProjectMemberServicesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/services"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // CreateService creates a new service per organization
@@ -847,11 +1506,23 @@ service AdminService {
       post: "/v1/orgs/{org}/services",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "400"; value: {description: "Bad request - invalid service parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetService returns information about a specific service
   rpc GetService(GetServiceRequest) returns (GetServiceResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/services/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Service not found"}};
+    };
   }
 
   // UpdateService updates a service per organization
@@ -859,6 +1530,12 @@ service AdminService {
     option (google.api.http) = {
       patch: "/v1/orgs/{org}/services/{name}",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "400"; value: {description: "Bad request - invalid service parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -868,11 +1545,23 @@ service AdminService {
       put: "/v1/orgs/{org}/services/{name}/role",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RemoveOrganizationMemberService removes the organization role for the service
   rpc RemoveOrganizationMemberService(RemoveOrganizationMemberServiceRequest) returns (RemoveOrganizationMemberServiceResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/services/{name}/role"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // SetProjectMemberServiceRole updates the project role for the service
@@ -881,21 +1570,44 @@ service AdminService {
       put: "/v1/orgs/{org}/projects/{project}/services/{name}/role",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RemoveProjectMemberService removes the service from the project
   rpc RemoveProjectMemberService(RemoveProjectMemberServiceRequest) returns (RemoveProjectMemberServiceResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/services/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // DeleteService deletes a service per organization
   rpc DeleteService(DeleteServiceRequest) returns (DeleteServiceResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/services/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // ListServiceAuthTokens lists all the service auth tokens
   rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/services/{service_name}/tokens"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // IssueServiceAuthToken issues an access token for a service
@@ -904,11 +1616,23 @@ service AdminService {
       post: "/v1/orgs/{org}/services/{service_name}/tokens",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RevokeServiceAuthToken revoke a service's access token
   rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/services/tokens/{token_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Service Accounts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
@@ -917,21 +1641,44 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/tokens/magic",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListMagicAuthTokens lists all the magic auth tokens for a specific project.
   rpc ListMagicAuthTokens(ListMagicAuthTokensRequest) returns (ListMagicAuthTokensResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/tokens/magic"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetCurrentMagicAuthToken returns information about the current magic auth token.
   rpc GetCurrentMagicAuthToken(GetCurrentMagicAuthTokenRequest) returns (GetCurrentMagicAuthTokenResponse) {
     option (google.api.http) = {get: "/v1/magic-tokens/current"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // RevokeMagicAuthToken revokes a magic auth token.
   rpc RevokeMagicAuthToken(RevokeMagicAuthTokenRequest) returns (RevokeMagicAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/magic-tokens/{token_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Auth Tokens";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // UpdateUserPreferences updates the preferences for the user
@@ -940,16 +1687,33 @@ service AdminService {
       put: "/v1/users/preferences",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Users";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListBookmarks lists all the bookmarks for the user and global ones for dashboard
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
     option (google.api.http) = {get: "/v1/users/bookmarks"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Bookmarks";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetBookmark returns the bookmark for the given user for the given project
   rpc GetBookmark(GetBookmarkRequest) returns (GetBookmarkResponse) {
     option (google.api.http) = {get: "/v1/users/bookmarks/{bookmark_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Bookmarks";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // CreateBookmark creates a bookmark for the given user or for all users for the dashboard
@@ -957,6 +1721,12 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/users/bookmarks",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Bookmarks";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -966,31 +1736,66 @@ service AdminService {
       put: "/v1/users/bookmarks",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Bookmarks";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // RemoveBookmark removes the bookmark for the given user or all users
   rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
     option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Bookmarks";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // GetRepoMeta returns credentials and other metadata for accessing a project's repo
   rpc GetRepoMeta(GetRepoMetaRequest) returns (GetRepoMetaResponse) {
     option (google.api.http) = {get: "/v1/projects/{project_id}/repo/meta"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Virtual Files";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // PullVirtualRepo fetches files from a project's virtual repo
   rpc PullVirtualRepo(PullVirtualRepoRequest) returns (PullVirtualRepoResponse) {
     option (google.api.http) = {get: "/v1/projects/{project_id}/repo/virtual"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Virtual Files";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
 	// GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
   rpc GetVirtualFile(GetVirtualFileRequest) returns (GetVirtualFileResponse) {
     option (google.api.http) = {get: "/v1/projects/{project_id}/repo/virtual/file"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Virtual Files";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // DeleteVirtualFile deletes a virtual file from a project's virtual repo
   rpc DeleteVirtualFile(DeleteVirtualFileRequest) returns (DeleteVirtualFileResponse) {
     option (google.api.http) = {delete: "/v1/projects/{project_id}/repo/virtual/file"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Virtual Files";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
@@ -998,6 +1803,12 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/projects/{project_id}/reports/meta",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Reports";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
     };
   }
 
@@ -1007,6 +1818,12 @@ service AdminService {
       post: "/v1/projects/{project_id}/alerts/meta",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Alerts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
@@ -1014,6 +1831,12 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/orgs/{org}/projects/{project}/reports",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Reports";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -1023,6 +1846,12 @@ service AdminService {
       put: "/v1/orgs/{org}/projects/{project}/reports/{name}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Reports";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // UnsubscribeReport removes the calling user from a reports recipients list
@@ -1031,11 +1860,22 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/reports/{name}/unsubscribe",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Reports";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
   rpc DeleteReport(DeleteReportRequest) returns (DeleteReportResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/reports/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Reports";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // TriggerReport triggers an ad-hoc report run
@@ -1043,6 +1883,11 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/orgs/{org}/projects/{project}/reports/{name}/trigger",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Reports";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -1052,6 +1897,12 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/reports/-/yaml",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Reports";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
@@ -1059,6 +1910,12 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/orgs/{org}/projects/{project}/alerts",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Alerts";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -1068,6 +1925,12 @@ service AdminService {
       put: "/v1/orgs/{org}/projects/{project}/alerts/{name}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Alerts";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // UnsubscribeAlert removes the calling user from a alert's recipients list
@@ -1076,11 +1939,22 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/alerts/{name}/unsubscribe",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Alerts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
   rpc DeleteAlert(DeleteAlertRequest) returns (DeleteAlertResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/alerts/{name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Alerts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -1089,6 +1963,12 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/alerts/-/yaml",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Alerts";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -1096,11 +1976,23 @@ service AdminService {
     option (google.api.http) = {
       get: "/v1/orgs/{org}/projects/{project}/alerts/{name}/yaml"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Alerts";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // GetBillingSubscription lists the subscription for the organization
   rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/subscriptions"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Billing";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // UpdateBillingSubscription updates the billing plan for the organization
@@ -1109,12 +2001,24 @@ service AdminService {
       patch: "/v1/orgs/{org}/billing/subscriptions",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Billing";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // CancelBillingSubscription cancels the billing subscription for the organization
   rpc CancelBillingSubscription(CancelBillingSubscriptionRequest) returns (CancelBillingSubscriptionResponse) {
     option (google.api.http) = {
       delete: "/v1/orgs/{org}/billing/subscriptions"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Billing";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
     };
   }
 
@@ -1124,16 +2028,33 @@ service AdminService {
       post: "/v1/orgs/{org}/billing/subscriptions/renew",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Billing";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
   rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/payments/portal-url"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Billing";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Billing";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
@@ -1142,6 +2063,11 @@ service AdminService {
       post: "/v1/billing/metrics-project-credentials",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Billing";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   rpc RequestProjectAccess(RequestProjectAccessRequest) returns (RequestProjectAccessResponse) {
@@ -1149,16 +2075,34 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/request-access",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Access Requests";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   rpc GetProjectAccessRequest(GetProjectAccessRequestRequest) returns (GetProjectAccessRequestResponse) {
     option (google.api.http) = {get: "/v1/project-access-request/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Access Requests";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   rpc ApproveProjectAccess(ApproveProjectAccessRequest) returns (ApproveProjectAccessResponse) {
     option (google.api.http) = {
       post: "/v1/project-access-request/{id}/approve",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Access Requests";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -1167,11 +2111,22 @@ service AdminService {
       post: "/v1/project-access-request/{id}/deny",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Access Requests";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListOrganizationBillingIssues lists all the billing issues for the organization
   rpc ListOrganizationBillingIssues(ListOrganizationBillingIssuesRequest) returns (ListOrganizationBillingIssuesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/issues"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Billing";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 }
 
@@ -1211,8 +2166,15 @@ message GetOrganizationNameForDomainResponse {
 }
 
 message CreateOrganizationRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {title: "CreateOrganizationRequest"; description: "Create a new organization."};
+    example: "{\"name\": \"acme-corp\", \"description\": \"Acme Corporation analytics\", \"display_name\": \"Acme Corp\"}";
+  };
+  // Unique organization identifier (required). Used in URLs and API paths.
   string name = 2 [(validate.rules).string.min_len = 1];
+  // Optional description of the organization.
   string description = 3;
+  // Optional human-readable display name.
   string display_name = 4;
 }
 
@@ -1623,9 +2585,17 @@ message DeleteServiceResponse {
 }
 
 message CreateProjectRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {title: "CreateProjectRequest"; description: "Create a new project in an organization."};
+    example: "{\"org\": \"my-org\", \"project\": \"sales-analytics\", \"description\": \"Sales dashboard project\", \"public\": false}";
+  };
+  // Organization name (required).
   string org = 1 [(validate.rules).string.min_len = 1];
+  // Project name (required). Must be unique within the organization.
   string project = 2 [(validate.rules).string.min_len = 1];
+  // Optional human-readable description of the project.
   string description = 3;
+  // Whether the project is publicly accessible.
   bool public = 4;
   // directory_name should be the most recently observed local directory name for the project.
   // See ListProjectsForFingerprint for more context.

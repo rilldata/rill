@@ -5,13 +5,22 @@ option go_package = "github.com/rilldata/rill/proto/gen/rill/admin/v1;adminv1";
 
 import "google/api/annotations.proto";
 import "rill/ai/v1/ai.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 service AIService {
   // Complete sends the messages of a chat to the AI and asks it to generate a new message.
+  // Accepts a list of chat messages and optionally a set of tools and an output JSON schema.
+  // Returns the AI-generated response along with token usage statistics.
   rpc Complete(CompleteRequest) returns (CompleteResponse) {
     option (google.api.http) = {
       post: "/v1/ai/complete",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "AI";
+      responses: {key: "400"; value: {description: "Invalid request - empty messages or malformed input"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 }

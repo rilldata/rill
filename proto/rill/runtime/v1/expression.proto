@@ -4,40 +4,68 @@ package rill.runtime.v1;
 import "google/protobuf/struct.proto";
 import "validate/validate.proto";
 
+// Expression represents a filter expression tree used to filter data in queries.
+// Expressions can be identifiers (column references), literal values, conditions (comparisons/logical ops), or subqueries.
 message Expression {
   oneof expression {
+    // Column or dimension name reference.
     string ident = 1;
+    // Literal value (string, number, bool, null, or list).
     google.protobuf.Value val = 2;
+    // Conditional expression (comparison or logical operation).
     Condition cond = 3;
+    // Subquery expression for nested filtering on measures.
     Subquery subquery = 4;
   }
 }
 
+// Condition represents a comparison or logical operation applied to one or more expressions.
 message Condition {
+  // The operation to apply (e.g., EQ, AND, IN, LIKE).
   Operation op = 1 [(validate.rules).enum.defined_only = true];
+  // Operand expressions. Binary ops (EQ, LT, etc.) expect 2 operands; logical ops (AND, OR) accept multiple; IN/NIN expect ident + list.
   repeated Expression exprs = 2;
 }
 
+// Operation enumerates the comparison and logical operators available for filter expressions.
 enum Operation {
   OPERATION_UNSPECIFIED = 0;
+  // Equals (==)
   OPERATION_EQ = 1;
+  // Not equals (!=)
   OPERATION_NEQ = 2;
+  // Less than (<)
   OPERATION_LT = 3;
+  // Less than or equal (<=)
   OPERATION_LTE = 4;
+  // Greater than (>)
   OPERATION_GT = 5;
+  // Greater than or equal (>=)
   OPERATION_GTE = 6;
+  // Logical OR
   OPERATION_OR = 7;
+  // Logical AND
   OPERATION_AND = 8;
+  // Value is in a list
   OPERATION_IN = 9;
+  // Value is not in a list
   OPERATION_NIN = 10;
+  // SQL LIKE pattern matching
   OPERATION_LIKE = 11;
+  // SQL NOT LIKE pattern matching
   OPERATION_NLIKE = 12;
+  // Type cast operation
   OPERATION_CAST = 13;
 }
 
+// Subquery defines a nested query used for measure-based filtering (e.g., "where sum(revenue) > 1000").
 message Subquery {
+  // The dimension to group by in the subquery.
   string dimension = 1;
+  // The measures to compute in the subquery.
   repeated string measures = 2;
+  // Optional WHERE clause filter applied before aggregation.
   Expression where = 3;
+  // Optional HAVING clause filter applied after aggregation.
   Expression having = 4;
 }

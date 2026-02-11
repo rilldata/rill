@@ -9,6 +9,88 @@ import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/resources.proto";
 import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Rill Runtime API";
+    version: "v1";
+    description: "The Rill Runtime API provides data infrastructure orchestration based on Rill SQL.\n\nIt manages instances (isolated data projects), file operations, resources (sources, models, dashboards), queries, connectors, AI chat, and Git operations.\n\nAll endpoints require authentication via a Bearer JWT token unless otherwise noted.";
+    contact: {
+      name: "Rill Data";
+      url: "https://www.rilldata.com";
+    };
+  };
+  external_docs: {
+    description: "Rill API Documentation";
+    url: "https://docs.rilldata.com";
+  };
+  security_definitions: {
+    security: {
+      key: "BearerAuth";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+        description: "Bearer JWT token authentication. Format: 'Bearer <token>'. Tokens are issued by the Rill Admin service.";
+      };
+    };
+  };
+  security: {
+    security_requirement: {
+      key: "BearerAuth";
+      value: {};
+    };
+  };
+  tags: {
+    name: "Instances";
+    description: "Manage runtime instances. Each instance represents an isolated data project with its own resources, files, and configuration.";
+  };
+  tags: {
+    name: "Files";
+    description: "File operations for the project repository. List, read, write, delete, and watch files.";
+  };
+  tags: {
+    name: "Resources";
+    description: "Manage runtime resources (sources, models, metrics views, explores, canvases, etc.). Resources are parsed from project files.";
+  };
+  tags: {
+    name: "Connectors";
+    description: "Inspect and manage data connector drivers and their configurations.";
+  };
+  tags: {
+    name: "AI";
+    description: "AI-powered chat and code generation. Manage conversations, invoke tools, and stream completions.";
+  };
+  tags: {
+    name: "Git";
+    description: "Git operations for version control. Commit, push, pull, branch, and inspect Git state.";
+  };
+  tags: {
+    name: "Generation";
+    description: "Generate Rill project files such as metrics views, canvases, resolvers, and renderers from existing data models.";
+  };
+  tags: {
+    name: "Queries";
+    description: "Execute SQL queries against the OLAP engine. Supports single queries, batch queries, and data export.";
+  };
+  tags: {
+    name: "Metrics Views";
+    description: "Query metrics views with specialized APIs for aggregation, toplist, comparison, time series, and more.";
+  };
+  tags: {
+    name: "Column Profiling";
+    description: "Profile individual columns to understand data distribution, cardinality, time ranges, and statistics.";
+  };
+  tags: {
+    name: "Table Profiling";
+    description: "Profile tables to understand row counts, columns, and sample data.";
+  };
+  tags: {
+    name: "Canvas";
+    description: "Resolve canvas layouts and individual components with their data.";
+  };
+};
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
 // It has a concept of instances, which are fully isolated data projects, enabling optional multi-tenancy.
@@ -16,16 +98,28 @@ service RuntimeService {
   // Ping returns information about the runtime
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {get: "/v1/ping"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Instances";
+    };
   }
 
   // Health runs a health check on the runtime.
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {get: "/v1/health"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Instances";
+    };
   }
 
   // InstanceHealth runs a health check on a specific instance.
   rpc InstanceHealth(InstanceHealthRequest) returns (InstanceHealthResponse) {
     option (google.api.http) = {get: "/v1/health/instances/{instance_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Instances";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Instance not found"}};
+    };
   }
 
   // Instances
@@ -33,11 +127,22 @@ service RuntimeService {
   // ListInstances lists all the instances currently managed by the runtime
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
     option (google.api.http) = {get: "/v1/instances"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Instances";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetInstance returns information about a specific instance
   rpc GetInstance(GetInstanceRequest) returns (GetInstanceResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Instances";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Instance not found"}};
+    };
   }
 
   // CreateInstance creates a new instance
@@ -45,6 +150,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Instances";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -54,6 +165,12 @@ service RuntimeService {
       patch: "/v1/instances/{instance_id}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Instances";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // DeleteInstance deletes an instance
@@ -61,6 +178,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Instances";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Instance not found"}};
     };
   }
 
@@ -71,6 +194,12 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/reload-config",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Instances";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Repos
@@ -79,16 +208,32 @@ service RuntimeService {
   // The files are sorted by their full path.
   rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/files"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // WatchFiles streams repo file update events. It is not supported on all backends.
   rpc WatchFiles(WatchFilesRequest) returns (stream WatchFilesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/files/watch"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetFile returns the contents of a specific file in a repo.
   rpc GetFile(GetFileRequest) returns (GetFileResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/files/entry"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "File not found"}};
+    };
   }
 
   // PutFile creates or updates a file in a repo
@@ -96,6 +241,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/files/entry",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -105,11 +256,23 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/files/dir",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // DeleteFile deletes a file from a repo
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
     option (google.api.http) = {delete: "/v1/instances/{instance_id}/files/entry"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "File not found"}};
+    };
   }
 
   // RenameFile renames a file in a repo
@@ -118,11 +281,22 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/files/rename",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListExamples lists all the examples embedded into binary
   rpc ListExamples(ListExamplesRequest) returns (ListExamplesResponse) {
     option (google.api.http) = {get: "/v1/examples"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // UnpackExample unpacks an example project
@@ -130,6 +304,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/files/unpack-example",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -139,6 +319,12 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/files/unpack-empty",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Files";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -146,6 +332,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/files/generate-metrics-view",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Generation";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -155,6 +347,12 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/files/generate-canvas",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Generation";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GenerateResolver generates resolver and resolver properties from a table or a metrics view
@@ -162,6 +360,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/generate/resolver",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Generation";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -171,6 +375,12 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/generate/renderer",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Generation";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // QueryResolver queries a resolver with the given properties and arguments
@@ -179,6 +389,12 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/query/resolver",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Generation";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Controller
@@ -186,36 +402,75 @@ service RuntimeService {
   // GetLogs returns recent logs from a controller
   rpc GetLogs(GetLogsRequest) returns (GetLogsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/logs"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Resources";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Instance not found"}};
+    };
   }
 
   // WatchLogs streams new logs emitted from a controller
   rpc WatchLogs(WatchLogsRequest) returns (stream WatchLogsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/logs/watch"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Resources";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListResources lists the resources stored in the catalog
   rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resources"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Resources";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
   
   // WatchResources streams updates to catalog resources (including creation and deletion events)
   rpc WatchResources(WatchResourcesRequest) returns (stream WatchResourcesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/-/watch"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Resources";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
   
   // GetResource looks up a specific catalog resource
   rpc GetResource(GetResourceRequest) returns (GetResourceResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resource"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Resources";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Resource not found"}};
+    };
   }
 
   // GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
   rpc GetExplore(GetExploreRequest) returns (GetExploreResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/explore"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Resources";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Explore resource not found"}};
+    };
   }
 
   // GetModelPartitions returns the partitions of a model
   rpc GetModelPartitions(GetModelPartitionsRequest) returns (GetModelPartitionsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/partitions"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Resources";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Model not found"}};
+    };
   }
   
   // CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
@@ -225,6 +480,12 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/trigger",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Resources";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Connectors
@@ -233,17 +494,32 @@ service RuntimeService {
   // including their configuration specs and the capabilities they support.
   rpc ListConnectorDrivers(ListConnectorDriversRequest) returns (ListConnectorDriversResponse) {
     option (google.api.http) = {get: "/v1/connectors/meta"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
   rpc AnalyzeConnectors(AnalyzeConnectorsRequest) returns (AnalyzeConnectorsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/analyze"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
   // This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
   rpc ListNotifierConnectors(ListNotifierConnectorsRequest) returns (ListNotifierConnectorsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Connectors";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // AI
@@ -251,11 +527,22 @@ service RuntimeService {
   // ListConversations lists all AI chat conversations for an instance.
   rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "AI";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // GetConversation returns a specific AI chat conversation.
   rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "AI";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Conversation not found"}};
+    };
   }
 
   // ShareConversation enables sharing of the conversation by adding metadata.
@@ -263,6 +550,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/share",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "AI";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -273,12 +566,23 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/fork",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "AI";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
   // Note that it covers all registered tools, but the current user may not have access to all of them.
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/tools"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "AI";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Complete runs a language model completion (LLM chat) using the configured AI connector.
@@ -287,6 +591,12 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/ai/complete",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "AI";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
@@ -294,6 +604,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/ai/complete/stream",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "AI";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -305,6 +621,12 @@ service RuntimeService {
       post: "/v1/dev-jwt",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Variables
@@ -312,21 +634,44 @@ service RuntimeService {
   // AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
   rpc AnalyzeVariables(AnalyzeVariablesRequest) returns (AnalyzeVariablesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/variables/analyze"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Git APIs
 
   rpc ListGitCommits(ListGitCommitsRequest) returns (ListGitCommitsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/commits"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Instance not found"}};
+    };
   }
 
   // GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
   rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Instance not found"}};
+    };
   }
 
   rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/branches"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Instance not found"}};
+    };
   }
 
   // GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
@@ -334,6 +679,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/git/commit",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -343,6 +694,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/git/restore/{commit_sha}",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -354,12 +711,24 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/git/merge",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   rpc GitSwitchBranch(GitSwitchBranchRequest) returns (GitSwitchBranchResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/git/branches/switch",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -371,6 +740,12 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/git/pull",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
   
   // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
@@ -379,6 +754,12 @@ service RuntimeService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/git/push",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Git";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 }
@@ -398,10 +779,15 @@ message PingResponse {
 message HealthRequest {}
 
 message HealthResponse {
+  // Error from the rate limiter, if any.
   string limiter_error = 1;
+  // Error from the connection cache, if any.
   string conn_cache_error = 2;
+  // Error from the metastore, if any.
   string metastore_error = 3;
+  // Error from network connectivity checks, if any.
   string network_error = 4;
+  // Health status for each instance, keyed by instance ID.
   map<string, InstanceHealth> instances_health = 5;
 }
 
@@ -413,12 +799,19 @@ message InstanceHealthResponse {
   InstanceHealth instance_health = 1;
 }
 
+// InstanceHealth contains the health status of a specific runtime instance.
 message InstanceHealth {
+  // Error from the reconciliation controller, if any.
   string controller_error = 1;
+  // Error from the OLAP connection, if any.
   string olap_error = 2;
+  // Error from the repository/file system, if any.
   string repo_error = 3;
+  // Map of metrics view name to error message, for any metrics views with errors.
   map<string, string> metrics_view_errors = 4;
+  // Number of files that failed to parse.
   int32 parse_error_count = 5;
+  // Number of resources that failed to reconcile.
   int32 reconcile_error_count = 6;
 }
 
@@ -433,23 +826,41 @@ message InstanceHealth {
 // projects, but also multiple tenants. On local, the runtime will usually have
 // just a single instance.
 message Instance {
+  // Unique instance identifier (alphanumeric, hyphens, underscores).
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Deployment environment (e.g., "dev", "prod").
   string environment = 20;
+  // Human-readable display name for the project.
   string project_display_name = 25;
+  // Name of the OLAP connector (e.g., "duckdb", "clickhouse").
   string olap_connector = 2;
+  // Name of the repository connector for project files.
   string repo_connector = 4;
+  // Name of the admin connector for cloud management.
   string admin_connector = 19;
+  // Name of the AI connector for chat/completion features.
   string ai_connector = 21;
+  // Timestamp when the instance was created.
   google.protobuf.Timestamp created_on = 11;
+  // Timestamp when the instance was last updated.
   google.protobuf.Timestamp updated_on = 12;
+  // Instance-level connector configurations.
   repeated Connector connectors = 10;
+  // Project-level connector configurations (from rill.yaml).
   repeated Connector project_connectors = 13;
+  // Instance-level variables (key-value pairs).
   map<string, string> variables = 7;
+  // Project-level variables (from rill.yaml).
   map<string, string> project_variables = 8;
+  // Feature flags controlling optional behaviors.
   map<string, bool> feature_flags = 22;
+  // Arbitrary key-value annotations for metadata.
   map<string, string> annotations = 14;
+  // Custom instructions for the AI assistant.
   string ai_instructions = 23;
+  // Base URL of the frontend UI associated with this instance.
   string frontend_url = 24;
+  // Default theme name for dashboards.
   string theme = 26;
 }
  

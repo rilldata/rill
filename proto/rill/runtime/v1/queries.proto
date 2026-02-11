@@ -10,6 +10,7 @@ import "rill/runtime/v1/resources.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 service QueryService {
   // Query runs a SQL query against the instance's OLAP datastore.
@@ -17,6 +18,12 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/query",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Queries";
+      responses: {key: "400"; value: {description: "Invalid SQL or request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -26,6 +33,12 @@ service QueryService {
       post: "/v1/instances/{instance_id}/query/batch",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Queries";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Export builds a URL to download the results of a query as a file.
@@ -34,6 +47,12 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/export",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Queries";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ExportReport builds a URL to download the results of a query as a file.
@@ -41,6 +60,12 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/reports/{report}/export",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Queries";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -51,6 +76,13 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view}/aggregation",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
     };
   }
 
@@ -63,6 +95,13 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/toplist",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
     };
   }
 
@@ -89,6 +128,13 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/compare-toplist",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
+    };
   }
 
   // MetricsViewTimeSeries returns time series for the measures in the metrics view.
@@ -98,6 +144,13 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/timeseries",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
+    };
   }
 
   // MetricsViewTotals returns totals over a time period for the measures in a metrics view.
@@ -106,6 +159,13 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/totals",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
     };
   }
 
@@ -131,6 +191,13 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/rows",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
+    };
   }
 
   // MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
@@ -140,11 +207,24 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/time-range-summary",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
+    };
   }
 
   // MetricsViewSchema Get the data types of measures and dimensions
   rpc MetricsViewSchema(MetricsViewSchemaRequest) returns (MetricsViewSchemaResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/schema"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
+    };
   }
 
   // MetricsViewSearch Get the data types of measures and dimensions
@@ -152,6 +232,13 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/search",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
     };
   }
 
@@ -161,12 +248,26 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/time-ranges",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
+    };
   }
 
   rpc MetricsViewAnnotations(MetricsViewAnnotationsRequest) returns (MetricsViewAnnotationsResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/annotations",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Metrics Views";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+      responses: {key: "404"; value: {description: "Metrics view not found"}};
     };
   }
 
@@ -175,6 +276,12 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/filter-expression/resolve",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Queries";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -186,6 +293,12 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/canvases/{canvas}/resolve",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Canvas";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ResolveComponent resolves renderer for a Component resource.
@@ -194,6 +307,12 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/components/{component}/resolve",
       body: "*",
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Canvas";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // ResolveTemplatedString resolves a templated strings.
@@ -201,6 +320,12 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/resolve-templated-string",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Queries";
+      responses: {key: "400"; value: {description: "Invalid request parameters"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
     };
   }
 
@@ -212,6 +337,12 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/rollup-interval/tables/{table_name}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Get TopK elements from a table for a column given an agg function
@@ -221,41 +352,89 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/topk/tables/{table_name}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Get the number of nulls in a column
   rpc ColumnNullCount(ColumnNullCountRequest) returns (ColumnNullCountResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/null-count/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Get basic stats for a numeric column like min, max, mean, stddev, etc
   rpc ColumnDescriptiveStatistics(ColumnDescriptiveStatisticsRequest) returns (ColumnDescriptiveStatisticsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/descriptive-statistics/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Estimates the smallest time grain present in the column
   rpc ColumnTimeGrain(ColumnTimeGrainRequest) returns (ColumnTimeGrainResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/smallest-time-grain/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Get the histogram for values in a column
   rpc ColumnNumericHistogram(ColumnNumericHistogramRequest) returns (ColumnNumericHistogramResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/numeric-histogram/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Get outliers for a numeric column
   rpc ColumnRugHistogram(ColumnRugHistogramRequest) returns (ColumnRugHistogramResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rug-histogram/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Get the time range summaries (min, max) for a column
   rpc ColumnTimeRange(ColumnTimeRangeRequest) returns (ColumnTimeRangeResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/time-range-summary/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Get cardinality for a column
   rpc ColumnCardinality(ColumnCardinalityRequest) returns (ColumnCardinalityResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/column-cardinality/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
@@ -264,6 +443,12 @@ service QueryService {
       post: "/v1/instances/{instance_id}/queries/timeseries/tables/{table_name}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Column Profiling";
+      responses: {key: "400"; value: {description: "Invalid column or table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // Tablewide profiling APIs
@@ -271,26 +456,55 @@ service QueryService {
   // TableCardinality returns row count
   rpc TableCardinality(TableCardinalityRequest) returns (TableCardinalityResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/table-cardinality/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Table Profiling";
+      responses: {key: "400"; value: {description: "Invalid table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // TableColumns returns column profiles
   rpc TableColumns(TableColumnsRequest) returns (TableColumnsResponse) {
     option (google.api.http) = {post: "/v1/instances/{instance_id}/queries/columns-profile/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Table Profiling";
+      responses: {key: "400"; value: {description: "Invalid table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 
   // TableRows returns table rows
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Table Profiling";
+      responses: {key: "400"; value: {description: "Invalid table name"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+      responses: {key: "403"; value: {description: "Permission denied - insufficient permissions"}};
+    };
   }
 }
 
 message QueryRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {title: "QueryRequest"; description: "Execute a SQL query against the OLAP datastore."};
+    example: "{\"instance_id\": \"default\", \"sql\": \"SELECT * FROM my_table LIMIT 10\", \"limit\": 100}";
+  };
+  // Runtime instance ID (alphanumeric, hyphens, and underscores only).
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Optional connector name to run the query against. Defaults to the instance's OLAP connector.
   string connector = 7;
+  // SQL query to execute.
   string sql = 2;
+  // Positional arguments for parameterized queries.
   repeated google.protobuf.Value args = 3;
+  // Query priority (higher values = higher priority). Used for request scheduling.
   int32 priority = 4;
+  // If true, validates the query without executing it.
   bool dry_run = 5;
+  // Maximum number of rows to return (0-10000). Defaults to no limit if 0.
   int32 limit = 6 [(validate.rules).int32 = {
     lte: 10000,
     gte: 0
@@ -298,18 +512,25 @@ message QueryRequest {
 }
 
 message QueryResponse {
+  // Schema metadata describing the columns of the result set.
   StructType meta = 1;
+  // Result rows as JSON objects.
   repeated google.protobuf.Struct data = 2;
 }
 
 message QueryBatchRequest {
+  // Runtime instance ID.
   string instance_id = 1;
+  // List of queries to execute. Results are streamed back as they complete.
   repeated Query queries = 2;
 }
 
 message QueryBatchResponse {
+  // Zero-based index of the query this response corresponds to.
   uint32 index = 1;
+  // Query result (if successful).
   QueryResult result = 2;
+  // Error message (if the query failed).
   string error = 3;
 }
 
@@ -414,8 +635,13 @@ message QueryResult {
 // **********
 
 message MetricsViewAggregationRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {title: "MetricsViewAggregationRequest"; description: "Query a metrics view with aggregation, filtering, sorting, and optional time comparison."};
+    example: "{\"instance_id\": \"default\", \"metrics_view\": \"ad_bids_metrics\", \"dimensions\": [{\"name\": \"publisher\"}], \"measures\": [{\"name\": \"total_revenue\"}], \"sort\": [{\"name\": \"total_revenue\", \"desc\": true}], \"limit\": 10}";
+  };
+  // Runtime instance ID.
   string instance_id = 1;
-  // Required
+  // Name of the metrics view to query (required).
   string metrics_view = 2 [(validate.rules).string.min_len = 1];
   // Required
   repeated MetricsViewAggregationDimension dimensions = 3;

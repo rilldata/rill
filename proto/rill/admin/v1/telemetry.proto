@@ -5,19 +5,27 @@ option go_package = "github.com/rilldata/rill/proto/gen/rill/admin/v1;adminv1";
 
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 service TelemetryService {
   // RecordEvents sends a batch of telemetry events.
   // The events must conform to the schema described in rill/runtime/pkg/activity/README.md.
+  // Each event is a freeform JSON object with required fields depending on the event type.
   rpc RecordEvents(RecordEventsRequest) returns (RecordEventsResponse) {
     option (google.api.http) = {
       post: "/v1/telemetry/events",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      tags: "Telemetry";
+      responses: {key: "400"; value: {description: "Invalid request - malformed event data"}};
+      responses: {key: "401"; value: {description: "Unauthenticated - missing or invalid token"}};
+    };
   }
 }
 
 message RecordEventsRequest {
+  // Batch of telemetry events to record. Each event is a freeform JSON object.
   repeated google.protobuf.Struct events = 1;
 }
 
