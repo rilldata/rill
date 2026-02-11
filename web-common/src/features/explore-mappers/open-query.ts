@@ -39,18 +39,13 @@ export async function openQuery({
     const queryParams = url.searchParams;
 
     // Get the JSON-encoded query parameters
-    const queryJSON = queryParams.get("query");
-    if (!queryJSON) {
+    const rawQuery = queryParams.get("query");
+    if (!rawQuery) {
       throw new Error("query parameter is required");
     }
 
     // Parse and validate the query with proper type safety
-    let query: MetricsResolverQuery;
-    try {
-      query = JSON.parse(queryJSON) as MetricsResolverQuery;
-    } catch (e) {
-      throw new Error(`Invalid query: ${e.message}`);
-    }
+    const query = maybeSanitiseQuery(rawQuery);
 
     // Extract metrics view name (now type-safe)
     const metricsViewName = query.metrics_view;
@@ -98,6 +93,42 @@ export async function openQuery({
 
   // Redirect outside the try/catch since redirect() throws internally
   redirect(302, exploreURL);
+}
+
+const closingRoundBracketRegex = /\)$/;
+const closingCurlyBracketRegex = /}$/;
+// We sometimes see citation urls have an additional closing bracket. Here we try to parse by removing a trailing bracket.
+// TODO: do a larger refactor of citation urls.
+function maybeSanitiseQuery(rawQuery: string): MetricsResolverQuery {
+  let query: MetricsResolverQuery;
+  try {
+    // Try to parse the query as is
+    query = JSON.parse(rawQuery) as MetricsResolverQuery;
+  } catch (e) {
+    // Next, try to parse the query with a trailing curly bracket removed
+    try {
+      query = JSON.parse(
+        rawQuery.replace(closingCurlyBracketRegex, ""),
+      ) as MetricsResolverQuery;
+      return query;
+    } catch {
+      // no-op
+    }
+
+    // Finally, try to parse the query with a trailing round bracket removed
+    try {
+      query = JSON.parse(
+        rawQuery.replace(closingRoundBracketRegex, ""),
+      ) as MetricsResolverQuery;
+      return query;
+    } catch {
+      // no-op
+    }
+
+    // If all else fails, throw the error from the original parse attempt
+    throw new Error(`Invalid query: ${e.message}`);
+  }
+  return query;
 }
 
 /**

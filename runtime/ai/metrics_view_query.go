@@ -255,8 +255,10 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID strin
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
 	}
+	query := string(queryJSON)
+
 	values := make(url.Values)
-	values.Set("query", string(queryJSON))
+	values.Set("query", query)
 	openURL.RawQuery = values.Encode()
 
 	return openURL.String(), nil
