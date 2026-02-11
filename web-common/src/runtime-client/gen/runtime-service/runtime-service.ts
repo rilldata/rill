@@ -84,6 +84,7 @@ import type {
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
   V1GenerateResolverResponse,
+  V1GetAIToolCallResponse,
   V1GetConversationResponse,
   V1GetExploreResponse,
   V1GetFileResponse,
@@ -1402,6 +1403,118 @@ export function createRuntimeServiceGetConversation<
   const queryOptions = getRuntimeServiceGetConversationQueryOptions(
     instanceId,
     conversationId,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
+ */
+export const runtimeServiceGetAIToolCall = (
+  instanceId: string,
+  conversationId: string,
+  callId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetAIToolCallResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/calls/${callId}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetAIToolCallQueryKey = (
+  instanceId: string,
+  conversationId: string,
+  callId: string,
+) => {
+  return [
+    `/v1/instances/${instanceId}/ai/conversations/${conversationId}/calls/${callId}`,
+  ] as const;
+};
+
+export const getRuntimeServiceGetAIToolCallQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  conversationId: string,
+  callId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetAIToolCallQueryKey(instanceId, conversationId, callId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>
+  > = ({ signal }) =>
+    runtimeServiceGetAIToolCall(instanceId, conversationId, callId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && conversationId && callId),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceGetAIToolCallQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>
+>;
+export type RuntimeServiceGetAIToolCallQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
+ */
+
+export function createRuntimeServiceGetAIToolCall<
+  TData = Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  conversationId: string,
+  callId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceGetAIToolCallQueryOptions(
+    instanceId,
+    conversationId,
+    callId,
     options,
   );
 

@@ -5346,6 +5346,98 @@ export class CompleteStreamingResponse extends Message$1<CompleteStreamingRespon
 }
 
 /**
+ * Request message for RuntimeService.GetAIToolCall
+ *
+ * @generated from message rill.runtime.v1.GetAIToolCallRequest
+ */
+export class GetAIToolCallRequest extends Message$1<GetAIToolCallRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * @generated from field: string call_id = 3;
+   */
+  callId = "";
+
+  constructor(data?: PartialMessage<GetAIToolCallRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIToolCallRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "call_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIToolCallRequest {
+    return new GetAIToolCallRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIToolCallRequest {
+    return new GetAIToolCallRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIToolCallRequest {
+    return new GetAIToolCallRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIToolCallRequest | PlainMessage<GetAIToolCallRequest> | undefined, b: GetAIToolCallRequest | PlainMessage<GetAIToolCallRequest> | undefined): boolean {
+    return proto3.util.equals(GetAIToolCallRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GetAIToolCall
+ *
+ * @generated from message rill.runtime.v1.GetAIToolCallResponse
+ */
+export class GetAIToolCallResponse extends Message$1<GetAIToolCallResponse> {
+  /**
+   * MetricsResolverQuery as JSON
+   *
+   * @generated from field: google.protobuf.Struct query = 1;
+   */
+  query?: Struct;
+
+  constructor(data?: PartialMessage<GetAIToolCallResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIToolCallResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "query", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIToolCallResponse {
+    return new GetAIToolCallResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIToolCallResponse {
+    return new GetAIToolCallResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIToolCallResponse {
+    return new GetAIToolCallResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIToolCallResponse | PlainMessage<GetAIToolCallResponse> | undefined, b: GetAIToolCallResponse | PlainMessage<GetAIToolCallResponse> | undefined): boolean {
+    return proto3.util.equals(GetAIToolCallResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.IssueDevJWT
  *
  * @generated from message rill.runtime.v1.IssueDevJWTRequest

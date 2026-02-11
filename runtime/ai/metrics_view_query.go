@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
+	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -30,6 +31,7 @@ type QueryMetricsViewArgs map[string]any
 type QueryMetricsViewResult struct {
 	Data    []map[string]any `json:"data"`
 	OpenURL string           `json:"open_url,omitempty"`
+	QueryID string           `json:"query_id,omitempty"`
 }
 
 func (t *QueryMetricsView) Spec() *mcp.Tool {
@@ -215,8 +217,10 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		data = append(data, row)
 	}
 
+	queryID := uuid.NewString()
+
 	// Generate an open URL for the query
-	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), args)
+	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), session.id, queryID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate open URL: %w", err)
 	}
@@ -224,11 +228,12 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	return &QueryMetricsViewResult{
 		Data:    data,
 		OpenURL: openURL,
+		QueryID: queryID,
 	}, nil
 }
 
 // generateOpenURL generates an open URL for the given query parameters
-func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID string, metricsQuery map[string]any) (string, error) {
+func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID string, sessionID string, queryID string) (string, error) {
 	// Get instance to access the configured frontend URL
 	instance, err := t.Runtime.Instance(ctx, instanceID)
 	if err != nil {
@@ -246,20 +251,10 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID strin
 		return "", fmt.Errorf("failed to parse frontend URL %q: %w", instance.FrontendURL, err)
 	}
 
-	openURL.Path, err = url.JoinPath(openURL.Path, "-", "open-query")
+	openURL.Path, err = url.JoinPath(openURL.Path, "-", "ai", sessionID, "query", queryID)
 	if err != nil {
 		return "", fmt.Errorf("failed to join path: %w", err)
 	}
-
-	queryJSON, err := json.Marshal(metricsQuery)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
-	}
-	query := string(queryJSON)
-
-	values := make(url.Values)
-	values.Set("query", query)
-	openURL.RawQuery = values.Encode()
 
 	return openURL.String(), nil
 }

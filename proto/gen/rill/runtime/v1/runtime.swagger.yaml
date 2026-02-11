@@ -538,6 +538,34 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/calls/{callId}:
+    get:
+      summary: GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
+      operationId: RuntimeService_GetAIToolCall
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAIToolCallResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: callId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
     post:
       summary: |-
@@ -5295,6 +5323,13 @@ definitions:
         type: string
       resolverProperties:
         type: object
+  v1GetAIToolCallResponse:
+    type: object
+    properties:
+      query:
+        type: object
+        title: MetricsResolverQuery as JSON
+    title: Response message for RuntimeService.GetAIToolCall
   v1GetConversationResponse:
     type: object
     properties:

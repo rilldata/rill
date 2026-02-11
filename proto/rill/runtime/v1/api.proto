@@ -297,6 +297,13 @@ service RuntimeService {
     };
   }
 
+  // GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
+  rpc GetAIToolCall(GetAIToolCallRequest) returns (GetAIToolCallResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/query/{query_id}"
+    };
+  }
+
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -1203,6 +1210,19 @@ message CompleteStreamingRequest {
 message CompleteStreamingResponse {
   string conversation_id = 1;
   Message message = 2;
+}
+
+// Request message for RuntimeService.GetAIToolCall
+message GetAIToolCallRequest {
+  string instance_id = 1;
+  string conversation_id = 2;
+  string query_id = 3;
+}
+
+// Response message for RuntimeService.GetAIToolCall
+message GetAIToolCallResponse {
+  // MetricsResolverQuery as JSON
+  google.protobuf.Struct query = 1;
 }
 
 // **********

@@ -15,7 +15,9 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -495,6 +497,63 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	// Serve the SSE stream.
 	// This will only return when the background goroutine calls close(events).
 	serveSSEUntilClose(w, events)
+}
+
+func (s *Server) GetAIToolCall(ctx context.Context, req *runtimev1.GetAIToolCallRequest) (*runtimev1.GetAIToolCallResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "failed to find the conversaion %q", req.ConversationId)
+	}
+
+	msg, ok := session.Message(ai.FilterByTool(ai.QueryMetricsViewName), ai.FilterByType(ai.MessageTypeResult), func(message *ai.Message) bool {
+		rawRes, err := session.UnmarshalMessageContent(message)
+		if err != nil {
+			return false
+		}
+		var res ai.QueryMetricsViewResult
+		err = mapstructureutil.WeakDecode(rawRes, &res)
+		if err != nil {
+			return false
+		}
+		return res.QueryID == req.CallId
+	})
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "message with ID %q not found", req.CallId)
+	}
+
+	callMsg, ok := session.Message(ai.FilterByID(msg.ParentID))
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "call message with ID %q not found", msg.ParentID)
+	}
+
+	rawReq, err := session.UnmarshalMessageContent(callMsg)
+	if err != nil {
+		return nil, err
+	}
+	var queryRes ai.QueryMetricsViewArgs
+	err = mapstructureutil.WeakDecode(rawReq, &queryRes)
+	if err != nil {
+		return nil, err
+	}
+
+	queryPb, err := pbutil.ToStruct(queryRes, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.GetAIToolCallResponse{
+		Query: queryPb,
+	}, nil
 }
 
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.

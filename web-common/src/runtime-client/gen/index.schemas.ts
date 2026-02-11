@@ -1073,6 +1073,12 @@ export interface V1GenerateResolverResponse {
   resolverProperties?: V1GenerateResolverResponseResolverProperties;
 }
 
+export type V1GetAIToolCallResponseQuery = { [key: string]: unknown };
+
+export interface V1GetAIToolCallResponse {
+  query?: V1GetAIToolCallResponseQuery;
+}
+
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
