@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
@@ -161,4 +162,61 @@ func (p *Printer) dataOut() io.Writer {
 		return p.dataOutOverride
 	}
 	return os.Stdout
+}
+
+// FormatBytes converts bytes to human readable format
+func (p *Printer) FormatBytes(bytes int64) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+		TB = GB * 1024
+	)
+
+	if bytes < KB {
+		return fmt.Sprintf("%d B", bytes)
+	} else if bytes < MB {
+		return fmt.Sprintf("%.1f KiB", float64(bytes)/KB)
+	} else if bytes < GB {
+		return fmt.Sprintf("%.1f MiB", float64(bytes)/MB)
+	} else if bytes < TB {
+		return fmt.Sprintf("%.1f GiB", float64(bytes)/GB)
+	}
+	return fmt.Sprintf("%.1f TiB", float64(bytes)/TB)
+}
+
+// FormatNumber formats a number with appropriate suffix (K, M, B, etc.)
+func (p *Printer) FormatNumber(num int64) string {
+	if num < 1000 {
+		return fmt.Sprintf("%d", num)
+	} else if num < 1000000 {
+		return fmt.Sprintf("%.1fK", float64(num)/1000)
+	} else if num < 1000000000 {
+		return fmt.Sprintf("%.1fM", float64(num)/1000000)
+	}
+	return fmt.Sprintf("%.1fB", float64(num)/1000000000)
+}
+
+// FormatValue formats a value for display, avoiding scientific notation for numbers
+func (p *Printer) FormatValue(val interface{}) string {
+	if val == nil {
+		return "null"
+	}
+
+	switch v := val.(type) {
+	case float64:
+		if v == float64(int64(v)) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case float32:
+		if v == float32(int32(v)) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(float64(v), 'f', -1, 32)
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }

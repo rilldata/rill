@@ -4,11 +4,11 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
+  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import type {
     ChartSortDirectionOptions,
     FieldConfig,
-  } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
+  } from "@rilldata/web-common/features/components/charts/types";
   import { List } from "lucide-svelte";
 
   export let fieldConfig: FieldConfig;
@@ -24,6 +24,8 @@
     { label: "Y-axis descending", value: "-y" },
     { label: "Color ascending", value: "color" },
     { label: "Color descending", value: "-color" },
+    { label: "Measure ascending", value: "measure" },
+    { label: "Measure descending", value: "-measure" },
     { label: "Custom", value: "custom" },
   ];
 
@@ -57,8 +59,7 @@
     onChange("sort", reorderedItems);
   }
 
-  function handleSortChange(e: CustomEvent<string>) {
-    const newSortValue = e.detail;
+  function handleSortChange(newSortValue: string) {
     if (newSortValue === "custom") {
       onChange("sort", sortConfig?.customSortItems);
     } else {
@@ -77,7 +78,7 @@
         width={190}
         options={sortOptionsForChart}
         value={sortValue}
-        on:change={handleSortChange}
+        onChange={handleSortChange}
       />
       {#if sortValue === "custom"}
         <Popover.Root bind:open={isCustomSortDropdownOpen}>
@@ -96,13 +97,13 @@
               minHeight="auto"
               maxHeight="300px"
             >
-              <div slot="empty" class="px-2 py-2 text-xs text-gray-500">
+              <div slot="empty" class="px-2 py-2 text-xs text-fg-secondary">
                 No sort item found
               </div>
               <div slot="item" let:item class="flex items-center gap-x-1">
                 <DragHandle
                   size="16px"
-                  className="text-gray-400 pointer-events-none"
+                  className="text-fg-secondary pointer-events-none"
                 />
                 <span class="text-xs truncate">{item.value}</span>
               </div>

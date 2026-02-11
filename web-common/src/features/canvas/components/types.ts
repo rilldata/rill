@@ -1,7 +1,8 @@
-import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
-import type { CircularChartSpec } from "@rilldata/web-common/features/canvas/components/charts/circular-charts/CircularChart";
+import type { CartesianCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
+import type { CircularCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/CircularChart";
+import type { ScatterPlotCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/ScatterPlotChart";
 import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
-import type { ChartType } from "./charts/types";
+import type { ChartType } from "../../components/charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { LeaderboardSpec } from "./leaderboard";
@@ -9,8 +10,9 @@ import type { MarkdownSpec } from "./markdown";
 import type { PivotSpec, TableSpec } from "./pivot";
 
 export type ComponentWithMetricsView =
-  | CartesianChartSpec
-  | CircularChartSpec
+  | CartesianCanvasChartSpec
+  | CircularCanvasChartSpec
+  | ScatterPlotCanvasChartSpec
   | PivotSpec
   | TableSpec
   | KPISpec
@@ -22,6 +24,7 @@ export type ComponentSpec = ComponentWithMetricsView | ImageSpec | MarkdownSpec;
 export interface ComponentCommonProperties {
   title?: string;
   description?: string;
+  show_description_as_tooltip?: boolean;
 }
 
 export type VeriticalAlignment = "top" | "middle" | "bottom";
@@ -56,15 +59,15 @@ export type CanvasComponentType =
   | "leaderboard";
 
 interface LineChart {
-  line_chart: CartesianChartSpec;
+  line_chart: CartesianCanvasChartSpec;
 }
 
 interface AreaChart {
-  area_chart: CartesianChartSpec;
+  area_chart: CartesianCanvasChartSpec;
 }
 
 interface BarChart {
-  bar_chart: CartesianChartSpec;
+  bar_chart: CartesianCanvasChartSpec;
 }
 
 export type ChartTemplates = LineChart | BarChart | AreaChart;

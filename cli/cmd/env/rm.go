@@ -13,31 +13,33 @@ func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName, environment string
 
 	rmCmd := &cobra.Command{
-		Use:   "rm [<project-name>] [<key>]",
-		Args:  cobra.ExactArgs(2),
-		Short: "Remove variable",
+		Use:   "rm [<project>] <key>",
+		Args:  cobra.MatchAll(cobra.MinimumNArgs(1), cobra.MaximumNArgs(2)),
+		Short: "Remove an env variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
+			// Parse or infer arguments
+			key := args[len(args)-1]
+			if len(args) == 2 {
+				if projectName != "" {
+					return fmt.Errorf("project name provided both as argument and flag")
+				}
 				projectName = args[0]
 			}
-
-			key := args[1]
-			ctx := cmd.Context()
-			client, err := ch.Client()
-			if err != nil {
-				return err
-			}
-
-			// Find the cloud project name
 			if projectName == "" {
+				var err error
 				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
 				if err != nil {
 					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
 			}
 
-			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization:   ch.Org,
+			// Unset the variable
+			client, err := ch.Client()
+			if err != nil {
+				return err
+			}
+			_, err = client.UpdateProjectVariables(cmd.Context(), &adminv1.UpdateProjectVariablesRequest{
+				Org:            ch.Org,
 				Project:        projectName,
 				Environment:    environment,
 				UnsetVariables: []string{key},

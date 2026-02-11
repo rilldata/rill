@@ -4,55 +4,70 @@
   import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { DateTime, Interval } from "luxon";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { TimeControls } from "../../stores/time-control";
+  import type { TimeState } from "../../stores/time-state";
+  import { ALL_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 
   export let id: string;
-  export let localTimeControls: TimeControls;
+  export let localTimeControls: TimeState;
   export let showComparison: boolean;
   export let showGrain: boolean;
   export let canvasName: string;
+  export let metricsView: string | null;
 
   $: ({ instanceId } = $runtime);
 
   $: ({
     canvasEntity: {
-      spec: { canvasSpec },
+      timeManager: {
+        defaultTimeRangeStore,
+        timeRangeOptionsStore,
+        minTimeGrainMap,
+        availableTimeZonesStore,
+        state: { rangeStore: globalRangeStore, minMaxTimeStamps },
+      },
     },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({
-    allTimeRange,
-    timeRangeStateStore,
-    comparisonRangeStateStore,
-    selectedTimezone,
-    minTimeGrain,
+    interval: intervalStore,
+    rangeStore,
+    comparisonIntervalStore,
+    showTimeComparisonStore,
+    timeZoneStore,
+    grainStore,
+    comparisonRangeStore,
     set,
     searchParamsStore,
     clearAll,
   } = localTimeControls);
 
-  $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+  $: minMax = $minMaxTimeStamps;
+
+  $: globalRange = $globalRangeStore;
+  $: availableTimeZones = $availableTimeZonesStore;
+
+  $: minDate = minMax?.min;
+  $: maxDate = minMax?.max;
 
   $: localFiltersEnabled = Boolean($searchParamsStore.size);
 
-  $: selectedComparisonTimeRange =
-    $comparisonRangeStateStore?.selectedComparisonTimeRange;
+  $: selectedRangeAlias = $rangeStore;
+  $: activeTimeGrain = $grainStore;
+  $: defaultTimeRange = $defaultTimeRangeStore;
+  $: timeRanges = $timeRangeOptionsStore;
+  $: showTimeComparison = $showTimeComparisonStore;
 
-  $: selectedRangeAlias = selectedTimeRange?.name;
-  $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
-  $: timeRanges = $canvasSpec?.timeRanges ?? [];
+  $: activeTimeZone = $timeZoneStore;
+  $: minTimeGrain = metricsView ? $minTimeGrainMap.get(metricsView) : undefined;
 
-  $: activeTimeZone = $selectedTimezone;
+  $: interval = $intervalStore;
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+  $: timeStart = interval?.start.toISO();
+  $: timeEnd = interval?.end.toISO();
+
+  $: comparisonInterval = $comparisonIntervalStore;
+  $: comparisonRange = $comparisonRangeStore;
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -70,15 +85,13 @@
         if (localFiltersEnabled) {
           clearAll();
         } else {
-          set.range("P14D");
-          set.zone("UTC");
-          set.grain("TIME_GRAIN_HOUR");
+          set.range(globalRange ?? defaultTimeRange ?? ALL_TIME_RANGE_ALIAS);
         }
       }}
       small
     />
   </div>
-  <div class="text-gray-500">
+  <div class="text-fg-secondary">
     {#if localFiltersEnabled}
       Overriding inherited time filters from canvas.
     {:else}
@@ -89,12 +102,14 @@
   {#if localFiltersEnabled}
     <div class="flex flex-row flex-wrap pt-2 gap-y-1.5 items-center">
       <SuperPill
-        allTimeRange={$allTimeRange}
+        context="filters-input"
+        {minDate}
+        {maxDate}
         {selectedRangeAlias}
         showPivot={!showGrain}
-        minTimeGrain={$minTimeGrain}
+        {minTimeGrain}
         {defaultTimeRange}
-        availableTimeZones={[]}
+        {availableTimeZones}
         {timeRanges}
         complete={false}
         {interval}
@@ -102,8 +117,7 @@
         {timeEnd}
         {activeTimeGrain}
         {activeTimeZone}
-        canPanLeft={false}
-        canPanRight={false}
+        hidePan
         showFullRange={false}
         showDefaultItem={false}
         applyRange={(timeRange) => {
@@ -118,13 +132,17 @@
 
       {#if showComparison}
         <CanvasComparisonPill
-          allTimeRange={$allTimeRange}
-          {selectedTimeRange}
+          {minTimeGrain}
+          {minDate}
+          {maxDate}
+          {interval}
+          selectedRange={selectedRangeAlias}
+          {activeTimeGrain}
           showFullRange={false}
-          {selectedComparisonTimeRange}
-          showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-            false}
-          activeTimeZone={$selectedTimezone}
+          {comparisonInterval}
+          {comparisonRange}
+          {showTimeComparison}
+          {activeTimeZone}
           onDisplayTimeComparison={set.comparison}
           onSetSelectedComparisonRange={(range) => {
             if (range.name === "CUSTOM_COMPARISON_RANGE") {

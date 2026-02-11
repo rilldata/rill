@@ -35,7 +35,7 @@ test.describe("Breadcrumbs", () => {
       await expect(link).toBeVisible();
       await expect(link).toHaveClass(/selected/g);
 
-      await page.getByText("Create explore dashboard").click();
+      await page.getByText("Generate Explore Dashboard").click();
 
       await page.waitForURL("**/files/dashboards/AdBids_metrics_explore.yaml");
 
@@ -55,7 +55,9 @@ test.describe("Breadcrumbs", () => {
         .click();
 
       await page.getByRole("button", { name: "Create resource menu" }).click();
-      await page.getByRole("menuitem", { name: "Create dashboard" }).click();
+      await page
+        .getByRole("menuitem", { name: "Generate Explore Dashboard" })
+        .click();
 
       await page.waitForURL(
         "**/files/dashboards/AdBids_metrics_explore_1.yaml",

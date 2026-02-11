@@ -32,6 +32,7 @@ enum Operation {
   OPERATION_NIN = 10;
   OPERATION_LIKE = 11;
   OPERATION_NLIKE = 12;
+  OPERATION_CAST = 13;
 }
 
 message Subquery {

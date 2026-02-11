@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	_ "github.com/marcboeker/go-duckdb/v2"
+	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
@@ -54,8 +54,8 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 		},
 	}
 
-	me, ok := duckDB.AsModelExecutor("default", opts)
-	require.True(t, ok)
+	me, err := duckDB.AsModelExecutor("default", opts)
+	require.NoError(t, err)
 
 	execOpts := &drivers.ModelExecuteOptions{
 		ModelExecutorOptions: opts,

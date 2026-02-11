@@ -9,6 +9,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
+  import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
@@ -62,6 +63,23 @@
   $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");
 
+  $: exploreUrl = getMappedExploreUrl(
+    {
+      exploreName: $exploreName.data,
+      queryName: reportSpec?.queryName,
+      queryArgsJson: reportSpec?.queryArgsJson,
+    },
+    {
+      exploreProtoState: reportSpec?.annotations?.web_open_state,
+      forceOpenPivot: true,
+    },
+    {
+      instanceId,
+      organization,
+      project,
+    },
+  );
+
   // Actions
   const queryClient = useQueryClient();
   const deleteReport = createAdminServiceDeleteReport();
@@ -73,7 +91,7 @@
 
   async function handleDeleteReport() {
     await $deleteReport.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: $reportQuery.data.resource.meta.name.name,
     });
@@ -88,7 +106,7 @@
   <div class="flex flex-col gap-y-9 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
       <!-- Header row 1 -->
-      <div class="uppercase text-xs text-gray-500 font-semibold">
+      <div class="uppercase text-xs text-fg-secondary font-semibold">
         <!-- Author -->
         <ProjectAccessControls {organization} {project}>
           <svelte:fragment slot="manage-project">
@@ -111,7 +129,7 @@
         </span>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-gray-700 text-lg font-bold" aria-label="Report name">
+        <h1 class="text-fg-primary text-lg font-bold" aria-label="Report name">
           {reportSpec.displayName}
         </h1>
         <div class="grow" />
@@ -157,9 +175,7 @@
                 </Tooltip>
               </div>
             {:else}
-              <a
-                href={`/${organization}/${project}/explore/${$exploreName.data}`}
-              >
+              <a href={$exploreUrl}>
                 {dashboardTitle}
               </a>
             {/if}
@@ -206,7 +222,7 @@
   </div>
 {/if}
 
-{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending}
+{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending && showEditReportDialog}
   <ScheduledReportDialog
     bind:open={showEditReportDialog}
     props={{

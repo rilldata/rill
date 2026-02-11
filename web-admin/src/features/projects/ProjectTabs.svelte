@@ -12,11 +12,21 @@
   export let project: string;
   export let pathname: string;
 
-  const { alerts, reports } = featureFlags;
+  const { chat, reports, alerts } = featureFlags;
 
   $: tabs = [
     {
       route: `/${organization}/${project}`,
+      label: "Home",
+      hasPermission: true,
+    },
+    {
+      route: `/${organization}/${project}/-/ai`,
+      label: "AI",
+      hasPermission: $chat,
+    },
+    {
+      route: `/${organization}/${project}/-/dashboards`,
       label: "Dashboards",
       hasPermission: true,
     },
@@ -29,11 +39,6 @@
       route: `/${organization}/${project}/-/alerts`,
       label: "Alerts",
       hasPermission: $alerts,
-    },
-    {
-      route: `/${organization}/${project}/-/ai`,
-      label: "AI",
-      hasPermission: true,
     },
     {
       route: `/${organization}/${project}/-/status`,
@@ -64,7 +69,7 @@
   }
 </script>
 
-<div>
+<div class="bg-surface-base">
   <nav>
     {#each tabs as tab, i (tab.route)}
       {#if tab.hasPermission}

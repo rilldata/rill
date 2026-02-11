@@ -15,10 +15,12 @@
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { SortType } from "../../proto-state/derived-types";
   import * as Elements from "../super-pill/components";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
   export let showTimeComparison: boolean;
+  export let minTimeGrain: V1TimeGrain | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
 
   const ctx = getStateManagers();
@@ -112,6 +114,8 @@
       maxDate={DateTime.fromJSDate(allTimeRange.end)}
       minDate={DateTime.fromJSDate(allTimeRange.start)}
       timeComparisonOptionsState={$timeComparisonOptionsState}
+      {minTimeGrain}
+      timeGrain={activeTimeGrain}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
       currentInterval={interval}
@@ -129,34 +133,4 @@
     @apply h-7 rounded-full;
     @apply overflow-hidden select-none;
   }
-
-  :global(.wrapper > button) {
-    @apply border;
-  }
-
-  :global(.wrapper > button:not(:first-child)) {
-    @apply -ml-[1px];
-  }
-
-  :global(.wrapper > button) {
-    @apply border;
-    @apply px-2 flex items-center justify-center bg-surface;
-  }
-
-  :global(.wrapper > button:first-child) {
-    @apply pl-2.5 rounded-l-full;
-  }
-  :global(.wrapper > button:last-child) {
-    @apply pr-2.5 rounded-r-full;
-  }
-
-  :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-gray-50 cursor-pointer;
-  }
-
-  /* Doest apply to all instances except alert/report. So this seems unintentional
-  :global(.wrapper > [data-state="open"]) {
-    @apply bg-gray-50 border-gray-400 z-50;
-  }
-  */
 </style>

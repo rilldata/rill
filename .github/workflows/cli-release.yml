@@ -33,10 +33,10 @@ jobs:
             platform: linux_amd64
           - os: ubuntu-22.04-arm
             platform: linux_arm64
-          - os: macos-13
-            platform: darwin_amd64
           - os: macos-14
             platform: darwin_arm64
+          - os: macos-15-intel
+            platform: darwin_amd64
       fail-fast: false
 
     steps:
@@ -46,7 +46,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24
+          go-version: 1.25
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
@@ -87,6 +87,7 @@ jobs:
         with:
           path: rill
           destination: prod-cdn.rilldata.com/rill/nightly/binaries/${{ matrix.platform }}/
+          process_gcloudignore: false
           headers: |-
             cache-control: no-store
 
@@ -96,6 +97,7 @@ jobs:
         with:
           path: rill
           destination: prod-cdn.rilldata.com/rill/${{ github.ref_name }}/binaries/${{ matrix.platform }}/
+          process_gcloudignore: false
           headers: |-
             cache-control: no-store
 
@@ -163,10 +165,10 @@ jobs:
 
       - name: Notify Slack
         uses: ravsamhq/notify-slack-action@v2
-        if: env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true'
+        if: always() && (env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true')
         with:
           status: ${{ job.status }}
-          notification_title: "{workflow} has {status_message}"
+          notification_title: "Nightly - ${{ env.PUBLISH_NIGHTLY }} / Release - ${{ env.PUBLISH_RELEASE }} "
           message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
           footer: "Linked Repo <{repo_url}|{repo}>"
           notify_when: "failure"

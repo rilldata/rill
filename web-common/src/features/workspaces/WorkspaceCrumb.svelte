@@ -1,10 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { type V1Resource } from "@rilldata/web-common/runtime-client";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "../entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { ResourceKindMap } from "../file-explorer/new-files";
   import CrumbTrigger from "./CrumbTrigger.svelte";
@@ -13,6 +10,8 @@
     type UserFacingResourceKinds,
   } from "../entity-management/resource-selectors";
   import { builderActions } from "bits-ui";
+  import { GitBranch } from "lucide-svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   const downstreamMapping = new Map([
     [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
@@ -30,6 +29,8 @@
   export let downstream = false;
   export let upstream = false;
   export let filePath: string = "";
+  export let graphSupported = false;
+  export let openGraph: (() => void) | null = null;
 
   let open = false;
 
@@ -101,75 +102,119 @@
   <svelte:self resources={upstreamResources} {allResources} upstream />
 
   {#if !componentsOnly}
-    <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
+    <CaretDownIcon size="12px" className="text-fg-muted -rotate-90 flex-none" />
   {/if}
 {/if}
 
 {#if !componentsOnly}
-  <DropdownMenu.Root bind:open>
-    <DropdownMenu.Trigger asChild let:builder>
-      <svelte:element
-        this={dropdown ? "button" : "a"}
-        class:open
-        class="text-gray-500 px-[5px] py-1 w-full max-w-fit line-clamp-1"
-        class:selected={current}
-        href={dropdown
-          ? undefined
-          : exampleResource
-            ? `/files${exampleResource?.meta?.filePaths?.[0]}`
-            : "#"}
-        {...dropdown ? builder : {}}
-        use:builderActions={{ builders: dropdown ? [builder] : [] }}
-      >
-        <CrumbTrigger
-          {filePath}
-          kind={resourceKind}
-          label={!selectedResource && dropdown
-            ? generateLabel(resources)
-            : resourceName}
-        />
-      </svelte:element>
-    </DropdownMenu.Trigger>
-
-    {#if dropdown}
-      <DropdownMenu.Content align="start">
-        {#each resources as resource (resource?.meta?.name?.name)}
-          {@const kind = resource?.meta?.name?.kind}
-          <DropdownMenu.Item
-            href="/files{resource?.meta?.filePaths?.[0] ?? '/'}"
+  <div class="crumb">
+    <div class="crumb__trigger">
+      <DropdownMenu.Root bind:open>
+        <DropdownMenu.Trigger asChild let:builder>
+          <svelte:element
+            this={dropdown ? "button" : "a"}
+            class:open
+            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
+            class:selected={current}
+            href={dropdown
+              ? undefined
+              : exampleResource
+                ? `/files${exampleResource?.meta?.filePaths?.[0]}`
+                : "#"}
+            {...dropdown ? builder : {}}
+            use:builderActions={{ builders: dropdown ? [builder] : [] }}
           >
-            {#if kind}
-              <svelte:component
-                this={resourceIconMapping[kind]}
-                color={resourceColorMapping[kind]}
-                size="14px"
-              />
-            {/if}
-            {resource?.meta?.name?.name}
-          </DropdownMenu.Item>
-        {/each}
-      </DropdownMenu.Content>
+            <CrumbTrigger
+              {filePath}
+              kind={resourceKind}
+              label={!selectedResource && dropdown
+                ? generateLabel(resources)
+                : resourceName}
+            />
+          </svelte:element>
+        </DropdownMenu.Trigger>
+
+        {#if dropdown}
+          <DropdownMenu.Content align="start">
+            {#each resources as resource (resource?.meta?.name?.name)}
+              {@const kind = resource?.meta?.name?.kind}
+              <DropdownMenu.Item
+                href="/files{resource?.meta?.filePaths?.[0] ?? '/'}"
+              >
+                {#if kind}
+                  <svelte:component
+                    this={resourceIconMapping[kind]}
+                    size="14px"
+                  />
+                {/if}
+                {resource?.meta?.name?.name}
+              </DropdownMenu.Item>
+            {/each}
+          </DropdownMenu.Content>
+        {/if}
+      </DropdownMenu.Root>
+    </div>
+    {#if current && graphSupported && openGraph}
+      <Button
+        type="tertiary"
+        square
+        onClick={openGraph}
+        label="Open resource graph"
+      >
+        <GitBranch size="13px" aria-hidden="true" />
+        <span class="sr-only">Open resource graph</span>
+      </Button>
     {/if}
-  </DropdownMenu.Root>
+  </div>
 {/if}
 
 {#if downstreamResources.length}
-  <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
+  <CaretDownIcon size="12px" className="text-fg-muted -rotate-90 flex-none" />
 
   <svelte:self resources={downstreamResources} {allResources} downstream />
 {/if}
 
 <style lang="postcss">
+  .crumb {
+    @apply inline-flex items-center gap-x-1 min-w-0;
+  }
+
+  .crumb__trigger {
+    @apply flex-1 min-w-0;
+  }
+
   a:hover,
   button:hover {
-    @apply text-gray-700;
+    @apply text-fg-primary;
   }
 
   .selected {
-    @apply text-gray-900;
+    @apply text-fg-primary;
   }
 
   .open {
-    @apply bg-slate-200 rounded-[2px] text-gray-700;
+    @apply bg-surface-active rounded-[2px] text-fg-primary;
+  }
+
+  .graph-trigger {
+    @apply flex-none inline-flex items-center justify-center rounded-md border transition-colors shadow-sm ml-1 px-2 py-[3px];
+
+    min-width: 30px;
+    height: 26px;
+  }
+
+  .graph-trigger:hover {
+    color: var(--foreground, #1f2937);
+    border-color: color-mix(
+      in srgb,
+      var(--border, #e5e7eb) 70%,
+      var(--foreground, #1f2937)
+    );
+  }
+
+  .graph-trigger:focus-visible {
+    @apply outline-none ring ring-offset-1;
+    ring-color: var(--ring, #93c5fd);
+    ring-offset-color: var(--surface-background, #ffffff);
   }
 </style>

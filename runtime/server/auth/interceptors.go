@@ -10,6 +10,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rilldata/rill/runtime"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -21,14 +22,27 @@ import (
 type claimsContextKey struct{}
 
 // GetClaims retrieves Claims from a request context.
+// The instanceID is optional, but if provided, the permissions in the result will be scoped to that instance.
 // It should only be used in handlers intercepted by UnaryServerInterceptor or StreamServerInterceptor.
-func GetClaims(ctx context.Context) Claims {
-	claims, ok := ctx.Value(claimsContextKey{}).(Claims)
+func GetClaims(ctx context.Context, instanceID string) *runtime.SecurityClaims {
+	cp, ok := ctx.Value(claimsContextKey{}).(ClaimsProvider)
 	if !ok {
 		return nil
 	}
 
-	return claims
+	return cp.Claims(instanceID)
+}
+
+// WithClaims wraps a context with the given claims.
+// It mimics the result of parsing a JWT using a middleware. It should only be used in tests.
+// NOTE: We should remove this when the server tests support interceptors.
+func WithClaims(ctx context.Context, claims *runtime.SecurityClaims) context.Context {
+	return withClaimsProvider(ctx, wrappedClaims{claims: claims})
+}
+
+// withClaimsProvider adds a ClaimsProvider to the context, for later retrieval with GetClaims.
+func withClaimsProvider(ctx context.Context, cp ClaimsProvider) context.Context {
+	return context.WithValue(ctx, claimsContextKey{}, cp)
 }
 
 // UnaryServerInterceptor is a middleware for setting claims on runtime server requests.
@@ -96,15 +110,20 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 }
 
 func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {
-	// When aud == nil, it means auth is disabled. Additionally, if auth header is not set then we set openClaims.
-	// If auth header is set then that means its running locally with some user context, so we set devJWTClaims.
+	// When aud == nil, it means auth is disabled.
 	if aud == nil {
+		// If there's no authorization header, we set open claims since auth is disabled.
 		if authorizationHeader == "" {
-			claims := openClaims{}
-			return context.WithValue(ctx, claimsContextKey{}, claims), nil
+			return withClaimsProvider(ctx, wrappedClaims{
+				claims: &runtime.SecurityClaims{
+					UserAttributes: map[string]any{"admin": true, "email": "", "name": ""},
+					Permissions:    runtime.AllPermissions,
+					SkipChecks:     true,
+				},
+			}), nil
 		}
-		claims := &devJWTClaims{}
-		// Extract bearer token to get dev JWT claims
+
+		// If auth header is set when auth is disabled, it must be a devJWTClaims, which we parse without verifying the signature.
 		bearerToken := ""
 		if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[0:6], "bearer") {
 			bearerToken = strings.TrimSpace(authorizationHeader[6:])
@@ -112,16 +131,21 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 		if bearerToken == "" {
 			return nil, errors.New("no bearer token found in authorization header")
 		}
+		claims := &devJWTClaims{}
 		_, _, err := jwt.NewParser().ParseUnverified(bearerToken, claims)
 		if err != nil {
 			return nil, err
 		}
-		return context.WithValue(ctx, claimsContextKey{}, claims), nil
+		return withClaimsProvider(ctx, claims), nil
 	}
 
-	// If authorization header is not set, we set anonClaims.
+	// If authorization header is not set, it's an anonymous user so we set empty claims with no permissions.
 	if authorizationHeader == "" {
-		ctx = context.WithValue(ctx, claimsContextKey{}, anonClaims{})
+		ctx = withClaimsProvider(ctx, wrappedClaims{
+			claims: &runtime.SecurityClaims{
+				UserAttributes: map[string]any{},
+			},
+		})
 		return ctx, nil
 	}
 
@@ -146,18 +170,9 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 	}
 
 	// Set subject in span
-	subject := claims.Subject()
-	if subject != "" {
-		span := trace.SpanFromContext(ctx)
-		span.SetAttributes(semconv.EnduserID(subject))
-	}
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(semconv.EnduserID(claims.Claims("").UserID))
 
-	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
+	ctx = withClaimsProvider(ctx, claims)
 	return ctx, nil
-}
-
-// WithOpen wraps a context with open claims. It's used for testing.
-// NOTE: We should remove this when the server tests support interceptors.
-func WithOpen(ctx context.Context) context.Context {
-	return context.WithValue(ctx, claimsContextKey{}, openClaims{})
 }

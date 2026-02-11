@@ -1,18 +1,19 @@
 <script lang="ts">
+  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
+  import CanvasComponent from "./CanvasComponent.svelte";
+  import ItemWrapper from "./ItemWrapper.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import { normalizeSizeArray } from "./layout-util";
-  import type { CanvasEntity } from "./stores/canvas-entity";
-  import ComponentError from "./components/ComponentError.svelte";
-  import ItemWrapper from "./ItemWrapper.svelte";
-  import CanvasComponent from "./CanvasComponent.svelte";
   import type { Row } from "./stores/row";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
 
   export let row: Row;
   export let zIndex = 1;
   export let maxWidth: number;
   export let rowIndex: number;
-  export let components: CanvasEntity["components"];
+  export let components: Map<string, BaseCanvasComponent>;
   export let heightUnit: string = "px";
+  export let navigationEnabled: boolean = true;
 
   $: ({ height, items: _itemIds, widths: itemWidths } = row);
 
@@ -35,7 +36,7 @@
     {@const component = components.get(id)}
     <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
       {#if component}
-        <CanvasComponent {component} />
+        <CanvasComponent {component} {navigationEnabled} />
       {:else}
         <ComponentError error="No valid component {id} in project" />
       {/if}

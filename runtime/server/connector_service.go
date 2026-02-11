@@ -6,132 +6,58 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/bigquery"
-	"github.com/rilldata/rill/runtime/drivers/gcs"
-	"github.com/rilldata/rill/runtime/drivers/s3"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (s *Server) S3ListBuckets(ctx context.Context, req *runtimev1.S3ListBucketsRequest) (*runtimev1.S3ListBucketsResponse, error) {
-	s3Conn, release, err := s.getS3Conn(ctx, req.Connector, req.InstanceId)
+func (s *Server) ListBuckets(ctx context.Context, req *runtimev1.ListBucketsRequest) (*runtimev1.ListBucketsResponse, error) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	buckets, err := s3Conn.ListBuckets(ctx)
+	os, ok := handle.AsObjectStore()
+	if !ok {
+		return nil, fmt.Errorf("connector %q does not implement object store", req.Connector)
+	}
+
+	buckets, nextPageToken, err := os.ListBuckets(ctx, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.S3ListBucketsResponse{
-		Buckets: buckets,
-	}, nil
-}
-
-func (s *Server) S3ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest) (*runtimev1.S3ListObjectsResponse, error) {
-	s3Conn, release, err := s.getS3Conn(ctx, req.Connector, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	objects, nextToken, err := s3Conn.ListObjectsRaw(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.S3ListObjectsResponse{
-		Objects:       objects,
-		NextPageToken: nextToken,
-	}, nil
-}
-
-func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest) (*runtimev1.S3GetBucketMetadataResponse, error) {
-	s3Conn, release, err := s.getS3Conn(ctx, req.Connector, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	region, err := s3Conn.BucketRegion(ctx, req.Bucket)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.S3GetBucketMetadataResponse{
-		Region: region,
-	}, nil
-}
-
-func (s *Server) S3GetCredentialsInfo(ctx context.Context, req *runtimev1.S3GetCredentialsInfoRequest) (*runtimev1.S3GetCredentialsInfoResponse, error) {
-	s3Conn, release, err := s.getS3Conn(ctx, req.Connector, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	provider, exist, err := s3Conn.GetCredentialsInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.S3GetCredentialsInfoResponse{
-		Exist:    exist,
-		Provider: provider,
-	}, nil
-}
-
-func (s *Server) GCSListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) (*runtimev1.GCSListBucketsResponse, error) {
-	gcsConn, release, err := s.getGCSConn(ctx, req.Connector, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	buckets, next, err := gcsConn.ListBuckets(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.GCSListBucketsResponse{
+	return &runtimev1.ListBucketsResponse{
 		Buckets:       buckets,
-		NextPageToken: next,
+		NextPageToken: nextPageToken,
 	}, nil
 }
 
-func (s *Server) GCSListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest) (*runtimev1.GCSListObjectsResponse, error) {
-	gcsConn, release, err := s.getGCSConn(ctx, req.Connector, req.InstanceId)
+func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequest) (*runtimev1.ListObjectsResponse, error) {
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
-
-	objects, nextToken, err := gcsConn.ListObjectsRaw(ctx, req)
+	os, ok := handle.AsObjectStore()
+	if !ok {
+		return nil, fmt.Errorf("connector %q does not implement object store", req.Connector)
+	}
+	objects, nextToken, err := os.ListObjects(ctx, req.Bucket, req.Path, req.Delimiter, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
-
-	return &runtimev1.GCSListObjectsResponse{
-		Objects:       objects,
+	pbObjects := make([]*runtimev1.Object, len(objects))
+	for i, obj := range objects {
+		pbObjects[i] = &runtimev1.Object{
+			Name:       obj.Path,
+			Size:       obj.Size,
+			IsDir:      obj.IsDir,
+			ModifiedOn: timestamppb.New(obj.UpdatedOn),
+		}
+	}
+	return &runtimev1.ListObjectsResponse{
+		Objects:       pbObjects,
 		NextPageToken: nextToken,
-	}, nil
-}
-
-func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *runtimev1.GCSGetCredentialsInfoRequest) (*runtimev1.GCSGetCredentialsInfoResponse, error) {
-	gcsConn, release, err := s.getGCSConn(ctx, req.Connector, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	projectID, exist, err := gcsConn.GetCredentialsInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.GCSGetCredentialsInfoResponse{
-		ProjectId: projectID,
-		Exist:     exist,
 	}, nil
 }
 
@@ -143,7 +69,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	defer release()
 
 	i := olap.InformationSchema()
-	tables, err := i.All(ctx, req.SearchPattern)
+	tables, next, err := i.All(ctx, req.SearchPattern, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +88,8 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 		}
 	}
 	return &runtimev1.OLAPListTablesResponse{
-		Tables: res,
+		Tables:        res,
+		NextPageToken: next,
 	}, nil
 }
 
@@ -196,21 +123,22 @@ func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDat
 
 	is, ok := handle.AsInformationSchema()
 	if !ok {
-		return nil, fmt.Errorf("driver: information schema not implemented")
+		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
-	schemas, err := is.ListDatabaseSchemas(ctx)
+	items, next, err := is.ListDatabaseSchemas(ctx, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*runtimev1.DatabaseSchemaInfo, len(schemas))
-	for i, schema := range schemas {
+	res := make([]*runtimev1.DatabaseSchemaInfo, len(items))
+	for i, schema := range items {
 		res[i] = &runtimev1.DatabaseSchemaInfo{
 			Database:       schema.Database,
 			DatabaseSchema: schema.DatabaseSchema,
 		}
 	}
 	return &runtimev1.ListDatabaseSchemasResponse{
+		NextPageToken:   next,
 		DatabaseSchemas: res,
 	}, nil
 }
@@ -224,22 +152,23 @@ func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesReques
 
 	is, ok := handle.AsInformationSchema()
 	if !ok {
-		return nil, fmt.Errorf("driver: information schema not implemented")
+		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
-	tables, err := is.ListTables(ctx, req.Database, req.DatabaseSchema)
+	items, next, err := is.ListTables(ctx, req.Database, req.DatabaseSchema, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*runtimev1.TableInfo, len(tables))
-	for i, table := range tables {
+	res := make([]*runtimev1.TableInfo, len(items))
+	for i, table := range items {
 		res[i] = &runtimev1.TableInfo{
 			Name: table.Name,
 			View: table.View,
 		}
 	}
 	return &runtimev1.ListTablesResponse{
-		Tables: res,
+		NextPageToken: next,
+		Tables:        res,
 	}, nil
 }
 
@@ -252,7 +181,7 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 
 	is, ok := handle.AsInformationSchema()
 	if !ok {
-		return nil, fmt.Errorf("driver: information schema not implemented")
+		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
 	tableMetadata, err := is.GetTable(ctx, req.Database, req.DatabaseSchema, req.Table)
@@ -263,79 +192,4 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 	return &runtimev1.GetTableResponse{
 		Schema: tableMetadata.Schema,
 	}, nil
-}
-
-func (s *Server) BigQueryListDatasets(ctx context.Context, req *runtimev1.BigQueryListDatasetsRequest) (*runtimev1.BigQueryListDatasetsResponse, error) {
-	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	names, nextToken, err := bq.ListDatasets(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.BigQueryListDatasetsResponse{
-		Names:         names,
-		NextPageToken: nextToken,
-	}, nil
-}
-
-func (s *Server) BigQueryListTables(ctx context.Context, req *runtimev1.BigQueryListTablesRequest) (*runtimev1.BigQueryListTablesResponse, error) {
-	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	names, nextToken, err := bq.ListBigQueryTables(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.BigQueryListTablesResponse{
-		Names:         names,
-		NextPageToken: nextToken,
-	}, nil
-}
-
-func (s *Server) getGCSConn(ctx context.Context, connector, instanceID string) (*gcs.Connection, func(), error) {
-	conn, release, err := s.runtime.AcquireHandle(ctx, instanceID, connector)
-	if err != nil {
-		return nil, nil, fmt.Errorf("can't open connection to gcs %w", err)
-	}
-
-	gcsConn, ok := conn.(*gcs.Connection)
-	if !ok {
-		panic("conn is not gcs connection")
-	}
-	return gcsConn, release, nil
-}
-
-func (s *Server) getS3Conn(ctx context.Context, connector, instanceID string) (*s3.Connection, func(), error) {
-	conn, release, err := s.runtime.AcquireHandle(ctx, instanceID, connector)
-	if err != nil {
-		return nil, nil, fmt.Errorf("can't open connection to s3 %w", err)
-	}
-
-	s3Conn, ok := conn.(*s3.Connection)
-	if !ok {
-		panic("conn is not s3 connection")
-	}
-	return s3Conn, release, nil
-}
-
-func (s *Server) getBigQueryConn(ctx context.Context, connector, instanceID string) (*bigquery.Connection, func(), error) {
-	conn, release, err := s.runtime.AcquireHandle(ctx, instanceID, connector)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	bq, ok := conn.(*bigquery.Connection)
-	if !ok {
-		panic("conn is not bigquery connection")
-	}
-	return bq, release, nil
 }

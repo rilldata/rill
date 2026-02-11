@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -28,36 +29,25 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Amazon Redshift",
 	Description: "Connect to Amazon Redshift database.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/redshift",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/redshift",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "aws_access_key_id",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-		{
-			Key:    "aws_secret_access_key",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
+			Key:         "aws_access_key_id",
 			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS access key ID",
+			Description: "AWS access key ID",
+			Placeholder: "your_access_key_id",
 			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from Redshift.",
-			Placeholder: "select * from public.table;",
+			Secret:      true,
 		},
 		{
-			Key:         "output_location",
+			Key:         "aws_secret_access_key",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "S3 output location",
-			Description: "Output location in S3 for temporary data.",
-			Placeholder: "s3://bucket-name/path/",
+			DisplayName: "AWS secret access key",
+			Description: "AWS secret access key",
+			Placeholder: "your_secret_access_key",
 			Required:    true,
+			Secret:      true,
 		},
 		{
 			Key:         "workgroup",
@@ -83,30 +73,6 @@ var spec = drivers.Spec{
 			Placeholder: "dev",
 			Required:    true,
 		},
-		{
-			Key:         "cluster_identifier",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Redshift cluster identifier",
-			Description: "Redshift cluster identifier",
-			Placeholder: "redshift-cluster-1",
-			Required:    false,
-		},
-		{
-			Key:         "role_arn",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Redshift role ARN",
-			Description: "Redshift role ARN",
-			Placeholder: "arn:aws:iam::03214372:role/service-role/AmazonRedshift-CommandsAccessRole-20240307T203902",
-			Required:    true,
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
-		},
 	},
 	ImplementsWarehouse: true,
 }
@@ -122,6 +88,7 @@ type configProperties struct {
 	Workgroup         string `mapstructure:"workgroup"`
 	ClusterIdentifier string `mapstructure:"cluster_identifier"`
 	AllowHostAccess   bool   `mapstructure:"allow_host_access"`
+	LogQueries        bool   `mapstructure:"log_queries"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -136,9 +103,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &Connection{
-		config:  conf,
-		logger:  logger,
-		storage: st,
+		config:   conf,
+		logger:   logger,
+		storage:  st,
+		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
 }
@@ -159,24 +127,22 @@ type Connection struct {
 	config  *configProperties
 	logger  *zap.Logger
 	storage *storage.Client
+
+	client    *redshiftdata.Client
+	clientErr error
+	clientMu  *semaphore.Weighted
 }
 
 var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	// Get AWS config with configured region
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get AWS config: %w", err)
+		return err
 	}
 
-	// Create Redshift client
-	client := redshiftdata.NewFromConfig(awsConfig, func(o *redshiftdata.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
-
-	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	return err
 }
 
@@ -219,7 +185,7 @@ func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -243,13 +209,13 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
@@ -291,24 +257,53 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	return config.LoadDefaultConfig(ctx, loadOptions...)
 }
 
-// executeQuery executes a query and waits for it to complete
-func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Client, sql, database, workgroup, clusterIdentifier string) (string, error) {
+func (c *Connection) getClient(ctx context.Context) (*redshiftdata.Client, error) {
+	if err := c.clientMu.Acquire(ctx, 1); err != nil {
+		return nil, err
+	}
+	defer c.clientMu.Release(1)
+
+	if c.client != nil || c.clientErr != nil {
+		return c.client, c.clientErr
+	}
+
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		c.clientErr = fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, c.clientErr
+	}
+
+	c.client = redshiftdata.NewFromConfig(awsConfig, func(o *redshiftdata.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
+	return c.client, nil
+}
+
+// executeQuery executes a query with optional parameters and waits for it to complete
+func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Client, sql, database, workgroup, clusterIdentifier string, params []redshift_types.SqlParameter) (*redshiftdata.DescribeStatementOutput, error) {
 	executeParams := &redshiftdata.ExecuteStatementInput{
 		Sql:      aws.String(sql),
 		Database: aws.String(database),
 	}
 
-	if clusterIdentifier != "" { // ClusterIdentifier and Workgroup are interchangeable
-		executeParams.ClusterIdentifier = aws.String(clusterIdentifier)
+	// Only set Parameters if there are any (Redshift Data API requires non-empty array)
+	if len(params) > 0 {
+		executeParams.Parameters = params
 	}
 
+	// Set either ClusterIdentifier or WorkgroupName, but not both
+	// WorkgroupName is preferred for serverless
 	if workgroup != "" {
 		executeParams.WorkgroupName = aws.String(workgroup)
+	} else if clusterIdentifier != "" {
+		executeParams.ClusterIdentifier = aws.String(clusterIdentifier)
+	} else {
+		return nil, fmt.Errorf("either workgroup or cluster_identifier is required")
 	}
 
 	queryExecutionOutput, err := client.ExecuteStatement(ctx, executeParams)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -321,23 +316,23 @@ func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Clie
 				Id: queryExecutionOutput.Id,
 			})
 			cancel()
-			return "", errors.Join(ctx.Err(), err)
+			return nil, errors.Join(ctx.Err(), err)
 		case <-ticker.C:
 			status, err := client.DescribeStatement(ctx, &redshiftdata.DescribeStatementInput{
 				Id: queryExecutionOutput.Id,
 			})
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
 			state := status.Status
 
 			if status.Error != nil {
-				return "", fmt.Errorf("Redshift query execution failed %s", *status.Error)
+				return nil, fmt.Errorf("Redshift query execution failed %s", *status.Error)
 			}
 
 			if state != redshift_types.StatusStringSubmitted && state != redshift_types.StatusStringStarted && state != redshift_types.StatusStringPicked {
-				return *queryExecutionOutput.Id, nil
+				return status, nil
 			}
 		}
 	}

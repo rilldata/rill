@@ -9,14 +9,14 @@
   export let href = "";
 </script>
 
-<div class="pt-3.5 flex flex-row items-center pl-1 gap-x-1">
-  <div class="text-gray-500">
+<div class="flex flex-row items-center gap-x-1">
+  <div class="text-fg-secondary">
     {description}
   </div>
   {#if hint}
     <Tooltip location="bottom" alignment="middle" distance={8}>
       <a
-        class="text-gray-500 hover:cursor-pointer"
+        class="text-fg-secondary hover:cursor-pointer"
         style="transform:translateY(-.5px)"
         {href}
         target="_blank"

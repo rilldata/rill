@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -52,23 +51,12 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			delResp, err := client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             name,
+			_, err = client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{
+				Org:     ch.Org,
+				Project: name,
 			})
 			if err != nil {
 				return err
-			}
-
-			rc, err := dotrillcloud.GetAll(path, ch.AdminURL())
-			if err != nil {
-				return err
-			}
-			if rc != nil && rc.ProjectID == delResp.Id {
-				err = dotrillcloud.Delete(path, ch.AdminURL())
-				if err != nil {
-					return err
-				}
 			}
 
 			ch.PrintfSuccess("Deleted project: %v\n", name)

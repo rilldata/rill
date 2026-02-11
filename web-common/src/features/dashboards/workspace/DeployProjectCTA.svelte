@@ -62,20 +62,20 @@
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
-  $: deployPageUrl = getDeployRoute($page.url);
+  $: deployPageUrl = getDeployRoute($page);
   $: redirectPageUrl = copyWithAdditionalArguments($page.url, {
     deploy: "true",
   });
 
   async function onDeploy(resumingDeploy = false) {
-    if (hasRemoteChanges) {
+    await waitUntil(() => !get(deploymentState).loading);
+    if (get(deploymentState).hasRemoteChanges) {
       remoteChangeDialog = true;
       return;
     }
 
     // Check user login
 
-    await waitUntil(() => !get(userQuery).isLoading);
     const userResp = get(userQuery).data;
     if (!userResp?.user) {
       if (resumingDeploy) {
@@ -110,7 +110,7 @@
 
     // do not show the confirmation dialog for successive deploys
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-    window.open(deployPageUrl, "_blank");
+    window.open($deployPageUrl, "_blank");
   }
 
   async function handleForceFetchRemoteCommits() {
@@ -146,7 +146,7 @@
   });
 </script>
 
-{#if isDeployed}
+{#if isDeployed && !hasRemoteChanges}
   <UpdateProjectPopup
     bind:open={updateProjectDropdownOpen}
     matchingProjects={$matchingProjectsQuery.data?.projects ?? []}
@@ -155,8 +155,9 @@
   <Tooltip distance={8}>
     <Button
       {loading}
-      onClick={() => onDeploy()}
-      type={hasValidDashboard ? "primary" : "secondary"}
+      onClick={() =>
+        hasRemoteChanges ? (remoteChangeDialog = true) : onDeploy()}
+      type="primary"
     >
       <Rocket size="16px" />
 

@@ -5,28 +5,79 @@
 
 #vg-tooltip-element,
 #rill-vg-tooltip {
-  @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
-  background: rgba(255, 255, 255, 0.9);
+  @apply absolute p-3 rounded-lg pointer-events-none;
+  @apply ui-copy-number;
+  border: 0 !important;
+  background: var(--tooltip) !important;
+  color: var(--fg-inverse) !important;
+
+  font-family: "Inter";
+  border-radius: 5px;
 
   & h2 {
-    @apply text-slate-500 text-sm font-semibold mb-2;
+    @apply text-sm font-semibold mb-2;
+    color: color-mix(
+      in oklab,
+      var(--fg-inverse) 90%,
+      transparent 30%
+    ) !important;
   }
 
   & table {
     @apply border-spacing-0;
+    border-collapse: separate;
+    border-spacing: 0;
+    display: table;
   }
 
-  & td {
-    @apply truncate py-0.5;
+  & table tr td {
+    @apply py-0.5;
+    white-space: nowrap;
+    padding-left: 0;
+    padding-right: 12px;
   }
 
-  & td.key {
-    @apply text-left px-1 font-normal truncate;
-    max-width: 250px;
+  & table tr td:first-child {
+    padding-left: 0;
   }
 
-  & td.value {
-    @apply text-left truncate font-semibold;
-    max-width: 250px;
+  & table tr td:last-child {
+    padding-right: 0;
   }
+
+  & table tr td.key {
+    @apply text-left font-normal text-xs;
+    padding-right: 12px;
+    color: color-mix(
+      in oklab,
+      var(--fg-inverse) 70%,
+      transparent 30%
+    ) !important;
+  }
+
+  & table tr td.value {
+    @apply text-right font-semibold text-xs;
+    display: table-cell !important;
+    max-width: none !important;
+    max-height: none !important;
+  }
+
+  & table tr td.previous-value {
+    opacity: 0.6;
+  }
+
+  & table tr td.empty-cell {
+    visibility: hidden;
+  }
+
+  & table tr .key-color {
+    @apply w-3 h-3 min-w-3 min-h-3 rounded-full;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+}
+
+#vg-tooltip-element table tr:first-child td {
+  font-size: 14px;
 }

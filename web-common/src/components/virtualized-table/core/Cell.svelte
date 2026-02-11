@@ -14,7 +14,7 @@
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
@@ -33,6 +33,11 @@
   export let excludeMode = false;
   export let positionStatic = false;
   export let label: string | undefined = undefined;
+  export let onInspect: (rowIndex: number) => void = () => {};
+  export let onSelectItem: (data: {
+    index: number;
+    meta: boolean;
+  }) => void = () => {};
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -40,20 +45,23 @@
   let cellActive = false;
   $: isTextColumn = type === "VARCHAR" || type === "CODE_STRING";
 
-  const dispatch = createEventDispatcher();
-
   function onFocus() {
-    dispatch("inspect", row.index);
+    onInspect(row.index);
     cellActive = true;
-    // Update the cell inspector store with the cell value
-    if (value !== undefined && value !== null) {
-      cellInspectorStore.updateValue(value.toString());
-    }
+    cellInspectorStore.updateValue(value);
   }
 
-  function onSelectItem(e: MouseEvent) {
+  function onSelect(e: MouseEvent) {
     if (e.shiftKey) return;
-    dispatch("select-item", { index: row.index, meta: e.ctrlKey || e.metaKey });
+
+    // Check if user has selected text
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      // User has selected text, don't trigger row selection
+      return;
+    }
+
+    onSelectItem({ index: row.index, meta: e.ctrlKey || e.metaKey });
   }
 
   function onBlur() {
@@ -68,15 +76,13 @@
   let activityStatus;
   $: {
     if (cellActive) {
-      // Specific cell active color, used to be bg-gray-200
-      // bg-gray-100 to match the hover color, and not too hard on the eyes
-      activityStatus = "bg-gray-100 ";
+      activityStatus = "bg-surface-hover";
     } else if (rowActive && !cellActive) {
-      activityStatus = "bg-gray-100 ";
+      activityStatus = "bg-surface-hover ";
     } else if (colSelected) {
-      activityStatus = "bg-surface";
+      activityStatus = "bg-transparent";
     } else {
-      activityStatus = "bg-surface";
+      activityStatus = "bg-transparent";
     }
   }
 
@@ -101,10 +107,10 @@
       : value;
 
   $: formattedDataTypeStyle = excluded
-    ? "font-normal ui-copy-disabled-faint"
+    ? "font-normal text-fg-muted"
     : rowSelected
-      ? "font-normal ui-copy-strong"
-      : "font-normal ui-copy";
+      ? "font-normal text-fg-primary font-semibold"
+      : "font-normal text-fg-primary";
 
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);
@@ -128,7 +134,7 @@
       {activityStatus}
       "
     on:blur={onBlur}
-    on:click={onSelectItem}
+    on:click={onSelect}
     on:focus={onFocus}
     on:keydown
     on:mouseout={onBlur}
@@ -147,15 +153,12 @@
       justify="left"
       showBackground={false}
       value={barValue}
-      compact={true}
+      compact
     >
       <button
         aria-label={label}
-        class="
-          {isTextColumn ? 'text-left' : 'text-right'}
-          {isDimensionTable ? '' : 'px-4'}
-          w-full truncate
-          "
+        class="{isTextColumn ? 'text-left' : 'text-right'} w-full truncate"
+        class:px-4={!isDimensionTable}
         on:click={modified({
           shift: shiftClick,
         })}
@@ -167,7 +170,7 @@
           isNull={value === null || value === undefined}
           {type}
           value={formattedValue || value}
-          color="text-gray-500"
+          color="text-fg-secondary"
         />
       </button>
     </BarAndLabel>

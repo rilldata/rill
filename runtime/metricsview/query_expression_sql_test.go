@@ -1,6 +1,8 @@
 package metricsview
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestExpressionToSQL(t *testing.T) {
 	tests := []struct {
@@ -20,14 +22,29 @@ func TestExpressionToSQL(t *testing.T) {
 			want: "foo",
 		},
 		{
+			name: "complex name expression",
+			e:    &Expression{Name: "foo \" $.%&/' bar"},
+			want: `"foo "" $.%&/' bar"`,
+		},
+		{
 			name: "value expression",
 			e:    &Expression{Value: 42},
 			want: "42",
 		},
 		{
 			name: "subquery expression",
-			e:    &Expression{Subquery: &Subquery{}},
-			want: "<subquery>",
+			e: &Expression{Subquery: &Subquery{
+				Dimension: Dimension{Name: "dim"},
+				Measures:  []Measure{{Name: "count"}},
+				Having: &Expression{Condition: &Condition{
+					Operator: OperatorEq,
+					Expressions: []*Expression{
+						{Name: "count"},
+						{Value: 10},
+					},
+				}},
+			}},
+			want: "(SELECT dim FROM metrics_view HAVING count = 10)",
 		},
 		{
 			name: "condition expression",
@@ -87,7 +104,33 @@ func TestExpressionToSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "foo IN [1,2,3]",
+			want: "foo IN (1, 2, 3)",
+		},
+		{
+			name: "in strings expression",
+			e: &Expression{
+				Condition: &Condition{
+					Operator: OperatorIn,
+					Expressions: []*Expression{
+						{Name: "foo"},
+						{Value: []string{"a.%$/\" ' s", "b", "c"}},
+					},
+				},
+			},
+			want: "foo IN ('a.%$/\" '' s', 'b', 'c')",
+		},
+		{
+			name: "in empty list expression",
+			e: &Expression{
+				Condition: &Condition{
+					Operator: OperatorIn,
+					Expressions: []*Expression{
+						{Name: "foo"},
+						{Value: []any{}},
+					},
+				},
+			},
+			want: "foo IN (NULL)",
 		},
 		{
 			name: "is null",

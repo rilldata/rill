@@ -1,11 +1,11 @@
 import {
   queryServiceMetricsViewTimeRanges,
   queryServiceMetricsViewTimeRange,
-  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 import { Interval, DateTime, type DateTimeUnit } from "luxon";
+import { GrainAliasToOrder } from "@rilldata/web-common/lib/time/new-grains";
 
 const GRAINS = ["Y", "Q", "M", "W", "D", "H", "m", "s"] as const;
 
@@ -17,58 +17,6 @@ type TimeMetadata = {
   watermark: DateTime;
   now: DateTime;
   latest: DateTime;
-};
-
-type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | typeof Infinity;
-
-type TimeGrainAlias =
-  | "ms"
-  | "MS"
-  | "s"
-  | "S"
-  | "m"
-  | "h"
-  | "H"
-  | "d"
-  | "D"
-  | "w"
-  | "W"
-  | "M"
-  | "q"
-  | "Q"
-  | "y"
-  | "Y";
-
-export const V1TimeGrainToOrder: Record<V1TimeGrain, Order> = {
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: 0,
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: 0,
-  [V1TimeGrain.TIME_GRAIN_SECOND]: 0,
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: 1,
-  [V1TimeGrain.TIME_GRAIN_HOUR]: 2,
-  [V1TimeGrain.TIME_GRAIN_DAY]: 3,
-  [V1TimeGrain.TIME_GRAIN_WEEK]: 4,
-  [V1TimeGrain.TIME_GRAIN_MONTH]: 5,
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: 6,
-  [V1TimeGrain.TIME_GRAIN_YEAR]: 7,
-};
-
-export const GrainAliasToOrder: Record<TimeGrainAlias, Order> = {
-  ms: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
-  MS: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
-  s: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_SECOND],
-  S: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_SECOND],
-  m: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MINUTE],
-  h: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_HOUR],
-  H: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_HOUR],
-  d: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY],
-  D: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY],
-  w: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_WEEK],
-  W: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_WEEK],
-  M: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MONTH],
-  q: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER],
-  Q: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER],
-  y: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR],
-  Y: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR],
 };
 
 const GRAIN_TO_LUXON: Record<string, DateTimeUnit> = {
@@ -454,7 +402,7 @@ export async function runTests(metricsViewName: string) {
       end: interval.end?.toISO({ suppressMilliseconds: true }),
     };
 
-    if (response?.timeRanges?.[i]?.start !== apiFormat.start) {
+    if (response?.resolvedTimeRanges?.[i]?.start !== apiFormat.start) {
       console.log(testCases[i].description);
       console.log(
         `${failures.toLocaleString("en-US", {
@@ -463,7 +411,7 @@ export async function runTests(metricsViewName: string) {
         })}. FAIL (start) // ${testCases[i].syntax.padEnd(36)} // Expected: ${String(apiFormat.start).padEnd(20)} // Got: ${response?.timeRanges?.[i]?.start}`,
       );
       failures++;
-    } else if (response?.timeRanges?.[i]?.end !== apiFormat.end) {
+    } else if (response?.resolvedTimeRanges?.[i]?.end !== apiFormat.end) {
       console.log(testCases[i].description);
       console.log(
         `${failures.toLocaleString("en-US", {

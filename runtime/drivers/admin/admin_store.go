@@ -11,27 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
-	var resources []*adminv1.ResourceName
-	resources = append(resources, &adminv1.ResourceName{
-		Type: runtime.ResourceKindReport,
-		Name: reportName,
-	})
-
-	if explore != "" {
-		resources = append(resources, &adminv1.ResourceName{
-			Type: runtime.ResourceKindExplore,
-			Name: explore,
-		})
-	}
-
-	if canvas != "" {
-		resources = append(resources, &adminv1.ResourceName{
-			Type: runtime.ResourceKindCanvas,
-			Name: canvas,
-		})
-	}
-
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
 		ProjectId:       h.config.ProjectID,
 		Report:          reportName,
@@ -39,8 +19,13 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, exp
 		EmailRecipients: emailRecipients,
 		AnonRecipients:  anonRecipients,
 		ExecutionTime:   timestamppb.New(executionTime),
-		Resources:       resources,
-		WebOpenMode:     webOpenMode,
+		Resources: []*adminv1.ResourceName{
+			{
+				Type: runtime.ResourceKindReport,
+				Name: reportName,
+			},
+		},
+		WebOpenMode: webOpenMode,
 	})
 	if err != nil {
 		return nil, err
@@ -61,11 +46,14 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, exp
 	}, nil
 }
 
-func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+func (h *Handle) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
 	req := &adminv1.GetAlertMetaRequest{
-		ProjectId:   h.config.ProjectID,
-		Alert:       alertName,
-		Annotations: annotations,
+		ProjectId:       h.config.ProjectID,
+		Alert:           alertName,
+		Annotations:     annotations,
+		OwnerId:         ownerID,
+		EmailRecipients: emailRecipients,
+		AnonRecipients:  anonRecipients,
 	}
 
 	if queryForUserID != "" {
@@ -79,9 +67,17 @@ func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotat
 		return nil, err
 	}
 
+	recipientURLs := make(map[string]drivers.AlertURLs)
+	for email, urls := range res.RecipientUrls {
+		recipientURLs[email] = drivers.AlertURLs{
+			OpenURL:        urls.OpenUrl,
+			EditURL:        urls.EditUrl,
+			UnsubscribeURL: urls.UnsubscribeUrl,
+		}
+	}
+
 	meta := &drivers.AlertMetadata{
-		OpenURL: res.OpenUrl,
-		EditURL: res.EditUrl,
+		RecipientURLs: recipientURLs,
 	}
 
 	if res.QueryForAttributes != nil {
@@ -108,4 +104,49 @@ func (h *Handle) ProvisionConnector(ctx context.Context, name, driver string, ar
 	}
 
 	return res.Resource.Config.AsMap(), nil
+}
+
+func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentConfig, error) {
+	res, err := h.admin.GetDeploymentConfig(ctx, &adminv1.GetDeploymentConfigRequest{
+		DeploymentId: "", // Will default to the deployment ID of the current access token.
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &drivers.DeploymentConfig{
+		Variables:             res.Variables,
+		Annotations:           res.Annotations,
+		FrontendURL:           res.FrontendUrl,
+		UpdatedOn:             res.UpdatedOn.AsTime(),
+		UsesArchive:           res.UsesArchive,
+		DuckdbConnectorConfig: res.DuckdbConnectorConfig.AsMap(),
+	}, nil
+}
+
+func (h *Handle) ListDeployments(ctx context.Context) ([]*drivers.Deployment, error) {
+	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: h.config.ProjectID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.admin.ListDeployments(ctx, &adminv1.ListDeploymentsRequest{
+		Org:     projectResp.Project.OrgName,
+		Project: projectResp.Project.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*drivers.Deployment, 0, len(resp.Deployments))
+	for _, d := range resp.Deployments {
+		res = append(res, &drivers.Deployment{
+			Branch:   d.Branch,
+			Editable: d.Editable,
+		})
+	}
+
+	return res, nil
 }

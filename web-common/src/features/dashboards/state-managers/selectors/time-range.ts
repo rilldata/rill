@@ -50,6 +50,7 @@ export const selectedTimeRangeState = (dashData: DashboardDataSources) =>
     dashData.validExplore,
     dashData.timeRangeSummary,
     dashData.dashboard,
+    dashData.validMetricsView?.smallestTimeGrain,
   ]);
 
 export const isCustomTimeRange = (dashData: DashboardDataSources): boolean =>

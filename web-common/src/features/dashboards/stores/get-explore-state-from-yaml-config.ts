@@ -1,12 +1,12 @@
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { getGrainForRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
-import { FromURLParamTimeGrainMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -17,40 +17,56 @@ import {
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreComparisonMode,
+  V1TimeGrain,
   type V1ExploreSpec,
-  type V1MetricsViewTimeRangeResponse,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { createQuery } from "@tanstack/svelte-query";
+import { derived, type Readable } from "svelte/store";
+import {
+  DateTimeUnitToV1TimeGrain,
+  isGrainAllowed,
+} from "@rilldata/web-common/lib/time/new-grains";
 
 export function getExploreStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
+  smallestTimeGrain: V1TimeGrain | undefined = undefined,
 ) {
   // TODO: support all fields from V1ExplorePreset. Not urgent since we do not parse them in backend.
   return <Partial<ExploreState>>{
     activePage: DashboardState_ActivePage.DEFAULT,
 
-    ...getExploreTimeStateFromYAMLConfig(exploreSpec, timeRangeSummary),
+    ...getExploreTimeStateFromYAMLConfig(
+      exploreSpec,
+      timeRangeSummary,
+      smallestTimeGrain,
+    ),
     ...getExploreViewStateFromYAMLConfig(exploreSpec),
   };
 }
 
 export function createUrlForExploreYAMLDefaultState(
-  validSpecQuery: ReturnType<typeof useExploreValidSpec>,
-  fullTimeRangeQuery: CreateQueryResult<V1MetricsViewTimeRangeResponse>,
+  exploreNameStore: Readable<string>,
 ) {
+  const validSpecQuery = createQuery(
+    getExploreValidSpecQueryOptions(exploreNameStore),
+  );
+  const timeRangeQuery = createQuery(
+    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
+  );
+
   return derived(
-    [validSpecQuery, fullTimeRangeQuery],
-    ([validSpec, fullTimeRange]) => {
-      const metricsViewSpec = validSpec.data?.metricsView ?? {};
-      const exploreSpec = validSpec.data?.explore ?? {};
-      const timeRangeSummary = fullTimeRange.data?.timeRangeSummary;
+    [validSpecQuery, timeRangeQuery],
+    ([validSpecResp, timeRangeResp]) => {
+      const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
+      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
+      const timeRangeSummary = timeRangeResp.data?.timeRangeSummary;
 
       const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
         exploreSpec,
         timeRangeSummary,
+        metricsViewSpec.smallestTimeGrain,
       );
 
       const timeControlState = getTimeControlState(
@@ -62,6 +78,7 @@ export function createUrlForExploreYAMLDefaultState(
 
       const urlParams = convertPartialExploreStateToUrlParams(
         exploreSpec,
+        metricsViewSpec,
         exploreStateFromYAMLConfig,
         timeControlState,
       );
@@ -73,6 +90,7 @@ export function createUrlForExploreYAMLDefaultState(
 function getExploreTimeStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
+  smallestTimeGrain: V1TimeGrain | undefined = undefined,
 ): Partial<ExploreState> {
   const exploreTimeState: Partial<ExploreState> = {};
   if (!exploreSpec.defaultPreset || !timeRangeSummary) {
@@ -87,13 +105,19 @@ function getExploreTimeStateFromYAMLConfig(
 
     if (defaultPreset.timeGrain) {
       exploreTimeState.selectedTimeRange.interval =
-        FromURLParamTimeGrainMap[defaultPreset.timeGrain];
+        DateTimeUnitToV1TimeGrain[defaultPreset.timeGrain];
     } else {
-      exploreTimeState.selectedTimeRange.interval = getGrainForRange(
+      const grainForRange = getGrainForRange(
         defaultPreset.timeRange,
         defaultPreset.timezone,
         timeRangeSummary,
       );
+
+      const interval = isGrainAllowed(grainForRange, smallestTimeGrain)
+        ? grainForRange
+        : smallestTimeGrain;
+
+      exploreTimeState.selectedTimeRange.interval = interval;
     }
   }
 
@@ -149,14 +173,15 @@ function getDefaultComparisonTimeRangeName(
     timezone,
   );
 
-  const comparisonTimeRangeNmae = getValidComparisonOption(
+  const comparisonTimeRangeName = getValidComparisonOption(
     exploreSpec.timeRanges,
     timeRange,
     undefined,
     allTimeRange,
+    timezone,
   );
 
-  return comparisonTimeRangeNmae;
+  return comparisonTimeRangeName;
 }
 
 function getExploreViewStateFromYAMLConfig(
@@ -184,6 +209,9 @@ function getExploreViewStateFromYAMLConfig(
 
   if (defaultPreset.exploreSortBy) {
     exploreViewState.leaderboardSortByMeasureName = defaultPreset.exploreSortBy;
+  } else if (exploreViewState.visibleMeasures?.length) {
+    exploreViewState.leaderboardSortByMeasureName =
+      exploreViewState.visibleMeasures[0];
   }
 
   if ("exploreSortAsc" in defaultPreset) {
@@ -201,6 +229,10 @@ function getExploreViewStateFromYAMLConfig(
   if (defaultPreset.exploreLeaderboardMeasures?.length) {
     exploreViewState.leaderboardMeasureNames =
       defaultPreset.exploreLeaderboardMeasures;
+  } else if (exploreViewState.leaderboardSortByMeasureName) {
+    exploreViewState.leaderboardMeasureNames = [
+      exploreViewState.leaderboardSortByMeasureName,
+    ];
   }
 
   if (defaultPreset.exploreLeaderboardShowContextForAllMeasures !== undefined) {

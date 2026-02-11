@@ -1,278 +1,221 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import {
-    ConnectorDriverPropertyType,
-    type V1ConnectorDriver,
-  } from "@rilldata/web-common/runtime-client";
+  import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
-  import { createEventDispatcher } from "svelte";
-  import {
-    defaults,
-    superForm,
-    type SuperValidated,
-  } from "sveltekit-superforms";
-  import { yup } from "sveltekit-superforms/adapters";
-  import { inferSourceName } from "../sourceUtils";
-  import { humanReadableErrorMessage } from "../errors/errors";
-  import {
-    submitAddOLAPConnectorForm,
-    submitAddSourceForm,
-  } from "./submitAddDataForm";
-  import type { AddDataFormType, ConnectorType } from "./types";
-  import { dsnSchema, getYupSchema } from "./yupSchemas";
-  import AddClickHouseForm from "./AddClickHouseForm.svelte";
-  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
-  import NeedHelpText from "./NeedHelpText.svelte";
-  import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
-  import { TabsContent } from "@rilldata/web-common/components/tabs";
-  import { isEmpty, normalizeErrors } from "./utils";
-  import { CONNECTION_TAB_OPTIONS } from "./constants";
-  import { getInitialFormValuesFromProperties } from "../sourceUtils";
-  import { compileConnectorYAML } from "../../connectors/code-utils";
-  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import type { SuperValidated } from "sveltekit-superforms";
 
-  const dispatch = createEventDispatcher();
+  import type { AddDataFormType } from "./types";
+  import MultiStepConnectorFlow from "./MultiStepConnectorFlow.svelte";
+  import NeedHelpText from "./NeedHelpText.svelte";
+  import { isEmpty } from "./utils";
+  import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
+  import { connectorStepStore } from "./connectorStepStore";
+  import YamlPreview from "./YamlPreview.svelte";
+  import { AddDataFormManager } from "./AddDataFormManager";
+  import { createConnectorForm } from "./FormValidation";
+  import AddDataFormSection from "./AddDataFormSection.svelte";
+  import { get } from "svelte/store";
+  import { getConnectorSchema } from "./connector-schemas";
+  import {
+    getRequiredFieldsForValues,
+    getSchemaButtonLabels,
+    isVisibleForValues,
+  } from "../../templates/schema-utils";
 
   export let connector: V1ConnectorDriver;
+  export let schemaName: string;
   export let formType: AddDataFormType;
+  export let isSubmitting: boolean;
   export let onBack: () => void;
   export let onClose: () => void;
 
-  const isSourceForm = formType === "source";
-  const isConnectorForm = formType === "connector";
+  let saveAnyway = false;
+  let showSaveAnyway = false;
 
-  let copied = false;
-  let connectionTab: ConnectorType = "parameters";
+  // Wire manager-provided onUpdate after declaration below
+  let handleOnUpdate: (event: {
+    form: SuperValidated<
+      Record<string, unknown>,
+      string,
+      Record<string, unknown>
+    >;
+    result?: Extract<ActionResult, { type: "success" | "failure" }>;
+    cancel?: () => void;
+  }) => Promise<void> = async (_event) => {};
 
-  // Form 1: Individual parameters
-  const paramsFormId = `add-data-${connector.name}-form`;
-  const properties =
-    (isSourceForm
-      ? connector.sourceProperties
-      : connector.configProperties?.filter(
-          (property) => property.key !== "dsn",
-        )) ?? [];
-
-  // FIXME: APP-209
-  const filteredParamsProperties = properties;
-  const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
-  const initialFormValues = getInitialFormValuesFromProperties(properties);
+  // Create form directly from schema using factory function
   const {
-    form: paramsForm,
+    form: form,
     errors: paramsErrors,
     enhance: paramsEnhance,
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(initialFormValues, {
-    SPA: true,
-    validators: schema,
-    onUpdate: handleOnUpdate,
-    resetForm: false,
+  } = createConnectorForm({
+    schemaName,
+    formType,
+    onUpdate: (e: any) => handleOnUpdate(e),
   });
+
+  // Create manager with form stores (manager handles orchestration, not form creation)
+  const formManager = new AddDataFormManager({
+    connector,
+    formType,
+    formStore: form,
+    errorsStore: paramsErrors,
+    getSelectedAuthMethod: () =>
+      get(connectorStepStore).selectedAuthMethod ?? undefined,
+    schemaName,
+  });
+
+  const isMultiStepConnector = formManager.isMultiStepConnector;
+  const hasExplorerStep = formManager.hasExplorerStep;
+  const isStepFlowConnector = isMultiStepConnector || hasExplorerStep;
+  const isSourceForm = formManager.isSourceForm;
+  const isConnectorForm = formManager.isConnectorForm;
+  let activeAuthMethod: string | null = null;
+  let prevAuthMethod: string | null = null;
+  let stepState = $connectorStepStore;
+  let multiStepSubmitDisabled = false;
+  let multiStepButtonLabel = "";
+  let multiStepLoadingCopy = "";
+  let shouldShowSkipLink = false;
+  let primaryButtonLabel = "";
+  let primaryLoadingCopy = "";
+
+  $: stepState = $connectorStepStore;
+
+  // Form IDs
+  const baseFormId = formManager.formId;
+  let multiStepFormId = baseFormId;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
-  // Form 2: DSN
-  // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
-  const hasDsnFormOption =
-    isConnectorForm &&
-    connector.configProperties?.some((property) => property.key === "dsn");
-  const dsnFormId = `add-data-${connector.name}-dsn-form`;
-  const dsnProperties =
-    connector.configProperties?.filter((property) => property.key === "dsn") ??
-    [];
+  const connectorSchema = getConnectorSchema(schemaName);
 
-  // FIXME: APP-209
-  const filteredDsnProperties = dsnProperties;
-  const dsnYupSchema = yup(dsnSchema);
-  const {
-    form: dsnForm,
-    errors: dsnErrors,
-    enhance: dsnEnhance,
-    tainted: dsnTainted,
-    submit: dsnSubmit,
-    submitting: dsnSubmitting,
-  } = superForm(defaults(dsnYupSchema), {
-    SPA: true,
-    validators: dsnYupSchema,
-    onUpdate: handleOnUpdate,
-    resetForm: false,
-  });
-  let dsnError: string | null = null;
-  let dsnErrorDetails: string | undefined = undefined;
-
-  let clickhouseError: string | null = null;
-  let clickhouseErrorDetails: string | undefined = undefined;
-
-  let clickhouseFormId: string = "";
-  let clickhouseSubmitting: boolean;
-  let clickhouseIsSubmitDisabled: boolean;
-  let clickhouseManaged: boolean;
-  let clickhouseParamsForm;
-  let clickhouseDsnForm;
-
-  // TODO: move to utils.ts
-  // Compute disabled state for the submit button
-  $: isSubmitDisabled = (() => {
-    if (connectionTab === "dsn") {
-      // DSN form: check required DSN properties
-      for (const property of dsnProperties) {
-        if (property.required) {
-          const key = String(property.key);
-          const value = $dsnForm[key];
-          if (isEmpty(value) || $dsnErrors[key]?.length) return true;
-        }
-      }
-      return false;
-    } else {
-      // Parameters form: check required properties
-      for (const property of properties) {
-        if (property.required) {
-          const key = String(property.key);
-          const value = $paramsForm[key];
-          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
-        }
-      }
-      return false;
-    }
-  })();
-
-  $: formId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
-  $: submitting = connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
-
-  // Reset errors when form is modified
-  $: if (connectionTab === "dsn") {
-    if ($dsnTainted) dsnError = null;
-  } else {
-    if ($paramsTainted) paramsError = null;
+  // Hide Save Anyway once we advance to the model step in step flow connectors.
+  $: if (
+    isStepFlowConnector &&
+    (stepState.step === "source" || stepState.step === "explorer")
+  ) {
+    showSaveAnyway = false;
   }
 
-  // Emit the submitting state to the parent
-  $: dispatch("submitting", { submitting });
-
-  // ClickHouse requires special handling because it supports both managed and self-managed modes:
-  // - When managed=true: uses sourceProperties and minimal configuration
-  // - When managed=false: uses configProperties and full connection details
-  // - The form state is managed by the child AddClickHouseForm component
-  // - Other connectors use a simpler single-form approach
-  $: yamlPreview = (() => {
-    if (connector.name === "clickhouse") {
-      // Use the value of the child form state for clickhouse
-      const values =
-        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
-      return compileConnectorYAML(
-        connector,
-        {
-          ...values,
-          managed: clickhouseManaged,
-        },
-        {
-          fieldFilter: (property) => !property.noPrompt,
-          orderedProperties:
-            connectionTab === "dsn"
-              ? filteredDsnProperties
-              : filteredParamsProperties,
-        },
-      );
-    } else {
-      const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
-      return compileConnectorYAML(connector, values, {
-        fieldFilter: (property) => !property.noPrompt,
-        orderedProperties:
-          connectionTab === "dsn"
-            ? filteredDsnProperties
-            : filteredParamsProperties,
-      });
+  $: isSubmitDisabled = (() => {
+    if (isStepFlowConnector) {
+      return multiStepSubmitDisabled;
     }
+
+    // No schema = disable submit (schema is required for all connectors)
+    if (!connectorSchema) {
+      return true;
+    }
+
+    const requiredFields = getRequiredFieldsForValues(
+      connectorSchema,
+      $form,
+      isConnectorForm ? "connector" : "source",
+    );
+    for (const field of requiredFields) {
+      if (!isVisibleForValues(connectorSchema, field, $form)) continue;
+      const value = $form[field];
+      const errorsForField = $paramsErrors[field] as any;
+      if (isEmpty(value) || errorsForField?.length) return true;
+    }
+    return false;
   })();
 
-  function copyYamlPreview() {
-    navigator.clipboard.writeText(yamlPreview);
-    copied = true;
-    setTimeout(() => {
-      copied = false;
-    }, 2_000);
+  $: formId = isStepFlowConnector ? multiStepFormId || baseFormId : baseFormId;
+
+  $: submitting = $paramsSubmitting;
+
+  // Get button labels from schema (e.g., rill-managed ClickHouse uses "Connect")
+  $: schemaButtonLabels = getSchemaButtonLabels(connectorSchema, $form);
+
+  $: primaryButtonLabel = isStepFlowConnector
+    ? multiStepButtonLabel
+    : formManager.getPrimaryButtonLabel({
+        isConnectorForm,
+        step: stepState.step,
+        submitting,
+        schemaButtonLabels,
+        selectedAuthMethod: activeAuthMethod ?? undefined,
+      });
+
+  $: primaryLoadingCopy = (() => {
+    if (isStepFlowConnector) return multiStepLoadingCopy;
+    if (schemaButtonLabels?.loading) return schemaButtonLabels.loading;
+    return activeAuthMethod === "public"
+      ? "Continuing..."
+      : "Testing connection...";
+  })();
+
+  // Clear Save Anyway state whenever auth method changes (any direction).
+  $: if (activeAuthMethod !== prevAuthMethod) {
+    prevAuthMethod = activeAuthMethod;
+    showSaveAnyway = false;
+    saveAnyway = false;
+  }
+
+  $: isSubmitting = submitting;
+
+  // Reset errors when form is modified
+  $: if ($paramsTainted) paramsError = null;
+
+  async function handleSaveAnyway() {
+    // Save Anyway should only work for connector forms
+    if (!isConnectorForm) {
+      return;
+    }
+
+    saveAnyway = true;
+    const result = await formManager.saveConnectorAnyway({
+      queryClient,
+      values: $form,
+    });
+    if (result.ok) {
+      onClose();
+    } else {
+      paramsError = result.message;
+      paramsErrorDetails = result.details;
+    }
+    saveAnyway = false;
+  }
+
+  $: yamlPreview = formManager.computeYamlPreview({
+    stepState,
+    isMultiStepConnector: isStepFlowConnector,
+    isConnectorForm,
+    formValues: $form,
+  });
+  $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
+  $: saveAnywayLoading = submitting && saveAnyway;
+
+  handleOnUpdate = formManager.makeOnUpdate({
+    onClose,
+    queryClient,
+    getSelectedAuthMethod: () => activeAuthMethod || undefined,
+    setParamsError: (message: string | null, details?: string) => {
+      paramsError = message;
+      paramsErrorDetails = details;
+    },
+    setShowSaveAnyway: (value: boolean) => {
+      showSaveAnyway = value;
+    },
+  });
+
+  async function handleFileUpload(file: File): Promise<string> {
+    return formManager.handleFileUpload(file);
   }
 
   function onStringInputChange(event: Event) {
-    const target = event.target as HTMLInputElement;
-    const { name, value } = target;
-
-    if (name === "path") {
-      if ($paramsTainted?.name) return;
-      const name = inferSourceName(connector, value);
-      if (name)
-        paramsForm.update(
-          ($form) => {
-            $form.name = name;
-            return $form;
-          },
-          { taint: false },
-        );
-    }
-  }
-
-  async function handleOnUpdate<
-    T extends Record<string, unknown>,
-    M = any,
-    In extends Record<string, unknown> = T,
-  >(event: {
-    form: SuperValidated<T, M, In>;
-    formEl: HTMLFormElement;
-    cancel: () => void;
-    result: Extract<ActionResult, { type: "success" | "failure" }>;
-  }) {
-    if (!event.form.valid) return;
-    const values = event.form.data;
-
-    try {
-      if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
-      } else {
-        await submitAddOLAPConnectorForm(queryClient, connector, values);
-      }
-      onClose();
-    } catch (e) {
-      let error: string;
-      let details: string | undefined = undefined;
-
-      // Handle different error types
-      if (e instanceof Error) {
-        error = e.message;
-        details = undefined;
-      } else if (e?.message && e?.details) {
-        error = e.message;
-        details = e.details !== e.message ? e.details : undefined;
-      } else if (e?.response?.data) {
-        const originalMessage = e.response.data.message;
-        const humanReadable = humanReadableErrorMessage(
-          connector.name,
-          e.response.data.code,
-          originalMessage,
-        );
-        error = humanReadable;
-        details =
-          humanReadable !== originalMessage ? originalMessage : undefined;
-      } else {
-        error = "Unknown error";
-        details = undefined;
-      }
-
-      // Keep error state for each form
-      if (connectionTab === "dsn") {
-        dsnError = error;
-        dsnErrorDetails = details;
-      } else {
-        paramsError = error;
-        paramsErrorDetails = details;
-      }
-    }
+    formManager.onStringInputChange(
+      event,
+      $paramsTainted as Record<string, boolean> | null | undefined,
+    );
   }
 </script>
 
@@ -282,218 +225,122 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow max-h-[552px] min-h-[552px] overflow-y-auto p-6"
+      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
-      {#if connector.name === "clickhouse"}
-        <AddClickHouseForm
+      {#if isStepFlowConnector}
+        <MultiStepConnectorFlow
           {connector}
-          {formType}
-          {onClose}
-          setError={(error, details) => {
-            clickhouseError = error;
-            clickhouseErrorDetails = details;
-          }}
-          bind:formId={clickhouseFormId}
-          bind:submitting={clickhouseSubmitting}
-          bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
-          bind:managed={clickhouseManaged}
-          bind:connectionTab
-          bind:paramsForm={clickhouseParamsForm}
-          bind:dsnForm={clickhouseDsnForm}
-          on:submitting
+          {formManager}
+          {form}
+          {paramsErrors}
+          {paramsEnhance}
+          {paramsSubmit}
+          {baseFormId}
+          {onStringInputChange}
+          {handleFileUpload}
+          submitting={$paramsSubmitting}
+          bind:activeAuthMethod
+          bind:isSubmitDisabled={multiStepSubmitDisabled}
+          bind:primaryButtonLabel={multiStepButtonLabel}
+          bind:primaryLoadingCopy={multiStepLoadingCopy}
+          bind:formId={multiStepFormId}
+          bind:shouldShowSkipLink
         />
-      {:else if hasDsnFormOption}
-        <Tabs
-          bind:value={connectionTab}
-          options={CONNECTION_TAB_OPTIONS}
-          disableMarginTop
+      {:else if connectorSchema}
+        <AddDataFormSection
+          id={baseFormId}
+          enhance={paramsEnhance}
+          onSubmit={paramsSubmit}
         >
-          <TabsContent value="parameters">
-            <form
-              id={paramsFormId}
-              class="pb-5 flex-grow overflow-y-auto"
-              use:paramsEnhance
-              on:submit|preventDefault={paramsSubmit}
-            >
-              {#each filteredParamsProperties as property (property.key)}
-                {@const propertyKey = property.key ?? ""}
-                {@const label =
-                  property.displayName +
-                  (property.required ? "" : " (optional)")}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                    <Input
-                      id={propertyKey}
-                      label={property.displayName}
-                      placeholder={property.placeholder}
-                      optional={!property.required}
-                      secret={property.secret}
-                      hint={property.hint}
-                      errors={normalizeErrors($paramsErrors[propertyKey])}
-                      bind:value={$paramsForm[propertyKey]}
-                      onInput={(_, e) => onStringInputChange(e)}
-                      alwaysShowError
-                    />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                    <Checkbox
-                      id={propertyKey}
-                      bind:checked={$paramsForm[propertyKey]}
-                      {label}
-                      hint={property.hint}
-                      optional={!property.required}
-                    />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                    <InformationalField
-                      description={property.description}
-                      hint={property.hint}
-                      href={property.docsUrl}
-                    />
-                  {/if}
-                </div>
-              {/each}
-            </form>
-          </TabsContent>
-          <TabsContent value="dsn">
-            <form
-              id={dsnFormId}
-              class="pb-5 flex-grow overflow-y-auto"
-              use:dsnEnhance
-              on:submit|preventDefault={dsnSubmit}
-            >
-              {#each filteredDsnProperties as property (property.key)}
-                {@const propertyKey = property.key ?? ""}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={property.placeholder}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={$dsnErrors[propertyKey]}
-                    bind:value={$dsnForm[propertyKey]}
-                    alwaysShowError
-                  />
-                </div>
-              {/each}
-            </form>
-          </TabsContent>
-        </Tabs>
+          <JSONSchemaFormRenderer
+            schema={connectorSchema}
+            step={isConnectorForm ? "connector" : "source"}
+            {form}
+            errors={$paramsErrors}
+            {onStringInputChange}
+            {handleFileUpload}
+          />
+        </AddDataFormSection>
       {:else}
-        <form
-          id={paramsFormId}
-          class="pb-5 flex-grow overflow-y-auto"
-          use:paramsEnhance
-          on:submit|preventDefault={paramsSubmit}
-        >
-          {#each filteredParamsProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={normalizeErrors($paramsErrors[propertyKey])}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                <Checkbox
-                  id={propertyKey}
-                  bind:checked={$paramsForm[propertyKey]}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                <InformationalField
-                  description={property.description}
-                  hint={property.hint}
-                  href={property.docsUrl}
-                />
-              {/if}
-            </div>
-          {/each}
-        </form>
+        <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+          <p class="text-red-800 font-medium">Missing connector schema</p>
+          <p class="text-red-600 text-sm mt-1">
+            No schema found for connector "{connector.name}". Please add a
+            schema in connector-schemas.ts.
+          </p>
+        </div>
       {/if}
     </div>
 
     <!-- LEFT FOOTER -->
     <div
-      class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
+      class="w-full bg-surface-subtle border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      <Button onClick={onBack} type="secondary">Back</Button>
-
-      <Button
-        disabled={connector.name === "clickhouse"
-          ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-          : submitting || isSubmitDisabled}
-        form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-        submitForm
-        type="primary"
+      <Button onClick={() => formManager.handleBack(onBack)} type="secondary"
+        >Back</Button
       >
-        {#if connector.name === "clickhouse"}
-          {#if clickhouseManaged}
-            {#if clickhouseSubmitting}
-              Connecting...
-            {:else}
-              Connect
-            {/if}
-          {:else if clickhouseSubmitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else if isConnectorForm}
-          {#if submitting}
-            Testing connection...
-          {:else}
-            Connect
-          {/if}
-        {:else}
-          Add data
+
+      <div class="flex gap-2">
+        {#if shouldShowSaveAnywayButton}
+          <Button
+            disabled={false}
+            loading={saveAnywayLoading}
+            loadingCopy="Saving..."
+            onClick={handleSaveAnyway}
+            type="secondary"
+          >
+            Save Anyway
+          </Button>
         {/if}
-      </Button>
+
+        <Button
+          disabled={submitting || isSubmitDisabled}
+          loading={submitting}
+          loadingCopy={primaryLoadingCopy}
+          form={formId}
+          submitForm
+          type="primary"
+        >
+          {primaryButtonLabel}
+        </Button>
+      </div>
     </div>
   </div>
 
   <!-- RIGHT SIDE PANEL -->
   <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
+    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
   >
-    {#if dsnError || paramsError || clickhouseError}
-      <SubmissionError
-        message={clickhouseError ??
-          (connectionTab === "dsn" ? dsnError : paramsError) ??
-          ""}
-        details={clickhouseErrorDetails ??
-          (connectionTab === "dsn" ? dsnErrorDetails : paramsErrorDetails) ??
-          ""}
-      />
-    {/if}
+    <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
+      {#if paramsError}
+        <SubmissionError
+          message={paramsError ?? ""}
+          details={paramsErrorDetails ?? ""}
+        />
+      {/if}
 
-    <div>
-      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
-      <div class="relative">
-        <button
-          class="absolute top-2 right-2 p-1 rounded"
-          type="button"
-          aria-label="Copy YAML"
-          on:click={copyYamlPreview}
-        >
-          {#if copied}
-            <Check size="16px" />
-          {:else}
-            <CopyIcon size="16px" />
-          {/if}
-        </button>
-        <pre
-          class="bg-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yamlPreview}</pre>
-      </div>
+      <YamlPreview
+        title={isStepFlowConnector
+          ? stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"
+          : isSourceForm
+            ? "Model preview"
+            : "Connector preview"}
+        yaml={yamlPreview}
+      />
+
+      {#if shouldShowSkipLink}
+        <div class="text-sm leading-normal font-medium text-muted-foreground">
+          Already connected? <button
+            type="button"
+            class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
+            on:click={() => formManager.handleSkip()}
+          >
+            Import your data
+          </button>
+        </div>
+      {/if}
     </div>
 
     <NeedHelpText {connector} />

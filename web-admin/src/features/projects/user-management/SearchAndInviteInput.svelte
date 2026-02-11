@@ -54,15 +54,32 @@
 
   // Debounced search for better performance
   const debouncedSearch = debounce(async (query: string) => {
+    let remoteResults = [] as SearchResult[];
+    let localResults = [] as SearchResult[];
+
+    try {
+      if (onSearch) {
+        remoteResults = await onSearch(query);
+      }
+    } catch {
+      remoteResults = [];
+    }
+
     if (searchList) {
-      searchResults = filterSearchResults(searchList, searchKeys, query);
-    } else {
-      try {
-        searchResults = await onSearch(query);
-      } catch {
-        searchResults = [];
+      localResults = filterSearchResults(searchList, searchKeys, query);
+    }
+
+    // Merge and de-duplicate by identifier
+    const seen = new Set<string>();
+    const merged: SearchResult[] = [];
+    for (const r of [...localResults, ...remoteResults]) {
+      if (!seen.has(r.identifier)) {
+        merged.push(r);
+        seen.add(r.identifier);
       }
     }
+
+    searchResults = merged;
     showDropdown = searchResults.length > 0;
     if (showDropdown) {
       updateDropdownPosition();
@@ -132,19 +149,23 @@
   }
 
   async function refreshSearchResults() {
-    if (searchList) {
-      searchResults = searchList;
-    } else {
-      try {
-        searchResults = await onSearch("");
-        showDropdown = searchResults.length > 0;
-        if (showDropdown) {
-          updateDropdownPosition();
+    try {
+      const remote = onSearch ? await onSearch("") : [];
+      const local = searchList ?? [];
+      const seen = new Set<string>();
+      const merged: SearchResult[] = [];
+      for (const r of [...local, ...remote]) {
+        if (!seen.has(r.identifier)) {
+          merged.push(r);
+          seen.add(r.identifier);
         }
-      } catch {
-        searchResults = [];
-        showDropdown = false;
       }
+      searchResults = merged;
+      showDropdown = searchResults.length > 0;
+      if (showDropdown) updateDropdownPosition();
+    } catch {
+      searchResults = searchList ?? [];
+      showDropdown = searchResults.length > 0;
     }
   }
 
@@ -282,14 +303,9 @@
     }
   }
 
-  function handleFocus() {
-    if (searchList) {
-      searchResults = filterSearchResults(searchList, searchKeys, input);
-      showDropdown = searchResults.length > 0;
-      if (showDropdown) {
-        updateDropdownPosition();
-      }
-    }
+  async function handleFocus() {
+    // On focus, load top 5 users from server (via onSearch("") -> no searchPattern)
+    await refreshSearchResults();
   }
 
   function handleBlur(e: FocusEvent) {
@@ -327,14 +343,14 @@
   <div class="input-row">
     <div
       class={cn(
-        "input-with-role p-1 border border-gray-200 outline-transparent",
+        "input-with-role p-1 border outline-transparent",
         showDropdown
           ? "border-transparent outline outline-1 outline-primary-500"
           : "",
       )}
     >
       <div
-        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1"
+        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1 max-h-[120px] overflow-y-auto pr-1"
       >
         {#each selected as identifier (identifier)}
           <span
@@ -343,7 +359,7 @@
             {identifier}
             <button
               on:click={() => removeSelected(identifier)}
-              class="ml-1 rounded hover:bg-gray-100 transition-colors"
+              class="ml-1 rounded hover:bg-surface-hover transition-colors"
             >
               <Close size="12px" />
             </button>
@@ -363,12 +379,14 @@
           class:error={!!error}
           autocomplete="off"
           tabindex={autoFocusInput}
-          class="px-1"
+          class="px-1 placeholder-fg-secondary"
         />
       </div>
 
       {#if roleSelect && (selected.length > 0 || input.trim())}
-        <UserRoleSelect bind:value={role} />
+        <div class="shrink-0 ml-2">
+          <UserRoleSelect bind:value={role} />
+        </div>
       {/if}
     </div>
 
@@ -397,7 +415,7 @@
     >
       {#if categorizedResults.groups.length > 0}
         <div class="section-header">GROUPS</div>
-        {#each categorizedResults.groups as result}
+        {#each categorizedResults.groups as result, i (i)}
           {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <SearchAndInviteListItem
@@ -423,7 +441,7 @@
 
       {#if categorizedResults.members.length > 0}
         <div class="section-header">MEMBERS</div>
-        {#each categorizedResults.members as result}
+        {#each categorizedResults.members as result, i (i)}
           {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <SearchAndInviteListItem
@@ -449,7 +467,7 @@
 
       {#if categorizedResults.guests.length > 0}
         <div class="section-header">GUESTS</div>
-        {#each categorizedResults.guests as result}
+        {#each categorizedResults.guests as result, i (i)}
           {@const resultIndex = getResultIndex(result, categorizedResults)}
           {@const isSelected = selectedSet.has(result.identifier)}
           <SearchAndInviteListItem
@@ -496,7 +514,7 @@
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
-    background: #fff;
+    @apply bg-input text-fg-primary border;
     border-radius: 6px;
     min-height: 32px;
     gap: 8px;
@@ -544,8 +562,7 @@
 
   .dropdown {
     position: fixed;
-    background: #fff;
-    border: 1px solid #d1d5db;
+    @apply bg-popover text-fg-primary border;
     border-radius: 6px;
     z-index: 50;
     min-height: 60px;
@@ -583,7 +600,7 @@
   }
 
   .section-header {
-    @apply text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2;
+    @apply text-xs font-semibold text-fg-secondary uppercase tracking-wide px-3 py-2;
     border-top: 1px solid #f3f4f6;
   }
 

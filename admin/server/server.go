@@ -61,6 +61,8 @@ type Options struct {
 	GithubManagedAccount   string
 	// AssetsBucket is the path on gcs where rill managed project artifacts are stored.
 	AssetsBucket string
+	// PylonIdentitySecret is an optional secret for Pylon identity verification.
+	PylonIdentitySecret []byte
 }
 
 type Server struct {
@@ -179,12 +181,20 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	adminv1.RegisterAIServiceServer(grpcServer, s)
 	adminv1.RegisterTelemetryServiceServer(grpcServer, s)
 
+	// Prepare CORS config.
+	// We currently only add CORS config on the transcoder and runtime proxy handlers.
+	// Other endpoints here don't need CORS config because they should not be used in cross-origin browser requests.
+	transcoderCORSMiddleware := cors.New(newCORSOptions(s.opts.AllowedOrigins, true)).Handler // Allow cookies for calls from ui.rilldata.com to admin.rilldata.com
+	runtimeProxyCORSMiddleware := cors.New(newCORSOptions([]string{"*"}, false)).Handler      // Allow any origin but no cookies. In the longer term, we should add explicit domain allowlisting per org or project.
+
 	// Add gRPC and gRPC-to-REST transcoder.
 	// This will be the fallback for REST routes like `/v1/ping` and GPRC routes like `/rill.admin.v1.AdminService/Ping`.
+	var transcoder http.Handler
 	transcoder, err := vanguardgrpc.NewTranscoder(grpcServer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create transcoder: %w", err)
 	}
+	transcoder = transcoderCORSMiddleware(transcoder)
 
 	// Add auth cookie refresh specifically for the GetCurrentUser RPC.
 	// This is sufficient to refresh the cookie on each page load without unnecessarily refreshing cookies in each API call.
@@ -195,25 +205,34 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux.Handle("/rill.admin.v1.AIService/", transcoder)
 	mux.Handle("/rill.admin.v1.TelemetryService/", transcoder)
 
-	// Add runtime proxy
+	// Add runtime proxy.
 	proxyHandler := observability.Middleware(
 		"runtime-proxy",
 		s.logger,
-		s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject)),
+		runtimeProxyCORSMiddleware(s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject))),
 	)
-	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}", proxyHandler) // Backwards compatibility
-	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler)
+	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}", proxyHandler)
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler) // Backwards compatibility
+
+	// Add backwards compatibility alias for iframe endpoint
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/iframe", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.Replace(r.URL.Path, "/v1/organizations/", "/v1/orgs/", 1)
+		transcoder.ServeHTTP(w, r)
+	}))
+
+	// Add backwards compatibility alias for credentials endpoint
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/credentials", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.Replace(r.URL.Path, "/v1/organizations/", "/v1/orgs/", 1)
+		transcoder.ServeHTTP(w, r)
+	}))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		mux.Handle("/metrics", promhttp.Handler())
 	}
 
-	// Server public JWKS for runtime JWT verification
-	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
-
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	s.authenticator.RegisterEndpoints(mux, s.limiter)
+	s.authenticator.RegisterEndpoints(mux, s.limiter, s.issuer)
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
@@ -244,49 +263,16 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Temporary endpoint for testing headers.
 	// NOTE: Commented out since it is unsafe, but keeping the code since it's been helpful for debugging on several occasions.
 	// mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Header().Set("Content-Type", "text/plain")
+	// 	fmt.Fprintf(w, "r.Host: %s\n", r.Host)
 	// 	for k, v := range r.Header {
 	// 		fmt.Fprintf(w, "%s: %v\n", k, v)
 	// 	}
 	// })
 
-	// Build CORS options for admin server
-
-	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.
-	// This is useful in development. In production, we set AllowedOrigins to non-wildcard values, so this does not have security implications.
-	// Details: https://github.com/rs/cors#allow--with-credentials-security-protection
-	var allowedOriginFunc func(string) bool
-	allowedOrigins := s.opts.AllowedOrigins
-	for _, origin := range s.opts.AllowedOrigins {
-		if origin == "*" {
-			allowedOriginFunc = func(origin string) bool { return true }
-			allowedOrigins = nil
-			break
-		}
-	}
-
-	corsOpts := cors.Options{
-		AllowedOrigins:  allowedOrigins,
-		AllowOriginFunc: allowedOriginFunc,
-		AllowedMethods: []string{
-			http.MethodHead,
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodPatch,
-			http.MethodDelete,
-		},
-		AllowedHeaders: []string{"*"},
-		// We use cookies for browser sessions, so this is required to allow ui.rilldata.com to make authenticated requests to admin.rilldata.com
-		AllowCredentials: true,
-		// Set max age to 1 hour (default if not set is 5 seconds)
-		MaxAge: 60 * 60,
-	}
-
-	// Wrap mux with CORS middleware
-	handlerWithAuth := s.authenticator.CookieToAuthHeader(mux)
-	handlerWithCors := cors.New(corsOpts).Handler(handlerWithAuth)
-	handler := middleware.TraceMiddleware(handlerWithCors)
-
+	// Wrap mux with final middleware and return
+	handler := s.authenticator.CookieToAuthHeader(mux) // Convert auth cookies to Authorization headers
+	handler = middleware.TraceMiddleware(handler)      // OpenTelemetry tracing
 	return handler, nil
 }
 
@@ -362,7 +348,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 }
 
 func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, error) {
-	user, err := s.admin.DB.FindUser(ctx, userID)
+	user, attributes, err := s.admin.DB.FindUserWithAttributes(ctx, userID, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +358,6 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 		return nil, err
 	}
 
-	// Using []any instead of []string since attr must be compatible with structpb.NewStruct
 	groupNames := make([]any, len(groups))
 	for i, group := range groups {
 		groupNames[i] = group.Name
@@ -384,6 +369,10 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 		"domain": user.Email[strings.LastIndex(user.Email, "@")+1:],
 		"groups": groupNames,
 		"admin":  projectPermissions.ManageProject,
+	}
+
+	for k, v := range attributes {
+		attr[k] = v
 	}
 
 	return attr, nil
@@ -411,13 +400,8 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
 		return time.Minute * 2
 	}
-	switch fullMethodName {
-	case
-		"/rill.admin.v1.AdminService/CreateProject",
-		"/rill.admin.v1.AdminService/UpdateProject",
-		"/rill.admin.v1.AdminService/RedeployProject",
-		"/rill.admin.v1.AdminService/TriggerRedeploy":
-		return time.Minute * 5
+	if fullMethodName == "/rill.admin.v1.AdminService/DeleteProject" {
+		return time.Minute * 4
 	}
 	return time.Minute
 }
@@ -495,4 +479,39 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 	}
 
 	return ctx, nil
+}
+
+// newCORSOptions creates config for the CORS middleware.
+// It supports passing a wildcard "*" in allowed origins to allow all origins.
+// Pass allowCredentials=true to allow cookies to be sent in CORS requests (necessary for endpoints accessed from ui.rilldata.com).
+func newCORSOptions(allowedOrigins []string, allowCredentials bool) cors.Options {
+	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.
+	// This is useful in development. In production, we set AllowedOrigins to non-wildcard values, so this does not have security implications.
+	// Details: https://github.com/rs/cors#allow--with-credentials-security-protection
+	var allowedOriginFunc func(string) bool
+	for _, origin := range allowedOrigins {
+		if origin == "*" {
+			allowedOriginFunc = func(origin string) bool { return true }
+			allowedOrigins = nil
+			break
+		}
+	}
+
+	return cors.Options{
+		AllowedOrigins:  allowedOrigins,
+		AllowOriginFunc: allowedOriginFunc,
+		AllowedMethods: []string{
+			http.MethodHead,
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+		},
+		AllowedHeaders: []string{"*"},
+		// We use cookies for browser sessions, so this must be true on endpoints that ui.rilldata.com access on admin.rilldata.com.
+		AllowCredentials: allowCredentials,
+		// Set max age to 1 hour (default if not set is 5 seconds)
+		MaxAge: 60 * 60,
+	}
 }

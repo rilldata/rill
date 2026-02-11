@@ -59,7 +59,7 @@
 
     try {
       await $updateOrg.mutateAsync({
-        name: organization,
+        org: organization,
         data: {
           billingEmail: selectedBillingContact,
         },
@@ -100,8 +100,7 @@
           id="billingContact"
           bind:value={selectedBillingContact}
           options={selectableUsers}
-          on:change={({ detail: newName }) =>
-            (selectedBillingContact = newName)}
+          onChange={(newName) => (selectedBillingContact = newName)}
           sameWidth
           fontSize={14}
         />

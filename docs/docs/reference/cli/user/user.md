@@ -21,6 +21,9 @@ Manage users
 * [rill user add](add.md)	 - Add user to a project, organization or group
 * [rill user list](list.md)	 - List users
 * [rill user remove](remove.md)	 - Remove a user
+* [rill user set-attributes](set-attributes.md)	 - Set custom attributes for a user
+* [rill user set-resources](set-resources.md)	 - Set a user's project resources and restriction flag (overwrites existing list)
 * [rill user set-role](set-role.md)	 - Change a user's role
+* [rill user show](show.md)	 - Show detailed information about a user
 * [rill user whitelist](whitelist/whitelist.md)	 - Whitelist access by email domain
 

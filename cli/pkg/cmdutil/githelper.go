@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -54,8 +55,8 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 	}
 
 	resp, err := c.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
-		Organization: g.org,
-		Project:      g.project,
+		Org:     g.org,
+		Project: g.project,
 	})
 	if err != nil {
 		return nil, err
@@ -68,7 +69,7 @@ func (g *GitHelper) GitConfig(ctx context.Context) (*gitutil.Config, error) {
 		Username:          resp.GitUsername,
 		Password:          resp.GitPassword,
 		PasswordExpiresAt: resp.GitPasswordExpiresAt.AsTime(),
-		DefaultBranch:     resp.GitProdBranch,
+		DefaultBranch:     resp.GitPrimaryBranch,
 		Subpath:           resp.GitSubpath,
 		ManagedRepo:       resp.GitManagedRepo,
 	}
@@ -82,8 +83,8 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 	}
 
 	gitRepo, err := c.CreateManagedGitRepo(ctx, &adminv1.CreateManagedGitRepoRequest{
-		Organization: g.org,
-		Name:         g.project,
+		Org:  g.org,
+		Name: g.project,
 	})
 	if err != nil {
 		return nil, err
@@ -100,7 +101,7 @@ func (g *GitHelper) PushToNewManagedRepo(ctx context.Context) (*adminv1.CreateMa
 		DefaultBranch:     gitRepo.DefaultBranch,
 		ManagedRepo:       true,
 	}
-	err = gitutil.CommitAndForcePush(ctx, g.localPath, config, "", author)
+	err = gitutil.CommitAndPush(ctx, g.localPath, config, "", author)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +124,7 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = gitutil.CommitAndForcePush(ctx, g.localPath, gitConfig, "", author)
+	err = g.h.CommitAndSafePush(ctx, g.localPath, gitConfig, "", author, "1")
 	if err != nil {
 		return err
 	}
@@ -139,6 +140,37 @@ func (g *GitHelper) setGitConfig(ctx context.Context, c *gitutil.Config) error {
 
 	g.gitConfig = c
 	return nil
+}
+
+func SetupGitIgnore(ctx context.Context, repo drivers.RepoStore) error {
+	// Ensure .gitignore exists and contains necessary entries
+	contents, err := repo.Get(ctx, ".gitignore")
+	if err != nil {
+		if !strings.Contains(err.Error(), "no such file") {
+			return err
+		}
+		// Create .gitignore if it does not exist
+		err = repo.Put(ctx, ".gitignore", strings.NewReader(".DS_Store\n\n# Rill\n.env\ntmp\n"))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	gitIgnoreContent := strings.ReplaceAll(contents, "\r\n", "\n")
+	gitIgnoreEntries := strings.Split(gitIgnoreContent, "\n")
+	var added bool
+	for _, path := range []string{".DS_Store", ".env", "tmp"} {
+		if slices.Contains(gitIgnoreEntries, path) {
+			continue // already exists
+		}
+		added = true
+		gitIgnoreContent += fmt.Sprintf("\n%s", path)
+	}
+	if !added {
+		return nil // nothing to add
+	}
+	return repo.Put(ctx, ".gitignore", strings.NewReader(gitIgnoreContent))
 }
 
 func EnsureGitignoreHasDotenv(ctx context.Context, repo drivers.RepoStore) (bool, error) {

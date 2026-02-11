@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -31,10 +32,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestMotherDuckDB(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
 	t.Parallel()
+	testmode.Expensive(t)
 	db := prepareMotherDuckDB(t)
 	ctx := context.Background()
 	// create table
@@ -92,10 +91,8 @@ func TestMotherDuckDB(t *testing.T) {
 }
 
 func TestMotherDuckCreateTable(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
 	t.Parallel()
+	testmode.Expensive(t)
 	db := prepareMotherDuckDB(t)
 	ctx := context.Background()
 	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
@@ -143,10 +140,8 @@ func TestMotherDuckCreateTable(t *testing.T) {
 }
 
 func TestMotherDuckDropTable(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
 	t.Parallel()
+	testmode.Expensive(t)
 	db := prepareMotherDuckDB(t)
 	ctx := context.Background()
 	// create table
@@ -173,10 +168,8 @@ func TestMotherDuckDropTable(t *testing.T) {
 }
 
 func TestMotherDuckMutateTable(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
 	t.Parallel()
+	testmode.Expensive(t)
 	db := prepareMotherDuckDB(t)
 	ctx := context.Background()
 
@@ -212,10 +205,8 @@ func TestMotherDuckMutateTable(t *testing.T) {
 }
 
 func TestOtherSchema(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
 	t.Parallel()
+	testmode.Expensive(t)
 	tempDir := t.TempDir()
 	randomDB := provisionDatabase(t)
 	db, err := NewGeneric(context.Background(), &GenericOptions{

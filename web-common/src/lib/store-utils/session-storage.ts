@@ -28,7 +28,7 @@ export function sessionStorageStore<T>(
   };
   loadData();
   const debouncer = debounce((v: T) => {
-    if (!v) return;
+    if (v === undefined) return;
     sessionStorage.setItem(itemKey, JSON.stringify(v));
   }, 300);
   store.subscribe(debouncer);

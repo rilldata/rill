@@ -14,7 +14,6 @@ import {
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
-  AD_BIDS_SCHEMA,
   TestTimeConstants,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
@@ -49,7 +48,6 @@ describe("toProto/fromProto", () => {
       getProtoFromDashboardState(exploreState, AD_BIDS_EXPLORE_INIT),
       AD_BIDS_METRICS_INIT_WITH_TIME,
       AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_SCHEMA,
     );
     expect(newState.selectedTimeRange?.name).toEqual("PT6H");
   });
@@ -95,7 +93,6 @@ describe("toProto/fromProto", () => {
       proto,
       AD_BIDS_METRICS_WITH_BOOL_DIMENSION,
       AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION,
-      AD_BIDS_SCHEMA,
     );
     expect(newState.whereFilter).toEqual(
       createAndExpression([

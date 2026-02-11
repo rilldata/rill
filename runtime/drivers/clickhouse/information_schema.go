@@ -10,80 +10,286 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
-func (c *Connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	return nil, nil
+func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
+	var args []any
+	var condFilter string
+	if c.config.DatabaseWhitelist != "" {
+		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
+		var sb strings.Builder
+		for i, db := range dbs {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("?")
+			args = append(args, strings.TrimSpace(db))
+		}
+		condFilter = fmt.Sprintf("(schema_name IN (%s))", sb.String())
+	} else {
+		condFilter = "(schema_name == currentDatabase() OR lower(schema_name) NOT IN ('information_schema', 'system'))"
+	}
+
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		condFilter += "	AND schema_name > ?"
+		args = append(args, startAfter)
+	}
+
+	q := fmt.Sprintf(`
+	SELECT
+		 name as schema_name
+	FROM system.databases
+	WHERE %s 
+	ORDER BY schema_name 
+	LIMIT ?
+	`, condFilter)
+	args = append(args, limit+1)
+
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+
+	rows, err := conn.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var res []*drivers.DatabaseSchemaInfo
+	var schema string
+	for rows.Next() {
+		if err := rows.Scan(&schema); err != nil {
+			return nil, "", err
+		}
+		res = append(res, &drivers.DatabaseSchemaInfo{
+			Database:       "",
+			DatabaseSchema: schema,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
+	next := ""
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].DatabaseSchema)
+	}
+	return res, next, nil
 }
 
-func (c *Connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
-	return nil, nil
+func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
+	q := `
+	SELECT
+		name AS table_name,
+		CASE WHEN match(engine, 'View') THEN true ELSE false END AS view
+	FROM system.tables
+	WHERE is_temporary = 0 AND database = ?
+	`
+	args := []any{databaseSchema}
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += "	AND table_name > ?"
+		args = append(args, startAfter)
+	}
+	q += `
+	ORDER BY table_name 
+	LIMIT ?
+	`
+	args = append(args, limit+1)
+
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+
+	rows, err := conn.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var res []*drivers.TableInfo
+	var name string
+	var view bool
+	for rows.Next() {
+		if err := rows.Scan(&name, &view); err != nil {
+			return nil, "", err
+		}
+		res = append(res, &drivers.TableInfo{
+			Name: name,
+			View: view,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
+	next := ""
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
+	}
+	return res, next, nil
 }
 
-func (c *Connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
-}
-
-func (c *Connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
+func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = release() }()
 
-	var likeClause string
-	var args []any
-	if like != "" {
-		likeClause = "AND (LOWER(T.name) LIKE LOWER(?) OR CONCAT(T.database, '.', T.name) LIKE LOWER(?))"
-		args = []any{like, like}
-	}
-
-	var dbFilter string
-	if c.config.DatabaseWhitelist != "" {
-		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
-		var filter strings.Builder
-		for i, db := range dbs {
-			if i > 0 {
-				filter.WriteString(", ")
-			}
-			filter.WriteString("?")
-			args = append(args, strings.TrimSpace(db))
-		}
-		dbFilter = fmt.Sprintf("T.database IN (%s)", filter.String())
-	} else {
-		dbFilter = " T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system') "
-	}
-	// Clickhouse does not have a concept of schemas. Both table_catalog and table_schema refer to the database where table is located.
-	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
-	// We map clickhouse database to `database schema` and table_name to `table name`.
-	q := fmt.Sprintf(`
-		SELECT 
-			T.database AS SCHEMA,
-			T.database = currentDatabase() AS is_default_schema,
-			T.name AS NAME,
-			if(lower(T.engine) like '%%view%%', 'VIEW', 'TABLE') AS TABLE_TYPE,
-			C.name AS COLUMNS,
-			C.type AS COLUMN_TYPE,
-			C.position AS ORDINAL_POSITION
-		FROM system.tables T
-		JOIN system.columns C ON T.database = C.database AND T.name = C.table
-		-- allow fetching tables from system or information_schema if it is current database
-		WHERE (%s)
-		%s
-		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
-	`, dbFilter, likeClause)
-
-	rows, err := conn.QueryxContext(ctx, q, args...)
+	q := `
+    SELECT
+        CASE WHEN match(engine, 'View') THEN true ELSE false END AS view,
+        c.name AS column_name,
+        c.type AS data_type
+    FROM system.tables t
+    LEFT JOIN system.columns c
+		ON t.database = c.database AND t.name = c.table
+    WHERE t.database = ? AND t.name = ?
+    ORDER BY c.position
+    `
+	rows, err := conn.QueryxContext(ctx, q, databaseSchema, table)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	tables, err := scanTables(rows)
-	if err != nil {
+	schemaMap := make(map[string]string)
+	var view bool
+	var colName, dataType string
+	for rows.Next() {
+		if err := rows.Scan(&view, &colName, &dataType); err != nil {
+			return nil, err
+		}
+		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
+			if errors.Is(err, errUnsupportedType) {
+				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
+			} else {
+				return nil, err
+			}
+		} else if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
+		} else {
+			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
+		}
+	}
+
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return tables, nil
+
+	return &drivers.TableMetadata{
+		Schema: schemaMap,
+		View:   view,
+	}, nil
+}
+
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+	var args []any
+	var filter string
+	if c.config.DatabaseWhitelist != "" {
+		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
+		var sb strings.Builder
+		for i, db := range dbs {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("?")
+			args = append(args, strings.TrimSpace(db))
+		}
+		filter = fmt.Sprintf("(T.database IN (%s))", sb.String())
+	} else {
+		filter = "(T.database == currentDatabase() OR lower(T.database) NOT IN ('information_schema', 'system'))"
+	}
+
+	if like != "" {
+		filter += " AND (LOWER(T.name) LIKE LOWER(?) OR CONCAT(T.database, '.', T.name) LIKE LOWER(?))"
+		args = append(args, like, like)
+	}
+
+	if pageToken != "" {
+		var startAfterSchema, startAfterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfterSchema, &startAfterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		filter += " AND (T.database > ? OR (T.database = ? AND T.name > ?))"
+		args = append(args, startAfterSchema, startAfterSchema, startAfterName)
+	}
+
+	// Clickhouse does not have a concept of schemas. Both table_catalog and table_schema refer to the database where table is located.
+	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
+	// We map clickhouse database to `database schema` and table_name to `table name`.
+	q := fmt.Sprintf(`
+		SELECT 
+			LT.database AS SCHEMA,
+			LT.database = currentDatabase() AS is_default_schema,
+			LT.name AS NAME,
+			if(lower(LT.engine) like '%%view%%', 'VIEW', 'TABLE') AS TABLE_TYPE,
+			C.name AS COLUMNS,
+			C.type AS COLUMN_TYPE,
+			C.position AS ORDINAL_POSITION
+		FROM (
+			SELECT 
+				T.database,
+				T.name,
+				T.engine
+			FROM system.tables T
+			-- allow fetching tables from system or information_schema if it is current database
+			WHERE %s
+			ORDER BY database, name, engine
+			LIMIT ?
+		) LT
+		JOIN system.columns C ON LT.database = C.database AND LT.name = C.table
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+	`, filter)
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	args = append(args, limit+1)
+
+	rows, err := conn.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	tables, err := scanTables(rows)
+	if err != nil {
+		return nil, "", err
+	}
+
+	next := ""
+	if len(tables) > limit {
+		tables = tables[:limit]
+		lastTable := tables[len(tables)-1]
+		next = pagination.MarshalPageToken(lastTable.DatabaseSchema, lastTable.Name)
+	}
+
+	return tables, next, nil
 }
 
 func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {

@@ -7,19 +7,28 @@
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let store: ConnectorExplorerStore;
+  export let olapOnly: boolean = false;
 
   $: ({ instanceId } = $runtime);
 
   $: connectors = createRuntimeServiceAnalyzeConnectors(instanceId, {
     query: {
+      // Retry transient 500s during runtime resets (e.g. project initialization)
+      retry: (failureCount, error) =>
+        !!error?.response?.status &&
+        error.response.status >= 500 &&
+        failureCount < 3,
+      retryDelay: 1000,
       // sort alphabetically
       select: (data) => {
         if (!data?.connectors) return;
 
-        const connectors = data.connectors.sort((a, b) =>
-          (a?.name as string).localeCompare(b?.name as string),
-        );
-        return { connectors };
+        const filtered = (
+          olapOnly
+            ? data.connectors.filter((c) => c?.driver?.implementsOlap)
+            : data.connectors
+        ).sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+        return { connectors: filtered };
       },
     },
   });
@@ -33,9 +42,7 @@
     </span>
   {:else if data?.connectors}
     {#if data.connectors.length === 0}
-      <span class="message">
-        No connectors found. Add data to get started!
-      </span>
+      <span class="message"> No data found. Add data to get started! </span>
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data.connectors as connector (connector.name)}
@@ -54,6 +61,6 @@
   .message {
     @apply pl-2 pr-3.5 py-2;
     @apply flex flex-none;
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 </style>

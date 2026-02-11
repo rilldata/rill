@@ -1,0 +1,58 @@
+<!-- Renders user prompt messages. -->
+<script lang="ts">
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
+  import { Editor } from "@tiptap/core";
+  import { onMount } from "svelte";
+  import type { V1Message } from "../../../../../runtime-client";
+  import { extractMessageText } from "../../utils";
+
+  export let message: V1Message;
+
+  let element: HTMLDivElement;
+  let editor: Editor;
+
+  // Message content
+  $: content = extractMessageText(message);
+  $: editor?.commands.setContent(content);
+
+  // Use a readable editor instance to render the inline context component for us.
+  onMount(() => {
+    editor = new Editor({
+      element,
+      editable: false,
+      extensions: getEditorPlugins({
+        placeholder: "",
+        onSubmit: () => {},
+      }),
+      content,
+    });
+
+    return () => {
+      editor.destroy();
+    };
+  });
+</script>
+
+<div class="chat-message">
+  <div
+    class="chat-message-content bg-gray-200 dark:bg-gray-300"
+    bind:this={element}
+  ></div>
+</div>
+
+<style lang="postcss">
+  .chat-message {
+    @apply max-w-[90%] self-end;
+  }
+
+  .chat-message-content {
+    @apply px-4 py-2 rounded-2xl;
+    @apply text-sm leading-relaxed break-words;
+    @apply text-fg-primary rounded-br-lg;
+  }
+
+  :global(.chat-message-content .tiptap) {
+    @apply p-0 min-h-4 outline-none;
+    @apply text-sm leading-relaxed;
+  }
+</style>

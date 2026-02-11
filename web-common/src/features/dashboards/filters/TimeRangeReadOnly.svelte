@@ -1,44 +1,43 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
-  import { getRillTimeLabel } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
   import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
-  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import { DateTime, Interval } from "luxon";
+  import { getRangeLabel } from "../time-controls/new-time-controls";
+  import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
 
   export let timeRange: V1TimeRange;
-  export let comparisonTimeRange: V1TimeRange | undefined;
+  export let comparisonTimeRange: V1TimeRange | undefined = undefined;
   export let hasBoldTimeRange: boolean = true;
+
+  $: selectedLabel = getRangeLabel(
+    timeRange.isoDuration ?? timeRange.expression,
+  );
+
+  $: showRange =
+    selectedLabel === "Custom" ||
+    selectedLabel?.startsWith("-") ||
+    !isNaN(Number(selectedLabel?.[0]));
 </script>
 
-<Chip type="time" readOnly>
+<Chip type="time" theme readOnly>
   <svelte:fragment slot="body">
-    <div class="text-xs text-slate-800 px-2">
-      {#if timeRange.isoDuration && timeRange.isoDuration !== TimeRangePreset.CUSTOM}
-        <div class="font-bold">
-          {#if timeRange.isoDuration === TimeRangePreset.ALL_TIME}
-            All Time
-          {:else if timeRange.isoDuration in DEFAULT_TIME_RANGES}
-            {DEFAULT_TIME_RANGES[timeRange.isoDuration].label}
-          {:else}
-            Last {humaniseISODuration(timeRange.isoDuration)}
-          {/if}
-        </div>
-      {:else if timeRange.start && timeRange.end}
-        <div class:font-bold={hasBoldTimeRange}>
-          {prettyFormatTimeRange(
-            new Date(timeRange.start),
-            new Date(timeRange.end),
-            TimeRangePreset.CUSTOM,
-            "UTC", // TODO
+    <div class="text-fg-primary flex gap-x-1.5">
+      <div class="font-bold">
+        {#if showRange}
+          Custom
+        {:else}
+          {selectedLabel}
+        {/if}
+      </div>
+      {#if showRange && timeRange.start && timeRange.end}
+        <RangeDisplay
+          interval={Interval.fromDateTimes(
+            DateTime.fromISO(timeRange.start).setZone(timeRange.timeZone),
+            DateTime.fromISO(timeRange.end).setZone(timeRange.timeZone),
           )}
-        </div>
-      {:else if timeRange.expression}
-        <div class:font-bold={hasBoldTimeRange}>
-          {getRillTimeLabel(timeRange.expression)}
-        </div>
+          timeGrain={timeRange.roundToGrain}
+        />
       {/if}
     </div>
   </svelte:fragment>
@@ -47,7 +46,7 @@
 {#if comparisonTimeRange}
   <Chip type="time" readOnly>
     <svelte:fragment slot="body">
-      <div class="text-xs text-slate-800 px-2">
+      <div class="text-fg-primary px-2">
         vs
         <span class:font-bold={hasBoldTimeRange}>
           {getComparisonLabel(comparisonTimeRange)}

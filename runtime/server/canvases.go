@@ -8,7 +8,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,149 +25,26 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	)
 
 	// Check if user has access to query for canvas data (we use the ReadAPI permission for this for now)
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadAPI) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadAPI) {
 		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to canvas data")
 	}
 
-	// Find the canvas resource
-	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: req.Canvas}, false)
+	res, err := s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return nil, status.Errorf(codes.NotFound, "canvas with name %q not found", req.Canvas)
 		}
+		if errors.Is(err, runtime.ErrForbidden) {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have access to canvas %q", req.Canvas)
+		}
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-	spec := res.GetCanvas().State.ValidSpec
-	if spec == nil {
-		return &runtimev1.ResolveCanvasResponse{
-			Canvas: res,
-		}, nil
-	}
-
-	// Setup templating data
-	inst, err := s.runtime.Instance(ctx, req.InstanceId)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	templateData := parser.TemplateData{
-		Environment: inst.Environment,
-		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
-		Variables:   inst.ResolveVariables(false),
-		ExtraProps: map[string]any{
-			"args": req.Args.AsMap(),
-		},
-	}
-
-	components := make(map[string]*runtimev1.Resource)
-
-	for _, row := range spec.Rows {
-		for _, item := range row.Items {
-			// Skip if already resolved.
-			if _, ok := components[item.Component]; ok {
-				continue
-			}
-
-			// Get component resource.
-			// NOTE: By passing true, we get a cloned object that is safe to modify in-place.
-			cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: item.Component}, true)
-			if err != nil {
-				if errors.Is(err, drivers.ErrResourceNotFound) {
-					return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
-				}
-				return nil, err
-			}
-
-			// Resolve the renderer properties in the valid_spec.
-			validSpec := cmp.GetComponent().State.ValidSpec
-			if validSpec != nil && validSpec.RendererProperties != nil {
-				v, err := parser.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), templateData, false)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "component %q: failed to resolve templating: %s", item.Component, err.Error())
-				}
-
-				props, ok := v.(map[string]any)
-				if !ok {
-					return nil, status.Errorf(codes.Internal, "component %q: failed to convert resolved renderer properties to map: %v", item.Component, v)
-				}
-
-				propsPB, err := structpb.NewStruct(props)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "component %q: failed to convert renderer properties to struct: %s", item.Component, err.Error())
-				}
-
-				validSpec.RendererProperties = propsPB
-			}
-
-			// Add to map.
-			components[item.Component] = cmp
-		}
-	}
-
-	// Extract metrics view names from components
-	metricsViews := make(map[string]bool)
-
-	for _, cmp := range components {
-		validSpec := cmp.GetComponent().State.ValidSpec
-		if validSpec == nil || validSpec.RendererProperties == nil {
-			continue
-		}
-
-		for k, v := range validSpec.RendererProperties.Fields {
-			switch k {
-			case "metrics_view":
-				if name := v.GetStringValue(); name != "" {
-					metricsViews[name] = true
-				}
-			case "metrics_sql":
-				// Handle single string
-				if sql := v.GetStringValue(); sql != "" {
-					claims := auth.GetClaims(ctx).SecurityClaims()
-					compiler := metricssqlparser.New(ctrl, req.InstanceId, claims, 0)
-					q, err := compiler.Rewrite(ctx, sql)
-					if err == nil && q.MetricsView != "" {
-						metricsViews[q.MetricsView] = true
-					}
-				}
-				// Handle array of strings
-				if listValue := v.GetListValue(); listValue != nil {
-					for _, item := range listValue.Values {
-						if sql := item.GetStringValue(); sql != "" {
-							claims := auth.GetClaims(ctx).SecurityClaims()
-							compiler := metricssqlparser.New(ctrl, req.InstanceId, claims, 0)
-							q, err := compiler.Rewrite(ctx, sql)
-							if err == nil && q.MetricsView != "" {
-								metricsViews[q.MetricsView] = true
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// Lookup metrics view resources
-	referencedMetricsViews := make(map[string]*runtimev1.Resource)
-	for mvName := range metricsViews {
-		mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: mvName}, false)
-		if err != nil {
-			if errors.Is(err, drivers.ErrResourceNotFound) {
-				return nil, status.Errorf(codes.Internal, "metrics view %q in valid spec not found", mvName)
-			}
-			return nil, err
-		}
-
-		// Add to map.
-		referencedMetricsViews[mvName] = mv
 	}
 
 	return &runtimev1.ResolveCanvasResponse{
-		Canvas:                 res,
-		ResolvedComponents:     components,
-		ReferencedMetricsViews: referencedMetricsViews,
+		Canvas:                 res.Canvas,
+		ResolvedComponents:     res.ResolvedComponents,
+		ReferencedMetricsViews: res.ReferencedMetricsViews,
 	}, nil
 }
 
@@ -181,7 +57,8 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	)
 
 	// Check if user has access to query for component data (we use the ReadAPI permission for this for now)
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadAPI) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadAPI) {
 		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to component data")
 	}
 
@@ -214,7 +91,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Setup templating data
 	td := parser.TemplateData{
 		Environment: inst.Environment,
-		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
+		User:        claims.UserAttributes,
 		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]any{
 			"args": args,

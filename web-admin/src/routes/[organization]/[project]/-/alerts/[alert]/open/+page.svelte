@@ -1,7 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
-  import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -9,45 +7,49 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
-  import {
-    getExploreName,
-    getExplorePageUrlSearchParams,
-  } from "@rilldata/web-common/features/explore-mappers/utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
+  import type { PageData } from "./$types";
 
-  $: ({ instanceId } = $runtime);
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
-  $: alertId = $page.params.alert;
-  $: executionTime = $page.url.searchParams.get("execution_time");
+  export let data: PageData;
 
-  $: alert = useAlert(instanceId, alertId);
-  $: exploreName = getExploreName(
-    $alert.data?.resource?.alert?.spec?.annotations?.web_open_path,
-  );
+  $: ({
+    alert: alertResource,
+    organization,
+    project,
+    alertId,
+    executionTime,
+    token,
+    exploreName,
+  } = data);
+
+  $: alertSpec = alertResource.alert.spec;
 
   let dashboardStateForAlert: ReturnType<typeof mapQueryToDashboard>;
   $: queryName =
-    ($alert.data?.resource?.alert?.spec?.resolverProperties?.query_name as
-      | string
-      | undefined) ??
-    $alert.data?.resource?.alert?.spec?.queryName ??
+    (alertSpec?.resolverProperties?.query_name as string | undefined) ??
+    alertSpec?.queryName ??
     "";
   $: queryArgsJson =
-    ($alert.data?.resource?.alert?.spec?.resolverProperties?.query_args_json as
-      | string
-      | undefined) ??
-    $alert.data?.resource?.alert?.spec?.queryArgsJson ??
+    (alertSpec?.resolverProperties?.query_args_json as string | undefined) ??
+    alertSpec?.queryArgsJson ??
     "";
   $: dashboardStateForAlert = mapQueryToDashboard(
-    exploreName,
-    queryName,
-    queryArgsJson,
-    executionTime,
-    $alert.data?.resource?.alert?.spec?.annotations ?? {},
+    {
+      exploreName,
+      queryName,
+      queryArgsJson,
+      executionTime,
+    },
+    {
+      exploreProtoState: alertSpec?.annotations?.web_open_state,
+      // When opening an alert from a link with token we should remove the filters from request.
+      // The filters are already baked into the token, each query will have them added in the backend.
+      // So adding them again will essentially apply filters twice. It will lead to incorrect results for threshold filters.
+      ignoreFilters: !!token,
+    },
   );
 
-  $: if ($alert.data?.resource?.alert?.spec && (!queryName || !queryArgsJson)) {
+  $: if (alertSpec && (!queryName || !queryArgsJson)) {
     goto(`/${organization}/${project}/-/alerts/${alertId}`);
   }
 
@@ -56,21 +58,24 @@
   }
 
   async function gotoExplorePage() {
-    const url = new URL(
-      `/${organization}/${project}/explore/${encodeURIComponent(exploreName)}`,
-      window.location.origin,
+    const exploreStateParams = await getExplorePageUrlSearchParams(
+      $dashboardStateForAlert.data.exploreName,
+      $dashboardStateForAlert.data.exploreState,
     );
-    url.search = (
-      await getExplorePageUrlSearchParams(
-        $dashboardStateForAlert.data.exploreName,
-        $dashboardStateForAlert.data.exploreState,
-      )
-    ).toString();
+
+    const url = new URL(window.location.origin);
+    if (token) {
+      url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
+    } else {
+      url.pathname = `/${organization}/${project}/explore/${exploreName}`;
+    }
+
+    url.search = exploreStateParams.toString();
     return goto(url.toString());
   }
 
   // When alert is loading we will have a "missing require field" error in dashboardStateForAlert so check loading for both queries.
-  $: loading = $alert.isPending || $dashboardStateForAlert?.isLoading;
+  $: loading = $dashboardStateForAlert?.isLoading;
 </script>
 
 <CtaLayoutContainer>
@@ -88,7 +93,7 @@
       </div>
       <CtaButton
         variant="secondary"
-        href={`/${organization}/${project}/-/alerts/${$alert}`}
+        href={`/${organization}/${project}/-/alerts/${alertId}`}
       >
         Go to Alerts page
       </CtaButton>

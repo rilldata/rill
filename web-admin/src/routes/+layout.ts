@@ -23,7 +23,6 @@ import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/proj
 import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { Settings } from "luxon";
@@ -81,6 +80,8 @@ export const load = async ({ params, url, route, depends }) => {
       user,
       organizationPermissions: <V1OrganizationPermissions>{},
       projectPermissions: <V1ProjectPermissions>{},
+      token,
+      organization: undefined,
     };
   }
 
@@ -107,9 +108,7 @@ export const load = async ({ params, url, route, depends }) => {
   }
 
   const organizationPermissions = organizationResp?.permissions ?? {};
-  const organizationLogoUrl = organizationResp?.organization?.logoUrl;
-  const organizationFaviconUrl = organizationResp?.organization?.faviconUrl;
-  const organizationThumbnailUrl = organizationResp?.organization?.thumbnailUrl;
+  const organizationData = organizationResp?.organization;
   const planDisplayName =
     organizationResp?.organization?.billingPlanDisplayName;
 
@@ -117,11 +116,10 @@ export const load = async ({ params, url, route, depends }) => {
     return {
       user,
       organizationPermissions,
-      organizationLogoUrl,
-      organizationFaviconUrl,
-      organizationThumbnailUrl,
+      organization: organizationData,
       planDisplayName,
       projectPermissions: <V1ProjectPermissions>{},
+      token,
     };
   }
 
@@ -132,22 +130,13 @@ export const load = async ({ params, url, route, depends }) => {
       runtime: runtimeData,
     } = await fetchProjectDeploymentDetails(organization, project, token);
 
-    await runtime.setRuntime(
-      queryClient,
-      runtimeData.host ?? "",
-      runtimeData.instanceId,
-      runtimeData.jwt?.token,
-      runtimeData.jwt?.authContext,
-    );
-
     return {
       user,
       organizationPermissions,
-      organizationLogoUrl,
-      organizationFaviconUrl,
-      organizationThumbnailUrl,
+      organization: organizationData,
       planDisplayName,
       projectPermissions,
+      token,
       project: proj,
       runtime: runtimeData,
     };

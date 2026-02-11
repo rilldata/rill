@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -14,17 +16,15 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/version"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -36,10 +36,13 @@ const (
 	telemetryIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" // nolint:gosec // secret is safe for public use
 )
 
+var ErrNoMatchingProject = fmt.Errorf("no matching project found")
+
 type Helper struct {
 	*printer.Printer
 	Version            version.Version
 	DotRill            dotrill.DotRill
+	HomeDir            string
 	Interactive        bool
 	Org                string
 	AdminURLDefault    string
@@ -61,6 +64,7 @@ func NewHelper(ver version.Version, homeDir string) (*Helper, error) {
 	ch := &Helper{
 		Printer:     printer.NewPrinter(printer.FormatHuman),
 		DotRill:     dotrill.New(homeDir),
+		HomeDir:     homeDir,
 		Version:     ver,
 		Interactive: true,
 	}
@@ -322,54 +326,18 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 	return userID, nil
 }
 
-// LoadProject loads the cloud project identified by the .rillcloud directory at the given path.
-// It returns an error if the caller is not authenticated.
-// If there is no .rillcloud directory, it returns a nil project an no error.
-func (h *Helper) LoadProject(ctx context.Context, path string) (*adminv1.Project, error) {
-	if !h.IsAuthenticated() {
-		return nil, fmt.Errorf("can't load project because you are not authenticated")
-	}
-
-	rc, err := dotrillcloud.GetAll(path, h.AdminURL())
-	if err != nil {
-		return nil, fmt.Errorf("failed to load .rillcloud: %w", err)
-	}
-	if rc == nil {
-		return nil, nil
-	}
-
-	c, err := h.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-		Id: rc.ProjectID,
-	})
-	if err != nil {
-		// If the project doesn't exist, delete the local project metadata.
-		if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
-			err = dotrillcloud.Delete(path, h.AdminURL())
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// We'll ignore the error, pretending no .rillcloud metadata was found
-		return nil, nil
-	}
-
-	return res.Project, nil
-}
-
 func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPath string) ([]string, error) {
+	if org == "" || remote == "" {
+		return nil, errors.New("org, remote cannot be blank")
+	}
+
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
-		OrganizationName: org,
+		Org: org,
 	})
 	if err != nil {
 		return nil, err
@@ -389,43 +357,99 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 	return names, nil
 }
 
-func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string, error) {
-	// Try loading the project from the .rillcloud directory
-	proj, err := h.LoadProject(ctx, path)
+// InferProjectName infers the project name from the given path.
+// If multiple projects are found, it prompts the user to select one.
+func (h *Helper) InferProjectName(ctx context.Context, org, pathToProject string) (string, error) {
+	projects, err := h.InferProjects(ctx, org, pathToProject)
 	if err != nil {
 		return "", err
 	}
-	if proj != nil {
-		return proj.Name, nil
+	if len(projects) == 1 {
+		return projects[0].Name, nil
 	}
 
-	// Verify projectPath is a Git repo with remote on Github
-	remote, err := gitutil.ExtractGitRemote(path, "", true)
-	if err != nil {
-		return "", err
+	var names []string
+	for _, p := range projects {
+		names = append(names, p.Name)
 	}
-	githubRemote, err := remote.Github()
-	if err != nil {
-		return "", err
-	}
-
-	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGitRemote(ctx, org, githubRemote, "")
-	if err != nil {
-		return "", err
-	}
-
-	if len(names) == 1 {
-		return names[0], nil
-	}
-
 	return SelectPrompt("Select project", names, "")
+}
+
+func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv1.Project, error) {
+	path, err := fileutil.ExpandHome(path)
+	if err != nil {
+		return nil, err
+	}
+
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build request
+	req := &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: filepath.Base(path),
+	}
+
+	// extract subpath
+	repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(path)
+	if err == nil {
+		req.SubPath = subpath
+	}
+
+	// extract remotes
+	remote, err := gitutil.ExtractRemotes(repoRoot, false)
+	if err == nil {
+		for _, r := range remote {
+			if r.Name == "__rill_remote" {
+				req.RillMgdGitRemote = r.URL
+			} else {
+				gitRemote, err := r.Github()
+				if err == nil {
+					req.GitRemote = gitRemote
+				}
+			}
+		}
+	}
+	c, err := h.Client()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.ListProjectsForFingerprint(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.Projects) == 0 {
+		return nil, ErrNoMatchingProject
+	}
+
+	if org == "" {
+		return resp.Projects, nil
+	}
+
+	orgFiltered := make([]*adminv1.Project, 0)
+	for _, p := range resp.Projects {
+		if p.OrgName == org {
+			orgFiltered = append(orgFiltered, p)
+		}
+	}
+	if len(orgFiltered) == 0 {
+		return nil, ErrNoMatchingProject
+	}
+	// cleanup rill managed remote
+	if len(orgFiltered) == 1 && orgFiltered[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
+		err := h.HandleRepoTransfer(repoRoot, req.GitRemote)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return orgFiltered, nil
 }
 
 // OpenRuntimeClient opens a client for the production deployment for the given project.
 // If local is true, it connects to the locally running runtime instead of the deployed project's runtime.
 // It returns the runtime client and instance ID for the project.
-func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, local bool) (*runtimeclient.Client, string, error) {
+func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project, branch string, local bool) (*runtimeclient.Client, string, error) {
 	var host, instanceID, jwt string
 	if local {
 		// This is the default port that Rill localhost uses for gRPC.
@@ -439,19 +463,20 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 		}
 
 		proj, err := adm.GetProject(ctx, &adminv1.GetProjectRequest{
-			OrganizationName: org,
-			Name:             project,
+			Org:     org,
+			Project: project,
+			Branch:  branch,
 		})
 		if err != nil {
 			return nil, "", err
 		}
 
-		depl := proj.ProdDeployment
+		depl := proj.Deployment
 		if depl == nil {
 			return nil, "", fmt.Errorf("project %q is not currently deployed", project)
 		}
-		if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-			return nil, "", fmt.Errorf("deployment status not OK: %s", depl.Status.String())
+		if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
+			return nil, "", fmt.Errorf("deployment status not RUNNING: %s", depl.Status.String())
 		}
 
 		host = depl.RuntimeHost
@@ -514,6 +539,110 @@ func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signatu
 		Email: userResp.User.Email,
 		When:  time.Now(),
 	}, nil
+}
+
+func (h *Helper) HandleRepoTransfer(path, remote string) error {
+	// clear cache
+	h.gitHelperMu.Lock()
+	h.gitHelper = nil
+	h.gitHelperMu.Unlock()
+
+	// remove rill managed remote
+	err := removeRemote(path, "__rill_remote")
+	if err != nil {
+		return err
+	}
+
+	// set origin to remote
+	err = gitutil.SetRemote(path, &gitutil.Config{
+		Remote: remote,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CommitAndSafePush commits changes and safely pushes them to the remote repository.
+// It fetches the latest remote changes, checks for conflicts, and handles them based on defaultPushChoice:
+//   - "1": Pull remote changes and merge (fails on conflicts)
+//   - "2": Overwrite remote changes with local changes using merge with favourLocal=true (not supported for monorepos)
+//   - "3": Abort the push operation
+//
+// If h.Interactive is true and there are remote commits, the user will be prompted to choose how to proceed.
+func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature, defaultPushChoice string) error {
+	// 1. Fetch latest from remote
+	err := gitutil.GitFetch(ctx, root, config)
+	if err != nil {
+		return fmt.Errorf("failed to fetch from remote: %w", err)
+	}
+
+	// 2. Check status of the subpath
+	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName())
+	if err != nil {
+		return fmt.Errorf("failed to get git status: %w", err)
+	}
+	if status.Branch != config.DefaultBranch {
+		return fmt.Errorf("current branch %q does not match expected branch %q", status.Branch, config.DefaultBranch)
+	}
+
+	// 3. Warn if there are remote commits
+	choice := defaultPushChoice
+	if status.RemoteCommits != 0 {
+		if h.Interactive {
+			h.PrintfWarn("Warning: There are changes on the remote branch that are not in your local branch.")
+			h.PrintfWarn("It's recommended to pull the latest changes before pushing to avoid overwriting remote changes.\n")
+			h.PrintfWarn("Please choose one of the following options to proceed:\n")
+			h.PrintfWarn("1: Pull remote changes to your local branch and fail on conflicts\n")
+			h.PrintfWarn("2: Overwrite remote changes with your local changes(Not supported for monorepos)\n")
+			h.PrintfWarn("3: Abort deploy and merge manually\n")
+			choice, err = SelectPrompt("Choose how to resolve remote changes", []string{"1", "2", "3"}, "1")
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// 4. Merge + push
+	// The push can still fail if there were new remote commits since the fetch. But that's okay, the user can just retry.
+	switch choice {
+	case "1":
+		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, false)
+		if err != nil {
+			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
+	case "2":
+		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't lose history.
+		// This is not equivalent to a force push but is safer for users.
+		if config.Subpath != "" {
+			// force pushing in a monorepo can overwrite other subpaths
+			// we can check for changes in other subpaths but it is tricky and error prone
+			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
+			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
+		}
+		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, true)
+		if err != nil {
+			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
+	default:
+		return fmt.Errorf("aborting deploy")
+	}
+}
+
+func removeRemote(path, remoteName string) error {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	err = repo.DeleteRemote(remoteName)
+	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
+		return err
+	}
+	return nil
 }
 
 func hashStr(ss ...string) string {

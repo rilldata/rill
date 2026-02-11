@@ -5,9 +5,7 @@
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import Chat from "@rilldata/web-common/features/chat/Chat.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
@@ -92,18 +90,13 @@
     body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
   />
 {:else}
-  {#key exploreName}
-    <div class="flex h-full overflow-hidden">
-      <div class="flex-1 overflow-hidden">
-        <StateManagersProvider {metricsViewName} {exploreName}>
-          <DashboardStateManager {exploreName}>
-            <DashboardThemeProvider>
-              <Dashboard {metricsViewName} {exploreName} />
-            </DashboardThemeProvider>
-          </DashboardStateManager>
-        </StateManagersProvider>
-      </div>
-      <Chat />
-    </div>
-  {/key}
+  <div class="h-full overflow-hidden">
+    {#key exploreName}
+      <StateManagersProvider {metricsViewName} {exploreName}>
+        <DashboardStateManager {exploreName}>
+          <Dashboard {metricsViewName} {exploreName} />
+        </DashboardStateManager>
+      </StateManagersProvider>
+    {/key}
+  </div>
 {/if}

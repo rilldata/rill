@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rilldata/rill/cli/cmd/project/deployment"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -32,6 +33,8 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(CloneCmd(ch))
 	projectCmd.AddCommand(GitPushCmd(ch))
 	projectCmd.AddCommand(DeployCmd(ch))
+	projectCmd.AddCommand(TablesCmd(ch))
+	projectCmd.AddCommand(deployment.DeploymentCmd(ch))
 
 	return projectCmd
 }
@@ -44,7 +47,7 @@ func ProjectNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
 
 	org := ch.Org
 
-	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: org})
+	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{Org: org})
 	if err != nil {
 		return nil, err
 	}

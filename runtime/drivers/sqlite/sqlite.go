@@ -8,6 +8,7 @@ import (
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
@@ -24,39 +25,66 @@ func init() {
 
 type driver struct{}
 
+type configProperties struct {
+	// DSN is the connection string for the SQLite database.
+	DSN string `mapstructure:"dsn"`
+	// ID is an optional globally unique ID for the SQLite database.
+	// If provided, we'll run periodic backups of the SQLite file to object storage.
+	// See connection.startBackups() for details.
+	ID string `mapstructure:"id"`
+}
+
 func (d driver) Open(_ string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	dsn, ok := config["dsn"].(string)
-	if !ok {
+	// Parse config
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return nil, err
+	}
+	if conf.DSN == "" {
 		return nil, fmt.Errorf("require dsn to open sqlite connection")
 	}
 
 	// The sqlite driver requires the DSN to contain "_time_format=sqlite" to support TIMESTAMP types in all timezones.
-	if !strings.Contains(dsn, "_time_format") {
-		if strings.Contains(dsn, "?") {
-			dsn += "&_time_format=sqlite"
+	if !strings.Contains(conf.DSN, "_time_format") {
+		if strings.Contains(conf.DSN, "?") {
+			conf.DSN += "&_time_format=sqlite"
 		} else {
-			dsn += "?_time_format=sqlite"
+			conf.DSN += "?_time_format=sqlite"
 		}
 	}
 
 	// Open DB handle
-	db, err := otelsql.Open("sqlite", dsn)
+	db, err := otelsql.Open("sqlite", conf.DSN)
 	if err != nil {
 		return nil, err
 	}
 	dbx := sqlx.NewDb(db, "sqlite")
 	db.SetMaxOpenConns(1)
-	return &connection{
-		db:     dbx,
-		config: config,
-	}, nil
+
+	// Create the handle
+	ctx, cancel := context.WithCancel(context.Background())
+	h := &connection{
+		db:       dbx,
+		logger:   logger,
+		config:   config,
+		ctx:      ctx,
+		cancel:   cancel,
+		storage:  st,
+		backupID: conf.ID,
+	}
+
+	// Start backups in the background (no-op if backups are not configured)
+	go h.startBackups()
+
+	return h, nil
 }
 
 func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{
 		DisplayName: "SQLite",
 		Description: "Import data from SQLite into DuckDB.",
-		DocsURL:     "https://docs.rilldata.com/connect/data-source/sqlite",
+		DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/sqlite",
 		// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 		SourceProperties: []*drivers.PropertySpec{
 			{
@@ -99,7 +127,15 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	db     *sqlx.DB
+	logger *zap.Logger
 	config map[string]any
+
+	// Backup management.
+	// See c.startBackups() for details.
+	ctx      context.Context
+	cancel   context.CancelFunc
+	storage  *storage.Client
+	backupID string
 }
 
 var _ drivers.Handle = &connection{}
@@ -121,6 +157,7 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	c.cancel()
 	return c.db.Close()
 }
 
@@ -165,13 +202,13 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsFileStore implements drivers.Connection.

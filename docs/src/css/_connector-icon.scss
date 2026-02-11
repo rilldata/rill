@@ -2,25 +2,9 @@
 .connect-connect .markdown h3,
 .connect-connect h3,
 .markdown h3:has(~ div.connector-icon-grid),
-h3:has(~ div.connector-icon-grid) {
-  visibility: hidden !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-
-// Hide h3 headers on the /connect/olap page
-body[data-page-id*="connect/olap"] .markdown h3,
-body[data-page-id*="connect/olap"] h3,
-body[data-page-id*="olap"] .markdown h3,
-body[data-page-id*="olap"] h3,
-// Alternative selectors for OLAP page
-body[data-page-id="olap"] .markdown h3,
-body[data-page-id="olap"] h3,
-// Target by URL path
-body[data-page-id*="olap"] .markdown h3,
-body[data-page-id*="olap"] h3 {
+h3:has(~ div.connector-icon-grid),
+.markdown h3:has(~ div.component-icon-grid),
+h3:has(~ div.component-icon-grid) {
   visibility: hidden !important;
   height: 0 !important;
   margin: 0 !important;
@@ -196,6 +180,18 @@ body[data-page-id*="olap"] h3 {
 
 .sheets-icon {
   height: 3rem !important;
+}
+
+.slack-icon {
+  height: 2.5rem !important;
+}
+
+.duckdb-icon {
+  height: 2rem !important;
+}
+
+.starrocks-icon {
+  height: 1.5rem !important;
 }
 
 .https-icon {

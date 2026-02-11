@@ -36,6 +36,7 @@
             instanceId,
             data: {
               displayName: EMPTY_PROJECT_TITLE,
+              olap: "duckdb", // Explicitly set DuckDB as OLAP for local file uploads
             },
           });
 

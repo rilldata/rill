@@ -2,13 +2,14 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
+import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
   filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
 import {
   TimeRangePreset,
   type DashboardTimeControls,
@@ -22,10 +23,7 @@ import type {
   V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import {
-  V1Operation,
-  type V1StructType,
-} from "@rilldata/web-common/runtime-client";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { derived, writable, type Readable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
@@ -116,6 +114,7 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
 function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsSet = new Set(explore.dimensions ?? []);
+
   exploreState.whereFilter =
     filterExpressions(exploreState.whereFilter, (e) => {
       if (!e.cond?.exprs?.length) return true;
@@ -170,17 +169,11 @@ const metricsViewReducers = {
     urlState: string,
     metricsView: V1MetricsViewSpec,
     explore: V1ExploreSpec,
-    schema: V1StructType,
   ) {
     if (!urlState || !metricsView) return;
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(
-      urlState,
-      metricsView,
-      explore,
-      schema,
-    );
+    const partial = getDashboardStateFromUrl(urlState, metricsView, explore);
     if (!partial) return;
 
     updateMetricsExplorerByName(name, (exploreState) => {
@@ -269,6 +262,7 @@ const metricsViewReducers = {
         }
       }
 
+      exploreState.pivot.expanded = {};
       exploreState.pivot.rows = dimensions;
     });
   },
@@ -277,7 +271,6 @@ const metricsViewReducers = {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
-      exploreState.pivot.expanded = {};
 
       if (exploreState.pivot.sorting.length) {
         const accessor = exploreState.pivot.sorting[0].id;
@@ -294,6 +287,7 @@ const metricsViewReducers = {
           }
         }
       }
+      exploreState.pivot.expanded = {};
       exploreState.pivot.columns = value;
     });
   },
@@ -302,6 +296,8 @@ const metricsViewReducers = {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
+      exploreState.pivot.expanded = {};
+
       if (value.type === PivotChipType.Measure) {
         exploreState.pivot.columns.push(value);
       } else {
@@ -418,6 +414,8 @@ const metricsViewReducers = {
   },
 
   setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
+    measureSelection.clear();
+
     updateMetricsExplorerByName(name, (exploreState) => {
       setSelectedScrubRange(exploreState, undefined);
       exploreState.selectedTimeRange = timeRange;
@@ -425,6 +423,8 @@ const metricsViewReducers = {
   },
 
   setSelectedScrubRange(name: string, scrubRange: ScrubRange | undefined) {
+    if (!scrubRange) measureSelection.clear();
+
     updateMetricsExplorerByName(name, (exploreState) => {
       setSelectedScrubRange(exploreState, scrubRange);
     });
@@ -477,6 +477,12 @@ const metricsViewReducers = {
       setSelectedScrubRange(exploreState, undefined);
 
       exploreState.selectedTimezone = zoneIANA;
+    });
+  },
+
+  setTimeDimension(name: string, column: string) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedTimeDimension = column;
     });
   },
 
@@ -548,6 +554,47 @@ const metricsViewReducers = {
       };
     });
   },
+
+  setPivotRowLimit(name: string, limit: number | undefined) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        rowLimit: limit,
+        expanded: {},
+        nestedRowLimits: {},
+        outermostRowLimit: undefined,
+        rowPage: 1,
+        activeCell: null,
+      };
+    });
+  },
+
+  setPivotRowLimitForExpandedRow(
+    name: string,
+    expandIndex: string,
+    limit: number,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        nestedRowLimits: {
+          ...exploreState.pivot.nestedRowLimits,
+          [expandIndex]: limit,
+        },
+        activeCell: null,
+      };
+    });
+  },
+
+  setPivotOutermostRowLimit(name: string, limit: number) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        outermostRowLimit: limit,
+        activeCell: null,
+      };
+    });
+  },
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
@@ -560,6 +607,15 @@ export function useExploreState(name: string): Readable<ExploreState> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
+}
+
+export function useStableExploreState(exploreNameStore: Readable<string>) {
+  return derived(
+    [metricsExplorerStore, exploreNameStore],
+    ([$store, $exploreName]) => {
+      return $store.entities[$exploreName];
+    },
+  );
 }
 
 export function sortTypeForContextColumnType(

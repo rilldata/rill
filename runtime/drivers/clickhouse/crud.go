@@ -21,8 +21,6 @@ type tableWriteMetrics struct {
 }
 
 func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) (*tableWriteMetrics, error) {
-	ctx = contextWithQueryID(ctx)
-
 	var onClusterClause string
 	if c.config.Cluster != "" {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
@@ -66,7 +64,6 @@ type InsertTableOptions struct {
 }
 
 func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions, outputProps *ModelOutputProperties) (*tableWriteMetrics, error) {
-	ctx = contextWithQueryID(ctx)
 	start := time.Now()
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
@@ -143,6 +140,16 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
+
+		// run 'OPTIMIZE' before partition replacement if configured
+		if c.config.OptimizeTemporaryTablesBeforePartitionReplace {
+			err = c.optimizeTable(ctx, tempName)
+			if err != nil {
+				c.logger.Warn("clickhouse: failed to optimize temporary table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
+				// Don't fail the entire operation if optimize fails - just log and continue
+			}
+		}
+
 		// list partitions from the temp table
 		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
@@ -164,12 +171,14 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		onClusterClause := ""
+		// get the engine info of the given table - local table for distributed tables
+		var n string
 		if onCluster {
-			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+			n = localTableName(name)
+		} else {
+			n = name
 		}
-		// get the engine info of the given table
-		engine, err := c.getTableEngine(ctx, name)
+		engine, err := c.getTableEngine(ctx, n)
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +188,7 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 
 		// insert into table using the merge strategy
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
+			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 			Priority: 1,
 		})
 		if err != nil {
@@ -192,7 +201,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 func (c *Connection) dropTable(ctx context.Context, name string) error {
-	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := c.entityType(ctx, c.config.Database, name)
 	if err != nil {
 		return err
@@ -242,7 +250,6 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 }
 
 func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) error {
-	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := c.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err
@@ -370,7 +377,7 @@ func (c *Connection) renameView(ctx context.Context, oldName, newName, onCluster
 
 func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluster string) error {
 	var exists bool
-	err := c.writeDB.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
+	err := c.writeDB.QueryRowContext(contextWithQueryID(ctx), fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
 	if err != nil {
 		return err
 	}
@@ -642,6 +649,20 @@ func (c *Connection) replacePartition(ctx context.Context, src, dest, part strin
 	return c.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION ? FROM %s", safeSQLName(dest), onClusterClause, safeSQLName(src)),
 		Args:     []any{part},
+		Priority: 1,
+	})
+}
+
+func (c *Connection) optimizeTable(ctx context.Context, tableName string) error {
+	var onClusterClause string
+	if c.config.Cluster != "" {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+		// For clustered tables, optimize the local table
+		tableName = localTableName(tableName)
+	}
+
+	return c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("OPTIMIZE TABLE %s %s", safeSQLName(tableName), onClusterClause),
 		Priority: 1,
 	})
 }

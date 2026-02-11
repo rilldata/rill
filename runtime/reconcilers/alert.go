@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -106,16 +107,25 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// As a special rule, we set a default refresh schedule if:
-	// ref_update=true and one of the refs is streaming (and an explicit schedule wasn't provided).
-	if hasStreamingRef(ctx, r.C, self.Meta.Refs) {
-		if a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.RefUpdate {
-			if a.Spec.RefreshSchedule.TickerSeconds == 0 && a.Spec.RefreshSchedule.Cron == "" {
-				cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
-				if err != nil {
-					return runtime.ReconcileResult{Err: err}
-				}
+	// - ref_update=true, and
+	// - one of the refs is streaming, and
+	// - an explicit schedule wasn't provided.
+	streaming, maybeScaledToZero, err := checkStreamingRef(ctx, r.C, self.Meta.Refs)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+	if streaming {
+		if a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.RefUpdate && a.Spec.RefreshSchedule.TickerSeconds == 0 && a.Spec.RefreshSchedule.Cron == "" {
+			cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
 
+			// Use a fast refresh schedule only for streaming sources that can't be scaled to zero.
+			if maybeScaledToZero {
 				a.Spec.RefreshSchedule.Cron = cfg.AlertsDefaultStreamingRefreshCron
+			} else {
+				a.Spec.RefreshSchedule.Cron = cfg.AlertsFastStreamingRefreshCron
 			}
 		}
 	}
@@ -211,6 +221,148 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: executeErr, Retrigger: a.State.NextRunOn.AsTime()}
 	}
 	return runtime.ReconcileResult{Err: executeErr}
+}
+
+func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
+
+	alert := res.GetAlert()
+	if alert == nil {
+		return nil, fmt.Errorf("resource is not an alert")
+	}
+
+	spec := alert.GetSpec()
+	if spec == nil {
+		return nil, fmt.Errorf("alert spec is nil")
+	}
+
+	// explicitly allow access to the alert itself
+	conditionResources = append(conditionResources, res.Meta.Name)
+	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
+
+	var mvName string
+	if spec.QueryName != "" {
+		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
+		if !ok {
+			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
+		}
+		resolver, err := initializer(ctx, &runtime.ResolverOptions{
+			Runtime:    r.C.Runtime,
+			InstanceID: r.C.InstanceID,
+			Properties: map[string]any{
+				"query_name":      spec.QueryName,
+				"query_args_json": spec.QueryArgsJson,
+			},
+			Claims:    claims,
+			ForExport: false,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer resolver.Close()
+		inferred, err := resolver.InferRequiredSecurityRules()
+		if err != nil {
+			return nil, err
+		}
+
+		rules = append(rules, inferred...)
+
+		refs := resolver.Refs()
+		for _, ref := range refs {
+			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
+		}
+	}
+
+	if spec.Resolver != "" {
+		initializer, ok := runtime.ResolverInitializers[spec.Resolver]
+		if !ok {
+			return nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
+		}
+		resolver, err := initializer(ctx, &runtime.ResolverOptions{
+			Runtime:    r.C.Runtime,
+			InstanceID: r.C.InstanceID,
+			Properties: spec.ResolverProperties.AsMap(),
+			Claims:     claims,
+			ForExport:  false,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer resolver.Close()
+		inferred, err := resolver.InferRequiredSecurityRules()
+		if err != nil {
+			return nil, err
+		}
+
+		rules = append(rules, inferred...)
+
+		refs := resolver.Refs()
+		for _, ref := range refs {
+			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
+		}
+	}
+
+	// figure out explore or canvas for the alert
+	var explore, canvas string
+	if e, ok := spec.Annotations["explore"]; ok {
+		explore = e
+	}
+	if c, ok := spec.Annotations["canvas"]; ok {
+		canvas = c
+	}
+
+	if explore == "" { // backwards compatibility, try to find explore
+		if path, ok := spec.Annotations["web_open_path"]; ok {
+			// parse path, extract explore name, it will be like /explore/{explore}
+			if strings.HasPrefix(path, "/explore/") {
+				explore = path[9:]
+				if explore[len(explore)-1] == '/' {
+					explore = explore[:len(explore)-1]
+				}
+			}
+		}
+		// still not found, use mv name as explore name
+		if explore == "" {
+			explore = mvName
+		}
+	}
+
+	// add explore and canvas to access and field access rule's condition resources
+	if explore != "" {
+		exp := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+		conditionResources = append(conditionResources, exp)
+		for _, r := range rules {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				rfa.ConditionResources = append(rfa.ConditionResources, exp)
+			}
+		}
+	}
+	if canvas != "" {
+		c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
+		conditionResources = append(conditionResources, c)
+		for _, r := range rules {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				rfa.ConditionResources = append(rfa.ConditionResources, c)
+			}
+		}
+	}
+
+	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					ConditionKinds:     conditionKinds,
+					ConditionResources: conditionResources,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
 }
 
 // executionSpecHash computes a hash of the alert properties that impact execution.
@@ -342,7 +494,7 @@ func (r *AlertReconciler) updateNextRunOn(ctx context.Context, self *runtimev1.R
 		curr = a.State.NextRunOn.AsTime()
 	}
 
-	if next == curr {
+	if next.Equal(curr) {
 		return nil
 	}
 
@@ -394,7 +546,20 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	}
 	if err == nil { // Connected successfully
 		defer release()
-		adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
+		anonRecipients := false
+		var emailRecipients []string
+		for _, notifier := range a.Spec.Notifiers {
+			if notifier.Connector == "email" {
+				emailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+			} else {
+				anonRecipients = true
+			}
+		}
+		ownerID := ""
+		if a.Spec.Annotations != nil {
+			ownerID = a.Spec.Annotations["admin_owner_user_id"]
+		}
+		adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
 		if err != nil {
 			return fmt.Errorf("failed to get alert metadata: %w", err)
 		}
@@ -724,16 +889,6 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	var notificationErr error
 	var sentNotifications bool
 	if msg != nil {
-		if adminMeta != nil {
-			// Note: adminMeta may not always be available (if outside of cloud). In those cases, we leave the links blank (no clickthrough available).
-			openLink, err := addExecutionTime(adminMeta.OpenURL, executionTime)
-			if err != nil {
-				return fmt.Errorf("failed to build open url: %w", err)
-			}
-			msg.OpenLink = openLink
-			msg.EditLink = adminMeta.EditURL
-		}
-
 		for _, notifier := range a.Spec.Notifiers {
 			switch notifier.Connector {
 			// TODO: transform email client to notifier
@@ -741,6 +896,26 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 				for _, recipient := range recipients {
 					msg.ToEmail = recipient
+
+					// Set recipient-specific URLs if available from admin metadata
+					if adminMeta != nil && adminMeta.RecipientURLs != nil {
+						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok {
+							// Use recipient-specific URLs (with magic token)
+							openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
+							if err != nil {
+								return fmt.Errorf("failed to build recipient open url: %w", err)
+							}
+							msg.OpenLink = openLink
+							msg.EditLink = recipientURLs.EditURL
+							msg.UnsubscribeLink = recipientURLs.UnsubscribeURL
+						} else {
+							// Note: adminMeta may not always be available (if outside of cloud) or no links sent for this recipient. In those cases, we leave the links blank (no clickthrough available).
+							msg.OpenLink = ""
+							msg.EditLink = ""
+							msg.UnsubscribeLink = ""
+						}
+					}
+
 					err := r.C.Runtime.Email.SendAlertStatus(msg)
 					if err != nil {
 						notificationErr = fmt.Errorf("failed to send email to %q: %w", recipient, err)
@@ -758,6 +933,16 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					if err != nil {
 						return err
 					}
+					urls, ok := adminMeta.RecipientURLs[""]
+					if !ok {
+						return fmt.Errorf("failed to get recipient URLs for anon user")
+					}
+					openLink, err := addExecutionTime(urls.OpenURL, executionTime)
+					if err != nil {
+						return fmt.Errorf("failed to build recipient open url: %w", err)
+					}
+					msg.OpenLink = openLink
+					msg.EditLink = urls.EditURL
 					start := time.Now()
 					defer func() {
 						totalLatency := time.Since(start).Milliseconds()

@@ -23,6 +23,9 @@
   let searchText = "";
   let active = false;
 
+  const toggleButtonBaseClass =
+    "flex h-[26px] w-[42px] items-center justify-center rounded-sm text-icon-muted transition-colors hover:bg-surface-hover hover:text-fg-primary active:bg-gray-300 disabled:text-gray-300 disabled:cursor-not-allowed";
+
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
   $: numAvailable = allItems?.length ?? 0;
   $: numShown = selectedItems?.filter((x) => x).length ?? 0;
@@ -33,12 +36,24 @@
   // Convert selectedItems to DraggableItem format
   $: selectedDraggableItems = selectedItems
     .filter((id) => id)
-    .map((id) => ({ id }));
+    .map((id) => {
+      const itemData = allItemsMap.get(id);
+      return {
+        id: id!,
+        displayName: itemData?.displayName ?? id!,
+      };
+    });
 
   // Convert hidden items to DraggableItem format
-  $: hiddenDraggableItems = Array.from(allItemsMap.entries())
-    .filter(([id]) => id && !selectedItems.includes(id))
-    .map(([id]) => ({ id: id! }));
+  $: hiddenDraggableItems = Array.from(allItemsMap.keys())
+    .filter((id) => id && !selectedItems.includes(id))
+    .map((id) => {
+      const itemData = allItemsMap.get(id);
+      return {
+        id: id!,
+        displayName: itemData?.displayName ?? id!,
+      };
+    });
 
   function handleSelectedReorder(data: {
     items: Array<{ id: string }>;
@@ -57,8 +72,8 @@
     onSelectedChange(newSelectedItems);
   }
 
-  function removeSelectedItem(index: number) {
-    const newSelectedItems = selectedItems.filter((_, i) => i !== index);
+  function removeSelectedItem(id: string) {
+    const newSelectedItems = selectedItems.filter((i) => i !== id);
     onSelectedChange(newSelectedItems);
   }
 
@@ -87,7 +102,7 @@
     </Button>
   </Popover.Trigger>
   <Popover.Content
-    class="p-0 z-popover"
+    class="p-0 z-popover text-fg-primary"
     align="start"
     strategy="absolute"
     fitViewport={true}
@@ -117,12 +132,12 @@
             slot="header"
             class="flex-none flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b z-10"
           >
-            <h3 class="uppercase text-gray-500 font-semibold text-[11px]">
+            <h3 class="uppercase font-semibold text-[11px] text-fg-secondary">
               Shown {type === "measure" ? "Measures" : "Dimensions"}
             </h3>
             {#if selectedItems.length > 1}
               <button
-                class="text-theme-500 pointer-events-auto hover:text-theme-600 font-medium text-[11px]"
+                class="text-theme-500 pointer-events-auto hover:text-theme-600 font-medium text-xs"
                 on:click={hideAllItems}
               >
                 Hide all
@@ -130,7 +145,7 @@
             {/if}
           </div>
 
-          <div slot="empty" class="px-2 py-2 text-xs text-gray-500">
+          <div slot="empty" class="px-2 py-2 text-xs">
             {searchText
               ? `No matching ${type === "measure" ? "measures" : "dimensions"} shown`
               : `No ${type === "measure" ? "measures" : "dimensions"} shown`}
@@ -139,39 +154,43 @@
           <div
             slot="item"
             let:item
-            let:index
-            class="w-full flex gap-x-1 items-center"
+            class="w-full flex gap-x-1 items-center py-1"
           >
             {@const itemData = allItemsMap.get(item.id)}
+            {@const displayName =
+              itemData?.displayName ??
+              `Unknown ${type === "measure" ? "measure" : "dimension"}`}
             {#if itemData?.description || selectedItems.length === 1}
               <Tooltip.Root openDelay={200} portal="body">
                 <Tooltip.Trigger class="w-full flex gap-x-1 items-center">
                   <DragHandle
                     size="16px"
-                    className="text-gray-400 pointer-events-none"
+                    className="fill-icon pointer-events-none"
                   />
-                  <span class="truncate flex-1 text-left pointer-events-none">
-                    {itemData?.displayName ??
-                      `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                  <span
+                    class="truncate flex-1 text-left pointer-events-none text-fg-primary"
+                  >
+                    {displayName}
                   </span>
                   <button
-                    class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                    on:click|stopPropagation={() => removeSelectedItem(index)}
+                    class="{toggleButtonBaseClass} ml-auto"
+                    on:click|stopPropagation={() => removeSelectedItem(item.id)}
                     on:mousedown|stopPropagation={() => {
                       // NO-OP
                     }}
                     disabled={selectedItems.length === 1}
                     class:pointer-events-none={selectedItems.length === 1}
                     class:opacity-50={selectedItems.length === 1}
-                    aria-label="Toggle visibility"
+                    aria-label="Hide {displayName}"
                     data-testid="toggle-visibility-button"
+                    type="button"
                   >
-                    <EyeIcon size="14px" color="#6b7280" />
+                    <EyeIcon size="18px" color="currentColor" />
                   </button>
                 </Tooltip.Trigger>
-                <Tooltip.Content side="right" sideOffset={12} class="z-popover">
+                <Tooltip.Content side="right" sideOffset={18} class="z-popover">
                   <div
-                    class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                    class="bg-popover text-fg-primary rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
                   >
                     {#if selectedItems.length === 1}
                       Must show at least one {type === "measure"
@@ -186,23 +205,24 @@
             {:else}
               <DragHandle
                 size="16px"
-                className="text-gray-400 pointer-events-none"
+                className="fill-icon pointer-events-none"
               />
               <span class="truncate flex-1 text-left pointer-events-none">
-                {itemData?.displayName ??
-                  `Unknown ${type === "measure" ? "measure" : "dimension"}`}
+                {displayName}
               </span>
               <button
-                class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                on:click|stopPropagation={() => removeSelectedItem(index)}
+                class="{toggleButtonBaseClass} ml-auto"
+                on:click|stopPropagation={() => removeSelectedItem(item.id)}
                 on:mousedown|stopPropagation={() => {
                   // NO-OP
                 }}
                 disabled={selectedItems.length === 1}
                 class:pointer-events-none={selectedItems.length === 1}
                 class:opacity-50={selectedItems.length === 1}
+                aria-label={`Hide ${displayName}`}
+                type="button"
               >
-                <EyeIcon size="14px" color="#6b7280" />
+                <EyeIcon size="18px" color="currentColor" />
               </button>
             {/if}
           </div>
@@ -211,33 +231,33 @@
 
       <!-- Hidden Items Section -->
       {#if selectedItems.length < allItems.length}
-        <span class="flex-none h-px bg-slate-200 w-full" />
+        <span class="flex-none h-px bg-border w-full" />
         <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
           <DraggableList
             items={hiddenDraggableItems}
             bind:searchValue={searchText}
             minHeight="auto"
             maxHeight="200px"
-            onItemClick={handleHiddenItemClick}
+            draggable={false}
           >
             <div
               slot="header"
-              class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b"
+              class="flex-none flex py-1.5 pb-1 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b"
             >
               <h3
-                class="uppercase text-xs text-gray-500 font-semibold from-popover from-80% to-transparent bg-gradient-to-b"
+                class="uppercase text-[11px] font-semibold text-fg-secondary from-popover from-80% to-transparent bg-gradient-to-b"
               >
                 Hidden {type === "measure" ? "Measures" : "Dimensions"}
               </h3>
               <button
-                class="pointer-events-auto text-theme-500 text-[11px] font-medium"
+                class="pointer-events-auto text-theme-500 text-xs font-medium hover:text-theme-600"
                 on:click={showAllItems}
               >
                 Show all
               </button>
             </div>
 
-            <div slot="empty" class="px-2 py-2 text-xs text-gray-500">
+            <div slot="empty" class="px-2 py-2 text-xs text-fg-secondary">
               {searchText
                 ? `No matching hidden ${type === "measure" ? "measures" : "dimensions"}`
                 : `No hidden ${type === "measure" ? "measures" : "dimensions"}`}
@@ -247,34 +267,38 @@
               slot="item"
               let:item
               let:index
-              class="w-full flex gap-x-1 justify-between items-center cursor-pointer"
+              class="w-full flex gap-x-1 justify-between items-center py-1"
             >
               {@const itemData = allItemsMap.get(item.id)}
+              {@const displayName =
+                itemData?.displayName ??
+                `Unknown ${type === "measure" ? "measure" : "dimension"}`}
               {#if itemData?.description}
                 <Tooltip.Root openDelay={200} portal="body">
                   <Tooltip.Trigger
                     class="w-full flex gap-x-1 justify-between items-center"
                   >
                     <span class="truncate flex-1 text-left pointer-events-none">
-                      {itemData.displayName}
+                      {displayName}
                     </span>
                     <button
-                      class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                      class={toggleButtonBaseClass}
                       on:click|stopPropagation={() =>
                         handleHiddenItemClick({ item, index })}
-                      aria-label="Toggle visibility"
+                      aria-label={`Show ${displayName}`}
                       data-testid="toggle-visibility-button"
+                      type="button"
                     >
-                      <EyeOffIcon size="14px" color="#9ca3af" />
+                      <EyeOffIcon size="18px" color="currentColor" />
                     </button>
                   </Tooltip.Trigger>
                   <Tooltip.Content
                     side="right"
-                    sideOffset={12}
+                    sideOffset={18}
                     class="z-popover"
                   >
                     <div
-                      class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                      class="bg-popover text-fg-primary rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
                     >
                       {itemData.description}
                     </div>
@@ -282,16 +306,17 @@
                 </Tooltip.Root>
               {:else}
                 <span class="truncate flex-1 text-left pointer-events-none">
-                  {itemData?.displayName}
+                  {displayName}
                 </span>
                 <button
-                  class="hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
+                  class="{toggleButtonBaseClass} "
                   on:click|stopPropagation={() =>
                     handleHiddenItemClick({ item, index })}
-                  aria-label="Toggle visibility"
+                  aria-label={`Show ${displayName}`}
                   data-testid="toggle-visibility-button"
+                  type="button"
                 >
-                  <EyeOffIcon size="14px" color="#9ca3af" />
+                  <EyeOffIcon size="18px" color="currentColor" />
                 </button>
               {/if}
             </div>
@@ -301,9 +326,3 @@
     </div>
   </Popover.Content>
 </Popover.Root>
-
-<style lang="postcss">
-  h3 {
-    @apply text-[11px] text-gray-500;
-  }
-</style>

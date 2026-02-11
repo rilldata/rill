@@ -3,8 +3,7 @@
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import DatabaseEntry from "./DatabaseEntry.svelte";
-  import { useDatabasesFromSchemas } from "../selectors";
-  import { useDatabasesOLAP as useDatabasesLegacy } from "../selectors";
+  import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
@@ -12,25 +11,37 @@
   export let store: ConnectorExplorerStore;
 
   $: connectorName = connector?.name as string;
+  $: hasError = !!connector?.errorMessage;
 
-  // Determine which API to use based on connector capabilities (optimized - direct access)
-  $: shouldUseNewAPI =
-    connector.driver?.implementsSqlStore ||
-    connector.driver?.implementsWarehouse ||
-    !connector.driver?.implementsOlap;
+  // Managed connectors without host/dsn config aren't ready for queries yet
+  $: isAwaitingConfig =
+    connector?.provision === true &&
+    !connector?.config?.dsn &&
+    !connector?.config?.host;
 
-  // Use appropriate selector based on connector type
-  $: databasesQuery = shouldUseNewAPI
-    ? useDatabasesFromSchemas(instanceId, connectorName)
-    : useDatabasesLegacy(instanceId, connectorName);
+  $: queryEnabled = !hasError && !isAwaitingConfig;
 
-  $: ({ data, error, isLoading } = $databasesQuery);
+  $: databaseSchemasQuery = useListDatabaseSchemas(
+    instanceId,
+    connectorName,
+    undefined,
+    queryEnabled,
+  );
+
+  $: ({ data: rawData, error, isLoading } = $databaseSchemasQuery);
+
+  // TanStack Query returns cached data even when disabled
+  $: data = queryEnabled ? rawData : undefined;
 </script>
 
 <div class="wrapper">
-  {#if isLoading}
+  {#if hasError}
+    <span class="message pl-6">Error: {connector.errorMessage}</span>
+  {:else if isAwaitingConfig}
+    <span class="message pl-6">Configure connector to browse tables</span>
+  {:else if isLoading && queryEnabled}
     <span class="message pl-6">Loading tables...</span>
-  {:else if error}
+  {:else if error && queryEnabled}
     <span class="message pl-6"
       >Error: {error.message || error.response?.data?.message}</span
     >
@@ -40,13 +51,7 @@
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
-          <DatabaseEntry
-            {instanceId}
-            {connector}
-            {database}
-            {store}
-            useNewAPI={shouldUseNewAPI}
-          />
+          <DatabaseEntry {instanceId} {connector} {database} {store} />
         {/each}
       </ol>
     {/if}
@@ -60,6 +65,6 @@
 
   .message {
     @apply pr-3.5 py-2; /* left-padding is set inline above */
-    @apply text-gray-500;
+    @apply text-fg-secondary;
   }
 </style>

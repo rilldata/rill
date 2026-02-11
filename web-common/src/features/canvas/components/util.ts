@@ -1,18 +1,19 @@
 import {
-  getChartComponent,
-  type ChartSpec,
+  getCanvasChartComponent,
+  type CanvasChartSpec,
 } from "@rilldata/web-common/features/canvas/components/charts";
-import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
-import type {
-  V1MetricsViewSpec,
-  V1Resource,
+import {
+  type V1ComponentSpec,
+  type V1MetricsViewSpec,
+  type V1ResolveCanvasResponseResolvedComponents,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { BaseCanvasComponent } from "./BaseCanvasComponent";
@@ -25,6 +26,18 @@ import type {
   ComponentCommonProperties,
   ComponentSpec,
 } from "./types";
+import ChartIcon from "@rilldata/web-common/features/canvas/icons/ChartIcon.svelte";
+import TableIcon from "@rilldata/web-common/features/canvas/icons/TableIcon.svelte";
+import TextIcon from "@rilldata/web-common/features/canvas/icons/TextIcon.svelte";
+import BigNumberIcon from "@rilldata/web-common/features/canvas/icons/BigNumberIcon.svelte";
+import LeaderboardIcon from "@rilldata/web-common/features/canvas/icons/LeaderboardIcon.svelte";
+import {
+  CHART_CONFIG,
+  type ChartMetadataConfig,
+} from "@rilldata/web-common/features/components/charts/config.ts";
+import { readable } from "svelte/store";
+import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
+import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
@@ -44,6 +57,15 @@ export const commonOptions: Record<
     label: "Description",
     meta: {
       placeholder: "Add additional context for this component",
+    },
+  },
+  show_description_as_tooltip: {
+    type: "boolean",
+    optional: true,
+    showInUI: true,
+    label: "Show description as tooltip",
+    meta: {
+      layout: "grouped",
     },
   },
 };
@@ -71,6 +93,8 @@ const CHART_TYPES = [
   "pie_chart",
   "heatmap",
   "funnel_chart",
+  "combo_chart",
+  "scatter_plot",
 ] as const;
 const NON_CHART_TYPES = [
   "markdown",
@@ -112,10 +136,16 @@ const baseComponentMap = {
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
 } as const;
+const IconMap = {
+  markdown: TextIcon,
+  kpi_grid: BigNumberIcon,
+  leaderboard: LeaderboardIcon,
+  table: TableIcon,
+};
 
 const chartComponentMap = Object.fromEntries(
-  CHART_TYPES.map((type) => [type, getChartComponent(type)]),
-) as Record<ChartType, BaseCanvasComponentConstructor<ChartSpec>>;
+  CHART_TYPES.map((type) => [type, getCanvasChartComponent(type)]),
+) as Record<ChartType, BaseCanvasComponentConstructor<CanvasChartSpec>>;
 
 export const COMPONENT_CLASS_MAP = {
   ...baseComponentMap,
@@ -183,12 +213,52 @@ export function getHeaderForComponent(
   return DISPLAY_MAP[componentType] || "Component";
 }
 
+const rowColMatcher = /-(\d+)-(\d+)$/;
+export function getLabelForComponent(
+  componentName: string,
+  componentSpec: V1ComponentSpec | undefined,
+  metricsViewSpec: V1MetricsViewSpec | undefined,
+) {
+  const renderer = componentSpec?.renderer as CanvasComponentType | undefined;
+  const chartSpec = componentSpec?.rendererProperties as ChartSpec | undefined;
+  if (!renderer || !chartSpec) return componentName;
+
+  if (CHART_CONFIG[renderer]?.provider) {
+    const providerClass: ChartMetadataConfig["provider"] =
+      CHART_CONFIG[renderer].provider;
+    const provider = new providerClass(readable(chartSpec));
+
+    const fields = getFieldsForSpec(chartSpec, metricsViewSpec ?? {});
+
+    return provider.chartTitle(fields);
+  }
+
+  const userDefinedTitle =
+    (componentSpec?.rendererProperties?.title as string | undefined) ||
+    componentSpec?.displayName;
+  if (userDefinedTitle) return userDefinedTitle;
+  const header = getHeaderForComponent(renderer);
+
+  const rowColMatch = rowColMatcher.exec(componentName);
+  if (!rowColMatch) return header;
+  const rowCount = Number(rowColMatch[1]) + 1;
+  const colCount = Number(rowColMatch[2]) + 1;
+  const rowColPart = ` at Row: ${rowCount}, Col: ${colCount}`;
+
+  return header + rowColPart;
+}
+
+export function getIconForComponent(componentType: CanvasComponentType | null) {
+  if (!componentType) return ChartIcon;
+  return IconMap[componentType] || ChartIcon;
+}
+
 export function getComponentMetricsViewFromSpec(
   componentName: string | undefined,
-  spec: CanvasResponse | undefined,
+  components: V1ResolveCanvasResponseResolvedComponents | undefined,
 ): string | undefined {
   if (!componentName) return undefined;
-  const resource = spec?.components?.[componentName]?.component;
+  const resource = components?.[componentName]?.component;
 
   if (resource) {
     return resource?.state?.validSpec?.rendererProperties?.metrics_view as

@@ -1,16 +1,15 @@
+import { splitDimensionsAndMeasuresAsRowsAndColumns } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
 import { getDimensionNameFromAggregationDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
-import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
-import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
+import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
   mapV1TimeRangeToSelectedComparisonTimeRange,
   mapV1TimeRangeToSelectedTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
-import { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
-import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import {
   getExistingScheduleFormValues,
   getInitialScheduleFormValues,
@@ -29,6 +28,10 @@ import {
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 
+export enum ReportRunAs {
+  Recipient = "recipient",
+  Creator = "creator",
+}
 export type ReportValues = ReturnType<typeof getNewReportInitialFormValues>;
 
 export function getQueryNameFromQuery(query: V1Query) {
@@ -47,6 +50,7 @@ export function getNewReportInitialFormValues(
 ) {
   return {
     title: "",
+    webOpenMode: ReportRunAs.Creator as string,
     ...getInitialScheduleFormValues(),
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
     exportLimit: "",
@@ -63,6 +67,8 @@ export function getExistingReportInitialFormValues(
 ) {
   return {
     title: reportSpec.displayName ?? "",
+    webOpenMode:
+      reportSpec.annotations?.web_open_mode || (ReportRunAs.Creator as string),
     ...getExistingScheduleFormValues(reportSpec.refreshSchedule),
     exportFormat:
       reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
@@ -146,44 +152,21 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
 export function extractRowsAndColumns(
   aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
-  const pivotedOn = new Set<string>(aggregationRequest.pivotOn ?? []);
-  const isFlat = aggregationRequest.pivotOn === undefined;
+  const { rows, dimensionColumns, measureColumns } =
+    splitDimensionsAndMeasuresAsRowsAndColumns(aggregationRequest);
 
-  const rows =
-    aggregationRequest.dimensions
-      ?.filter(
-        (dimension) =>
-          !isFlat &&
-          !pivotedOn.has(dimension.alias!) &&
-          !pivotedOn.has(dimension.name!),
-      )
-      .map((dimension) =>
-        getDimensionNameFromAggregationDimension(dimension),
-      ) ?? [];
+  const rowFields = rows.map((dimension) =>
+    getDimensionNameFromAggregationDimension(dimension),
+  );
 
-  const columnsFromDimensions =
-    aggregationRequest.dimensions
-      ?.filter(
-        (dimension) =>
-          isFlat ||
-          pivotedOn.has(dimension.alias!) ||
-          pivotedOn.has(dimension.name!),
-      )
-      .map((dimension) =>
-        getDimensionNameFromAggregationDimension(dimension),
-      ) ?? [];
+  const columnsFromDimensions = dimensionColumns.map((dimension) =>
+    getDimensionNameFromAggregationDimension(dimension),
+  );
 
-  const columnsFromMeasures =
-    aggregationRequest.measures
-      ?.filter(
-        (measure) =>
-          !MeasureModifierSuffixRegex.test(measure.name!) &&
-          !ComparisonModifierSuffixRegex.test(measure.name!),
-      )
-      .map((measure) => measure.name!) ?? [];
+  const columnsFromMeasures = measureColumns.map((measure) => measure.name!);
 
   return {
-    rows,
+    rows: rowFields,
     columns: [...columnsFromDimensions, ...columnsFromMeasures],
   };
 }

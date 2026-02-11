@@ -12,6 +12,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -21,6 +22,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Deprecated: See details in api.proto.
@@ -100,13 +103,14 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 // ListDeployments returns a list of deployments for a given project.
 func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymentsRequest) (*adminv1.ListDeploymentsResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization_name", req.OrganizationName),
-		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.organization_name", req.Org),
+		attribute.String("args.project_name", req.Project),
 		attribute.String("args.environment", req.Environment),
+		attribute.String("args.branch", req.Branch),
 		attribute.String("args.user_id", req.UserId),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -118,7 +122,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
+	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, req.Environment, req.Branch)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -130,9 +134,6 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 			continue
 		}
 		if d.Environment == "dev" && !permissions.ReadDev {
-			continue
-		}
-		if req.Environment != "" && req.Environment != d.Environment {
 			continue
 		}
 		if req.UserId != "" && d.OwnerUserID != nil && req.UserId != *d.OwnerUserID {
@@ -182,9 +183,15 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	}
 
 	var attr map[string]any
+	var restrictResources bool
+	var resources []database.ResourceName
 	if req.For == nil {
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
+			if err != nil {
+				return nil, err
+			}
+			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
 			if err != nil {
 				return nil, err
 			}
@@ -202,12 +209,12 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentRequest_UserId:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
+			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetDeploymentRequest_UserEmail:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
+			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
@@ -223,29 +230,32 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
-	instancePermissions := []runtimeauth.Permission{
-		runtimeauth.ReadObjects,
-		runtimeauth.ReadMetrics,
-		runtimeauth.ReadAPI,
-		runtimeauth.UseAI,
+	// get resource level security rules if applicable
+	rules := securityRulesFromResources(restrictResources, resources)
+
+	instancePermissions := []runtime.Permission{
+		runtime.ReadObjects,
+		runtime.ReadMetrics,
+		runtime.ReadAPI,
+		runtime.UseAI,
 	}
 	if depl.Environment == "dev" {
 		instancePermissions = append(instancePermissions,
-			runtimeauth.ReadOLAP,
-			runtimeauth.ReadProfiling,
-			runtimeauth.ReadRepo,
-			runtimeauth.ReadResolvers,
+			runtime.ReadOLAP,
+			runtime.ReadProfiling,
+			runtime.ReadRepo,
+			runtime.ReadResolvers,
 		)
 		if permissions.ManageDev {
 			instancePermissions = append(instancePermissions,
-				runtimeauth.EditRepo,
-				runtimeauth.EditTrigger,
+				runtime.EditRepo,
+				runtime.EditTrigger,
 			)
 		}
 	} else if permissions.ManageProd {
 		instancePermissions = append(instancePermissions,
-			runtimeauth.ReadResolvers,
-			runtimeauth.EditTrigger,
+			runtime.ReadResolvers,
+			runtime.EditTrigger,
 		)
 	}
 
@@ -254,10 +264,11 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			depl.RuntimeInstanceID: instancePermissions,
 		},
-		Attributes: attr,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
@@ -276,12 +287,14 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 // CreateDeployment creates a new deployment for a project.
 func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploymentRequest) (*adminv1.CreateDeploymentResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization_name", req.OrganizationName),
-		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.organization_name", req.Org),
+		attribute.String("args.project_name", req.Project),
 		attribute.String("args.environment", req.Environment),
+		attribute.String("args.branch", req.Branch),
+		attribute.Bool("args.editable", req.Editable),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -299,29 +312,48 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		}
 	}
 
-	// We only allow one prod deployment.
-	if req.Environment == "prod" && proj.ProdDeploymentID != nil {
-		return nil, status.Error(codes.InvalidArgument, "project already has a prod deployment, cannot create a new prod deployment")
-	}
-
 	// Determine branch and slots based on environment.
 	var branch string
+	var autogeneratedBranch bool
 	var slots int
 	switch req.Environment {
 	case "prod":
-		branch = ""
+		if req.Branch != "" {
+			branch = req.Branch
+		} else {
+			branch = proj.PrimaryBranch
+		}
+		if req.Editable {
+			return nil, status.Error(codes.InvalidArgument, "editable cannot be set for prod deployments")
+		}
 		slots = proj.ProdSlots
 	case "dev":
-		// Generate a random branch name for dev deployments
-		b := make([]byte, 8)
-		_, err := rand.Read(b)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+		if req.Branch != "" {
+			branch = req.Branch
+		} else {
+			autogeneratedBranch = true
+			// Generate a random branch name for dev deployments
+			b := make([]byte, 8)
+			_, err := rand.Read(b)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
 		}
-		branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
 		slots = proj.DevSlots
 	default:
 		return nil, status.Error(codes.InvalidArgument, "invalid environment specified, must be 'prod' or 'dev'")
+	}
+
+	if !autogeneratedBranch {
+		// only one deployment per branch allowed
+		depl, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", branch)
+		if err != nil {
+			return nil, err
+		}
+		if len(depl) > 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "another deployment for the specified branch %q already exists in %q environment", branch, depl[0].Environment)
+		}
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -351,32 +383,24 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		ownerUserID = &id
 	}
 
-	vars, err := s.admin.ResolveVariables(ctx, proj.ID, req.Environment, true)
-	if err != nil {
-		return nil, err
-	}
-
 	depl, err := s.admin.CreateDeployment(ctx, &admin.CreateDeploymentOptions{
 		ProjectID:   proj.ID,
 		OwnerUserID: ownerUserID,
 		Environment: req.Environment,
-		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
 		Branch:      branch,
-		Provisioner: proj.Provisioner,
-		Slots:       slots,
-		Version:     proj.ProdVersion,
-		Variables:   vars,
+		Editable:    req.Editable,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if depl.Environment == "prod" {
+	if depl.Environment == "prod" && proj.PrimaryBranch == branch {
 		// If this is a prod deployment, we update the prod deployment on project
 		_, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
 			Name:                 proj.Name,
 			Description:          proj.Description,
 			Public:               proj.Public,
+			DirectoryName:        proj.DirectoryName,
 			Provisioner:          proj.Provisioner,
 			ArchiveAssetID:       proj.ArchiveAssetID,
 			GitRemote:            proj.GitRemote,
@@ -384,9 +408,9 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			GithubRepoID:         proj.GithubRepoID,
 			ManagedGitRepoID:     proj.ManagedGitRepoID,
 			ProdVersion:          proj.ProdVersion,
-			ProdBranch:           proj.ProdBranch,
+			PrimaryBranch:        proj.PrimaryBranch,
 			Subpath:              proj.Subpath,
-			ProdDeploymentID:     &depl.ID,
+			PrimaryDeploymentID:  &depl.ID,
 			ProdSlots:            proj.ProdSlots,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			DevSlots:             proj.DevSlots,
@@ -431,33 +455,7 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 		}
 	}
 
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	var slots int
-	switch depl.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		return nil, status.Error(codes.InvalidArgument, "invalid environment, must be 'prod' or 'dev'")
-	}
-
-	vars, err := s.admin.ResolveVariables(ctx, proj.ID, depl.Environment, true)
-	if err != nil {
-		return nil, err
-	}
-
-	depl, err = s.admin.StartDeployment(ctx, depl, &admin.StartDeploymentOptions{
-		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
-		Provisioner: proj.Provisioner,
-		Slots:       slots,
-		Version:     proj.ProdVersion,
-		Variables:   vars,
-	})
+	depl, err = s.admin.StartDeployment(ctx, depl)
 	if err != nil {
 		return nil, err
 	}
@@ -546,22 +544,22 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploy
 // GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
 func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetDeploymentCredentialsRequest) (*adminv1.GetDeploymentCredentialsResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.branch", req.Branch),
 		attribute.String("args.ttl_seconds", strconv.FormatUint(uint64(req.TtlSeconds), 10)),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
 	}
 
-	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -578,15 +576,29 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	}
 
 	var attr map[string]any
-	if req.For != nil {
-		switch forVal := req.For.(type) {
-		case *adminv1.GetDeploymentCredentialsRequest_UserId:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
+	var restrictResources bool
+	var resources []database.ResourceName
+	if req.For == nil {
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return nil, err
 			}
+			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		switch forVal := req.For.(type) {
+		case *adminv1.GetDeploymentCredentialsRequest_UserId:
+			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
+			if err != nil {
+				return nil, err
+			}
+
 		case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
+			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
@@ -602,20 +614,24 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
 
+	// get resource level security rules if applicable
+	rules := securityRulesFromResources(restrictResources, resources)
+
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
-				runtimeauth.UseAI,
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
+				runtime.UseAI,
 			},
 		},
-		Attributes: attr,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
@@ -633,7 +649,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 
 func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (*adminv1.GetIFrameResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.branch", req.Branch),
 		attribute.String("args.type", req.Type),
@@ -647,19 +663,20 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, status.Error(codes.InvalidArgument, "resource must be provided if navigation is not enabled")
 	}
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
 	}
 
-	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	s.admin.Used.Deployment(prodDepl.ID)
 
 	if req.Branch != "" && req.Branch != prodDepl.Branch {
 		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment for given branch")
@@ -672,16 +689,30 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
+	// Get user attributes to pass in the JWT
 	var attr map[string]any
-	if req.For != nil {
+	var restrictResources bool
+	var resources []database.ResourceName
+	if req.For == nil {
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
+			if err != nil {
+				return nil, err
+			}
+			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetIFrameRequest_UserId:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
+			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetIFrameRequest_UserEmail:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
+			attr, restrictResources, resources, err = s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
@@ -692,6 +723,43 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}
 	}
 
+	// Add an `embed` attribute for use in security policies or feature flags (as `{{.user.embed}}`).
+	if _, ok := attr["embed"]; !ok {
+		if attr == nil {
+			attr = make(map[string]any)
+		}
+		attr["embed"] = true
+	}
+
+	// Backwards compatibility for req.Type and req.Kind
+	if req.Kind != "" { // nolint:staticcheck // For backwards compatibility
+		req.Type = req.Kind // nolint:staticcheck // For backwards compatibility
+	}
+	if req.Type == "" {
+		// Default to an explore if no type is explicitly provided
+		req.Type = runtime.ResourceKindExplore
+	}
+	req.Type = runtime.ResourceKindFromShorthand(req.Type)
+
+	var rules []*runtimev1.SecurityRule
+	// If navigation is disabled and a specific resource is requested, limit access to only that resource.
+	if !req.Navigation && req.Resource != "" {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_TransitiveAccess{
+				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+					Resource: &runtimev1.ResourceName{
+						Kind: req.Type,
+						Name: req.Resource,
+					},
+				},
+			},
+		})
+	} else {
+		// get resource level security rules if navigation is enabled
+		rules = append(rules, securityRulesFromResources(restrictResources, resources)...)
+	}
+
+	// Determine TTL for the access token
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
@@ -702,38 +770,30 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
-				runtimeauth.UseAI,
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
+				runtime.UseAI,
 			},
 		},
-		Attributes: attr,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
-	s.admin.Used.Deployment(prodDepl.ID)
-
+	// Build the iframe URL search params
 	iframeQuery := map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
 	}
 
-	if req.Kind != "" { // nolint:staticcheck // For backwards compatibility
-		req.Type = req.Kind // nolint:staticcheck // For backwards compatibility
-	}
-	if req.Type == "" {
-		// Default to an explore if no type is explicitly provided
-		req.Type = runtime.ResourceKindExplore
-	}
-	req.Type = runtime.ResourceKindFromShorthand(req.Type)
 	iframeQuery["type"] = req.Type
-	iframeQuery["kind"] = iframeQuery["type"] // For backwards compatibility
+	iframeQuery["kind"] = req.Type // For backwards compatibility
 
 	if req.Resource != "" {
 		iframeQuery["resource"] = req.Resource
@@ -741,6 +801,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	if req.Theme != "" {
 		iframeQuery["theme"] = req.Theme
+	}
+
+	if req.ThemeMode != "" {
+		iframeQuery["theme_mode"] = req.ThemeMode
 	}
 
 	if req.Navigation {
@@ -769,17 +833,157 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}, nil
 }
 
-// getAttributesFor returns a map of attributes for a given user and project.
+func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploymentConfigRequest) (*adminv1.GetDeploymentConfigResponse, error) {
+	// If the deployment ID is not provided, attempt to infer it from the access token.
+	claims := auth.GetClaims(ctx)
+	if req.DeploymentId == "" {
+		if claims.OwnerType() == auth.OwnerTypeDeployment {
+			req.DeploymentId = claims.OwnerID()
+		} else {
+			return nil, status.Error(codes.InvalidArgument, "missing deployment_id")
+		}
+	}
+
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
+
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the runtime provisioned for this deployment
+	pr, ok, err := s.admin.FindProvisionedRuntimeResource(ctx, depl.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if depl.Environment == "prod" {
+		if !permissions.ReadProdStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+		}
+	} else {
+		if !permissions.ReadDevStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+		}
+	}
+
+	resp := &adminv1.GetDeploymentConfigResponse{
+		UpdatedOn:   timestamppb.New(depl.UpdatedOn),
+		UsesArchive: proj.ArchiveAssetID != nil,
+	}
+	vars, err := s.admin.ResolveVariables(ctx, depl.ProjectID, depl.Environment)
+	if err != nil {
+		return nil, err
+	}
+	resp.Variables = vars
+
+	// parsing duckdb connector config
+	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "invalid runtime config: %v", err)
+	}
+	configStruct, err := rCfg.DuckdbConfig().AsMap()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to decode DuckDB connector config: %v", err)
+	}
+	configStructPb, err := structpb.NewStruct(configStruct)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to encode DuckDB connector config: %v", err)
+	}
+	resp.DuckdbConnectorConfig = configStructPb
+
+	annotations := s.admin.NewDeploymentAnnotations(org, proj)
+	resp.Annotations = annotations.ToMap()
+
+	resp.FrontendUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
+	return resp, nil
+}
+
+// getResourceRestrictionsForUser returns resource restrictions for a given user and project.
+func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
+	mu, err := s.admin.DB.FindProjectMemberUser(ctx, projID, userID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return false, nil, err
+	}
+	mug, err := s.admin.DB.FindProjectMemberUsergroupsForUser(ctx, projID, userID)
+	if err != nil {
+		return false, nil, err
+	}
+	restrictResources := mu != nil || len(mug) > 0
+	var resources []database.ResourceName
+	if mu != nil {
+		restrictResources = restrictResources && mu.RestrictResources
+		resources = append(resources, mu.Resources...)
+	}
+	if len(mug) > 0 {
+		for _, g := range mug {
+			restrictResources = restrictResources && g.RestrictResources
+			resources = append(resources, g.Resources...)
+		}
+	}
+
+	var mergedResources []database.ResourceName
+	seen := make(map[database.ResourceName]struct{})
+	for _, r := range resources {
+		if _, ok := seen[r]; !ok {
+			seen[r] = struct{}{}
+			mergedResources = append(mergedResources, r)
+		}
+	}
+
+	return restrictResources, mergedResources, nil
+}
+
+// getAttributesAndResourceRestrictionsForUser returns a map of attributes and resource restrictions for a given user and project.
 // The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
 // NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
-func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, error) {
+func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, bool, []database.ResourceName, error) {
+	attr, userID, err := s.getAttributesForUser(ctx, orgID, projID, userID, userEmail)
+	if err != nil {
+		return nil, false, nil, err
+	}
+
+	if userID == "" {
+		return attr, false, nil, nil
+	}
+
+	// Determine resource restrictions from project member and usergroups
+	restrictResources, resources, err := s.getResourceRestrictionsForUser(ctx, projID, userID)
+	if err != nil {
+		return nil, false, nil, err
+	}
+
+	return attr, restrictResources, resources, nil
+}
+
+// getAttributesForUser returns a map of attributes for a given user and project and the userID.
+// The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
+// NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
+func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, string, error) {
 	if userID == "" && userEmail == "" {
-		return nil, errors.New("must provide either userID or userEmail")
+		return nil, "", errors.New("must provide either userID or userEmail")
 	}
 
 	if userEmail != "" {
 		if userID != "" {
-			return nil, errors.New("must provide either userID or userEmail, not both")
+			return nil, "", errors.New("must provide either userID or userEmail, not both")
 		}
 
 		user, err := s.admin.DB.FindUserByEmail(ctx, userEmail)
@@ -792,9 +996,9 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 					"email":  userEmail,
 					"domain": userEmail[strings.LastIndex(userEmail, "@")+1:],
 					"admin":  false,
-				}, nil
+				}, "", nil
 			}
-			return nil, err
+			return nil, "", err
 		}
 
 		userID = user.ID
@@ -802,18 +1006,18 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 
 	forOrgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, userID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	forProjPerms, err := s.admin.ProjectPermissionsForUser(ctx, projID, userID, forOrgPerms)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	attr, err := s.jwtAttributesForUser(ctx, userID, orgID, forProjPerms)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return attr, nil
+	return attr, userID, nil
 }

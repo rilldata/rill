@@ -23,13 +23,14 @@ export const httpClient = async <T>(
 ): Promise<T> => {
   // Naive request interceptors
 
+  const interceptedConfig = { ...config };
   // Set host
   const host = get(runtime).host;
-  const interceptedConfig = { ...config, baseUrl: host };
+  if (host) interceptedConfig.baseUrl = host;
 
   // Set JWT
   let jwt = get(runtime).jwt;
-  if (jwt && jwt.token) {
+  if (jwt && jwt.token && !interceptedConfig.headers?.["Authorization"]) {
     jwt = await maybeWaitForFreshJWT(jwt);
     interceptedConfig.headers = {
       ...interceptedConfig.headers,

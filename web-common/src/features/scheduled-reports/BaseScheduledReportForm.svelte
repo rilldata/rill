@@ -8,7 +8,10 @@
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
-  import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils";
+  import {
+    ReportRunAs,
+    type ReportValues,
+  } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -28,6 +31,23 @@
   export let exploreName: string;
   export let filters: Filters;
   export let timeControls: TimeControls;
+
+  const RUN_AS_OPTIONS = [
+    {
+      value: ReportRunAs.Creator,
+      label: "Creator",
+      description:
+        "Works for any recipient, including external recipient. It does NOT grant access beyond the report’s filters and dashboard.",
+    },
+    {
+      value: ReportRunAs.Recipient,
+      label: "Recipient",
+      description: "Does NOT work for non-project members.",
+    },
+  ];
+  $: selectedRunAsOption = RUN_AS_OPTIONS.find(
+    (o) => o.value === $data["webOpenMode"],
+  );
 
   $: ({ instanceId } = $runtime);
 
@@ -50,6 +70,18 @@
       label="Report title"
       placeholder="My report"
     />
+    <Select
+      bind:value={$data["webOpenMode"]}
+      id="webOpenMode"
+      label="Run as"
+      options={RUN_AS_OPTIONS}
+      dropdownWidth="w-[400px]"
+    />
+    {#if selectedRunAsOption}
+      <div>
+        {selectedRunAsOption.description}
+      </div>
+    {/if}
     <ScheduleForm {data} {exploreName} />
     <Select
       bind:value={$data["exportFormat"]}
@@ -82,7 +114,7 @@
         label="Include metadata"
       />
       <Tooltip location="right" alignment="middle" distance={8}>
-        <div class="text-gray-500" style="transform:translateY(-.5px)">
+        <div class="text-fg-secondary" style="transform:translateY(-.5px)">
           <InfoCircle size="13px" />
         </div>
         <TooltipContent maxWidth="400px" slot="tooltip-content">
@@ -94,7 +126,7 @@
 
     <div class="flex flex-col gap-y-3">
       <InputLabel label="Filters" id="filters" capitalize={false} />
-      <FiltersForm {filters} {timeControls} maxWidth={750} side="top" />
+      <FiltersForm {filters} {timeControls} side="top" />
     </div>
 
     <RowsAndColumnsForm
@@ -147,9 +179,9 @@
     {:else}
       <FormSection title="Slack notifications" padding="">
         <svelte:fragment slot="description">
-          <span class="text-sm text-slate-600">
+          <span class="text-sm text-fg-secondary">
             Slack has not been configured for this project. Read the <a
-              href="https://docs.rilldata.com/explore/alerts/slack"
+              href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets"
               target="_blank"
             >
               docs

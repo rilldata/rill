@@ -1,7 +1,7 @@
 compiler: rillv1
 
-title: Open RTB Ads
-description: Open RTB Ads
+display_name: OpenRTB Ad Analytics
+description: Monitor and analyze OpenRTB ad auction performance, including bid rates, win rates, and programmatic advertising metrics
 
 mock_users:
 - email: someone@rilldata.com
@@ -11,3 +11,10 @@ mock_users:
   groups:
     - partners
 - email: test@domain.com
+
+ai_connector: mock_ai
+
+features:
+  chat: true
+  cloudDataViewer: true
+  reports: '{{not (.user.embed)}}'

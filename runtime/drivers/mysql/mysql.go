@@ -7,6 +7,7 @@ import (
 	"maps"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -15,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -25,57 +27,89 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "MySQL",
 	Description: "Connect to MySQL.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/mysql",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/mysql",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Placeholder: "mysql://user:password@host:3306/my-db",
-			Secret:      true,
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from MySQL.",
-			Placeholder: "select * from table;",
-		},
-		{
-			Key:         "dsn",
-			Type:        drivers.StringPropertyType,
 			DisplayName: "MySQL Connection String",
-			Required:    false,
+			Required:    true,
 			DocsURL:     "https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri",
 			Placeholder: "mysql://user:password@host:3306/my-db",
 			Hint:        "Can be configured here or by setting the 'connector.mysql.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,
 		},
 		{
-			Key:         "name",
+			Key:         "user",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
+			DisplayName: "Username",
+			Placeholder: "mysql",
 			Required:    true,
+			Hint:        "MySQL username for authentication",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Placeholder: "your_password",
+			Hint:        "MySQL password for authentication",
+			Secret:      true,
+		},
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Host",
+			Placeholder: "localhost",
+			Required:    true,
+			Hint:        "MySQL server hostname or IP address",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Port",
+			Placeholder: "3306",
+			Default:     "3306",
+			Hint:        "MySQL server port (default is 3306)",
+		},
+
+		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Placeholder: "your_database",
+			Required:    true,
+			Hint:        "Name of the MySQL database to connect to",
+		},
+		{
+			Key:         "ssl-mode",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "SSL Mode",
+			Placeholder: "require",
+			Hint:        "Options include disabled, preferred or required",
+		},
+		{
+			Key:         "log_queries",
+			Type:        drivers.BooleanPropertyType,
+			DisplayName: "Log Queries",
+			Default:     "false",
+			Hint:        "Enable logging of all SQL queries (useful for debugging)",
 		},
 	},
 	ImplementsSQLStore: true,
+	ImplementsOLAP:     true,
 }
 
 type driver struct{}
 
 type ConfigProperties struct {
-	DSN      string `mapstructure:"dsn"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Database string `mapstructure:"database"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	SSLMode  string `mapstructure:"ssl_mode"`
+	DSN        string `mapstructure:"dsn"`
+	Host       string `mapstructure:"host"`
+	Port       int    `mapstructure:"port"`
+	Database   string `mapstructure:"database"`
+	User       string `mapstructure:"user"`
+	Password   string `mapstructure:"password"`
+	SSLMode    string `mapstructure:"ssl-mode"`
+	LogQueries bool   `mapstructure:"log_queries"`
 }
 
 func (c *ConfigProperties) ResolveDSN() (string, error) {
@@ -107,21 +141,34 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 	if c.Database != "" {
 		path = "/" + c.Database
 	}
+	u := &url.URL{
+		Scheme: "mysql",
+		User:   userInfo,
+		Host:   host,
+		Path:   path,
+	}
 
+	dsn := enocodeExtra(u.String())
 	query := url.Values{}
 	if c.SSLMode != "" {
 		query.Set("ssl-mode", c.SSLMode)
+		dsn = fmt.Sprintf("%s?%s", dsn, query.Encode())
 	}
+	return dsn, nil
+}
 
-	u := &url.URL{
-		Scheme:   "mysql",
-		User:     userInfo,
-		Host:     host,
-		Path:     path,
-		RawQuery: query.Encode(),
+// enocodeExtra convert & and = in the string to it's hex code. Required because duckdb does not handle properly.
+func enocodeExtra(s string) string {
+	var buf strings.Builder
+	for i := 0; i < len(s); i++ {
+		b := s[i]
+		if b == '&' || b == '=' {
+			buf.WriteString(fmt.Sprintf("%%%02X", b))
+		} else {
+			buf.WriteByte(b)
+		}
 	}
-
-	return u.String(), nil
+	return buf.String()
 }
 
 func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
@@ -158,15 +205,13 @@ func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
 		return "", fmt.Errorf("unsupported ssl-mode: %s", sslMode)
 	}
 
-	cfg := mysql.Config{
-		User:      user,
-		Passwd:    pass,
-		Net:       "tcp",
-		Addr:      addr,
-		DBName:    dbName,
-		TLSConfig: tlsConfig,
-	}
-
+	cfg := mysql.NewConfig()
+	cfg.User = user
+	cfg.Passwd = pass
+	cfg.Net = "tcp"
+	cfg.Addr = addr
+	cfg.DBName = dbName
+	cfg.TLSConfig = tlsConfig
 	return cfg.FormatDSN(), nil
 }
 
@@ -175,8 +220,16 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("mysql driver can't be shared")
 	}
 
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(config, conf); err != nil {
+		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
 	return &connection{
-		config: config,
+		config:     config,
+		logger:     logger,
+		logQueries: conf.LogQueries,
+		dbMu:       semaphore.NewWeighted(1),
 	}, nil
 }
 
@@ -193,17 +246,21 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	config map[string]any
+	config     map[string]any
+	logger     *zap.Logger
+	logQueries bool
+
+	db    *sqlx.DB // lazily populated using getDB
+	dbErr error
+	dbMu  *semaphore.Weighted
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	// Open DB handle
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to open connection: %w", err)
+		return fmt.Errorf("failed to open MySQL connection: %w", err)
 	}
-	defer db.Close()
 	return db.PingContext(ctx)
 }
 
@@ -229,6 +286,9 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	if c.db != nil {
+		return c.db.Close()
+	}
 	return nil
 }
 
@@ -259,7 +319,7 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -273,13 +333,13 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsFileStore implements drivers.Connection.
@@ -297,19 +357,35 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// getDB opens a new sqlx.DB connection using the config.
-func (c *connection) getDB() (*sqlx.DB, error) {
-	conf := &ConfigProperties{}
-	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
-		return nil, fmt.Errorf("failed to decode config: %w", err)
-	}
-	dsn, err := conf.resolveGoFormatDSN()
+// getDB lazily initializes and returns a database connection.
+func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
+	err := c.dbMu.Acquire(ctx, 1)
 	if err != nil {
 		return nil, err
 	}
-	db, err := sqlx.Open("mysql", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
+	defer c.dbMu.Release(1)
+
+	if c.db != nil || c.dbErr != nil {
+		return c.db, c.dbErr
 	}
-	return db, nil
+
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
+		c.dbErr = fmt.Errorf("failed to decode config: %w", err)
+		return nil, c.dbErr
+	}
+
+	dsn, err := conf.resolveGoFormatDSN()
+	if err != nil {
+		c.dbErr = err
+		return nil, c.dbErr
+	}
+
+	c.db, c.dbErr = sqlx.Open("mysql", dsn)
+	if c.dbErr != nil {
+		return nil, c.dbErr
+	}
+	c.db.SetConnMaxIdleTime(time.Minute)
+
+	return c.db, nil
 }

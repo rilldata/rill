@@ -14,17 +14,13 @@ export function withinOrganization(page: Page): boolean {
 }
 
 export function isProjectPage(page: Page): boolean {
+  const routeId = page.route?.id;
+  if (!routeId) return false;
   return (
-    page.route.id === "/[organization]/[project]" ||
-    page.route.id === "/[organization]/[project]/-/reports" ||
-    page.route.id === "/[organization]/[project]/-/alerts" ||
-    page.route.id === "/[organization]/[project]/-/ai" ||
-    page.route.id === "/[organization]/[project]/-/status" ||
-    page.route.id === "/[organization]/[project]/-/settings" ||
-    page.route.id === "/[organization]/[project]/-/settings/public-urls" ||
-    page.route.id ===
-      "/[organization]/[project]/-/settings/environment-variables" ||
-    !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
+    routeId === "/[organization]/[project]" ||
+    (routeId.startsWith("/[organization]/[project]/-/") &&
+      !routeId.startsWith("/[organization]/[project]/-/invite") &&
+      !routeId.startsWith("/[organization]/[project]/-/share"))
   );
 }
 
@@ -72,7 +68,8 @@ export function isPublicURLPage(page: Page): boolean {
 
   return (
     page.route.id.startsWith("/[organization]/[project]/-/share/[token]") ||
-    isPublicReportPage(page)
+    isPublicReportPage(page) ||
+    isPublicAlertPage(page)
   );
 }
 
@@ -81,6 +78,13 @@ export function isPublicReportPage(page: Page): boolean {
     !!page.route.id?.startsWith(
       "/[organization]/[project]/-/reports/[report]",
     ) && page.url.searchParams.has("token")
+  );
+}
+
+export function isPublicAlertPage(page: Page): boolean {
+  return (
+    !!page.route.id?.startsWith("/[organization]/[project]/-/alerts/[alert]") &&
+    page.url.searchParams.has("token")
   );
 }
 

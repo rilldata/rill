@@ -1,7 +1,12 @@
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { DateTimeUnit } from "luxon";
+import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import type { DateTimeUnit, Interval } from "luxon";
 
-type TimeGrainAlias =
+const MAX_BUCKETS = 1500;
+
+type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
+
+export type TimeGrainAlias =
   | "ms"
   | "MS"
   | "s"
@@ -57,23 +62,21 @@ export function getAllowedEndingGrains(
   return getSmallerGrainsFromOrders(order, getGrainOrder(smallestTimeGrain));
 }
 
-type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | typeof Infinity;
-
 export const V1TimeGrainToOrder: Record<V1TimeGrain, Order> = {
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: 0,
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: 0,
   [V1TimeGrain.TIME_GRAIN_SECOND]: 0,
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: 1,
-  [V1TimeGrain.TIME_GRAIN_HOUR]: 2,
-  [V1TimeGrain.TIME_GRAIN_DAY]: 3,
-  [V1TimeGrain.TIME_GRAIN_WEEK]: 4,
-  [V1TimeGrain.TIME_GRAIN_MONTH]: 5,
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: 6,
-  [V1TimeGrain.TIME_GRAIN_YEAR]: 7,
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: 0,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: 1,
+  [V1TimeGrain.TIME_GRAIN_DAY]: 2,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: 3,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: 4,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: 5,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: 6,
 };
 
 export const V1TimeGrainToAlias: Record<V1TimeGrain, TimeGrainAlias> = {
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "ms",
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "m",
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "ms",
   [V1TimeGrain.TIME_GRAIN_SECOND]: "s",
   [V1TimeGrain.TIME_GRAIN_MINUTE]: "m",
@@ -86,7 +89,7 @@ export const V1TimeGrainToAlias: Record<V1TimeGrain, TimeGrainAlias> = {
 };
 
 export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "second",
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "minute",
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "millisecond",
   [V1TimeGrain.TIME_GRAIN_SECOND]: "second",
   [V1TimeGrain.TIME_GRAIN_MINUTE]: "minute",
@@ -98,6 +101,8 @@ export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
 
+export const DateTimeUnitToV1TimeGrain = reverseMap(V1TimeGrainToDateTimeUnit);
+
 export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
   const v1TimeGrain = GrainAliasToV1TimeGrain[alias];
   if (v1TimeGrain === undefined) {
@@ -106,9 +111,8 @@ export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
   return V1TimeGrainToDateTimeUnit[v1TimeGrain];
 }
 
-const allowedGrains = [
-  // V1TimeGrain.TIME_GRAIN_MILLISECOND,
-  // V1TimeGrain.TIME_GRAIN_SECOND,
+// We prevent users from aggregating by second or millisecond
+export const allowedAggregationGrains = [
   V1TimeGrain.TIME_GRAIN_MINUTE,
   V1TimeGrain.TIME_GRAIN_HOUR,
   V1TimeGrain.TIME_GRAIN_DAY,
@@ -117,6 +121,9 @@ const allowedGrains = [
   V1TimeGrain.TIME_GRAIN_QUARTER,
   V1TimeGrain.TIME_GRAIN_YEAR,
 ];
+
+const ALLOWABLE_AGGREGATION_UNITS: DateTimeUnit[] =
+  allowedAggregationGrains.map((grain) => V1TimeGrainToDateTimeUnit[grain]);
 
 export const GrainAliasToOrder: Record<TimeGrainAlias, Order> = {
   ms: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
@@ -168,17 +175,18 @@ export const GrainToOrder: Record<DateTimeUnit, Order> = {
   year: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR],
 };
 
-export function isGrainWithinMinimum(
-  grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit,
-  minimum: V1TimeGrain | TimeGrainAlias | DateTimeUnit,
+export function isGrainAllowed(
+  grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | undefined,
+  minTimeGrain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | undefined,
 ) {
+  if (!grain) return false;
+  if (!minTimeGrain) return true;
   const grainOrder = getGrainOrder(grain);
-  const minimumOrder = getGrainOrder(minimum);
+  const minimumOrder = getGrainOrder(minTimeGrain);
 
-  if (grainOrder === undefined || minimumOrder === undefined) {
-    return false;
-  }
-  return grainOrder <= minimumOrder;
+  if (grainOrder === -1) return false;
+
+  return grainOrder >= minimumOrder;
 }
 
 export function getGrainOrder(
@@ -197,11 +205,15 @@ export function getGrainOrder(
 }
 
 export function getAllowedGrainsFromOrder(order: Order) {
-  return allowedGrains.slice(order);
+  return allowedAggregationGrains.slice(order);
 }
 
 export function getLargerGrainsFromOrder(order: Order) {
-  return allowedGrains.slice(order + 1);
+  return allowedAggregationGrains.slice(order + 1);
+}
+
+export function getSmallerGrainsFromOrders(maxOrder: Order, minOrder = 0) {
+  return allowedAggregationGrains.slice(minOrder, maxOrder + 1);
 }
 
 export function getOptionsFromSmallestToLargest(
@@ -219,14 +231,11 @@ export function getOptionsFromSmallestToLargest(
   ) {
     return [];
   }
+
   return getSmallerGrainsFromOrders(
     orderOfReferenceTimeGrain,
     orderOfSmallestTimeGrain,
   );
-}
-
-export function getSmallerGrainsFromOrders(maxOrder: Order, minOrder = 0) {
-  return allowedGrains.slice(minOrder, maxOrder + 1);
 }
 
 export function getLargerGrains(grain: V1TimeGrain | TimeGrainAlias) {
@@ -284,7 +293,7 @@ export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {
     case V1TimeGrain.TIME_GRAIN_SECOND:
       return V1TimeGrain.TIME_GRAIN_MILLISECOND;
     case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return V1TimeGrain.TIME_GRAIN_SECOND;
+      return V1TimeGrain.TIME_GRAIN_MINUTE;
     case V1TimeGrain.TIME_GRAIN_HOUR:
       return V1TimeGrain.TIME_GRAIN_MINUTE;
     case V1TimeGrain.TIME_GRAIN_DAY:
@@ -296,7 +305,7 @@ export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {
     case V1TimeGrain.TIME_GRAIN_QUARTER:
       return V1TimeGrain.TIME_GRAIN_MONTH;
     case V1TimeGrain.TIME_GRAIN_YEAR:
-      return V1TimeGrain.TIME_GRAIN_QUARTER;
+      return V1TimeGrain.TIME_GRAIN_MONTH;
     default:
       return V1TimeGrain.TIME_GRAIN_MINUTE;
   }
@@ -328,4 +337,64 @@ export function getSmallestGrainFromISODuration(
       ? current
       : smallest;
   });
+}
+
+export const minTimeGrainToDefaultTimeRange: Record<V1TimeGrain, string> = {
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_HOUR]: "24h as of latest/h",
+  [V1TimeGrain.TIME_GRAIN_DAY]: "7d as of latest/d",
+  [V1TimeGrain.TIME_GRAIN_WEEK]: "4w as of latest/w",
+  [V1TimeGrain.TIME_GRAIN_MONTH]: "3M as of latest/M",
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: "4Q as of latest/Q",
+  [V1TimeGrain.TIME_GRAIN_YEAR]: "5y as of latest/Y",
+};
+
+export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
+  if (grains.length === 0) {
+    return undefined;
+  }
+
+  return grains.reduce(
+    (smallest, current) => {
+      if (!current) return smallest;
+      if (!smallest) return current;
+      return V1TimeGrainToOrder[current] < V1TimeGrainToOrder[smallest]
+        ? current
+        : smallest;
+    },
+    undefined as V1TimeGrain | undefined,
+  );
+}
+
+export function allowedGrainsForInterval(
+  interval: Interval<true> | undefined,
+  minTimeGrain?: V1TimeGrain,
+): V1TimeGrain[] {
+  minTimeGrain = minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
+  if (!interval) return [];
+
+  const validGrains = ALLOWABLE_AGGREGATION_UNITS.filter((unit) => {
+    return isGrainAllowed(unit, minTimeGrain);
+  });
+
+  const allowedGrains = validGrains
+    .filter((unit) => {
+      const grain = DateTimeUnitToV1TimeGrain[unit];
+      if (!grain) return false;
+      const bucketCount = interval.length(unit);
+
+      return (
+        bucketCount >= 1 && (bucketCount <= MAX_BUCKETS || unit === "year")
+      );
+    })
+    .map((unit) => DateTimeUnitToV1TimeGrain[unit]!);
+
+  if (allowedGrains.length) {
+    return allowedGrains;
+  } else {
+    return [minTimeGrain];
+  }
 }

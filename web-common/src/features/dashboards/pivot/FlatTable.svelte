@@ -198,23 +198,12 @@
               cell.getValue() !== undefined}
             class:text-right={getMeasureColumn(cell.column)}
             class:border-r={hasBorderRight(cell.column.id)}
+            class:total-label={cell.getValue() === "Total"}
             data-value={cell.getValue()}
             data-rowid={cell.row.id}
             data-columnid={cell.column.id}
-            on:mouseover={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
-            on:focus={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
+            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component
@@ -239,7 +228,7 @@
 
 <style lang="postcss">
   * {
-    @apply border-slate-200;
+    @apply border-gray-200;
   }
 
   .resize-bar {
@@ -249,13 +238,13 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface table-fixed;
+    @apply bg-surface-background table-fixed;
   }
 
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface;
+    @apply z-30 bg-surface-background;
   }
 
   tbody .cell {
@@ -282,14 +271,14 @@
   }
 
   .header-cell {
-    @apply px-2 bg-surface size-full;
+    @apply px-2 bg-surface-background size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply text-gray-800 font-medium;
+    @apply text-fg-primary font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2 text-gray-800;
+    @apply size-full p-1 px-2 text-fg-primary;
   }
 
   tr > td {
@@ -298,13 +287,18 @@
 
   /* The totals row */
   .with-measure tbody > tr:nth-of-type(2) {
-    @apply bg-surface sticky z-20;
+    @apply bg-surface-background sticky z-20;
     top: var(--total-header-height);
+  }
+
+  /* The totals row label - make it bold for flat tables */
+  .total-label {
+    @apply font-semibold;
   }
 
   tr:hover,
   tr:hover .cell {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   tr:hover .active-cell {

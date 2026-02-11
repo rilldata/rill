@@ -1,8 +1,9 @@
 import {
   aggregationRequestWithRowsAndColumns,
   buildAggregationRequest,
-} from "@rilldata/web-common/features/dashboards/aggregation-request-builder.ts";
+} from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
 import { getDimensionTableAggregationRequestForTime } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export.ts";
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column.ts";
 import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
@@ -24,7 +25,10 @@ import {
   AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
   AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
+  AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+  AD_BIDS_SET_TIME_PIVOT_FILTER,
   AD_BIDS_SORT_ASC_BY_BID_PRICE,
+  AD_BIDS_SORT_BY_PERCENT_CHANGE_IMPRESSIONS,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations.ts";
@@ -35,9 +39,9 @@ import {
 import { extractRowsAndColumns } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
 import type { V1MetricsViewAggregationRequest } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
-import { describe, it, expect } from "vitest";
-import { getTDDAggregationRequest } from "web-common/src/features/dashboards/time-dimension-details/tdd-export.ts";
+import { describe, expect, it } from "vitest";
 import { getPivotAggregationRequest } from "web-common/src/features/dashboards/pivot/pivot-export.ts";
+import { getTDDAggregationRequest } from "web-common/src/features/dashboards/time-dimension-details/tdd-export.ts";
 
 describe("Report rows and columns", () => {
   describe("From dimension table", () => {
@@ -159,11 +163,53 @@ describe("Report rows and columns", () => {
           pivotOn: ["publisher"],
         },
       },
+
+      {
+        title: "Sorting by comparison measure",
+
+        mutations: [
+          AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+          AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
+          AD_BIDS_SORT_BY_PERCENT_CHANGE_IMPRESSIONS,
+        ],
+        expectedRows: [],
+        expectedColumns: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_IMPRESSIONS_MEASURE,
+          AD_BIDS_BID_PRICE_MEASURE,
+        ],
+
+        updatedRows: [],
+        updatedColumns: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          AD_BIDS_IMPRESSIONS_MEASURE,
+        ],
+
+        expectedRequest: {
+          dimensions: [{ name: "publisher" }],
+          measures: [
+            { name: "impressions" },
+            {
+              comparisonValue: { measure: "impressions" },
+              name: "impressions_prev",
+            },
+            {
+              comparisonDelta: { measure: "impressions" },
+              name: "impressions_delta",
+            },
+            {
+              comparisonRatio: { measure: "impressions" },
+              name: "impressions_delta_perc",
+            },
+          ],
+          sort: [{ desc: true, name: "impressions_delta_perc" }],
+        },
+      },
     ];
 
     testCases.forEach((testCase) => {
-      it(testCase.title, () => {
-        runTest(testCase, (exploreState, timeControlState) =>
+      it(testCase.title, async () => {
+        await runTest(testCase, (exploreState, timeControlState) =>
           getDimensionTableAggregationRequestForTime({
             metricsViewName: AD_BIDS_METRICS_NAME,
             exploreState,
@@ -171,7 +217,12 @@ describe("Report rows and columns", () => {
               start: timeControlState.timeStart,
               end: timeControlState.timeEnd,
             },
-            comparisonTimeRange: undefined,
+            comparisonTimeRange: timeControlState.selectedComparisonTimeRange
+              ? {
+                  start: timeControlState.comparisonTimeStart,
+                  end: timeControlState.comparisonTimeEnd,
+                }
+              : undefined,
             dimensionSearchText: "",
           }),
         );
@@ -313,8 +364,8 @@ describe("Report rows and columns", () => {
     ];
 
     testCases.forEach((testCase) => {
-      it(testCase.title, () => {
-        runTest(
+      it(testCase.title, async () => {
+        await runTest(
           testCase,
           (exploreState, timeControlState) =>
             getTDDAggregationRequest({
@@ -410,11 +461,46 @@ describe("Report rows and columns", () => {
           sort: [{ desc: true, name: "bid_price" }],
         },
       },
+
+      {
+        title: "Sort by time dimension",
+        mutations: [
+          AD_BIDS_FLAT_PIVOT_TABLE,
+          AD_BIDS_SET_TIME_PIVOT_FILTER("timestamp_rill_TIME_GRAIN_DAY"),
+        ],
+        expectedRows: [],
+        expectedColumns: [
+          AD_BIDS_DOMAIN_DIMENSION,
+          "timestamp_rill_TIME_GRAIN_DAY",
+          AD_BIDS_IMPRESSIONS_MEASURE,
+        ],
+
+        updatedRows: [],
+        updatedColumns: [
+          AD_BIDS_PUBLISHER_DIMENSION,
+          "timestamp_rill_TIME_GRAIN_DAY",
+          AD_BIDS_IMPRESSIONS_MEASURE,
+        ],
+
+        expectedRequest: {
+          dimensions: [
+            { name: "publisher" },
+            {
+              name: "timestamp",
+              timeGrain: "TIME_GRAIN_DAY",
+              timeZone: "UTC",
+              alias: "Time day",
+            },
+          ],
+          measures: [{ name: "impressions" }],
+          sort: [{ desc: true, name: "Time day" }],
+        },
+      },
     ];
 
     testCases.forEach((testCase) => {
-      it(testCase.title, () => {
-        runTest(
+      it(testCase.title, async () => {
+        await runTest(
           testCase,
           (exploreState, timeControlState) =>
             getPivotAggregationRequest({
@@ -428,8 +514,13 @@ describe("Report rows and columns", () => {
               },
               rows: exploreState.pivot.rows,
               columns: splitPivotChips(exploreState.pivot.columns),
-              comparisonTime: undefined,
-              enableComparison: false,
+              comparisonTime: timeControlState.selectedComparisonTimeRange
+                ? {
+                    start: timeControlState.comparisonTimeStart,
+                    end: timeControlState.comparisonTimeEnd,
+                  }
+                : undefined,
+              enableComparison: !!timeControlState.showTimeComparison,
               isFlat: exploreState.pivot.tableMode === "flat",
               pivotState: exploreState.pivot,
             })!,
@@ -452,7 +543,7 @@ type TestCase = {
   expectedRequest: V1MetricsViewAggregationRequest;
 };
 
-function runTest(
+async function runTest(
   {
     mutations,
 
@@ -477,7 +568,10 @@ function runTest(
     ),
   );
 
-  applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+  await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+    leaderboardContextCorrection,
+  ]);
+  await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
   const exploreState = get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];
   const timeControlState = getTimeControlState(
@@ -498,7 +592,7 @@ function runTest(
       exploreSpec: AD_BIDS_EXPLORE,
       rows: updatedRows,
       columns: updatedColumns,
-      showTimeComparison: false,
+      showTimeComparison: exploreState.showTimeComparison,
       selectedTimezone: exploreState.selectedTimezone,
     }),
   ]);
@@ -520,7 +614,9 @@ function cleanAggregationRequestForAssertion(
     ...request,
   };
 
-  delete cleanedRequest.timeRange; // Time range is not targeted in the tests.
+  // Time ranges are not targeted in the tests.
+  delete cleanedRequest.timeRange;
+  delete cleanedRequest.comparisonTimeRange;
 
   Object.keys(cleanedRequest).forEach((key) => {
     if (cleanedRequest[key] === undefined) delete cleanedRequest[key];
@@ -528,3 +624,11 @@ function cleanAggregationRequestForAssertion(
 
   return cleanedRequest;
 }
+
+// There seems to be an issue with setting context column.
+// Since it is marked deprecated, all the url <=> dashboard transforms dont populate it.
+// But looks like it is used extensively in the dimension table. So we need this hack to get the tests to not fail.
+// TODO: either really deprecate it or account for it in transforms.
+const leaderboardContextCorrection: TestDashboardMutation = (mut) => {
+  mut.dashboard.leaderboardContextColumn = LeaderboardContextColumn.HIDDEN;
+};

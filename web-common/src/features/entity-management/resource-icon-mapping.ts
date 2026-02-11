@@ -1,5 +1,5 @@
 import ApiIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
-import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
 import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
 import Chart from "@rilldata/web-common/components/icons/Chart.svelte";
 import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
@@ -7,14 +7,16 @@ import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte"
 import TableIcon from "@rilldata/web-common/components/icons/TableIcon.svelte";
 import ThemeIcon from "@rilldata/web-common/components/icons/ThemeIcon.svelte";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { Code2Icon } from "lucide-svelte";
 import ConnectorIcon from "../../components/icons/ConnectorIcon.svelte";
 import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
+import ModelIcon from "@rilldata/web-common/components/icons/ModelIcon.svelte";
+import File from "@rilldata/web-common/components/icons/File.svelte";
+import SettingsIcon from "@rilldata/web-common/components/icons/SettingsIcon.svelte";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: TableIcon,
   [ResourceKind.Connector]: ConnectorIcon,
-  [ResourceKind.Model]: Code2Icon,
+  [ResourceKind.Model]: ModelIcon,
   [ResourceKind.MetricsView]: MetricsViewIcon,
   [ResourceKind.Explore]: ExploreIcon,
   [ResourceKind.API]: ApiIcon,
@@ -22,21 +24,44 @@ export const resourceIconMapping = {
   [ResourceKind.Canvas]: CanvasIcon,
   [ResourceKind.Theme]: ThemeIcon,
   [ResourceKind.Report]: ReportIcon,
-  [ResourceKind.Alert]: AlertCircleOutline,
+  [ResourceKind.Alert]: AlertIcon,
 };
 
-export const resourceColorMapping = {
-  [ResourceKind.Source]: "#059669",
-  [ResourceKind.Connector]: "#6B7280",
-  [ResourceKind.Model]: "#0891B2",
-  [ResourceKind.MetricsView]: "#7C3AED",
-  [ResourceKind.Explore]: "#4736F5",
-  [ResourceKind.API]: "#EA580C",
-  [ResourceKind.Component]: "#65A30D",
-  [ResourceKind.Canvas]: "#008FD4",
-  [ResourceKind.Theme]: "#DB2777",
-
-  // To follow up later
-  [ResourceKind.Report]: "black",
-  [ResourceKind.Alert]: "black",
+export const resourceLabelMapping = {
+  [ResourceKind.Source]: "Source",
+  [ResourceKind.Connector]: "Connector",
+  [ResourceKind.Model]: "Model",
+  [ResourceKind.MetricsView]: "Metrics View",
+  [ResourceKind.Explore]: "Explore",
+  [ResourceKind.API]: "API",
+  [ResourceKind.Component]: "Component",
+  [ResourceKind.Canvas]: "Canvas",
+  [ResourceKind.Theme]: "Theme",
+  [ResourceKind.Report]: "Report",
+  [ResourceKind.Alert]: "Alert",
 };
+
+export const resourceShorthandMapping = {
+  [ResourceKind.Source]: "source",
+  [ResourceKind.Connector]: "connector",
+  [ResourceKind.Model]: "model",
+  [ResourceKind.MetricsView]: "metrics",
+  [ResourceKind.Explore]: "explore",
+  [ResourceKind.API]: "API",
+  [ResourceKind.Component]: "component",
+  [ResourceKind.Canvas]: "canvas",
+  [ResourceKind.Theme]: "theme",
+  [ResourceKind.Report]: "report",
+  [ResourceKind.Alert]: "alert",
+};
+
+export function getIconComponent(
+  kind: ResourceKind | undefined,
+  filePath: string,
+) {
+  return kind
+    ? resourceIconMapping[kind]
+    : filePath === "/.env" || filePath === "/rill.yaml"
+      ? SettingsIcon
+      : File;
+}

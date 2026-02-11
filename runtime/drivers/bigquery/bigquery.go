@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 	"google.golang.org/api/option"
 )
 
@@ -25,55 +26,24 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "BigQuery",
 	Description: "Import data from BigQuery.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/bigquery",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/bigquery",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:  "google_application_credentials",
-			Type: drivers.FilePropertyType,
-			Hint: "Enter path of file to load from.",
-		},
-		{
 			Key:         "project_id",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
-			DisplayName: "Project ID",
-			Description: "Default Google project ID.",
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from BigQuery.",
-			Placeholder: "select * from project.dataset.table;",
-		},
-		{
-			Key:         "project_id",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
 			DisplayName: "Project ID",
 			Description: "Google project ID.",
 			Placeholder: "my-project",
 			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
 		},
 		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
-		},
-		{
 			Key:         "google_application_credentials",
-			Type:        drivers.InformationalPropertyType,
-			DisplayName: "GCP credentials",
-			Description: "GCP credentials inferred from your local environment.",
-			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs#rill-developer-local-credentials",
+			Type:        drivers.FilePropertyType,
+			DisplayName: "GCP Credentials",
+			Description: "GCP credentials as JSON string",
+			Placeholder: "Paste your GCP service account JSON here",
+			Secret:      true,
+			Required:    true,
 		},
 	},
 	ImplementsWarehouse: true,
@@ -85,6 +55,8 @@ type configProperties struct {
 	SecretJSON      string `mapstructure:"google_application_credentials"`
 	ProjectID       string `mapstructure:"project_id"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.
+	LogQueries bool `mapstructure:"log_queries"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -99,9 +71,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &Connection{
-		config:  conf,
-		storage: st,
-		logger:  logger,
+		config:   conf,
+		storage:  st,
+		logger:   logger,
+		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
 }
@@ -123,13 +96,17 @@ type Connection struct {
 	config  *configProperties
 	storage *storage.Client
 	logger  *zap.Logger
+
+	client    *bigquery.Client // lazily populated using getClient
+	clientErr error
+	clientMu  *semaphore.Weighted
 }
 
 var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	client, err := c.createClient(ctx, "")
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
@@ -159,6 +136,9 @@ func (c *Connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
+	if c.client != nil {
+		return c.client.Close()
+	}
 	return nil
 }
 
@@ -189,7 +169,7 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // OLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -213,22 +193,22 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.InputHandle == c {
 		store, ok := opts.OutputHandle.AsObjectStore()
 		if ok && opts.OutputHandle.Driver() == "gcs" {
 			return &selfToGCSExecutor{
 				c:     c,
 				store: store,
-			}, true
+			}, nil
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
@@ -243,6 +223,30 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// getClient initializes and caches a BigQuery client
+func (c *Connection) getClient(ctx context.Context) (*bigquery.Client, error) {
+	err := c.clientMu.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	defer c.clientMu.Release(1)
+
+	if c.client != nil || c.clientErr != nil {
+		return c.client, c.clientErr
+	}
+	client, err := c.createClient(ctx, "")
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			// don't cache context errors
+			return nil, err
+		}
+		c.clientErr = err
+		return nil, err
+	}
+	c.client = client
+	return c.client, nil
 }
 
 // createClient initializes a BigQuery client using the provided context and project ID.
@@ -262,7 +266,7 @@ func (c *Connection) createClient(ctx context.Context, projectID string) (*bigqu
 	client, err := bigquery.NewClient(ctx, projectID, opts...)
 	if err != nil {
 		if strings.Contains(err.Error(), "unable to detect projectID") {
-			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
+			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in the connector YAML")
 		}
 		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}

@@ -3,17 +3,16 @@
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
-    createAdminServiceListOrganizationMemberUsersInfinite,
   } from "@rilldata/web-admin/client";
-  import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
-  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
-  import OrgGroupsTable from "@rilldata/web-admin/features/organizations/users/OrgGroupsTable.svelte";
+  import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/CreateUserGroupDialog.svelte";
+  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
+  import OrgGroupsTable from "@rilldata/web-admin/features/organizations/user-management/table/groups/OrgGroupsTable.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 50;
 
   let userGroupName = "";
   let isCreateUserGroupDialogOpen = false;
@@ -28,24 +27,6 @@
       pageToken,
       includeCounts: true,
     });
-  $: listOrganizationMemberUsersInfinite =
-    createAdminServiceListOrganizationMemberUsersInfinite(
-      organization,
-      {
-        pageSize: PAGE_SIZE,
-      },
-      {
-        query: {
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
-
   const currentUser = createAdminServiceGetCurrentUser();
 
   $: filteredGroups =
@@ -60,12 +41,6 @@
   );
 
   $: isFetchingNextPage = $listOrganizationMemberUsergroups.isFetching;
-
-  // Flatten all pages of organization users
-  $: allOrganizationUsers =
-    $listOrganizationMemberUsersInfinite.data?.pages.flatMap(
-      (page) => page.members ?? [],
-    ) ?? [];
 
   function handleLoadMore() {
     if (hasNextPage) {
@@ -98,7 +73,7 @@
     <div class="text-red-500">
       Error loading organization user groups: {$listOrganizationMemberUsergroups.error}
     </div>
-  {:else if $listOrganizationMemberUsergroups.isSuccess && $listOrganizationMemberUsersInfinite.isSuccess}
+  {:else if $listOrganizationMemberUsergroups.isSuccess}
     <div class="flex flex-col">
       <div class="flex flex-row gap-x-4">
         <Search
@@ -121,7 +96,6 @@
         <OrgGroupsTable
           data={filteredGroups}
           currentUserEmail={$currentUser.data?.user.email}
-          searchUsersList={allOrganizationUsers}
           {hasNextPage}
           {isFetchingNextPage}
           onLoadMore={handleLoadMore}
@@ -129,7 +103,7 @@
       </div>
       {#if filteredGroups.length > 0}
         <div class="px-2 py-3">
-          <span class="font-medium text-sm text-gray-500">
+          <span class="font-medium text-sm text-fg-secondary">
             {filteredGroups.length} total group{filteredGroups.length === 1
               ? ""
               : "s"}
@@ -143,13 +117,11 @@
 <CreateUserGroupDialog
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
-  organizationUsers={allOrganizationUsers}
   currentUserEmail={$currentUser.data?.user.email}
 />
 
 <EditUserGroupDialog
   bind:open={isEditUserGroupDialogOpen}
   groupName={userGroupName}
-  organizationUsers={allOrganizationUsers}
   currentUserEmail={$currentUser.data?.user.email}
 />

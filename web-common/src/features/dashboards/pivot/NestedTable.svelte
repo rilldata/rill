@@ -7,9 +7,9 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     getRowNestedLabel,
     type DimensionColumnProps,
@@ -20,6 +20,7 @@
     calculateRowDimensionWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -57,6 +58,7 @@
 
   $: hasRowDimension = rowDimensions.length > 0;
   $: hasExpandableRows = rowDimensions.length > 1;
+  $: hasMeasures = measures.length > 0;
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
 
@@ -65,21 +67,30 @@
       ? calculateRowDimensionWidth(rowDimensionName, timeDimension, dataRows)
       : 0;
 
-  $: measures.forEach(({ name, label, formatter }) => {
-    if (!$measureLengths.has(name)) {
-      const estimatedWidth = calculateMeasureWidth(
-        name,
-        label,
-        formatter,
-        totalsRow,
-        dataRows,
-      );
+  $: {
+    // Get the longest column dimension header to ensure proper width calculation
+    const maxColumnDimensionHeader = getMaxColumnDimensionHeader(
+      hasColumnDimension,
+      headerGroups,
+    );
 
-      measureLengths.update((measureLengths) => {
-        return measureLengths.set(name, estimatedWidth);
-      });
-    }
-  });
+    measures.forEach(({ name, label, formatter }) => {
+      if (!$measureLengths.has(name)) {
+        const estimatedWidth = calculateMeasureWidth(
+          name,
+          label,
+          formatter,
+          totalsRow,
+          dataRows,
+          hasColumnDimension ? maxColumnDimensionHeader : undefined,
+        );
+
+        measureLengths.update((measureLengths) => {
+          return measureLengths.set(name, estimatedWidth);
+        });
+      }
+    });
+  }
 
   $: if (resizingMeasure && containerRefElement && measureLengths) {
     containerRefElement.scrollTo({
@@ -158,6 +169,25 @@
     return (index + offset) % measureCount === 0 && index > 0;
   }
 
+  function getMaxColumnDimensionHeader(
+    hasColumnDimension: boolean,
+    headerGroups: HeaderGroup<PivotDataRow>[],
+  ): string {
+    if (!hasColumnDimension || headerGroups.length === 0) return "";
+
+    // Get the second-to-last header group which contains column dimension values
+    const colDimensionHeaderGroup =
+      headerGroups.length >= 2
+        ? headerGroups[headerGroups.length - 2]
+        : undefined;
+    if (!colDimensionHeaderGroup?.headers) return "";
+
+    return colDimensionHeaderGroup.headers.reduce((longest, header) => {
+      const headerText = String(header.column?.columnDef?.header ?? "");
+      return headerText.length > longest.length ? headerText : longest;
+    }, "");
+  }
+
   function shouldShowRightBorder(index: number): boolean {
     let offset = 0;
     if (!hasRowDimension) offset = 1;
@@ -232,6 +262,8 @@
   class:with-row-dimension={hasRowDimension}
   class:with-col-dimension={hasColumnDimension}
   class:with-expandable-rows={hasExpandableRows}
+  class:with-totals-row={!!totalsRow}
+  class:with-measures={hasMeasures}
   role="presentation"
   style:width="{totalLength + rowDimensionWidth}px"
   on:click={modified({ shift: onCellCopy, click: onCellClick })}
@@ -297,7 +329,7 @@
     <tr style:height="{before}px" />
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
-      <tr>
+      <tr class:show-more-row={isShowMoreRow(rows[row.index])}>
         {#each cells as cell, i (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
@@ -314,20 +346,8 @@
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
-            on:mouseover={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
-            on:focus={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
+            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component
@@ -352,7 +372,7 @@
 
 <style lang="postcss">
   * {
-    @apply border-slate-200;
+    @apply border-gray-200;
   }
 
   .resize-bar {
@@ -362,13 +382,13 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface table-fixed;
+    @apply bg-surface-background table-fixed;
   }
 
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface;
+    @apply z-30 bg-surface-background;
   }
 
   .with-row-dimension thead tr th:first-of-type .header-cell {
@@ -410,12 +430,12 @@
   .header-cell {
     @apply px-2 size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply text-gray-800 font-medium;
+    @apply text-fg-primary font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2 text-gray-800;
+    @apply size-full p-1 px-2 text-fg-primary;
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
@@ -425,41 +445,47 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    @apply bg-surface;
+    @apply bg-surface-base;
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    @apply bg-surface;
+    @apply bg-surface-base;
   }
 
   .with-row-dimension tr:hover > td:first-of-type {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   .with-row-dimension.with-col-dimension tr > th:first-of-type {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 
   /* The totals row */
-  tbody > tr:nth-of-type(2) {
-    @apply bg-surface sticky z-20;
+  .with-totals-row tbody > tr:nth-of-type(2) {
+    @apply bg-surface-muted sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }
 
-  /* The totals row header */
-  .with-row-dimension tbody > tr:nth-of-type(2) > td:first-of-type {
-    @apply font-semibold;
+  /* The totals row header - only apply when there are actual measures and totals */
+  .with-row-dimension.with-totals-row.with-measures
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
+    @apply font-semibold bg-surface-muted;
   }
 
-  .with-expandable-rows tbody > tr:nth-of-type(2) > td:first-of-type {
+  .with-expandable-rows.with-totals-row
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
     @apply pl-5;
   }
 
   tr:hover,
   tr:hover .cell {
-    @apply bg-slate-100;
+    @apply bg-surface-hover;
   }
 
   tr:hover .active-cell {
@@ -474,5 +500,16 @@
   }
   .active-cell.cell {
     @apply bg-primary-50;
+  }
+
+  /* Show more row styling */
+  .show-more-row,
+  .show-more-row .cell {
+    @apply bg-surface-background;
+  }
+
+  .show-more-row:hover,
+  .show-more-row:hover .cell {
+    @apply bg-gray-100;
   }
 </style>

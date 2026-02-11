@@ -48,7 +48,15 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", stmt.Query),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("druid query", fields...)
 	}
 
 	if stmt.DryRun {
@@ -76,6 +84,12 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 			queryCfg = &druidsqldriver.QueryConfig{}
 		}
 		queryCfg.PopulateCache = stmt.PopulateCache
+	}
+	if !c.config.SkipQueryPriority && stmt.Priority != 0 {
+		if queryCfg == nil {
+			queryCfg = &druidsqldriver.QueryConfig{}
+		}
+		queryCfg.Priority = stmt.Priority
 	}
 
 	if queryCfg != nil {

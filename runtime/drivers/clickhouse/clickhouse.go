@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math"
+	"net"
 	"strings"
 	"time"
 
@@ -36,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "ClickHouse",
 	Description: "Connect to ClickHouse.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/clickhouse",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/clickhouse",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -83,7 +85,7 @@ var spec = drivers.Spec{
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
 			Placeholder: "9000",
-			Hint:        "Default port is 9000 for native protocol. Also commonly used: 8443 for ClickHouse Cloud (HTTPS), 8123 for HTTP",
+			Hint:        "Default ClickHouse ports: 9000 (native TCP), 8123 (HTTP). Secure/common alternatives: 9440 (native TCP + TLS) and 8443 (HTTPS, often used in ClickHouse Cloud/managed setups).",
 			Default:     "9000",
 		},
 		{
@@ -131,7 +133,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
-			Hint:        "Enable SSL for secure connections",
+			Hint:        "Enable SSL for secure connections. For ClickHouse Cloud, SSL is always enabled.",
 			Default:     "true",
 		},
 	},
@@ -167,6 +169,8 @@ type configProperties struct {
 	// This is just a *quick hack* to avoid fetching all databases in the table list till we have a better solution.
 	// This does not list queries to other databases.
 	DatabaseWhitelist string `mapstructure:"database_whitelist"`
+	// OptimizeTemporaryTablesBeforePartitionReplace determines whether to optimize temporary tables before partition replacement.
+	OptimizeTemporaryTablesBeforePartitionReplace bool `mapstructure:"optimize_temporary_tables_before_partition_replace"`
 	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
@@ -176,6 +180,9 @@ type configProperties struct {
 	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
 	// Use cases include disabling settings or setting `readonly = 1` when using read-only user.
 	QuerySettingsOverride string `mapstructure:"query_settings_override"`
+	// QuerySettings are set on each read query. QuerySettingsOverride takes precedence over these settings and if set these are ignored./
+	// Each setting must be separated by a comma. Example `max_threads = 8, max_memory_usage = 10000000000`
+	QuerySettings string `mapstructure:"query_settings"`
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort int `mapstructure:"embed_port"`
 	// CanScaleToZero indicates if the underlying Clickhouse service may scale to zero when idle.
@@ -195,39 +202,19 @@ type configProperties struct {
 }
 
 func (c *configProperties) validate() error {
-	var set []string
-	if c.Host != "" {
-		set = append(set, "host")
-	}
-	if c.Port != 0 {
-		set = append(set, "port")
-	}
-	if c.Username != "" {
-		set = append(set, "username")
-	}
-	if c.Password != "" {
-		set = append(set, "password")
-	}
-	if c.Database != "" {
-		set = append(set, "database")
-	}
-	if c.SSL {
-		set = append(set, "ssl")
+	if c.Managed {
+		// In managed mode, clear connection properties but preserve provisioner DSN
+		c.Username = ""
+		c.Password = ""
+		c.Host = ""
+		c.Port = 0
+		c.Database = ""
+		c.SSL = false
+	} else if c.DSN != "" && (c.Host != "" || c.Username != "" || c.Password != "" || c.Database != "" || c.Port != 0 || c.SSL) {
+		// Only validate conflicts when not in managed mode
+		return errors.New("only one of 'dsn' or [host, port, username, password, database, ssl] can be set")
 	}
 
-	if c.DSN != "" {
-		if len(set) > 0 {
-			return fmt.Errorf("only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
-		}
-	}
-	if c.Managed {
-		if c.DSN != "" {
-			set = append(set, "dsn")
-		}
-		if len(set) > 0 {
-			return fmt.Errorf("managed ClickHouse does not support setting [%s] properties", strings.Join(set, ", "))
-		}
-	}
 	return nil
 }
 
@@ -333,7 +320,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, fmt.Errorf("failed to open write connection: %w", err)
 		}
 	}
-
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
 	row := db.QueryRow(`
         WITH
@@ -341,7 +327,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
             toInt32(parts[1]) AS major,
             toInt32(parts[2]) AS minor
         SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
-`)
+	`)
+
 	var isSupported bool
 	if err := row.Scan(&isSupported); err != nil {
 		return nil, err
@@ -350,20 +337,46 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
 	}
 
+	// Using the harmless, non–side-effecting setting
+	// `show_table_uuid_in_table_create_query_if_not_nil` as a probe to check
+	// whether the cluster mode supports modifying query settings. This setting
+	// has no practical use for our purposes.
+	supportSettings := true
+	if _, err := db.Exec("SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
+		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
+			supportSettings = false
+		}
+	}
+
+	// Compute OLAP queue size
+	var olapSemSize int
+	if conf.MaxOpenConns < 1 {
+		// MaxOpenConns <= 0 means unlimited connections
+		olapSemSize = math.MaxInt
+	} else if conf.MaxOpenConns > 1 {
+		// Leave one connection for meta queries. All others can be used for OLAP.
+		olapSemSize = conf.MaxOpenConns - 1
+	} else {
+		// If there is only one connection, both meta and olap queries need to share it.
+		// There will be contention at the database/sql layer, but it will work.
+		olapSemSize = 1
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Connection{
-		readDB:     db,
-		writeDB:    writeDB,
-		config:     conf,
-		logger:     logger,
-		activity:   ac,
-		instanceID: instanceID,
-		ctx:        ctx,
-		cancel:     cancel,
-		metaSem:    semaphore.NewWeighted(1),
-		olapSem:    priorityqueue.NewSemaphore(conf.MaxOpenConns - 1),
-		opts:       opts,
-		embed:      embed,
+		readDB:          db,
+		writeDB:         writeDB,
+		config:          conf,
+		logger:          logger,
+		activity:        ac,
+		instanceID:      instanceID,
+		supportSettings: supportSettings,
+		ctx:             ctx,
+		cancel:          cancel,
+		metaSem:         semaphore.NewWeighted(1),
+		olapSem:         priorityqueue.NewSemaphore(olapSemSize),
+		opts:            opts,
+		embed:           embed,
 	}
 
 	c.used()
@@ -385,12 +398,13 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	readDB     *sqlx.DB
-	writeDB    *sqlx.DB
-	config     *configProperties
-	logger     *zap.Logger
-	activity   *activity.Client
-	instanceID string
+	readDB          *sqlx.DB
+	writeDB         *sqlx.DB
+	config          *configProperties
+	logger          *zap.Logger
+	activity        *activity.Client
+	instanceID      string
+	supportSettings bool
 
 	// context that is cancelled when the connection is closed
 	ctx    context.Context
@@ -437,7 +451,7 @@ func (c *Connection) Ping(ctx context.Context) error {
 	return nil
 }
 
-// Driver implements drivers.Connection.
+// Driver implements drivers.Handle.
 func (c *Connection) Driver() string {
 	return "clickhouse"
 }
@@ -449,7 +463,7 @@ func (c *Connection) Config() map[string]any {
 	return m
 }
 
-// Close implements drivers.Connection.
+// Close implements drivers.Handle.
 func (c *Connection) Close() error {
 	c.cancel()
 
@@ -473,17 +487,17 @@ func (c *Connection) Close() error {
 	return errors.Join(errReadDB, errWriteDB, errEmbed)
 }
 
-// Registry implements drivers.Connection.
+// Registry implements drivers.Handle.
 func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection.
+// Catalog implements drivers.Handle.
 func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// Repo implements drivers.Connection.
+// Repo implements drivers.Handle.
 func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
@@ -498,62 +512,60 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
-// OLAP implements drivers.Connection.
+// OLAP implements drivers.Handle.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
 }
 
-// AsInformationSchema implements drivers.Connection.
+// AsInformationSchema implements drivers.Handle.
 func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
-// Migrate implements drivers.Connection.
+// Migrate implements drivers.Handle.
 func (c *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection.
+// MigrationStatus implements drivers.Handle.
 func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
-// AsObjectStore implements drivers.Connection.
+// AsObjectStore implements drivers.Handle.
 func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.OutputHandle != c {
-		return nil, false
+		return nil, drivers.ErrNotImplemented
 	}
 	if c.config.Mode != modeReadWrite {
-		c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
-		return nil, false
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
 	}
 	if opts.InputHandle == c {
-		return &selfToSelfExecutor{c}, true
+		return &selfToSelfExecutor{c}, nil
 	}
 	if opts.InputHandle.Driver() == "s3" || opts.InputHandle.Driver() == "gcs" {
-		return &objectStoreToSelfExecutor{opts.InputHandle, c}, true
+		return &objectStoreToSelfExecutor{opts.InputHandle, c}, nil
 	}
-	if opts.InputHandle.Driver() == "local_file" {
-		return &localFileToSelfExecutor{opts.InputHandle, c}, true
+	if opts.InputHandle.Driver() == "local_file" || opts.InputHandle.Driver() == "https" {
+		return &fileStoreToSelfExecutor{opts.InputHandle, c}, nil
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	if c.config.Mode != modeReadWrite {
-		c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
-		return nil, false
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
 	}
-	return c, true
+	return c, nil
 }
 
-// AsFileStore implements drivers.Connection.
+// AsFileStore implements drivers.Handle.
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
@@ -563,7 +575,7 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-// AsNotifier implements drivers.Connection.
+// AsNotifier implements drivers.Handle.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
@@ -601,11 +613,12 @@ func (c *Connection) periodicallyEmitStats() {
 	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
 	defer cacheInvalidationTicker.Stop()
 
+	skipEstimatedSizeEmission := false
 	for {
 		select {
 		case <-sensitiveTicker.C:
 			// Skip if it hasn't been used recently and may be scaled to zero.
-			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute {
+			if (c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) || skipEstimatedSizeEmission {
 				continue
 			}
 
@@ -619,9 +632,30 @@ func (c *Connection) periodicallyEmitStats() {
 					lvl = zap.ErrorLevel
 				}
 
+				var chErr *clickhouse.Exception
+				if errors.As(err, &chErr) && chErr.Code == 497 {
+					// Code 497 is "Not enough privileges" - downgrade to debug level and skip future emissions.
+					lvl = zap.DebugLevel
+					skipEstimatedSizeEmission = true
+				}
+
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
 		case <-regularTicker.C:
+			// Skip if it hasn't been used recently and may be scaled to zero.
+			if !(c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) && !skipEstimatedSizeEmission {
+				// Emit the estimated size per table.
+				tableSizes, err := c.estimatePerTableSize(c.ctx)
+				if err == nil {
+					for _, ts := range tableSizes {
+						c.activity.RecordMetric(c.ctx, "clickhouse_per_table_estimated_size_bytes", float64(ts.size), attribute.String("database", ts.database), attribute.String("table", ts.table))
+					}
+				} else if !errors.Is(err, c.ctx.Err()) {
+					c.logger.Warn("failed to estimate clickhouse per-table sizes", zap.Error(err))
+				}
+			}
+
+			// Check if billing.events table exists (with caching).
 			billingTableExists, err := c.checkBillingTableExists(c.ctx, c.config.Cluster)
 			if err != nil {
 				if !errors.Is(err, c.ctx.Err()) {
@@ -646,8 +680,9 @@ func (c *Connection) periodicallyEmitStats() {
 				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
 			}
 		case <-cacheInvalidationTicker.C:
-			// Invalidate the billing table existence cache every hour.
+			// Invalidate the billing table existence cache and skip size emission flag.
 			c.billingTableExists = nil
+			skipEstimatedSizeEmission = false
 		case <-c.ctx.Done():
 			return
 		}
@@ -657,12 +692,47 @@ func (c *Connection) periodicallyEmitStats() {
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
 func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 	var size int64
-	err := c.readDB.QueryRowxContext(ctx, `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`).Scan(&size)
+	var query string
+	if c.config.Cluster == "" {
+		query = `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`
+	} else {
+		query = fmt.Sprintf(`SELECT sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`, c.config.Cluster)
+	}
+	err := c.readDB.QueryRowxContext(ctx, query).Scan(&size)
 	if err != nil {
 		return 0, err
 	}
 
 	return size, nil
+}
+
+// estimatePerTableSize returns the estimated average disk size per table in bytes.
+func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, error) {
+	var query string
+	if c.config.Cluster == "" {
+		query = `SELECT database, table, sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`
+	} else {
+		query = fmt.Sprintf(`SELECT database, table, sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
+	}
+	rows, err := c.readDB.QueryxContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tableSizes []*tableSize
+	for rows.Next() {
+		var ts tableSize
+		if err := rows.Scan(&ts.database, &ts.table, &ts.size); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		tableSizes = append(tableSizes, &ts)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %w", err)
+	}
+
+	return tableSizes, nil
 }
 
 // latestRCUPerService returns the sum latest RCU value reported for nodes in each service i.e. read/write.
@@ -747,9 +817,6 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		}
 		opts.DialTimeout = d
 	}
-	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
-		opts.DialTimeout = time.Second * 60
-	}
 
 	if conf.ReadTimeout != "" {
 		d, err := time.ParseDuration(conf.ReadTimeout)
@@ -762,15 +829,38 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		opts.ReadTimeout = time.Second * 300
 	}
 
+	// NOTE: After https://github.com/ClickHouse/clickhouse-go/pull/1709, we can remove the manual TCP dial and
+	// the default 60s DialTimeout.
+	// The manual dial currently ensures that the host and port are reachable.
+	// This check only verifies that the TCP socket is open — it will succeed even if the ClickHouse instance is scaled to zero.
+	// It prevents invalid host/port combinations from proceeding to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
+	if conf.Host != "" && conf.Port != 0 {
+		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
+		conn, err := net.DialTimeout("tcp", target, 10*time.Second)
+		if err != nil {
+			return nil, fmt.Errorf("please check that the host and port are correct %s: %w", target, err)
+		}
+		conn.Close()
+	}
+	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
+		opts.DialTimeout = time.Second * 60
+	}
+
 	// Open the connection
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 	err := db.Ping()
 	if err != nil {
-		if !strings.Contains(err.Error(), "unexpected packet") && !strings.Contains(err.Error(), "i/o timeout") {
-			return nil, err
+		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
+		if strings.Contains(err.Error(), "EOF") ||
+			strings.Contains(err.Error(), "[handshake] unexpected packet [21]") ||
+			(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+			return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
 		}
-
-		if conf.DSN != "" {
+		// Return immediately without retrying in the following cases:
+		//   1. The current protocol is already HTTP (no need to retry with HTTP again).
+		//   2. A DSN was explicitly provided (respect the user’s configuration).
+		//   3. The error is not "unexpected packet [72]" → The native protocol hit an HTTP endpoint.
+		if opts.Protocol == clickhouse.HTTP || conf.DSN != "" || !strings.Contains(err.Error(), "[handshake] unexpected packet [72]") {
 			return nil, err
 		}
 		// may be the port is http, also try with http protocol if DSN is not provided
@@ -778,6 +868,11 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 		err := db.Ping()
 		if err != nil {
+			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
+			if strings.Contains(err.Error(), "EOF") ||
+				(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+				return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
+			}
 			return nil, err
 		}
 		// connection with http protocol is successful
@@ -796,4 +891,10 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	}
 
 	return db, nil
+}
+
+type tableSize struct {
+	database string
+	table    string
+	size     int64
 }

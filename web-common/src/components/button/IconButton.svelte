@@ -29,18 +29,18 @@
   <button
     type="button"
     on:click
+    {disabled}
     aria-label={ariaLabel}
     class:cursor-auto={disabled}
     class:rounded
-    class="{marginClasses} grid place-items-center {disabled
-      ? 'text-gray-400'
-      : 'text-gray-800'}
+    class:text-fg-disabled={disabled}
+    class="{marginClasses} grid place-items-center text-fg-muted hover:text-fg-secondary
 {disableHover || disabled
       ? ''
       : bgGray
-        ? 'hover:bg-gray-200'
-        : 'hover:bg-gray-50'}"
-    class:bg-gray-100={active}
+        ? 'hover:bg-surface-hover'
+        : 'hover:bg-surface-background'}"
+    class:bg-surface-active={active}
     style:width="{size}px"
     style:height="{size}px"
     style:font-size="18px"

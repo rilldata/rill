@@ -9,9 +9,11 @@ type Client interface {
 	Close(ctx context.Context) error
 	Work(ctx context.Context) error
 	CancelJob(ctx context.Context, jobID int64) error
+	EnqueueByKind(ctx context.Context, kind string) (*InsertResult, error)
 
 	// NOTE: Add new job trigger functions here
 	ResetAllDeployments(ctx context.Context) (*InsertResult, error)
+	ReconcileDeployment(ctx context.Context, deploymentID string) (*InsertResult, error)
 
 	// payment provider related jobs
 	PaymentMethodAdded(ctx context.Context, methodID, paymentCustomerID, typ string, eventTime time.Time) (*InsertResult, error)
@@ -30,6 +32,17 @@ type Client interface {
 	HibernateInactiveOrgs(ctx context.Context) (*InsertResult, error)
 
 	PlanChanged(ctx context.Context, billingCustomerID string) (*InsertResult, error)
+
+	CheckProvisioners(ctx context.Context) (*InsertResult, error)
+	BillingReporter(ctx context.Context) (*InsertResult, error)
+	DeleteExpiredAuthCodes(ctx context.Context) (*InsertResult, error)
+	DeleteExpiredDeviceAuthCodes(ctx context.Context) (*InsertResult, error)
+	DeleteExpiredTokens(ctx context.Context) (*InsertResult, error)
+	DeleteExpiredVirtualFiles(ctx context.Context) (*InsertResult, error)
+	DeleteUnusedAssets(ctx context.Context) (*InsertResult, error)
+	DeploymentsHealthCheck(ctx context.Context) (*InsertResult, error)
+	HibernateExpiredDeployments(ctx context.Context) (*InsertResult, error)
+	RunAutoscaler(ctx context.Context) (*InsertResult, error)
 }
 
 type InsertResult struct {

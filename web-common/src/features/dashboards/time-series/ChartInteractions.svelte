@@ -3,6 +3,7 @@
   import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
     type DashboardTimeControls,
@@ -27,6 +28,7 @@
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     validSpecStore,
+    metricsViewName,
   } = StateManagers;
 
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
@@ -56,6 +58,7 @@
     }
 
     const isMac = window.navigator.userAgent.includes("Macintosh");
+    const isExplainKey = e.key === "e" && !e.metaKey && !e.ctrlKey;
 
     if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
       if ($canPanLeft) {
@@ -75,6 +78,8 @@
         e.key === "Escape"
       ) {
         metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
+      } else if (isExplainKey) {
+        measureSelection.startAnomalyExplanationChat($metricsViewName);
       }
     } else if (
       priorRange &&
@@ -83,6 +88,8 @@
     ) {
       e.preventDefault();
       undoZoom();
+    } else if (isExplainKey) {
+      measureSelection.startAnomalyExplanationChat($metricsViewName);
     }
   }
 
@@ -172,12 +179,12 @@
     aria-label={priorRange ? "Undo zoom" : "Zoom"}
   >
     <div class="content-wrapper">
-      <span class="flex-none">
+      <span class="flex-none text-icon-muted">
         <Zoom size="16px" />
       </span>
 
       {#if subInterval?.isValid && timeGrain}
-        <RangeDisplay interval={subInterval} />
+        <RangeDisplay interval={subInterval} {timeGrain} />
       {/if}
 
       <span class="font-medium line-clamp-1 flex-none whitespace-nowrap">
@@ -196,7 +203,7 @@
 
 <style lang="postcss">
   button {
-    @apply border rounded-[2px] bg-surface pointer-events-auto;
+    @apply border rounded-[2px] bg-surface-subtle pointer-events-auto;
     @apply absolute left-1/2 -top-8 -translate-x-1/2 z-50;
   }
 

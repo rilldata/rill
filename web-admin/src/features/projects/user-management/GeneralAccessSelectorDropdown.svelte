@@ -3,7 +3,7 @@
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceRemoveProjectMemberUsergroup,
     createAdminServiceAddProjectMemberUsergroup,
-    createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -19,7 +19,6 @@
   export let organization: string;
   export let project: string;
 
-  let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
 
@@ -36,28 +35,26 @@
       undefined,
       {
         query: {
-          enabled: open,
+          enabled: accessDropdownOpen,
           refetchOnMount: true,
           refetchOnWindowFocus: true,
         },
       },
     );
 
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
-    organization,
-    "autogroup:members",
-    undefined,
-    {
-      query: {
-        enabled: open,
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
+  // Use ListOrganizationMemberUsergroups with includeCounts to get the usersCount
+  // for autogroup:members, which specifically excludes guest users
+  // Query is always enabled so the count displays immediately (not just when dropdown opens)
+  $: listOrgMemberUsergroups =
+    createAdminServiceListOrganizationMemberUsergroups(organization, {
+      includeCounts: true,
+    });
 
-  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
-  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
+  // Get the user count from the autogroup:members group (excludes guests)
+  $: autogroupMembersGroup = $listOrgMemberUsergroups?.data?.members?.find(
+    (group) => group.groupName === "autogroup:members",
+  );
+  $: userGroupMemberUsersCount = autogroupMembersGroup?.usersCount ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
 
@@ -72,7 +69,7 @@
     if (autogroup) {
       // Remove the autogroup:members user group
       await $removeProjectMemberUsergroup.mutateAsync({
-        organization,
+        org: organization,
         project,
         usergroup: autogroup.groupName,
       });
@@ -100,7 +97,7 @@
     // Add the autogroup:members user group back with the viewer role
     // This is the default role for autogroup:members as seen in the tests
     await $addProjectMemberUsergroup.mutateAsync({
-      organization,
+      org: organization,
       project,
       usergroup: "autogroup:members",
       data: {
@@ -157,7 +154,7 @@
         <div class="flex flex-col text-left">
           <div class="flex">
             <div
-              class="inline-flex flex-row items-center gap-x-1 text-sm font-medium text-gray-900 hover:bg-gray-100 rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
+              class="inline-flex flex-row items-center gap-x-1 text-sm font-medium text-fg-primary hover:bg-surface-hover rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
             >
               {#if accessType === "everyone"}
                 Everyone at {organization}
@@ -165,9 +162,9 @@
                 Invite only
               {/if}
               {#if accessDropdownOpen}
-                <CaretUpIcon size="12px" color="text-gray-700" />
+                <CaretUpIcon size="12px" color="text-fg-primary" />
               {:else}
-                <CaretDownIcon size="12px" color="text-gray-700" />
+                <CaretDownIcon size="12px" className="text-fg-primary" />
               {/if}
             </div>
           </div>
@@ -175,7 +172,7 @@
           {#if accessType === "everyone"}
             <div class="flex flex-row items-center gap-x-1">
               {#if userGroupMemberUsersCount && userGroupMemberUsersCount > 0}
-                <span class="text-xs text-gray-500">
+                <span class="text-xs text-fg-secondary">
                   {userGroupMemberUsersCount} user{userGroupMemberUsersCount > 1
                     ? "s"
                     : ""}
@@ -184,7 +181,7 @@
             </div>
           {:else}
             <div class="flex flex-row items-center gap-x-1">
-              <span class="text-xs text-gray-500">
+              <span class="text-xs text-fg-secondary">
                 Only admins and invited users can access
               </span>
             </div>
@@ -198,16 +195,16 @@
       on:click={setAccessInviteOnly}
       class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
       'invite-only'
-        ? 'bg-gray-50'
+        ? 'bg-surface-background'
         : ''}"
     >
       <div class="flex items-start gap-2">
         <Lock size="20px" color="#374151" />
-        <span class="text-xs font-medium text-gray-700">Invite only</span>
+        <span class="text-xs font-medium text-fg-primary">Invite only</span>
       </div>
       <div class="flex flex-row items-center gap-2">
         <div class="w-[20px]" />
-        <span class="text-[11px] text-gray-500"
+        <span class="text-[11px] text-fg-secondary"
           >Only admins and invited users can access</span
         >
       </div>
@@ -216,7 +213,7 @@
       on:click={setAccessEveryone}
       class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
       'everyone'
-        ? 'bg-gray-50'
+        ? 'bg-surface-background'
         : ''}"
     >
       <div class="flex items-start gap-2">
@@ -227,13 +224,14 @@
             >{organization[0].toUpperCase()}</span
           >
         </div>
-        <span class="text-xs font-medium text-gray-700"
+        <span class="text-xs font-medium text-fg-primary"
           >Everyone at {organization}</span
         >
       </div>
       <div class="flex flex-row items-center gap-2">
         <div class="w-[20px]" />
-        <span class="text-[11px] text-gray-500">Org members can access</span>
+        <span class="text-[11px] text-fg-secondary">Org members can access</span
+        >
       </div>
     </DropdownMenu.Item>
   </DropdownMenu.Content>

@@ -19,6 +19,7 @@
   export let error: string | null = null;
   export let canvasDashboard = false;
   export let renderer: "canvas" | "svg" = "canvas";
+  export let theme: "light" | "dark" = "light";
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let view: View;
   export let isScrubbing: boolean;
@@ -69,6 +70,8 @@
     width,
     height,
     renderer,
+    themeMode: theme,
+    colorMapping: [],
     expressionFunctions,
     useExpressionInterpreter: false,
   });
@@ -101,7 +104,6 @@
 <div
   bind:contentRect
   role="presentation"
-  class:bg-surface={canvasDashboard}
   class:px-4={canvasDashboard}
   class:pb-2={canvasDashboard}
   class="rill-vega-container overflow-hidden size-full flex flex-col items-center justify-center"

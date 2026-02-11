@@ -133,7 +133,8 @@ service QueryService {
     };
   }
 
-  // MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+  // MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+  // Deprecated: use MetricsViewTimeRanges instead.
   rpc MetricsViewTimeRange(MetricsViewTimeRangeRequest) returns (MetricsViewTimeRangeResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/time-range-summary",
@@ -154,6 +155,7 @@ service QueryService {
     };
   }
 
+  // MetricsViewTimeRanges resolves time ranges for a metrics view.
   rpc MetricsViewTimeRanges(MetricsViewTimeRangesRequest) returns (MetricsViewTimeRangesResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/time-ranges",
@@ -164,6 +166,14 @@ service QueryService {
   rpc MetricsViewAnnotations(MetricsViewAnnotationsRequest) returns (MetricsViewAnnotationsResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/annotations",
+      body: "*"
+    };
+  }
+
+  // ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+  rpc ConvertExpressionToMetricsSQL(ConvertExpressionToMetricsSQLRequest) returns (ConvertExpressionToMetricsSQLResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/filter-expression/resolve",
       body: "*"
     };
   }
@@ -183,6 +193,14 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/components/{component}/resolve",
       body: "*",
+    };
+  }
+
+  // ResolveTemplatedString resolves a templated strings.
+  rpc ResolveTemplatedString(ResolveTemplatedStringRequest) returns (ResolveTemplatedStringResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/resolve-templated-string",
+      body: "*"
     };
   }
 
@@ -314,6 +332,8 @@ message ExportRequest {
   // Optional UI URL that the export originates from.
   // Only used if include_header is true.
   string origin_url = 8;
+  // Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
+  google.protobuf.Timestamp execution_time = 9;
 }
 
 message ExportResponse {
@@ -547,7 +567,7 @@ message MetricsViewComparisonRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   // Required
-  MetricsViewAggregationDimension dimension = 3;
+  MetricsViewAggregationDimension dimension = 3 [(validate.rules).message.required = true];
   // Required
   repeated MetricsViewAggregationMeasure measures = 4 [(validate.rules).repeated.min_items = 1];
   // Measures that should be compared
@@ -832,16 +852,41 @@ message MetricsViewSearchResponse {
 message MetricsViewTimeRangesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  // Optional time range expressions to resolve (uses the rilltime expression syntax).
   repeated string expressions = 3;
+  // Optional query priority.
   int32 priority = 4;
-  // Optional timezone param to easily override time-range expressions
+  // Optional time zone that overrides the time zones used when resolving the time range expressions.
   string time_zone = 5;
-  // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+  // Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension.
   string time_dimension = 6;
+  // Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided.
+  optional google.protobuf.Timestamp execution_time = 7;
 }
 
 message MetricsViewTimeRangesResponse {
-  repeated TimeRange time_ranges = 1;
+  // The full time range summary for the requested time dimension.
+  TimeRangeSummary full_time_range = 1;
+  // The resolved time ranges for the requested rilltime expressions.
+  repeated ResolvedTimeRange resolved_time_ranges = 3;
+  // The same values as resolved_time_ranges for backwards compatibility.
+  // Deprecated: use resolved_time_ranges instead.
+  repeated TimeRange time_ranges = 2;
+}
+
+message ResolvedTimeRange {
+  // The start of the resolved time range.
+  google.protobuf.Timestamp start = 1;
+  // The end of the resolved time range.
+  google.protobuf.Timestamp end = 2;
+  // The time grain of the resolved time range.
+  TimeGrain grain = 3;
+  // The time dimension that was used to resolve the time range.
+  string time_dimension = 4;
+  // The time zone that was used to resolve the time range.
+  string time_zone = 5;
+  // The original expression used to resolve the time range.
+  string expression = 6;
 }
 
 message MetricsViewAnnotationsRequest {
@@ -877,6 +922,16 @@ message MetricsViewAnnotationsResponse {
   }
 
   repeated Annotation rows = 1;
+}
+
+message ConvertExpressionToMetricsSQLRequest {
+  string instance_id = 1;
+  Expression expression = 2;
+}
+
+message ConvertExpressionToMetricsSQLResponse {
+  // The SQL filter string representation of the expression.
+  string sql = 1;
 }
 
 // **********
@@ -915,6 +970,22 @@ message ResolveComponentRequest {
 message ResolveComponentResponse {
   // Renderer properties with templating resolved for the provided args
   google.protobuf.Struct renderer_properties = 2;
+}
+
+message ResolveTemplatedStringRequest {
+  string instance_id = 1;
+  // Any string with Go templating
+  string body = 2;
+  // If true, output format tokens instead of raw values.
+  bool use_format_tokens = 3;
+  // Additional filters to inject into metrics SQL queries by metrics view name
+  map<string, Expression> additional_where_by_metrics_view = 4;
+  // Additional time range to add to metrics SQL queries
+  TimeRange additional_time_range = 5;
+}
+
+message ResolveTemplatedStringResponse {
+  string body = 1;
 }
 
 // **********

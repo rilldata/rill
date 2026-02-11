@@ -1,7 +1,6 @@
 import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import {
-  ConnectorDriverPropertyType,
   type V1ConnectorDriver,
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
@@ -22,36 +21,53 @@ import {
   runtimeServiceGetInstance,
   runtimeServicePutFile,
 } from "../../runtime-client";
-import { makeSufficientlyQualifiedTableName } from "./connectors-utils";
+import {
+  getDriverNameForConnector,
+  makeSufficientlyQualifiedTableName,
+} from "./connectors-utils";
 
-const YAML_MODEL_TEMPLATE = `type: model
-connector: {{ connector }}
+function yamlModelTemplate(driverName: string) {
+  return `# Model YAML
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+
+type: model
 materialize: true
+
+connector: {{ connector }}
+
 sql: {{ sql }}{{ dev_section }}
 `;
+}
 
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   options?: {
-    fieldFilter?: (property: ConnectorDriverProperty) => boolean;
-    orderedProperties?: ConnectorDriverProperty[];
+    fieldFilter?: (
+      property:
+        | ConnectorDriverProperty
+        | { key?: string; type?: string; secret?: boolean; internal?: boolean },
+    ) => boolean;
+    orderedProperties?: Array<
+      | ConnectorDriverProperty
+      | { key?: string; type?: string; secret?: boolean }
+    >;
+    connectorInstanceName?: string;
+    secretKeys?: string[];
+    stringKeys?: string[];
   },
 ) {
   // Add instructions to the top of the file
+  const driverName = getDriverNameForConnector(connector.name as string);
   const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+
 type: connector
 
-driver: ${connector.name}`;
+driver: ${driverName}`;
 
-  // Use the provided orderedProperties if available, otherwise fall back to configProperties/sourceProperties
-  let properties =
-    options?.orderedProperties ??
-    connector.configProperties ??
-    connector.sourceProperties ??
-    [];
+  // Use the provided orderedProperties if available.
+  let properties = options?.orderedProperties ?? [];
 
   // Optionally filter properties
   if (options?.fieldFilter) {
@@ -59,18 +75,10 @@ driver: ${connector.name}`;
   }
 
   // Get the secret property keys
-  const secretPropertyKeys =
-    connector.configProperties
-      ?.filter((property) => property.secret)
-      .map((property) => property.key) || [];
+  const secretPropertyKeys = options?.secretKeys ?? [];
 
   // Get the string property keys
-  const stringPropertyKeys =
-    connector.configProperties
-      ?.filter(
-        (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
-      )
-      .map((property) => property.key) || [];
+  const stringPropertyKeys = options?.stringKeys ?? [];
 
   // Compile key value pairs in the order of properties
   const compiledKeyValues = properties
@@ -96,10 +104,12 @@ driver: ${connector.name}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
+        const placeholder = `{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
-        )} }}"`;
+          options?.connectorInstanceName,
+        )} }}`;
+        return `${key}: "${placeholder}"`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -120,10 +130,18 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
+  connectorInstanceName?: string,
+  opts?: { secretKeys?: string[] },
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
-  // Get the existing .env file
+  // Invalidate the cache to ensure we get fresh .env content
+  // This prevents overwriting credentials added by a previous step
+  await queryClient.invalidateQueries({
+    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+  });
+
+  // Get the existing .env file with fresh data
   let blob: string;
   try {
     const file = await queryClient.fetchQuery({
@@ -141,13 +159,7 @@ export async function updateDotEnvWithSecrets(
   }
 
   // Get the secret keys
-  const properties =
-    formType === "source"
-      ? connector.sourceProperties
-      : connector.configProperties;
-  const secretKeys = properties
-    ?.filter((property) => property.secret)
-    .map((property) => property.key);
+  const secretKeys = opts?.secretKeys ?? [];
 
   // In reality, all connectors have secret keys, but this is a safeguard
   if (!secretKeys) {
@@ -163,6 +175,7 @@ export async function updateDotEnvWithSecrets(
     const connectorSecretKey = makeDotEnvConnectorKey(
       connector.name as string,
       key,
+      connectorInstanceName,
     );
 
     blob = replaceOrAddEnvVariable(
@@ -217,9 +230,15 @@ export function deleteEnvVariable(
   return newBlob;
 }
 
-export function makeDotEnvConnectorKey(connectorName: string, key: string) {
-  // Note: The connector name, not driver, is used. This enables configuring multiple connectors that use the same driver.
-  return `connector.${connectorName}.${key}`;
+export function makeDotEnvConnectorKey(
+  driverName: string,
+  key: string,
+  connectorInstanceName?: string,
+) {
+  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
+  // This enables configuring multiple connectors that use the same driver with unique env keys.
+  const nameToUse = connectorInstanceName || driverName;
+  return `connector.${nameToUse}.${key}`;
 }
 
 export async function updateRillYAMLWithOlapConnector(
@@ -305,10 +324,11 @@ export async function createYamlModelFromTable(
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
   const devSection = shouldIncludeDevSection
-    ? `\ndev:\n  sql: ${selectStatement} limit 10000`
+    ? `\n\ndev:\n  sql: ${selectStatement} limit 10000`
     : "";
 
-  const yamlContent = YAML_MODEL_TEMPLATE.replace("{{ connector }}", connector)
+  const yamlContent = yamlModelTemplate(driverName)
+    .replace("{{ connector }}", connector)
     .replace(/{{ sql }}/g, selectStatement)
     .replace("{{ dev_section }}", devSection);
 
@@ -386,8 +406,7 @@ export async function createSqlModelFromTable(
   );
 
   // Create model
-  const topComments =
-    "-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/reference/project-files/models";
+  const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,

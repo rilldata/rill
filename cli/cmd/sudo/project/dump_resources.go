@@ -25,6 +25,7 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 	var pageToken string
 	var annotations map[string]string
 	var typ string
+	var includeFiles bool
 
 	searchCmd := &cobra.Command{
 		Use:   "dump-resources [<project-pattern>]",
@@ -62,14 +63,14 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 
 			var m sync.Mutex
 			failedProjects := map[string]error{}
-			resources := map[string]map[string][]*runtimev1.Resource{}
+			resources := map[string]map[string][]*resourceWithFile{}
 			grp, ctx := errgroup.WithContext(ctx)
 			for _, name := range res.Names {
 				org := strings.Split(name, "/")[0]
 				project := strings.Split(name, "/")[1]
 
 				grp.Go(func() error {
-					row, err := resourcesForProject(ctx, client, org, project, typ)
+					row, err := resourcesForProject(ctx, ch, client, org, project, typ, includeFiles)
 					if err != nil {
 						m.Lock()
 						failedProjects[name] = err
@@ -79,7 +80,7 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 					m.Lock()
 					projects, ok := resources[org]
 					if !ok {
-						projects = map[string][]*runtimev1.Resource{}
+						projects = map[string][]*resourceWithFile{}
 						resources[org] = projects
 					}
 					projects[project] = row
@@ -111,14 +112,21 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 	searchCmd.Flags().StringToStringVar(&annotations, "annotation", nil, "Annotations to filter projects by (supports wildcard values)")
 	searchCmd.Flags().Uint32Var(&pageSize, "page-size", 1000, "Number of projects to return per page")
 	searchCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
+	searchCmd.Flags().BoolVar(&includeFiles, "include-files", false, "Include file contents for each resource")
 
 	return searchCmd
 }
 
-func resourcesForProject(ctx context.Context, c *client.Client, org, project, filter string) ([]*runtimev1.Resource, error) {
+// resourceWithFile pairs a resource with its optional file content.
+type resourceWithFile struct {
+	Resource    *runtimev1.Resource
+	FileContent string
+}
+
+func resourcesForProject(ctx context.Context, ch *cmdutil.Helper, c *client.Client, org, project, filter string, includeFiles bool) ([]*resourceWithFile, error) {
 	proj, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
-		OrganizationName:     org,
-		Name:                 project,
+		Org:                  org,
+		Project:              project,
 		SuperuserForceAccess: true,
 		IssueSuperuserToken:  true,
 	})
@@ -126,7 +134,7 @@ func resourcesForProject(ctx context.Context, c *client.Client, org, project, fi
 		return nil, err
 	}
 
-	depl := proj.ProdDeployment
+	depl := proj.Deployment
 	if depl == nil {
 		return nil, nil
 	}
@@ -151,10 +159,28 @@ func resourcesForProject(ctx context.Context, c *client.Client, org, project, fi
 		return nil, fmt.Errorf("runtime error, failed to list resources: %v", msg)
 	}
 
-	return res.Resources, nil
+	// Wrap resources with optional file content
+	result := make([]*resourceWithFile, 0, len(res.Resources))
+	for _, r := range res.Resources {
+		rwf := &resourceWithFile{Resource: r}
+		if includeFiles && len(r.Meta.FilePaths) > 0 {
+			fileRes, err := rt.GetFile(ctx, &runtimev1.GetFileRequest{
+				InstanceId: depl.RuntimeInstanceId,
+				Path:       r.Meta.FilePaths[0],
+			})
+			if err == nil {
+				rwf.FileContent = fileRes.Blob
+			} else {
+				ch.PrintfWarn("Failed to fetch file %q for resource %s/%s: %v\n", r.Meta.FilePaths[0], r.Meta.Name.Kind, r.Meta.Name.Name, err)
+			}
+		}
+		result = append(result, rwf)
+	}
+
+	return result, nil
 }
 
-func printResources(p *printer.Printer, resources map[string]map[string][]*runtimev1.Resource) {
+func printResources(p *printer.Printer, resources map[string]map[string][]*resourceWithFile) {
 	if len(resources) == 0 {
 		p.PrintfWarn("No resources found\n")
 		return
@@ -163,7 +189,8 @@ func printResources(p *printer.Printer, resources map[string]map[string][]*runti
 	rows := make([]map[string]any, 0)
 	for org, projectRes := range resources {
 		for proj, res := range projectRes {
-			for _, r := range res {
+			for _, rwf := range res {
+				r := rwf.Resource
 				row := make(map[string]any, 0)
 				rows = append(rows, row)
 
@@ -198,6 +225,9 @@ func printResources(p *printer.Printer, resources map[string]map[string][]*runti
 				row["project"] = proj
 				row["resource_type"] = runtime.PrettifyResourceKind(r.Meta.Name.Kind)
 				row["resource_name"] = r.Meta.Name.Name
+				if rwf.FileContent != "" {
+					row["file_content"] = rwf.FileContent
+				}
 			}
 		}
 	}

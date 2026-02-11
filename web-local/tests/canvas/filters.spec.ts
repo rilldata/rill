@@ -12,7 +12,7 @@ test.describe("canvas time filters", () => {
 
     await page
       .locator("#AdBids_metrics_canvas--component-0-0 div")
-      .filter({ hasText: "Total records 1,122 -5 ~0% vs previous day" })
+      .filter({ hasText: "Total records 1,122 -5 ~0% vs previous period" })
       .first()
       .click();
 
@@ -28,7 +28,7 @@ test.describe("canvas time filters", () => {
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByLabel("Select time range")
       .click();
-    await page.getByRole("menuitem", { name: "Last 7 Days" }).click();
+    await page.getByRole("menuitem", { name: "Last 7 days" }).click();
 
     await page.waitForTimeout(500);
 
@@ -36,6 +36,13 @@ test.describe("canvas time filters", () => {
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByLabel("Toggle time comparison")
       .click();
+
+    await page
+      .getByRole("complementary", { name: "Inspector Panel" })
+      .getByLabel("Select time comparison option")
+      .click();
+
+    await page.getByRole("menuitem", { name: "Previous week" }).click();
 
     await expect(
       page.getByText("Total records 7,863 -15 ~0% vs previous week"),
@@ -55,13 +62,16 @@ test.describe("canvas time filters", () => {
     await page.getByLabel("/dashboards").click();
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
-    await page.getByText("Total records 1,122 -5 ~0% vs previous day").click();
+    await page
+      .getByText("Total records 1,122 -5 ~0% vs previous period")
+      .click();
 
     await page.getByRole("button", { name: "Options" }).click();
     await page.getByRole("button", { name: "Add filter button" }).click();
     await page.getByRole("menuitem", { name: "Domain" }).click();
 
     await page.getByLabel("domain results").getByText("facebook.com").click();
+
     await page
       .getByLabel("domain results")
       .getByText("google.com", { exact: true })

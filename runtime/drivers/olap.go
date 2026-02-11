@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"math"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 
@@ -34,7 +32,7 @@ var (
 // It also provides pointers to the actual database/sql and database/sql/driver connections.
 // It's called with two contexts: wrappedCtx wraps the input context (including cancellation),
 // and ensuredCtx wraps a background context (ensuring it can never be cancelled).
-type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
+type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context) error
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
 type OLAPStore interface {
@@ -75,11 +73,23 @@ type Statement struct {
 	// Unlike a timeout on ctx, it will be enforced only for query execution, not for time spent waiting in queues.
 	// It may not be supported by all drivers.
 	ExecutionTimeout time.Duration
+	// QueryAttributes provides additional attributes for the query (if supported by the driver).
+	// These can be used to customize the behavior of the query "{{ .user.partnerId }}"
+	QueryAttributes map[string]string
 }
 
-// Result wraps the results of query.
+// Rows is an iterator for rows returned by a query. It mimics the behavior of sqlx.Rows.
+type Rows interface {
+	Next() bool
+	Err() error
+	Close() error
+	Scan(dest ...any) error
+	MapScan(dest map[string]any) error
+}
+
+// Result is the result of a query. It wraps a Rows iterator with additional functionality.
 type Result struct {
-	*sqlx.Rows
+	Rows
 	Schema    *runtimev1.StructType
 	cleanupFn func() error
 	cap       int64
@@ -160,7 +170,7 @@ func (r *Result) Close() error {
 type OLAPInformationSchema interface {
 	// All returns metadata about all tables and views.
 	// The like argument can optionally be passed to filter the tables by name.
-	All(ctx context.Context, like string) ([]*OlapTable, error)
+	All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*OlapTable, string, error)
 	// Lookup returns metadata about a specific tables and views.
 	Lookup(ctx context.Context, db, schema, name string) (*OlapTable, error)
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
@@ -176,9 +186,10 @@ type OlapTable struct {
 	IsDefaultDatabaseSchema bool
 	Name                    string
 	View                    bool
-	Schema                  *runtimev1.StructType
-	UnsupportedCols         map[string]string
-	PhysicalSizeBytes       int64
+	// Schema is the table schema. It is only set when only single table is looked up. It is not set when listing all tables.
+	Schema            *runtimev1.StructType
+	UnsupportedCols   map[string]string
+	PhysicalSizeBytes int64
 }
 
 // Dialect enumerates OLAP query languages.
@@ -190,6 +201,15 @@ const (
 	DialectDruid
 	DialectClickHouse
 	DialectPinot
+	DialectStarRocks
+
+	// Below dialects are not fully supported dialects.
+	DialectBigQuery
+	DialectSnowflake
+	DialectAthena
+	DialectRedshift
+	DialectMySQL
+	DialectPostgres
 )
 
 func (d Dialect) String() string {
@@ -204,6 +224,20 @@ func (d Dialect) String() string {
 		return "clickhouse"
 	case DialectPinot:
 		return "pinot"
+	case DialectStarRocks:
+		return "starrocks"
+	case DialectBigQuery:
+		return "bigquery"
+	case DialectSnowflake:
+		return "snowflake"
+	case DialectAthena:
+		return "athena"
+	case DialectRedshift:
+		return "redshift"
+	case DialectMySQL:
+		return "mysql"
+	case DialectPostgres:
+		return "postgres"
 	default:
 		panic("not implemented")
 	}
@@ -218,7 +252,18 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\"")) // nolint:gocritic // Because SQL escaping is different
+
+	switch d {
+	case DialectMySQL, DialectBigQuery, DialectStarRocks:
+		// MySQL and StarRocks use backticks for quoting identifiers
+		// Replace any backticks inside the identifier with double backticks.
+		return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
+
+	default:
+		// Most other dialects follow ANSI SQL: use double quotes.
+		// Replace any internal double quotes with escaped double quotes.
+		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
+	}
 }
 
 func (d Dialect) EscapeStringValue(s string) string {
@@ -255,7 +300,8 @@ func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
 }
 
 func (d Dialect) SupportsILike() bool {
-	return d != DialectDruid && d != DialectPinot
+	// StarRocks uses MySQL syntax which doesn't support ILIKE
+	return d != DialectDruid && d != DialectPinot && d != DialectStarRocks
 }
 
 // RequiresCastForLike returns true if the dialect requires an expression used in a LIKE or ILIKE condition to explicitly be cast to type TEXT.
@@ -263,7 +309,20 @@ func (d Dialect) RequiresCastForLike() bool {
 	return d == DialectClickHouse
 }
 
-// EscapeTable returns an esacped fully qualified table name
+func (d Dialect) SupportsRegexMatch() bool {
+	return d == DialectDruid
+}
+
+func (d Dialect) GetRegexMatchFunction() string {
+	switch d {
+	case DialectDruid:
+		return "REGEXP_LIKE"
+	default:
+		panic(fmt.Sprintf("unsupported dialect %q for regex match", d))
+	}
+}
+
+// EscapeTable returns an escaped table name with database, schema and table.
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	if d == DialectDuckDB {
 		return d.EscapeIdentifier(table)
@@ -279,6 +338,14 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 	}
 	sb.WriteString(d.EscapeIdentifier(table))
 	return sb.String()
+}
+
+// EscapeMember returns an escaped member name with table alias and column name.
+func (d Dialect) EscapeMember(tbl, name string) string {
+	if tbl == "" {
+		return d.EscapeIdentifier(name)
+	}
+	return fmt.Sprintf("%s.%s", d.EscapeIdentifier(tbl), d.EscapeIdentifier(name))
 }
 
 func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
@@ -335,7 +402,7 @@ func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tu
 	}
 	if d == DialectClickHouse {
 		// using `LEFT ARRAY JOIN` instead of just `ARRAY JOIN` as it includes empty arrays in the result set with zero values
-		return fmt.Sprintf("LEFT ARRAY JOIN %s as %s", expr, colName), false, false, nil
+		return fmt.Sprintf("LEFT ARRAY JOIN %s as %s", expr, d.EscapeIdentifier(colName)), false, false, nil
 	}
 	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
 }
@@ -374,11 +441,42 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	return d.EscapeIdentifier(dimension.Name), nil
 }
 
+// AnyValueExpression applies the ANY_VALUE aggregation function (or equivalent) to the given expression.
+func (d Dialect) AnyValueExpression(expr string) string {
+	return fmt.Sprintf("ANY_VALUE(%s)", expr)
+}
+
+func (d Dialect) MinDimensionExpression(expr string) string {
+	if d == DialectDruid {
+		return fmt.Sprintf("EARLIEST(%s)", expr) // since MIN on string column is not supported
+	}
+	return fmt.Sprintf("MIN(%s)", expr)
+}
+
+func (d Dialect) MaxDimensionExpression(expr string) string {
+	if d == DialectDruid {
+		return fmt.Sprintf("LATEST(%s)", expr) // since MAX on string column is not supported
+	}
+	return fmt.Sprintf("MAX(%s)", expr)
+}
+
 func (d Dialect) GetTimeDimensionParameter() string {
 	if d == DialectPinot {
 		return "CAST(? AS TIMESTAMP)"
 	}
 	return "?"
+}
+
+func (d Dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
+	switch typ {
+	case runtimev1.Type_CODE_TIMESTAMP:
+		if d == DialectClickHouse {
+			return "DateTime64", nil
+		}
+		return "TIMESTAMP", nil
+	default:
+		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
+	}
 }
 
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
@@ -395,7 +493,7 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 	if desc {
 		res += " DESC"
 	}
-	if d == DialectDuckDB {
+	if d == DialectDuckDB || d == DialectStarRocks {
 		res += " NULLS LAST"
 	}
 	return res
@@ -404,6 +502,10 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 func (d Dialect) JoinOnExpression(lhs, rhs string) string {
 	if d == DialectClickHouse {
 		return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
+	}
+	// StarRocks uses MySQL's NULL-safe equal operator
+	if d == DialectStarRocks {
+		return fmt.Sprintf("%s <=> %s", lhs, rhs)
 	}
 	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
@@ -516,6 +618,13 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 			return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS') AS TIMESTAMP)", specifier, expr), nil
 		}
 		return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS', '%s') AS TIMESTAMP)", specifier, expr, tz), nil
+	case DialectStarRocks:
+		// StarRocks supports date_trunc and CONVERT_TZ for timezone handling
+		if tz == "" {
+			return fmt.Sprintf("date_trunc('%s', %s)", specifier, expr), nil
+		}
+		// Convert to target timezone, truncate, then convert back to UTC
+		return fmt.Sprintf("CONVERT_TZ(date_trunc('%s', CONVERT_TZ(%s, 'UTC', '%s')), '%s', 'UTC')", specifier, expr, tz, tz), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -528,7 +637,7 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 		return fmt.Sprintf("DATEDIFF('%s', parseDateTimeBestEffort('%s'), parseDateTimeBestEffort('%s'))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectDruid:
 		return fmt.Sprintf("TIMESTAMPDIFF(%q, TIME_PARSE('%s'), TIME_PARSE('%s'))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
-	case DialectDuckDB:
+	case DialectDuckDB, DialectStarRocks:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectPinot:
 		return fmt.Sprintf("DATEDIFF('%s', %d, %d)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
@@ -539,25 +648,29 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 
 func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error) {
 	switch d {
-	case DialectClickHouse, DialectDruid, DialectDuckDB:
+	case DialectClickHouse, DialectDruid, DialectDuckDB, DialectStarRocks:
 		return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 	case DialectPinot:
-		return fmt.Sprintf("(dateAdd('%s', -1 * %s, %s))", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
+		return fmt.Sprintf("CAST((dateAdd('%s', -1 * %s, %s)) AS TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
 }
 
-func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location) (string, []any, error) {
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
+	g := timeutil.TimeGrainFromAPI(grain)
+	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
 	var args []any
 	switch d {
 	case DialectDuckDB:
-		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil, nil
+		// first convert start and end to the target timezone as the application sends UTC representation of the time, so it will send `2024-03-12T18:30:00Z` for the 13th day of March in Asia/Kolkata timezone (`2024-03-13T00:00:00Z`)
+		// then let duckdb range over it and then convert back to the target timezone
+		return fmt.Sprintf("SELECT range AT TIME ZONE '%s' AS %s FROM range('%s'::TIMESTAMPTZ AT TIME ZONE '%s', '%s'::TIMESTAMPTZ AT TIME ZONE '%s', INTERVAL '1 %s')", tz.String(), d.EscapeIdentifier(alias), start.Format(time.RFC3339), tz.String(), end.Format(time.RFC3339), tz.String(), d.ConvertToDateTruncSpecifier(grain)), nil, nil
 	case DialectClickHouse:
 		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}
@@ -566,7 +679,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		}
 		sb.WriteString(")")
 		return sb.String(), args, nil
-	case DialectDruid:
+	case DialectDruid, DialectPinot:
 		// generate select like - SELECT * FROM (
 		//  VALUES
 		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
@@ -574,7 +687,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// ) t (time)
 		var sb strings.Builder
 		sb.WriteString("SELECT * FROM (VALUES ")
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}
@@ -583,6 +696,18 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		}
 		sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(alias)))
 		return sb.String(), args, nil
+	case DialectStarRocks:
+		// StarRocks uses UNION ALL for generating time series
+		var sb strings.Builder
+		first := true
+		for t := start; t != end; t = timeutil.OffsetTime(t, g, 1, tz) {
+			if !first {
+				sb.WriteString(" UNION ALL ")
+			}
+			sb.WriteString(fmt.Sprintf("SELECT CAST('%s' AS DATETIME) AS %s", t.Format(time.DateTime), d.EscapeIdentifier(alias)))
+			first = false
+		}
+		return sb.String(), nil, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -780,6 +905,8 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
 	case DialectPinot:
 		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
+	case DialectStarRocks:
+		return true, fmt.Sprintf("CAST('%s' AS DATETIME)", t.Format(time.DateTime))
 	default:
 		return false, ""
 	}

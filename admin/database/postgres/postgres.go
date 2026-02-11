@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -129,9 +130,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, favicon_asset_id, thumbnail_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, logo_dark_asset_id, favicon_asset_id, thumbnail_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -150,8 +151,8 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, favicon_asset_id=$5, thumbnail_asset_id=$6, custom_domain=$7, default_project_role_id=$8, quota_projects=$9, quota_deployments=$10, quota_slots_total=$11, quota_slots_per_deployment=$12, quota_outstanding_invites=$13, quota_storage_limit_bytes_per_deployment=$14, billing_customer_id=$15, payment_customer_id=$16, billing_email=$17, created_by_user_id=$18, billing_plan_name=$19, billing_plan_display_name=$20, updated_on=now() WHERE id=$21 RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, id).StructScan(res)
+		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, logo_dark_asset_id=$5, favicon_asset_id=$6, thumbnail_asset_id=$7, custom_domain=$8, default_project_role_id=$9, quota_projects=$10, quota_deployments=$11, quota_slots_total=$12, quota_slots_per_deployment=$13, quota_outstanding_invites=$14, quota_storage_limit_bytes_per_deployment=$15, billing_customer_id=$16, payment_customer_id=$17, billing_email=$18, created_by_user_id=$19, billing_plan_name=$20, billing_plan_display_name=$21, updated_on=now() WHERE id=$22 RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -282,6 +283,40 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	return c.projectsFromDTOs(res)
 }
 
+// FindProjectsForUserAndFingerprint returns projects for the user based on fingerprint.
+// The fingerprint is simply git_remote + subpath for git based projects.
+// For archive projects it is directory_name.
+func (c *connection) FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, rillMgdRemote string) ([]*database.Project, error) {
+	// Shouldn't happen, but just to be safe and not return all projects.
+	if directoryName == "" && gitRemote == "" {
+		return nil, nil
+	}
+
+	args := []any{userID, directoryName, gitRemote, subpath, rillMgdRemote}
+	qry := `
+		SELECT p.* FROM projects p
+		WHERE p.id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $1
+			UNION
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users ugu ON ugpr.usergroup_id = ugu.usergroup_id WHERE ugu.user_id = $1
+		)
+		AND (
+			(p.archive_asset_id IS NULL AND p.git_remote = $3 AND p.subpath = $4)
+			OR
+			(p.archive_asset_id IS NULL AND p.git_remote = $5)
+			OR
+			(p.archive_asset_id IS NOT NULL AND p.directory_name = $2)
+		)
+	`
+
+	var res []*projectDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry, args...)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return c.projectsFromDTOs(res)
+}
+
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -388,9 +423,47 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_slots, subpath, prod_branch, archive_asset_id, git_remote, github_installation_id, github_repo_id, managed_git_repo_id, prod_ttl_seconds, prod_version, dev_slots, dev_ttl_seconds)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ProdTTLSeconds, opts.ProdVersion, opts.DevSlots, opts.DevTTLSeconds,
+		INSERT INTO projects (
+			org_id,
+			name,
+			description,
+			public,
+			created_by_user_id,
+			directory_name,
+			provisioner,
+			prod_slots,
+			subpath,
+			primary_branch,
+			archive_asset_id,
+			git_remote,
+			github_installation_id,
+			github_repo_id,
+			managed_git_repo_id,
+			prod_ttl_seconds,
+			prod_version,
+			dev_slots,
+			dev_ttl_seconds
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *`,
+		opts.OrganizationID,
+		opts.Name,
+		opts.Description,
+		opts.Public,
+		opts.CreatedByUserID,
+		opts.DirectoryName,
+		opts.Provisioner,
+		opts.ProdSlots,
+		opts.Subpath,
+		opts.PrimaryBranch,
+		opts.ArchiveAssetID,
+		opts.GitRemote,
+		opts.GithubInstallationID,
+		opts.GithubRepoID,
+		opts.ManagedGitRepoID,
+		opts.ProdTTLSeconds,
+		opts.ProdVersion,
+		opts.DevSlots,
+		opts.DevTTLSeconds,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -412,10 +485,54 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	}
 
 	res := &projectDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, git_remote=$5, github_installation_id=$6, github_repo_id=$7, managed_git_repo_id=$8, archive_asset_id=$9, prod_deployment_id=$10, provisioner=$11, prod_slots=$12, subpath=$13, prod_ttl_seconds=$14, annotations=$15, prod_version=$16, dev_slots=$17, dev_ttl_seconds=$18, updated_on=now()
-		WHERE id=$19 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GitRemote, opts.GithubInstallationID, opts.GithubRepoID, opts.ManagedGitRepoID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, opts.DevSlots, opts.DevTTLSeconds, id,
+	err := c.getDB(ctx).QueryRowxContext(
+		ctx,
+		`
+		UPDATE projects
+		SET
+			name = $1,
+			description = $2,
+			public = $3,
+			directory_name = $4,
+			primary_branch = $5,
+			git_remote = $6,
+			github_installation_id = $7,
+			github_repo_id = $8,
+			managed_git_repo_id = $9,
+			archive_asset_id = $10,
+			primary_deployment_id = $11,
+			provisioner = $12,
+			prod_slots = $13,
+			subpath = $14,
+			prod_ttl_seconds = $15,
+			annotations = $16,
+			prod_version = $17,
+			dev_slots = $18,
+			dev_ttl_seconds = $19,
+			updated_on = now()
+		WHERE id = $20
+		RETURNING *
+		`,
+		opts.Name,
+		opts.Description,
+		opts.Public,
+		opts.DirectoryName,
+		opts.PrimaryBranch,
+		opts.GitRemote,
+		opts.GithubInstallationID,
+		opts.GithubRepoID,
+		opts.ManagedGitRepoID,
+		opts.ArchiveAssetID,
+		opts.PrimaryDeploymentID,
+		opts.Provisioner,
+		opts.ProdSlots,
+		opts.Subpath,
+		opts.ProdTTLSeconds,
+		opts.Annotations,
+		opts.ProdVersion,
+		opts.DevSlots,
+		opts.DevTTLSeconds,
+		id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -518,9 +635,26 @@ func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.De
 	return res, nil
 }
 
-func (c *connection) FindDeploymentsForProject(ctx context.Context, projectID string) ([]*database.Deployment, error) {
-	var res []*database.Deployment
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM deployments d WHERE d.project_id=$1", projectID)
+func (c *connection) FindDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*database.Deployment, error) {
+	var (
+		res   []*database.Deployment
+		query strings.Builder
+		args  []any
+	)
+
+	query.WriteString("SELECT * FROM deployments d WHERE d.project_id=$1")
+	args = append(args, projectID)
+
+	if environment != "" {
+		query.WriteString(fmt.Sprintf(" AND d.environment=$%d", len(args)+1))
+		args = append(args, environment)
+	}
+	if branch != "" {
+		query.WriteString(fmt.Sprintf(" AND d.branch=$%d", len(args)+1))
+		args = append(args, branch)
+	}
+
+	err := c.getDB(ctx).SelectContext(ctx, &res, query.String(), args...)
 	if err != nil {
 		return nil, parseErr("deployments", err)
 	}
@@ -552,9 +686,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, owner_user_id, environment, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
+		INSERT INTO deployments (project_id, owner_user_id, environment, branch, editable, runtime_host, runtime_instance_id, runtime_audience, status, status_message, desired_status, desired_status_updated_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now()) RETURNING *`,
+		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.Editable, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, opts.DesiredStatus,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -567,13 +701,31 @@ func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 	return checkDeleteRow("deployment", res, err)
 }
 
-func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *database.UpdateDeploymentOptions) (*database.Deployment, error) {
+func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus database.DeploymentStatus) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET desired_status=$1, desired_status_updated_on=now(), updated_on=now() WHERE id=$2 RETURNING *", desiredStatus, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentUnsafe(ctx context.Context, id string, opts *database.UpdateDeploymentUnsafeOptions) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		UPDATE deployments
-		SET branch=$1, runtime_host=$2, runtime_instance_id=$3, runtime_audience=$4, status=$5, status_message=$6, updated_on=now()
-		WHERE id=$7 RETURNING *`,
-		opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, id,
+		SET runtime_host=$1, runtime_instance_id=$2, runtime_audience=$3, status=$4, status_message=$5, updated_on=now()
+		WHERE id=$6 RETURNING *`,
+		opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -581,9 +733,14 @@ func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *data
 	return res, nil
 }
 
-func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
+func (c *connection) UpdateDeploymentSafe(ctx context.Context, id string, opts *database.UpdateDeploymentSafeOptions) (*database.Deployment, error) {
 	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE deployments
+		SET desired_status=$1, branch=$2, desired_status_updated_on=now(), updated_on=now()
+		WHERE id=$3 RETURNING *`,
+		opts.DesiredStatus, opts.Branch, id,
+	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
@@ -661,6 +818,24 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
+func (c *connection) FindUserWithAttributes(ctx context.Context, userID, orgID string) (*database.User, map[string]any, error) {
+	var dto userWithAttributesDTO
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT u.*, uor.attributes
+		FROM users u
+		LEFT JOIN users_orgs_roles uor ON u.id = uor.user_id AND uor.org_id = $2
+		WHERE u.id = $1
+	`, userID, orgID).StructScan(&dto)
+	if err != nil {
+		return nil, nil, parseErr("user with org attributes", err)
+	}
+	user, attributes, err := dto.userWithAttributesFromDTO()
+	if err != nil {
+		return nil, nil, err
+	}
+	return user, attributes, nil
+}
+
 func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u
@@ -724,11 +899,13 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_refresh_token=$5, quota_singleuser_orgs=$6, quota_trial_orgs=$7, preference_time_zone=$8, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_token=$5, github_token_expires_on=$6, github_refresh_token=$7, quota_singleuser_orgs=$8, quota_trial_orgs=$9, preference_time_zone=$10, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		opts.DisplayName,
 		opts.PhotoURL,
 		opts.GithubUsername,
+		opts.GithubToken,
+		opts.GithubTokenExpiresOn,
 		opts.GithubRefreshToken,
 		opts.QuotaSingleuserOrgs,
 		opts.QuotaTrialOrgs,
@@ -951,7 +1128,7 @@ func (c *connection) DeleteManagedUsergroupsMemberUser(ctx context.Context, orgI
 	return nil
 }
 
-func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*database.UserAuthToken, error) {
+func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int, refresh *bool) ([]*database.UserAuthToken, error) {
 	var qry strings.Builder
 	qry.WriteString(`
 		SELECT
@@ -962,11 +1139,18 @@ func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID str
 		WHERE t.user_id = $1 AND (t.expires_on IS NULL OR t.expires_on > now())
 	`)
 	args := []any{userID}
+
+	// Filter by refresh token status if specified
+	if refresh != nil {
+		qry.WriteString(" AND t.refresh = $2")
+		args = append(args, *refresh)
+	}
+
 	if afterID != "" {
-		qry.WriteString(" AND t.id > $2 ORDER BY t.id LIMIT $3")
+		qry.WriteString(fmt.Sprintf(" AND t.id > $%d ORDER BY t.id LIMIT $%d", len(args)+1, len(args)+2))
 		args = append(args, afterID, limit)
 	} else {
-		qry.WriteString(" ORDER BY t.id LIMIT $2")
+		qry.WriteString(fmt.Sprintf(" ORDER BY t.id LIMIT $%d", len(args)+1))
 		args = append(args, limit)
 	}
 
@@ -994,9 +1178,9 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, expires_on)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.ExpiresOn,
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, refresh, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.Refresh, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("auth token", err)
@@ -1015,6 +1199,26 @@ func (c *connection) UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return checkDeleteRow("auth token", res, err)
+}
+
+func (c *connection) DeleteAllUserAuthTokens(ctx context.Context, userID string) (int, error) {
+	qry := "DELETE FROM user_auth_tokens WHERE user_id=$1"
+	args := []any{userID}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, qry, args...)
+	if err != nil {
+		return 0, parseErr("delete all auth tokens", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, parseErr("delete all auth tokens", err)
+	}
+	return int(n), nil
+}
+
+func (c *connection) DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE user_id = $1 AND representing_user_id = $2", userID, representingUserID)
+	return parseErr("auth token", err)
 }
 
 func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error {
@@ -1401,16 +1605,20 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		return nil, err
 	}
 
-	resources, err := json.Marshal(opts.Resources)
+	resources, err := marshalResourceNames(opts.Resources)
 	if err != nil {
 		return nil, err
 	}
 
+	if opts.MetricsViewFilterJSONs == nil {
+		opts.MetricsViewFilterJSONs = make(map[string]string)
+	}
+
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, filter_json, fields, state, display_name, internal, resources)
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view_filter_jsons, fields, state, display_name, internal, resources)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.FilterJSON, opts.Fields, opts.State, opts.DisplayName, opts.Internal, resources,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsViewFilterJSONs, opts.Fields, opts.State, opts.DisplayName, opts.Internal, resources,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
@@ -1441,25 +1649,25 @@ func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention
 	return parseErr("magic auth token", err)
 }
 
-func (c *connection) FindReportTokens(ctx context.Context, reportName string) ([]*database.ReportToken, error) {
-	var res []*database.ReportToken
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM report_tokens WHERE report_name=$1`, reportName)
+func (c *connection) FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*database.NotificationToken, error) {
+	var res []*database.NotificationToken
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM notification_tokens WHERE resource_kind=$1 AND resource_name=$2`, resourceKind, resourceName)
 	if err != nil {
-		return nil, parseErr("report tokens", err)
+		return nil, parseErr("notification tokens", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*database.ReportTokenWithSecret, error) {
-	var res []*reportTokenWithSecretDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret as magic_auth_token_secret, m.secret_encryption_key_id FROM report_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.report_name=$1`, reportName)
+func (c *connection) FindNotificationTokensWithSecret(ctx context.Context, resourceKind, resourceName string) ([]*database.NotificationTokenWithSecret, error) {
+	var res []*notificationTokenWithSecretDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret as magic_auth_token_secret, m.secret_encryption_key_id FROM notification_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.resource_kind=$1 AND t.resource_name=$2`, resourceKind, resourceName)
 	if err != nil {
-		return nil, parseErr("report tokens", err)
+		return nil, parseErr("notification tokens", err)
 	}
 
-	ret := make([]*database.ReportTokenWithSecret, len(res))
+	ret := make([]*database.NotificationTokenWithSecret, len(res))
 	for i, dto := range res {
-		ret[i], err = c.reportTokenWithSecretFromDTO(dto)
+		ret[i], err = c.notificationTokenWithSecretFromDTO(dto)
 		if err != nil {
 			return nil, err
 		}
@@ -1467,24 +1675,24 @@ func (c *connection) FindReportTokensWithSecret(ctx context.Context, reportName 
 	return ret, nil
 }
 
-func (c *connection) FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*database.ReportToken, error) {
-	res := &database.ReportToken{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM report_tokens WHERE magic_auth_token_id=$1`, magicAuthTokenID).StructScan(res)
+func (c *connection) FindNotificationTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*database.NotificationToken, error) {
+	res := &database.NotificationToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM notification_tokens WHERE magic_auth_token_id=$1`, magicAuthTokenID).StructScan(res)
 	if err != nil {
-		return nil, parseErr("report token", err)
+		return nil, parseErr("notification token", err)
 	}
 	return res, nil
 }
 
-func (c *connection) InsertReportToken(ctx context.Context, opts *database.InsertReportTokenOptions) (*database.ReportToken, error) {
+func (c *connection) InsertNotificationToken(ctx context.Context, opts *database.InsertNotificationTokenOptions) (*database.NotificationToken, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
 
-	res := &database.ReportToken{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO report_tokens (report_name, recipient_email, magic_auth_token_id) VALUES ($1, $2, $3) RETURNING *`, opts.ReportName, opts.RecipientEmail, opts.MagicAuthTokenID).StructScan(res)
+	res := &database.NotificationToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO notification_tokens (resource_kind, resource_name, recipient_email, magic_auth_token_id) VALUES ($1, $2, $3, $4) RETURNING *`, opts.ResourceKind, opts.ResourceName, opts.RecipientEmail, opts.MagicAuthTokenID).StructScan(res)
 	if err != nil {
-		return nil, parseErr("report token", err)
+		return nil, parseErr("notification token", err)
 	}
 	return res, nil
 }
@@ -1563,6 +1771,40 @@ func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retent
 	return parseErr("authorization code", err)
 }
 
+func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes, redirectURIs []string) (*database.AuthClient, error) {
+	if grantTypes == nil {
+		grantTypes = []string{}
+	}
+	if redirectURIs == nil {
+		redirectURIs = []string{}
+	}
+	dto := &authClientDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		`INSERT INTO auth_clients (display_name, scope, grant_types, redirect_uris) VALUES ($1, $2, $3, $4) RETURNING *`,
+		displayName, scope, grantTypes, redirectURIs).StructScan(dto)
+	if err != nil {
+		return nil, parseErr("auth client", err)
+	}
+	return dto.AsModel()
+}
+
+func (c *connection) FindAuthClient(ctx context.Context, id string) (*database.AuthClient, error) {
+	dto := &authClientDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM auth_clients WHERE id = $1", id).StructScan(dto)
+	if err != nil {
+		return nil, parseErr("auth client", err)
+	}
+	return dto.AsModel()
+}
+
+func (c *connection) UpdateAuthClientUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE auth_clients SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("auth client", err)
+	}
+	return nil
+}
+
 func (c *connection) FindOrganizationRoles(ctx context.Context) ([]*database.OrganizationRole, error) {
 	var res []*database.OrganizationRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_roles")
@@ -1593,6 +1835,15 @@ func (c *connection) FindProjectRoles(ctx context.Context) ([]*database.ProjectR
 func (c *connection) FindProjectRole(ctx context.Context, name string) (*database.ProjectRole, error) {
 	role := &database.ProjectRole{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_roles WHERE lower(name)=lower($1)", name).StructScan(role)
+	if err != nil {
+		return nil, parseErr("project role", err)
+	}
+	return role, nil
+}
+
+func (c *connection) FindProjectRoleByID(ctx context.Context, id string) (*database.ProjectRole, error) {
+	role := &database.ProjectRole{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_roles WHERE id=$1", id).StructScan(role)
 	if err != nil {
 		return nil, parseErr("project role", err)
 	}
@@ -1663,10 +1914,10 @@ func (c *connection) ResolveProjectRolesForService(ctx context.Context, serviceI
 	return roles, nil
 }
 
-func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*database.OrganizationMemberUser, error) {
+func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int, searchPattern string) ([]*database.OrganizationMemberUser, error) {
 	args := []any{orgID, afterEmail, limit}
 	var qry strings.Builder
-	qry.WriteString("SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name")
+	qry.WriteString("SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name, uor.attributes")
 	if withCounts {
 		qry.WriteString(`,
 			(
@@ -1680,7 +1931,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 				SELECT COUNT(*)
 				FROM usergroups_users uus
 				JOIN usergroups ugu ON uus.usergroup_id = ugu.id
-				WHERE ugu.org_id = $1 AND uus.user_id = u.id
+				WHERE ugu.org_id = $1 AND uus.user_id = u.id AND NOT ugu.managed
 			) as usergroups_count
 		`)
 	}
@@ -1694,24 +1945,41 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 		qry.WriteString(" AND uor.org_role_id=$4")
 		args = append(args, filterRoleID)
 	}
+	if searchPattern != "" {
+		qry.WriteString(fmt.Sprintf(" AND (lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", len(args)+1, len(args)+1))
+		args = append(args, searchPattern)
+	}
 	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
 
 	var res []*database.OrganizationMemberUser
-	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
+	var dtos []*organizationMemberUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("org members", err)
+	}
+	for _, dto := range dtos {
+		user, err := dto.organizationMemberUserFromDTO()
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, user)
 	}
 	return res, nil
 }
 
-func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error) {
+func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, searchPattern string) (int, error) {
 	var count int
-	query := "SELECT COUNT(*) FROM users_orgs_roles uor WHERE uor.org_id=$1"
+	query := "SELECT COUNT(*) FROM users_orgs_roles uor JOIN users u ON u.id = uor.user_id WHERE uor.org_id=$1"
 	args := []any{orgID}
 
 	if filterRoleID != "" {
 		query += " AND uor.org_role_id=$2"
 		args = append(args, filterRoleID)
+	}
+
+	if searchPattern != "" {
+		query += fmt.Sprintf(" AND (lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", len(args)+1, len(args)+1)
+		args = append(args, searchPattern)
 	}
 
 	err := c.getDB(ctx).QueryRowxContext(ctx, query, args...).Scan(&count)
@@ -1731,6 +1999,40 @@ func (c *connection) FindOrganizationMemberUsersByRole(ctx context.Context, orgI
 	return res, nil
 }
 
+func (c *connection) FindOrganizationMemberUser(ctx context.Context, orgID, userID string) (*database.OrganizationMemberUser, error) {
+	qry := `SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name, uor.attributes,
+			(
+				SELECT COUNT(*) FROM projects p WHERE p.org_id = $1 AND p.id IN (
+					SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = u.id
+					UNION
+					SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = u.id
+				)
+			) as projects_count,
+			(
+				SELECT COUNT(*)
+				FROM usergroups_users uus
+				JOIN usergroups ugu ON uus.usergroup_id = ugu.id
+				WHERE ugu.org_id = $1 AND uus.user_id = u.id
+			) as usergroups_count
+		FROM users u
+		JOIN users_orgs_roles uor ON u.id = uor.user_id
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.org_id = $1 AND uor.user_id = $2`
+
+	var dto organizationMemberUserDTO
+	err := c.getDB(ctx).QueryRowxContext(ctx, qry, orgID, userID).StructScan(&dto)
+	if err != nil {
+		return nil, parseErr("org member", err)
+	}
+
+	user, err := dto.organizationMemberUserFromDTO()
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (c *connection) FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error) {
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
 		SELECT
@@ -1746,9 +2048,14 @@ func (c *connection) FindOrganizationMemberUserAdminStatus(ctx context.Context, 
 	return isAdmin, isLastAdmin, nil
 }
 
-func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error) {
+func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]interface{}, ifNotExists bool) (bool, error) {
+	attrs, err := c.validateAttributes(attributes)
+	if err != nil {
+		return false, err
+	}
+
 	if !ifNotExists {
-		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id) VALUES ($1, $2, $3)", userID, orgID, roleID)
+		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes) VALUES ($1, $2, $3, $4)", userID, orgID, roleID, attrs)
 		if err != nil {
 			return false, parseErr("org member", err)
 		}
@@ -1763,10 +2070,10 @@ func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, us
 	}
 
 	res, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO users_orgs_roles (user_id, org_id, org_role_id)
-		VAlUES ($1, $2, $3)
+		INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (user_id, org_id) DO NOTHING
-	`, userID, orgID, roleID)
+	`, userID, orgID, roleID, attributes)
 	if err != nil {
 		return false, parseErr("org member", err)
 	}
@@ -1790,6 +2097,30 @@ func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID
 	return checkUpdateRow("org member", res, err)
 }
 
+func (c *connection) UpdateOrganizationMemberUserAttributes(ctx context.Context, orgID, userID string, attributes map[string]any) (bool, error) {
+	attrs, err := c.validateAttributes(attributes)
+	if err != nil {
+		return false, err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE users_orgs_roles
+		SET attributes = $1
+		WHERE user_id = $2 AND org_id = $3
+	`, attrs, userID, orgID)
+	if err != nil {
+		return false, parseErr("org member attributes", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if rows > 1 {
+		panic(fmt.Errorf("expected to update 0 or 1 row, but updated %d", rows))
+	}
+	return rows != 0, nil
+}
+
 func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
@@ -1807,8 +2138,9 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 
 func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.OrganizationMemberUser, error) {
 	var res []*database.OrganizationMemberUser
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name
+	var dtos []*organizationMemberUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name, uor.attributes
 		FROM users u
 		JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id
@@ -1817,6 +2149,13 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 	`, orgID)
 	if err != nil {
 		return nil, parseErr("org members", err)
+	}
+	for _, dto := range dtos {
+		user, err := dto.organizationMemberUserFromDTO()
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, user)
 	}
 	return res, nil
 }
@@ -1859,7 +2198,9 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectI
 				JOIN users_orgs_roles uor
 				ON orr.id = uor.org_role_id
 				WHERE uor.user_id = u.id AND uor.org_id = $1
-			) as org_role_name
+			) as org_role_name,
+			upr.resources,
+			upr.restrict_resources
 		FROM users u
 		JOIN users_projects_roles upr ON upr.user_id = u.id
 		WHERE upr.project_id = $2
@@ -1870,12 +2211,37 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectI
 	}
 	qry.WriteString(" AND lower(u.email) > lower($3) ORDER BY lower(u.email) LIMIT $4")
 
-	var res []*database.ProjectMemberUser
-	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
+	var dtos []*projectMemberUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("project members", err)
 	}
-	return res, nil
+	return c.projectMemberUsersFromDTOs(dtos)
+}
+
+func (c *connection) FindProjectMemberUser(ctx context.Context, projectID, userID string) (*database.ProjectMemberUser, error) {
+	dto := &projectMemberUserDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT
+			u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on,
+			(SELECT pr.name FROM project_roles pr WHERE pr.id = upr.project_role_id) as role_name,
+			(
+				SELECT orr.name
+				FROM org_roles orr
+				JOIN users_orgs_roles uor
+				ON orr.id = uor.org_role_id
+				WHERE uor.user_id = u.id AND uor.org_id = (SELECT org_id FROM projects WHERE id = upr.project_id)
+			) as org_role_name,
+			upr.resources,
+			upr.restrict_resources
+		FROM users u
+		JOIN users_projects_roles upr ON upr.user_id = u.id
+		WHERE upr.project_id = $1 AND upr.user_id = $2
+	`, projectID, userID).StructScan(dto)
+	if err != nil {
+		return nil, parseErr("project member", err)
+	}
+	return dto.asModel()
 }
 
 func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*database.ProjectRole, error) {
@@ -1905,8 +2271,13 @@ func (c *connection) UpdateSuperuser(ctx context.Context, userID string, superus
 	return checkUpdateRow("superuser", res, err)
 }
 
-func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_projects_roles (user_id, project_id, project_role_id) VALUES ($1, $2, $3)", userID, projectID, roleID)
+func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string, restrictResources bool, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_projects_roles (user_id, project_id, project_role_id, restrict_resources, resources) VALUES ($1, $2, $3, $4, $5)", userID, projectID, roleID, restrictResources, resJSON)
 	if err != nil {
 		return parseErr("project member", err)
 	}
@@ -1988,11 +2359,19 @@ func (c *connection) DeleteOrganizationMemberUsergroup(ctx context.Context, grou
 	return checkDeleteRow("org group member", res, err)
 }
 
-func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	args := []any{projectID, afterName, limit}
 	var qry strings.Builder
+	qry.WriteString(`SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name", upr.resources, upr.restrict_resources`)
+	if withCounts {
+		qry.WriteString(`,
+			(
+				SELECT COUNT(*) FROM usergroups_users uug WHERE uug.usergroup_id = ug.id
+			) as users_count
+		`)
+	}
 	qry.WriteString(`
-		SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name" FROM usergroups ug
+		FROM usergroups ug
 		JOIN usergroups_projects_roles upr ON ug.id = upr.usergroup_id
 		JOIN project_roles r ON upr.project_role_id = r.id
 		WHERE upr.project_id=$1
@@ -2003,12 +2382,43 @@ func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID,
 	}
 	qry.WriteString(" AND lower(ug.name) > lower($2) ORDER BY lower(ug.name) LIMIT $3")
 
-	var res []*database.MemberUsergroup
-	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
+	var dtos []*memberUsergroupDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("project groups", err)
 	}
-	return res, nil
+	return c.memberUsergroupsFromDTOs(dtos)
+}
+
+func (c *connection) FindProjectMemberUsergroupsForUser(ctx context.Context, projectID, userID string) ([]*database.MemberUsergroup, error) {
+	var dtos []*memberUsergroupDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
+		SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name", upr.resources, upr.restrict_resources
+		FROM usergroups ug
+		JOIN usergroups_projects_roles upr ON ug.id = upr.usergroup_id
+		JOIN usergroups_users uug ON ug.id = uug.usergroup_id
+		JOIN project_roles r ON upr.project_role_id = r.id
+		WHERE upr.project_id=$1 AND uug.user_id=$2
+	`, projectID, userID)
+	if err != nil {
+		return nil, parseErr("project groups", err)
+	}
+	return c.memberUsergroupsFromDTOs(dtos)
+}
+
+func (c *connection) FindProjectMemberUsergroup(ctx context.Context, groupID, projectID string) (*database.MemberUsergroup, error) {
+	dto := &memberUsergroupDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name", upr.resources, upr.restrict_resources
+		FROM usergroups ug
+		JOIN usergroups_projects_roles upr ON ug.id = upr.usergroup_id
+		JOIN project_roles r ON upr.project_role_id = r.id
+		WHERE upr.usergroup_id=$1 AND upr.project_id=$2
+	`, groupID, projectID).StructScan(dto)
+	if err != nil {
+		return nil, parseErr("project group member", err)
+	}
+	return dto.asModel()
 }
 
 func (c *connection) FindProjectMemberUsergroupRole(ctx context.Context, groupID, projectID string) (*database.ProjectRole, error) {
@@ -2024,20 +2434,30 @@ func (c *connection) FindProjectMemberUsergroupRole(ctx context.Context, groupID
 	return role, nil
 }
 
-func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id) VALUES ($1, $2, $3)
-	`, groupID, projectID, roleID)
+func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string, restrictResources bool, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id, restrict_resources, resources) VALUES ($1, $2, $3, $4, $5)
+	`, groupID, projectID, roleID, restrictResources, resJSON)
 	if err != nil {
 		return parseErr("project group member", err)
 	}
 	return nil
 }
 
-func (c *connection) UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
+func (c *connection) UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string, restrictResources bool, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
 	res, err := c.getDB(ctx).ExecContext(ctx, `
-		UPDATE usergroups_projects_roles SET project_role_id = $3 WHERE usergroup_id = $1 AND project_id = $2
-	`, groupID, projectID, roleID)
+		UPDATE usergroups_projects_roles SET project_role_id = $3, restrict_resources = $4, resources = $5 WHERE usergroup_id = $1 AND project_id = $2
+	`, groupID, projectID, roleID, restrictResources, resJSON)
 	return checkUpdateRow("project group member", res, err)
 }
 
@@ -2059,8 +2479,13 @@ func (c *connection) DeleteAllProjectMemberUserForOrganization(ctx context.Conte
 	return nil
 }
 
-func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users_projects_roles SET project_role_id = $1 WHERE user_id = $2 AND project_id = $3`, roleID, userID, projectID)
+func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string, restrictResources bool, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users_projects_roles SET project_role_id = $1, restrict_resources = $4, resources = $5 WHERE user_id = $2 AND project_id = $3`, roleID, userID, projectID, restrictResources, resJSON)
 	return checkUpdateRow("project member", res, err)
 }
 
@@ -2097,7 +2522,7 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 		SELECT uoi.id, uoi.email, ur.name as role_name, u.email as invited_by
 		FROM org_invites uoi
 		JOIN org_roles ur ON uoi.org_role_id = ur.id
-		JOIN users u ON uoi.invited_by_user_id = u.id
+		LEFT JOIN users u ON uoi.invited_by_user_id = u.id
 		WHERE uoi.org_id = $1 AND lower(uoi.email) > lower($2)
 		ORDER BY lower(uoi.email) LIMIT $3
 	`, orgID, afterEmail, limit)
@@ -2147,7 +2572,12 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return err
 	}
 
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.OrgID, opts.RoleID)
+	var inviterID any
+	if opts.InviterID != "" {
+		inviterID = opts.InviterID
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, inviterID, opts.OrgID, opts.RoleID)
 	if err != nil {
 		return parseErr("org invite", err)
 	}
@@ -2166,14 +2596,9 @@ func (c *connection) DeleteOrganizationInvite(ctx context.Context, id string) er
 
 func (c *connection) CountInvitesForOrganization(ctx context.Context, orgID string) (int, error) {
 	var count int
-	// count outstanding org invites as well as project invites for this org
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT COALESCE(SUM(total_count), 0) as total_count FROM (
-  			SELECT COUNT(*) as total_count FROM org_invites WHERE org_id = $1
-  			UNION ALL
-  			SELECT COUNT(*) as total_count FROM project_invites WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)
-		) as subquery
-		`, orgID).Scan(&count)
+		SELECT COUNT(*) as total_count FROM org_invites WHERE org_id = $1
+	`, orgID).Scan(&count)
 	if err != nil {
 		return 0, parseErr("invites count", err)
 	}
@@ -2186,12 +2611,12 @@ func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleI
 }
 
 func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.ProjectInviteWithRole, error) {
-	var res []*database.ProjectInviteWithRole
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT upi.id, upi.email, upr.name as role_name, uor.name as org_role_name, u.email as invited_by
+	var dtos []*projectInviteWithRoleDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
+		SELECT upi.id, upi.email, upr.name as role_name, uor.name as org_role_name, u.email as invited_by, upi.resources, upi.restrict_resources
 		FROM project_invites upi
 		JOIN project_roles upr ON upi.project_role_id = upr.id
-		JOIN users u ON upi.invited_by_user_id = u.id
+		LEFT JOIN users u ON upi.invited_by_user_id = u.id
 		LEFT JOIN org_invites uoi ON upi.org_invite_id = uoi.id
 		LEFT JOIN org_roles uor ON uoi.org_role_id = uor.id
 		WHERE upi.project_id = $1 AND lower(upi.email) > lower($2)
@@ -2200,35 +2625,44 @@ func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEma
 	if err != nil {
 		return nil, parseErr("project invites", err)
 	}
-	return res, nil
+	return c.projectInviteWithRolesFromDTOs(dtos)
 }
 
 func (c *connection) FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*database.ProjectInvite, error) {
-	var res []*database.ProjectInvite
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM project_invites WHERE lower(email) = lower($1)", userEmail)
+	var dtos []*projectInviteDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, "SELECT * FROM project_invites WHERE lower(email) = lower($1)", userEmail)
 	if err != nil {
 		return nil, parseErr("project invites", err)
 	}
-	return res, nil
+	return projectInvitesFromDTOs(dtos)
 }
 
 func (c *connection) FindProjectInvite(ctx context.Context, projectID, userEmail string) (*database.ProjectInvite, error) {
-	res := &database.ProjectInvite{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_invites WHERE lower(email) = lower($1) AND project_id = $2", userEmail, projectID).StructScan(res)
+	dto := &projectInviteDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_invites WHERE lower(email) = lower($1) AND project_id = $2", userEmail, projectID).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("project invite", err)
 	}
-	return res, nil
+	return dto.asModel()
 }
 
 func (c *connection) InsertProjectInvite(ctx context.Context, opts *database.InsertProjectInviteOptions) error {
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
+	var inviterID any
+	if opts.InviterID != "" {
+		inviterID = opts.InviterID
+	}
 
-	_, err := c.getDB(ctx).ExecContext(ctx,
-		`INSERT INTO project_invites (email, org_invite_id, project_id, project_role_id, invited_by_user_id) VALUES ($1, $2, $3, $4, $5)`,
-		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, opts.InviterID)
+	resJSON, err := marshalResourceNames(opts.Resources)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.getDB(ctx).ExecContext(ctx,
+		`INSERT INTO project_invites (email, org_invite_id, project_id, project_role_id, invited_by_user_id, restrict_resources, resources) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, inviterID, opts.RestrictResources, resJSON)
 	if err != nil {
 		return parseErr("project invite", err)
 	}
@@ -2240,8 +2674,13 @@ func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
 	return checkDeleteRow("project invite", res, err)
 }
 
-func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1 WHERE id = $2`, roleID, id)
+func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string, restrictResources bool, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1, restrict_resources = $3, resources = $4 WHERE id = $2`, roleID, id, restrictResources, resJSON)
 	return checkUpdateRow("project invite", res, err)
 }
 
@@ -2343,9 +2782,9 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 	}
 
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, data, resource_kind, resource_name, project_id, user_id, "default", shared)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, url_search, resource_kind, resource_name, project_id, user_id, "default", shared)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.DisplayName, opts.Description, opts.Data, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
+		opts.DisplayName, opts.Description, opts.URLSearch, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -2356,8 +2795,8 @@ func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBo
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, data=$3, shared=$4 WHERE id=$5`,
-		opts.DisplayName, opts.Description, opts.Data, opts.Shared, opts.BookmarkID)
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, url_search=$3, shared=$4 WHERE id=$5`,
+		opts.DisplayName, opts.Description, opts.URLSearch, opts.Shared, opts.BookmarkID)
 	return checkUpdateRow("bookmark", res, err)
 }
 
@@ -2460,6 +2899,7 @@ func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*databa
 		WHERE a.created_on < now() - INTERVAL '7 DAYS'
 		AND NOT EXISTS (SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
 		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.logo_asset_id = a.id)
+		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.logo_dark_asset_id = a.id)
 		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.favicon_asset_id = a.id)
 		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.thumbnail_asset_id = a.id)
 		ORDER BY a.created_on DESC LIMIT $1
@@ -2495,7 +2935,7 @@ func (c *connection) FindOrganizationIDsWithoutBilling(ctx context.Context) ([]s
 
 func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error) {
 	var count int
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND prod_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND primary_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
 	if err != nil {
 		return 0, parseErr("billing projects", err)
 	}
@@ -2875,6 +3315,28 @@ func (c *connection) DeleteManagedGitRepos(ctx context.Context, ids []string) er
 	return parseErr("managed git repo", err)
 }
 
+func (c *connection) FindGitRepoTransfer(ctx context.Context, remote string) (*database.GitRepoTransfer, error) {
+	res := &database.GitRepoTransfer{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM git_repo_transfers WHERE from_git_remote = $1", remote).StructScan(res)
+	if err != nil {
+		return nil, parseErr("git repo transfer", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertGitRepoTransfer(ctx context.Context, fromRemote, toRemote string) (*database.GitRepoTransfer, error) {
+	res := &database.GitRepoTransfer{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO git_repo_transfers (from_git_remote, to_git_remote)
+		VALUES ($1, $2) RETURNING *`,
+		fromRemote, toRemote,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("git repo transfer", err)
+	}
+	return res, nil
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
@@ -2942,9 +3404,10 @@ func (c *connection) provisionerResourcesFromDTOs(dtos []*provisionerResourceDTO
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenDTO struct {
 	*database.MagicAuthToken
-	Attributes pgtype.JSON      `db:"attributes"`
-	Fields     pgtype.TextArray `db:"fields"`
-	Resources  pgtype.JSONB     `db:"resources"`
+	Attributes             pgtype.JSON      `db:"attributes"`
+	Fields                 pgtype.TextArray `db:"fields"`
+	Resources              pgtype.JSONB     `db:"resources"`
+	MetricsViewFilterJSONs pgtype.JSONB     `db:"metrics_view_filter_jsons"`
 }
 
 func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret bool) (*database.MagicAuthToken, error) {
@@ -2957,6 +3420,10 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 		return nil, err
 	}
 	err = dto.Resources.AssignTo(&dto.MagicAuthToken.Resources)
+	if err != nil {
+		return nil, err
+	}
+	err = dto.MetricsViewFilterJSONs.AssignTo(&dto.MagicAuthToken.MetricsViewFilterJSONs)
 	if err != nil {
 		return nil, err
 	}
@@ -2977,9 +3444,10 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes pgtype.JSON      `db:"attributes"`
-	Fields     pgtype.TextArray `db:"fields"`
-	Resources  pgtype.JSONB     `db:"resources"`
+	Attributes             pgtype.JSON      `db:"attributes"`
+	Fields                 pgtype.TextArray `db:"fields"`
+	Resources              pgtype.JSONB     `db:"resources"`
+	MetricsViewFilterJSONs pgtype.JSONB     `db:"metrics_view_filter_jsons"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
@@ -2995,6 +3463,10 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	if err != nil {
 		return nil, err
 	}
+	err = dto.MetricsViewFilterJSONs.AssignTo(&dto.MagicAuthToken.MetricsViewFilterJSONs)
+	if err != nil {
+		return nil, err
+	}
 
 	dto.MagicAuthTokenWithUser.Secret, err = c.decrypt(dto.MagicAuthTokenWithUser.Secret, dto.MagicAuthTokenWithUser.SecretEncryptionKeyID)
 	if err != nil {
@@ -3004,21 +3476,121 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	return dto.MagicAuthTokenWithUser, nil
 }
 
-type reportTokenWithSecretDTO struct {
-	*database.ReportTokenWithSecret
-	SecretEncryptionKeyID string `db:"secret_encryption_key_id"`
+type projectMemberUserDTO struct {
+	*database.ProjectMemberUser
+	Resources pgtype.JSONB `db:"resources"`
 }
 
-func (c *connection) reportTokenWithSecretFromDTO(dto *reportTokenWithSecretDTO) (*database.ReportTokenWithSecret, error) {
-	if dto.SecretEncryptionKeyID == "" {
-		return dto.ReportTokenWithSecret, nil
-	}
-	decrypted, err := c.decrypt(dto.ReportTokenWithSecret.MagicAuthTokenSecret, dto.SecretEncryptionKeyID)
+func (dto *projectMemberUserDTO) asModel() (*database.ProjectMemberUser, error) {
+	err := dto.Resources.AssignTo(&dto.ProjectMemberUser.Resources)
 	if err != nil {
 		return nil, err
 	}
-	dto.ReportTokenWithSecret.MagicAuthTokenSecret = decrypted
-	return dto.ReportTokenWithSecret, nil
+	return dto.ProjectMemberUser, nil
+}
+
+func (c *connection) projectMemberUsersFromDTOs(dtos []*projectMemberUserDTO) ([]*database.ProjectMemberUser, error) {
+	res := make([]*database.ProjectMemberUser, len(dtos))
+	for i, dto := range dtos {
+		member, err := dto.asModel()
+		if err != nil {
+			return nil, err
+		}
+		res[i] = member
+	}
+	return res, nil
+}
+
+type memberUsergroupDTO struct {
+	*database.MemberUsergroup
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (dto *memberUsergroupDTO) asModel() (*database.MemberUsergroup, error) {
+	err := dto.Resources.AssignTo(&dto.MemberUsergroup.Resources)
+	if err != nil {
+		return nil, err
+	}
+	return dto.MemberUsergroup, nil
+}
+
+func (c *connection) memberUsergroupsFromDTOs(dtos []*memberUsergroupDTO) ([]*database.MemberUsergroup, error) {
+	res := make([]*database.MemberUsergroup, len(dtos))
+	for i, dto := range dtos {
+		group, err := dto.asModel()
+		if err != nil {
+			return nil, err
+		}
+		res[i] = group
+	}
+	return res, nil
+}
+
+type projectInviteDTO struct {
+	*database.ProjectInvite
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (dto *projectInviteDTO) asModel() (*database.ProjectInvite, error) {
+	err := dto.Resources.AssignTo(&dto.ProjectInvite.Resources)
+	if err != nil {
+		return nil, err
+	}
+	return dto.ProjectInvite, nil
+}
+
+func projectInvitesFromDTOs(dtos []*projectInviteDTO) ([]*database.ProjectInvite, error) {
+	res := make([]*database.ProjectInvite, len(dtos))
+	for i, dto := range dtos {
+		model, err := dto.asModel()
+		if err != nil {
+			return nil, err
+		}
+		res[i] = model
+	}
+	return res, nil
+}
+
+type projectInviteWithRoleDTO struct {
+	*database.ProjectInviteWithRole
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (dto *projectInviteWithRoleDTO) asModel() (*database.ProjectInviteWithRole, error) {
+	err := dto.Resources.AssignTo(&dto.ProjectInviteWithRole.Resources)
+	if err != nil {
+		return nil, err
+	}
+	return dto.ProjectInviteWithRole, nil
+}
+
+func (c *connection) projectInviteWithRolesFromDTOs(dtos []*projectInviteWithRoleDTO) ([]*database.ProjectInviteWithRole, error) {
+	res := make([]*database.ProjectInviteWithRole, len(dtos))
+	for i, dto := range dtos {
+		model, err := dto.asModel()
+		if err != nil {
+			return nil, err
+		}
+		res[i] = model
+	}
+	return res, nil
+}
+
+type notificationTokenWithSecretDTO struct {
+	*database.NotificationTokenWithSecret
+	SecretEncryptionKeyID string `db:"secret_encryption_key_id"`
+}
+
+func (c *connection) notificationTokenWithSecretFromDTO(dto *notificationTokenWithSecretDTO) (*database.NotificationTokenWithSecret, error) {
+	if dto.SecretEncryptionKeyID == "" {
+		return dto.NotificationTokenWithSecret, nil
+	}
+	decrypted, err := c.decrypt(dto.NotificationTokenWithSecret.MagicAuthTokenSecret, dto.SecretEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+	dto.NotificationTokenWithSecret.MagicAuthTokenSecret = decrypted
+	return dto.NotificationTokenWithSecret, nil
 }
 
 type organizationInviteDTO struct {
@@ -3033,6 +3605,25 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 	}
 
 	return o.OrganizationInvite, nil
+}
+
+type authClientDTO struct {
+	*database.AuthClient
+	GrantTypes   pgtype.TextArray `db:"grant_types"`
+	RedirectURIs pgtype.TextArray `db:"redirect_uris"`
+}
+
+func (dto *authClientDTO) AsModel() (*database.AuthClient, error) {
+	if dto.AuthClient == nil {
+		dto.AuthClient = &database.AuthClient{}
+	}
+	if err := dto.GrantTypes.AssignTo(&dto.AuthClient.GrantTypes); err != nil {
+		return nil, err
+	}
+	if err := dto.RedirectURIs.AssignTo(&dto.AuthClient.RedirectURIs); err != nil {
+		return nil, err
+	}
+	return dto.AuthClient, nil
 }
 
 type billingIssueDTO struct {
@@ -3139,6 +3730,55 @@ func (d *projectMemberServiceWithProjectDTO) projectMemberServiceWithProjectFrom
 		return nil, err
 	}
 	return d.ProjectMemberServiceWithProject, nil
+}
+
+type organizationMemberUserDTO struct {
+	*database.OrganizationMemberUser
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (dto *organizationMemberUserDTO) organizationMemberUserFromDTO() (*database.OrganizationMemberUser, error) {
+	user := &database.OrganizationMemberUser{
+		ID:              dto.ID,
+		Email:           dto.Email,
+		DisplayName:     dto.DisplayName,
+		PhotoURL:        dto.PhotoURL,
+		RoleName:        dto.RoleName,
+		ProjectsCount:   dto.ProjectsCount,
+		UsergroupsCount: dto.UsergroupsCount,
+		CreatedOn:       dto.CreatedOn,
+		UpdatedOn:       dto.UpdatedOn,
+	}
+
+	// Handle Attributes: Normalize NULL JSONB to empty map
+	var attrs map[string]any
+	if err := dto.Attributes.AssignTo(&attrs); err != nil {
+		return nil, err
+	}
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+	user.Attributes = attrs
+
+	return user, nil
+}
+
+type userWithAttributesDTO struct {
+	*database.User
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (dto *userWithAttributesDTO) userWithAttributesFromDTO() (*database.User, map[string]any, error) {
+	// Handle Attributes: Normalize NULL JSONB to empty map
+	var attrs map[string]any
+	if err := dto.Attributes.AssignTo(&attrs); err != nil {
+		return nil, nil, err
+	}
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+
+	return dto.User, attrs, nil
 }
 
 func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
@@ -3327,4 +3967,70 @@ func decrypt(ciphertext, key []byte) ([]byte, error) {
 		return nil, err
 	}
 	return d, nil
+}
+
+// validateAttributes validates keys and values of an attributes map, handling nil input
+func (c *connection) validateAttributes(attributes map[string]any) (map[string]any, error) {
+	if attributes == nil {
+		return make(map[string]any), nil
+	}
+
+	if len(attributes) > 50 {
+		return nil, fmt.Errorf("too many attributes: maximum 50 allowed, got %d", len(attributes))
+	}
+
+	for key, value := range attributes {
+		// Validate key format
+		if !isValidAttributeKey(key) {
+			return nil, fmt.Errorf("invalid attribute key '%s': must contain only alphanumeric characters and underscores", key)
+		}
+
+		// Validate value length
+		if str, ok := value.(string); ok && len(str) > 256 {
+			return nil, fmt.Errorf("attribute value for key '%s' too long: maximum 256 characters, got %d", key, len(str))
+		}
+	}
+	return attributes, nil
+}
+
+// isValidAttributeKey checks if an attribute key contains only alphanumeric characters and underscores
+func isValidAttributeKey(key string) bool {
+	if key == "" {
+		return false
+	}
+	for _, r := range key {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_') {
+			return false
+		}
+	}
+	return true
+}
+
+func marshalResourceNames(resources []database.ResourceName) ([]byte, error) {
+	resources = dedupeAndSortResourceNames(resources)
+	return json.Marshal(resources)
+}
+
+// dedupeAndSortResourceNames deduplicates and sorts a slice of ResourceName
+func dedupeAndSortResourceNames(resources []database.ResourceName) []database.ResourceName {
+	seen := make(map[database.ResourceName]struct{})
+	var deduped []database.ResourceName
+	for _, r := range resources {
+		if r.Type == "" || r.Name == "" {
+			continue
+		}
+		if _, ok := seen[r]; !ok {
+			seen[r] = struct{}{}
+			deduped = append(deduped, r)
+		}
+	}
+
+	sort.Slice(deduped, func(i, j int) bool {
+		if deduped[i].Type == deduped[j].Type {
+			return deduped[i].Name < deduped[j].Name
+		}
+		return deduped[i].Type < deduped[j].Type
+	})
+
+	return deduped
 }

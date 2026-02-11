@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -74,7 +76,7 @@ func toProjectRow(o *adminv1.Project) *project {
 	if o.ManagedGitId == "" {
 		githubURL = strings.TrimSuffix(o.GitRemote, ".git")
 		if o.Subpath != "" {
-			githubURL = filepath.Join(githubURL, "tree", o.ProdBranch, o.Subpath)
+			githubURL = filepath.Join(githubURL, "tree", o.PrimaryBranch, o.Subpath)
 		}
 	}
 
@@ -132,10 +134,21 @@ func (p *Printer) PrintOrganizationMemberUsers(members []*adminv1.OrganizationMe
 
 	allMembers := make([]*memberUserWithRole, 0, len(members))
 	for _, m := range members {
+		memberAttrs := ""
+		if m.Attributes != nil && len(m.Attributes.Fields) > 0 {
+			attrMap := m.Attributes.AsMap()
+			var attrs []string
+			for key, value := range attrMap {
+				attrs = append(attrs, fmt.Sprintf("%s=%v", key, value))
+			}
+			memberAttrs = strings.Join(attrs, ", ")
+		}
+
 		allMembers = append(allMembers, &memberUserWithRole{
-			Email:    m.UserEmail,
-			Name:     m.UserName,
-			RoleName: m.RoleName,
+			Email:      m.UserEmail,
+			Name:       m.UserName,
+			RoleName:   m.RoleName,
+			Attributes: memberAttrs,
 		})
 	}
 
@@ -148,12 +161,13 @@ func (p *Printer) PrintProjectMemberUsers(members []*adminv1.ProjectMemberUser) 
 		return
 	}
 
-	allMembers := make([]*memberUserWithRole, 0, len(members))
+	allMembers := make([]*projectMemberUserWithRole, 0, len(members))
 	for _, m := range members {
-		allMembers = append(allMembers, &memberUserWithRole{
-			Email:    m.UserEmail,
-			Name:     m.UserName,
-			RoleName: m.RoleName,
+		allMembers = append(allMembers, &projectMemberUserWithRole{
+			Email:     m.UserEmail,
+			Name:      m.UserName,
+			RoleName:  m.RoleName,
+			Resources: formatResourceNamesPB(m.RestrictResources, m.Resources),
 		})
 	}
 
@@ -231,9 +245,17 @@ type memberUser struct {
 }
 
 type memberUserWithRole struct {
-	Email    string `header:"email" json:"email"`
-	Name     string `header:"name" json:"display_name"`
-	RoleName string `header:"role" json:"role_name"`
+	Email      string `header:"email" json:"email"`
+	Name       string `header:"name" json:"display_name"`
+	RoleName   string `header:"role" json:"role_name"`
+	Attributes string `header:"attributes" json:"attributes"`
+}
+
+type projectMemberUserWithRole struct {
+	Email     string `header:"email" json:"email"`
+	Name      string `header:"name" json:"display_name"`
+	RoleName  string `header:"role" json:"role_name"`
+	Resources string `header:"resources" json:"resources"`
 }
 
 type orgMemberService struct {
@@ -283,6 +305,7 @@ func (p *Printer) PrintProjectInvites(invites []*adminv1.ProjectInvite) {
 			RoleName:    i.RoleName,
 			OrgRoleName: i.OrgRoleName,
 			InvitedBy:   i.InvitedBy,
+			Resources:   formatResourceNamesPB(i.RestrictResources, i.Resources),
 		})
 	}
 	p.PrintDataWithTitle(rows, "Invites pending acceptance")
@@ -293,6 +316,7 @@ type projectInvite struct {
 	RoleName    string `header:"role" json:"role_name"`
 	OrgRoleName string `header:"org_role" json:"org_role_name"`
 	InvitedBy   string `header:"invited_by" json:"invited_by"`
+	Resources   string `header:"resources" json:"resources"`
 }
 
 func (p *Printer) PrintServices(svcs []*adminv1.Service) {
@@ -426,18 +450,25 @@ func toMagicAuthTokensTable(tkns []*adminv1.MagicAuthToken) []*magicAuthToken {
 }
 
 func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
-	expr := metricsview.NewExpressionFromProto(t.Filter)
-	filter, err := metricsview.ExpressionToSQL(expr)
-	if err != nil {
-		panic(err)
+	filters := ""
+	for mv, filter := range t.MetricsViewFilters {
+		expr := metricsview.NewExpressionFromProto(filter)
+		sqlFilter, err := metricsview.ExpressionToSQL(expr)
+		if err != nil {
+			panic(err)
+		}
+		if filters != "" {
+			filters += ", "
+		}
+		filters += fmt.Sprintf("%s(%s)", mv, sqlFilter)
 	}
 
 	row := &magicAuthToken{
-		ID:        t.Id,
-		Filter:    filter,
-		CreatedBy: t.CreatedByUserEmail,
-		CreatedOn: t.CreatedOn.AsTime().Local().Format(time.DateTime),
-		UsedOn:    t.UsedOn.AsTime().Local().Format(time.DateTime),
+		ID:                 t.Id,
+		MetricsViewFilters: filters,
+		CreatedBy:          t.CreatedByUserEmail,
+		CreatedOn:          t.CreatedOn.AsTime().Local().Format(time.DateTime),
+		UsedOn:             t.UsedOn.AsTime().Local().Format(time.DateTime),
 	}
 	if t.ExpiresOn != nil {
 		row.ExpiresOn = t.ExpiresOn.AsTime().Local().Format(time.DateTime)
@@ -446,13 +477,13 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 }
 
 type magicAuthToken struct {
-	ID        string `header:"id" json:"id"`
-	Resource  string `header:"resource" json:"resource"`
-	Filter    string `header:"filter" json:"filter"`
-	CreatedBy string `header:"created by" json:"created_by"`
-	CreatedOn string `header:"created on" json:"created_on"`
-	UsedOn    string `header:"last used on" json:"used_on"`
-	ExpiresOn string `header:"expires on" json:"expires_on"`
+	ID                 string `header:"id" json:"id"`
+	Resource           string `header:"resource" json:"resource"`
+	MetricsViewFilters string `header:"metrics view filters" json:"metrics_view_filters"`
+	CreatedBy          string `header:"created by" json:"created_by"`
+	CreatedOn          string `header:"created on" json:"created_on"`
+	UsedOn             string `header:"last used on" json:"used_on"`
+	ExpiresOn          string `header:"expires on" json:"expires_on"`
 }
 
 func (p *Printer) PrintSubscriptions(subs []*adminv1.Subscription) {
@@ -572,6 +603,7 @@ func toMemberUsergroupRows(ug *adminv1.MemberUsergroup) *memberUsergroup {
 	return &memberUsergroup{
 		Name:      ug.GroupName,
 		Role:      role,
+		Resources: formatResourceNamesPB(ug.RestrictResources, ug.Resources),
 		CreatedOn: ug.CreatedOn.AsTime().Local().Format(time.DateTime),
 		UpdatedOn: ug.UpdatedOn.AsTime().Local().Format(time.DateTime),
 	}
@@ -580,8 +612,24 @@ func toMemberUsergroupRows(ug *adminv1.MemberUsergroup) *memberUsergroup {
 type memberUsergroup struct {
 	Name      string `header:"name" json:"name"`
 	Role      string `header:"role" json:"role"`
+	Resources string `header:"resources" json:"resources"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_at"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_at"`
+}
+
+func formatResourceNamesPB(restrictResources bool, resources []*adminv1.ResourceName) string {
+	if !restrictResources {
+		return "all"
+	}
+	if len(resources) == 0 {
+		return "none"
+	}
+	var parts []string
+	for _, r := range resources {
+		parts = append(parts, fmt.Sprintf("%s/%s", r.Type, r.Name))
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ", ")
 }
 
 func (p *Printer) PrintModelPartitions(partitions []*runtimev1.ModelPartition) {
@@ -651,7 +699,7 @@ func toBillingIssueRow(e *adminv1.BillingIssue) *billingIssue {
 		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
 	}
 	return &billingIssue{
-		Organization: e.Organization,
+		Organization: e.Org,
 		Type:         e.Type.String(),
 		Level:        e.Level.String(),
 		Metadata:     string(meta), // TODO pretty print
@@ -665,6 +713,99 @@ type billingIssue struct {
 	Level        string `header:"level" json:"level"`
 	Metadata     string `header:"metadata" json:"metadata"`
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
+}
+
+func (p *Printer) PrintDeployments(deployments []*adminv1.Deployment) {
+	if len(deployments) == 0 {
+		p.PrintfWarn("No deployments found\n")
+		return
+	}
+
+	p.PrintData(toDeploymentsTable(deployments))
+}
+
+func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
+	status := formatDeploymentStatus(d.Status)
+	if d.StatusMessage != "" {
+		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
+	}
+
+	p.Printf("Deployment ID: %s\n", d.Id)
+	p.Printf("Environment: %s\n", d.Environment)
+	p.Printf("Branch: %s\n", d.Branch)
+	p.Printf("Status: %s\n", status)
+	if d.RuntimeHost != "" {
+		p.Printf("Runtime Host: %s\n", d.RuntimeHost)
+	}
+	if d.Editable {
+		p.Printf("Editable: true\n")
+	}
+	p.Printf("Created: %s\n", d.CreatedOn.AsTime().Local().Format(time.RFC1123))
+	p.Printf("Updated: %s\n", d.UpdatedOn.AsTime().Local().Format(time.RFC1123))
+}
+
+func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
+	res := make([]*deployment, 0, len(deployments))
+	for _, d := range deployments {
+		res = append(res, toDeploymentRow(d))
+	}
+	slices.SortFunc(res, func(a, b *deployment) int {
+		// group by environment
+		if a.Environment < b.Environment {
+			return -1
+		} else if a.Environment > b.Environment {
+			return 1
+		}
+		// sort by branch if environment is same
+		if a.Branch < b.Branch {
+			return -1
+		} else if a.Branch > b.Branch {
+			return 1
+		}
+		return 0
+	})
+	return res
+}
+
+func toDeploymentRow(d *adminv1.Deployment) *deployment {
+	status := formatDeploymentStatus(d.Status)
+	if d.StatusMessage != "" {
+		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
+	}
+	return &deployment{
+		Branch:      d.Branch,
+		Environment: d.Environment,
+		Status:      status,
+	}
+}
+
+func formatDeploymentStatus(status adminv1.DeploymentStatus) string {
+	switch status {
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING:
+		return "Pending"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING:
+		return "Running"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED:
+		return "Errored"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED:
+		return "Stopped"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING:
+		return "Updating"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING:
+		return "Stopping"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING:
+		return "Deleting"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETED:
+		return "Deleted"
+	default:
+		return "Unknown"
+	}
+}
+
+type deployment struct {
+	Branch      string `header:"branch" json:"branch"`
+	Environment string `header:"environment" json:"environment"`
+	Status      string `header:"status" json:"status"`
 }
 
 // PrintQueryResponse prints the query response in the desired format (human, json, csv)
@@ -684,7 +825,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			rows[i] = make([]string, len(headers))
 			for j, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					rows[i][j] = fmt.Sprintf("%v", val.AsInterface())
+					rows[i][j] = p.FormatValue(val.AsInterface())
 				} else {
 					rows[i][j] = "null"
 				}
@@ -707,7 +848,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			record := make([]string, len(headers))
 			for i, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					record[i] = fmt.Sprintf("%v", val.AsInterface())
+					record[i] = p.FormatValue(val.AsInterface())
 				} else {
 					record[i] = ""
 				}

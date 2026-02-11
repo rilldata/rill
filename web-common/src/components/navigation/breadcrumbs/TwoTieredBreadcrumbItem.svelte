@@ -3,33 +3,28 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import type { PathOptions } from "./types";
 
-  export let options: PathOptions;
+  export let pathOptions: PathOptions;
   export let current: string;
   export let isCurrentPage = false;
-  export let onSelect: undefined | ((id: string) => void) = undefined;
+
+  $: ({ options } = pathOptions);
 
   $: selected = options.get(current.toLowerCase());
 
-  let groupedData = new Map();
+  const groupedData = new Map();
 
   // Group data by colon separator
-  for (let [key, value] of options) {
+  for (let [key, option] of options) {
     const [group, sub] = key.split(":");
     if (sub) {
       if (!groupedData.has(group)) {
         groupedData.set(group, []);
       }
-      groupedData.get(group).push({ key, label: value.label });
+      groupedData.get(group).push(option);
     } else {
-      groupedData.set(group, { key, label: value.label }); // Standalone items
+      groupedData.set(group, option); // Standalone items
     }
   }
-
-  const handleSelect = (key: string) => {
-    if (onSelect) {
-      onSelect(key);
-    }
-  };
 </script>
 
 <li class="flex items-center gap-x-2 px-2">
@@ -37,7 +32,7 @@
     {#if selected}
       <a
         href={isCurrentPage ? "#top" : undefined}
-        class="text-gray-500 hover:text-gray-600 flex flex-row items-center gap-x-2"
+        class="text-fg-secondary hover:text-fg-secondary flex flex-row items-center gap-x-2"
         class:current={isCurrentPage}
       >
         <span>{selected?.label}</span>
@@ -63,9 +58,10 @@
                   {#each subItems as subItem}
                     <DropdownMenu.Item
                       class="cursor-pointer"
-                      on:click={() => handleSelect(subItem.key)}
+                      href={subItem.href}
+                      preloadData={false}
                     >
-                      <span class="text-xs text-gray-800 flex-grow">
+                      <span class="text-xs text-fg-primary flex-grow">
                         {subItem.label}
                       </span>
                     </DropdownMenu.Item>
@@ -76,9 +72,10 @@
               <!-- Standalone item -->
               <DropdownMenu.Item
                 class="cursor-pointer"
-                on:click={() => handleSelect(subItems.key)}
+                href={subItems.href}
+                preloadData={false}
               >
-                <span class="text-xs text-gray-800 flex-grow">
+                <span class="text-xs text-fg-primary flex-grow">
                   {subItems.label}
                 </span>
               </DropdownMenu.Item>
@@ -92,12 +89,12 @@
 
 <style lang="postcss">
   .current {
-    @apply text-gray-800 font-medium;
+    @apply text-fg-primary font-medium;
   }
 
   .trigger {
     @apply flex flex-col justify-center items-center;
-    @apply transition-transform text-gray-500;
+    @apply transition-transform text-fg-secondary;
     @apply px-0.5 py-1 rounded;
   }
 

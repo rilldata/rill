@@ -25,6 +25,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
+  import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -62,10 +63,15 @@
     ? formatRefreshSchedule(alertSpec.refreshSchedule.cron)
     : "Whenever your data refreshes";
 
-  $: metricsViewAggregationRequest = JSON.parse(
+  $: queryArgsJson =
     (alertSpec?.resolverProperties?.query_args_json as string) ||
-      alertSpec?.queryArgsJson ||
-      "{}",
+    alertSpec?.queryArgsJson ||
+    "{}";
+  $: queryName =
+    alertSpec?.queryName ||
+    (alertSpec?.resolverProperties?.query_name as string);
+  $: metricsViewAggregationRequest = JSON.parse(
+    queryArgsJson,
   ) as V1MetricsViewAggregationRequest;
 
   $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
@@ -75,13 +81,29 @@
   $: emailNotifier = extractNotifier(alertSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(alertSpec?.notifiers, "slack");
 
+  $: exploreUrl = getMappedExploreUrl(
+    {
+      exploreName: $exploreName.data,
+      queryName,
+      queryArgsJson,
+    },
+    {
+      exploreProtoState: alertSpec?.annotations?.web_open_state,
+    },
+    {
+      instanceId,
+      organization,
+      project,
+    },
+  );
+
   // Actions
   const queryClient = useQueryClient();
   const deleteAlert = createAdminServiceDeleteAlert();
 
   async function handleDeleteAlert() {
     await $deleteAlert.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: $alertQuery.data.resource.meta.name.name,
     });
@@ -97,7 +119,7 @@
   <div class="flex flex-col gap-y-9 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
       <!-- Header row 1 -->
-      <div class="uppercase text-xs text-gray-500 font-semibold">
+      <div class="uppercase text-xs text-fg-secondary font-semibold">
         <!-- Author -->
         <ProjectAccessControls {organization} {project}>
           <svelte:fragment slot="manage-project">
@@ -112,7 +134,7 @@
         </ProjectAccessControls>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-gray-700 text-lg font-bold" aria-label="Alert name">
+        <h1 class="text-fg-primary text-lg font-bold" aria-label="Alert name">
           {alertSpec.displayName}
         </h1>
         <div class="grow" />
@@ -152,9 +174,7 @@
                 </Tooltip>
               </div>
             {:else}
-              <a
-                href={`/${organization}/${project}/explore/${encodeURIComponent($exploreName.data)}`}
-              >
+              <a href={$exploreUrl}>
                 {dashboardTitle}
               </a>
             {/if}

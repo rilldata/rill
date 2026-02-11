@@ -1,13 +1,17 @@
+import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 import type {
   ChartLegend,
   ChartSortDirectionOptions,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
-import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
+} from "@rilldata/web-common/features/components/charts/types";
 
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea" | "select";
 type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
-type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
+type CustomInputTypes =
+  | "rill_time"
+  | "sparkline"
+  | "comparison_options"
+  | "switcher_tab";
 type PositionalInputTypes = "alignment";
 
 export type InputType =
@@ -29,21 +33,42 @@ export type SortSelectorConfig = {
 };
 
 export type ChartFieldInput = {
-  type: FieldType;
+  type: FieldType | "value";
+  excludedValues?: string[];
   axisTitleSelector?: boolean;
   hideTimeDimension?: boolean;
   originSelector?: boolean;
   sortSelector?: SortSelectorConfig;
   limitSelector?: { defaultLimit: number };
-  colorMappingSelector?: { enable: boolean; values?: string[] };
+  colorMappingSelector?: {
+    enable: boolean;
+    values?: string[];
+    isContinuous?: boolean;
+  };
+  colorRangeSelector?: {
+    enable: boolean;
+  };
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;
+  multiFieldSelector?: boolean;
+  /**
+   * For combo charts individual field can be a bar or line chart.
+   */
+  markTypeSelector?: boolean;
   /**
    * The default legend position for the chart.
    * If this key is not specified, legend selector will not be shown.
    */
   defaultLegendOrientation?: ChartLegend;
+  /**
+   * For measures toggle for displaying measure total value
+   */
+  totalSelector?: boolean;
+  /**
+   * Marks a field as optional which can be removed from the chart.
+   */
+  isRemovable?: boolean;
 };
 
 export interface ComponentInputParam {
@@ -56,6 +81,12 @@ export interface ComponentInputParam {
     allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
     defaultAlignment?: ComponentAlignment;
     chartFieldInput?: ChartFieldInput;
+    layout?: "default" | "grouped";
+    /**
+     * If true, the boolean input will be inverted. This is useful when true
+     * is the intended default state
+     */
+    invertBoolean?: boolean;
     [key: string]: any;
   };
 }

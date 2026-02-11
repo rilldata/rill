@@ -105,6 +105,13 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	return runtime.ReconcileResult{Err: validateErr}
 }
 
+func (r *ComponentReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetComponent() == nil {
+		return nil, fmt.Errorf("not a component resource")
+	}
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}
+
 // checkMetricsViews returns true if all the metrics views referenced by the component have a valid spec.
 // If all metrics views are valid, it also returns the most recent DataRefreshedOn timestamp across all referenced metrics views.
 // Note that it returns false if no metrics views are referenced.

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
-  import AvatarListItem from "../../organizations/users/AvatarListItem.svelte";
+  import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import OrgUserGroupSetRole from "./OrgUserGroupSetRole.svelte";
 
   export let organization: string;

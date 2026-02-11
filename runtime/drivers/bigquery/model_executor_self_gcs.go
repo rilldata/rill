@@ -59,11 +59,10 @@ func (e *selfToGCSExecutor) export(ctx context.Context, props map[string]any, ou
 		return "", err
 	}
 
-	client, err := e.c.createClient(ctx, conf.ProjectID)
+	client, err := e.c.getClient(ctx)
 	if err != nil {
 		return "", err
 	}
-	defer client.Close()
 
 	outputLocation, err = url.JoinPath(outputLocation, "rill-tmp-"+uuid.New().String(), "/")
 	if err != nil {
@@ -95,7 +94,7 @@ func (e *selfToGCSExecutor) export(ctx context.Context, props map[string]any, ou
 		return "", fmt.Errorf("query job failed: %w", err)
 	}
 
-	return outputLocation, nil
+	return outputLocation + "*", nil
 }
 
 func exportOptions(outputLocation string, format drivers.FileFormat) (string, error) {

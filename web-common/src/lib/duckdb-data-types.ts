@@ -2,9 +2,16 @@
  * Provides mappings from duckdb's data types to conceptual types we use in the application:
  * CATEGORICALS, NUMERICS, and TIMESTAMPS.
  */
+import IntegerType from "@rilldata/web-common/components/icons/IntegerType.svelte";
+import FloatType from "@rilldata/web-common/components/icons/FloatType.svelte";
+import StringlikeType from "@rilldata/web-common/components/icons/StringlikeType.svelte";
+import TimestampType from "@rilldata/web-common/components/icons/TimestampType.svelte";
+import BooleanType from "@rilldata/web-common/components/icons/BooleanType.svelte";
+import StructType from "@rilldata/web-common/components/icons/StructType.svelte";
+import ListType from "@rilldata/web-common/components/icons/ListType.svelte";
 
 export const INTEGERS = new Set([
-  // Go Types
+  // Rill runtime types
   "CODE_INT8",
   "CODE_INT16",
   "CODE_INT32",
@@ -16,7 +23,7 @@ export const INTEGERS = new Set([
   "CODE_UINT64",
   "CODE_UINT128",
 
-  // Node Types
+  // DuckDB native types
   "BIGINT",
   "HUGEINT",
   "SMALLINT",
@@ -33,11 +40,11 @@ export const INTEGERS = new Set([
 ]);
 
 export const FLOATS = new Set([
-  // Go Types
+  // Rill runtime types
   "CODE_FLOAT32",
   "CODE_FLOAT64",
 
-  // Node Types
+  // DuckDB native types
   "DOUBLE",
   "DECIMAL",
   "FLOAT8",
@@ -48,16 +55,19 @@ export const DATES = new Set(["CODE_DATE", "DATE"]);
 export const NUMERICS = new Set([...INTEGERS, ...FLOATS]);
 export const BOOLEANS = new Set(["CODE_BOOL", "BOOLEAN", "BOOL", "LOGICAL"]);
 export const TIMESTAMPS = new Set([
-  // Go Types
+  // Rill runtime types
   "CODE_TIMESTAMP",
   "CODE_TIME",
 
-  // Node Types
+  // DuckDB native types
   "TIMESTAMP",
   "TIME",
   "DATETIME",
   "TIMESTAMPTZ",
   "TIMESTAMP WITH TIME ZONE",
+  "TIMESTAMP_S",
+  "TIMESTAMP_MS",
+  "TIMESTAMP_NS",
 
   ...DATES,
 ]);
@@ -88,12 +98,12 @@ export function isNested(type: string) {
 }
 
 export const STRING_LIKES = new Set([
-  // Go Types
+  // Rill runtime types
   "CODE_STRING",
   "CODE_BYTES",
   "CODE_UUID",
 
-  // Node Types
+  // DuckDB native types
   "UUID",
   "BYTE_ARRAY",
   "VARCHAR",
@@ -157,7 +167,7 @@ export const TIMESTAMP_TOKENS: ColorTokens = {
 };
 
 export const NESTED_TOKENS: ColorTokens = {
-  textClass: "text-gray-800",
+  textClass: "text-fg-primary",
   bgClass: "bg-gray-200",
   vizFillClass: "fill-gray-800",
   vizStrokeClass: "stroke-gray-800",
@@ -197,4 +207,24 @@ export enum PreviewRollupInterval {
   day = "1 day",
   month = "1 month",
   year = "1 year",
+}
+
+export function fieldTypeToSymbol(fieldType: string) {
+  if (INTEGERS.has(fieldType)) {
+    return IntegerType;
+  } else if (FLOATS.has(fieldType)) {
+    return FloatType;
+  } else if (STRING_LIKES.has(fieldType)) {
+    return StringlikeType;
+  } else if (TIMESTAMPS.has(fieldType) || INTERVALS.has(fieldType)) {
+    return TimestampType;
+  } else if (BOOLEANS.has(fieldType)) {
+    return BooleanType;
+  } else if (isStruct(fieldType)) {
+    return StructType;
+  } else if (isList(fieldType)) {
+    return ListType;
+  } else if (isNested(fieldType)) {
+    return StructType;
+  }
 }

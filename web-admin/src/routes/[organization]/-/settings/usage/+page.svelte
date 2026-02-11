@@ -16,6 +16,7 @@
 {#if iframeLoading}
   <Spinner status={EntityStatus.Running} size="16px" />
 {/if}
+
 <iframe
   {...iframeProps}
   src={data.billingPortalUrl}
@@ -23,3 +24,6 @@
   class="w-full h-[1000px]"
   on:load={() => (iframeLoading = false)}
 />
+
+<style lang="postcss">
+</style>

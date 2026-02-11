@@ -12,7 +12,11 @@ export const allDimensions = ({
 
   return (
     validMetricsView.dimensions
-      .filter((d) => validExplore.dimensions!.includes(d.name!))
+      .filter(
+        (d) =>
+          validExplore.dimensions!.includes(d.name!) &&
+          d.type !== "DIMENSION_TYPE_TIME",
+      ) //
       // Sort the filtered dimensions based on their order in validExplore.dimensions
       .sort(
         (a, b) =>
@@ -20,6 +24,28 @@ export const allDimensions = ({
           validExplore.dimensions!.indexOf(b.name!),
       )
   );
+};
+
+export const timeDimensions = ({
+  validMetricsView,
+  validExplore,
+}: Pick<
+  DashboardDataSources,
+  "validMetricsView" | "validExplore"
+>): MetricsViewSpecDimension[] => {
+  if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
+
+  return validMetricsView.dimensions
+    .filter(
+      (d) =>
+        validExplore.dimensions?.includes(d.name!) &&
+        d.type === "DIMENSION_TYPE_TIME",
+    )
+    .sort(
+      (a, b) =>
+        validExplore.dimensions!.indexOf(a.name!) -
+        validExplore.dimensions!.indexOf(b.name!),
+    );
 };
 
 export const visibleDimensions = ({
@@ -40,7 +66,9 @@ export const visibleDimensions = ({
 
   return dashboard.visibleDimensions
     .map((dim) => dimensions.find((d) => d.name === dim))
-    .filter(Boolean) as MetricsViewSpecDimension[];
+    .filter(
+      (d) => d && d?.type !== "DIMENSION_TYPE_TIME",
+    ) as MetricsViewSpecDimension[];
 };
 
 export const dimensionTableColumnName = (
@@ -82,6 +110,11 @@ export const dimensionSelectors = {
    * Gets all dimensions for the dashboard, or undefined if there are none.
    */
   allDimensions,
+
+  /**
+   * Time dimensions for the dashboard
+   */
+  timeDimensions,
 
   /**
    * Gets all visible dimensions in the dashboard.

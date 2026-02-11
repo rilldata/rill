@@ -70,10 +70,10 @@
   }
 
   .quota-entry-title {
-    @apply font-semibold text-[10px] uppercase text-gray-500;
+    @apply font-semibold text-[10px] uppercase text-fg-secondary;
   }
 
   .quota-entry-body {
-    @apply text-gray-800 text-xs;
+    @apply text-fg-primary text-xs;
   }
 </style>

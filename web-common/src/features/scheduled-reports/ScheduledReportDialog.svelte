@@ -17,6 +17,7 @@
     createAdminServiceCreateReport,
     createAdminServiceEditReport,
     createAdminServiceGetCurrentUser,
+    createAdminServiceListProjectMemberUsers,
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import {
@@ -24,7 +25,7 @@
     aggregationRequestWithRowsAndColumns,
     aggregationRequestWithTimeRange,
     buildAggregationRequest,
-  } from "@rilldata/web-common/features/dashboards/aggregation-request-builder.ts";
+  } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {
@@ -33,6 +34,7 @@
     getFiltersAndTimeControlsFromAggregationRequest,
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
+    ReportRunAs,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -40,7 +42,7 @@
   import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
-  import { array, object, string } from "yup";
+  import { array, object, string, boolean } from "yup";
   import { Button } from "../../components/button";
   import {
     getRuntimeServiceGetResourceQueryKey,
@@ -64,6 +66,14 @@
 
   $: ({ organization, project, report: reportName } = $page.params);
   $: ({ instanceId } = $runtime);
+
+  $: listProjectMemberUsersQuery = createAdminServiceListProjectMemberUsers(
+    organization,
+    project,
+  );
+  $: projectMembersSet = new Set(
+    $listProjectMemberUsersQuery.data?.members?.map((m) => m.userEmail) ?? [],
+  );
 
   $: exploreName =
     props.mode === "create"
@@ -115,11 +125,46 @@
   const schema = yup(
     object({
       title: string().required("Required"),
+      webOpenMode: string().required("Required"),
       emailRecipients: array().of(string().email("Invalid email")),
+      enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
       columns: array().of(string()).min(1),
-    }),
+    })
+      .test(
+        "at-least-one-recipient",
+        "At least one email recipient, slack user, or slack channel is required",
+        function (value) {
+          // Check if at least one array has non-empty values
+          const hasEmailRecipients = value.emailRecipients
+            ? value.emailRecipients.filter(Boolean).length > 0
+            : false;
+          if (!value.enableSlackNotification) return hasEmailRecipients;
+
+          const hasSlackUsers = value.slackUsers
+            ? value.slackUsers.filter(Boolean).length > 0
+            : false;
+          const hasSlackChannels = value.slackChannels
+            ? value.slackChannels.filter(Boolean).length > 0
+            : false;
+
+          return hasEmailRecipients || hasSlackUsers || hasSlackChannels;
+        },
+      )
+      .test(
+        "as-recipients-in-project",
+        "Recipients must be part of the project when running as recipient",
+        function (values) {
+          if (values.webOpenMode !== ReportRunAs.Recipient) return true;
+
+          return (
+            values.emailRecipients?.every(
+              (recipient) => !recipient || projectMembersSet.has(recipient),
+            ) ?? true
+          );
+        },
+      ),
   ) as ValidationAdapter<ReportValues>;
 
   $: initialValues =
@@ -153,6 +198,8 @@
     },
   ));
 
+  $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
+
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
       values.frequency,
@@ -179,7 +226,7 @@
 
     try {
       await $mutation.mutateAsync({
-        organization,
+        org: organization,
         project,
         name: reportName,
         data: {
@@ -206,12 +253,7 @@
                 : (props.reportSpec.annotations as V1ReportSpecAnnotations)[
                     "web_open_state"
                   ],
-            webOpenMode:
-              props.mode === "create"
-                ? "recipient" // To be changed to "filtered" once support is added
-                : ((props.reportSpec.annotations as V1ReportSpecAnnotations)[
-                    "web_open_mode"
-                  ] ?? "recipient"), // Backwards compatibility
+            webOpenMode: values.webOpenMode,
           },
         },
       });
@@ -249,7 +291,7 @@
 </script>
 
 <Dialog.Root bind:open closeOnEscape={false}>
-  <Dialog.Content class="min-w-[802px]">
+  <Dialog.Content class="min-w-[900px]">
     <Dialog.Title>Schedule report</Dialog.Title>
 
     <BaseScheduledReportForm
@@ -263,14 +305,14 @@
       {timeControls}
     />
 
+    {#if generalErrors}
+      <div class="text-red-500">{generalErrors}</div>
+    {/if}
     <div class="flex items-center gap-x-2 mt-5">
-      {#if $mutation.isError}
-        <div class="text-red-500">{$mutation.error.message}</div>
-      {/if}
       <div class="grow" />
       <Button onClick={() => (open = false)} type="secondary">Cancel</Button>
       <Button
-        disabled={$submitting || $form["emailRecipients"]?.length === 0}
+        disabled={$submitting}
         form={FORM_ID}
         submitForm
         type="primary"

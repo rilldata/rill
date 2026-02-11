@@ -24,7 +24,15 @@ func (n *noop) CancelJob(ctx context.Context, jobID int64) error {
 	return nil
 }
 
+func (n *noop) EnqueueByKind(ctx context.Context, kind string) (*InsertResult, error) {
+	return nil, nil
+}
+
 func (n *noop) ResetAllDeployments(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) ReconcileDeployment(ctx context.Context, deploymentID string) (*InsertResult, error) {
 	return nil, nil
 }
 
@@ -73,5 +81,45 @@ func (n *noop) PlanChanged(ctx context.Context, billingCustomerID string) (*Inse
 }
 
 func (n *noop) HibernateInactiveOrgs(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) CheckProvisioners(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) BillingReporter(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) DeleteExpiredAuthCodes(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) DeleteExpiredDeviceAuthCodes(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) DeleteExpiredTokens(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) DeleteExpiredVirtualFiles(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) DeleteUnusedAssets(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) DeploymentsHealthCheck(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) HibernateExpiredDeployments(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
+func (n *noop) RunAutoscaler(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }

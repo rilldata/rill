@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -18,27 +19,31 @@ import (
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/jobs/river"
 	"github.com/rilldata/rill/admin/server"
-	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
+	rillstorage "github.com/rilldata/rill/runtime/storage"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/option"
 
-	// Register database and provisioner implementations
+	// Register drivers
 	_ "github.com/rilldata/rill/admin/database/postgres"
 	_ "github.com/rilldata/rill/admin/provisioner/clickhousestatic"
 	_ "github.com/rilldata/rill/admin/provisioner/kubernetes"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
+	_ "github.com/rilldata/rill/runtime/drivers/claude"
+	_ "github.com/rilldata/rill/runtime/drivers/gemini"
+	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
+	_ "github.com/rilldata/rill/runtime/drivers/openai"
 )
 
 // Config describes admin server config derived from environment variables.
@@ -89,7 +94,10 @@ type Config struct {
 	EmailSenderEmail                  string `split_words:"true"`
 	EmailSenderName                   string `split_words:"true"`
 	EmailBCC                          string `split_words:"true"`
+	AIDriver                          string `default:"" split_words:"true"`
 	OpenAIAPIKey                      string `envconfig:"openai_api_key"`
+	ClaudeAPIKey                      string `envconfig:"claude_api_key"`
+	GeminiAPIKey                      string `envconfig:"gemini_api_key"`
 	ActivitySinkType                  string `default:"" split_words:"true"`
 	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic          string `default:"" split_words:"true"`
@@ -101,6 +109,7 @@ type Config struct {
 	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
+	PylonIdentitySecret               string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -231,15 +240,44 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				logger.Fatal("error creating github client", zap.Error(err))
 			}
 
-			// Init AI client
-			var aiClient ai.Client
-			if conf.OpenAIAPIKey != "" {
-				aiClient, err = ai.NewOpenAI(conf.OpenAIAPIKey, nil)
-				if err != nil {
-					logger.Fatal("error creating OpenAI client", zap.Error(err))
+			// Init AI service
+			aiDriver := conf.AIDriver
+			aiConfig := map[string]any{}
+			switch aiDriver {
+			case "openai":
+				if conf.OpenAIAPIKey == "" {
+					logger.Fatal("RILL_ADMIN_OPENAI_API_KEY is required when AI driver is 'openai'")
 				}
-			} else {
-				aiClient = ai.NewNoop()
+				aiConfig["api_key"] = conf.OpenAIAPIKey
+			case "claude":
+				if conf.ClaudeAPIKey == "" {
+					logger.Fatal("RILL_ADMIN_CLAUDE_API_KEY is required when AI driver is 'claude'")
+				}
+				aiConfig["api_key"] = conf.ClaudeAPIKey
+			case "gemini":
+				if conf.GeminiAPIKey == "" {
+					logger.Fatal("RILL_ADMIN_GEMINI_API_KEY is required when AI driver is 'gemini'")
+				}
+				aiConfig["api_key"] = conf.GeminiAPIKey
+			case "mock_ai":
+				// Nothing more to do
+			case "":
+				aiDriver = "mock_ai"
+				if conf.OpenAIAPIKey != "" { // Backwards compatibility
+					aiDriver = "openai"
+					aiConfig["api_key"] = conf.OpenAIAPIKey
+				}
+			default:
+				logger.Fatal("unknown AI driver", zap.String("driver", aiDriver))
+			}
+			aiHandle, err := drivers.Open(aiDriver, "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
+			if err != nil {
+				logger.Fatal("error creating AI client", zap.Error(err))
+			}
+			defer aiHandle.Close()
+			aiService, ok := aiHandle.AsAI("")
+			if !ok {
+				logger.Fatal("AI driver does not implement AI interface", zap.String("driver", aiHandle.Driver()))
 			}
 
 			// Init AssetsBucket handle
@@ -294,7 +332,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AutoscalerCron:            conf.AutoscalerCron,
 				ScaleDownConstraint:       conf.ScaleDownConstraint,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiService, assetsBucket, biller, p)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -318,6 +356,15 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					logger.Fatal("failed to parse session key from hex string to bytes")
 				}
 				keyPairs[idx] = key
+			}
+
+			// Parse Pylon identity secret
+			var pylonIdentitySecret []byte
+			if conf.PylonIdentitySecret != "" {
+				pylonIdentitySecret, err = hex.DecodeString(conf.PylonIdentitySecret)
+				if err != nil {
+					logger.Fatal("failed to parse pylon identity secret from hex string to bytes")
+				}
 			}
 
 			// Make errgroup for running the processes
@@ -358,6 +405,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubClientSecret:     conf.GithubClientSecret,
 					GithubManagedAccount:   conf.GithubManagedAccount,
 					AssetsBucket:           conf.AssetsBucket,
+					PylonIdentitySecret:    pylonIdentitySecret,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
@@ -370,18 +418,34 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init and run worker
 			if runWorker || runJobs {
-				wkr := worker.New(logger, adm, jobs)
 				if runWorker {
-					group.Go(func() error { return wkr.Run(cctx) })
+					group.Go(func() error { return jobs.Work(cctx) })
 					if !runServer {
 						// If we're not running the server, lets start a http server with /ping endpoint for health checks
-						group.Go(func() error { return worker.StartPingServer(cctx, conf.HTTPPort) })
+						mux := http.NewServeMux()
+						mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusOK)
+							_, err := w.Write([]byte("pong"))
+							if err != nil {
+								panic(err)
+							}
+						})
+						group.Go(func() error {
+							return graceful.ServeHTTP(cctx, mux, graceful.ServeOptions{Port: conf.HTTPPort})
+						})
 					}
 				}
+
 				if runJobs {
 					for _, job := range conf.Jobs {
 						job := job
-						group.Go(func() error { return wkr.RunJob(cctx, job) })
+						group.Go(func() error {
+							_, err := jobs.EnqueueByKind(cmd.Context(), job)
+							if err != nil {
+								return err
+							}
+							return nil
+						})
 					}
 				}
 			}

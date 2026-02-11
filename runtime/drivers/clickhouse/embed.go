@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const embedVersion = "25.2.2.39"
+const embedVersion = "25.6.12.10"
 
 var (
 	embed             *embedClickHouse
@@ -247,6 +247,8 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 			fileName = "clickhouse-macos"
 		case "arm64":
 			fileName = "clickhouse-macos-aarch64"
+		default:
+			return "", fmt.Errorf("unsupported architecture %q for embedded Clickhouse", goarch)
 		}
 		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
 		logger.Info("Downloading ClickHouse binary", zap.String("url", url), zap.String("dst", destPath))
@@ -257,9 +259,11 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 		fileName := ""
 		switch goarch {
 		case "amd64":
-			fileName = "clickhouse-common-static-24.7.4.51-amd64.tgz"
+			fileName = fmt.Sprintf("clickhouse-common-static-%s-amd64.tgz", embedVersion)
 		case "arm64":
-			fileName = "clickhouse-common-static-24.7.4.51-arm64.tgz"
+			fileName = fmt.Sprintf("clickhouse-common-static-%s-arm64.tgz", embedVersion)
+		default:
+			return "", fmt.Errorf("unsupported architecture %q for embedded Clickhouse", goarch)
 		}
 		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
 		destTgzPath := filepath.Join(destDir, release, fileName)
@@ -271,6 +275,8 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 		if err := extractFileFromTgz(destTgzPath, fileToExtract, destPath); err != nil {
 			return "", fmt.Errorf("error extracting ClickHouse: %w", err)
 		}
+	default:
+		return "", fmt.Errorf("unsupported OS %q for embedded Clickhouse", goos)
 	}
 
 	err := os.Chmod(destPath, 0x755)
@@ -323,6 +329,8 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 	}
 
 	config := []byte(fmt.Sprintf(`<clickhouse>
+    <timezone>UTC</timezone>
+
     <logger>
         <level>debug</level>
         <console>true</console>
@@ -518,6 +526,7 @@ func parseErrorCode(msg string) int {
 // Exceptions are usually accompanied by an error code, which is a number that can be used to identify the type of error.
 // This function checks for specific error codes that are considered user errors.
 // As of writing this is not an exhaustive list so if you find an error that is not to be logged add the error code here.
+// The full list of error codes is here : https://github.com/ClickHouse/ClickHouse/blob/master/src/Common/ErrorCodes.cpp
 func isUserError(code int) bool {
 	switch code {
 	case 16: // no such column in table
@@ -528,7 +537,7 @@ func isUserError(code int) bool {
 		return true
 	case 50: // unknown type
 		return true
-	case 38, 42, 43, 44, 46, 47, 51, 52, 53, 57, 60, 62, 63, 81, 82, 179: // different query syntax error
+	case 38, 41, 42, 43, 44, 46, 47, 48, 51, 52, 53, 57, 60, 62, 63, 70, 80, 81, 82, 117, 127, 179, 195, 251: // different query syntax error
 		return true
 	case 181, 182, 183, 184, 215: // aggregate syntax error
 		return true
@@ -536,7 +545,8 @@ func isUserError(code int) bool {
 		return true
 	case 394: // query was cancelled
 		return true
-
+	case 236: // aborted in normal operation
+		return true
 	default:
 		return false
 	}

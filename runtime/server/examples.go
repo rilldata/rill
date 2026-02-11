@@ -7,6 +7,7 @@ import (
 	"path"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/examples"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -44,7 +45,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -115,12 +116,13 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.display_name", req.DisplayName),
+		attribute.String("args.olap", req.Olap),
 		attribute.Bool("args.force", req.Force),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -135,7 +137,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	}
 
 	// Init empty project
-	err = parser.InitEmpty(ctx, repo, req.InstanceId, req.DisplayName)
+	err = parser.InitEmpty(ctx, repo, req.InstanceId, req.DisplayName, req.Olap)
 	if err != nil {
 		return nil, err
 	}

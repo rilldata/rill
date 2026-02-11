@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -17,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -27,41 +29,71 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
-		{
-			Key:    "dsn",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from Snowflake.",
-			Placeholder: "select * from table",
-		},
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Snowflake Connection String",
 			Required:    false,
-			DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
+			DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
-			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env')",
+			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
 		},
 		{
-			Key:         "name",
+			Key:         "account",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
+			DisplayName: "Account Identifier",
 			Required:    true,
+			Placeholder: "your_account_identifier",
+			Hint:        "To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com",
+		},
+		{
+			Key:         "user",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Username",
+			Required:    true,
+			Placeholder: "your_username",
+			Hint:        "Your Snowflake database username",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Required:    true,
+			Placeholder: "your_password",
+			Hint:        "Your Snowflake database password. This will be stored securely and used to authenticate your connection.",
+			Secret:      true,
+		},
+		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Required:    true,
+			Placeholder: "your_database",
+			Hint:        "The name of the Snowflake database you want to connect to. This database must exist in your Snowflake account and you must have access permissions to it.",
+		},
+		{
+			Key:         "schema",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Schema",
+			Placeholder: "your_schema",
+			Hint:        "The schema within the database to use as the default. If not specified, Snowflake will use the PUBLIC schema or your user's default schema.",
+		},
+		{
+			Key:         "warehouse",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Warehouse",
+			Placeholder: "your_warehouse",
+			Hint:        "The compute warehouse to use for running queries. If not specified, Snowflake will use your default warehouse. The warehouse must be running or have auto-resume enabled.",
+		},
+		{
+			Key:         "role",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Role",
+			Placeholder: "your_role",
+			Hint:        "The Snowflake role to use (defaults to your default role if not specified)",
 		},
 	},
 	ImplementsWarehouse: true,
@@ -82,6 +114,9 @@ type configProperties struct {
 	PrivateKey         string         `mapstructure:"privateKey"`
 	ParallelFetchLimit int            `mapstructure:"parallel_fetch_limit"`
 	Extras             map[string]any `mapstructure:",remain"`
+
+	// LogQueries controls whether to log the raw SQL passed to OLAP.
+	LogQueries bool `mapstructure:"log_queries"`
 }
 
 func (c *configProperties) validate() error {
@@ -186,6 +221,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		configProperties: conf,
 		storage:          st,
 		logger:           logger,
+		dbMu:             semaphore.NewWeighted(1),
 	}, nil
 }
 
@@ -205,15 +241,18 @@ type connection struct {
 	configProperties *configProperties
 	storage          *storage.Client
 	logger           *zap.Logger
+
+	db    *sqlx.DB // lazily populated using getDB
+	dbErr error
+	dbMu  *semaphore.Weighted
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open snowflake connection: %w", err)
 	}
-	defer db.Close()
 	return db.PingContext(ctx)
 }
 
@@ -241,6 +280,9 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	if c.db != nil {
+		return c.db.Close()
+	}
 	return nil
 }
 
@@ -271,7 +313,7 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -285,21 +327,21 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.InputHandle == c {
 		if _, ok := opts.OutputHandle.AsObjectStore(); ok {
 			return &selfToObjectStoreExecutor{
 				c:           c,
 				objectStore: opts.OutputHandle,
-			}, true
+			}, nil
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsFileStore implements drivers.Connection.
@@ -317,18 +359,26 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// getDB opens a new sqlx.DB connection using the config.
-func (c *connection) getDB() (*sqlx.DB, error) {
+func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
+	err := c.dbMu.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	defer c.dbMu.Release(1)
+	if c.db != nil || c.dbErr != nil {
+		return c.db, c.dbErr
+	}
 	dsn, err := c.configProperties.resolveDSN()
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := sqlx.Open("snowflake", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
+	c.db, c.dbErr = sqlx.Open("snowflake", dsn)
+	if c.dbErr != nil {
+		return nil, c.dbErr
 	}
-	return db, nil
+	c.db.SetConnMaxIdleTime(time.Minute)
+	return c.db, c.dbErr
 }
 
 // parseRSAPrivateKey parses a private key string

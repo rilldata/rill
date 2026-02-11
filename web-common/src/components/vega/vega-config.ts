@@ -1,49 +1,88 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
-import {
-  MainAreaColorGradientDark,
-  MainAreaColorGradientLight,
-  MainLineColor,
-} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import { getSequentialColorsAsHex } from "@rilldata/web-common/features/themes/palette-store";
+import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
+import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
 import type { Config } from "vega-lite";
+import { definedLightModeColors } from "@rilldata/web-common/features/themes/colors";
 
-const BarFill = "var(--color-primary-400)";
-
-const defaultMarkColor = MainLineColor;
+function resolveCSSVariable(
+  cssVar: string,
+  isDarkMode: boolean,
+  fallback?: string,
+): string {
+  return themeManager.resolveCSSVariable(cssVar, isDarkMode, fallback);
+}
 
 // Light and dark mode color values for canvas compatibility
 const colors = {
   light: {
-    grid: "#e5e7eb", // gray-200
-    axisLabel: "#6b7280", // gray-600
-    surface: "white",
+    grid: definedLightModeColors.neutral[300].css(),
+    axisLabel: definedLightModeColors.neutral[500].css(),
   },
   dark: {
-    grid: "#374151", // gray-700
-    axisLabel: "#d1d5db", // gray-300
-    surface: "oklch(0.153 0.007 264.364)", // gray-50
+    grid: definedLightModeColors.neutral[600].css(),
+    axisLabel: definedLightModeColors.neutral[400].css(),
   },
 };
 
 export const getRillTheme: (
   isCanvasDashboard: boolean,
   isDarkMode?: boolean,
-) => Config = (isCanvasDashboard, isDarkMode = false) => {
+  theme?: Record<string, string>,
+) => Config = (isCanvasDashboard, isDarkMode = false, theme) => {
   const gridColor = isDarkMode ? colors.dark.grid : colors.light.grid;
   const axisLabelColor = isDarkMode
     ? colors.dark.axisLabel
     : colors.light.axisLabel;
 
+  // Use provided theme if available, otherwise resolve from CSS variables
+  let lineColor: string,
+    barColor: string,
+    areaGradientLight: string,
+    areaGradientDark: string;
+
+  if (theme?.primary) {
+    // Use theme's primary color directly
+    const primary = getChroma(theme.primary);
+    lineColor = primary.darken(0.2).css();
+    barColor = primary.css();
+    areaGradientLight = primary.brighten(2).css();
+    areaGradientDark = primary.darken(0.5).css();
+  } else {
+    // Fallback: resolve from CSS variables (for standalone charts without theme context)
+    lineColor = resolveCSSVariable(
+      "var(--color-theme-600)",
+      isDarkMode,
+      "var(--color-primary-600)",
+    );
+    barColor = resolveCSSVariable(
+      "var(--color-theme-400)",
+      isDarkMode,
+      "var(--color-primary-400)",
+    );
+    areaGradientLight = resolveCSSVariable(
+      "var(--color-theme-50)",
+      isDarkMode,
+      "var(--color-primary-50)",
+    );
+    areaGradientDark = resolveCSSVariable(
+      "var(--color-theme-300)",
+      isDarkMode,
+      "var(--color-primary-300)",
+    );
+  }
+
   return {
     autosize: {
       type: "fit-x",
     },
-    background: isDarkMode ? colors.dark.surface : colors.light.surface,
+    background: "transparent",
     mark: {
       tooltip: isCanvasDashboard,
     },
-    arc: { fill: defaultMarkColor },
+    arc: { fill: lineColor },
     area: {
-      line: { stroke: MainLineColor, strokeWidth: 1 },
+      line: { stroke: lineColor, strokeWidth: 1 },
       stroke: null,
       fillOpacity: 0.8,
       color: {
@@ -55,21 +94,24 @@ export const getRillTheme: (
         stops: [
           {
             offset: 0,
-            color: MainAreaColorGradientLight,
+            color: areaGradientLight,
           },
           {
             offset: 1,
-            color: MainAreaColorGradientDark,
+            color: areaGradientDark,
           },
         ],
       },
     },
-    bar: { fill: BarFill, ...(!isCanvasDashboard && { opacity: 0.8 }) },
-    line: { stroke: defaultMarkColor, strokeWidth: 1.5, strokeOpacity: 1 },
-    path: { stroke: defaultMarkColor },
-    rect: { fill: defaultMarkColor },
-    shape: { stroke: defaultMarkColor },
-    symbol: { fill: defaultMarkColor },
+    bar: {
+      fill: barColor,
+      ...(!isCanvasDashboard && { opacity: 0.8 }),
+    },
+    line: { stroke: lineColor, strokeWidth: 1.5, strokeOpacity: 1 },
+    path: { stroke: lineColor },
+    rect: { fill: lineColor },
+    shape: { stroke: lineColor },
+    symbol: { fill: lineColor },
 
     legend: {
       orient: "top",
@@ -127,10 +169,64 @@ export const getRillTheme: (
       strokeWidth: 0,
     },
     range: {
-      category: COMPARIONS_COLORS,
-      heatmap: {
-        scheme: "tealblues", // TODO: Generate this from theme
-      },
+      category: (() => {
+        const defaultColors = COMPARIONS_COLORS.map((color) =>
+          color.startsWith("var(")
+            ? resolveCSSVariable(color, isDarkMode)
+            : color,
+        );
+
+        if (!theme) return defaultColors;
+
+        const themeColors = [
+          theme["color-qualitative-1"],
+          theme["color-qualitative-2"],
+          theme["color-qualitative-3"],
+          theme["color-qualitative-4"],
+          theme["color-qualitative-5"],
+          theme["color-qualitative-6"],
+          theme["color-qualitative-7"],
+          theme["color-qualitative-8"],
+          theme["color-qualitative-9"],
+          theme["color-qualitative-10"],
+          theme["color-qualitative-11"],
+          theme["color-qualitative-12"],
+          theme["color-qualitative-13"],
+          theme["color-qualitative-14"],
+          theme["color-qualitative-15"],
+          theme["color-qualitative-16"],
+          theme["color-qualitative-17"],
+          theme["color-qualitative-18"],
+          theme["color-qualitative-19"],
+          theme["color-qualitative-20"],
+          theme["color-qualitative-21"],
+          theme["color-qualitative-22"],
+          theme["color-qualitative-23"],
+          theme["color-qualitative-24"],
+        ].filter(Boolean);
+
+        return themeColors.length > 0 ? themeColors : defaultColors;
+      })(),
+      heatmap: (() => {
+        // Use palette store which respects scoped themes and converts to hex
+        const defaultColors = getSequentialColorsAsHex();
+
+        if (!theme) return defaultColors;
+
+        const themeColors = [
+          theme["color-sequential-1"],
+          theme["color-sequential-2"],
+          theme["color-sequential-3"],
+          theme["color-sequential-4"],
+          theme["color-sequential-5"],
+          theme["color-sequential-6"],
+          theme["color-sequential-7"],
+          theme["color-sequential-8"],
+          theme["color-sequential-9"],
+        ].filter(Boolean);
+
+        return themeColors.length > 0 ? themeColors : defaultColors;
+      })(),
     },
     numberFormat: "s",
     tooltipFormat: {

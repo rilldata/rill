@@ -3,17 +3,22 @@
   import { marked } from "marked";
 
   export let content: string;
+
+  // Sometimes LLM response adds markdown syntax around the content, so we need to remove it
+  $: sanitisedContext = content
+    .replace(/^```markdown\n/m, "")
+    .replace(/\n```$/m, "");
 </script>
 
 <div class="chat-markdown">
-  {#await marked(content) then html}
+  {#await marked(sanitisedContext) then html}
     {@html DOMPurify.sanitize(html)}
   {/await}
 </div>
 
 <style lang="postcss">
   :global(.chat-markdown) {
-    @apply text-gray-800;
+    @apply text-fg-primary;
     line-height: 1.6;
   }
 
@@ -99,7 +104,7 @@
   }
 
   :global(.chat-markdown blockquote) {
-    @apply border-l-2 border-gray-300 italic text-gray-600 text-sm;
+    @apply border-l-2 border-gray-300 italic text-fg-secondary text-sm;
     padding-left: 0.75rem;
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
@@ -113,7 +118,7 @@
   }
 
   :global(.chat-markdown pre) {
-    @apply bg-gray-100 text-xs;
+    @apply bg-surface-muted border text-xs;
     padding: 0.5rem;
     border-radius: 0.25rem;
     margin-bottom: 0.5rem;
@@ -153,7 +158,7 @@
   }
 
   :global(.chat-markdown th) {
-    @apply bg-gray-50 border border-gray-200 font-medium;
+    @apply bg-surface-background border border-gray-200 font-medium;
     padding: 0.25rem 0.5rem;
     text-align: left;
   }
@@ -164,6 +169,11 @@
   }
 
   :global(.chat-markdown tr:nth-child(even)) {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
+  }
+
+  :global(code[class*="language-"], pre[class*="language-"]) {
+    @apply text-fg-primary;
+    text-shadow: none;
   }
 </style>
