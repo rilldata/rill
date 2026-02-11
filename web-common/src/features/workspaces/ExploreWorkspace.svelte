@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { findRootCause } from "@rilldata/web-common/features/entity-management/error-utils";
+  import { resolveRootCauseErrorMessage } from "@rilldata/web-common/features/entity-management/error-utils";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     resourceIsLoading,
@@ -73,17 +73,15 @@
     ? createRuntimeServiceListResources(instanceId)
     : undefined;
 
-  $: rootCause =
-    mainError && $allResourcesQuery?.data
-      ? findRootCause(
-          exploreResource ?? metricsViewResource ?? {},
+  $: errorResource = exploreResource ?? metricsViewResource;
+  $: errorBody =
+    errorResource && $allResourcesQuery?.data
+      ? resolveRootCauseErrorMessage(
+          errorResource,
           $allResourcesQuery.data.resources ?? [],
+          mainError?.message ?? "",
         )
-      : undefined;
-
-  $: errorBody = rootCause?.meta?.reconcileError
-    ? `${rootCause.meta.name?.name}: ${rootCause.meta.reconcileError}`
-    : (mainError?.message ?? "");
+      : (mainError?.message ?? "");
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(

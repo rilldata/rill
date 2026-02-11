@@ -22,7 +22,7 @@
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import { findRootCause } from "../entity-management/error-utils";
+  import { resolveRootCauseErrorMessage } from "../entity-management/error-utils";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
@@ -88,15 +88,14 @@
     ? createRuntimeServiceListResources(instanceId)
     : undefined;
 
-  $: rootCause =
-    errorMessage && resource && $allResourcesQuery?.data
-      ? findRootCause(resource, $allResourcesQuery.data.resources ?? [])
-      : undefined;
-
-  // Replace the error message body with the root cause if found
-  $: resolvedErrorMessage = rootCause?.meta?.reconcileError
-    ? `${rootCause.meta.name?.name}: ${rootCause.meta.reconcileError}`
-    : errorMessage;
+  $: resolvedErrorMessage =
+    resource && $allResourcesQuery?.data
+      ? resolveRootCauseErrorMessage(
+          resource,
+          $allResourcesQuery.data.resources ?? [],
+          errorMessage ?? "",
+        ) || undefined
+      : errorMessage;
 
   $: resolvedStore = getResolvedStore(
     fetchedCanvas,

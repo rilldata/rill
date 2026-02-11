@@ -1,10 +1,27 @@
-import type { V1Resource, V1ResourceName } from "../../runtime-client";
+import type { V1Resource } from "../../runtime-client";
 import { resourceNameToId } from "./resource-utils";
 
 /**
- * Given a resource with a dependency error, traverse meta.refs
- * to find the root cause resource (the one whose error is NOT
- * caused by another dependency).
+ * Resolves the root cause error message for a resource. If the resource's
+ * error is caused by a dependency, traverses refs to find the original
+ * error and formats it as "resourceName: error". Falls back to the
+ * provided error message if no deeper cause is found.
+ */
+export function resolveRootCauseErrorMessage(
+  resource: V1Resource,
+  allResources: V1Resource[],
+  fallback: string,
+): string {
+  const rootCause = findRootCause(resource, allResources);
+  if (rootCause?.meta?.reconcileError) {
+    return `${rootCause.meta.name?.name}: ${rootCause.meta.reconcileError}`;
+  }
+  return fallback;
+}
+
+/**
+ * Given a resource with a dependency error, traverse meta.refs to find the
+ * root cause resource — the one whose error is NOT caused by another dependency.
  */
 export function findRootCause(
   resource: V1Resource,
@@ -13,26 +30,17 @@ export function findRootCause(
   const refs = resource.meta?.refs;
   if (!refs?.length) return undefined;
 
-  const erroredRef = findErroredRef(refs, allResources);
-  if (!erroredRef) return undefined;
-
-  // If that ref also has errored refs, keep traversing
-  const deeper = findRootCause(erroredRef, allResources);
-  return deeper ?? erroredRef;
-}
-
-function findErroredRef(
-  refs: V1ResourceName[],
-  allResources: V1Resource[],
-): V1Resource | undefined {
+  // Find the first ref that has an error
   for (const ref of refs) {
     const refId = resourceNameToId(ref);
     const refResource = allResources.find(
       (r) => resourceNameToId(r.meta?.name) === refId,
     );
     if (refResource?.meta?.reconcileError) {
-      return refResource;
+      // If that ref also has errored refs, keep traversing
+      return findRootCause(refResource, allResources) ?? refResource;
     }
   }
+
   return undefined;
 }

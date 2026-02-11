@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { findRootCause } from "./error-utils";
+import { resolveRootCauseErrorMessage } from "./error-utils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
 function makeResource(
@@ -19,8 +19,8 @@ function makeResource(
   };
 }
 
-describe("findRootCause", () => {
-  it("returns the errored ref when a direct dependency has an error", () => {
+describe("resolveRootCauseErrorMessage", () => {
+  it("returns the root cause error when a direct dependency has an error", () => {
     const source = makeResource("Source", "raw_data", {
       reconcileError: "connection refused",
     });
@@ -29,9 +29,13 @@ describe("findRootCause", () => {
       refs: [{ kind: "Source", name: "raw_data" }],
     });
 
-    const result = findRootCause(model, [source, model]);
+    const result = resolveRootCauseErrorMessage(
+      model,
+      [source, model],
+      "fallback",
+    );
 
-    expect(result).toBe(source);
+    expect(result).toBe("raw_data: connection refused");
   });
 
   it("traverses multiple levels to find the root cause", () => {
@@ -47,45 +51,61 @@ describe("findRootCause", () => {
       refs: [{ kind: "Model", name: "clean_data" }],
     });
 
-    const result = findRootCause(explore, [source, model, explore]);
+    const result = resolveRootCauseErrorMessage(
+      explore,
+      [source, model, explore],
+      "fallback",
+    );
 
-    expect(result).toBe(source);
+    expect(result).toBe("raw_data: 503 Service Unavailable");
   });
 
-  it("returns undefined when the resource has no refs", () => {
+  it("returns the fallback when the resource has no refs", () => {
     const resource = makeResource("Source", "raw_data", {
       reconcileError: "connection refused",
     });
 
-    const result = findRootCause(resource, [resource]);
+    const result = resolveRootCauseErrorMessage(
+      resource,
+      [resource],
+      "fallback",
+    );
 
-    expect(result).toBeUndefined();
+    expect(result).toBe("fallback");
   });
 
-  it("returns undefined when no refs have errors", () => {
+  it("returns the fallback when no refs have errors", () => {
     const source = makeResource("Source", "raw_data");
     const model = makeResource("Model", "clean_data", {
       reconcileError: "some error",
       refs: [{ kind: "Source", name: "raw_data" }],
     });
 
-    const result = findRootCause(model, [source, model]);
+    const result = resolveRootCauseErrorMessage(
+      model,
+      [source, model],
+      "fallback",
+    );
 
-    expect(result).toBeUndefined();
+    expect(result).toBe("fallback");
   });
 
-  it("returns undefined when refs list is empty", () => {
+  it("returns the fallback when refs list is empty", () => {
     const resource = makeResource("Model", "clean_data", {
       reconcileError: "some error",
       refs: [],
     });
 
-    const result = findRootCause(resource, [resource]);
+    const result = resolveRootCauseErrorMessage(
+      resource,
+      [resource],
+      "fallback",
+    );
 
-    expect(result).toBeUndefined();
+    expect(result).toBe("fallback");
   });
 
-  it("returns the first errored ref when multiple refs have errors", () => {
+  it("uses the first errored ref when multiple refs have errors", () => {
     const sourceA = makeResource("Source", "source_a", {
       reconcileError: "error A",
     });
@@ -100,12 +120,16 @@ describe("findRootCause", () => {
       ],
     });
 
-    const result = findRootCause(model, [sourceA, sourceB, model]);
+    const result = resolveRootCauseErrorMessage(
+      model,
+      [sourceA, sourceB, model],
+      "fallback",
+    );
 
-    expect(result).toBe(sourceA);
+    expect(result).toBe("source_a: error A");
   });
 
-  it("skips refs that are not found in allResources", () => {
+  it("skips refs not found in allResources", () => {
     const source = makeResource("Source", "raw_data", {
       reconcileError: "connection refused",
     });
@@ -117,8 +141,12 @@ describe("findRootCause", () => {
       ],
     });
 
-    const result = findRootCause(model, [source, model]);
+    const result = resolveRootCauseErrorMessage(
+      model,
+      [source, model],
+      "fallback",
+    );
 
-    expect(result).toBe(source);
+    expect(result).toBe("raw_data: connection refused");
   });
 });
