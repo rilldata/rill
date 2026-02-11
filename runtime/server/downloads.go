@@ -74,7 +74,25 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 	rep := r.GetReport()
 	t := req.ExecutionTime.AsTime()
 
-	qry, err := queries.ProtoFromJSON(rep.Spec.QueryName, rep.Spec.QueryArgsJson, &t)
+	// Get legacy query info back from resolver because currently resolvers does not all options like include headers and also not all resolvers support exports so until then. TODO change UI to support resolver props to open report like alerts
+	var queryName string
+	var queryArgsJSON string
+	var ok bool
+	if rep.Spec.Resolver != "legacy_metrics" {
+		return nil, status.Errorf(codes.InvalidArgument, "unsupported report resolver: %s", rep.Spec.Resolver)
+	}
+	props := rep.Spec.ResolverProperties.AsMap()
+	if props["query_name"] == nil || props["query_args_json"] == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "missing query_name or query_args_json in resolver properties")
+	}
+	if queryName, ok = props["query_name"].(string); !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "query_name must be a string")
+	}
+	if queryArgsJSON, ok = props["query_args_json"].(string); !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "query_args_json must be a string")
+	}
+
+	qry, err := queries.ProtoFromJSON(queryName, queryArgsJSON, &t)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build export request: %w", err)
 	}

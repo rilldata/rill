@@ -78,8 +78,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	var tokens map[string]string
 	if webOpenMode == WebOpenModeRecipient {
-		// in recipient mode tokens are used for unsubscribing so no access to resources is needed
-		tokens, err = s.createMagicTokensWithoutResources(ctx, proj.ID, req.Report, req.OwnerId, recipients)
+		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, req.OwnerId, ownerEmail, recipients)
 	} else {
 		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
 	}
@@ -555,13 +554,11 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 
-	// Handle resolver-based reports (new style) vs legacy query-based reports
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
 			opts.Resolver: opts.ResolverProperties,
 		}
 	}
-	// Legacy query-based report options
 	res.Query.Name = opts.QueryName         // nolint:staticcheck // backwards compatibility
 	res.Query.ArgsJSON = opts.QueryArgsJson // nolint:staticcheck // backwards compatibility
 	res.Export.Format = opts.ExportFormat.String()
@@ -593,20 +590,6 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 }
 
 func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
-	res := reportYAML{}
-	res.Type = "report"
-	res.DisplayName = opts.DisplayName
-	res.Refresh.Cron = opts.RefreshCron
-	res.Refresh.TimeZone = opts.RefreshTimeZone
-	res.Watermark = "inherit"
-	res.Intervals.Duration = opts.IntervalDuration
-
-	// Handle resolver-based reports
-	if opts.Resolver != "" {
-		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
-		}
-	}
 	// Format args as pretty YAML
 	var args map[string]interface{}
 	if opts.QueryArgsJson != "" { // nolint:staticcheck // backwards compatibility
@@ -629,12 +612,23 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 		exportFormat = opts.ExportFormat.String()
 	}
 
+	res := reportYAML{}
+	res.Type = "report"
+	res.DisplayName = opts.DisplayName
+	res.Refresh.Cron = opts.RefreshCron
+	res.Refresh.TimeZone = opts.RefreshTimeZone
+	res.Watermark = "inherit"
+	res.Intervals.Duration = opts.IntervalDuration
+	if opts.Resolver != "" {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties,
+		}
+	}
 	res.Query.Name = opts.QueryName // nolint:staticcheck // backwards compatibility
 	res.Query.Args = args
 	res.Export.Format = exportFormat
 	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
-
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -763,7 +757,7 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 	return emailTokens, nil
 }
 
-func (s *Server) createMagicTokensWithoutResources(ctx context.Context, projectID, reportName, ownerID string, emails []string) (map[string]string, error) {
+func (s *Server) createUnsubMagicTokens(ctx context.Context, projectID, reportName, ownerID, ownerEmail string, emails []string) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -785,6 +779,10 @@ func (s *Server) createMagicTokensWithoutResources(ctx context.Context, projectI
 
 	emailTokens := make(map[string]string)
 	for _, email := range emails {
+		if ownerEmail != "" && strings.EqualFold(ownerEmail, email) {
+			// skip creating unsubscribe token for owner email
+			continue
+		}
 		// set user attrs as per the email
 		mgcOpts.Attributes = map[string]interface{}{
 			"name":   "",

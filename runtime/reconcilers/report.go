@@ -178,20 +178,18 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	conditionRes = append(conditionRes, res.Meta.Name)
 	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
 
-	if spec.QueryName != "" {
-		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
+	var mvName string
+	if spec.Resolver != "" {
+		initializer, ok := runtime.ResolverInitializers[spec.Resolver]
 		if !ok {
 			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
 		}
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
 			Runtime:    r.C.Runtime,
 			InstanceID: r.C.InstanceID,
-			Properties: map[string]any{
-				"query_name":      spec.QueryName,
-				"query_args_json": spec.QueryArgsJson,
-			},
-			Claims:    claims,
-			ForExport: false,
+			Properties: spec.ResolverProperties.AsMap(),
+			Claims:     claims,
+			ForExport:  false,
 		})
 		if err != nil {
 			return nil, err
@@ -204,7 +202,6 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 
 		rules = append(rules, inferred...)
 
-		mvName := ""
 		refs := resolver.Refs()
 		for _, ref := range refs {
 			// need access to the referenced resources
@@ -213,49 +210,49 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 				mvName = ref.Name
 			}
 		}
+	}
 
-		// figure out explore or canvas for the report
-		var explore, canvas string
-		if e, ok := spec.Annotations["explore"]; ok {
-			explore = e
-		}
-		if c, ok := spec.Annotations["canvas"]; ok {
-			canvas = c
-		}
+	// figure out explore or canvas for the report
+	var explore, canvas string
+	if e, ok := spec.Annotations["explore"]; ok {
+		explore = e
+	}
+	if c, ok := spec.Annotations["canvas"]; ok {
+		canvas = c
+	}
 
-		if explore == "" { // backwards compatibility, try to find explore
-			if path, ok := spec.Annotations["web_open_path"]; ok {
-				// parse path, extract explore name, it will be like /explore/{explore}
-				if strings.HasPrefix(path, "/explore/") {
-					explore = path[9:]
-					if explore[len(explore)-1] == '/' {
-						explore = explore[:len(explore)-1]
-					}
-				}
-			}
-			// still not found, use mv name as explore name
-			if explore == "" {
-				explore = mvName
-			}
-		}
-
-		// add explore and canvas to access and field access rule's condition resources
-		if explore != "" {
-			exp := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
-			conditionRes = append(conditionRes, exp)
-			for _, r := range rules {
-				if rfa := r.GetFieldAccess(); rfa != nil {
-					rfa.ConditionResources = append(rfa.ConditionResources, exp)
+	if explore == "" { // backwards compatibility, try to find explore
+		if path, ok := spec.Annotations["web_open_path"]; ok {
+			// parse path, extract explore name, it will be like /explore/{explore}
+			if strings.HasPrefix(path, "/explore/") {
+				explore = path[9:]
+				if explore[len(explore)-1] == '/' {
+					explore = explore[:len(explore)-1]
 				}
 			}
 		}
-		if canvas != "" {
-			c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
-			conditionRes = append(conditionRes, c)
-			for _, r := range rules {
-				if rfa := r.GetFieldAccess(); rfa != nil {
-					rfa.ConditionResources = append(rfa.ConditionResources, c)
-				}
+		// still not found, use mv name as explore name
+		if explore == "" {
+			explore = mvName
+		}
+	}
+
+	// add explore and canvas to access and field access rule's condition resources
+	if explore != "" {
+		exp := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+		conditionRes = append(conditionRes, exp)
+		for _, r := range rules {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				rfa.ConditionResources = append(rfa.ConditionResources, exp)
+			}
+		}
+	}
+	if canvas != "" {
+		c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
+		conditionRes = append(conditionRes, c)
+		for _, r := range rules {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				rfa.ConditionResources = append(rfa.ConditionResources, c)
 			}
 		}
 	}
@@ -651,9 +648,9 @@ func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *ru
 		return false, err
 	}
 
-	content, ok := notificationsContent[""]
+	content, ok := notificationsContent[""] // non-email recipients are treated as anon users
 	if !ok {
-		return false, fmt.Errorf("failed to get recipient URLs for anon user")
+		return false, fmt.Errorf("failed to get notification content for non-email notifier %q", notifier.Connector)
 	}
 
 	msg := &drivers.ScheduledReport{
@@ -712,7 +709,7 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	}
 
 	// Create claims for executing the AI resolver
-	// The userID determines what data the AI can access (row-level security)
+	// The userID and userAttrs determines what data the AI can access (row-level security)
 	claims := &runtime.SecurityClaims{
 		UserID:         userID,
 		UserAttributes: userAttrs,

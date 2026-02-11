@@ -149,7 +149,15 @@ func (p *Parser) parseReport(node *Node) error {
 			return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
 		}
 
-		// TODO use legacy_metrics resolver here after adding support for resolver in ExportReport API, will be a fast follow up or done in this PR only
+		resolver = "legacy_metrics"
+		props := map[string]any{
+			"query_name":      tmp.Query.Name,
+			"query_args_json": tmp.Query.ArgsJSON,
+		}
+		resolverProps, err = structpb.NewStruct(props)
+		if err != nil {
+			return fmt.Errorf("encountered invalid property type: %w", err)
+		}
 	}
 
 	// Parse export format
@@ -202,7 +210,7 @@ func (p *Parser) parseReport(node *Node) error {
 	}
 	// AI resolver only supports non email notifications in creator mode as we can't reliably fetch user attributes for slack webhooks/channels for enforcing access control in other modes
 	if resolver == "ai" && mode != "creator" && (len(tmp.Notify.Slack.Users) > 0 || len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Webhooks) > 0) {
-		return errors.New(`ai reports only support email notifications in "creator" web open mode`)
+		return errors.New(`ai reports only support non-email notifications in "creator" web open mode`)
 	}
 
 	// Track report
@@ -227,13 +235,8 @@ func (p *Parser) parseReport(node *Node) error {
 		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
 
-	if resolver != "" {
-		r.ReportSpec.Resolver = resolver
-		r.ReportSpec.ResolverProperties = resolverProps
-	} else { // TODO remove when ExportReport API supports resolver
-		r.ReportSpec.QueryName = tmp.Query.Name
-		r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
-	}
+	r.ReportSpec.Resolver = resolver
+	r.ReportSpec.ResolverProperties = resolverProps
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader

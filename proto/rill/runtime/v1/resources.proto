@@ -633,7 +633,6 @@ message ReportExecution {
   google.protobuf.Timestamp finished_on = 5;
 }
 
-
 message Alert {
   AlertSpec spec = 1;
   AlertState state = 2;

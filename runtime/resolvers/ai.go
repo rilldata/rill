@@ -15,8 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func init() {
@@ -25,11 +23,9 @@ func init() {
 
 // aiProps contains the static properties for the AI resolver.
 type aiProps struct {
-	Agent  string `mapstructure:"agent"`
-	Prompt string `mapstructure:"prompt"`
-	// Time range for analysis (supports rilltime expressions, ISO durations, or fixed start/end)
-	TimeRange *metricsview.TimeRange `mapstructure:"time_range"`
-	// Optional comparison time range
+	Agent               string                 `mapstructure:"agent"`
+	Prompt              string                 `mapstructure:"prompt"`
+	TimeRange           *metricsview.TimeRange `mapstructure:"time_range"` // Time range for analysis (supports rilltime expressions, or fixed start/end)
 	ComparisonTimeRange *metricsview.TimeRange `mapstructure:"comparison_time_range"`
 	TimeZone            string                 `mapstructure:"time_zone"`
 	// optional dashboard context for the agent
@@ -269,12 +265,13 @@ func (r *aiResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runti
 
 // InferRequiredSecurityRules implements runtime.Resolver.
 func (r *aiResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented yet for AI resolver")
+	return nil, nil
 }
 
 // resolveTimeRange resolves and rewrites the time range to actual timestamps using rilltime.
 func (r *aiResolver) resolveTimeRange(ctx context.Context, tr *metricsview.TimeRange, tz string) error {
-	if tr == nil || tr.IsZero() {
+	// if time range is not provided, or already has start and end, do nothing
+	if tr == nil || tr.IsZero() || (!tr.Start.IsZero() && !tr.End.IsZero()) {
 		return nil
 	}
 
@@ -285,11 +282,6 @@ func (r *aiResolver) resolveTimeRange(ctx context.Context, tr *metricsview.TimeR
 		if err != nil {
 			return fmt.Errorf("invalid time zone %q: %w", tz, err)
 		}
-	}
-
-	// If start and end are already set, nothing to do
-	if !tr.Start.IsZero() && !tr.End.IsZero() {
-		return nil
 	}
 
 	// if metrics view is provided, we can get the metrics view's time bounds
@@ -364,7 +356,7 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 	}
 
 	if !resolvedSecurity.CanAccess() {
-		return nil, nil, status.Error(codes.Unauthenticated, "action not allowed")
+		return nil, nil, runtime.ErrForbidden
 	}
 
 	return mv, resolvedSecurity, nil
@@ -374,18 +366,18 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewState, error) {
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, err
 	}
 
 	mv := res.GetMetricsView()
 	spec := mv.State.ValidSpec
 	if spec == nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
+		return nil, nil, fmt.Errorf("metrics view %q is invalid", name)
 	}
 
 	return res, mv.State, nil
