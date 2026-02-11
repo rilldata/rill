@@ -46,11 +46,11 @@ The query payload bypasses the LLM entirely. The backend stores it (which it alr
 
 ### Key Insight
 
-Today, `query_metrics_view` already persists the full query arguments in the `ai_messages` table as part of normal tool call tracking. The tool *call* message (the assistant's request to invoke `query_metrics_view`) is created and assigned a UUID *before* the tool handler executes. The short link uses this existing call message ID — the handler receives it, embeds it in the URL, and the query arguments can be retrieved directly from the call message at click time.
+Today, `query_metrics_view` already persists the full query arguments in the `ai_messages` table as part of normal tool call tracking. The tool _call_ message (the assistant's request to invoke `query_metrics_view`) is created and assigned a UUID _before_ the tool handler executes. The short link uses this existing call message ID — the handler receives it, embeds it in the URL, and the query arguments can be retrieved directly from the call message at click time.
 
 ### Conversation Forks
 
-`ForkSession` clones messages with **new IDs** (including tool call IDs) and copies content verbatim. Without any additional handling, citation URLs in cloned messages would still reference the original conversation and original call IDs. See step 7 below for the optional rewrite approach and its tradeoffs.
+`ForkSession` clones messages with **new IDs** (including tool call IDs) and copies content verbatim. Without any additional handling, citation URLs in cloned messages still reference the original conversation and call IDs. This is a known limitation — see Open Questions for options.
 
 ## Architecture
 
@@ -143,7 +143,7 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID strin
 }
 ```
 
-Both IDs are already available when the handler runs. The tool *call* message (the assistant's request to invoke `query_metrics_view`) is created and assigned a UUID via `uuid.NewString()` in `AddMessage` (`runtime/ai/ai.go`) *before* the handler executes. The conversation ID is available from the session context. The handler receives the tool call message ID and passes it to `generateOpenURL`.
+Both IDs are already available when the handler runs. The tool _call_ message (the assistant's request to invoke `query_metrics_view`) is created and assigned a UUID via `uuid.NewString()` in `AddMessage` (`runtime/ai/ai.go`) _before_ the handler executes. The conversation ID is available from the session context. The handler receives the tool call message ID and passes it to `generateOpenURL`.
 
 ### 3. Frontend: Add Route for Short Links
 
@@ -212,7 +212,10 @@ export function getCitationUrlRewriter(
           // This is the assistant's request to invoke query_metrics_view —
           // its content_data contains the query arguments.
           const toolCall = conversation.messages.find(
-            (m) => m.id === toolCallID && m.type === "tool_call" && m.tool === "query_metrics_view",
+            (m) =>
+              m.id === toolCallID &&
+              m.type === "tool_call" &&
+              m.tool === "query_metrics_view",
           );
           if (!toolCall) {
             // Fallback: render as standard link (frontend route will handle it)
@@ -239,30 +242,11 @@ Key behaviors:
 - **Outside Explore context**: Short links pass through as standard `<a>` elements pointing to the short URL. Clicking navigates to the frontend route, which calls the gRPC endpoint and redirects.
 - **Fallback**: If the tool call ID isn't found in the conversation (edge case), the link renders as-is and the frontend route handles resolution.
 
-Note: the `call_id` here is the tool *call* message ID — the assistant's request to invoke the tool. Its `content_data` contains the query arguments that were passed to `query_metrics_view`. This is distinct from the tool *result* message, which contains the query output and is created *after* the handler returns.
+Note: the `call_id` here is the tool _call_ message ID — the assistant's request to invoke the tool. Its `content_data` contains the query arguments that were passed to `query_metrics_view`. This is distinct from the tool _result_ message, which contains the query output and is created _after_ the handler returns.
 
 ### 6. Frontend: Embed-Aware Rendering (Future)
 
 The existing embed/app branching problem and the icon button rendering request are separate from the short link change. They can be addressed in a follow-up by enhancing the citation link renderer in the `marked` extension — the short link approach doesn't block or change this. With citations now identifiable via a URL pattern (`/-/ai/.../call/...`), the markdown renderer has a clean hook point for custom rendering (buttons in embeds, icon buttons, hover previews, etc.).
-
-### 7. Optional: Rewrite Citation URLs During Fork
-
-`ForkSession` clones messages with new IDs using an `oldToNewMessageID` map (already present in the code). Citation URLs in cloned content still reference the original conversation and call IDs. This step rewrites them to be fork-local.
-
-**Without this step**, citations in a forked conversation resolve against the original conversation. This works as long as the user has access to the original — which they do, since they forked it. The edge cases are:
-- If the original owner later revokes the forker's access, citations in the fork return 403.
-- If the forker shares the fork with a third party, that person may not have access to the original conversation's citations.
-
-These are narrow scenarios and may be acceptable for now.
-
-**With this step**, citations in the fork are fully self-contained. The rewrite touches two message types during the existing clone loop:
-
-1. **Tool result messages** (JSON content): Parse the JSON, update the `open_url` field with the new conversation ID and remapped call ID, re-serialize.
-2. **Assistant messages** (markdown content): Regex replace on the short link URL pattern (`/-/ai/conversations/{uuid}/call/{uuid}`) with remapped IDs.
-
-If a call ID is not found in `oldToNewMessageID` (unexpected edge case), the original link is kept as a fallback.
-
-**Performance impact**: Negligible. The fork operation already iterates all messages and does a database insert per message. The added work is a `strings.Contains` check per message, plus an occasional JSON round-trip or regex replace for messages that contain citations. Single-digit milliseconds even for long conversations.
 
 ## Access Control
 
@@ -337,7 +321,6 @@ Parse citation URLs defensively, stripping trailing brackets that the LLM append
    - Implement handler in `runtime/server/`
    - Change `generateOpenURL` to produce short links using conversation ID and tool call message ID
    - Pass the tool call message ID into the handler (it's already available — the call message is created before the handler executes)
-   - (Optional) Update `ForkSession` cloning to rewrite citation URLs in copied messages to fork-local IDs using `oldToNewMessageID` (see step 7)
 
 2. **Phase 2: Frontend changes**
 
@@ -354,3 +337,13 @@ Parse citation URLs defensively, stripping trailing brackets that the LLM append
 ## Open Questions
 
 1. **Tool call TTL**: How long should tool call messages be retained? If a user shares a citation link months later and the conversation has been garbage collected, the link returns 404. Options: retain indefinitely, set a generous TTL (e.g., 1 year), or accept this as a known limitation with a friendly error page.
+
+2. **Citations in forked conversations**: `ForkSession` clones messages with new IDs but copies content verbatim. Citation URLs in cloned messages still reference the original conversation and call IDs. This works for the forker (who has access to the original), but breaks if the fork is shared with a third party who lacks access to the source conversation.
+
+   Options:
+
+   - **Do nothing (source-bound links)**: Accept that citations in forks reference the original conversation. The forker has access; third-party recipients may not. Simplest, zero implementation cost.
+   - **Rewrite at fork time**: During the `ForkSession` clone loop, regex/JSON-rewrite citation URLs in message content to use the new conversation and remapped call IDs (via the existing `oldToNewMessageID` map). Makes forks self-contained, but mutating serialized content strings is fragile.
+   - **Stable citation ID store**: Generate a conversation-independent `citation_id` at tool-call time, stored in a dedicated table mapping `{citation_id -> query payload + ACL context}`. Forks copy messages unchanged because the citation ID is stable. Architecturally cleanest, but new storage and access control semantics for a narrow edge case.
+   - **Alias table**: On fork, store mapping rows `{fork_conversation_id, old_call_id -> new_call_id}`. The resolver checks the alias table before fetching the tool call. Avoids content mutation but introduces a new lookup path and lifecycle management.
+   - **Resolver fallback via lineage**: `GetAIToolCall` follows the `forked_from_session_id` chain to resolve old call IDs from ancestor conversations. No content rewriting or extra tables, but introduces an "implied access" auth pattern that needs careful design.
