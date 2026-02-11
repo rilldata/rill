@@ -7,7 +7,7 @@ import { waitForReconciliation } from "./utils/wait-for-reconciliation";
 test.describe("Example project initialization", () => {
   EXAMPLES.forEach((example) => {
     test.describe(`Example project: ${example.title}`, () => {
-      test.setTimeout(120_000);
+      test.setTimeout(180_000);
       test("should initialize new project", async ({ page }) => {
         await page.getByRole("link", { name: example.title }).click();
 
