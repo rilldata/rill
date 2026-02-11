@@ -108,7 +108,9 @@ export function isMultiStepConnector(
  */
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
   const category = schema?.["x-category"];
-  return category === "sqlStore" || category === "warehouse" || category === "olap";
+  return (
+    category === "sqlStore" || category === "warehouse" || category === "olap"
+  );
 }
 
 // Form height CSS classes for modals

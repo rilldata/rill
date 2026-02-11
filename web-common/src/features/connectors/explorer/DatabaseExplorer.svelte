@@ -44,7 +44,13 @@
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
-          <DatabaseEntry {instanceId} {connector} {database} {store} {searchPattern} />
+          <DatabaseEntry
+            {instanceId}
+            {connector}
+            {database}
+            {store}
+            {searchPattern}
+          />
         {/each}
       </ol>
     {/if}

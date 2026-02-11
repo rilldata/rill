@@ -181,7 +181,7 @@
     return false;
   })();
 
-$: formId = isStepFlowConnector ? multiStepFormId || baseFormId : baseFormId;
+  $: formId = isStepFlowConnector ? multiStepFormId || baseFormId : baseFormId;
 
   $: submitting = $paramsSubmitting;
 
@@ -321,7 +321,7 @@ $: formId = isStepFlowConnector ? multiStepFormId || baseFormId : baseFormId;
           <JSONSchemaFormRenderer
             schema={connectorSchema}
             step={isConnectorForm ? "connector" : "source"}
-{form}
+            {form}
             errors={$paramsErrors}
             {onStringInputChange}
             {handleFileUpload}
