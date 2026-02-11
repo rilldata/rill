@@ -16,12 +16,14 @@
 
   // Type for resource kinds that support graph visualization
   type GraphableKind =
+    | ResourceKind.Connector
     | ResourceKind.Source
     | ResourceKind.Model
     | ResourceKind.MetricsView
     | ResourceKind.Explore;
 
   const NAME_SEED_ALIAS: Record<GraphableKind, string> = {
+    [ResourceKind.Connector]: "connector",
     [ResourceKind.Source]: "source",
     [ResourceKind.Model]: "model",
     [ResourceKind.MetricsView]: "metrics",
@@ -29,6 +31,7 @@
   };
 
   const KIND_TOKEN_BY_KIND: Record<GraphableKind, string> = {
+    [ResourceKind.Connector]: "connectors",
     [ResourceKind.Source]: "sources",
     [ResourceKind.Model]: "models",
     [ResourceKind.MetricsView]: "metrics",
