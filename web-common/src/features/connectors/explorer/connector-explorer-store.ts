@@ -4,6 +4,7 @@ import { derived, get, writable, type Writable } from "svelte/store";
 type ConnectorExplorerState = {
   showConnectors: boolean;
   expandedItems: Record<string, boolean>;
+  selectedKey: string | null;
 };
 
 export class ConnectorExplorerStore {
@@ -50,8 +51,9 @@ export class ConnectorExplorerStore {
       ? localStorageStore<ConnectorExplorerState>("connector-explorer-state", {
           showConnectors,
           expandedItems,
+          selectedKey: null,
         })
-      : writable({ showConnectors, expandedItems });
+      : writable({ showConnectors, expandedItems, selectedKey: null });
   }
 
   createItemIfNotExists(
@@ -128,6 +130,14 @@ export class ConnectorExplorerStore {
     if (this.onToggleItem)
       this.onToggleItem(connector, database, schema, table);
 
+    if (table && this.allowSelectTable) {
+      const key = getItemKey(connector, database, schema, table);
+      this.store.update((state) => ({
+        ...state,
+        selectedKey: state.selectedKey === key ? null : key,
+      }));
+    }
+
     if (table && !this.allowShowSchema) return;
 
     this.store.update((state) => {
@@ -143,6 +153,20 @@ export class ConnectorExplorerStore {
         },
       };
     });
+  };
+
+  isSelected = (
+    connector: string,
+    database?: string,
+    schema?: string,
+    table?: string,
+  ) => {
+    const key = getItemKey(connector, database, schema, table);
+    return derived(this.store, ($state) => $state.selectedKey === key);
+  };
+
+  clearSelection = () => {
+    this.store.update((state) => ({ ...state, selectedKey: null }));
   };
 
   // Not used yet. Currently, the reconciler does not track connector renames.

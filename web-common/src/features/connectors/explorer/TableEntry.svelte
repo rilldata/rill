@@ -24,13 +24,24 @@
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
   export let isOlapConnector: boolean = false;
+  export let searchPattern: string = "";
 
   let contextMenuOpen = false;
 
   $: expandedStore = store.getItem(connector, database, databaseSchema, table);
   $: showSchema = $expandedStore;
 
-  const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
+  const {
+    allowContextMenu,
+    allowNavigateToTable,
+    allowShowSchema,
+    allowSelectTable,
+  } = store;
+
+  $: selectedStore = allowSelectTable
+    ? store.isSelected(connector, database, databaseSchema, table)
+    : null;
+  $: selected = selectedStore ? $selectedStore : false;
 
   $: ({ instanceId: runtimeInstanceId } = $runtime);
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
@@ -61,6 +72,7 @@
 <li aria-label={tableId} class="table-entry group" class:open>
   <div
     class="table-entry-header"
+    class:selected
     style="padding-left: calc({database || !allowShowSchema
       ? 58
       : 40}px + var(--explorer-indent-offset, 0px))"
@@ -91,7 +103,18 @@
     >
       <TableIcon size="14px" className="shrink-0 text-fg-secondary" />
       <span class="truncate">
-        {table}
+        {#if searchPattern}
+          {@const i = table.toLowerCase().indexOf(searchPattern.toLowerCase())}
+          {#if i >= 0}
+            {table.slice(0, i)}<mark class="search-highlight"
+              >{table.slice(i, i + searchPattern.length)}</mark
+            >{table.slice(i + searchPattern.length)}
+          {:else}
+            {table}
+          {/if}
+        {:else}
+          {table}
+        {/if}
       </span>
     </svelte:element>
 
@@ -154,8 +177,16 @@
     @apply bg-gray-100;
   }
 
+  .table-entry-header.selected {
+    @apply bg-primary-100 dark:bg-primary-900;
+  }
+
   .clickable-text {
     @apply flex grow items-center gap-x-1;
     @apply text-fg-primary truncate;
+  }
+
+  .search-highlight {
+    @apply font-semibold bg-transparent;
   }
 </style>

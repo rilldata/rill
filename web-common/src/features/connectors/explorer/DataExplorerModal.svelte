@@ -85,12 +85,14 @@
     selectedTable = null;
     selectedConnector = null;
     searchQuery = "";
+    selectionStore.clearSelection();
   }
 
   function handleSelectConnector(connector: V1AnalyzedConnector) {
     selectedConnector = connector;
     selectedTable = null;
     searchQuery = "";
+    selectionStore.clearSelection();
   }
 
   async function handleGenerateMetrics() {
