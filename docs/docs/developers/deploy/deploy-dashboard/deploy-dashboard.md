@@ -1,6 +1,6 @@
 ---
-title: Deploy Dashboards
-sidebar_label: Deploy Dashboards
+title: Deploy to Rill Cloud
+sidebar_label: Deploy to Rill Cloud
 sidebar_position: 00
 ---
 
@@ -13,7 +13,6 @@ Once you've built your dashboards locally, deploying to Rill Cloud lets you shar
 - [Deploy from the CLI](#deploy-from-the-cli) — For scripting and automation
 - [Deploy with GitHub](#deploy-from-cli-with-github) — Best for teams and ongoing projects
 - [Connect GitHub later](#connect-github-to-an-existing-project) — Add version control after your first deploy
-- [Managing access](#managing-access) — Invite your team
 
 ## Deploy from the UI
 
@@ -59,13 +58,25 @@ rill project connect-github
 
 Rill will either create a new repository or connect to an existing one, then set up continuous deployment for you.
 
-**Helpful options:**
-- `--primary-branch string` - Git branch to deploy from (default: the default Git branch)
-- `--subpath path/to/project` — If your Rill project lives inside a larger repo
-
 :::tip New to Git?
 No problem! Check out our [GitHub Basics](/developers/tutorials/github-101) guide, which walks you through everything using GitHub Desktop — no command line required.
 :::
+
+### Deploy from a specific branch
+
+By default, Rill deploys from the repository's default Git branch. To deploy from a different branch:
+
+```bash
+rill project connect-github --primary-branch my-branch-name
+```
+
+### Deploy from a monorepo
+
+If your Rill project lives inside a larger repository, use the `--subpath` flag to point to the project directory:
+
+```bash
+rill project connect-github --subpath path/to/project
+```
 
 ## Connect GitHub to an Existing Project
 
@@ -81,10 +92,6 @@ Already deployed without GitHub? You can add it anytime:
 The Rill Cloud GitHub app needs permission to read and write to your repository. If you're not a GitHub org admin, you may need to ask them to approve the app first.
 :::
 
-## Managing Access
-
-Your dashboards are private by default. Once deployed, head to [User Management](/guide/administration/users-and-access/user-management) to invite your team and set up permissions.
-
 ## Something not working?
 
 Check your deployment status anytime:
@@ -98,3 +105,5 @@ You can also view detailed status information on the Status page in Rill Cloud.
 :::tip Using GitLab?
 We've got you covered. See [Deploy from CLI](/developers/tutorials/deploy-from-cli) for GitLab instructions.
 :::
+
+Once deployed, your project is private by default. Head to [User Management](/guide/administration/users-and-access/user-management) to invite your team and set up permissions.

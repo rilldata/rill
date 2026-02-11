@@ -6,7 +6,7 @@ tags:
   - Getting Started
 ---
 
-# Welcome to Rill tutorials and Tutorials!
+# Welcome to Rill Tutorials!
 
 ### We're thrilled you've joined us on this th-Rill-ing journey!
 

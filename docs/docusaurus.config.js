@@ -254,6 +254,18 @@ const config = {
             to: '/guide/ai/mcp',
           },
           {
+            from: '/developers/tutorials/setting-up-mcp',
+            to: '/guide/ai/mcp',
+          },
+          {
+            from: '/developers/deploy/deploy-dashboard/github-101',
+            to: '/developers/tutorials/github-101',
+          },
+          {
+            from: '/developers/deploy/deploy-dashboard/deploy-from-cli',
+            to: '/developers/tutorials/deploy-from-cli',
+          },
+          {
             from: '/install',
             to: '/developers/get-started/install',
           },
