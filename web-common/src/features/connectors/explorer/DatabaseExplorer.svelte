@@ -12,37 +12,27 @@
   export let searchPattern: string = "";
 
   $: connectorName = connector?.name as string;
-  $: hasError = !!connector?.errorMessage;
-
-  $: queryEnabled = !hasError;
+  $: isConnectorReady = !connector?.errorMessage;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
     instanceId,
     connectorName,
     undefined,
-    queryEnabled,
+    isConnectorReady,
   );
 
   $: ({ data: rawData, error, isLoading } = $databaseSchemasQuery);
-
-  // TanStack Query returns cached data even when disabled
-  $: data = queryEnabled ? rawData : undefined;
+  $: data = isConnectorReady ? rawData : undefined;
 </script>
 
 <div class="wrapper">
-  {#if hasError}
-    <span
-      class="message"
-      style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
-      >Error: {connector.errorMessage}</span
-    >
-  {:else if isLoading && queryEnabled}
+  {#if !isConnectorReady || isLoading}
     <span
       class="message"
       style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
       >Loading tables...</span
     >
-  {:else if error && queryEnabled}
+  {:else if error}
     <span
       class="message"
       style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"

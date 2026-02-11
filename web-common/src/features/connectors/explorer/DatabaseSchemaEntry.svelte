@@ -112,15 +112,6 @@
       >
         Loading tables...
       </div>
-    {:else if connector?.errorMessage}
-      <div
-        class="message"
-        style="padding-left: calc({database
-          ? 78
-          : 60}px + var(--explorer-indent-offset, 0px))"
-      >
-        {connector.errorMessage}
-      </div>
     {:else if !connector.driver || !connector.driver.name}
       <div
         class="message"
