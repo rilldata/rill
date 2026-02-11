@@ -1,10 +1,14 @@
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   V1ReconcileStatus,
   type V1Resource,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { Page } from "playwright";
+
+// Inline the kind string to avoid importing resource-selectors.ts,
+// which imports @tanstack/svelte-query — a package that contains .svelte
+// files that Node can't handle in the Playwright test runner.
+const ProjectParserKind = "rill.runtime.v1.ProjectParser";
 
 /**
  * Waits for all resources in the instance to finish reconciling,
@@ -27,7 +31,7 @@ export async function waitForReconciliation(page: Page, timeoutMs = 60_000) {
       // Exclude the ProjectParser — it's a meta-resource that stays
       // running while watching the repo and doesn't represent data errors.
       const dataResources = resources.filter(
-        (r) => r.meta?.name?.kind !== ResourceKind.ProjectParser,
+        (r) => r.meta?.name?.kind !== ProjectParserKind,
       );
 
       return dataResources.every(
@@ -40,7 +44,7 @@ export async function waitForReconciliation(page: Page, timeoutMs = 60_000) {
   }, timeoutMs);
 
   const dataResources = resources.filter(
-    (r) => r.meta?.name?.kind !== ResourceKind.ProjectParser,
+    (r) => r.meta?.name?.kind !== ProjectParserKind,
   );
 
   if (!settled) {
