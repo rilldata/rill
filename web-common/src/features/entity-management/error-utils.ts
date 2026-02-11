@@ -1,29 +1,56 @@
 import type { V1Resource } from "../../runtime-client";
+import { createRuntimeServiceListResources } from "../../runtime-client";
 import { resourceNameToId } from "./resource-utils";
+
+/**
+ * Query factory that fetches all resources (only when there's an error)
+ * and resolves the root cause error message via `select`.
+ */
+export function createRootCauseErrorQuery(
+  instanceId: string,
+  resource: V1Resource | undefined,
+  errorMessage: string | undefined,
+) {
+  return createRuntimeServiceListResources<string | undefined>(
+    instanceId,
+    undefined,
+    {
+      query: {
+        enabled: !!errorMessage && !!resource,
+        select: (data) =>
+          resolveRootCauseErrorMessage(
+            resource!,
+            data.resources ?? [],
+            errorMessage!,
+          ),
+      },
+    },
+  );
+}
 
 /**
  * Resolves the root cause error message for a resource. If the resource's
  * error is caused by a dependency, traverses refs to find the original
- * error and formats it as "resourceName: error". Falls back to the
- * provided error message if no deeper cause is found.
+ * error and formats it as "resourceName: error". Returns the original
+ * error message if no deeper cause is found.
  */
 export function resolveRootCauseErrorMessage(
   resource: V1Resource,
   allResources: V1Resource[],
-  fallback: string,
+  errorMessage: string,
 ): string {
   const rootCause = findRootCause(resource, allResources);
   if (rootCause?.meta?.reconcileError) {
     return `${rootCause.meta.name?.name}: ${rootCause.meta.reconcileError}`;
   }
-  return fallback;
+  return errorMessage;
 }
 
 /**
  * Given a resource with a dependency error, traverse meta.refs to find the
  * root cause resource — the one whose error is NOT caused by another dependency.
  */
-export function findRootCause(
+function findRootCause(
   resource: V1Resource,
   allResources: V1Resource[],
 ): V1Resource | undefined {

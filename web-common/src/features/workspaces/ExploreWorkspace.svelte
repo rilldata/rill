@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { resolveRootCauseErrorMessage } from "@rilldata/web-common/features/entity-management/error-utils";
+  import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     resourceIsLoading,
@@ -15,10 +15,7 @@
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import {
-    createRuntimeServiceGetExplore,
-    createRuntimeServiceListResources,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
@@ -68,20 +65,12 @@
 
   $: mainError = lineBasedRuntimeErrors?.at(0);
 
-  // Fetch all resources only when there's an error, to find the root cause
-  $: allResourcesQuery = mainError
-    ? createRuntimeServiceListResources(instanceId)
-    : undefined;
-
-  $: errorResource = exploreResource ?? metricsViewResource;
-  $: errorBody =
-    errorResource && $allResourcesQuery?.data
-      ? resolveRootCauseErrorMessage(
-          errorResource,
-          $allResourcesQuery.data.resources ?? [],
-          mainError?.message ?? "",
-        )
-      : (mainError?.message ?? "");
+  $: rootCauseQuery = createRootCauseErrorQuery(
+    instanceId,
+    exploreResource ?? metricsViewResource,
+    mainError?.message,
+  );
+  $: errorBody = $rootCauseQuery?.data ?? mainError?.message ?? "";
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(

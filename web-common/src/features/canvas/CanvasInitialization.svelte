@@ -14,7 +14,6 @@
   import { writable } from "svelte/store";
   import {
     createQueryServiceResolveCanvas,
-    createRuntimeServiceListResources,
     type V1MetricsView,
     type V1ResolveCanvasResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -22,7 +21,7 @@
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import { resolveRootCauseErrorMessage } from "../entity-management/error-utils";
+  import { createRootCauseErrorQuery } from "../entity-management/error-utils";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
@@ -83,19 +82,12 @@
     ? reconcileError || resource?.meta?.reconcileError
     : undefined;
 
-  // Fetch all resources only when there's an error, to find the root cause
-  $: allResourcesQuery = errorMessage
-    ? createRuntimeServiceListResources(instanceId)
-    : undefined;
-
-  $: resolvedErrorMessage =
-    resource && $allResourcesQuery?.data
-      ? resolveRootCauseErrorMessage(
-          resource,
-          $allResourcesQuery.data.resources ?? [],
-          errorMessage ?? "",
-        ) || undefined
-      : errorMessage;
+  $: rootCauseQuery = createRootCauseErrorQuery(
+    instanceId,
+    resource,
+    errorMessage,
+  );
+  $: resolvedErrorMessage = $rootCauseQuery?.data ?? errorMessage;
 
   $: resolvedStore = getResolvedStore(
     fetchedCanvas,

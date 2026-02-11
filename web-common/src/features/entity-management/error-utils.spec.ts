@@ -19,134 +19,136 @@ function makeResource(
   };
 }
 
+const MODEL = "rill.runtime.v1.Model";
+const METRICS_VIEW = "rill.runtime.v1.MetricsView";
+const EXPLORE = "rill.runtime.v1.Explore";
+
 describe("resolveRootCauseErrorMessage", () => {
   it("returns the root cause error when a direct dependency has an error", () => {
-    const source = makeResource("Source", "raw_data", {
-      reconcileError: "connection refused",
+    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
+      reconcileError: 'table "orders" does not exist',
     });
-    const model = makeResource("Model", "clean_data", {
+    const explore = makeResource(EXPLORE, "orders_explore", {
       reconcileError: "dependency error",
-      refs: [{ kind: "Source", name: "raw_data" }],
-    });
-
-    const result = resolveRootCauseErrorMessage(
-      model,
-      [source, model],
-      "fallback",
-    );
-
-    expect(result).toBe("raw_data: connection refused");
-  });
-
-  it("traverses multiple levels to find the root cause", () => {
-    const source = makeResource("Source", "raw_data", {
-      reconcileError: "503 Service Unavailable",
-    });
-    const model = makeResource("Model", "clean_data", {
-      reconcileError: "dependency error",
-      refs: [{ kind: "Source", name: "raw_data" }],
-    });
-    const explore = makeResource("Explore", "dashboard", {
-      reconcileError: "dependency error",
-      refs: [{ kind: "Model", name: "clean_data" }],
+      refs: [{ kind: METRICS_VIEW, name: "orders_metrics" }],
     });
 
     const result = resolveRootCauseErrorMessage(
       explore,
-      [source, model, explore],
-      "fallback",
+      [metricsView, explore],
+      "dependency error",
     );
 
-    expect(result).toBe("raw_data: 503 Service Unavailable");
+    expect(result).toBe('orders_metrics: table "orders" does not exist');
   });
 
-  it("returns the fallback when the resource has no refs", () => {
-    const resource = makeResource("Source", "raw_data", {
-      reconcileError: "connection refused",
+  it("traverses multiple levels to find the root cause", () => {
+    const model = makeResource(MODEL, "orders_model", {
+      reconcileError: "invalid SQL: syntax error at position 42",
+    });
+    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
+      reconcileError: "dependency error",
+      refs: [{ kind: MODEL, name: "orders_model" }],
+    });
+    const explore = makeResource(EXPLORE, "orders_explore", {
+      reconcileError: "dependency error",
+      refs: [{ kind: METRICS_VIEW, name: "orders_metrics" }],
     });
 
     const result = resolveRootCauseErrorMessage(
-      resource,
-      [resource],
-      "fallback",
+      explore,
+      [model, metricsView, explore],
+      "dependency error",
     );
 
-    expect(result).toBe("fallback");
+    expect(result).toBe(
+      "orders_model: invalid SQL: syntax error at position 42",
+    );
   });
 
-  it("returns the fallback when no refs have errors", () => {
-    const source = makeResource("Source", "raw_data");
-    const model = makeResource("Model", "clean_data", {
-      reconcileError: "some error",
-      refs: [{ kind: "Source", name: "raw_data" }],
+  it("returns the original error when the resource has no refs", () => {
+    const model = makeResource(MODEL, "orders_model", {
+      reconcileError: "invalid SQL",
+    });
+
+    const result = resolveRootCauseErrorMessage(model, [model], "invalid SQL");
+
+    expect(result).toBe("invalid SQL");
+  });
+
+  it("returns the original error when no refs have errors", () => {
+    const model = makeResource(MODEL, "orders_model");
+    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
+      reconcileError: "invalid measure expression",
+      refs: [{ kind: MODEL, name: "orders_model" }],
     });
 
     const result = resolveRootCauseErrorMessage(
-      model,
-      [source, model],
-      "fallback",
+      metricsView,
+      [model, metricsView],
+      "invalid measure expression",
     );
 
-    expect(result).toBe("fallback");
+    expect(result).toBe("invalid measure expression");
   });
 
-  it("returns the fallback when refs list is empty", () => {
-    const resource = makeResource("Model", "clean_data", {
+  it("returns the original error when refs list is empty", () => {
+    const explore = makeResource(EXPLORE, "orders_explore", {
       reconcileError: "some error",
       refs: [],
     });
 
     const result = resolveRootCauseErrorMessage(
-      resource,
-      [resource],
-      "fallback",
+      explore,
+      [explore],
+      "some error",
     );
 
-    expect(result).toBe("fallback");
+    expect(result).toBe("some error");
   });
 
   it("uses the first errored ref when multiple refs have errors", () => {
-    const sourceA = makeResource("Source", "source_a", {
+    const modelA = makeResource(MODEL, "orders_model", {
       reconcileError: "error A",
     });
-    const sourceB = makeResource("Source", "source_b", {
+    const modelB = makeResource(MODEL, "returns_model", {
       reconcileError: "error B",
     });
-    const model = makeResource("Model", "clean_data", {
+    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
       reconcileError: "dependency error",
       refs: [
-        { kind: "Source", name: "source_a" },
-        { kind: "Source", name: "source_b" },
+        { kind: MODEL, name: "orders_model" },
+        { kind: MODEL, name: "returns_model" },
       ],
     });
 
     const result = resolveRootCauseErrorMessage(
-      model,
-      [sourceA, sourceB, model],
-      "fallback",
+      metricsView,
+      [modelA, modelB, metricsView],
+      "dependency error",
     );
 
-    expect(result).toBe("source_a: error A");
+    expect(result).toBe("orders_model: error A");
   });
 
   it("skips refs not found in allResources", () => {
-    const source = makeResource("Source", "raw_data", {
-      reconcileError: "connection refused",
+    const model = makeResource(MODEL, "orders_model", {
+      reconcileError: "invalid SQL",
     });
-    const model = makeResource("Model", "clean_data", {
+    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
       reconcileError: "dependency error",
       refs: [
-        { kind: "Source", name: "missing_source" },
-        { kind: "Source", name: "raw_data" },
+        { kind: MODEL, name: "deleted_model" },
+        { kind: MODEL, name: "orders_model" },
       ],
     });
 
     const result = resolveRootCauseErrorMessage(
-      model,
-      [source, model],
-      "fallback",
+      metricsView,
+      [model, metricsView],
+      "dependency error",
     );
 
-    expect(result).toBe("raw_data: connection refused");
+    expect(result).toBe("orders_model: invalid SQL");
   });
 });
