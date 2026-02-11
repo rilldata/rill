@@ -16,6 +16,7 @@
   export let database: string;
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;
+  export let searchPattern: string = "";
 
   $: connectorName = connector?.name as string;
 
@@ -29,6 +30,7 @@
     databaseSchema,
     100,
     expanded,
+    searchPattern,
   );
 
   $: ({
