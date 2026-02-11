@@ -194,6 +194,7 @@
   data={tableData}
   {columns}
   columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
+  containerHeight={550}
 />
 
 <RefreshResourceConfirmDialog

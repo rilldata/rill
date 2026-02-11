@@ -9,24 +9,29 @@
 
   const navItems = [
     {
-      label: "Project Status",
+      label: "Status",
       route: "/project-status",
       hasPermission: true,
     },
     {
-      label: "Project Logs",
+      label: "Resources",
+      route: "/resources",
+      hasPermission: true,
+    },
+    {
+      label: "Tables",
+      route: "/model-details",
+      hasPermission: true,
+    },
+    {
+      label: "Logs",
       route: "/project-logs",
       hasPermission: true,
     },
     {
-      label: "DAG Viewer",
-      route: "/dag-viewer",
-      hasPermission: false,
-    },
-    {
-      label: "Model Overview",
-      route: "/model-details",
-      hasPermission: false,
+      label: "Analytics",
+      route: "/analytics",
+      hasPermission: true,
     },
   ];
 </script>

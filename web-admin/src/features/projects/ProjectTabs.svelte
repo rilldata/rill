@@ -36,8 +36,13 @@
       hasPermission: false,
     },
     {
-      route: `/${organization}/${project}/-/project-resources`,
-      label: "Project Resources",
+      route: `/${organization}/${project}/-/reports`,
+      label: "Reports",
+      hasPermission: projectPermissions.manageProject,
+    },
+    {
+      route: `/${organization}/${project}/-/alerts`,
+      label: "Alerts",
       hasPermission: projectPermissions.manageProject,
     },
     {

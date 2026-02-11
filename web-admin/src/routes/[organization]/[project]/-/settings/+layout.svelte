@@ -13,11 +13,16 @@
     {
       label: "General",
       route: "/general",
-      hasPermission: false,
+      hasPermission: true,
     },
     {
       label: "Environment Variables",
       route: "/environment-variables",
+      hasPermission: true,
+    },
+    {
+      label: "Public URLs",
+      route: "/public-urls",
       hasPermission: true,
     },
     {
