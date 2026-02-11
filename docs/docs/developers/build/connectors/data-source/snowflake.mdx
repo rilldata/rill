@@ -72,7 +72,7 @@ If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_snowflake.yaml`:
+Create `connectors/snowflake.yaml`:
 
 ```yaml
 type: connector
@@ -105,7 +105,7 @@ Snowflake has deprecated single-factor password authentication. This method may 
 
 ### Manual Configuration
 
-Create `connectors/my_snowflake.yaml`:
+Create `connectors/snowflake.yaml`:
 
 ```yaml
 type: connector
@@ -126,15 +126,15 @@ Then, [create your first model](#create-your-first-model).
 
 Once your connector is configured using any method above, create a model to define what data to pull.
 
-Create `models/my_snowflake_data.yaml`:
+Create `models/snowflake_data.yaml`:
 
 ```yaml
 type: model
-connector: my_snowflake
+connector: snowflake
 dev:
-   sql: SELECT * FROM my_database.my_schema.my_table limit 10000
+  sql: SELECT * FROM my_database.schema.my_table limit 10000
 
-sql: SELECT * FROM my_database.my_schema.my_table
+sql: SELECT * FROM my_database.schema.my_table
 ```
 
 After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.

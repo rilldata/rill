@@ -60,7 +60,7 @@ If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_mysql.yaml`:
+Create `connectors/mysql.yaml`:
 
 ```yaml
 type: connector
@@ -86,11 +86,11 @@ Then, [create your first model](#create-your-first-model).
 
 Once your connector is configured, create a model to define what data to pull.
 
-Create `models/my_mysql_data.yaml`:
+Create `models/mysql_data.yaml`:
 
 ```yaml
 type: model
-connector: my_mysql
+connector: mysql
 dev:
   sql: SELECT * FROM my_table limit 10000
 

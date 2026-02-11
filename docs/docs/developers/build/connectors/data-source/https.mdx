@@ -45,7 +45,7 @@ If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_https.yaml`:
+Create `connectors/https.yaml`:
 
 ```yaml
 type: connector
@@ -94,11 +94,11 @@ Then, [create your first model](#create-your-first-model).
 
 Once your connector is configured using any method above, create a model to define what data to pull.
 
-Create `models/my_https_data.yaml`:
+Create `models/https_data.yaml`:
 
 ```yaml
 type: model
-connector: my_https
+connector: https
 
 path: https://api.endpoint.com/v1/data/export.csv
 ```

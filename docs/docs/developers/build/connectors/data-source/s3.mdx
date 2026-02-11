@@ -65,7 +65,7 @@ If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_s3.yaml`:
+Create `connectors/s3.yaml`:
 
 ```yaml
 type: connector
@@ -105,7 +105,7 @@ Rill supports AWS IAM role assumption for enhanced security. This method allows 
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_s3_role.yaml`:
+Create `connectors/s3_role.yaml`:
 
 ```yaml
 type: connector
@@ -192,19 +192,19 @@ SELECT * FROM read_parquet('s3://my-bucket/data/2024-*.parquet')
 
 After setting up your authentication above, create a model to define what data to pull.
 
-Create `models/my_s3_data.yaml`:
+Create `models/s3_data.yaml`:
 
 ```yaml
 type: model
 connector: duckdb
-create_secrets_from_connectors: my_s3
+create_secrets_from_connectors: s3
 dev:
-   sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
+  sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
 
 sql: SELECT * FROM read_parquet('s3://my-bucket/**/*.parquet')
 ```
 
-- Replace `my_s3` in `create_secrets_from_connectors` with the name of the connector you created.
+- Replace `s3` in `create_secrets_from_connectors` with the name of the connector you created.
 - If you're using a public bucket or local credentials (no connector), omit the `create_secrets_from_connectors` line.
 
 After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.

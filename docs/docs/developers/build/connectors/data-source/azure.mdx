@@ -235,7 +235,7 @@ connector: duckdb
 create_secrets_from_connectors: azure
 
 dev:
-   sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
+  sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
 
 sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/**/*.parquet')
 
