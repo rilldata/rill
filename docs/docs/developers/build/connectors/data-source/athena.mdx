@@ -71,6 +71,8 @@ connector.athena.aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 <EnvPullTip />
 
+Then, [create your first model](#create-your-first-model).
+
 ## Method 2: Local AWS Credentials
 
 For local development, you can use credentials from the AWS CLI. This method is **not suitable for production** or Rill Cloud deployments.
@@ -102,7 +104,7 @@ output_location: "s3://my-bucket/athena-results/"
 region: "us-east-1"
 ```
 
-When no explicit credentials are provided in the connector, Rill will automatically use your local AWS CLI credentials.
+When no explicit credentials are provided in the connector, Rill will automatically use your local AWS CLI credentials. Then, [create your first model](#create-your-first-model).
 
 ## Create Your First Model
 
@@ -117,7 +119,6 @@ dev:
    sql: SELECT * FROM my_database.my_table limit 10000
 
 sql: `SELECT * FROM my_database.my_table 
-
 ```
 
 After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.

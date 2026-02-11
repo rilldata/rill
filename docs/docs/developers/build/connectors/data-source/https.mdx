@@ -63,6 +63,8 @@ connector.https.token=your_api_token_here
 
 <EnvPullTip />
 
+Then, [create your first model](#create-your-first-model).
+
 ## Method 2: Public URLs
 
 For publicly accessible files that don't require authentication, you can use the HTTPS connector directly without credentials.
@@ -86,6 +88,8 @@ type: connector
 driver: https
 ```
 
+Then, [create your first model](#create-your-first-model).
+
 ## Create Your First Model
 
 Once your connector is configured using any method above, create a model to define what data to pull.
@@ -97,10 +101,6 @@ type: model
 connector: my_https
 
 path: https://api.endpoint.com/v1/data/export.csv
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
 ```
 
 After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.

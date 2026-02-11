@@ -54,7 +54,7 @@ If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_gcs.yaml`:
+Create `connectors/gcs.yaml`:
 
 ```yaml
 type: connector
@@ -68,6 +68,8 @@ google_application_credentials: "{{ .env.connector.gcs.google_application_creden
 ```bash
 connector.gcs.google_application_credentials=<json_credentials>
 ```
+
+Then, [create your first model](#create-your-first-model).
 
 ## Method 2: HMAC Keys
 
@@ -90,7 +92,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_gcs_hmac.yaml`:
+Create `connectors/gcs_hmac.yaml`:
 
 ```yaml
 type: connector
@@ -110,6 +112,8 @@ connector.gcs.secret=your-secret-access-key
 :::info
 Notice that the connector uses `key_id` and `secret`. HMAC keys use S3-compatible authentication with GCS.
 :::
+
+Then, [create your first model](#create-your-first-model).
 
 ## Method 3: Public Buckets
 
@@ -158,21 +162,20 @@ This method only works for local development. Deploying to Rill Cloud with this 
 
 After setting up your authentication above, create a model to define what data to pull.
 
-Create `models/my_gcs_data.yaml`:
+Create `models/gcs_data.yaml`:
 
 ```yaml
 type: model
 connector: duckdb
-create_secrets_from_connectors: my_gcs
+create_secrets_from_connectors: gcs
 
-sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
+dev:
+  sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
 
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
+sql: SELECT * FROM read_parquet('gs://my-bucket/**/*.parquet')
 ```
 
-- Replace `my_gcs` in `create_secrets_from_connectors` with the name of the connector you created.
+- Replace `gcs` in `create_secrets_from_connectors` with the name of the connector you created.
 - If you're using a public bucket or local credentials (no connector), omit the `create_secrets_from_connectors` line.
 
 After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.

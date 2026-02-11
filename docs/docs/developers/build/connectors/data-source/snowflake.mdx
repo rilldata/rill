@@ -89,6 +89,8 @@ connector.snowflake.dsn=myuser@myaccount/mydb/myschema?warehouse=mywh&role=myrol
 
 <EnvPullTip />
 
+Then, [create your first model](#create-your-first-model).
+
 ## Method 2: Password Authentication (Deprecated)
 
 :::warning Deprecated by Snowflake
@@ -118,6 +120,8 @@ Add credentials to `.env`:
 connector.snowflake.dsn=myuser:mypassword@myaccount/mydb/myschema?warehouse=mywh&role=myrole
 ```
 
+Then, [create your first model](#create-your-first-model).
+
 ## Create Your First Model
 
 Once your connector is configured using any method above, create a model to define what data to pull.
@@ -127,12 +131,10 @@ Create `models/my_snowflake_data.yaml`:
 ```yaml
 type: model
 connector: my_snowflake
+dev:
+   sql: SELECT * FROM my_database.my_schema.my_table limit 10000
 
 sql: SELECT * FROM my_database.my_schema.my_table
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
 ```
 
 After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.

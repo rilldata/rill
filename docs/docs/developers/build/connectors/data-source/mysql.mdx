@@ -89,12 +89,10 @@ Create `models/my_mysql_data.yaml`:
 ```yaml
 type: model
 connector: my_mysql
+dev:
+  sql: SELECT * FROM my_table limit 10000
 
-sql: SELECT * FROM my_table
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
+sql: SELECT * FROM my_table limit 10000
 ```
 
 After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.

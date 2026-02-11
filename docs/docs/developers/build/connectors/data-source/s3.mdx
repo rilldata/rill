@@ -88,6 +88,8 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 :::
 
+Then, [create your first model](#create-your-first-model).
+
 ## Method 2: IAM Role Assumption
 
 Rill supports AWS IAM role assumption for enhanced security. This method allows Rill to temporarily assume an IAM role to access S3 resources. This method is only available through manual configuration.
@@ -119,6 +121,8 @@ aws_external_id: "{{ .env.connector.s3.aws_external_id }}"
 connector.s3.aws_role_arn=arn:aws:iam::123456789012:role/RillDataAccess
 connector.s3.aws_external_id=your_external_id
 ```
+
+Then, [create your first model](#create-your-first-model).
 
 ## Method 3: Public Buckets
 
@@ -194,12 +198,10 @@ Create `models/my_s3_data.yaml`:
 type: model
 connector: duckdb
 create_secrets_from_connectors: my_s3
+dev:
+   sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
 
-sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
+sql: SELECT * FROM read_parquet('s3://my-bucket/**/*.parquet')
 ```
 
 - Replace `my_s3` in `create_secrets_from_connectors` with the name of the connector you created.

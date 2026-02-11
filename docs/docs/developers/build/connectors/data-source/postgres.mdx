@@ -72,6 +72,8 @@ connector.postgres.password=your_password_here
 
 <EnvPullTip />
 
+Then, [create your first model](#create-your-first-model).
+
 ## Method 2: Connection String/URI
 
 You can also use a connection string or URI format to configure your PostgreSQL connection.
@@ -115,13 +117,11 @@ Create `models/my_postgres_data.yaml`:
 
 ```yaml
 type: model
-connector: my_postgres
+connector: my_mysql
+dev:
+  sql: SELECT * FROM my_table limit 10000
 
-sql: SELECT * FROM my_table
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
+sql: SELECT * FROM my_table limit 10000
 ```
 
 After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
