@@ -219,6 +219,7 @@
 
         <div
           class="flex-1 overflow-y-auto border border-border rounded-lg min-h-0"
+          style="--explorer-indent-offset: -14px"
         >
           {#if selectedConnector}
             <DatabaseExplorer

@@ -60,8 +60,10 @@
 
 <li aria-label={tableId} class="table-entry group" class:open>
   <div
-    class:pl-[58px]={database || !allowShowSchema}
-    class="table-entry-header pl-10"
+    class="table-entry-header"
+    style="padding-left: calc({database || !allowShowSchema
+      ? 58
+      : 40}px + var(--explorer-indent-offset, 0px))"
   >
     {#if allowShowSchema}
       <button
@@ -155,9 +157,5 @@
   .clickable-text {
     @apply flex grow items-center gap-x-1;
     @apply text-fg-primary truncate;
-  }
-
-  .selected:hover {
-    @apply bg-gray-200;
   }
 </style>
