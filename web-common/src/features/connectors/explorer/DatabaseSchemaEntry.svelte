@@ -157,6 +157,7 @@
             {databaseSchema}
             table={tableInfo.name}
             {store}
+            {searchPattern}
           />
         {/each}
       </ol>
