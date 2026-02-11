@@ -2,6 +2,7 @@
   import AddDataModal from "@rilldata/web-common/features/sources/modal/AddDataModal.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
+  import DataExplorerModal from "@rilldata/web-common/features/connectors/explorer/DataExplorerModal.svelte";
   import { sourceIngestionTracker } from "@rilldata/web-common/features/sources/sources-store";
 
   const ingestedPath = sourceIngestionTracker.ingestedPath;
@@ -34,3 +35,4 @@
 
 <AddDataModal />
 <SourceImportedModal sourcePath={$ingestedPath} />
+<DataExplorerModal />
