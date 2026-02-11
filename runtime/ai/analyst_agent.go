@@ -33,9 +33,9 @@ type AnalystAgentArgs struct {
 	CanvasComponent     string                             `json:"canvas_component,omitempty" yaml:"canvas_component" jsonschema:"Optional canvas component name. If provided, the exploration will be limited to this canvas component."`
 	WherePerMetricsView map[string]*metricsview.Expression `json:"where_per_metrics_view,omitempty" yaml:"where_per_metrics_view" jsonschema:"Optional filter for queries per metrics view. If provided, this filter will be applied to queries for each metrics view."`
 
-	Where     *metricsview.Expression `json:"where,omitempty" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
-	TimeStart time.Time               `json:"time_start,omitempty" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
-	TimeEnd   time.Time               `json:"time_end,omitempty" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
+	Where               *metricsview.Expression `json:"where,omitempty" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	TimeStart           time.Time               `json:"time_start,omitempty" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
+	TimeEnd             time.Time               `json:"time_end,omitempty" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 	ComparisonTimeStart time.Time               `json:"comparison_time_start" yaml:"comparison_time_start" jsonschema:"Optional comparison period start time."`
 	ComparisonTimeEnd   time.Time               `json:"comparison_time_end" yaml:"comparison_time_end" jsonschema:"Optional comparison period end time."`
 	DisableCharts       bool                    `json:"disable_charts" yaml:"disable_charts" jsonschema:"Flag indicating whether to disable chart creation in the analysis."`
@@ -212,22 +212,10 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 	if err != nil {
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
 	}
-<<<<<<< HEAD
+
 	if args.DisableCharts {
 		ff["chat_charts"] = false
 	}
-	data := map[string]any{
-		"ai_instructions": session.ProjectInstructions(),
-		"is_prompt":       args.Prompt != "",
-		"metrics_view":    metricsViewName,
-		"explore":         args.Explore,
-		"dimensions":      strings.Join(args.Dimensions, ", "),
-		"measures":        strings.Join(args.Measures, ", "),
-		"feature_flags":   ff,
-		"forked":          session.Forked(),
-		"is_report":       args.IsReport,
-		"now":             time.Now(),
-=======
 
 	metricsViewsQuoted := make([]string, len(metricsViewNames))
 	for i, mv := range metricsViewNames {
@@ -236,6 +224,7 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 
 	data := map[string]any{
 		"ai_instructions":  session.ProjectInstructions(),
+		"is_prompt":        args.Prompt != "",
 		"metrics_views":    strings.Join(metricsViewsQuoted, ", "),
 		"explore":          args.Explore,
 		"canvas":           args.Canvas,
@@ -243,8 +232,9 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		"dimensions":       strings.Join(args.Dimensions, ", "),
 		"measures":         strings.Join(args.Measures, ", "),
 		"feature_flags":    ff,
+		"forked":           session.Forked(),
+		"is_report":        args.IsReport,
 		"now":              time.Now(),
->>>>>>> main
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
@@ -263,8 +253,6 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 			return "", err
 		}
 	}
-<<<<<<< HEAD
-=======
 
 	if args.WherePerMetricsView != nil {
 		wherePerMetricsView := map[string]string{}
@@ -276,9 +264,6 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		}
 		data["where_per_metrics_view"] = wherePerMetricsView
 	}
-
-	data["forked"] = session.Forked()
->>>>>>> main
 
 	// Generate the system prompt
 	return executeTemplate(`<role>
