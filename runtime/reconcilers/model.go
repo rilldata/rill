@@ -1249,6 +1249,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	// Execute the partition.
 	start := time.Now()
 	errStr := ""
+	var executionErr error
 	outcome, err := r.executeSingle(ctx, executor, self, mdl, incrementalRun, incrementalState, partition.Key, data)
 	var res *drivers.ModelResult
 	var retryStats modelRetryStats
@@ -1257,14 +1258,13 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 		retryStats = outcome.Retry
 	}
 	if err != nil {
-		// Unless cancelled or explicitly told to return the error, we save the error in the partition and continue.
-		if returnErr {
-			return nil, false, err
-		}
+		// Always persist partition execution metadata on non-cancellation errors.
+		// For returnErr=true, we still return the error after writing state.
 		if errors.Is(err, ctx.Err()) {
 			return nil, false, err
 		}
 		errStr = err.Error()
+		executionErr = err
 		logArgs = append(logArgs, zap.Error(err))
 	}
 
@@ -1280,6 +1280,9 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	err = catalog.UpdateModelPartition(ctx, mdl.State.PartitionsModelId, partition)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to update partition: %w", err)
+	}
+	if returnErr && executionErr != nil {
+		return nil, false, executionErr
 	}
 	return res, res != nil, nil
 }
@@ -1413,6 +1416,8 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	var lastErr error
 
 	for attempt := 1; attempt <= attempts; attempt++ {
+		// Used counts actual attempts executed (including the first attempt).
+		stats.Used = uint32(attempt)
 		res, err := executeFunc(ctx)
 		if err == nil {
 			return &modelExecutionOutcome{Result: res, Retry: stats}, nil
@@ -1437,7 +1442,6 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 		if attempt >= attempts || !shouldRetry {
 			break
 		}
-		stats.Used++
 
 		r.C.Logger.Warn("Model execution failed, retrying", zap.String("model", self.Meta.Name.Name), zap.Int("attempt", attempt), zap.Int("max_attempts", attempts), zap.Error(err), observability.ZapCtx(ctx))
 

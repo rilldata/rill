@@ -36,7 +36,7 @@ func TestExecuteWithRetry_TracksRetryStatsOnSuccessAfterRetries(t *testing.T) {
 	require.NotNil(t, outcome.Result)
 	require.Equal(t, "ok", outcome.Result.Table)
 	require.Equal(t, 3, attempts)
-	require.Equal(t, uint32(2), outcome.Retry.Used)
+	require.Equal(t, uint32(3), outcome.Retry.Used)
 	require.Equal(t, uint32(3), outcome.Retry.Max)
 }
 
@@ -59,7 +59,7 @@ func TestExecuteWithRetry_TracksRetryStatsOnNonRetryableFailure(t *testing.T) {
 	require.Error(t, err)
 	require.NotNil(t, outcome)
 	require.Equal(t, 1, attempts)
-	require.Equal(t, uint32(0), outcome.Retry.Used)
+	require.Equal(t, uint32(1), outcome.Retry.Used)
 	require.Equal(t, uint32(3), outcome.Retry.Max)
 }
 
