@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Plus } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { Tag } from "../../../components/tag";
   import {
@@ -10,6 +11,7 @@
   import { connectorIconMapping } from "../connector-icon-mapping";
   import { getConnectorIconKey } from "../connectors-utils";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
+  import { dataExplorerStore } from "./data-explorer-store";
 
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
@@ -62,6 +64,15 @@
 
         {#if isOlapConnector}
           <Tag height={16} class="ml-auto">OLAP</Tag>
+          <button
+            class="add-button"
+            aria-label="Add data"
+            on:click|stopPropagation={() => {
+              dataExplorerStore.open(connector);
+            }}
+          >
+            <Plus size="14px" />
+          </button>
         {/if}
       </button>
 
@@ -83,8 +94,14 @@
     @apply z-10 bg-surface-subtle;
   }
 
-  button:hover {
+  .connector-entry-header:hover {
     @apply bg-popover-accent;
+  }
+
+  .add-button {
+    @apply p-0.5 rounded;
+    @apply text-fg-secondary;
+    @apply hover:bg-surface-hover hover:text-fg-primary;
   }
 
   h4 {

@@ -200,7 +200,7 @@
   <JSONSchemaFormRenderer
     schema={activeSchema}
     step={stepState.step}
-    {form}
+{form}
     errors={$paramsErrors}
     {onStringInputChange}
     {handleFileUpload}
