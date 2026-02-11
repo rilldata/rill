@@ -18,10 +18,6 @@ To connect to data via HTTPS, you need to choose an authentication approach. Ril
 1. **Use Authenticated Endpoints** (for private APIs or protected resources)
 2. **Use Public URLs** (for publicly accessible files without authentication)
 
-:::tip Authentication Methods
-Choose the method that matches your data source requirements. For protected resources that require API keys or tokens, use authenticated endpoints. For publicly accessible files, you can use public URLs directly.
-:::
-
 <TwoStepFlowIntro
   connector="HTTPS"
   step1Description="Set up your HTTPS connector with authentication headers (if required)"
@@ -45,7 +41,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-If you prefer to configure manually, create two files:
+If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
@@ -59,22 +55,7 @@ headers:
   Authorization: "Bearer {{ .env.connector.https.token }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_https_data.yaml`:
-
-```yaml
-type: model
-connector: my_https
-
-path: https://api.endpoint.com/v1/data/export.csv
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.https.token=your_api_token_here
@@ -96,8 +77,6 @@ For publicly accessible files that don't require authentication, you can use the
 
 ### Manual Configuration
 
-**Step 1: Create connector configuration (optional)**
-
 For public URLs, you can create a simple connector or use the built-in `https` connector:
 
 Create `connectors/public_https.yaml`:
@@ -107,20 +86,24 @@ type: connector
 driver: https
 ```
 
-**Step 2: Create model configuration**
+## Create Your First Model
 
-Create `models/my_public_data.yaml`:
+Once your connector is configured using any method above, create a model to define what data to pull.
+
+Create `models/my_https_data.yaml`:
 
 ```yaml
 type: model
-connector: https
+connector: my_https
 
-path: https://example.com/data.csv
+path: https://api.endpoint.com/v1/data/export.csv
 
 # Add a refresh schedule
 refresh:
   cron: "0 */6 * * *"
 ```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ## Supported URL Types
 

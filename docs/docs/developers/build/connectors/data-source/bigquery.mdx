@@ -20,10 +20,6 @@ To connect to Google BigQuery, you need to provide authentication credentials. R
 1. **Use Service Account JSON** (recommended for production)
 2. **Use Local Google Cloud CLI credentials** (local development only - not recommended for production)
 
-:::tip Authentication Methods
-Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON. Local Google Cloud CLI credentials only work for local development and will cause deployment failures.
-:::
-
 <TwoStepFlowIntro
   connector="BigQuery"
   step1Description="Set up your BigQuery connector with credentials (Service Account JSON)"
@@ -48,11 +44,11 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-If you prefer to configure manually, create two files:
+If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_bigquery.yaml`:
+Create `connectors/bigquery.yaml`:
 
 ```yaml
 type: connector
@@ -62,22 +58,7 @@ google_application_credentials: "{{ .env.connector.bigquery.google_application_c
 project_id: "my-gcp-project"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_bigquery_data.yaml`:
-
-```yaml
-type: model
-connector: my_bigquery
-
-sql: SELECT * FROM my_dataset.my_table
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.bigquery.google_application_credentials=<json_credentials>
@@ -114,9 +95,7 @@ gcloud auth activate-service-account --key-file=path_to_json_key_file
 
 ### Manual Configuration
 
-**Step 1: Create connector configuration**
-
-Create `connectors/my_bigquery.yaml`:
+Create `connectors/bigquery.yaml`:
 
 ```yaml
 type: connector
@@ -125,22 +104,26 @@ driver: bigquery
 project_id: "my-gcp-project"
 ```
 
-**Step 2: Create model configuration**
+When no explicit credentials are provided in the connector, Rill will automatically use your local Google Cloud CLI credentials.
 
-Create `models/my_bigquery_data.yaml`:
+## Create Your First Model
+
+Once your connector is configured using any method above, create a model to define what data to pull.
+
+Create `models/bigquery_data.yaml`:
 
 ```yaml
 type: model
-connector: my_bigquery
+connector: bigquery
+
+dev:
+  sql: SELECT * FROM my_dataset.my_table limit 10000
 
 sql: SELECT * FROM my_dataset.my_table
 
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
 ```
 
-When no explicit credentials are provided in the connector, Rill will automatically use your local Google Cloud CLI credentials.
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ## Separating Dev and Prod Environments
 

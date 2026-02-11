@@ -27,7 +27,7 @@ To connect to Amazon S3, you can choose from four authentication options:
 You can also connect to S3-compatible storage services by specifying a custom endpoint in your connector configuration.
 :::
 
-When you add an S3 data model through the Rill UI, you'll see two authentication options:
+When you add data from S3 through the Rill UI, you'll see two authentication options:
 
 - **Access Key/Secret Key**: The process follows two steps:
   1. **Configure Authentication** - Set up your S3 connector with credentials
@@ -61,7 +61,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-If you prefer to configure manually, create two files:
+If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
@@ -69,29 +69,13 @@ Create `connectors/my_s3.yaml`:
 
 ```yaml
 type: connector
-driver: s3 
+driver: s3
 
 aws_access_key_id: "{{ .env.connector.s3.aws_access_key_id }}"
 aws_secret_access_key: "{{ .env.connector.s3.aws_secret_access_key }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_s3_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-create_secrets_from_connectors: my_s3
-
-sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.s3.aws_access_key_id=your_access_key_id
@@ -129,22 +113,7 @@ aws_role_arn: "{{ .env.connector.s3.aws_role_arn }}"
 aws_external_id: "{{ .env.connector.s3.aws_external_id }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_s3_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-create_secrets_from_connectors: my_s3_role
-
-sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.s3.aws_role_arn=arn:aws:iam::123456789012:role/RillDataAccess
@@ -169,19 +138,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-For public buckets, you only need to create a model file. No connector configuration is required.
-
-Create `models/my_s3_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('s3://my-public-bucket/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
+No connector configuration is needed for public buckets. Proceed to [Create Your First Model](#create-your-first-model) below and omit the `create_secrets_from_connectors` line.
 
 :::warning Public Access Only
 This method only works with publicly accessible buckets. Most production S3 buckets are private and require authentication.
@@ -201,17 +158,7 @@ For local development, you can use credentials from the AWS CLI. This method is 
 
 ### Manual Configuration
 
-Create `models/my_s3_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
+No connector is needed when using local credentials. Proceed to [Create Your First Model](#create-your-first-model) below and omit the `create_secrets_from_connectors` line.
 
 Rill will automatically detect and use your local AWS CLI credentials when no connector is specified.
 
@@ -236,6 +183,29 @@ SELECT * FROM read_parquet('s3://my-bucket/data/**/*.parquet')
 -- Files matching a pattern
 SELECT * FROM read_parquet('s3://my-bucket/data/2024-*.parquet')
 ```
+
+## Create Your First Model
+
+After setting up your authentication above, create a model to define what data to pull.
+
+Create `models/my_s3_data.yaml`:
+
+```yaml
+type: model
+connector: duckdb
+create_secrets_from_connectors: my_s3
+
+sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
+
+# Add a refresh schedule
+refresh:
+  cron: "0 */6 * * *"
+```
+
+- Replace `my_s3` in `create_secrets_from_connectors` with the name of the connector you created.
+- If you're using a public bucket or local credentials (no connector), omit the `create_secrets_from_connectors` line.
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ## Deploy to Rill Cloud
 

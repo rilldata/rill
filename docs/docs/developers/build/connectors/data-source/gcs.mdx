@@ -21,11 +21,7 @@ To connect to Google Cloud Storage, you can choose from three authentication opt
 2. **HMAC Keys** (alternative authentication method)
 3. **Public** (for publicly accessible buckets - no authentication required)
 
-:::tip Authentication Methods
-Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON or HMAC Keys. Public buckets don't require authentication and skip connector creation.
-:::
-
-When you add a GCS data model through the Rill UI, you'll see three authentication options:
+When you add data from GCS through the Rill UI, you'll see three authentication options:
 
 - **Service Account JSON** or **HMAC Keys**: The process follows two steps:
   1. **Configure Authentication** - Set up your GCS connector with credentials
@@ -54,7 +50,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-If you prefer to configure manually, create two files:
+If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
@@ -67,23 +63,7 @@ driver: gcs
 google_application_credentials: "{{ .env.connector.gcs.google_application_credentials }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_gcs_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-create_secrets_from_connectors: my_gcs
-
-sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.gcs.google_application_credentials=<json_credentials>
@@ -120,23 +100,7 @@ key_id: "{{ .env.connector.gcs.key_id }}"
 secret: "{{ .env.connector.gcs.secret }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_gcs_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-create_secrets_from_connectors: my_gcs_hmac
-
-sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.gcs.key_id=GOOG1234567890ABCDEFG
@@ -165,20 +129,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-For public buckets, you only need to create a model file. No connector configuration is required.
-
-Create `models/my_gcs_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('gs://my-public-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
+No connector configuration is needed for public buckets. Proceed to [Create Your First Model](#create-your-first-model) below and omit the `create_secrets_from_connectors` line.
 
 ## Method 4: Local Google Cloud CLI Credentials
 
@@ -195,11 +146,24 @@ For local development, you can use credentials from the Google Cloud CLI. This m
 
 ### Manual Configuration
 
+No connector is needed when using local credentials. Proceed to [Create Your First Model](#create-your-first-model) below and omit the `create_secrets_from_connectors` line.
+
+Rill will automatically detect and use your local Google Cloud CLI credentials when no connector is specified.
+
+:::warning
+This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Service Account JSON or HMAC keys for production deployments.
+:::
+
+## Create Your First Model
+
+After setting up your authentication above, create a model to define what data to pull.
+
 Create `models/my_gcs_data.yaml`:
 
 ```yaml
 type: model
 connector: duckdb
+create_secrets_from_connectors: my_gcs
 
 sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
 
@@ -208,11 +172,10 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
-Rill will automatically detect and use your local Google Cloud CLI credentials when no connector is specified.
+- Replace `my_gcs` in `create_secrets_from_connectors` with the name of the connector you created.
+- If you're using a public bucket or local credentials (no connector), omit the `create_secrets_from_connectors` line.
 
-:::warning
-This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Service Account JSON or HMAC keys for production deployments.
-:::
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Reading Multiple File Types
 

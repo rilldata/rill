@@ -20,10 +20,6 @@ To connect to PostgreSQL, you need to provide database connection credentials. R
 1. **Use Individual Parameters** (recommended for clarity)
 2. **Use Connection String/URI** (alternative format)
 
-:::tip Authentication Methods
-Choose the method that best fits your setup. Both methods work for local development and Rill Cloud deployments.
-:::
-
 <TwoStepFlowIntro
   connector="PostgreSQL"
   step1Description="Set up your PostgreSQL connector with database credentials"
@@ -51,7 +47,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-If you prefer to configure manually, create two files:
+If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
@@ -68,22 +64,7 @@ password: "{{ .env.connector.postgres.password }}"
 dbname: "my_database"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_postgres_data.yaml`:
-
-```yaml
-type: model
-connector: my_postgres
-
-sql: SELECT * FROM my_table
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.postgres.password=your_password_here
@@ -120,7 +101,15 @@ driver: postgres
 dsn: "{{ .env.connector.postgres.dsn }}"
 ```
 
-**Step 2: Create model configuration**
+**Step 2: Add credentials to `.env`**
+
+```bash
+connector.postgres.dsn=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
+```
+
+## Create Your First Model
+
+Once your connector is configured using any method above, create a model to define what data to pull.
 
 Create `models/my_postgres_data.yaml`:
 
@@ -135,11 +124,7 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
-**Step 3: Add credentials to `.env`**
-
-```bash
-connector.postgres.dsn=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
-```
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ## Separating Dev and Prod Environments
 

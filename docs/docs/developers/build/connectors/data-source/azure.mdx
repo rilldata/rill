@@ -26,11 +26,7 @@ To connect to Azure Blob Storage, you can choose from four authentication option
 4. **Public** (for publicly accessible containers - no authentication required)
 5. **Azure CLI authentication** (local development only - not recommended for production)
 
-:::tip Authentication Methods
-Choose the method that best fits your setup. For production deployments to Rill Cloud, use Storage Account Key, Connection String, or SAS tokens. Public containers don't require authentication and skip connector creation. Azure CLI authentication only works for local development and will cause deployment failures.
-:::
-
-When you add an Azure Blob Storage data model through the Rill UI, you'll see four authentication options:
+When you add data from Azure Blob Storage through the Rill UI, you'll see four authentication options:
 
 - **Storage Account Key**, **Connection String**, or **SAS Token**: The process follows two steps:
   1. **Configure Authentication** - Set up your Azure connector with credentials
@@ -64,11 +60,11 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-If you prefer to configure manually, create two files:
+If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_azure.yaml`:
+Create `connectors/azure.yaml`:
 
 ```yaml
 type: connector
@@ -78,22 +74,7 @@ azure_storage_account: rilltest
 azure_storage_key: "{{ .env.connector.azure.azure_storage_key }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_azure_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-create_secrets_from_connectors: my_azure
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.azure.azure_storage_key=your_storage_account_key
@@ -121,7 +102,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_azure_conn.yaml`:
+Create `connectors/azure_conn.yaml`:
 
 ```yaml
 type: connector
@@ -130,22 +111,7 @@ driver: azure
 azure_storage_connection_string: "{{ .env.connector.azure.azure_storage_connection_string }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_azure_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-create_secrets_from_connectors: my_azure_conn
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.azure.azure_storage_connection_string=your_connection_string
@@ -174,32 +140,17 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_azure_sas.yaml`:
+Create `connectors/azure.yaml`:
 
 ```yaml
 type: connector
 driver: azure
 
-azure_storage_account: rilltest 
+azure_storage_account: rilltest
 azure_storage_sas_token: "{{ .env.connector.azure.azure_storage_sas_token }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_azure_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-create_secrets_from_connectors: my_azure_sas
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.azure.azure_storage_sas_token=your_sas_token
@@ -225,19 +176,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-For public containers, you only need to create a model file. No connector configuration is required.
-
-Create `models/my_azure_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('azure://publicaccount.blob.core.windows.net/my-public-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
+No connector configuration is needed for public containers. Proceed to [Create Your First Model](#create-your-first-model) below and omit the `create_secrets_from_connectors` line.
 
 ## Method 5: Azure CLI Authentication (Local Development Only)
 
@@ -258,17 +197,7 @@ For local development, you can use credentials from the Azure CLI. This method i
 
 ### Manual Configuration
 
-Create `models/my_azure_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
+No connector is needed when using local credentials. Proceed to [Create Your First Model](#create-your-first-model) below and omit the `create_secrets_from_connectors` line.
 
 Rill will automatically detect and use your local Azure CLI credentials when no connector is specified.
 
@@ -293,6 +222,29 @@ SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data
 -- Files matching a pattern
 SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data/2024-*.parquet')
 ```
+
+## Create Your First Model
+
+After setting up your authentication above, create a model to define what data to pull.
+
+Create `models/azure_data.yaml`:
+
+```yaml
+type: model
+connector: duckdb
+create_secrets_from_connectors: azure
+
+dev:
+   sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/path/to/data/*.parquet')
+
+sql: SELECT * FROM read_parquet('azure://rilltest.blob.core.windows.net/my-container/**/*.parquet')
+
+```
+
+- Replace `azure` in `create_secrets_from_connectors` with the name of the connector you created.
+- If you're using a public container or local credentials (no connector), omit the `create_secrets_from_connectors` line.
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ## Deploy to Rill Cloud
 

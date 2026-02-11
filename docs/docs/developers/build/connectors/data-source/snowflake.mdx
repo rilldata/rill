@@ -26,10 +26,6 @@ To connect to Snowflake, you need to provide authentication credentials. Rill su
 1. **Use Keypair Authentication** (recommended - required for production)
 2. **Use Password Authentication** (deprecated by Snowflake)
 
-:::tip Authentication Methods
-Snowflake has deprecated single-factor password authentication. We strongly recommend using keypair authentication to ensure uninterrupted service.
-:::
-
 <TwoStepFlowIntro
   connector="Snowflake"
   step1Description="Set up your Snowflake connector with credentials via connection string"
@@ -72,7 +68,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-If you prefer to configure manually, create two files:
+If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
@@ -85,22 +81,7 @@ driver: snowflake
 dsn: "{{ .env.connector.snowflake.dsn }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_snowflake_data.yaml`:
-
-```yaml
-type: model
-connector: my_snowflake
-
-sql: SELECT * FROM my_database.my_schema.my_table
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.snowflake.dsn=myuser@myaccount/mydb/myschema?warehouse=mywh&role=myrole&authenticator=SNOWFLAKE_JWT&privateKey=<your_url_safe_private_key>
@@ -122,8 +103,6 @@ Snowflake has deprecated single-factor password authentication. This method may 
 
 ### Manual Configuration
 
-**Step 1: Create connector configuration**
-
 Create `connectors/my_snowflake.yaml`:
 
 ```yaml
@@ -133,7 +112,15 @@ driver: snowflake
 dsn: "{{ .env.connector.snowflake.dsn }}"
 ```
 
-**Step 2: Create model configuration**
+Add credentials to `.env`:
+
+```bash
+connector.snowflake.dsn=myuser:mypassword@myaccount/mydb/myschema?warehouse=mywh&role=myrole
+```
+
+## Create Your First Model
+
+Once your connector is configured using any method above, create a model to define what data to pull.
 
 Create `models/my_snowflake_data.yaml`:
 
@@ -148,11 +135,7 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
-**Step 3: Add credentials to `.env`**
-
-```bash
-connector.snowflake.dsn=myuser:mypassword@myaccount/mydb/myschema?warehouse=mywh&role=myrole
-```
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ## Separating Dev and Prod Environments
 

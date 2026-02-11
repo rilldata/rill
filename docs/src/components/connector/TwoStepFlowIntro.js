@@ -15,7 +15,7 @@ function TwoStepFlowIntro({ connector, step1Description, step2Description }) {
 
     return (
         <div className="two-step-flow-intro">
-            <p>When you add a {connector} data model through the Rill UI, the process follows two steps:</p>
+            <p>When you add data from {connector} through the Rill UI, the process follows two steps:</p>
             <ol>
                 <li><strong>Configure Authentication</strong> - {step1Description || defaultStep1}</li>
                 <li><strong>Configure Data Model</strong> - {step2Description || defaultStep2}</li>

@@ -20,10 +20,6 @@ To connect to Amazon Redshift, you need to provide authentication credentials. R
 1. **Use Access Key/Secret Key** (recommended for production)
 2. **Use Local AWS credentials** (local development only - not recommended for production)
 
-:::tip Authentication Methods
-Choose the method that best fits your setup. For production deployments to Rill Cloud, use Access Key/Secret Key. Local AWS credentials only work for local development and will cause deployment failures.
-:::
-
 <TwoStepFlowIntro
   connector="Redshift"
   step1Description="Set up your Redshift connector with AWS credentials (Access Key/Secret Key)"
@@ -50,7 +46,7 @@ After the model YAML is generated, you can add additional [model settings](/deve
 
 ### Manual Configuration
 
-If you prefer to configure manually, create two files:
+If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
@@ -65,22 +61,7 @@ aws_secret_access_key: "{{ .env.connector.redshift.aws_secret_access_key }}"
 database: "dev"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_redshift_data.yaml`:
-
-```yaml
-type: model
-connector: my_redshift
-
-sql: SELECT * FROM my_schema.my_table
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.redshift.aws_access_key_id=AKIAIOSFODNN7EXAMPLE
@@ -110,8 +91,6 @@ Local AWS credentials only work for local development. If you deploy to Rill Clo
 
 ### Manual Configuration
 
-**Step 1: Create connector configuration**
-
 Create `connectors/my_redshift.yaml`:
 
 ```yaml
@@ -121,7 +100,11 @@ driver: redshift
 database: "dev"
 ```
 
-**Step 2: Create model configuration**
+When no explicit credentials are provided in the connector, Rill will automatically use your local AWS CLI credentials.
+
+## Create Your First Model
+
+Once your connector is configured using any method above, create a model to define what data to pull.
 
 Create `models/my_redshift_data.yaml`:
 
@@ -136,7 +119,7 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
-When no explicit credentials are provided in the connector, Rill will automatically use your local AWS CLI credentials.
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ## Separating Dev and Prod Environments
 
