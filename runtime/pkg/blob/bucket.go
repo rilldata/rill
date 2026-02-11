@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/bmatcuk/doublestar/v4"
@@ -97,6 +98,14 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 				if as(&s3Input) {
 					if startAfter != "" {
 						s3Input.StartAfter = aws.String(startAfter)
+					}
+				}
+
+				// Handle Azure Blob Storage
+				var azOpts *container.ListBlobsHierarchyOptions
+				if as(&azOpts) {
+					if startAfter != "" {
+						azOpts.StartFrom = &startAfter
 					}
 				}
 				return nil
