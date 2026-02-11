@@ -235,6 +235,15 @@ func TestEval_OrdinalVariations(t *testing.T) {
 		{"W1", "2025-04-28T00:00:00Z", "2025-05-05T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"W1 as of -2M", "2025-03-03T00:00:00Z", "2025-03-10T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 
+		// Ordinals with lower order truncation
+		{"M2 as of watermark/D", "2025-02-01T00:00:00Z", "2025-03-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"M7 as of watermark/D", "2025-07-01T00:00:00Z", "2025-08-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"D4 as of watermark/H", "2025-05-04T00:00:00Z", "2025-05-05T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+
+		// Ordinals with higher order truncation
+		{"D6 as of watermark/M", "2025-05-06T00:00:00Z", "2025-05-07T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"D6 as of watermark/W", "2025-05-17T00:00:00Z", "2025-05-18T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+
 		// Ordinal chaining variations
 		{"s57 of m4 of H2 of D4 as of -1M", "2025-04-04T01:03:56Z", "2025-04-04T01:03:57Z", timeutil.TimeGrainMillisecond, 1, 1},
 	}
