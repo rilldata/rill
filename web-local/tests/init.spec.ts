@@ -2,10 +2,12 @@ import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants";
 import { expect } from "playwright/test";
 import { test } from "./setup/base";
 import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+import { waitForReconciliation } from "./utils/wait-for-reconciliation";
 
 test.describe("Example project initialization", () => {
   EXAMPLES.forEach((example) => {
     test.describe(`Example project: ${example.title}`, () => {
+      test.setTimeout(180_000);
       test("should initialize new project", async ({ page }) => {
         await page.getByRole("link", { name: example.title }).click();
 
@@ -15,6 +17,9 @@ test.describe("Example project initialization", () => {
         await expect(
           page.getByRole("heading", { name: fileName }),
         ).toBeVisible();
+
+        // Wait for all resources to reconcile and assert no errors
+        await waitForReconciliation(page);
       });
     });
   });
