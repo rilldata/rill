@@ -5,9 +5,7 @@
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
-  import {
-    createRuntimeServiceGetInstance,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useProjectDeployment, useRuntimeVersion } from "../selectors";
   import {
@@ -57,7 +55,6 @@
   $: aiConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.aiConnector,
   );
-
 </script>
 
 <section class="section">
@@ -134,9 +131,7 @@
       </span>
     </div>
   </div>
-
 </section>
-
 
 <style lang="postcss">
   .section {
@@ -152,7 +147,7 @@
     @apply flex flex-col;
   }
   .info-row {
-    @apply flex items-center py-2 ;
+    @apply flex items-center py-2;
   }
   .info-row:last-child {
     @apply border-b-0;
