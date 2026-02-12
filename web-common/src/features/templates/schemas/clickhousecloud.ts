@@ -1,3 +1,4 @@
+import { olapExplorerFields } from "./olap-explorer-fields";
 import type { MultiStepFormSchema } from "./types";
 
 export const clickhousecloudSchema: MultiStepFormSchema = {
@@ -97,6 +98,7 @@ export const clickhousecloudSchema: MultiStepFormSchema = {
       default: true,
       "x-step": "connector",
     },
+    ...olapExplorerFields("ClickHouse Cloud"),
   },
   allOf: [
     {

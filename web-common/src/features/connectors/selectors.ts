@@ -203,9 +203,10 @@ export function useInfiniteListTables(
       );
 
       // Client-side filtering by search pattern (case-insensitive)
-      const filteredTables = searchPattern
+      const lowerPattern = searchPattern?.toLowerCase();
+      const filteredTables = lowerPattern
         ? allTables.filter((table: V1TableInfo) =>
-            table.name?.toLowerCase().includes(searchPattern.toLowerCase()),
+            table.name?.toLowerCase().includes(lowerPattern),
           )
         : allTables;
 
