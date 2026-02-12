@@ -1,13 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { resolveRootCauseErrorMessage } from "./error-utils";
+import { ResourceKind } from "./resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
 function makeResource(
-  kind: string,
+  kind: ResourceKind,
   name: string,
   opts: {
     reconcileError?: string;
-    refs?: { kind: string; name: string }[];
+    refs?: { kind: ResourceKind; name: string }[];
   } = {},
 ): V1Resource {
   return {
@@ -19,18 +20,18 @@ function makeResource(
   };
 }
 
-const MODEL = "rill.runtime.v1.Model";
-const METRICS_VIEW = "rill.runtime.v1.MetricsView";
-const EXPLORE = "rill.runtime.v1.Explore";
-
 describe("resolveRootCauseErrorMessage", () => {
   it("returns the root cause error when a direct dependency has an error", () => {
-    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
-      reconcileError: 'table "orders" does not exist',
-    });
-    const explore = makeResource(EXPLORE, "orders_explore", {
+    const metricsView = makeResource(
+      ResourceKind.MetricsView,
+      "orders_metrics",
+      {
+        reconcileError: 'table "orders" does not exist',
+      },
+    );
+    const explore = makeResource(ResourceKind.Explore, "orders_explore", {
       reconcileError: "dependency error",
-      refs: [{ kind: METRICS_VIEW, name: "orders_metrics" }],
+      refs: [{ kind: ResourceKind.MetricsView, name: "orders_metrics" }],
     });
 
     const result = resolveRootCauseErrorMessage(
@@ -45,16 +46,20 @@ describe("resolveRootCauseErrorMessage", () => {
   });
 
   it("traverses multiple levels to find the root cause", () => {
-    const model = makeResource(MODEL, "orders_model", {
+    const model = makeResource(ResourceKind.Model, "orders_model", {
       reconcileError: "invalid SQL: syntax error at position 42",
     });
-    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
+    const metricsView = makeResource(
+      ResourceKind.MetricsView,
+      "orders_metrics",
+      {
+        reconcileError: "dependency error",
+        refs: [{ kind: ResourceKind.Model, name: "orders_model" }],
+      },
+    );
+    const explore = makeResource(ResourceKind.Explore, "orders_explore", {
       reconcileError: "dependency error",
-      refs: [{ kind: MODEL, name: "orders_model" }],
-    });
-    const explore = makeResource(EXPLORE, "orders_explore", {
-      reconcileError: "dependency error",
-      refs: [{ kind: METRICS_VIEW, name: "orders_metrics" }],
+      refs: [{ kind: ResourceKind.MetricsView, name: "orders_metrics" }],
     });
 
     const result = resolveRootCauseErrorMessage(
@@ -69,7 +74,7 @@ describe("resolveRootCauseErrorMessage", () => {
   });
 
   it("returns the original error when the resource has no refs", () => {
-    const model = makeResource(MODEL, "orders_model", {
+    const model = makeResource(ResourceKind.Model, "orders_model", {
       reconcileError: "invalid SQL",
     });
 
@@ -79,11 +84,15 @@ describe("resolveRootCauseErrorMessage", () => {
   });
 
   it("returns the original error when no refs have errors", () => {
-    const model = makeResource(MODEL, "orders_model");
-    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
-      reconcileError: "invalid measure expression",
-      refs: [{ kind: MODEL, name: "orders_model" }],
-    });
+    const model = makeResource(ResourceKind.Model, "orders_model");
+    const metricsView = makeResource(
+      ResourceKind.MetricsView,
+      "orders_metrics",
+      {
+        reconcileError: "invalid measure expression",
+        refs: [{ kind: ResourceKind.Model, name: "orders_model" }],
+      },
+    );
 
     const result = resolveRootCauseErrorMessage(
       metricsView,
@@ -95,7 +104,7 @@ describe("resolveRootCauseErrorMessage", () => {
   });
 
   it("returns the original error when refs list is empty", () => {
-    const explore = makeResource(EXPLORE, "orders_explore", {
+    const explore = makeResource(ResourceKind.Explore, "orders_explore", {
       reconcileError: "some error",
       refs: [],
     });
@@ -110,19 +119,23 @@ describe("resolveRootCauseErrorMessage", () => {
   });
 
   it("uses the first errored ref when multiple refs have errors", () => {
-    const modelA = makeResource(MODEL, "orders_model", {
+    const modelA = makeResource(ResourceKind.Model, "orders_model", {
       reconcileError: "error A",
     });
-    const modelB = makeResource(MODEL, "returns_model", {
+    const modelB = makeResource(ResourceKind.Model, "returns_model", {
       reconcileError: "error B",
     });
-    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
-      reconcileError: "dependency error",
-      refs: [
-        { kind: MODEL, name: "orders_model" },
-        { kind: MODEL, name: "returns_model" },
-      ],
-    });
+    const metricsView = makeResource(
+      ResourceKind.MetricsView,
+      "orders_metrics",
+      {
+        reconcileError: "dependency error",
+        refs: [
+          { kind: ResourceKind.Model, name: "orders_model" },
+          { kind: ResourceKind.Model, name: "returns_model" },
+        ],
+      },
+    );
 
     const result = resolveRootCauseErrorMessage(
       metricsView,
@@ -134,16 +147,20 @@ describe("resolveRootCauseErrorMessage", () => {
   });
 
   it("skips refs not found in allResources", () => {
-    const model = makeResource(MODEL, "orders_model", {
+    const model = makeResource(ResourceKind.Model, "orders_model", {
       reconcileError: "invalid SQL",
     });
-    const metricsView = makeResource(METRICS_VIEW, "orders_metrics", {
-      reconcileError: "dependency error",
-      refs: [
-        { kind: MODEL, name: "deleted_model" },
-        { kind: MODEL, name: "orders_model" },
-      ],
-    });
+    const metricsView = makeResource(
+      ResourceKind.MetricsView,
+      "orders_metrics",
+      {
+        reconcileError: "dependency error",
+        refs: [
+          { kind: ResourceKind.Model, name: "deleted_model" },
+          { kind: ResourceKind.Model, name: "orders_model" },
+        ],
+      },
+    );
 
     const result = resolveRootCauseErrorMessage(
       metricsView,
