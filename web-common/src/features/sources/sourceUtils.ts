@@ -362,6 +362,8 @@ export function compileStagingYAML(
 
   const lines: string[] = [
     `# Staging Model: ${warehouse} → ${stagingConnector} → ClickHouse`,
+    `# This model extracts data from ${warehouse} using the provided SQL, stages it to ${stagingConnector}, and then reads it into ClickHouse.`,
+    `For more details on staging with ClickHouse, see: https://docs.rilldata.com/developers/build/models/staging-models`,
     "",
     "type: model",
     "materialize: true",
