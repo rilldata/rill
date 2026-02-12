@@ -62,10 +62,16 @@ test.describe("Default olap_connector behavior", () => {
       })
       .click();
 
-    // Wait for the DataExplorer modal to open, then dismiss it
-    await page.getByText("Data explorer").waitFor();
-    await page.keyboard.press("Escape");
-    await page.getByRole("dialog").waitFor({ state: "detached" });
+    // Wait for the DataExplorer modal to open, then dismiss it.
+    // Use a filtered locator and click "Back" instead of pressing Escape,
+    // because the AddDataModal's fade-out transition may still be in progress,
+    // causing Escape to be intercepted or a strict-mode violation on getByRole("dialog").
+    const dataExplorerDialog = page
+      .getByRole("dialog")
+      .filter({ hasText: "Data explorer" });
+    await dataExplorerDialog.waitFor();
+    await dataExplorerDialog.getByRole("button", { name: "Back" }).click();
+    await dataExplorerDialog.waitFor({ state: "detached" });
 
     // Wait for the connector file to be created in the file nav
     await waitForFileNavEntry(page, "/connectors/clickhouse.yaml", false);
