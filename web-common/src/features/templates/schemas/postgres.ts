@@ -66,9 +66,9 @@ export const postgresSchema: MultiStepFormSchema = {
     sslmode: {
       type: "string",
       title: "SSL mode",
-      description: "Use disable, allow, prefer, require",
       enum: ["disable", "allow", "prefer", "require"],
-      "x-placeholder": "require",
+      "x-display": "select",
+      "x-placeholder": "Select SSL mode",
     },
     sql: {
       type: "string",

@@ -143,7 +143,7 @@
 
   function isEnumWithDisplay(
     prop: JSONSchemaField,
-    displayType: "radio" | "tabs",
+    displayType: "radio" | "tabs" | "select",
   ) {
     return Boolean(prop.enum && prop["x-display"] === displayType);
   }
@@ -154,6 +154,10 @@
 
   function isTabsEnum(prop: JSONSchemaField) {
     return isEnumWithDisplay(prop, "tabs");
+  }
+
+  function isSelectEnum(prop: JSONSchemaField) {
+    return isEnumWithDisplay(prop, "select");
   }
 
   function computeVisibleEntries(
@@ -322,6 +326,10 @@
     return buildEnumOptions(prop, false);
   }
 
+  function selectOptions(prop: JSONSchemaField) {
+    return buildEnumOptions(prop, true);
+  }
+
   function isRequired(key: string) {
     return requiredFields.has(key);
   }
@@ -369,8 +377,8 @@
                                   bind:checked={$form[tabKey]}
                                   {onStringInputChange}
                                   {handleFileUpload}
-                                  options={isRadioEnum(tabProp)
-                                    ? radioOptions(tabProp)
+                                  options={tabProp.enum?.length
+                                    ? selectOptions(tabProp)
                                     : undefined}
                                   name={`${tabKey}-radio`}
                                 />
@@ -390,8 +398,8 @@
                       bind:checked={$form[childKey]}
                       {onStringInputChange}
                       {handleFileUpload}
-                      options={isRadioEnum(childProp)
-                        ? radioOptions(childProp)
+                      options={childProp.enum?.length
+                        ? selectOptions(childProp)
                         : undefined}
                       name={`${childKey}-radio`}
                     />
@@ -423,8 +431,8 @@
                       bind:checked={$form[childKey]}
                       {onStringInputChange}
                       {handleFileUpload}
-                      options={isRadioEnum(childProp)
-                        ? radioOptions(childProp)
+                      options={childProp.enum?.length
+                        ? selectOptions(childProp)
                         : undefined}
                       name={`${childKey}-radio`}
                     />
@@ -446,7 +454,7 @@
           bind:checked={$form[key]}
           {onStringInputChange}
           {handleFileUpload}
-          options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
+          options={prop.enum?.length ? selectOptions(prop) : undefined}
           name={`${key}-radio`}
         />
       </div>

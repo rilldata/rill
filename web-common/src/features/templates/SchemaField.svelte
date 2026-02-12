@@ -3,6 +3,7 @@
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
   import KeyValueInput from "@rilldata/web-common/components/forms/KeyValueInput.svelte";
   import { normalizeErrors } from "./error-utils";
@@ -59,8 +60,21 @@
     bind:value
     keyPlaceholder={prop["x-placeholder"]}
   />
-{:else if options?.length}
+{:else if options?.length && prop["x-display"] === "radio"}
   <Radio bind:value {options} {name} />
+{:else if options?.length}
+  <Select
+    {id}
+    label={prop.title ?? id}
+    tooltip={prop.description ?? prop["x-hint"] ?? ""}
+    {options}
+    {optional}
+    placeholder={prop["x-placeholder"] ?? ""}
+    bind:value
+    full
+    sameWidth
+    clearable
+  />
 {:else}
   <Input
     {id}
