@@ -4,7 +4,6 @@
   import {
     ResourceKind,
     SingletonProjectParserName,
-    prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import {
@@ -14,6 +13,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useResources } from "../selectors";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import { groupErrorsByKind } from "./overview-utils";
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -36,23 +36,6 @@
   $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
 
   $: errorsByKind = groupErrorsByKind(erroredResources);
-
-  function groupErrorsByKind(
-    resources: V1Resource[],
-  ): { kind: string; label: string; count: number }[] {
-    const counts = new Map<string, number>();
-    for (const r of resources) {
-      const kind = r.meta?.name?.kind;
-      if (kind) counts.set(kind, (counts.get(kind) ?? 0) + 1);
-    }
-    return Array.from(counts.entries())
-      .map(([kind, count]) => ({
-        kind,
-        label: prettyResourceKind(kind),
-        count,
-      }))
-      .sort((a, b) => b.count - a.count);
-  }
 
   // Total
   $: totalErrors = parseErrors.length + erroredResources.length;
@@ -87,7 +70,7 @@
     <div class="error-chips">
       {#if parseErrors.length > 0}
         <a
-          href="{basePage}/project-logs"
+          href="{basePage}/resources?error=true"
           class="error-chip"
           on:click|stopPropagation
         >

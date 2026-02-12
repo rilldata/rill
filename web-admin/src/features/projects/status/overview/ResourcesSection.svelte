@@ -1,50 +1,16 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    ResourceKind,
-    prettyResourceKind,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import { type V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useResources } from "../selectors";
+  import { countByKind } from "./overview-utils";
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   $: resources = useResources(instanceId);
   $: allResources = $resources.data?.resources ?? [];
-
-  const displayKinds = [
-    ResourceKind.Source,
-    ResourceKind.Model,
-    ResourceKind.MetricsView,
-    ResourceKind.Explore,
-    ResourceKind.Canvas,
-    ResourceKind.Alert,
-    ResourceKind.Report,
-    ResourceKind.API,
-    ResourceKind.Connector,
-  ];
-
   $: resourceCounts = countByKind(allResources);
-
-  function countByKind(
-    res: V1Resource[],
-  ): { kind: string; label: string; count: number }[] {
-    const counts = new Map<string, number>();
-    for (const r of res) {
-      const kind = r.meta?.name?.kind;
-      if (kind) counts.set(kind, (counts.get(kind) ?? 0) + 1);
-    }
-    return displayKinds
-      .filter((kind) => (counts.get(kind) ?? 0) > 0)
-      .map((kind) => ({
-        kind,
-        label: prettyResourceKind(kind),
-        count: counts.get(kind) ?? 0,
-      }));
-  }
 </script>
 
 {#if resourceCounts.length > 0}

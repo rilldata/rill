@@ -111,7 +111,7 @@
     <div class="info-row">
       <span class="info-label">OLAP Engine</span>
       <span class="info-value">
-        {olapConnector ? formatConnectorName(olapConnector.type) : "—"}
+        {olapConnector ? formatConnectorName(olapConnector.type) : "DuckDB"}
         {#if olapConnector && (olapConnector.provision || olapConnector.type !== "duckdb")}
           <span class="text-fg-tertiary text-xs ml-1">
             ({olapConnector.provision ? "Rill-managed" : "Self-managed"})
