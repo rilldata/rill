@@ -1,5 +1,6 @@
 <script lang="ts">
   import DeploymentSection from "./DeploymentSection.svelte";
+  import ResourcesSection from "./ResourcesSection.svelte";
   import ErrorsSection from "./ErrorsSection.svelte";
   import AnalyticsSection from "./AnalyticsSection.svelte";
 
@@ -9,6 +10,7 @@
 
 <div class="flex flex-col gap-6">
   <DeploymentSection {organization} {project} />
+  <ResourcesSection />
   <ErrorsSection />
   <AnalyticsSection />
 </div>

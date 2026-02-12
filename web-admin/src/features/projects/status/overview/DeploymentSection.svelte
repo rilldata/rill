@@ -1,27 +1,15 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import {
     createAdminServiceGetProject,
-    createAdminServiceListDeployments,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import {
-    ResourceKind,
-    prettyResourceKind,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import {
     createRuntimeServiceGetInstance,
-    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import {
-    useProjectDeployment,
-    useRuntimeVersion,
-    useResources,
-  } from "../selectors";
+  import { useProjectDeployment, useRuntimeVersion } from "../selectors";
   import {
     formatEnvironmentName,
     formatConnectorName,
@@ -34,7 +22,6 @@
   export let project: string;
 
   $: ({ instanceId } = $runtime);
-  $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   // Deployment
   $: projectDeployment = useProjectDeployment(organization, project);
@@ -59,21 +46,6 @@
   $: runtimeVersionQuery = useRuntimeVersion();
   $: version = $runtimeVersionQuery.data?.version ?? "";
 
-  // Deployment counts
-  $: allDeployments = createAdminServiceListDeployments(
-    organization,
-    project,
-    {},
-  );
-  // Will Use these when Rill Cloud Editing is supported. This will allow users to see how many deployments they have and in which environments. See L188
-  // $: deploymentCount = $allDeployments.data?.deployments?.length ?? 0;
-  // $: prodCount =
-  //   $allDeployments.data?.deployments?.filter((d) => d.environment === "prod")
-  //     .length ?? 0;
-  // $: devCount =
-  //   $allDeployments.data?.deployments?.filter((d) => d.environment === "dev")
-  //     .length ?? 0;
-
   // Connectors
   $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
@@ -86,40 +58,6 @@
     (c) => c.name === instance?.aiConnector,
   );
 
-  // Resources
-  $: resources = useResources(instanceId);
-  $: allResources = $resources.data?.resources ?? [];
-
-  const displayKinds = [
-    ResourceKind.Source,
-    ResourceKind.Model,
-    ResourceKind.MetricsView,
-    ResourceKind.Explore,
-    ResourceKind.Canvas,
-    ResourceKind.Alert,
-    ResourceKind.Report,
-    ResourceKind.API,
-    ResourceKind.Connector,
-  ];
-
-  $: resourceCounts = countByKind(allResources);
-
-  function countByKind(
-    res: V1Resource[],
-  ): { kind: string; label: string; count: number }[] {
-    const counts = new Map<string, number>();
-    for (const r of res) {
-      const kind = r.meta?.name?.kind;
-      if (kind) counts.set(kind, (counts.get(kind) ?? 0) + 1);
-    }
-    return displayKinds
-      .filter((kind) => (counts.get(kind) ?? 0) > 0)
-      .map((kind) => ({
-        kind,
-        label: prettyResourceKind(kind),
-        count: counts.get(kind) ?? 0,
-      }));
-  }
 </script>
 
 <section class="section">
@@ -141,10 +79,6 @@
       <span class="info-label">Environment</span>
       <span class="info-value">
         {formatEnvironmentName(deployment?.environment)}
-        <!-- Hide counts for now since we only show primary deployment, which is usually prod. Can add back if we show multiple deployments in the future. -->
-        <!-- <span class="text-fg-tertiary text-xs ml-1">
-          ({deploymentCount} total · {prodCount} prod · {devCount} dev)
-        </span> -->
       </span>
     </div>
 
@@ -201,19 +135,6 @@
     </div>
   </div>
 
-  {#if resourceCounts.length > 0}
-    <div class="resource-chips">
-      {#each resourceCounts as { kind, label, count }}
-        <a href="{basePage}/resources?kind={kind}" class="resource-chip">
-          {#if resourceIconMapping[kind]}
-            <svelte:component this={resourceIconMapping[kind]} size="12px" />
-          {/if}
-          <span class="font-medium">{count}</span>
-          <span class="text-fg-secondary">{label}{count !== 1 ? "s" : ""}</span>
-        </a>
-      {/each}
-    </div>
-  {/if}
 </section>
 
 
@@ -244,14 +165,5 @@
   }
   .status-dot {
     @apply w-2 h-2 rounded-full inline-block;
-  }
-  .resource-chips {
-    @apply flex flex-wrap gap-2 mt-4 pt-4 border-t border-border;
-  }
-  .resource-chip {
-    @apply flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border border-border bg-surface-subtle;
-  }
-  .resource-chip:hover {
-    @apply border-primary-500 text-primary-600;
   }
 </style>
