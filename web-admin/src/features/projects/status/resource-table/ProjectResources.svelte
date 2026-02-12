@@ -11,7 +11,7 @@
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  // import Switch from "@rilldata/web-common/components/forms/Switch.svelte"; // Re-import when DAG viewer is implemented
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";

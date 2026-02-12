@@ -13,9 +13,13 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import {
+    createRuntimeServiceCreateTrigger,
     createRuntimeServiceGetInstance,
+    getRuntimeServiceGetResourceQueryKey,
+    getRuntimeServiceListResourcesQueryKey,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     useProjectDeployment,
@@ -28,10 +32,23 @@
     getStatusDotClass,
     getStatusLabel,
   } from "../display-utils";
+  import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+  } from "@rilldata/web-common/components/alert-dialog/index.js";
+  import { Button } from "@rilldata/web-common/components/button/index.js";
   import ProjectClone from "./ProjectClone.svelte";
 
   export let organization: string;
   export let project: string;
+
+  let isSyncDialogOpen = false;
+  const createTrigger = createRuntimeServiceCreateTrigger();
+  const queryClient = useQueryClient();
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -46,6 +63,7 @@
   $: proj = createAdminServiceGetProject(organization, project);
   $: projectData = $proj.data?.project;
   $: primaryBranch = projectData?.primaryBranch;
+  $: isGithubConnected = !!projectData?.gitRemote && !projectData?.managedGitId;
 
   // Last synced
   $: githubLastSynced = useGithubLastSynced(instanceId);
@@ -66,13 +84,14 @@
     project,
     {},
   );
-  $: deploymentCount = $allDeployments.data?.deployments?.length ?? 0;
-  $: prodCount =
-    $allDeployments.data?.deployments?.filter((d) => d.environment === "prod")
-      .length ?? 0;
-  $: devCount =
-    $allDeployments.data?.deployments?.filter((d) => d.environment === "dev")
-      .length ?? 0;
+  // Will Use these when Rill Cloud Editing is supported. This will allow users to see how many deployments they have and in which environments. See L188
+  // $: deploymentCount = $allDeployments.data?.deployments?.length ?? 0;
+  // $: prodCount =
+  //   $allDeployments.data?.deployments?.filter((d) => d.environment === "prod")
+  //     .length ?? 0;
+  // $: devCount =
+  //   $allDeployments.data?.deployments?.filter((d) => d.environment === "dev")
+  //     .length ?? 0;
 
   // Connectors
   $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
@@ -104,6 +123,21 @@
 
   $: resourceCounts = countByKind(allResources);
 
+  async function handleSync() {
+    await $createTrigger.mutateAsync({
+      instanceId,
+      data: { parser: true },
+    });
+    // Invalidate queries so Last synced updates
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceGetResourceQueryKey(instanceId),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
+    });
+    isSyncDialogOpen = false;
+  }
+
   function countByKind(
     res: V1Resource[],
   ): { kind: string; label: string; count: number }[] {
@@ -125,7 +159,17 @@
 <section class="section">
   <div class="section-header">
     <h3 class="section-title">Deployment</h3>
-    <ProjectClone {organization} {project} />
+    <div class="flex items-center gap-2">
+      <Button
+        type="secondary"
+        onClick={() => {
+          isSyncDialogOpen = true;
+        }}
+      >
+        {isGithubConnected ? "Re-sync from GitHub" : "Re-sync project"}
+      </Button>
+      <ProjectClone {organization} {project} />
+    </div>
   </div>
 
   <div class="info-grid">
@@ -181,7 +225,7 @@
       <span class="info-label">OLAP Engine</span>
       <span class="info-value">
         {olapConnector ? formatConnectorName(olapConnector.type) : "—"}
-        {#if olapConnector}
+        {#if olapConnector && (olapConnector.provision || olapConnector.type !== "duckdb")}
           <span class="text-fg-tertiary text-xs ml-1">
             ({olapConnector.provision ? "Rill-managed" : "Self-managed"})
           </span>
@@ -216,6 +260,32 @@
   {/if}
 </section>
 
+<AlertDialog bind:open={isSyncDialogOpen}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>
+        {isGithubConnected ? "Re-sync from GitHub?" : "Re-sync project?"}
+      </AlertDialogTitle>
+      <AlertDialogDescription>
+        {isGithubConnected
+          ? "This will pull the latest code from GitHub and re-parse all project files. Existing data will not be re-ingested."
+          : "This will re-parse all project files and reconcile resources. Existing data will not be re-ingested."}
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <Button
+        type="tertiary"
+        onClick={() => {
+          isSyncDialogOpen = false;
+        }}>Cancel</Button
+      >
+      <Button type="primary" onClick={handleSync}>
+        {isGithubConnected ? "Yes, sync" : "Yes, re-sync"}
+      </Button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+
 <style lang="postcss">
   .section {
     @apply border border-border rounded-lg p-5;
@@ -230,7 +300,7 @@
     @apply flex flex-col;
   }
   .info-row {
-    @apply flex items-center py-2 border-b border-border;
+    @apply flex items-center py-2 ;
   }
   .info-row:last-child {
     @apply border-b-0;

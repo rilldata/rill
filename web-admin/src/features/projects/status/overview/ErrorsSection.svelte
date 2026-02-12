@@ -1,11 +1,10 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
-  import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import {
     ResourceKind,
     SingletonProjectParserName,
-    prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     createRuntimeServiceGetResource,
@@ -35,9 +34,22 @@
 
   // Total
   $: totalErrors = parseErrors.length + erroredResources.length;
+
+  function handleClick() {
+    if (totalErrors > 0) {
+      void goto(`${basePage}/resources?error=true`);
+    }
+  }
 </script>
 
-<section class="section" class:section-error={totalErrors > 0}>
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<div
+  class="section"
+  class:section-error={totalErrors > 0}
+  class:section-clickable={totalErrors > 0}
+  on:click={handleClick}
+>
   <div class="section-header">
     <h3 class="section-title flex items-center gap-2">
       Errors
@@ -45,12 +57,6 @@
         <span class="error-badge">{totalErrors}</span>
       {/if}
     </h3>
-    {#if totalErrors > 0}
-      <a href="{basePage}/resources?error=true" class="section-action">
-        View all errors
-        <ChevronRight size="14px" />
-      </a>
-    {/if}
   </div>
 
   {#if totalErrors === 0}
@@ -81,26 +87,26 @@
       {/if}
     </div>
   {/if}
-</section>
+</div>
 
 <style lang="postcss">
   .section {
-    @apply border border-border rounded-lg p-5;
+    @apply block border border-border rounded-lg p-5;
+  }
+  .section-clickable {
+    @apply cursor-pointer;
   }
   .section-error {
     @apply border-red-500;
+  }
+  .section-clickable:hover {
+    @apply border-red-600;
   }
   .section-header {
     @apply flex items-center justify-between mb-4;
   }
   .section-title {
     @apply text-sm font-semibold text-fg-primary uppercase tracking-wide;
-  }
-  .section-action {
-    @apply text-sm text-primary-500 flex items-center gap-1;
-  }
-  .section-action:hover {
-    @apply text-primary-600;
   }
   .error-badge {
     @apply text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 min-w-[20px] text-center;
@@ -110,8 +116,5 @@
   }
   .error-item {
     @apply flex items-center gap-3 px-3 py-2.5 rounded-md text-sm;
-  }
-  .error-item:hover {
-    @apply bg-surface-subtle;
   }
 </style>
