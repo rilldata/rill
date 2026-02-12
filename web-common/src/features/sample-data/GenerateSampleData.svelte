@@ -28,7 +28,7 @@
         .min(10, "Please provide more detail (at least 10 characters)"),
     }),
   );
-  const initialValues = { prompt: "" };
+  const initialValues = { prompt: "Generate a model with mock data for: " };
   const superFormInstance = superForm(defaults(initialValues, schema), {
     SPA: true,
     validators: schema,
