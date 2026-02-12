@@ -47,8 +47,9 @@
   $: dashboards = useDashboards(instanceId);
 
   $: allRowsWithDashboardTitle = allRows.map((token) => {
+    const tokenResource = token.resources?.[0];
     const dashboard = $dashboards.data?.find(
-      (d) => d.meta.name.name === token.resourceName,
+      (d) => d.meta.name.name === tokenResource?.name,
     );
     return {
       ...token,

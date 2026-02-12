@@ -111,6 +111,10 @@ export function getSchemaInitialValues(
       initial[key] = prop.default;
       continue;
     }
+    if (prop["x-display"] === "key-value") {
+      initial[key] = [];
+      continue;
+    }
     if (
       prop.enum?.length &&
       (prop["x-display"] === "radio" || prop["x-display"] === "tabs")
@@ -197,8 +201,15 @@ export function filterSchemaValuesForSubmit(
 
 export function findRadioEnumKey(schema: MultiStepFormSchema): string | null {
   if (!schema.properties) return null;
+  // First look for radio-display enum (e.g. ClickHouse connector_type)
   for (const [key, value] of Object.entries(schema.properties)) {
     if (value.enum && value["x-display"] === "radio") {
+      return key;
+    }
+  }
+  // Fall back to tabs-display enum with tab-group (e.g. Snowflake auth_method)
+  for (const [key, value] of Object.entries(schema.properties)) {
+    if (value.enum && value["x-display"] === "tabs" && value["x-tab-group"]) {
       return key;
     }
   }
@@ -321,6 +332,7 @@ function filterValuesByTabGroups(
   for (const [key, prop] of Object.entries(properties)) {
     if (!isStepMatch(schema, key, opts?.step)) continue;
     if (prop["x-display"] !== "tabs") continue;
+    if (!isVisibleForValues(schema, key, values)) continue;
     const tabGroups = prop["x-tab-group"];
     if (!tabGroups) continue;
     const selected = String(values?.[key] ?? "");
@@ -388,6 +400,7 @@ export function getBackendConnectorName(
 /**
  * Returns custom button labels from the schema based on current form values.
  * Looks up x-button-labels[fieldKey][fieldValue] for each field in values.
+ * A wildcard key "*" always matches regardless of form values.
  */
 export function getSchemaButtonLabels(
   schema: MultiStepFormSchema | null,
@@ -395,6 +408,10 @@ export function getSchemaButtonLabels(
 ): ButtonLabels | null {
   const buttonLabelsMap = schema?.["x-button-labels"];
   if (!buttonLabelsMap) return null;
+
+  // Check for wildcard match first
+  const wildcard = buttonLabelsMap["*"]?.["*"];
+  if (wildcard) return wildcard;
 
   for (const [fieldKey, valueLabels] of Object.entries(buttonLabelsMap)) {
     const currentValue = values[fieldKey];

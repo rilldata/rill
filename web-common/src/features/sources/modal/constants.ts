@@ -103,6 +103,7 @@ export const OLAP_ENGINES = [
   "duckdb",
   "druid",
   "pinot",
+  "starrocks",
 ];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
