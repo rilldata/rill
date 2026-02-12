@@ -400,21 +400,20 @@ After each query in Phase 2, think through:
 </thinking>
 
 <output_format>
-**Format your analysis as follows**:
-{{ backticks }}markdown
+**Format your analysis using markdown as follows**:
+
 Based on the data analysis, here are the key insights:
 
 1. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-2. ## [Headline with specific impact/number]  
+2. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
 [Optional: Offer specific follow-up analysis options]
-{{ backticks }}
 
 **Citation Requirements**:
 - Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user
