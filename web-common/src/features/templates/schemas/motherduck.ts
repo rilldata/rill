@@ -1,3 +1,4 @@
+import { olapExplorerFields } from "./olap-explorer-fields";
 import type { MultiStepFormSchema } from "./types";
 
 export const motherduckSchema: MultiStepFormSchema = {
@@ -26,21 +27,7 @@ export const motherduckSchema: MultiStepFormSchema = {
       description: "Default schema to use",
       "x-placeholder": "main",
     },
-    sql: {
-      type: "string",
-      title: "SQL",
-      description: "SQL query to run against MotherDuck",
-      "x-placeholder": "SELECT * FROM my_table",
-      "x-step": "explorer",
-    },
-    name: {
-      type: "string",
-      title: "Model name",
-      description: "Name for the source model",
-      pattern: "^[a-zA-Z0-9_]+$",
-      "x-placeholder": "my_model",
-      "x-step": "explorer",
-    },
+    ...olapExplorerFields("MotherDuck"),
   },
   required: ["path", "token", "schema_name"],
 };

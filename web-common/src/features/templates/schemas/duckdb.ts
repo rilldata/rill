@@ -1,3 +1,4 @@
+import { olapExplorerFields } from "./olap-explorer-fields";
 import type { MultiStepFormSchema } from "./types";
 
 export const duckdbSchema: MultiStepFormSchema = {
@@ -53,21 +54,7 @@ export const duckdbSchema: MultiStepFormSchema = {
       },
       "x-step": "connector",
     },
-    sql: {
-      type: "string",
-      title: "SQL",
-      description: "SQL query to run against DuckDB",
-      "x-placeholder": "SELECT * FROM my_table",
-      "x-step": "explorer",
-    },
-    name: {
-      type: "string",
-      title: "Model name",
-      description: "Name for the source model",
-      pattern: "^[a-zA-Z0-9_]+$",
-      "x-placeholder": "my_model",
-      "x-step": "explorer",
-    },
+    ...olapExplorerFields("DuckDB"),
   },
   required: ["connector_type"],
   allOf: [

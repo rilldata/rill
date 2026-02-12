@@ -420,28 +420,21 @@ export class AddDataFormManager {
       const connectorValues = this.filterValuesForStep(values, "connector");
       setConnectorConfig(connectorValues);
       setConnectorInstanceName(null);
-
-      // For OLAP connectors, open DataExplorer instead of explorer step
-      if (isOlapConnector && nextStep === "explorer" && onOpenDataExplorer) {
-        onClose();
-        onOpenDataExplorer();
-        return;
-      }
-
-      setStep(nextStep);
-      return;
+    } else {
+      // Test the connection, then persist config and advance
+      const connectorInstanceName = await submitAddConnectorForm(
+        queryClient,
+        this.connector,
+        submitValues,
+        false,
+      );
+      const connectorValues = this.filterValuesForStep(
+        submitValues,
+        "connector",
+      );
+      setConnectorConfig(connectorValues);
+      setConnectorInstanceName(connectorInstanceName);
     }
-
-    // Test the connection, then persist config and advance
-    const connectorInstanceName = await submitAddConnectorForm(
-      queryClient,
-      this.connector,
-      submitValues,
-      false,
-    );
-    const connectorValues = this.filterValuesForStep(submitValues, "connector");
-    setConnectorConfig(connectorValues);
-    setConnectorInstanceName(connectorInstanceName);
 
     // For OLAP connectors, open DataExplorer instead of explorer step
     if (isOlapConnector && nextStep === "explorer" && onOpenDataExplorer) {
