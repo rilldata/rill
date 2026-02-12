@@ -85,6 +85,8 @@
   let multiStepSubmitDisabled = false;
   let multiStepButtonLabel = "";
   let multiStepLoadingCopy = "";
+  $: stepState = $connectorStepStore;
+
   // Show skip link on connector step for non-OLAP connectors
   $: shouldShowSkipLink = checkShouldShowSkipLink(
     stepState.step,
@@ -94,8 +96,6 @@
   );
   let primaryButtonLabel = "";
   let primaryLoadingCopy = "";
-
-  $: stepState = $connectorStepStore;
 
   // Form IDs
   const baseFormId = formManager.formId;
