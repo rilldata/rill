@@ -72,7 +72,7 @@ export function mapParseErrorToLine(
   if (error.message === ConfigErrors.Malformed) return undefined;
   if (error.startLocation) {
     return {
-      line: error.startLocation.line,
+      line: error.startLocation.line ?? 0,
       message: error.message,
       level: "error",
     };
