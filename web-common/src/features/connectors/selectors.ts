@@ -172,7 +172,6 @@ export function useInfiniteListTables(
         database,
         databaseSchema,
         pageSize,
-        searchPattern,
       },
     ],
     enabled:
