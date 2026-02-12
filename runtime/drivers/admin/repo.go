@@ -20,7 +20,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
-	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/yaml.v3"
 )
@@ -403,7 +402,6 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	// We create a new watcher for each call to Watch.
 	// This makes cancellation and handling config changes easier than if we used a single shared watcher with many subscribers.
 	// This should be fine performance-wise since we don't expect many concurrent watchers (only the project parser plus up to a handful of concurrent editors).
-	r.h.logger.Error("starting watching for file changes in", zap.String("path", root))
 	w, err := filewatcher.NewWatcher(root, ignorePaths, r.h.logger)
 	if err != nil {
 		return fmt.Errorf("failed to create file watcher: %w", err)
