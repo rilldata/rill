@@ -40,7 +40,9 @@
   // Total
   $: totalErrors = parseErrors.length + erroredResources.length;
 
-  function handleSectionClick() {
+  function handleSectionClick(e: MouseEvent | KeyboardEvent) {
+    // Don't navigate if the click was on a chip link
+    if ((e.target as HTMLElement).closest(".error-chip")) return;
     if (totalErrors > 0) {
       void goto(`${basePage}/resources?error=true`);
     }
@@ -51,13 +53,13 @@
   class="section"
   class:section-error={totalErrors > 0}
   class:section-clickable={totalErrors > 0}
-  role={totalErrors > 0 ? "button" : undefined}
-  tabindex={totalErrors > 0 ? 0 : undefined}
+  role="button"
+  tabindex="0"
   on:click={handleSectionClick}
   on:keydown={(e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      handleSectionClick();
+      handleSectionClick(e);
     }
   }}
 >
@@ -75,11 +77,7 @@
   {:else}
     <div class="error-chips">
       {#if parseErrors.length > 0}
-        <a
-          href="{basePage}/resources?error=true"
-          class="error-chip"
-          on:click|stopPropagation
-        >
+        <a href="{basePage}/resources?error=true" class="error-chip">
           <AlertCircleOutline size="12px" />
           <span class="font-medium">{parseErrors.length}</span>
           <span>Parse error{parseErrors.length !== 1 ? "s" : ""}</span>
@@ -90,7 +88,6 @@
         <a
           href="{basePage}/resources?error=true&kind={kind}"
           class="error-chip"
-          on:click|stopPropagation
         >
           {#if resourceIconMapping[kind]}
             <svelte:component this={resourceIconMapping[kind]} size="12px" />

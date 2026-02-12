@@ -30,20 +30,16 @@
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   // Initialize filter from URL search params (e.g. ?kind=rill.runtime.v1.Model or ?error=true)
-  $: kindParam = $page.url.searchParams.get("kind");
-  $: errorParam = $page.url.searchParams.get("error") === "true";
+  const kindParam = $page.url.searchParams.get("kind");
+  const errorParam = $page.url.searchParams.get("error") === "true";
 
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
   let showDagViewer = false;
   let searchText = "";
-  let selectedTypes: string[] = [];
-  let selectedStatuses: string[] = [];
-
-  // Sync URL params into filter state when they change
-  $: if (kindParam) selectedTypes = [kindParam];
-  $: if (errorParam) selectedStatuses = ["error"];
+  let selectedTypes: string[] = kindParam ? [kindParam] : [];
+  let selectedStatuses: string[] = errorParam ? ["error"] : [];
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
@@ -285,14 +281,14 @@
       </Button>
     </div>
 
-    {#if $resources.isLoading}
-      <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
+    {#if $resources.data}
+      <ProjectResourcesTable data={filteredResources} />
     {:else if $resources.isError}
       <div class="text-red-500">
         Error loading resources: {$resources.error?.message}
       </div>
-    {:else if $resources.data}
-      <ProjectResourcesTable data={filteredResources} />
+    {:else}
+      <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
     {/if}
 
     <div class="parse-errors">
