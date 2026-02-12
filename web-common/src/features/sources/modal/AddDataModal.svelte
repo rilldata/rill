@@ -214,7 +214,6 @@
             </div>
           </section>
         {/if}
-      {/if}
         <div class="text-fg-secondary">
           Check out
           <a
@@ -223,10 +222,11 @@
             rel="noopener noreferrer"
             class="text-primary-500 hover:text-primary-600 font-medium"
           >
-             our docs
+            our docs
           </a>
-           for more!
+          for more!
         </div>
+      {/if}
 
       {#if step === 1}
         <section>

@@ -14,9 +14,7 @@ export const s3Schema: MultiStepFormSchema = {
       default: "access_keys",
       "x-display": "radio",
       "x-enum-labels": ["Access keys"],
-      "x-enum-descriptions": [
-        "Use AWS access key ID and secret access key.",
-      ],
+      "x-enum-descriptions": ["Use AWS access key ID and secret access key."],
       "x-ui-only": true,
       "x-grouped-fields": {
         access_keys: [

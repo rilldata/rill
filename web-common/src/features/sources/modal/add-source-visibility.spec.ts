@@ -33,11 +33,11 @@ describe("addSourceModal", () => {
 
   beforeEach(() => {
     // Spy on window.history.pushState
-    pushStateSpy = vi.spyOn(window.history, "pushState").mockImplementation(
-      (state) => {
+    pushStateSpy = vi
+      .spyOn(window.history, "pushState")
+      .mockImplementation((state) => {
         capturedState = state;
-      },
-    );
+      });
 
     // Spy on window.dispatchEvent
     dispatchEventSpy = vi
