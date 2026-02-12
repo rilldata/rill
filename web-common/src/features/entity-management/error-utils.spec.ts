@@ -39,7 +39,9 @@ describe("resolveRootCauseErrorMessage", () => {
       "dependency error",
     );
 
-    expect(result).toBe('orders_metrics: table "orders" does not exist');
+    expect(result).toBe(
+      'Error in dependency orders_metrics: table "orders" does not exist',
+    );
   });
 
   it("traverses multiple levels to find the root cause", () => {
@@ -62,7 +64,7 @@ describe("resolveRootCauseErrorMessage", () => {
     );
 
     expect(result).toBe(
-      "orders_model: invalid SQL: syntax error at position 42",
+      "Error in dependency orders_model: invalid SQL: syntax error at position 42",
     );
   });
 
@@ -128,7 +130,7 @@ describe("resolveRootCauseErrorMessage", () => {
       "dependency error",
     );
 
-    expect(result).toBe("orders_model: error A");
+    expect(result).toBe("Error in dependency orders_model: error A");
   });
 
   it("skips refs not found in allResources", () => {
@@ -149,6 +151,6 @@ describe("resolveRootCauseErrorMessage", () => {
       "dependency error",
     );
 
-    expect(result).toBe("orders_model: invalid SQL");
+    expect(result).toBe("Error in dependency orders_model: invalid SQL");
   });
 });

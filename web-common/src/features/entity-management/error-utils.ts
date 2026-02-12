@@ -35,7 +35,7 @@ export function createRootCauseErrorQuery(
 /**
  * Resolves the root cause error message for a resource. If the resource's
  * error is caused by a dependency, traverses refs to find the original
- * error and formats it as "resourceName: error". Returns the original
+ * error and formats it as "Error in dependency resourceName: error". Returns the original
  * error message if no deeper cause is found.
  */
 export function resolveRootCauseErrorMessage(
@@ -45,7 +45,7 @@ export function resolveRootCauseErrorMessage(
 ): string {
   const rootCause = findRootCause(resource, allResources);
   if (rootCause?.meta?.reconcileError) {
-    return `${rootCause.meta.name?.name}: ${rootCause.meta.reconcileError}`;
+    return `Error in dependency ${rootCause.meta.name?.name}: ${rootCause.meta.reconcileError}`;
   }
   return errorMessage;
 }
