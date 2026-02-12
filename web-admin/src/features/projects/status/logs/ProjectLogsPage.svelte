@@ -135,9 +135,9 @@
       case V1LogLevel.LOG_LEVEL_INFO:
         return "text-fg-primary";
       case V1LogLevel.LOG_LEVEL_WARN:
-        return "text-yellow-600";
+        return "text-yellow-700";
       case V1LogLevel.LOG_LEVEL_ERROR:
-        return "text-red-600";
+        return "text-red-700";
       default:
         return "text-fg-secondary";
     }
@@ -187,16 +187,22 @@
     <div class="flex items-center gap-x-2">
       <h2 class="text-lg font-medium">Logs</h2>
       <span
-        class="status-indicator"
-        class:connected={isConnected}
-        class:connecting={isConnecting}
-        class:error={hasConnectionError}
-      />
-      {#if isConnecting}
-        <span class="text-sm text-fg-secondary">Connecting...</span>
-      {:else if hasConnectionError}
-        <span class="text-sm text-red-600">Disconnected</span>
-      {/if}
+        class="status-badge"
+        class:status-live={isConnected}
+        class:status-connecting={isConnecting}
+        class:status-error={hasConnectionError}
+      >
+        <span class="status-dot" />
+        {#if isConnected}
+          Live
+        {:else if isConnecting}
+          Connecting
+        {:else if hasConnectionError}
+          Disconnected
+        {:else}
+          Idle
+        {/if}
+      </span>
     </div>
   </div>
 
@@ -259,10 +265,12 @@
     {:else}
       {#each filteredLogs as log, i (log.time ?? i)}
         <div class="log-entry {getLevelClass(log.level)}">
-          {formatTime(log.time)}
-          {getLevelLabel(log.level)}
-          {log.message}
-          {log.jsonPayload ?? ""}
+          <p>
+            {formatTime(log.time)}
+            {getLevelLabel(log.level)}
+            {log.message}
+            {log.jsonPayload ?? ""}
+          </p>
         </div>
       {/each}
     {/if}
@@ -270,19 +278,36 @@
 </section>
 
 <style lang="postcss">
-  .status-indicator {
-    @apply w-2 h-2 rounded-full bg-gray-400;
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full;
+    @apply bg-gray-100 text-fg-secondary;
   }
 
-  .status-indicator.connected {
+  .status-dot {
+    @apply w-1.5 h-1.5 rounded-full bg-gray-400;
+  }
+
+  .status-live {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .status-live .status-dot {
     @apply bg-green-500;
   }
 
-  .status-indicator.connecting {
+  .status-connecting {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+
+  .status-connecting .status-dot {
     @apply bg-yellow-500 animate-pulse;
   }
 
-  .status-indicator.error {
+  .status-error {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .status-error .status-dot {
     @apply bg-red-500;
   }
 
