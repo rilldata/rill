@@ -156,10 +156,6 @@
     return isEnumWithDisplay(prop, "tabs");
   }
 
-  function isSelectEnum(prop: JSONSchemaField) {
-    return isEnumWithDisplay(prop, "select");
-  }
-
   function computeVisibleEntries(
     currentSchema: MultiStepFormSchema,
     currentStep: string | undefined,
