@@ -1,9 +1,9 @@
-<section class="section">
+<!-- <section class="section">
   <div class="section-header">
     <h3 class="section-title">Analytics</h3>
   </div>
   <p class="text-sm text-fg-secondary">Coming soon</p>
-</section>
+</section> -->
 
 <style lang="postcss">
   .section {

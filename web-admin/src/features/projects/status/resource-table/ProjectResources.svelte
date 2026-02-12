@@ -50,6 +50,7 @@
 
   // Resource types available for filtering (excluding internal types)
   const filterableTypes = [
+    ResourceKind.Source,
     ResourceKind.Model,
     ResourceKind.MetricsView,
     ResourceKind.Explore,

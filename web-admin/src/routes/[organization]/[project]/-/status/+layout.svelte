@@ -21,7 +21,7 @@
     {
       label: "Tables",
       route: "/model-details",
-      hasPermission: true,
+      hasPermission: false,
     },
     {
       label: "Logs",
@@ -31,7 +31,7 @@
     {
       label: "Analytics",
       route: "/analytics",
-      hasPermission: true,
+      hasPermission: false,
     },
   ];
 </script>

@@ -17,6 +17,7 @@
   import RefreshCell from "./RefreshCell.svelte";
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
+  import ResourceYamlDialog from "./ResourceYamlDialog.svelte";
 
   export let data: V1Resource[];
 
@@ -24,6 +25,11 @@
   let dialogResourceName = "";
   let dialogResourceKind = "";
   let dialogRefreshType: "full" | "incremental" = "full";
+
+  let isSpecDialogOpen = false;
+  let specResourceName = "";
+  let specResourceKind = "";
+  let specResource: V1Resource | undefined = undefined;
 
   let openDropdownResourceKey = "";
 
@@ -43,6 +49,17 @@
 
   const closeRefreshDialog = () => {
     isConfirmDialogOpen = false;
+  };
+
+  const openSpecDialog = (
+    resourceName: string,
+    resourceKind: string,
+    resource: V1Resource,
+  ) => {
+    specResourceName = resourceName;
+    specResourceKind = resourceKind;
+    specResource = resource;
+    isSpecDialogOpen = true;
   };
 
   const setDropdownOpen = (resourceKey: string, isOpen: boolean) => {
@@ -158,25 +175,25 @@
       accessorKey: "actions",
       header: "",
       cell: ({ row }) => {
-        // Only hide actions for reconciling rows
         const status = row.original.meta?.reconcileStatus;
         const isRowReconciling =
           status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
           status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
-        if (!isRowReconciling) {
-          const resourceKey = `${row.original.meta.name.kind}:${row.original.meta.name.name}`;
-          return flexRender(ActionsCell, {
-            resourceKind: row.original.meta.name.kind,
-            resourceName: row.original.meta.name.name,
-            canRefresh:
-              row.original.meta.name.kind === ResourceKind.Model ||
-              row.original.meta.name.kind === ResourceKind.Source,
-            onClickRefreshDialog: openRefreshDialog,
-            isDropdownOpen: isDropdownOpen(resourceKey),
-            onDropdownOpenChange: (isOpen: boolean) =>
-              setDropdownOpen(resourceKey, isOpen),
-          });
-        }
+        const resourceKey = `${row.original.meta.name.kind}:${row.original.meta.name.name}`;
+        return flexRender(ActionsCell, {
+          resourceKind: row.original.meta.name.kind,
+          resourceName: row.original.meta.name.name,
+          resource: row.original,
+          canRefresh:
+            !isRowReconciling &&
+            (row.original.meta.name.kind === ResourceKind.Model ||
+              row.original.meta.name.kind === ResourceKind.Source),
+          onClickRefreshDialog: openRefreshDialog,
+          onClickViewSpec: openSpecDialog,
+          isDropdownOpen: isDropdownOpen(resourceKey),
+          onDropdownOpenChange: (isOpen: boolean) =>
+            setDropdownOpen(resourceKey, isOpen),
+        });
       },
       enableSorting: false,
       meta: {
@@ -202,4 +219,11 @@
   name={dialogResourceName}
   refreshType={dialogRefreshType}
   onRefresh={handleRefresh}
+/>
+
+<ResourceYamlDialog
+  bind:open={isSpecDialogOpen}
+  resourceName={specResourceName}
+  resourceKind={specResourceKind}
+  resource={specResource}
 />

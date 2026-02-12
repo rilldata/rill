@@ -35,6 +35,7 @@ export function useResources(instanceId: string) {
         select: (data: V1ListResourcesResponse) => {
           const filtered = data?.resources?.filter(
             (resource) =>
+              !resource?.meta?.hidden &&
               resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
               resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger,
           );
