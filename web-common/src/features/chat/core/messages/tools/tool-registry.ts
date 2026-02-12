@@ -8,11 +8,12 @@
  */
 
 import type { V1Message } from "@rilldata/web-common/runtime-client";
-import { ToolName } from "../../types";
+import { MessageContentType, ToolName } from "../../types";
 import { createChartBlock, type ChartBlock } from "../chart/chart-block";
 import {
   createFileDiffBlock,
   type FileDiffBlock,
+  type WriteFileCallData,
 } from "../file-diff/file-diff-block";
 import { goto } from "$app/navigation";
 import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
@@ -20,6 +21,7 @@ import {
   createSimpleTooCall,
   type SimpleToolCall,
 } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
+import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils.ts";
 
 // =============================================================================
 // RENDER MODES
@@ -55,7 +57,11 @@ export interface ToolConfig {
   ) => ToolBlockType | null;
 
   /** Used to process any UI action or side effects from tool calls. */
-  onResult?: (callMessage: V1Message) => void;
+  onCall?: (callMessage: V1Message) => void;
+  onResult?: (
+    callMessage: V1Message | undefined,
+    resultMessage: V1Message,
+  ) => void;
 }
 
 /**
@@ -90,12 +96,13 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
   [ToolName.WRITE_FILE]: {
     renderMode: "block",
     createBlock: createFileDiffBlock,
+    onResult: handleWriteFilesToolResult,
   },
 
   [ToolName.NAVIGATE]: {
     renderMode: "block",
     createBlock: createSimpleTooCall,
-    onResult: handleNavigateToolCall,
+    onCall: handleNavigateToolCall,
   },
 
   // All other tools default to "inline" (shown in thinking blocks)
@@ -129,6 +136,32 @@ function handleNavigateToolCall(callMessage: V1Message) {
     switch (content.kind) {
       case "file":
         void goto(`/files${addLeadingSlash(content.name)}`);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+/**
+ * If a file is successfully removed and the removed file was the active page, navigate to the home page.
+ * @param callMessage
+ * @param resultMessage
+ */
+function handleWriteFilesToolResult(
+  callMessage: V1Message,
+  resultMessage: V1Message,
+) {
+  if (
+    !callMessage.contentData ||
+    resultMessage.contentType === MessageContentType.ERROR
+  )
+    return;
+  try {
+    const content = JSON.parse(callMessage.contentData) as WriteFileCallData;
+    if (!content.remove) return;
+    const filePath = addLeadingSlash(content.path);
+    if (isCurrentActivePage(filePath, false)) {
+      void goto("/");
     }
   } catch (err) {
     console.error(err);

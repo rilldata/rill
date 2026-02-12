@@ -18,6 +18,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const defaultTemperature = 0.1
+
 func init() {
 	drivers.Register("gemini", driver{})
 	drivers.RegisterAsConnector("gemini", driver{})
@@ -135,14 +137,14 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 }
 
 type configProperties struct {
-	APIKey          string  `mapstructure:"api_key"`
-	Model           string  `mapstructure:"model"`
-	IncludeThoughts bool    `mapstructure:"include_thoughts"`
-	ThinkingLevel   string  `mapstructure:"thinking_level"`
-	MaxOutputTokens int     `mapstructure:"max_output_tokens"`
-	Temperature     float64 `mapstructure:"temperature"`
-	TopP            float64 `mapstructure:"top_p"`
-	TopK            float64 `mapstructure:"top_k"`
+	APIKey          string   `mapstructure:"api_key"`
+	Model           string   `mapstructure:"model"`
+	IncludeThoughts bool     `mapstructure:"include_thoughts"`
+	ThinkingLevel   string   `mapstructure:"thinking_level"`
+	MaxOutputTokens int      `mapstructure:"max_output_tokens"`
+	Temperature     *float64 `mapstructure:"temperature"`
+	TopP            float64  `mapstructure:"top_p"`
+	TopK            float64  `mapstructure:"top_k"`
 }
 
 func (c *configProperties) getModel() string {
@@ -150,6 +152,13 @@ func (c *configProperties) getModel() string {
 		return c.Model
 	}
 	return "gemini-3-flash-preview"
+}
+
+func (c *configProperties) getTemperature() float64 {
+	if c.Temperature != nil {
+		return *c.Temperature
+	}
+	return defaultTemperature
 }
 
 func (c *configProperties) getThinkingConfig() *genai.ThinkingConfig {
@@ -275,15 +284,12 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		return nil, fmt.Errorf("failed to convert messages: %w", err)
 	}
 
-	// Build generation config.
-	// Only set parameters if explicitly configured (let Gemini use its defaults)
+	// Build generation config
 	genConfig := &genai.GenerateContentConfig{
 		MaxOutputTokens:   int32(h.config.MaxOutputTokens),
 		SystemInstruction: systemInstructions,
 		ThinkingConfig:    h.config.getThinkingConfig(),
-	}
-	if h.config.Temperature > 0 {
-		genConfig.Temperature = genai.Ptr(float32(h.config.Temperature))
+		Temperature:       genai.Ptr(float32(h.config.getTemperature())),
 	}
 	if h.config.TopP > 0 {
 		genConfig.TopP = genai.Ptr(float32(h.config.TopP))

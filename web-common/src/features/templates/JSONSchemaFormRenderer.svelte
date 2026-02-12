@@ -28,7 +28,10 @@
   // Use `any` to be compatible with superforms' complex ValidationErrors type
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
-  export let handleFileUpload: (file: File) => Promise<string>;
+  export let handleFileUpload: (
+    file: File,
+    fieldKey: string,
+  ) => Promise<string>;
 
   $: stepFilter = step;
   $: groupedFields = schema

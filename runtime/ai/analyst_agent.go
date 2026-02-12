@@ -208,6 +208,16 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
+
+	instance, err := t.Runtime.Instance(ctx, session.InstanceID())
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance: %w", err)
+	}
+	instanceCfg, err := instance.Config()
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance config: %w", err)
+	}
+
 	ff, err := t.Runtime.FeatureFlags(ctx, session.InstanceID(), session.Claims())
 	if err != nil {
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
@@ -222,6 +232,16 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		metricsViewsQuoted[i] = fmt.Sprintf("`%s`", mv)
 	}
 
+	dimensionsQuoted := make([]string, len(args.Dimensions))
+	for i, dim := range args.Dimensions {
+		dimensionsQuoted[i] = fmt.Sprintf("`%s`", dim)
+	}
+
+	measuresQuoted := make([]string, len(args.Measures))
+	for i, measure := range args.Measures {
+		measuresQuoted[i] = fmt.Sprintf("`%s`", measure)
+	}
+
 	data := map[string]any{
 		"ai_instructions":  session.ProjectInstructions(),
 		"is_prompt":        args.Prompt != "",
@@ -229,12 +249,13 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		"explore":          args.Explore,
 		"canvas":           args.Canvas,
 		"canvas_component": args.CanvasComponent,
-		"dimensions":       strings.Join(args.Dimensions, ", "),
-		"measures":         strings.Join(args.Measures, ", "),
+		"dimensions":       strings.Join(dimensionsQuoted, ", "),
+		"measures":         strings.Join(measuresQuoted, ", "),
 		"feature_flags":    ff,
 		"forked":           session.Forked(),
 		"is_report":        args.IsReport,
 		"now":              time.Now(),
+		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
@@ -294,8 +315,8 @@ Here is an overview of the settings applied to the dashboard:
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
 {{ if (and .comparison_start .comparison_end) }}Use comparison time range: start={{.comparison_start}}, end={{.comparison_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
-{{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
-{{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}
+{{ if .measures }}Use measures: {{ .measures }}{{ end }}
+{{ if .dimensions }}Use dimensions: {{ .dimensions }}{{ end }}
 
 You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
@@ -404,6 +425,8 @@ Choose the appropriate chart type based on your data:
 - Focus on insights that are surprising, actionable, and quantified
 - Never repeat identical queries - each should explore new analytical angles
 - Use <thinking> tags between queries to evaluate results and plan next steps
+- Aim to make queries with high information density; keep row limits as low as possible and avoid pagination
+- The combined data you load across all queries should be below 10000 rows, ideally much less
 
 **Quality Standards**:
 - Prioritize findings that contradict expectations or reveal hidden patterns
@@ -433,8 +456,7 @@ After each query in Phase 2, think through:
 </thinking>
 
 <output_format>
-**Format your analysis as follows**:
-{{ backticks }}markdown
+**Format your analysis using markdown as follows**:
 {{ if .is_report }}
 <summary>
 [One line summary. Do not include citation links.]
@@ -452,7 +474,6 @@ Based on the data analysis, here are the key insights:
    [Finding with business context and implications]
 
 {{ if not .is_report }} [Optional: Offer specific follow-up analysis options] {{ end }}
-{{ backticks }}
 
 **Citation Requirements**:
 - Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user
@@ -461,11 +482,14 @@ Based on the data analysis, here are the key insights:
 - When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph
 </output_format>
 
+<additional_context>
+The system allows a max row limit of {{ .max_query_limit }} per query.
+
 {{ if .ai_instructions }}
-<additional_user_provided_instructions>
+The administrator has provided the following project-wide instructions, which may or may not be relevant to this task:
 {{ .ai_instructions }}
-</additional_user_provided_instructions>
 {{ end }}
+</additional_context>
 `, data)
 }
 
