@@ -192,10 +192,6 @@
     activeAuthMethod !== "public";
   $: saveAnywayLoading = submitting && saveAnyway;
 
-  // Save button uses the same disabled logic as Test/Connect buttons
-  // (checks if required fields are filled and form is valid)
-  $: isSaveDisabled = isSubmitDisabled;
-
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
     queryClient,
@@ -284,7 +280,6 @@
         {#if shouldShowSaveAnywayButton}
           <Tooltip distance={8}>
             <Button
-              disabled={isSaveDisabled}
               loading={saveAnywayLoading}
               loadingCopy="Saving..."
               onClick={handleSaveAnyway}
