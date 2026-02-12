@@ -47,7 +47,7 @@
   }
 </script>
 
-<section
+<div
   class="section"
   class:section-error={totalErrors > 0}
   class:section-clickable={totalErrors > 0}
@@ -101,7 +101,7 @@
       {/each}
     </div>
   {/if}
-</section>
+</div>
 
 <style lang="postcss">
   .section {
