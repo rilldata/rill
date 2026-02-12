@@ -18,7 +18,6 @@
   import { getConnectorIconKey } from "../connectors-utils";
   import { FORM_HEIGHT_DEFAULT } from "../../sources/modal/connector-schemas";
   import { addSourceModal } from "../../sources/modal/add-source-visibility";
-  import { debounce } from "../../../lib/create-debouncer";
 
   const { ai } = featureFlags;
   $: ({ instanceId } = $runtime);
@@ -71,10 +70,14 @@
   let isGenerating = false;
   let searchInput = "";
   let searchQuery = "";
+  let searchTimeout: ReturnType<typeof setTimeout>;
 
-  const updateSearch = debounce((value: string) => {
-    searchQuery = value;
-  }, 200);
+  function updateSearch(value: string) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      searchQuery = value;
+    }, 200);
+  }
 
   $: updateSearch(searchInput);
 
@@ -99,6 +102,7 @@
   );
 
   function handleClose() {
+    clearTimeout(searchTimeout);
     dataExplorerStore.close();
     selectedTable = null;
     selectedConnector = null;

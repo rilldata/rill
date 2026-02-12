@@ -26,7 +26,13 @@
 </script>
 
 <div class="wrapper">
-  {#if !isConnectorReady || isLoading}
+  {#if !isConnectorReady}
+    <span
+      class="message"
+      style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
+      >Error: {connector.errorMessage}</span
+    >
+  {:else if isLoading}
     <span
       class="message"
       style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
