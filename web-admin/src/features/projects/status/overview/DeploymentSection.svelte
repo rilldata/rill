@@ -124,7 +124,8 @@
       <span class="info-label">AI</span>
       <span class="info-value">
         {#if aiConnector}
-          {formatConnectorName(aiConnector.name)}
+          {formatConnectorName(aiConnector.type)}
+          <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span>
         {:else}
           Rill Managed
         {/if}
