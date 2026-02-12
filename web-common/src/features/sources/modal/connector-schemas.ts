@@ -5,10 +5,13 @@ import type {
 import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
+import { claudeSchema } from "../../templates/schemas/claude";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
 import { clickhousecloudSchema } from "../../templates/schemas/clickhousecloud";
 import { gcsSchema } from "../../templates/schemas/gcs";
+import { geminiSchema } from "../../templates/schemas/gemini";
 import { mysqlSchema } from "../../templates/schemas/mysql";
+import { openaiSchema } from "../../templates/schemas/openai";
 import { postgresSchema } from "../../templates/schemas/postgres";
 import { redshiftSchema } from "../../templates/schemas/redshift";
 import { salesforceSchema } from "../../templates/schemas/salesforce";
@@ -22,7 +25,7 @@ import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
 import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
-import { SOURCES, OLAP_ENGINES } from "./constants";
+import { SOURCES, OLAP_ENGINES, AI_CONNECTORS } from "./constants";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
@@ -45,6 +48,9 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   s3: s3Schema,
   gcs: gcsSchema,
   azure: azureSchema,
+  claude: claudeSchema,
+  openai: openaiSchema,
+  gemini: geminiSchema,
 };
 
 /**
@@ -59,7 +65,11 @@ export interface ConnectorInfo {
 /**
  * All connectors enumerated from JSON schemas, sorted by display order.
  */
-export const connectors: ConnectorInfo[] = [...SOURCES, ...OLAP_ENGINES]
+export const connectors: ConnectorInfo[] = [
+  ...SOURCES,
+  ...OLAP_ENGINES,
+  ...AI_CONNECTORS,
+]
   .filter((name) => multiStepFormSchemas[name]?.["x-category"])
   .map((name) => {
     const schema = multiStepFormSchemas[name];

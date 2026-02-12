@@ -32,8 +32,11 @@
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
-  import { Wand } from "lucide-svelte";
+  import { Wand, Bot } from "lucide-svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import ClaudeIcon from "../../components/icons/connectors/ClaudeIcon.svelte";
+  import OpenAIIcon from "../../components/icons/connectors/OpenAIIcon.svelte";
+  import GeminiIcon from "../../components/icons/connectors/GeminiIcon.svelte";
 
   let active = false;
   let showExploreDialog = false;
@@ -280,8 +283,37 @@
             size="16px"
           />
           API
-          <DropdownMenu.Separator />
         </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Sub>
+          <DropdownMenu.SubTrigger class="flex gap-x-2">
+            <Bot size="14px" class="stroke-icon-muted" />
+            AI Connector
+          </DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent class="w-[180px]">
+            <DropdownMenu.Item
+              class="flex gap-x-2"
+              on:click={() => addSourceModal.openForConnector("claude")}
+            >
+              <ClaudeIcon size="16px" />
+              Claude
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              class="flex gap-x-2"
+              on:click={() => addSourceModal.openForConnector("openai")}
+            >
+              <OpenAIIcon size="16px" />
+              OpenAI
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              class="flex gap-x-2"
+              on:click={() => addSourceModal.openForConnector("gemini")}
+            >
+              <GeminiIcon size="16px" />
+              Gemini
+            </DropdownMenu.Item>
+          </DropdownMenu.SubContent>
+        </DropdownMenu.Sub>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"

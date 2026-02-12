@@ -1,4 +1,8 @@
 import { resetConnectorStep } from "./connectorStepStore";
+import {
+  getBackendConnectorName,
+  getConnectorSchema,
+} from "./connector-schemas";
 
 export const addSourceModal = (() => {
   return {
@@ -6,6 +10,36 @@ export const addSourceModal = (() => {
       const state = { step: 1, connector: null, requestConnector: false };
       window.history.pushState(state, "", "");
       dispatchEvent(new PopStateEvent("popstate", { state: state }));
+    },
+    /**
+     * Open the modal directly at step 2 for a specific connector schema.
+     * Used for AI connectors in the "Add > More > AI Connector" menu.
+     */
+    openForConnector: (schemaName: string) => {
+      resetConnectorStep();
+      const schema = getConnectorSchema(schemaName);
+      const category = schema?.["x-category"];
+      const backendName = getBackendConnectorName(schemaName);
+
+      const selectedConnector = {
+        name: backendName,
+        displayName: schema?.title ?? schemaName,
+        implementsObjectStore: category === "objectStore",
+        implementsOlap: category === "olap",
+        implementsSqlStore: category === "sqlStore",
+        implementsWarehouse: category === "warehouse",
+        implementsFileStore: category === "fileStore",
+        implementsAi: category === "ai",
+      };
+
+      const state = {
+        step: 2,
+        selectedConnector,
+        schemaName,
+        requestConnector: false,
+      };
+      window.history.pushState(state, "", "");
+      dispatchEvent(new PopStateEvent("popstate", { state }));
     },
     close: () => {
       const state = { step: 0, connector: null, requestConnector: false };

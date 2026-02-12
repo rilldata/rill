@@ -34,7 +34,9 @@
   let isSubmittingForm = false;
 
   // Filter connectors by category from JSON schemas
-  $: sourceConnectors = connectors.filter((c) => c.category !== "olap");
+  $: sourceConnectors = connectors.filter(
+    (c) => c.category !== "olap" && c.category !== "ai",
+  );
   $: olapConnectors = connectors.filter((c) => c.category === "olap");
 
   /**
@@ -55,6 +57,7 @@
       implementsSqlStore: category === "sqlStore",
       implementsWarehouse: category === "warehouse",
       implementsFileStore: category === "fileStore",
+      implementsAi: category === "ai",
     };
   }
 
@@ -136,7 +139,8 @@
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
-      selectedConnector?.name !== "salesforce");
+      selectedConnector?.name !== "salesforce") ||
+    selectedConnector?.implementsAi;
 </script>
 
 {#if step >= 1 || $duplicateSourceName}

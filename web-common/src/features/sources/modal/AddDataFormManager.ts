@@ -144,6 +144,11 @@ export class AddDataFormManager {
     return hasExplorerStepSchema(schema);
   }
 
+  get isAiConnector(): boolean {
+    const schema = getConnectorSchema(this.schemaName);
+    return schema?.["x-category"] === "ai";
+  }
+
   /**
    * Determines whether the "Save Anyway" button should be shown for the current submission.
    */
@@ -159,8 +164,8 @@ export class AddDataFormManager {
   }): boolean {
     const { isConnectorForm, event, stepState, selectedAuthMethod } = args;
 
-    // Only show for connector forms (not sources)
-    if (!isConnectorForm) return false;
+    // Only show for connector forms (not sources or AI connectors)
+    if (!isConnectorForm || this.isAiConnector) return false;
 
     // Need a submission result to show the button
     if (!event?.result) return false;
@@ -220,6 +225,10 @@ export class AddDataFormManager {
     }
 
     if (isConnectorForm) {
+      // AI connectors save directly without testing
+      if (this.isAiConnector) {
+        return submitting ? "Saving..." : "Save";
+      }
       // Step 1 of multi-step: "Test and Connect" or "Continue" for public auth
       if (isStepFlowConnector && isOnConnectorStep) {
         const labels =
@@ -369,12 +378,12 @@ export class AddDataFormManager {
           await submitAddSourceForm(queryClient, connector, submitValues);
           onClose();
         } else {
-          // Single-step connector form
+          // Single-step connector form (AI connectors skip test via saveAnyway)
           await submitAddConnectorForm(
             queryClient,
             connector,
             submitValues,
-            false,
+            this.isAiConnector,
           );
           onClose();
         }
