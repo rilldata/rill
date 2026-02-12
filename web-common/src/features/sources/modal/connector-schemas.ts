@@ -136,7 +136,9 @@ export function isAiConnector(schema: MultiStepFormSchema | null): boolean {
  * Build a V1ConnectorDriver-compatible object from a schema name.
  * Shared by AddDataModal.toConnectorDriver and addSourceModal.openForConnector.
  */
-export function toConnectorDriver(schemaName: string): V1ConnectorDriver | null {
+export function toConnectorDriver(
+  schemaName: string,
+): V1ConnectorDriver | null {
   const schema = getConnectorSchema(schemaName);
   if (!schema) return null;
   const category = schema["x-category"];

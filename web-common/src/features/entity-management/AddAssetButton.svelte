@@ -1,7 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { Bot, Database, File, Folder, PlusCircleIcon, Wand } from "lucide-svelte";
+  import {
+    Bot,
+    Database,
+    File,
+    Folder,
+    PlusCircleIcon,
+    Wand,
+  } from "lucide-svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
