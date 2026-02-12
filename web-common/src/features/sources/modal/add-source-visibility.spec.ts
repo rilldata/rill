@@ -2,18 +2,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { addSourceModal } from "@rilldata/web-common/features/sources/modal/add-source-visibility";
 
 describe("addSourceModal.openForConnector", () => {
-  const pushStateSpy = vi.spyOn(window.history, "pushState");
+  const replaceStateSpy = vi.spyOn(window.history, "replaceState");
   const dispatchSpy = vi.spyOn(window, "dispatchEvent");
 
   afterEach(() => {
-    pushStateSpy.mockClear();
+    replaceStateSpy.mockClear();
     dispatchSpy.mockClear();
   });
 
   it("sets step 2 and implementsAi for claude", () => {
     addSourceModal.openForConnector("claude");
 
-    const state = pushStateSpy.mock.calls[0][0] as Record<string, unknown>;
+    const state = replaceStateSpy.mock.calls[0][0] as Record<string, unknown>;
     expect(state.step).toBe(2);
     expect(state.schemaName).toBe("claude");
     expect(state.requestConnector).toBe(false);
@@ -29,7 +29,7 @@ describe("addSourceModal.openForConnector", () => {
   it("sets implementsWarehouse for bigquery", () => {
     addSourceModal.openForConnector("bigquery");
 
-    const state = pushStateSpy.mock.calls[0][0] as Record<string, unknown>;
+    const state = replaceStateSpy.mock.calls[0][0] as Record<string, unknown>;
     const connector = state.selectedConnector as Record<string, unknown>;
     expect(connector.implementsWarehouse).toBe(true);
     expect(connector.implementsAi).toBe(false);
@@ -43,6 +43,6 @@ describe("addSourceModal.openForConnector", () => {
     expect(dispatchSpy).toHaveBeenCalledOnce();
     const event = dispatchSpy.mock.calls[0][0] as PopStateEvent;
     expect(event.type).toBe("popstate");
-    expect(event.state).toEqual(pushStateSpy.mock.calls[0][0]);
+    expect(event.state).toEqual(replaceStateSpy.mock.calls[0][0]);
   });
 });
