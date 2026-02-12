@@ -34,6 +34,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
 					defaultBranch: "main",
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -45,11 +46,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, repo *gitRepo, localDir string) {
 				// Verify repository exists and is on correct branch
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "main", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "main")
 			},
 		},
 		{
@@ -69,6 +66,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
 					defaultBranch: "main",
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -81,11 +79,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, repo *gitRepo, localDir string) {
 				// Verify repository is on correct branch
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "main", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "main")
 
 				// Verify the new file exists
 				newFilePath := filepath.Join(localDir, "new_file.txt")
@@ -117,11 +111,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, repo *gitRepo, localDir string) {
 				// Verify we're on the edit branch
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "edit-branch", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "edit-branch")
 			},
 		},
 		{
@@ -179,11 +169,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, repo *gitRepo, localDir string) {
 				// Verify we're on the edit branch and it has been reset to remote
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "edit-branch", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "edit-branch")
 
 				// The remote file should exist (local changes discarded due to force reset)
 				remoteFilePath := filepath.Join(localDir, "remote_edit.txt")
@@ -210,6 +196,7 @@ func TestGitRepo_pullInner(t *testing.T) {
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
 					defaultBranch: "main",
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -222,17 +209,118 @@ func TestGitRepo_pullInner(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, repo *gitRepo, localDir string) {
 				// Verify repository is on correct branch
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "main", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "main")
 
 				// Verify remote changes are present
 				test1Path := filepath.Join(localDir, "test1.txt")
 				content, err := os.ReadFile(test1Path)
 				require.NoError(t, err)
 				require.Equal(t, "updated remote content", string(content))
+			},
+		},
+		{
+			name: "switch primary branch from main to rename (remote only has main initially)",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				// Remove the local directory to simulate no existing repo
+				require.NoError(t, os.RemoveAll(localDir))
+				return &gitRepo{
+					h:             &Handle{logger: zap.NewNop()},
+					repoDir:       localDir,
+					remoteURL:     remoteURL,
+					defaultBranch: "main",
+					primaryBranch: "main",
+					subpath:       "",
+					managedRepo:   true,
+				}
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				// Initial pull happens with only main branch
+				// After first pull, we'll create rename branch
+			},
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir string) {
+				// First pull should succeed with main branch
+				verifyCurrentBranch(t, localDir, "main")
+
+				// Now create rename branch on remote
+				createRemoteBranch(t, repo.remoteURL, "rename", "rename_file.txt", "rename content", "Create rename branch")
+
+				// Update primary branch and pull again
+				repo.primaryBranch = "rename"
+				ctx := context.Background()
+				err := repo.pullInner(ctx, false)
+				require.NoError(t, err)
+
+				// Verify we're still on main (default branch unchanged)
+				verifyCurrentBranch(t, localDir, "main")
+
+				// Now change default branch to rename and pull again
+				repo.defaultBranch = "rename"
+				err = repo.pullInner(ctx, false)
+				require.NoError(t, err)
+
+				// Verify we've switched to rename branch
+				verifyCurrentBranch(t, localDir, "rename")
+
+				// Verify rename branch file exists
+				renameFilePath := filepath.Join(localDir, "rename_file.txt")
+				content, err := os.ReadFile(renameFilePath)
+				require.NoError(t, err)
+				require.Equal(t, "rename content", string(content))
+			},
+		},
+		{
+			name: "switch primary branch from main to rename (remote has both branches)",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				// Remove the local directory to simulate no existing repo
+				require.NoError(t, os.RemoveAll(localDir))
+				return &gitRepo{
+					h:             &Handle{logger: zap.NewNop()},
+					repoDir:       localDir,
+					remoteURL:     remoteURL,
+					defaultBranch: "main",
+					primaryBranch: "main",
+					subpath:       "",
+					managedRepo:   true,
+				}
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				// Create rename branch on remote before first pull
+				createRemoteBranch(t, remoteDir, "rename", "rename_file.txt", "rename content", "Create rename branch")
+			},
+			force:       false,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir string) {
+				// First pull should succeed with main branch
+				verifyCurrentBranch(t, localDir, "main")
+
+				// Update primary branch and pull again
+				repo.primaryBranch = "rename"
+				ctx := context.Background()
+				err := repo.pullInner(ctx, false)
+				require.NoError(t, err)
+
+				// Verify we're still on main (default branch unchanged)
+				verifyCurrentBranch(t, localDir, "main")
+
+				// Verify rename branch file doesn't exist on main branch
+				renameFilePath := filepath.Join(localDir, "rename_file.txt")
+				_, err = os.Stat(renameFilePath)
+				require.Error(t, err, "rename_file.txt should not exist on main branch")
+
+				// Now change default branch to rename and pull again
+				repo.defaultBranch = "rename"
+				err = repo.pullInner(ctx, false)
+				require.NoError(t, err)
+
+				// Verify we've switched to rename branch
+				verifyCurrentBranch(t, localDir, "rename")
+
+				// Verify rename branch file now exists
+				content, err := os.ReadFile(renameFilePath)
+				require.NoError(t, err)
+				require.Equal(t, "rename content", string(content))
 			},
 		},
 	}
@@ -325,16 +413,12 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
 				// Verify we're back on edit branch
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "edit-branch", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "edit-branch")
 
 				// Verify changes were pushed to remote default branch
 				workingDir := t.TempDir()
 				cmd := exec.Command("git", "clone", "-b", "main", remoteDir, workingDir)
-				err = cmd.Run()
+				err := cmd.Run()
 				require.NoError(t, err)
 
 				newFeaturePath := filepath.Join(workingDir, "new_feature.txt")
@@ -390,16 +474,12 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 			expectError: false,
 			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
 				// Verify we're back on edit branch
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "edit-branch", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "edit-branch")
 
 				// Verify changes were resolved and pushed (force merge should use "theirs" strategy)
 				workingDir := t.TempDir()
 				cmd := exec.Command("git", "clone", "-b", "main", remoteDir, workingDir)
-				err = cmd.Run()
+				err := cmd.Run()
 				require.NoError(t, err)
 
 				test1Path := filepath.Join(workingDir, "test1.txt")
@@ -457,16 +537,12 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 			expectError: false, // Should not error, but should abort merge
 			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
 				// Verify we're back on edit branch
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "edit-branch", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "edit-branch")
 
 				// Verify remote main branch was NOT updated (merge was aborted)
 				workingDir := t.TempDir()
 				cmd := exec.Command("git", "clone", "-b", "main", remoteDir, workingDir)
-				err = cmd.Run()
+				err := cmd.Run()
 				require.NoError(t, err)
 
 				test1Path := filepath.Join(workingDir, "test1.txt")
@@ -520,16 +596,12 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 			expectError: false, // Should handle empty commit gracefully
 			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
 				// Verify we're back on edit branch
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "edit-branch", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "edit-branch")
 
 				// Verify no new commits were added to remote
 				workingDir := t.TempDir()
 				cmd := exec.Command("git", "clone", "-b", "main", remoteDir, workingDir)
-				err = cmd.Run()
+				err := cmd.Run()
 				require.NoError(t, err)
 
 				// Count commits - should still be the initial commit only
@@ -557,6 +629,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
 					defaultBranch: "main",
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -575,11 +648,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 			expectError: true,
 			validate: func(t *testing.T, repo *gitRepo, localDir, remoteDir string) {
 				// Verify we're still on main branch
-				gitRepo, err := git.PlainOpen(localDir)
-				require.NoError(t, err)
-				head, err := gitRepo.Head()
-				require.NoError(t, err)
-				require.Equal(t, "main", head.Name().Short())
+				verifyCurrentBranch(t, localDir, "main")
 			},
 		},
 	}
@@ -752,4 +821,15 @@ func execGitCommand(cmd *exec.Cmd) error {
 		return fmt.Errorf("command failed: %s, output: %s", err, string(out))
 	}
 	return nil
+}
+
+// verifyCurrentBranch verifies that the repository is currently on the expected branch
+func verifyCurrentBranch(t *testing.T, repoPath, expectedBranch string) {
+	repo, err := git.PlainOpen(repoPath)
+	require.NoError(t, err, "failed to open repository")
+
+	head, err := repo.Head()
+	require.NoError(t, err, "failed to get HEAD")
+
+	require.Equal(t, expectedBranch, head.Name().Short(), "unexpected branch")
 }
