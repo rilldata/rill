@@ -32,8 +32,14 @@ sql: >
 `,
     );
 
-    // YAML files in /models/ don't auto-save, so manually trigger save
-    await page.getByRole("button", { name: "Save" }).click();
+    // Trigger save via keyboard shortcut — works regardless of auto-save state.
+    // (After a rename from .sql to .yaml the editor may keep auto-save enabled,
+    // so the "Save" button is not guaranteed to exist.)
+    if (process.platform === "darwin") {
+      await page.keyboard.press("Meta+s");
+    } else {
+      await page.keyboard.press("Control+s");
+    }
 
     await waitForProfiling(page, "partitioned_model", ["inserted_on", "num"]);
 
