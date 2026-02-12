@@ -13,13 +13,9 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import {
-    createRuntimeServiceCreateTrigger,
     createRuntimeServiceGetInstance,
-    getRuntimeServiceGetResourceQueryKey,
-    getRuntimeServiceListResourcesQueryKey,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     useProjectDeployment,
@@ -32,23 +28,10 @@
     getStatusDotClass,
     getStatusLabel,
   } from "../display-utils";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-  } from "@rilldata/web-common/components/alert-dialog/index.js";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
   import ProjectClone from "./ProjectClone.svelte";
 
   export let organization: string;
   export let project: string;
-
-  let isSyncDialogOpen = false;
-  const createTrigger = createRuntimeServiceCreateTrigger();
-  const queryClient = useQueryClient();
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -63,8 +46,6 @@
   $: proj = createAdminServiceGetProject(organization, project);
   $: projectData = $proj.data?.project;
   $: primaryBranch = projectData?.primaryBranch;
-  $: isGithubConnected = !!projectData?.gitRemote && !projectData?.managedGitId;
-
   // Last synced
   $: githubLastSynced = useGithubLastSynced(instanceId);
   $: dashboardsLastUpdated = useDashboardsLastUpdated(
@@ -123,21 +104,6 @@
 
   $: resourceCounts = countByKind(allResources);
 
-  async function handleSync() {
-    await $createTrigger.mutateAsync({
-      instanceId,
-      data: { parser: true },
-    });
-    // Invalidate queries so Last synced updates
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceGetResourceQueryKey(instanceId),
-    });
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
-    });
-    isSyncDialogOpen = false;
-  }
-
   function countByKind(
     res: V1Resource[],
   ): { kind: string; label: string; count: number }[] {
@@ -159,17 +125,7 @@
 <section class="section">
   <div class="section-header">
     <h3 class="section-title">Deployment</h3>
-    <div class="flex items-center gap-2">
-      <Button
-        type="secondary"
-        onClick={() => {
-          isSyncDialogOpen = true;
-        }}
-      >
-        {isGithubConnected ? "Re-sync from GitHub" : "Re-sync project"}
-      </Button>
-      <ProjectClone {organization} {project} />
-    </div>
+    <ProjectClone {organization} {project} />
   </div>
 
   <div class="info-grid">
@@ -260,31 +216,6 @@
   {/if}
 </section>
 
-<AlertDialog bind:open={isSyncDialogOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>
-        {isGithubConnected ? "Re-sync from GitHub?" : "Re-sync project?"}
-      </AlertDialogTitle>
-      <AlertDialogDescription>
-        {isGithubConnected
-          ? "This will pull the latest code from GitHub and re-parse all project files. Existing data will not be re-ingested."
-          : "This will re-parse all project files and reconcile resources. Existing data will not be re-ingested."}
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button
-        type="tertiary"
-        onClick={() => {
-          isSyncDialogOpen = false;
-        }}>Cancel</Button
-      >
-      <Button type="primary" onClick={handleSync}>
-        {isGithubConnected ? "Yes, sync" : "Yes, re-sync"}
-      </Button>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
 
 <style lang="postcss">
   .section {
