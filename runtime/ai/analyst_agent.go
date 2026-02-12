@@ -221,14 +221,24 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		metricsViewsQuoted[i] = fmt.Sprintf("`%s`", mv)
 	}
 
+	dimensionsQuoted := make([]string, len(args.Dimensions))
+	for i, dim := range args.Dimensions {
+		dimensionsQuoted[i] = fmt.Sprintf("`%s`", dim)
+	}
+
+	measuresQuoted := make([]string, len(args.Measures))
+	for i, measure := range args.Measures {
+		measuresQuoted[i] = fmt.Sprintf("`%s`", measure)
+	}
+
 	data := map[string]any{
 		"ai_instructions":  session.ProjectInstructions(),
 		"metrics_views":    strings.Join(metricsViewsQuoted, ", "),
 		"explore":          args.Explore,
 		"canvas":           args.Canvas,
 		"canvas_component": args.CanvasComponent,
-		"dimensions":       strings.Join(args.Dimensions, ", "),
-		"measures":         strings.Join(args.Measures, ", "),
+		"dimensions":       strings.Join(dimensionsQuoted, ", "),
+		"measures":         strings.Join(measuresQuoted, ", "),
 		"feature_flags":    ff,
 		"now":              time.Now(),
 		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
@@ -283,8 +293,8 @@ The metrics view's definition and time range of available data has been provided
 Here is an overview of the settings the user has currently applied to the dashboard:
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
-{{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
-{{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}
+{{ if .measures }}Use measures: {{ .measures }}{{ end }}
+{{ if .dimensions }}Use dimensions: {{ .dimensions }}{{ end }}
 
 You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
