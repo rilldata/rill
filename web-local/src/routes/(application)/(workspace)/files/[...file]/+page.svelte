@@ -104,7 +104,7 @@
           filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
-        <WorkspaceEditorContainer slot="body" error={mainError}>
+        <WorkspaceEditorContainer slot="body" error={mainError?.message}>
           <Editor
             {fileArtifact}
             {extensions}

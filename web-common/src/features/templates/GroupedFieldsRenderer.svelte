@@ -28,7 +28,10 @@
   export let formStore: FormStore;
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
-  export let handleFileUpload: (file: File) => Promise<string>;
+  export let handleFileUpload: (
+    file: File,
+    fieldKey: string,
+  ) => Promise<string>;
   export let isRequired: (key: string) => boolean;
   export let isDisabled: (key: string) => boolean;
   export let getTabFieldsForOption: (
