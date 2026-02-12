@@ -73,9 +73,9 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		}
 
 		cloneOptions := &git.CloneOptions{
-			URL:          r.remoteURL,
-			SingleBranch: r.primaryBranch == r.defaultBranch,
-			NoCheckout:   true,
+			URL:           r.remoteURL,
+			SingleBranch:  r.primaryBranch == r.defaultBranch,
+			ReferenceName: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
 		}
 
 		repo, err = git.PlainCloneContext(ctx, r.repoDir, false, cloneOptions)
