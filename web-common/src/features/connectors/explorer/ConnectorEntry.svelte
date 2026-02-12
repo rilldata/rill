@@ -66,7 +66,7 @@
           <Tag height={16} class="ml-auto">OLAP</Tag>
           <button
             class="add-button"
-            aria-label="Add data"
+            aria-label="Explore {connector.name} data"
             on:click|stopPropagation={() => {
               dataExplorerStore.open(connector);
             }}
