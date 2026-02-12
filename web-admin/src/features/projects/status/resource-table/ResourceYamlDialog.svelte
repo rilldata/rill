@@ -33,7 +33,7 @@
     }
 
     // Fallback: show the full resource minus meta
-    const { meta, ...rest } = res;
+    const { meta: _meta, ...rest } = res;
     return JSON.stringify(rest, null, 2);
   }
 

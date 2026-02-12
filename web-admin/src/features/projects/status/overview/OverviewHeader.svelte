@@ -8,7 +8,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useProjectDeployment, useRuntimeVersion } from "../selectors";
   import { formatEnvironmentName, getStatusDotClass } from "../display-utils";
-  import ProjectClone from "../project-information/ProjectClone.svelte";
+  import ProjectClone from "./ProjectClone.svelte";
 
   export let organization: string;
   export let project: string;

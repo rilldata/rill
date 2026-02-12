@@ -12,7 +12,7 @@
   const navItems = [
     {
       label: "General",
-      route: "/general",
+      route: "",
       hasPermission: true,
     },
     {
