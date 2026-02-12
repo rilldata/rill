@@ -3,7 +3,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { addSourceModal } from "@rilldata/web-common/features/sources/modal/add-source-visibility";
-  import { OLAP_ENGINES } from "@rilldata/web-common/features/sources/modal/constants";
+  import { SOURCES } from "@rilldata/web-common/features/sources/modal/constants";
   import { getSchemaNameFromDriver } from "@rilldata/web-common/features/sources/modal/connector-schemas";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { Plus } from "lucide-svelte";
@@ -14,7 +14,7 @@
   $: connectorName = resource?.meta?.name?.name;
   $: driverName = resource?.connector?.spec?.driver;
   $: hasReconcileError = !!resource?.meta?.reconcileError;
-  $: isOlapConnector = driverName ? OLAP_ENGINES.includes(driverName) : false;
+  $: isDataSource = schemaName ? SOURCES.includes(schemaName) : false;
   // Map driver name to schema name for connector lookup
   $: schemaName = driverName ? getSchemaNameFromDriver(driverName) : null;
 
@@ -29,7 +29,7 @@
   }
 </script>
 
-{#if !isOlapConnector}
+{#if isDataSource}
   <Tooltip distance={8}>
     <Button
       type="primary"
