@@ -62,6 +62,10 @@ test.describe("Default olap_connector behavior", () => {
       })
       .click();
 
+    // Dismiss the explorer table UI shown in the second step
+    await page.keyboard.press("Escape");
+    await page.getByRole("dialog").waitFor({ state: "detached" });
+
     // Wait for the connector file to be created in the file nav
     await waitForFileNavEntry(page, "/connectors/clickhouse.yaml", false);
 
