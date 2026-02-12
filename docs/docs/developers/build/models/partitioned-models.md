@@ -228,8 +228,7 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 
 Once `partitions:` is defined in your model, a new button will appear in the right-hand panel: `View Partitions`. When selecting this, a new UI will appear with all of your partitions and more information on each. Note that these can be sorted by all, pending, and errors.
 
-<img src='/img/build/advanced-models/partitions-developer.png' class='rounded-gif' />
-<br />
+![Partitions Developer](/img/build/advanced-models/partitions-developer.png)
 
 You can sort the view by `all partitions`, `pending partitions`, and `error partitions`.
 - **all partitions**: shows all the available partitions in the model.
