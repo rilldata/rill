@@ -33,7 +33,8 @@
     }
 
     // Fallback: show the full resource minus meta
-    const { meta: _meta, ...rest } = res;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { meta, ...rest } = res;
     return JSON.stringify(rest, null, 2);
   }
 
