@@ -62,7 +62,8 @@ test.describe("Default olap_connector behavior", () => {
       })
       .click();
 
-    // Dismiss the explorer table UI shown in the second step
+    // Wait for the DataExplorer modal to open, then dismiss it
+    await page.getByText("Data explorer").waitFor();
     await page.keyboard.press("Escape");
     await page.getByRole("dialog").waitFor({ state: "detached" });
 
