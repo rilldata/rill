@@ -40,7 +40,7 @@ Zero-friction entry point for individuals or small teams evaluating Rill.
 - +1,000 tokens → $10
 - +5,000 tokens → $50
 
-**Not included:** Live Connect, embedded dashboards, API access, Slack/24×7 support, enterprise security.
+**Not included:** Live Connect, Slack/24×7 support, enterprise security.
 
 ---
 
