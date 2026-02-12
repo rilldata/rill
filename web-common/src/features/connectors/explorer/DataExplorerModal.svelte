@@ -26,17 +26,23 @@
 
   let selectedConnector: V1AnalyzedConnector | null = null;
 
-  $: initialIconKey = initialConnector
-    ? getConnectorIconKey(initialConnector)
-    : null;
+  $: driverName = initialConnector?.driver?.name ?? null;
+
+  function isMatchingConnector(c: V1AnalyzedConnector): boolean {
+    if (driverName === "motherduck") {
+      const path = c.config?.path;
+      return typeof path === "string" && path.startsWith("md:");
+    }
+    return c?.driver?.name === driverName;
+  }
 
   $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
     query: {
-      enabled: open && !!initialIconKey,
+      enabled: open && !!driverName,
       select: (data) => {
-        if (!data?.connectors || !initialIconKey) return [];
+        if (!data?.connectors || !driverName) return [];
         return data.connectors
-          .filter((c) => getConnectorIconKey(c) === initialIconKey)
+          .filter(isMatchingConnector)
           .sort((a, b) => (a?.name ?? "").localeCompare(b?.name ?? ""));
       },
     },
