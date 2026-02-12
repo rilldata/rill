@@ -44,7 +44,8 @@
       {#if resourceKind === ResourceKind.Model}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => onClickRefreshDialog(resourceName, resourceKind, "full")}
+          on:click={() =>
+            onClickRefreshDialog(resourceName, resourceKind, "full")}
         >
           <div class="flex items-center">
             <RefreshCcwIcon size="12px" />
@@ -53,7 +54,8 @@
         </DropdownMenu.Item>
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => onClickRefreshDialog(resourceName, resourceKind, "incremental")}
+          on:click={() =>
+            onClickRefreshDialog(resourceName, resourceKind, "incremental")}
         >
           <div class="flex items-center">
             <RefreshCcwIcon size="12px" />
@@ -63,7 +65,8 @@
       {:else}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={() => onClickRefreshDialog(resourceName, resourceKind, "full")}
+          on:click={() =>
+            onClickRefreshDialog(resourceName, resourceKind, "full")}
         >
           <div class="flex items-center">
             <RefreshCcwIcon size="12px" />
