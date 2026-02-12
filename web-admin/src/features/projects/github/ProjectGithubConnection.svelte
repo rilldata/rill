@@ -49,7 +49,7 @@
             {repoName}
           </a>
         </div>
-        <div class="flex items-center gap-x-2 text-[12px]">
+        <div class="flex flex-col text-[12px]">
           <span class="font-mono">branch: {primaryBranch}</span>
           {#if subpath}
             <span class="font-mono">subpath: /{subpath}</span>
