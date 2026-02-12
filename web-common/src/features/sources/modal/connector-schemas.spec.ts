@@ -5,6 +5,7 @@ import {
   hasExplorerStep,
   isAiConnector,
   isMultiStepConnector,
+  toConnectorDriver,
 } from "@rilldata/web-common/features/sources/modal/connector-schemas";
 
 describe("connector-schemas", () => {
@@ -86,6 +87,53 @@ describe("connector-schemas", () => {
 
     it("returns the input name for unknown schemas", () => {
       expect(getBackendConnectorName("nonexistent")).toBe("nonexistent");
+    });
+  });
+
+  describe("toConnectorDriver", () => {
+    it("returns null for unknown schema names", () => {
+      expect(toConnectorDriver("nonexistent")).toBeNull();
+    });
+
+    it("sets implementsAi for AI connectors", () => {
+      const claude = toConnectorDriver("claude");
+      expect(claude).not.toBeNull();
+      expect(claude!.name).toBe("claude");
+      expect(claude!.displayName).toBe("Claude");
+      expect(claude!.implementsAi).toBe(true);
+      expect(claude!.implementsOlap).toBe(false);
+      expect(claude!.implementsWarehouse).toBe(false);
+      expect(claude!.implementsObjectStore).toBe(false);
+      expect(claude!.implementsSqlStore).toBe(false);
+    });
+
+    it("sets implementsWarehouse for warehouse connectors", () => {
+      const bq = toConnectorDriver("bigquery");
+      expect(bq).not.toBeNull();
+      expect(bq!.name).toBe("bigquery");
+      expect(bq!.displayName).toBe("BigQuery");
+      expect(bq!.implementsWarehouse).toBe(true);
+      expect(bq!.implementsAi).toBe(false);
+    });
+
+    it("sets implementsObjectStore for object store connectors", () => {
+      const s3 = toConnectorDriver("s3");
+      expect(s3).not.toBeNull();
+      expect(s3!.implementsObjectStore).toBe(true);
+      expect(s3!.implementsAi).toBe(false);
+    });
+
+    it("sets implementsOlap for OLAP connectors", () => {
+      const ch = toConnectorDriver("clickhouse");
+      expect(ch).not.toBeNull();
+      expect(ch!.implementsOlap).toBe(true);
+      expect(ch!.implementsAi).toBe(false);
+    });
+
+    it("uses x-driver for the name when set", () => {
+      const chCloud = toConnectorDriver("clickhousecloud");
+      expect(chCloud).not.toBeNull();
+      expect(chCloud!.name).toBe("clickhouse");
     });
   });
 });
