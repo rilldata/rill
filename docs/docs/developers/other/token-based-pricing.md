@@ -126,7 +126,7 @@ AI Chat Tokens = Query Tokens + AI Multiplier
 
 **Key work items:**
 
-- Instrument every OLAP query path (ClickHouse, Snowflake, BigQuery, DuckDB) to extract `bytes_scanned` and `bytes_returned` from query metadata / result stats.
+- Instrument every OLAP query path (ClickHouse, MotherDuck, StarRocks Pinot, Druid, DuckDB) to extract `bytes_scanned` and `bytes_returned` from query metadata / result stats.
 - Define a `MeteringEvent` proto with fields: `org_id`, `project_id`, `user_id`, `action_type`, `bytes_scanned`, `bytes_returned`, `tokens_consumed`, `timestamp`, `query_id`, `cache_hit`.
 - Build a metering writer that batches events and flushes to a durable store (e.g. ClickHouse table or time-series store).
 - **Cache-hit handling:** When `cache_hit = true`, log the event for observability but set `tokens_consumed = 0`. Cached results are free.
@@ -138,8 +138,6 @@ AI Chat Tokens = Query Tokens + AI Multiplier
 | Connector | Bytes-scanned source |
 | --- | --- |
 | ClickHouse | `system.query_log.read_bytes` |
-| Snowflake | `QUERY_HISTORY.BYTES_SCANNED` |
-| BigQuery | `totalBytesProcessed` from Job stats |
 | DuckDB (local) | Profiling output or `EXPLAIN ANALYZE` |
 
 ---
