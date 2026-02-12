@@ -28,19 +28,13 @@
   );
   $: parseErrors =
     $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
-  $: parserReconcileError =
-    $projectParserQuery.data?.resource?.meta?.reconcileError;
-
   // Resource errors
   $: resourcesQuery = useResources(instanceId);
   $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
   $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
 
   // Total
-  $: totalErrors =
-    parseErrors.length +
-    erroredResources.length +
-    (parserReconcileError ? 1 : 0);
+  $: totalErrors = parseErrors.length + erroredResources.length;
 </script>
 
 <section class="section" class:section-error={totalErrors > 0}>
@@ -64,48 +58,26 @@
   {:else}
     <div class="error-list">
       {#if parseErrors.length > 0}
-        <a href="{basePage}/project-logs" class="error-item">
+        <div class="error-item">
           <AlertCircleOutline size="16px" color="#ef4444" />
-          <span class="flex-1">
-            <span class="font-medium"
-              >{parseErrors.length} parse error{parseErrors.length !== 1
-                ? "s"
-                : ""}</span
-            >
-          </span>
-          <span class="error-action">
-            View logs <ChevronRight size="12px" />
-          </span>
-        </a>
-      {/if}
-
-      {#if parserReconcileError}
-        <a href="{basePage}/project-logs" class="error-item">
-          <AlertCircleOutline size="16px" color="#ef4444" />
-          <span class="flex-1">
-            <span class="font-medium">Parser reconcile error</span>
-          </span>
-          <span class="error-action">
-            View logs <ChevronRight size="12px" />
-          </span>
-        </a>
+          <span class="font-medium"
+            >{parseErrors.length} parse error{parseErrors.length !== 1
+              ? "s"
+              : ""}</span
+          >
+        </div>
       {/if}
 
       {#if erroredResources.length > 0}
-        <a href="{basePage}/resources?error=true" class="error-item">
+        <div class="error-item">
           <AlertCircleOutline size="16px" color="#ef4444" />
-          <span class="flex-1">
-            <span class="font-medium"
-              >{erroredResources.length} resource error{erroredResources.length !==
-              1
-                ? "s"
-                : ""}</span
-            >
-          </span>
-          <span class="error-action">
-            View resources <ChevronRight size="12px" />
-          </span>
-        </a>
+          <span class="font-medium"
+            >{erroredResources.length} resource error{erroredResources.length !==
+            1
+              ? "s"
+              : ""}</span
+          >
+        </div>
       {/if}
     </div>
   {/if}

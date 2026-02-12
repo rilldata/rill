@@ -8,9 +8,7 @@
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    SingletonProjectParserName,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
@@ -168,10 +166,10 @@
 <section class="flex flex-col gap-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
-    <label class="flex items-center gap-2 cursor-pointer">
+    <div class="flex items-center gap-2">
       <span class="text-sm text-fg-secondary">DAG Viewer</span>
       <Switch bind:checked={showDagViewer} small />
-    </label>
+    </div>
   </div>
 
   {#if showDagViewer}
@@ -292,12 +290,16 @@
       <ProjectResourcesTable data={filteredResources} />
     {/if}
 
-    {#if parseErrors.length > 0}
-      <div class="parse-errors">
-        <h3 class="parse-errors-header">
-          Parse Errors
+    <div class="parse-errors">
+      <h3 class="parse-errors-header">
+        Parse Errors
+        {#if parseErrors.length > 0}
           <span class="parse-errors-badge">{parseErrors.length}</span>
-        </h3>
+        {/if}
+      </h3>
+      {#if parseErrors.length === 0}
+        <p class="text-sm text-fg-secondary">No parse errors</p>
+      {:else}
         <div class="parse-errors-list">
           {#each parseErrors as error}
             <div class="parse-error-item">
@@ -308,8 +310,8 @@
             </div>
           {/each}
         </div>
-      </div>
-    {/if}
+      {/if}
+    </div>
   {/if}
 </section>
 
@@ -320,7 +322,7 @@
 
 <style lang="postcss">
   .parse-errors {
-    @apply border border-red-300 rounded-lg p-4 mt-2;
+    @apply pt-4 mt-2;
   }
   .parse-errors-header {
     @apply text-sm font-semibold text-fg-primary flex items-center gap-2 mb-3;

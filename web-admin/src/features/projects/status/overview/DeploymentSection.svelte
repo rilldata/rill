@@ -11,6 +11,7 @@
     ResourceKind,
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import {
     createRuntimeServiceGetInstance,
     type V1Resource,
@@ -140,7 +141,7 @@
       <span class="info-label">Environment</span>
       <span class="info-value">
         {formatEnvironmentName(deployment?.environment)}
-         <!-- Hide counts for now since we only show primary deployment, which is usually prod. Can add back if we show multiple deployments in the future. -->
+        <!-- Hide counts for now since we only show primary deployment, which is usually prod. Can add back if we show multiple deployments in the future. -->
         <!-- <span class="text-fg-tertiary text-xs ml-1">
           ({deploymentCount} total · {prodCount} prod · {devCount} dev)
         </span> -->
@@ -204,6 +205,9 @@
     <div class="resource-chips">
       {#each resourceCounts as { kind, label, count }}
         <a href="{basePage}/resources?kind={kind}" class="resource-chip">
+          {#if resourceIconMapping[kind]}
+            <svelte:component this={resourceIconMapping[kind]} size="12px" />
+          {/if}
           <span class="font-medium">{count}</span>
           <span class="text-fg-secondary">{label}{count !== 1 ? "s" : ""}</span>
         </a>
