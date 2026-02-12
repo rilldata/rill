@@ -43,6 +43,7 @@ explore:
 		"measures":     []map[string]any{{"name": "total_revenue"}},
 	})
 	require.NoError(t, err)
+	require.NotEmpty(t, res.Schema)
 	require.NotEmpty(t, res.Data)
 	require.Contains(t, res.OpenURL, "https://ui.rilldata.com/test-org/test-project")
 	require.Contains(t, res.OpenURL, "/-/open-query?query=")
@@ -160,8 +161,10 @@ cache:
 		"measures":     []map[string]any{{"name": "inf"}, {"name": "nan"}},
 	})
 	require.NoError(t, err)
+	require.Len(t, res.Schema, 2)
+	require.Equal(t, "inf", res.Schema[0].Name)
+	require.Equal(t, "nan", res.Schema[1].Name)
 	require.Len(t, res.Data, 1)
-	row := res.Data[0]
-	require.Equal(t, nil, row["inf"])
-	require.Equal(t, nil, row["nan"])
+	require.Equal(t, nil, res.Data[0][0])
+	require.Equal(t, nil, res.Data[0][1])
 }
