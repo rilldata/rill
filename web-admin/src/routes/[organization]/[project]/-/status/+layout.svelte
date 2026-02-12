@@ -9,8 +9,8 @@
 
   const navItems = [
     {
-      label: "Status",
-      route: "/project-status",
+      label: "Overview",
+      route: "",
       hasPermission: true,
     },
     {
