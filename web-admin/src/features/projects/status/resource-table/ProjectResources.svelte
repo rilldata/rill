@@ -30,16 +30,20 @@
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   // Initialize filter from URL search params (e.g. ?kind=rill.runtime.v1.Model or ?error=true)
-  const kindParam = $page.url.searchParams.get("kind");
-  const errorParam = $page.url.searchParams.get("error") === "true";
+  $: kindParam = $page.url.searchParams.get("kind");
+  $: errorParam = $page.url.searchParams.get("error") === "true";
 
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
   let showDagViewer = false;
   let searchText = "";
-  let selectedTypes: string[] = kindParam ? [kindParam] : [];
-  let selectedStatuses: string[] = errorParam ? ["error"] : [];
+  let selectedTypes: string[] = [];
+  let selectedStatuses: string[] = [];
+
+  // Sync URL params into filter state when they change
+  $: if (kindParam) selectedTypes = [kindParam];
+  $: if (errorParam) selectedStatuses = ["error"];
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
@@ -302,7 +306,7 @@
         <p class="text-sm text-fg-secondary">No parse errors</p>
       {:else}
         <div class="parse-errors-list">
-          {#each parseErrors as error}
+          {#each parseErrors as error, i (i)}
             <div class="parse-error-item">
               {#if error.filePath}
                 <span class="parse-error-file">{error.filePath}</span>

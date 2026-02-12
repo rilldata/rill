@@ -17,7 +17,7 @@
   import RefreshCell from "./RefreshCell.svelte";
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
-  import ResourceYamlDialog from "./ResourceYamlDialog.svelte";
+  import ResourceSpecDialog from "./ResourceSpecDialog.svelte";
 
   export let data: V1Resource[];
 
@@ -221,7 +221,7 @@
   onRefresh={handleRefresh}
 />
 
-<ResourceYamlDialog
+<ResourceSpecDialog
   bind:open={isSpecDialogOpen}
   resourceName={specResourceName}
   resourceKind={specResourceKind}

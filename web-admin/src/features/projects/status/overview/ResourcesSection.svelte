@@ -20,7 +20,7 @@
       <a href="{basePage}/resources" class="view-all">View all</a>
     </div>
     <div class="resource-chips">
-      {#each resourceCounts as { kind, label, count }}
+      {#each resourceCounts as { kind, label, count } (kind)}
         <a href="{basePage}/resources?kind={kind}" class="resource-chip">
           {#if resourceIconMapping[kind]}
             <svelte:component this={resourceIconMapping[kind]} size="12px" />

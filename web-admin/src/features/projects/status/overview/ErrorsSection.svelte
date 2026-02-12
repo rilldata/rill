@@ -47,13 +47,19 @@
   }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
 <section
   class="section"
   class:section-error={totalErrors > 0}
   class:section-clickable={totalErrors > 0}
+  role={totalErrors > 0 ? "button" : undefined}
+  tabindex={totalErrors > 0 ? 0 : undefined}
   on:click={handleSectionClick}
+  on:keydown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleSectionClick();
+    }
+  }}
 >
   <div class="section-header">
     <h3 class="section-title flex items-center gap-2">

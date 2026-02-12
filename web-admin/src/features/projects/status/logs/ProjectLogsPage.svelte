@@ -22,7 +22,9 @@
     { value: V1LogLevel.LOG_LEVEL_ERROR, label: "Error" },
   ];
 
-  let logs: V1Log[] = [];
+  type LogEntry = V1Log & { _id: number };
+  let nextLogId = 0;
+  let logs: LogEntry[] = [];
   let logsContainer: HTMLDivElement;
   let connectionError: string | null = null;
   let filterDropdownOpen = false;
@@ -68,7 +70,7 @@
   })();
 
   onMount(() => {
-    const { host, instanceId, jwt } = $runtime;
+    const { host, instanceId } = $runtime;
     if (!host || !instanceId) return;
 
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
@@ -77,9 +79,7 @@
     logsConnection.on("error", handleError);
     logsConnection.on("open", handleOpen);
 
-    logsConnection.start(url, {
-      headers: jwt?.token ? { Authorization: `Bearer ${jwt.token}` } : {},
-    });
+    logsConnection.start(url);
   });
 
   onDestroy(() => {
@@ -93,7 +93,7 @@
       const response = JSON.parse(message.data);
       const log = response.log as V1Log;
       if (log) {
-        logs = [...logs, log].slice(-MAX_LOGS);
+        logs = [...logs, { ...log, _id: nextLogId++ }].slice(-MAX_LOGS);
 
         if (logsContainer) {
           requestAnimationFrame(() => {
@@ -118,14 +118,12 @@
   }
 
   function retryConnection() {
-    const { host, instanceId, jwt } = $runtime;
+    const { host, instanceId } = $runtime;
     if (!host || !instanceId) return;
 
     connectionError = null;
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
-    logsConnection.start(url, {
-      headers: jwt?.token ? { Authorization: `Bearer ${jwt.token}` } : {},
-    });
+    logsConnection.start(url);
   }
 
   function getLevelClass(level: V1LogLevel | undefined): string {
@@ -263,7 +261,7 @@
     {:else if filteredLogs.length === 0}
       <div class="empty-state">No logs match the current filters</div>
     {:else}
-      {#each filteredLogs as log, i (log.time ?? i)}
+      {#each filteredLogs as log (log._id)}
         <div class="log-entry {getLevelClass(log.level)}">
           <p>
             {formatTime(log.time)}
