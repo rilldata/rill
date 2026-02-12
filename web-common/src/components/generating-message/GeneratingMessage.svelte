@@ -1,6 +1,10 @@
 <script lang="ts">
   import { SparklesIcon } from "lucide-svelte";
 
+  export let title: string;
+  export let description: string =
+    "Tips: you can ask AI to create and modify your dashboard";
+
   // row-span-4 row-span-2
   const heights = [4, 2, 2, 2];
   // col-span-1 col-span-3
@@ -21,21 +25,23 @@
   </div>
   <div class="title">
     <SparklesIcon size="16px" class="text-blue-500 rotate-90" />
-    <span>Generating your sample data...</span>
+    <span>{title}</span>
   </div>
-  <div class="description">
-    Tips: you can ask AI to create and modify your dashboard
-  </div>
+  {#if description}
+    <div class="description">
+      {description}
+    </div>
+  {/if}
 </div>
 
 <style lang="postcss">
   .container {
-    @apply flex flex-col px-8 m-auto items-center w-fit;
+    @apply flex flex-col px-8 m-auto items-center w-fit h-full justify-center;
   }
 
   .loading-grid {
     @apply grid grid-cols-10 gap-3 p-8 h-52 w-96 bg-surface-subtle;
-    @apply border-2 border-primary-200 rounded-lg border-dotted;
+    @apply border-2 border-primary-100 rounded-lg border-dotted;
   }
 
   .loading-grid-cell {
