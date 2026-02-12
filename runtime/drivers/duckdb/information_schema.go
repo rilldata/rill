@@ -273,6 +273,29 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	q := `
+		SELECT sql FROM duckdb_tables() WHERE table_name = ?
+		UNION ALL
+		SELECT sql FROM duckdb_views() WHERE view_name = ?
+	`
+	var sqlStr *string
+	err = conn.QueryRowxContext(ctx, q, table.Name, table.Name).Scan(&sqlStr)
+	if err != nil || sqlStr == nil {
+		// No DDL available (e.g. CTAS tables); not an error
+		return nil
+	}
+
+	table.DDL = *sqlStr
+	return nil
+}
+
 func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 	var res []*drivers.OlapTable
 

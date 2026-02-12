@@ -359,6 +359,11 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	return table, nil
 }
 
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	return nil // Not implemented
+}
+
 // LoadPhysicalSize populates the PhysicalSizeBytes field of the tables.
 // This was not tested when implemented so should be tested when pinot becomes a fairly used connector.
 func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {

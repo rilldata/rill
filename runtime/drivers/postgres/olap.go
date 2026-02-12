@@ -98,6 +98,59 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	schema := table.DatabaseSchema
+	if schema == "" {
+		schema = "public"
+	}
+
+	if table.View {
+		// For views: use pg_get_viewdef
+		var ddl string
+		q := `
+			SELECT 'CREATE VIEW ' || quote_ident(n.nspname) || '.' || quote_ident(c.relname) || ' AS ' || pg_get_viewdef(c.oid, true)
+			FROM pg_class c
+			JOIN pg_namespace n ON n.oid = c.relnamespace
+			WHERE n.nspname = $1 AND c.relname = $2 AND c.relkind IN ('v', 'm')
+		`
+		err = db.QueryRowContext(ctx, q, schema, table.Name).Scan(&ddl)
+		if err != nil {
+			return err
+		}
+		table.DDL = ddl
+		return nil
+	}
+
+	// For tables: reconstruct a basic CREATE TABLE from pg_attribute
+	q := `
+		SELECT
+			'CREATE TABLE ' || quote_ident(n.nspname) || '.' || quote_ident(c.relname) || ' (' ||
+			string_agg(
+				quote_ident(a.attname) || ' ' || format_type(a.atttypid, a.atttypmod) ||
+				CASE WHEN a.attnotnull THEN ' NOT NULL' ELSE '' END,
+				', ' ORDER BY a.attnum
+			) || ')'
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		JOIN pg_attribute a ON a.attrelid = c.oid
+		WHERE n.nspname = $1 AND c.relname = $2 AND a.attnum > 0 AND NOT a.attisdropped
+		GROUP BY n.nspname, c.relname
+	`
+	var ddl string
+	err = db.QueryRowContext(ctx, q, schema, table.Name).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
+}
+
 // Lookup implements drivers.OLAPInformationSchema.
 func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	meta, err := c.GetTable(ctx, db, schema, name)

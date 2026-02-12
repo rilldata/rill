@@ -118,6 +118,43 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	// SHOW CREATE TABLE works for both tables and views in MySQL.
+	// Tables return 2 columns; views return 4. We only need the second column.
+	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", drivers.DialectMySQL.EscapeIdentifier(table.Name)))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		cols, err := rows.Columns()
+		if err != nil {
+			return err
+		}
+		dest := make([]any, len(cols))
+		for i := range dest {
+			dest[i] = new(sql.NullString)
+		}
+		if err := rows.Scan(dest...); err != nil {
+			return err
+		}
+		// DDL is always in the second column
+		if len(dest) >= 2 {
+			if ns, ok := dest[1].(*sql.NullString); ok && ns.Valid {
+				table.DDL = ns.String
+			}
+		}
+	}
+	return rows.Err()
+}
+
 // Lookup implements drivers.OLAPInformationSchema.
 func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	meta, err := c.GetTable(ctx, db, schema, name)

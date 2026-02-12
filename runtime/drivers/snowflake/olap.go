@@ -98,6 +98,37 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Build fully-qualified name for GET_DDL
+	var fqn string
+	if table.Database != "" && table.DatabaseSchema != "" {
+		fqn = fmt.Sprintf("%s.%s.%s", sqlSafeName(table.Database), sqlSafeName(table.DatabaseSchema), sqlSafeName(table.Name))
+	} else if table.DatabaseSchema != "" {
+		fqn = fmt.Sprintf("%s.%s", sqlSafeName(table.DatabaseSchema), sqlSafeName(table.Name))
+	} else {
+		fqn = sqlSafeName(table.Name)
+	}
+
+	objectType := "TABLE"
+	if table.View {
+		objectType = "VIEW"
+	}
+
+	var ddl string
+	err = db.QueryRowContext(ctx, fmt.Sprintf("SELECT GET_DDL('%s', ?)", objectType), fqn).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
+}
+
 // Lookup implements drivers.OLAPInformationSchema.
 func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	meta, err := c.GetTable(ctx, db, schema, name)
