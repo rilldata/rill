@@ -226,16 +226,13 @@ ai_instructions: ...
 
 
 For campaign `Leafly_MarketMight`, which site domains are getting the most bids? 
-<img src='/img/tutorials/quickstart/openrtb-analytics-1.png' class='rounded-gif'/>
-<br />
+![OpenRTB Analytics 1](/img/tutorials/quickstart/openrtb-analytics-1.png)
 
 Which US region has the highest activity and what devices are being used?
-<img src='/img/tutorials/quickstart/openrtb-analytics-2.png' class='rounded-gif'/>
-<br />
+![OpenRTB Analytics 2](/img/tutorials/quickstart/openrtb-analytics-2.png)
 
 Compare Bids and Auctions.
-<img src='/img/tutorials/quickstart/openrtb-analytics-3.png' class='rounded-gif'/>
-<br />
+![OpenRTB Analytics 3](/img/tutorials/quickstart/openrtb-analytics-3.png)
 
 
 These are just some of the insights that you can find within your explore dashboard but you'll find more hidden gems in your data as you continue to use Rill. Please let us know if you have any other questions!

@@ -64,6 +64,22 @@ export function runtimeErrorToLine(
   return { line: 0, message, level: "error" };
 }
 
+export function mapParseErrorToLine(
+  error: V1ParseError | undefined,
+  yaml: string,
+): LineStatus | undefined {
+  if (!error) return undefined;
+  if (error.message === ConfigErrors.Malformed) return undefined;
+  if (error.startLocation) {
+    return {
+      line: error.startLocation.line ?? 0,
+      message: error.message,
+      level: "error",
+    };
+  }
+  return runtimeErrorToLine(error.message, yaml);
+}
+
 // TODO: double check error
 export function mapParseErrorsToLines(
   errors: Array<V1ParseError>,

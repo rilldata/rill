@@ -36,6 +36,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 ### Service Integrations
 - [**Claude**](#claude) - Claude connector for chat with your own API key
 - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
+- [**Gemini**](#gemini) - Gemini connector for chat with your own API key
 - [**Slack**](#slack) - Slack data
 
 ### _Other_
@@ -702,6 +703,52 @@ type: connector
 driver: claude
 api_key: "{{ .env.claude_api_key }}"
 model: claude-opus-4-5
+```
+
+## Gemini
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "gemini" 
+
+### `api_key`
+
+_[string]_ - API key for connecting to Gemini _(required)_
+
+### `model`
+
+_[string]_ - The Gemini model to use (e.g., 'gemini-2.5-pro-preview-05-06') 
+
+### `include_thoughts`
+
+_[boolean]_ - Whether to include thinking/reasoning in the response 
+
+### `thinking_level`
+
+_[string]_ - Level of 'thinking' for the model's response (e.g., 'MINIMAL', 'LOW', 'MEDIUM', 'HIGH'). Default is 'LOW'. 
+
+### `max_output_tokens`
+
+_[number]_ - Maximum number of tokens in the response (e.g., 8192) 
+
+### `temperature`
+
+_[number]_ - Sampling temperature to use (0.0-2.0) 
+
+### `top_p`
+
+_[number]_ - Nucleus sampling parameter 
+
+### `top_k`
+
+_[number]_ - Top-K sampling parameter 
+
+```yaml
+# Example: Gemini connector configuration
+type: connector
+driver: gemini
+api_key: "{{ .env.gemini_api_key }}"
+model: gemini-2.5-pro-preview-05-06
 ```
 
 ## Pinot

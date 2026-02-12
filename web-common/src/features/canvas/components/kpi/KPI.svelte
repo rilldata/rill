@@ -353,6 +353,7 @@
   .spark-right .data-wrapper {
     @apply items-start h-full;
     flex: 0 4 20%;
+    min-width: 0;
   }
 
   .measure-name {
@@ -391,6 +392,7 @@
   .spark-right .sparkline-wrapper {
     @apply mt-2;
     flex: 4 1 80%;
+    min-width: 0;
   }
 
   .comparison-value {

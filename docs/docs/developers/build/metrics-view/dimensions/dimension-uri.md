@@ -7,8 +7,7 @@ sidebar_position: 50
 
 You can make dimension values clickable by adding a `uri` parameter to your dimension configuration. This enables users to click directly on dimension values in the dashboard to navigate to external URLs, making your dashboards more interactive and useful for data exploration.
 
-<img src='/img/build/dashboard/clickable-dimension.png' class='rounded-gif' />
-<br />
+![Clickable Dimension](/img/build/dashboard/clickable-dimension.png)
 
 ## Simple Setup: Column Already Contains URLs
 

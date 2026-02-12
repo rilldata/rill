@@ -236,8 +236,11 @@
     },
   });
 
-  async function handleFileUpload(file: File): Promise<string> {
-    return formManager.handleFileUpload(file);
+  async function handleFileUpload(
+    file: File,
+    fieldKey: string,
+  ): Promise<string> {
+    return formManager.handleFileUpload(file, fieldKey);
   }
 
   function onStringInputChange(event: Event) {
