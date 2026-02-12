@@ -25,12 +25,16 @@ refresh:
 partitions:
   sql: SELECT range AS num FROM range(0,10)
 sql: >
-  SELECT 
+  SELECT
     {{ .partition.num }} AS num,
     now() AS inserted_on,
     CASE WHEN {{ .partition.num }} = 2 THEN error('simulated error') ELSE NULL END as error
 `,
     );
+
+    // YAML files in /models/ don't auto-save, so manually trigger save
+    await page.getByRole("button", { name: "Save" }).click();
+
     await waitForProfiling(page, "partitioned_model", ["inserted_on", "num"]);
 
     // Open the partitions browser
