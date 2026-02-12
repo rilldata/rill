@@ -102,6 +102,7 @@
     dataExplorerStore.close();
     selectedTable = null;
     selectedConnector = null;
+    isGenerating = false;
     searchInput = "";
     searchQuery = "";
     selectionStore.clearSelection();
