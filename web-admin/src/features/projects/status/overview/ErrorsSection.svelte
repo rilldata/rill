@@ -114,10 +114,4 @@
   .error-item:hover {
     @apply bg-surface-subtle;
   }
-  .error-action {
-    @apply text-xs text-fg-tertiary flex items-center gap-0.5;
-  }
-  .error-item:hover .error-action {
-    @apply text-primary-500;
-  }
 </style>
