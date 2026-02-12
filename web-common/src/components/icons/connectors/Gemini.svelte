@@ -21,5 +21,6 @@
     y="38"
     class="fill-fg-primary"
     style="font-family: system-ui, -apple-system, sans-serif; font-size: 26px; font-weight: 500; letter-spacing: -0.5px;"
-  >Gemini</text>
+    >Gemini</text
+  >
 </svg>

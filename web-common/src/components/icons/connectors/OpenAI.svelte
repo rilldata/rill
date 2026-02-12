@@ -17,5 +17,6 @@
     y="36"
     class="fill-fg-primary"
     style="font-family: system-ui, -apple-system, sans-serif; font-size: 28px; font-weight: 600;"
-  >AI</text>
+    >AI</text
+  >
 </svg>
