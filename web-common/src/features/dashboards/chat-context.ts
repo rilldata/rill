@@ -53,11 +53,17 @@ function getActiveExploreContext(): Readable<
           timeControlsStore.selectedTimeRange.end.toISOString();
       }
 
-      if (exploreState?.visibleDimensions?.length) {
+      if (
+        exploreState?.visibleDimensions.length &&
+        !exploreState?.allDimensionsVisible
+      ) {
         analystAgentContext.dimensions = exploreState.visibleDimensions;
       }
 
-      if (exploreState?.visibleMeasures?.length) {
+      if (
+        exploreState?.visibleMeasures.length &&
+        !exploreState?.allMeasuresVisible
+      ) {
         analystAgentContext.measures = exploreState.visibleMeasures;
       }
 

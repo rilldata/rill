@@ -117,7 +117,6 @@ export class MeasureSelection {
     const end = endJsDate
       ? roundDownToTimeUnit(endJsDate, grain, this.timeZone).toISOString()
       : null;
-    if (!start) return;
 
     const timeRangeCtx = <InlineContext>{
       type: InlineContextType.TimeRange,
@@ -133,7 +132,7 @@ export class MeasureSelection {
 
     const prompt =
       `Explain what drives ${measureMention}, ${timeRangeMention}. ` +
-      `What selected dimensions have noticeably changed, as compared to other time windows?`;
+      `Which visible dimensions have noticeably changed, as compared to other time windows?`;
 
     sidebarActions.startChat(prompt);
   }
