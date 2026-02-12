@@ -305,17 +305,17 @@
             </DropdownMenu.Item>
             <DropdownMenu.Item
               class="flex gap-x-2"
-              on:click={() => addSourceModal.openForConnector("openai")}
-            >
-              <OpenAIIcon size="16px" />
-              OpenAI
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              class="flex gap-x-2"
               on:click={() => addSourceModal.openForConnector("gemini")}
             >
               <GeminiIcon size="16px" />
               Gemini
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              class="flex gap-x-2"
+              on:click={() => addSourceModal.openForConnector("openai")}
+            >
+              <OpenAIIcon size="16px" />
+              OpenAI
             </DropdownMenu.Item>
           </DropdownMenu.SubContent>
         </DropdownMenu.Sub>

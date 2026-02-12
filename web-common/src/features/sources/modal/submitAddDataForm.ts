@@ -20,6 +20,7 @@ import { runtime } from "../../../runtime-client/runtime-store";
 import {
   compileConnectorYAML,
   updateDotEnvWithSecrets,
+  updateRillYAMLWithAiConnector,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
 import {
@@ -34,7 +35,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
-import { OLAP_ENGINES } from "./constants";
+import { AI_CONNECTORS, OLAP_ENGINES } from "./constants";
 import { getConnectorSchema } from "./connector-schemas";
 import {
   getSchemaFieldMetaList,
@@ -134,6 +135,19 @@ async function setOlapConnectorInRillYAML(
   });
 }
 
+async function setAiConnectorInRillYAML(
+  queryClient: QueryClient,
+  instanceId: string,
+  newConnectorName: string,
+): Promise<void> {
+  await runtimeServicePutFile(instanceId, {
+    path: "rill.yaml",
+    blob: await updateRillYAMLWithAiConnector(queryClient, newConnectorName),
+    create: true,
+    createOnly: false,
+  });
+}
+
 // Check for an existing `.env` file
 // Store the original `.env` blob so we can restore it in case of errors
 async function getOriginalEnvBlob(
@@ -222,6 +236,14 @@ async function saveConnectorAnyway(
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
     await setOlapConnectorInRillYAML(
+      queryClient,
+      resolvedInstanceId,
+      newConnectorName,
+    );
+  }
+
+  if (AI_CONNECTORS.includes(connector.name as string)) {
+    await setAiConnectorInRillYAML(
       queryClient,
       resolvedInstanceId,
       newConnectorName,
@@ -388,6 +410,14 @@ export async function submitAddConnectorForm(
 
       if (OLAP_ENGINES.includes(connector.name as string)) {
         await setOlapConnectorInRillYAML(
+          queryClient,
+          instanceId,
+          newConnectorName,
+        );
+      }
+
+      if (AI_CONNECTORS.includes(connector.name as string)) {
+        await setAiConnectorInRillYAML(
           queryClient,
           instanceId,
           newConnectorName,

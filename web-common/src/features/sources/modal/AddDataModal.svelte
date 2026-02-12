@@ -95,7 +95,7 @@
       schemaName: null,
       requestConnector: false,
     };
-    window.history.pushState(state, "", "");
+    window.history.replaceState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
     isSubmittingForm = false;
     resetConnectorStep();

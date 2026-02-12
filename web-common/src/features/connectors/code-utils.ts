@@ -422,6 +422,38 @@ export function replaceOlapConnectorInYAML(
   }
 }
 
+export async function updateRillYAMLWithAiConnector(
+  queryClient: QueryClient,
+  newConnector: string,
+): Promise<string> {
+  const instanceId = get(runtime).instanceId;
+  const file = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+      path: "rill.yaml",
+    }),
+    queryFn: () => runtimeServiceGetFile(instanceId, { path: "rill.yaml" }),
+  });
+  const blob = file.blob || "";
+  return replaceAiConnectorInYAML(blob, newConnector);
+}
+
+/**
+ * Update the `ai_connector` key in a YAML file.
+ * This function uses a regex approach to preserve comments and formatting.
+ */
+export function replaceAiConnectorInYAML(
+  blob: string,
+  newConnector: string,
+): string {
+  const aiConnectorRegex = /^ai_connector: .+$/m;
+
+  if (aiConnectorRegex.test(blob)) {
+    return blob.replace(aiConnectorRegex, `ai_connector: ${newConnector}`);
+  } else {
+    return `${blob}${blob !== "" ? "\n" : ""}ai_connector: ${newConnector}\n`;
+  }
+}
+
 export async function createYamlModelFromTable(
   queryClient: QueryClient,
   connector: string,

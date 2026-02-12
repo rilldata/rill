@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  replaceAiConnectorInYAML,
   replaceOlapConnectorInYAML,
   replaceOrAddEnvVariable,
 } from "./code-utils";
@@ -110,6 +111,29 @@ describe("replaceOlapConnectorInYAML", () => {
     const updatedBlob = replaceOlapConnectorInYAML(existingBlob, "clickhouse");
     expect(updatedBlob).toBe(
       `# here's a comment\ntitle: test project\n\nolap_connector: clickhouse\n`,
+    );
+  });
+});
+
+describe("replaceAiConnectorInYAML", () => {
+  it("should add a new `ai_connector` key to a blank file", () => {
+    const updatedBlob = replaceAiConnectorInYAML("", "claude");
+    expect(updatedBlob).toBe("ai_connector: claude\n");
+  });
+
+  it("should add a new `ai_connector` key to a file with other keys", () => {
+    const existingBlob = `# here's a comment\ntitle: test project\n`;
+    const updatedBlob = replaceAiConnectorInYAML(existingBlob, "claude");
+    expect(updatedBlob).toBe(
+      `# here's a comment\ntitle: test project\n\nai_connector: claude\n`,
+    );
+  });
+
+  it("should update the `ai_connector` key in a file with an existing `ai_connector` key", () => {
+    const existingBlob = `# here's a comment\ntitle: test project\n\nai_connector: openai\n`;
+    const updatedBlob = replaceAiConnectorInYAML(existingBlob, "claude");
+    expect(updatedBlob).toBe(
+      `# here's a comment\ntitle: test project\n\nai_connector: claude\n`,
     );
   });
 });
