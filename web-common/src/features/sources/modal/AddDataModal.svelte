@@ -22,6 +22,7 @@
     connectors,
     getBackendConnectorName,
     getConnectorSchema,
+    isMultiStepConnector as isMultiStepConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
   import { ICONS } from "./icons";
@@ -140,7 +141,10 @@
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
       selectedConnector?.name !== "salesforce") ||
-    selectedConnector?.implementsAi;
+    selectedConnector?.implementsAi ||
+    isMultiStepConnectorSchema(
+      getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
+    );
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
