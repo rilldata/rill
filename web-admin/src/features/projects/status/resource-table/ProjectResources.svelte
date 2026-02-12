@@ -167,10 +167,10 @@
 <section class="flex flex-col gap-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
-    <div class="flex items-center gap-2">
+    <!-- <div class="flex items-center gap-2">
       <span class="text-sm text-fg-secondary">DAG Viewer</span>
       <Switch bind:checked={showDagViewer} small />
-    </div>
+    </div> -->
   </div>
 
   {#if showDagViewer}
