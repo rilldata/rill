@@ -137,16 +137,14 @@
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
-  $: chartScrubInterval = $exploreState?.lastDefinedScrubRange
-    ? (Interval.fromDateTimes(
-        DateTime.fromJSDate($exploreState.lastDefinedScrubRange.start, {
-          zone: selectedTimezone,
-        }),
-        DateTime.fromJSDate($exploreState.lastDefinedScrubRange.end, {
-          zone: selectedTimezone,
-        }),
-      ) as Interval<true>)
-    : undefined;
+  $: chartScrubInterval = (() => {
+    const range = $exploreState?.lastDefinedScrubRange;
+    if (!range) return undefined;
+    const a = DateTime.fromJSDate(range.start, { zone: selectedTimezone });
+    const b = DateTime.fromJSDate(range.end, { zone: selectedTimezone });
+    const [start, end] = a <= b ? [a, b] : [b, a];
+    return Interval.fromDateTimes(start, end) as Interval<true>;
+  })();
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
   );
