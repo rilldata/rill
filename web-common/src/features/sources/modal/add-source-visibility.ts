@@ -23,7 +23,7 @@ export const addSourceModal = (() => {
         schemaName,
         requestConnector: false,
       };
-      window.history.pushState(state, "", "");
+      window.history.replaceState(state, "", "");
       dispatchEvent(new PopStateEvent("popstate", { state }));
     },
     close: () => {
