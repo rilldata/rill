@@ -215,6 +215,18 @@
           </section>
         {/if}
       {/if}
+        <div class="text-fg-secondary">
+          Check out
+          <a
+            href="https://docs.rilldata.com/build/connectors/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary-500 hover:text-primary-600 font-medium"
+          >
+             our docs
+          </a>
+           for more!
+        </div>
 
       {#if step === 1}
         <section>

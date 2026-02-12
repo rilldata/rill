@@ -10,13 +10,12 @@ export const s3Schema: MultiStepFormSchema = {
       type: "string",
       title: "Authentication method",
       description: "Choose how to authenticate to S3",
-      enum: ["access_keys", "public"],
+      enum: ["access_keys"],
       default: "access_keys",
       "x-display": "radio",
-      "x-enum-labels": ["Access keys", "Public"],
+      "x-enum-labels": ["Access keys"],
       "x-enum-descriptions": [
         "Use AWS access key ID and secret access key.",
-        "Access publicly readable buckets without credentials.",
       ],
       "x-ui-only": true,
       "x-grouped-fields": {
@@ -27,7 +26,6 @@ export const s3Schema: MultiStepFormSchema = {
           "endpoint",
           "aws_role_arn",
         ],
-        public: [],
       },
       "x-step": "connector",
     },
