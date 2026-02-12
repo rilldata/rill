@@ -533,11 +533,16 @@ export class AddDataFormManager {
         ? getSchemaStringKeys(rewrittenSchema, { step: sourceStep })
         : undefined;
       if (isRewrittenToDuckDb || isExplorerStep) {
+        // When rewritten to DuckDB, don't use the original connectorInstanceName.
+        // The original connector is referenced via create_secrets_from_connectors.
+        const yamlConnectorInstanceName = isRewrittenToDuckDb
+          ? undefined
+          : stepState?.connectorInstanceName || undefined;
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
           secretKeys: rewrittenSecretKeys,
           stringKeys: rewrittenStringKeys,
           originalDriverName: connector.name || undefined,
-          connectorInstanceName: stepState?.connectorInstanceName || undefined,
+          connectorInstanceName: yamlConnectorInstanceName,
         });
       }
       return getConnectorYamlPreview(rewrittenFormValues);
