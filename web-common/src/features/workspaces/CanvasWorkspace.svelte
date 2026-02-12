@@ -86,7 +86,6 @@
     let:ready
     let:isReconciling
     let:isLoading
-    let:errorMessage
   >
     <WorkspaceContainer>
       <WorkspaceHeader
@@ -129,7 +128,7 @@
             {ready}
             {isReconciling}
             {isLoading}
-            {errorMessage}
+            errorMessage={rootCauseReconcileError}
           >
             <CanvasBuilder
               {canvasName}

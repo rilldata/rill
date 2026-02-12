@@ -21,7 +21,6 @@
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import { createRootCauseErrorQuery } from "../entity-management/error-utils";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
@@ -78,16 +77,9 @@
 
   $: resource = resourceQuery ? $resourceQuery?.data : undefined;
 
-  $: errorMessage = !validSpec
+  $: reconcileErrorMessage = !validSpec
     ? reconcileError || resource?.meta?.reconcileError
     : undefined;
-
-  $: rootCauseQuery = createRootCauseErrorQuery(
-    instanceId,
-    resource,
-    errorMessage,
-  );
-  $: resolvedErrorMessage = $rootCauseQuery?.data ?? errorMessage;
 
   $: resolvedStore = getResolvedStore(
     fetchedCanvas,
@@ -188,4 +180,4 @@
   <title>{canvasTitle || `${canvasName} - Rill`}</title>
 </svelte:head>
 
-<slot {ready} errorMessage={resolvedErrorMessage} {isLoading} {isReconciling} />
+<slot {ready} {reconcileErrorMessage} {isLoading} {isReconciling} />
