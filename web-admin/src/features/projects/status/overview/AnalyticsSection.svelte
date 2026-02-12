@@ -6,7 +6,7 @@
 </section> -->
 
 <style lang="postcss">
-  .section {
+  /* .section {
     @apply border border-border rounded-lg p-5;
   }
   .section-header {
@@ -14,5 +14,5 @@
   }
   .section-title {
     @apply text-sm font-semibold text-fg-primary uppercase tracking-wide;
-  }
+  } */
 </style>

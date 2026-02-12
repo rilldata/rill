@@ -37,7 +37,9 @@ export function useResources(instanceId: string) {
             (resource) =>
               !resource?.meta?.hidden &&
               resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
-              resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger,
+              resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger &&
+              resource?.meta?.name?.kind !== ResourceKind.Component &&
+              resource?.meta?.name?.kind !== "rill.runtime.v1.Migration",
           );
           return {
             ...data,
