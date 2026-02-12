@@ -105,15 +105,7 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 		return err
 	}
 
-	// Build fully-qualified name for GET_DDL
-	var fqn string
-	if table.Database != "" && table.DatabaseSchema != "" {
-		fqn = fmt.Sprintf("%s.%s.%s", sqlSafeName(table.Database), sqlSafeName(table.DatabaseSchema), sqlSafeName(table.Name))
-	} else if table.DatabaseSchema != "" {
-		fqn = fmt.Sprintf("%s.%s", sqlSafeName(table.DatabaseSchema), sqlSafeName(table.Name))
-	} else {
-		fqn = sqlSafeName(table.Name)
-	}
+	fqn := drivers.DialectSnowflake.EscapeTable(table.Database, table.DatabaseSchema, table.Name)
 
 	objectType := "TABLE"
 	if table.View {

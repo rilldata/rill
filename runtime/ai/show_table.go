@@ -33,8 +33,8 @@ type ShowTableResult struct {
 }
 
 type ColumnInfo struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+	Name string `json:"name" jsonschema:"The name of the column."`
+	Type string `json:"type" jsonschema:"The data type of the column. This is a generic type code and does not exactly match the underlying SQL type."`
 }
 
 func (t *ShowTable) Spec() *mcp.Tool {

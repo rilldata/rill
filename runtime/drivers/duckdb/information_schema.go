@@ -280,13 +280,29 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	}
 	defer func() { _ = release() }()
 
-	q := `
-		SELECT sql FROM duckdb_tables() WHERE table_name = ?
-		UNION ALL
-		SELECT sql FROM duckdb_views() WHERE view_name = ?
-	`
+	var q string
+	var args []any
+	if c.config.Path != "" || c.config.Attach != "" {
+		// For generic duckdb: filter by database/schema to avoid collisions across attached databases.
+		q = `
+			SELECT sql FROM duckdb_tables() WHERE database_name = ? AND schema_name = ? AND table_name = ?
+			UNION ALL
+			SELECT sql FROM duckdb_views() WHERE database_name = ? AND schema_name = ? AND view_name = ?
+		`
+		args = []any{table.Database, table.DatabaseSchema, table.Name, table.Database, table.DatabaseSchema, table.Name}
+	} else {
+		// For rduckdb: the read connection is pinned to the current schema; match by name only.
+		// The rduckdb Lookup reports a synthetic DatabaseSchema that doesn't match the internal
+		// schema names used by duckdb_tables()/duckdb_views().
+		q = `
+			SELECT sql FROM duckdb_tables() WHERE table_name = ?
+			UNION ALL
+			SELECT sql FROM duckdb_views() WHERE view_name = ?
+		`
+		args = []any{table.Name, table.Name}
+	}
 	var sqlStr *string
-	err = conn.QueryRowxContext(ctx, q, table.Name, table.Name).Scan(&sqlStr)
+	err = conn.QueryRowxContext(ctx, q, args...).Scan(&sqlStr)
 	if err != nil || sqlStr == nil {
 		// No DDL available (e.g. CTAS tables); not an error
 		return nil

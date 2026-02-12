@@ -288,12 +288,14 @@ func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.
 func testLoadDDL(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
 
-	// Test DDL for a materialized table
+	// Test DDL for a materialized table.
+	// In rduckdb, materialized tables are exposed via views wrapping attached databases,
+	// so the DDL is "CREATE VIEW ... AS SELECT * FROM <attached_db>.<table>".
 	table, err := olap.InformationSchema().Lookup(ctx, "", "", "bar")
 	require.NoError(t, err)
 	err = olap.InformationSchema().LoadDDL(ctx, table)
 	require.NoError(t, err)
-	require.Contains(t, table.DDL, "CREATE TABLE")
+	require.Contains(t, table.DDL, "CREATE")
 	require.Contains(t, table.DDL, "bar")
 
 	// Test DDL for a view

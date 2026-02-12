@@ -508,8 +508,11 @@ func testLoadDDL(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 	err = olap.InformationSchema().LoadDDL(t.Context(), view)
 	require.NoError(t, err)
-	require.Contains(t, view.DDL, "CREATE")
+	// MySQL's DDL output for views is wack, so splitting the pieces out like this. Not worth fixing as it does contain the essential information.
+	require.Contains(t, strings.ToLower(view.DDL), "create")
 	require.Contains(t, strings.ToLower(view.DDL), "view")
+	require.Contains(t, strings.ToLower(view.DDL), "test_ddl_view")
+	require.Contains(t, strings.ToLower(view.DDL), "as select")
 }
 
 func acquireTestMySQL(t *testing.T) (drivers.Handle, drivers.OLAPStore) {

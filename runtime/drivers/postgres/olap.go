@@ -127,7 +127,7 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 		return nil
 	}
 
-	// For tables: reconstruct a basic CREATE TABLE from pg_attribute
+	// Postgres does not have a built-in way to get the DDL for a table, so we reconstruct a basic CREATE TABLE statement from the available metadata (won't include indexes, constraints, etc.).
 	q := `
 		SELECT
 			'CREATE TABLE ' || quote_ident(n.nspname) || '.' || quote_ident(c.relname) || ' (' ||

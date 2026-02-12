@@ -126,7 +126,9 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	}
 
 	// SHOW CREATE TABLE works for both tables and views in MySQL.
-	// Tables return 2 columns; views return 4. We only need the second column.
+	// For tables it returns columns: [Table, Create Table].
+	// For views it returns columns: [View, Create View, character_set_client, collation_connection].
+	// We extract the DDL by column name to avoid depending on column order or count.
 	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", drivers.DialectMySQL.EscapeIdentifier(table.Name)))
 	if err != nil {
 		return err
@@ -134,21 +136,16 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	defer rows.Close()
 
 	if rows.Next() {
-		cols, err := rows.Columns()
-		if err != nil {
+		res := make(map[string]any)
+		if err := rows.MapScan(res); err != nil {
 			return err
 		}
-		dest := make([]any, len(cols))
-		for i := range dest {
-			dest[i] = new(sql.NullString)
-		}
-		if err := rows.Scan(dest...); err != nil {
-			return err
-		}
-		// DDL is always in the second column
-		if len(dest) >= 2 {
-			if ns, ok := dest[1].(*sql.NullString); ok && ns.Valid {
-				table.DDL = ns.String
+		for _, key := range []string{"Create Table", "Create View"} {
+			if v, ok := res[key]; ok && v != nil {
+				if b, ok := v.([]byte); ok {
+					table.DDL = string(b)
+				}
+				break
 			}
 		}
 	}
