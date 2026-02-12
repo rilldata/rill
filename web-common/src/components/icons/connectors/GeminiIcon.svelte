@@ -1,5 +1,7 @@
 <script lang="ts">
   export let size = "1em";
+
+  const uid = `gemini-mask-${Math.random().toString(36).slice(2, 9)}`;
 </script>
 
 <svg
@@ -10,7 +12,7 @@
   xmlns="http://www.w3.org/2000/svg"
 >
   <mask
-    id="maskme"
+    id={uid}
     style="mask-type:alpha"
     maskUnits="userSpaceOnUse"
     x="0"
@@ -27,7 +29,7 @@
       fill="url(#prefix__paint0_linear_2001_67)"
     />
   </mask>
-  <g mask="url(#maskme)">
+  <g mask="url(#{uid})">
     <g filter="url(#prefix__filter0_f_2001_67)">
       <path
         d="M-5.859 50.734c7.498 2.663 16.116-2.33 19.249-11.152 3.133-8.821-.406-18.131-7.904-20.794-7.498-2.663-16.116 2.33-19.25 11.151-3.132 8.822.407 18.132 7.905 20.795z"

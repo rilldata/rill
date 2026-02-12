@@ -4,17 +4,14 @@ import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte
 import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
 import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte";
 import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
-import Claude from "../../../components/icons/connectors/Claude.svelte";
 import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
 import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
-import Gemini from "../../../components/icons/connectors/Gemini.svelte";
 import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
 import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
 import Https from "../../../components/icons/connectors/HTTPS.svelte";
 import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
 import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
 import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
-import OpenAI from "../../../components/icons/connectors/OpenAI.svelte";
 import Postgres from "../../../components/icons/connectors/Postgres.svelte";
 import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
 import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
@@ -43,7 +40,4 @@ export const ICONS = {
   druid: ApacheDruid,
   pinot: ApachePinot,
   starrocks: StarRocks,
-  claude: Claude,
-  openai: OpenAI,
-  gemini: Gemini,
 };

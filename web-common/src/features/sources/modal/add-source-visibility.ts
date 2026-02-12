@@ -1,8 +1,5 @@
 import { resetConnectorStep } from "./connectorStepStore";
-import {
-  getBackendConnectorName,
-  getConnectorSchema,
-} from "./connector-schemas";
+import { toConnectorDriver } from "./connector-schemas";
 
 export const addSourceModal = (() => {
   return {
@@ -17,20 +14,8 @@ export const addSourceModal = (() => {
      */
     openForConnector: (schemaName: string) => {
       resetConnectorStep();
-      const schema = getConnectorSchema(schemaName);
-      const category = schema?.["x-category"];
-      const backendName = getBackendConnectorName(schemaName);
-
-      const selectedConnector = {
-        name: backendName,
-        displayName: schema?.title ?? schemaName,
-        implementsObjectStore: category === "objectStore",
-        implementsOlap: category === "olap",
-        implementsSqlStore: category === "sqlStore",
-        implementsWarehouse: category === "warehouse",
-        implementsFileStore: category === "fileStore",
-        implementsAi: category === "ai",
-      };
+      const selectedConnector = toConnectorDriver(schemaName);
+      if (!selectedConnector) return;
 
       const state = {
         step: 2,

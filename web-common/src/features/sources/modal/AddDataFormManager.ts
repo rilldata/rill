@@ -13,6 +13,7 @@ import {
   getConnectorSchema,
   getFormHeight,
   hasExplorerStep as hasExplorerStepSchema,
+  isAiConnector as isAiConnectorSchema,
   isMultiStepConnector as isMultiStepConnectorSchema,
 } from "./connector-schemas";
 import {
@@ -74,6 +75,11 @@ export class AddDataFormManager {
   private formType: AddDataFormType;
   private schemaName: string;
 
+  // Cached schema-derived flags (immutable after construction)
+  private readonly _isMultiStepConnector: boolean;
+  private readonly _hasExplorerStep: boolean;
+  private readonly _isAiConnector: boolean;
+
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
     return normalizeConnectorError(this.connector.name ?? "", e);
@@ -124,6 +130,11 @@ export class AddDataFormManager {
 
     // Layout height (derived from schema metadata)
     this.formHeight = getFormHeight(schema);
+
+    // Cache schema-derived flags once (schema name is immutable)
+    this._isMultiStepConnector = isMultiStepConnectorSchema(schema);
+    this._hasExplorerStep = hasExplorerStepSchema(schema);
+    this._isAiConnector = isAiConnectorSchema(schema);
   }
 
   get isSourceForm(): boolean {
@@ -135,18 +146,15 @@ export class AddDataFormManager {
   }
 
   get isMultiStepConnector(): boolean {
-    const schema = getConnectorSchema(this.schemaName);
-    return isMultiStepConnectorSchema(schema);
+    return this._isMultiStepConnector;
   }
 
   get hasExplorerStep(): boolean {
-    const schema = getConnectorSchema(this.schemaName);
-    return hasExplorerStepSchema(schema);
+    return this._hasExplorerStep;
   }
 
   get isAiConnector(): boolean {
-    const schema = getConnectorSchema(this.schemaName);
-    return schema?.["x-category"] === "ai";
+    return this._isAiConnector;
   }
 
   /**

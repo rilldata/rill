@@ -20,9 +20,9 @@
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
     connectors,
-    getBackendConnectorName,
     getConnectorSchema,
     isMultiStepConnector as isMultiStepConnectorSchema,
+    toConnectorDriver as toConnectorDriverFromSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
   import { ICONS } from "./icons";
@@ -40,26 +40,8 @@
   );
   $: olapConnectors = connectors.filter((c) => c.category === "olap");
 
-  /**
-   * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
-   * Derives implements* flags from the schema's x-category.
-   * Uses x-driver for the name when specified.
-   */
   function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
-    const schema = getConnectorSchema(info.name);
-    const category = schema?.["x-category"];
-    const backendName = getBackendConnectorName(info.name);
-
-    return {
-      name: backendName,
-      displayName: info.displayName,
-      implementsObjectStore: category === "objectStore",
-      implementsOlap: category === "olap",
-      implementsSqlStore: category === "sqlStore",
-      implementsWarehouse: category === "warehouse",
-      implementsFileStore: category === "fileStore",
-      implementsAi: category === "ai",
-    };
+    return toConnectorDriverFromSchema(info.name) ?? { name: info.name };
   }
 
   onMount(() => {

@@ -17,7 +17,7 @@ export const claudeSchema: MultiStepFormSchema = {
       type: "string",
       title: "Model",
       description: "The Claude model to use",
-      "x-placeholder": "claude-sonnet-4-5-20250929",
+      "x-placeholder": "claude-sonnet-4-5",
     },
   },
   required: ["api_key"],

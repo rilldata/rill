@@ -1,3 +1,4 @@
+import type { V1ConnectorDriver } from "../../../runtime-client";
 import type {
   ConnectorCategory,
   MultiStepFormSchema,
@@ -121,6 +122,35 @@ export function isMultiStepConnector(
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
   const category = schema?.["x-category"];
   return category === "sqlStore" || category === "warehouse";
+}
+
+/**
+ * Determine if a connector is an AI connector (Claude, OpenAI, Gemini).
+ * AI connectors save directly without testing the connection.
+ */
+export function isAiConnector(schema: MultiStepFormSchema | null): boolean {
+  return schema?.["x-category"] === "ai";
+}
+
+/**
+ * Build a V1ConnectorDriver-compatible object from a schema name.
+ * Shared by AddDataModal.toConnectorDriver and addSourceModal.openForConnector.
+ */
+export function toConnectorDriver(schemaName: string): V1ConnectorDriver | null {
+  const schema = getConnectorSchema(schemaName);
+  if (!schema) return null;
+  const category = schema["x-category"];
+  const backendName = getBackendConnectorName(schemaName);
+  return {
+    name: backendName,
+    displayName: schema.title ?? schemaName,
+    implementsObjectStore: category === "objectStore",
+    implementsOlap: category === "olap",
+    implementsSqlStore: category === "sqlStore",
+    implementsWarehouse: category === "warehouse",
+    implementsFileStore: category === "fileStore",
+    implementsAi: category === "ai",
+  };
 }
 
 /**

@@ -68,7 +68,7 @@ export function createConnectorForm(args: {
     SPA: true,
     validators: adapter,
     onUpdate,
-    resetForm: true,
+    resetForm: false,
     validationMethod: "onsubmit",
   });
 }
