@@ -40,6 +40,8 @@ import (
 	_ "github.com/rilldata/rill/admin/provisioner/clickhousestatic"
 	_ "github.com/rilldata/rill/admin/provisioner/kubernetes"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
+	_ "github.com/rilldata/rill/runtime/drivers/claude"
+	_ "github.com/rilldata/rill/runtime/drivers/gemini"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
 )
@@ -92,7 +94,10 @@ type Config struct {
 	EmailSenderEmail                  string `split_words:"true"`
 	EmailSenderName                   string `split_words:"true"`
 	EmailBCC                          string `split_words:"true"`
+	AIDriver                          string `default:"" split_words:"true"`
 	OpenAIAPIKey                      string `envconfig:"openai_api_key"`
+	ClaudeAPIKey                      string `envconfig:"claude_api_key"`
+	GeminiAPIKey                      string `envconfig:"gemini_api_key"`
 	ActivitySinkType                  string `default:"" split_words:"true"`
 	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
 	ActivityUISinkKafkaTopic          string `default:"" split_words:"true"`
@@ -104,6 +109,7 @@ type Config struct {
 	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
+	PylonIdentitySecret               string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -235,11 +241,34 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Init AI service
-			aiDriver := "mock_ai"
+			aiDriver := conf.AIDriver
 			aiConfig := map[string]any{}
-			if conf.OpenAIAPIKey != "" {
-				aiDriver = "openai"
+			switch aiDriver {
+			case "openai":
+				if conf.OpenAIAPIKey == "" {
+					logger.Fatal("RILL_ADMIN_OPENAI_API_KEY is required when AI driver is 'openai'")
+				}
 				aiConfig["api_key"] = conf.OpenAIAPIKey
+			case "claude":
+				if conf.ClaudeAPIKey == "" {
+					logger.Fatal("RILL_ADMIN_CLAUDE_API_KEY is required when AI driver is 'claude'")
+				}
+				aiConfig["api_key"] = conf.ClaudeAPIKey
+			case "gemini":
+				if conf.GeminiAPIKey == "" {
+					logger.Fatal("RILL_ADMIN_GEMINI_API_KEY is required when AI driver is 'gemini'")
+				}
+				aiConfig["api_key"] = conf.GeminiAPIKey
+			case "mock_ai":
+				// Nothing more to do
+			case "":
+				aiDriver = "mock_ai"
+				if conf.OpenAIAPIKey != "" { // Backwards compatibility
+					aiDriver = "openai"
+					aiConfig["api_key"] = conf.OpenAIAPIKey
+				}
+			default:
+				logger.Fatal("unknown AI driver", zap.String("driver", aiDriver))
 			}
 			aiHandle, err := drivers.Open(aiDriver, "", aiConfig, rillstorage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), logger)
 			if err != nil {
@@ -329,6 +358,15 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				keyPairs[idx] = key
 			}
 
+			// Parse Pylon identity secret
+			var pylonIdentitySecret []byte
+			if conf.PylonIdentitySecret != "" {
+				pylonIdentitySecret, err = hex.DecodeString(conf.PylonIdentitySecret)
+				if err != nil {
+					logger.Fatal("failed to parse pylon identity secret from hex string to bytes")
+				}
+			}
+
 			// Make errgroup for running the processes
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
@@ -367,6 +405,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubClientSecret:     conf.GithubClientSecret,
 					GithubManagedAccount:   conf.GithubManagedAccount,
 					AssetsBucket:           conf.AssetsBucket,
+					PylonIdentitySecret:    pylonIdentitySecret,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

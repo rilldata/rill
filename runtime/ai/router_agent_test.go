@@ -11,7 +11,7 @@ import (
 func TestRouterAgent(t *testing.T) {
 	// Setup empty project
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 	})
 
 	// NOTE: We use a single eval session, so each subsequent prompt will have the context of the previous ones.

@@ -81,8 +81,7 @@ For more information about available DSN properties and setting an appropriate c
 
 If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve connection details about your instance by clicking on the `Connect` tab from within the admin settings navigation page. This will provide relevant information, such as the hostname, port, and username being used for your instance that you can then use to construct your DSN.
 
-<img src='/img/build/connectors/olap-engines/clickhouse/clickhouse-cloud.png' class='rounded-gif' />
-<br />
+![ClickHouse Cloud](/img/build/connectors/olap-engines/clickhouse/clickhouse-cloud.png)
 
 Using the information in the ClickHouse UI, populate the parameters of your connection. 
 
@@ -111,7 +110,7 @@ driver: clickhouse
 managed: true
 ```
 
-Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/developers/guides/rill-clickhouse/r_ch_ingest).
+Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/developers/tutorials/rill-clickhouse/r_ch_ingest).
 
 
 ## Read Only Connector
