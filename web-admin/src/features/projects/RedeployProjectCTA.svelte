@@ -22,6 +22,9 @@
 
   const redeployMutation = createAdminServiceRedeployProject();
 
+  // Track waking state: true when mutation is pending OR has succeeded (waiting for refetch)
+  $: isWaking = $redeployMutation.isPending || $redeployMutation.isSuccess;
+
   async function handleWakeProject() {
     try {
       await $redeployMutation.mutateAsync({
@@ -54,7 +57,7 @@
         <div class="relative size-[104px]">
           <div
             class="absolute inset-0 transition-opacity duration-200"
-            class:opacity-0={$redeployMutation.isPending}
+            class:opacity-0={isWaking}
           >
             <MoonCircleOutline
               size="104px"
@@ -64,20 +67,19 @@
           </div>
           <div
             class="absolute inset-0 transition-opacity duration-200"
-            class:opacity-0={!$redeployMutation.isPending}
+            class:opacity-0={!isWaking}
           >
             <LoadingCircleOutline size="104px" className="text-gray-300" />
           </div>
         </div>
         <CtaHeader variant="bold">
-          {$redeployMutation.isPending
-            ? "Waking up your project..."
-            : "Your project is hibernating"}
+          {isWaking ? "Waking up your project..." : "Your project is hibernating"}
         </CtaHeader>
         <Button
           type="primary"
           wide
-          loading={$redeployMutation.isPending}
+          disabled={isWaking}
+          loading={isWaking}
           loadingCopy="Waking..."
           onClick={handleWakeProject}
         >
@@ -85,8 +87,8 @@
         </Button>
         <div
           class="flex flex-col items-center gap-y-6 transition-opacity duration-200"
-          class:opacity-40={$redeployMutation.isPending}
-          class:pointer-events-none={$redeployMutation.isPending}
+          class:opacity-40={isWaking}
+          class:pointer-events-none={isWaking}
         >
           <CtaMessage>
             You can also run the following command in the Rill CLI:
