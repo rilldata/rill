@@ -1,8 +1,5 @@
-<script lang="ts">
-  // Container component for dangerous/destructive actions
-  // Styled with red border and footer similar to Vercel's danger zones
-</script>
-
+<!-- Container component for dangerous/destructive actions.
+     Styled with red border and footer similar to Vercel's danger zones. -->
 <div class="danger-zone">
   <slot />
 </div>
