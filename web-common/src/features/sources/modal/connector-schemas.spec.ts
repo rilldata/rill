@@ -138,7 +138,7 @@ describe("connector-schemas", () => {
 
   describe("getFormHeight", () => {
     it("returns tall height for schemas with x-form-height: tall", () => {
-      const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";
+      const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
 
       for (const [, schema] of Object.entries(multiStepFormSchemas)) {
         if (schema?.["x-form-height"] === "tall") {
