@@ -427,11 +427,27 @@ service AdminService {
   // ListProjectMemberUsers lists all the project members
   rpc ListProjectMemberUsers(ListProjectMemberUsersRequest) returns (ListProjectMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListProjectInvites lists all the project invites
   rpc ListProjectInvites(ListProjectInvitesRequest) returns (ListProjectInvitesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/invites"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // AddProjectMemberUser adds a member to the project
@@ -440,11 +456,27 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/members",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // RemoveProjectMemberUser removes member from the project
   rpc RemoveProjectMemberUser(RemoveProjectMemberUserRequest) returns (RemoveProjectMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/members/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // SetProjectMemberUserRole sets the role for the member
@@ -453,11 +485,27 @@ service AdminService {
       put: "/v1/orgs/{org}/projects/{project}/members/{email}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // GetProjectMemberUser gets the member details
   rpc GetProjectMemberUser(GetProjectMemberUserRequest) returns (GetProjectMemberUserResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
@@ -471,11 +519,27 @@ service AdminService {
       post: "/v1/orgs/{org}/usergroups",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // GetUsergroups returns the user group details
   rpc GetUsergroup(GetUsergroupRequest) returns (GetUsergroupResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/usergroups/{usergroup}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // RenameUsergroup renames the user group
@@ -492,21 +556,53 @@ service AdminService {
       put: "/v1/orgs/{org}/usergroups/{usergroup}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListOrganizationMemberUsergroups lists the org's user groups
   rpc ListOrganizationMemberUsergroups(ListOrganizationMemberUsergroupsRequest) returns (ListOrganizationMemberUsergroupsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/usergroups"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListProjectMemberUsergroups lists the project's user groups
   rpc ListProjectMemberUsergroups(ListProjectMemberUsergroupsRequest) returns (ListProjectMemberUsergroupsResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{org}/project/{project}/usergroups"};
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/usergroups"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // DeleteUsergroup deletes the user group from the organization
   rpc DeleteUsergroup(DeleteUsergroupRequest) returns (DeleteUsergroupResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/usergroups/{usergroup}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // AddOrganizationMemberUsergroupRole adds the role for the user group
@@ -536,6 +632,14 @@ service AdminService {
       post: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // SetProjectMemberUsergroupRole sets the role for the user group
@@ -544,12 +648,28 @@ service AdminService {
       put: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // RemoveProjectMemberUsergroup revokes the project-level role for the user group
   rpc RemoveProjectMemberUsergroup(RemoveProjectMemberUsergroupRequest) returns (RemoveProjectMemberUsergroupResponse) {
     option (google.api.http) = {
       delete: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
     };
   }
 
@@ -559,16 +679,40 @@ service AdminService {
       put: "/v1/orgs/{org}/usergroups/{usergroup}/members/{email}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListUsergroupMemberUsers lists all the user group members
   rpc ListUsergroupMemberUsers(ListUsergroupMemberUsersRequest) returns (ListUsergroupMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/usergroups/{usergroup}/members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // RemoveUsergroupMemberUser removes member from the user group
   rpc RemoveUsergroupMemberUser(RemoveUsergroupMemberUserRequest) returns (RemoveUsergroupMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/usergroups/{usergroup}/members/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // GetUser returns user by email

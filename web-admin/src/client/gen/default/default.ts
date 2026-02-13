@@ -4007,120 +4007,6 @@ export const createAdminServiceLeaveOrganization = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ListProjectMemberUsergroups lists the project's user groups
- */
-export const adminServiceListProjectMemberUsergroups = (
-  org: string,
-  project: string,
-  params?: AdminServiceListProjectMemberUsergroupsParams,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1ListProjectMemberUsergroupsResponse>({
-    url: `/v1/orgs/${org}/project/${project}/usergroups`,
-    method: "GET",
-    params,
-    signal,
-  });
-};
-
-export const getAdminServiceListProjectMemberUsergroupsQueryKey = (
-  org: string,
-  project: string,
-  params?: AdminServiceListProjectMemberUsergroupsParams,
-) => {
-  return [
-    `/v1/orgs/${org}/project/${project}/usergroups`,
-    ...(params ? [params] : []),
-  ] as const;
-};
-
-export const getAdminServiceListProjectMemberUsergroupsQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
-  TError = RpcStatus,
->(
-  org: string,
-  project: string,
-  params?: AdminServiceListProjectMemberUsergroupsParams,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
-        TError,
-        TData
-      >
-    >;
-  },
-) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceListProjectMemberUsergroupsQueryKey(org, project, params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>
-  > = ({ signal }) =>
-    adminServiceListProjectMemberUsergroups(org, project, params, signal);
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!(org && project),
-    ...queryOptions,
-  } as CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type AdminServiceListProjectMemberUsergroupsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>
->;
-export type AdminServiceListProjectMemberUsergroupsQueryError = RpcStatus;
-
-/**
- * @summary ListProjectMemberUsergroups lists the project's user groups
- */
-
-export function createAdminServiceListProjectMemberUsergroups<
-  TData = Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
-  TError = RpcStatus,
->(
-  org: string,
-  project: string,
-  params?: AdminServiceListProjectMemberUsergroupsParams,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getAdminServiceListProjectMemberUsergroupsQueryOptions(
-    org,
-    project,
-    params,
-    options,
-  );
-
-  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-/**
  * @summary ListProjectsForOrganization lists all the projects currently available for given organizations.
  */
 export const adminServiceListProjectsForOrganization = (
@@ -8254,6 +8140,120 @@ export const createAdminServiceIssueMagicAuthToken = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary ListProjectMemberUsergroups lists the project's user groups
+ */
+export const adminServiceListProjectMemberUsergroups = (
+  org: string,
+  project: string,
+  params?: AdminServiceListProjectMemberUsergroupsParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListProjectMemberUsergroupsResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/usergroups`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListProjectMemberUsergroupsQueryKey = (
+  org: string,
+  project: string,
+  params?: AdminServiceListProjectMemberUsergroupsParams,
+) => {
+  return [
+    `/v1/orgs/${org}/projects/${project}/usergroups`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceListProjectMemberUsergroupsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  params?: AdminServiceListProjectMemberUsergroupsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListProjectMemberUsergroupsQueryKey(org, project, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>
+  > = ({ signal }) =>
+    adminServiceListProjectMemberUsergroups(org, project, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListProjectMemberUsergroupsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>
+>;
+export type AdminServiceListProjectMemberUsergroupsQueryError = RpcStatus;
+
+/**
+ * @summary ListProjectMemberUsergroups lists the project's user groups
+ */
+
+export function createAdminServiceListProjectMemberUsergroups<
+  TData = Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  params?: AdminServiceListProjectMemberUsergroupsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListProjectMemberUsergroups>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListProjectMemberUsergroupsQueryOptions(
+    org,
+    project,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary RemoveProjectMemberUsergroup revokes the project-level role for the user group
  */

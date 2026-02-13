@@ -1793,19 +1793,6 @@ export type AdminServiceUpdateOrganizationMemberUserAttributesBody = {
   attributes?: AdminServiceUpdateOrganizationMemberUserAttributesBodyAttributes;
 };
 
-export type AdminServiceListProjectMemberUsergroupsParams = {
-  /**
-   * Optionally filter by role
-   */
-  role?: string;
-  /**
-   * Optionally include counts
-   */
-  includeCounts?: boolean;
-  pageSize?: number;
-  pageToken?: string;
-};
-
 export type AdminServiceListProjectsForOrganizationParams = {
   pageSize?: number;
   pageToken?: string;
@@ -2005,6 +1992,19 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   displayName?: string;
   /** list of resources to grant access to. */
   resources?: V1ResourceName[];
+};
+
+export type AdminServiceListProjectMemberUsergroupsParams = {
+  /**
+   * Optionally filter by role
+   */
+  role?: string;
+  /**
+   * Optionally include counts
+   */
+  includeCounts?: boolean;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type AdminServiceSearchProjectUsersParams = {

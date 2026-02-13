@@ -934,47 +934,6 @@ paths:
           in: path
           required: true
           type: string
-  /v1/orgs/{org}/project/{project}/usergroups:
-    get:
-      summary: ListProjectMemberUsergroups lists the project's user groups
-      operationId: AdminService_ListProjectMemberUsergroups
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListProjectMemberUsergroupsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: org
-          in: path
-          required: true
-          type: string
-        - name: project
-          in: path
-          required: true
-          type: string
-        - name: role
-          description: Optionally filter by role
-          in: query
-          required: false
-          type: string
-        - name: includeCounts
-          description: Optionally include counts
-          in: query
-          required: false
-          type: boolean
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
   /v1/orgs/{org}/projects:
     get:
       summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
@@ -1693,6 +1652,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/members:
     get:
       summary: ListProjectMemberUsers lists all the project members
@@ -1733,6 +1693,7 @@ paths:
           in: query
           required: false
           type: boolean
+      x-visibility: public
     post:
       summary: AddProjectMemberUser adds a member to the project
       operationId: AdminService_AddProjectMemberUser
@@ -1771,6 +1732,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}:
     get:
       summary: GetProjectMemberUser gets the member details
@@ -1797,6 +1759,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     delete:
       summary: RemoveProjectMemberUser removes member from the project
       operationId: AdminService_RemoveProjectMemberUser
@@ -1822,6 +1785,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     put:
       summary: SetProjectMemberUserRole sets the role for the member
       operationId: AdminService_SetProjectMemberUserRole
@@ -1862,6 +1826,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
     get:
       summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
@@ -2310,6 +2275,48 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
                 description: list of resources to grant access to.
+  /v1/orgs/{org}/projects/{project}/usergroups:
+    get:
+      summary: ListProjectMemberUsergroups lists the project's user groups
+      operationId: AdminService_ListProjectMemberUsergroups
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberUsergroupsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
+          type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles:
     delete:
       summary: RemoveProjectMemberUsergroup revokes the project-level role for the user group
@@ -2336,6 +2343,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     post:
       summary: AddProjectMemberUsergroupRole adds the role for the user group
       operationId: AdminService_AddProjectMemberUsergroup
@@ -2376,6 +2384,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
     put:
       summary: SetProjectMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetProjectMemberUsergroupRole
@@ -2416,6 +2425,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -2879,6 +2889,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
     post:
       summary: CreateUsergroup creates a user group in the organization
       operationId: AdminService_CreateUsergroup
@@ -2904,6 +2915,7 @@ paths:
             properties:
               name:
                 type: string
+      x-visibility: public
   /v1/orgs/{org}/usergroups-for-user:
     get:
       summary: ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
@@ -2966,6 +2978,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
     delete:
       summary: DeleteUsergroup deletes the user group from the organization
       operationId: AdminService_DeleteUsergroup
@@ -2987,6 +3000,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     post:
       summary: RenameUsergroup renames the user group
       operationId: AdminService_RenameUsergroup
@@ -3045,6 +3059,7 @@ paths:
             properties:
               description:
                 type: string
+      x-visibility: public
   /v1/orgs/{org}/usergroups/{usergroup}/members:
     get:
       summary: ListUsergroupMemberUsers lists all the user group members
@@ -3076,6 +3091,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
   /v1/orgs/{org}/usergroups/{usergroup}/members/{email}:
     delete:
       summary: RemoveUsergroupMemberUser removes member from the user group
@@ -3102,6 +3118,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     put:
       summary: AddUsergroupMemberUser adds a member to the user group
       operationId: AdminService_AddUsergroupMemberUser
@@ -3132,6 +3149,7 @@ paths:
           required: true
           schema:
             type: object
+      x-visibility: public
   /v1/orgs/{org}/usergroups/{usergroup}/role:
     delete:
       summary: RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
