@@ -40,7 +40,10 @@
 
   function getColors(optionValue: string): { bg: string; text: string } {
     return (
-      colorMap[optionValue] ?? { bg: "bg-gray-100", text: "text-gray-500" }
+      colorMap[optionValue] ?? {
+        bg: "bg-surface-secondary",
+        text: "text-fg-muted",
+      }
     );
   }
 
@@ -48,7 +51,7 @@
   $: SelectedIcon = selectedOption ? getIcon(selectedOption.value) : Server;
   $: selectedColors = selectedOption
     ? getColors(selectedOption.value)
-    : { bg: "bg-gray-100", text: "text-gray-500" };
+    : { bg: "bg-surface-secondary", text: "text-fg-muted" };
 
   function handleChange(newValue: string | undefined) {
     if (newValue) {
@@ -60,7 +63,8 @@
 
 <div class="w-full pb-2">
   {#if label}
-    <span class="text-sm font-medium text-gray-700 block mb-1">{label}</span>
+    <span class="text-sm font-medium text-fg-secondary block mb-1">{label}</span
+    >
   {/if}
 
   <SelectPrimitive.Root
@@ -78,11 +82,11 @@
             <svelte:component this={SelectedIcon} size="14" />
           </div>
           <div class="flex flex-col items-start">
-            <span class="text-sm font-medium text-gray-900">
+            <span class="text-sm font-medium text-fg-primary">
               {selectedOption.label}
             </span>
             {#if selectedOption.description}
-              <span class="text-xs text-gray-500">
+              <span class="text-xs text-fg-muted">
                 {selectedOption.description}
               </span>
             {/if}
@@ -110,7 +114,7 @@
             <div class="flex flex-col">
               <span class="text-sm font-medium">{option.label}</span>
               {#if option.description}
-                <span class="text-xs text-gray-500">{option.description}</span>
+                <span class="text-xs text-fg-muted">{option.description}</span>
               {/if}
             </div>
           </div>

@@ -18,7 +18,7 @@ export const duckdbSchema: MultiStepFormSchema = {
       default: "rill-managed",
       "x-display": "select",
       "x-select-style": "rich",
-      "x-enum-labels": ["Rill Managed", "Self Hosted"],
+      "x-enum-labels": ["Rill Managed", "Local File"],
       "x-enum-descriptions": [
         "Rill manages your DuckDB infrastructure",
         "Connect to your own DuckDB database file",
