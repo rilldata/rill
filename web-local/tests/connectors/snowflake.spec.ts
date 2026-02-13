@@ -41,7 +41,7 @@ test.describe("Snowflake connector", () => {
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: snowflake");
     await expect(codeEditor).toContainText(
-      'dsn: "{{ .env.connector.snowflake.dsn }}"',
+      'dsn: "{{ .env.SNOWFLAKE_DSN }}"',
     );
   });
 });
