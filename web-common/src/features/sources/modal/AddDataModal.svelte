@@ -74,21 +74,11 @@
         // If connector is provided, always go to step 2 (Import Data flow)
         step = e.state?.connectorInstanceName ? 2 : stateStep;
       } else if (e.state?.connector) {
-        // Store the connector name to look up when connectors are loaded
+        // Store the connector name to resolve when connectors finish loading.
+        // The reactive block below handles the actual resolution.
         pendingConnectorName = e.state.connector;
         selectedSchemaName = e.state.connector;
-        // If connector is provided, always go to step 2 (Import Data flow)
-        // This matches PR 8736 behavior
         step = 2;
-        if (connectors.length > 0) {
-          const found = connectors.find((c) => c.name === e.state.connector);
-          if (found) {
-            selectedConnector = toConnectorDriver(found);
-            pendingConnectorName = null;
-            // Ensure step stays at 2
-            step = 2;
-          }
-        }
       } else {
         selectedConnector = null;
         selectedSchemaName = null;

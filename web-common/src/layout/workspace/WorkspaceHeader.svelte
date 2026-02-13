@@ -93,7 +93,9 @@
       {/if}
 
       <slot name="workspace-controls" {width} />
-      <slot name="cta" {width} />
+      <div class="flex-none">
+        <slot name="cta" {width} />
+      </div>
 
       {#if showTableToggle}
         <Tooltip distance={8}>

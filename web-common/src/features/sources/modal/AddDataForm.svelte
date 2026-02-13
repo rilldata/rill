@@ -1,7 +1,5 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -240,7 +238,7 @@
           bind:primaryButtonLabel={multiStepButtonLabel}
           bind:primaryLoadingCopy={multiStepLoadingCopy}
           bind:formId={multiStepFormId}
-          bind:shouldShowSkipLink
+          {shouldShowSkipLink}
         />
       {:else if connectorSchema}
         <AddDataFormSection
@@ -278,36 +276,26 @@
 
       <div class="flex gap-2">
         {#if shouldShowSaveAnywayButton}
-          <Tooltip distance={8}>
-            <Button
-              loading={saveAnywayLoading}
-              loadingCopy="Saving..."
-              onClick={handleSaveAnyway}
-              type="secondary"
-            >
-              Save
-            </Button>
-            <TooltipContent slot="tooltip-content">
-              Save connector and exit to file
-            </TooltipContent>
-          </Tooltip>
+          <Button
+            loading={saveAnywayLoading}
+            loadingCopy="Saving..."
+            onClick={handleSaveAnyway}
+            type="secondary"
+          >
+            Save
+          </Button>
         {/if}
 
-        <Tooltip distance={8}>
-          <Button
-            disabled={submitting || isSubmitDisabled}
-            loading={submitting}
-            loadingCopy={primaryLoadingCopy}
-            form={formId}
-            submitForm
-            type="primary"
-          >
-            {primaryButtonLabel}
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            Test connection and proceed to import step
-          </TooltipContent>
-        </Tooltip>
+        <Button
+          disabled={submitting || isSubmitDisabled}
+          loading={submitting}
+          loadingCopy={primaryLoadingCopy}
+          form={formId}
+          submitForm
+          type="primary"
+        >
+          {primaryButtonLabel}
+        </Button>
       </div>
     </div>
   </div>
