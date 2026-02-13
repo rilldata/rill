@@ -1,10 +1,10 @@
 import { expect } from "@playwright/test";
 import { test } from "../setup/base";
 
-test.describe("Save Anyway feature", () => {
+test.describe("Save connector feature", () => {
   test.use({ project: "Blank" });
 
-  test("Save Anyway button appears and redirects to connector file", async ({
+  test("Save button saves connector and redirects to connector file", async ({
     page,
   }) => {
     // Open the Add Data modal
@@ -21,16 +21,12 @@ test.describe("Save Anyway feature", () => {
     await page.getByRole("textbox", { name: "Host" }).fill("asd");
     await page.getByRole("textbox", { name: "Password" }).fill("asd");
 
-    // Click "Test and Connect" - this should fail connection test and show "Save Anyway" button
-    await page
-      .getByRole("button", { name: /^(Test and Connect|Connect)$/ })
-      .click();
+    // Save button should be visible on the connector step
+    const saveButton = page.getByRole("button", { name: "Save", exact: true });
+    await expect(saveButton).toBeVisible();
 
-    // Wait for "Save" button to appear
-    await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
-
-    // Click "Save" button
-    await page.getByRole("button", { name: "Save" }).click();
+    // Click "Save" button to save connector without testing connection
+    await saveButton.click();
 
     // Wait for navigation to connector file, then for the editor to appear
     await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/, {

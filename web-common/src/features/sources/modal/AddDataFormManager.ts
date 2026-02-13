@@ -147,6 +147,7 @@ export class AddDataFormManager {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     // Only allow skipping when on connector step
     if (stepState.step !== "connector") return;
+    if (!this.isMultiStepConnector && !this.hasExplorerStep) return;
 
     setConnectorConfig({});
     setConnectorInstanceName(null);
@@ -156,7 +157,7 @@ export class AddDataFormManager {
       setStep("source");
     }
     // For connectors with explorer step (warehouses/databases), skip to explorer step
-    else if (this.hasExplorerStep) {
+    else {
       setStep("explorer");
     }
   }
@@ -565,10 +566,10 @@ export class AddDataFormManager {
   }
 
   /**
-   * Save connector anyway, returning a result object for the caller to handle.
+   * Save connector without testing the connection, returning a result object for the caller to handle.
    * Schema conditionals handle connector-specific requirements (e.g., SSL).
    */
-  async saveConnectorAnyway(args: {
+  async saveConnector(args: {
     queryClient: QueryClient;
     values: FormData;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {

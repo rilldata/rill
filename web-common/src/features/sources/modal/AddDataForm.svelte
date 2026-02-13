@@ -36,7 +36,7 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
-  let saveAnyway = false;
+  let saving = false;
 
   // Wire manager-provided onUpdate after declaration below
   let handleOnUpdate: (event: {
@@ -157,14 +157,14 @@
   // Reset errors when form is modified
   $: if ($paramsTainted) paramsError = null;
 
-  async function handleSaveAnyway() {
-    // Save Anyway should only work for connector forms
+  async function handleSave() {
+    // Save should only work for connector forms
     if (!isConnectorForm) {
       return;
     }
 
-    saveAnyway = true;
-    const result = await formManager.saveConnectorAnyway({
+    saving = true;
+    const result = await formManager.saveConnector({
       queryClient,
       values: $form,
     });
@@ -174,7 +174,7 @@
       paramsError = result.message;
       paramsErrorDetails = result.details;
     }
-    saveAnyway = false;
+    saving = false;
   }
 
   $: yamlPreview = formManager.computeYamlPreview({
@@ -183,12 +183,12 @@
     isConnectorForm,
     formValues: $form,
   });
-  // Always show Save Anyway for connector forms on the connector step (not for public auth which skips connection test)
-  $: shouldShowSaveAnywayButton =
+  // Show Save button for connector forms on the connector step (not for public auth which skips connection test)
+  $: shouldShowSaveButton =
     isConnectorForm &&
     stepState.step === "connector" &&
     activeAuthMethod !== "public";
-  $: saveAnywayLoading = submitting && saveAnyway;
+  $: saveLoading = submitting && saving;
 
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
@@ -273,11 +273,11 @@
       >
 
       <div class="flex gap-2">
-        {#if shouldShowSaveAnywayButton}
+        {#if shouldShowSaveButton}
           <Button
-            loading={saveAnywayLoading}
+            loading={saveLoading}
             loadingCopy="Saving..."
-            onClick={handleSaveAnyway}
+            onClick={handleSave}
             type="secondary"
           >
             Save
