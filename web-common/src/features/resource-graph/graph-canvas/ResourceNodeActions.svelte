@@ -36,6 +36,7 @@
   import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import type { ResourceNodeData } from "../shared/types";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import {
@@ -59,6 +60,7 @@
     (kind === ResourceKind.Model || kind === ResourceKind.Source) &&
     !!resourceName;
   $: metadata = data?.metadata;
+  $: isExpanded = $page.url.searchParams.has("expanded");
 
   // Derive connector info for Describe modal
   $: derivedConnector = (() => {
@@ -203,15 +205,17 @@
           </div>
         </DropdownMenu.Item>
       {/if}
-      <DropdownMenu.Item
-        class="font-normal flex items-center"
-        on:click={handleViewLineage}
-      >
-        <div class="flex items-center gap-x-2">
-          <GitFork size="12px" />
-          <span>View Lineage</span>
-        </div>
-      </DropdownMenu.Item>
+      {#if !isExpanded}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={handleViewLineage}
+        >
+          <div class="flex items-center gap-x-2">
+            <GitFork size="12px" />
+            <span>View Lineage</span>
+          </div>
+        </DropdownMenu.Item>
+      {/if}
       {#if canRefresh}
         <DropdownMenu.Separator />
         {#if kind === ResourceKind.Model}
