@@ -27,6 +27,7 @@
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
+  import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -35,6 +36,7 @@
   export let connectorInstanceName: string | null = null;
   export let onBack: () => void;
   export let onClose: () => void;
+  export let onCloseAfterNavigation: () => void = onClose;
 
   let saving = false;
 
@@ -100,8 +102,39 @@
   let multiStepFormId = baseFormId;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
+  let prevDeploymentType: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
+
+  // Clear errors when connection type changes
+  $: {
+    const currentDeploymentType = $form.deployment_type as string | undefined;
+    if (
+      prevDeploymentType !== undefined &&
+      currentDeploymentType !== prevDeploymentType
+    ) {
+      paramsError = null;
+    }
+    prevDeploymentType = currentDeploymentType;
+  }
+
+  /**
+   * Clears error state when user modifies form input.
+   * Called from onStringInputChange for text inputs.
+   *
+   * Note: Select/dropdown changes do NOT trigger this - errors only clear on:
+   * - Text input changes (via onStringInputChange)
+   * - Deployment type changes (via reactive statement above)
+   * This is intentional: changing a dropdown option (other than deployment_type)
+   * typically doesn't fix connection errors, so we keep the error visible.
+   */
+  function clearErrorOnInput() {
+    if (paramsError) {
+      paramsError = null;
+      paramsErrorDetails = undefined;
+    }
+  }
+
 
   $: isSubmitDisabled = (() => {
     if (isStepFlowConnector) {
@@ -154,9 +187,6 @@
 
   $: isSubmitting = submitting;
 
-  // Reset errors when form is modified
-  $: if ($paramsTainted) paramsError = null;
-
   async function handleSave() {
     // Save should only work for connector forms
     if (!isConnectorForm) {
@@ -169,7 +199,10 @@
       values: $form,
     });
     if (result.ok) {
-      onClose();
+      // Use quiet close — saveConnectorAnyway already navigated via goto().
+      // The normal resetModal() fires a synthetic popstate that races with
+      // SvelteKit's router and can revert the navigation.
+      onCloseAfterNavigation();
     } else {
       paramsError = result.message;
       paramsErrorDetails = result.details;
@@ -208,6 +241,7 @@
   }
 
   function onStringInputChange(event: Event) {
+    clearErrorOnInput();
     formManager.onStringInputChange(
       event,
       $paramsTainted as Record<string, boolean> | null | undefined,
@@ -254,6 +288,7 @@
             errors={$paramsErrors}
             {onStringInputChange}
             {handleFileUpload}
+            iconMap={ICONS}
           />
         </AddDataFormSection>
       {:else}

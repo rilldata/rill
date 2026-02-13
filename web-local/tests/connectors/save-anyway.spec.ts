@@ -14,11 +14,14 @@ test.describe("Save connector feature", () => {
     // Select ClickHouse connector
     await page.locator("#clickhouse").click();
 
-    // Wait for the form to load
+    // Wait for the form to load and Host field to be visible
+    // (Host is visible when connection type is "cloud" which is the default)
     await page.waitForSelector('form[id*="clickhouse"]');
+    const hostField = page.getByRole("textbox", { name: "Host" });
+    await expect(hostField).toBeVisible();
 
     // Fill in connection details with invalid values
-    await page.getByRole("textbox", { name: "Host" }).fill("asd");
+    await hostField.fill("asd");
     await page.getByRole("textbox", { name: "Password" }).fill("asd");
 
     // Save button should be visible on the connector step

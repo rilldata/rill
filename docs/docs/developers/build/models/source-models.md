@@ -32,12 +32,17 @@ The YAML configuration file contains several key parameters:
 ## Retry Configuration
 
 By default, a model will retry if the initial load fails. This helps ensure reliable data processing by automatically retrying failed operations. The default retry settings are:
+The default `if_error_matches` values are exactly:
+`".*OvercommitTracker.*"`, `".*Bad Gateway.*"`, `".*Timeout.*"`, and `".*Connection refused.*"`.
+If you set `retry.if_error_matches`, it overrides these defaults rather than appending to them.
 
 ```yaml
 retry:
   attempts: 3 
   delay: 5s
   exponential_backoff: true
+  if_error_matches:
+    - ".*NetException.*" # overrides defaults
 ```
 
 You can customize the retry behavior to better suit your specific needs. For example, you might want to increase the number of attempts for critical models, adjust the delay between retries, or only retry on specific error types. Use the following configuration in your source YAML:
@@ -49,8 +54,10 @@ retry:
   exponential_backoff: true
   if_error_matches:
     - ".*OvercommitTracker.*"
-    - ".*Timeout.*"
     - ".*Bad Gateway.*"
+    - ".*Timeout.*"
+    - ".*Connection refused.*"
+    - ".*NetException.*"
 ```
 
 

@@ -6,7 +6,6 @@ import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
-import { clickhousecloudSchema } from "../../templates/schemas/clickhousecloud";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { mysqlSchema } from "../../templates/schemas/mysql";
 import { postgresSchema } from "../../templates/schemas/postgres";
@@ -28,7 +27,6 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
   bigquery: bigquerySchema,
   clickhouse: clickhouseSchema,
-  clickhousecloud: clickhousecloudSchema,
   mysql: mysqlSchema,
   postgres: postgresSchema,
   redshift: redshiftSchema,
@@ -141,7 +139,7 @@ export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
  * Some connectors with more fields use a taller form.
  */
 export function getFormHeight(schema: MultiStepFormSchema | null): string {
-  const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";
+  const FORM_HEIGHT_TALL = "max-h-[40rem] min-h-[40rem]";
   const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
   return schema?.["x-form-height"] === "tall"
     ? FORM_HEIGHT_TALL
@@ -175,4 +173,12 @@ export function shouldShowSkipLink(
     !implementsOlap &&
     !SKIP_LINK_EXCLUDED_CONNECTORS.includes(connectorName ?? "")
   );
+}
+
+/**
+ * Get the form width CSS class for a connector's add data modal.
+ * Some connectors with templates or more content use a wider form.
+ */
+export function getFormWidth(schema: MultiStepFormSchema | null): string {
+  return schema?.["x-form-width"] === "wide" ? "max-w-5xl" : "max-w-4xl";
 }
