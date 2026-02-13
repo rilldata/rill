@@ -24,7 +24,7 @@ To configure OpenAI access, you'll need to obtain an API key and configure it in
    ```yaml
    type: connector
    driver: openai
-   api_key: "{{ .env.connector.openai.openai_api_key }}"
+   api_key: "{{ .env.OPENAI_API_KEY }}"
    ```
 
 3. **Set up environment variable:**
@@ -32,9 +32,15 @@ To configure OpenAI access, you'll need to obtain an API key and configure it in
    If configuring manually, ensure your project's `.env` file contains the key before starting Rill:
 
    ```env
-   connector.openai.openai_api_key=sk-...
+   OPENAI_API_KEY=sk-...
    ```
+4. **Configure OpenAI as the default AI connector:**
 
+   Add the following to your `rill.yaml` to use Claude as the AI provider for your project:
+
+   ```yaml
+   ai_connector: openai
+   ```
 For details on managing credentials across environments, see [Configure Local Credentials](/developers/build/connectors/credentials).
 
 ## Configuration Options

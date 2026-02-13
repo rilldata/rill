@@ -24,7 +24,7 @@ To configure Claude access, you'll need to obtain an API key and configure it in
    ```yaml
    type: connector
    driver: claude
-   api_key: "{{ .env.claude_api_key }}"
+   api_key: "{{ .env.CLAUDE_API_KEY }}"
    ```
 
 3. **Set up environment variable:**
