@@ -92,7 +92,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, err
 	}
 
-	client, err := getS3Client(ctx, e.c.config, "")
+	client, err := getS3Client(ctx, e.c.config, bucket)
 	if err != nil {
 		return nil, err
 	}
