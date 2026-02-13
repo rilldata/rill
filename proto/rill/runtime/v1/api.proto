@@ -805,6 +805,8 @@ message ModelPartition {
   google.protobuf.Timestamp executed_on = 4;
   string error = 5;
   uint32 elapsed_ms = 6;
+  uint32 retry_used = 7;
+  uint32 retry_max = 8;
 }
 
 message GetLogsRequest {

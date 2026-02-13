@@ -34,6 +34,8 @@ func testCatalogPartitions(t *testing.T, catalog drivers.CatalogStore) {
 		DataJSON:  []byte(`{"hello": "world"}`),
 		Watermark: &now,
 		Index:     2,
+		RetryUsed: 0,
+		RetryMax:  0,
 	}
 
 	err = catalog.InsertModelPartition(ctx, modelID, partition)
@@ -47,6 +49,8 @@ func testCatalogPartitions(t *testing.T, catalog drivers.CatalogStore) {
 	partition.ExecutedOn = &now
 	partition.Error = "something"
 	partition.Elapsed = time.Second
+	partition.RetryUsed = 2
+	partition.RetryMax = 3
 
 	err = catalog.UpdateModelPartition(ctx, modelID, partition)
 	require.NoError(t, err)
@@ -61,6 +65,8 @@ func testCatalogPartitions(t *testing.T, catalog drivers.CatalogStore) {
 		DataJSON:  []byte(`{"hello": "world"}`),
 		Watermark: &now,
 		Index:     3,
+		RetryUsed: 0,
+		RetryMax:  0,
 	}
 	err = catalog.InsertModelPartition(ctx, modelID, partition2)
 	require.NoError(t, err)
@@ -68,6 +74,8 @@ func testCatalogPartitions(t *testing.T, catalog drivers.CatalogStore) {
 	partition2.ExecutedOn = &now
 	partition2.Error = ""
 	partition2.Elapsed = 2 * time.Second
+	partition2.RetryUsed = 1
+	partition2.RetryMax = 3
 	err = catalog.UpdateModelPartition(ctx, modelID, partition2)
 	require.NoError(t, err)
 
@@ -90,6 +98,8 @@ func requirePartitionEqual(t *testing.T, expected, actual drivers.ModelPartition
 	requireTimePtrEqual(t, expected.ExecutedOn, actual.ExecutedOn)
 	require.Equal(t, expected.Error, actual.Error)
 	require.Equal(t, expected.Elapsed, actual.Elapsed)
+	require.Equal(t, expected.RetryUsed, actual.RetryUsed)
+	require.Equal(t, expected.RetryMax, actual.RetryMax)
 }
 
 func requireTimePtrEqual(t *testing.T, expected, actual *time.Time) {

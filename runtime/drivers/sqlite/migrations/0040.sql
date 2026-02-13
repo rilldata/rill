@@ -1,0 +1,2 @@
+ALTER TABLE model_partitions ADD COLUMN retry_used INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE model_partitions ADD COLUMN retry_max INTEGER NOT NULL DEFAULT 0;
