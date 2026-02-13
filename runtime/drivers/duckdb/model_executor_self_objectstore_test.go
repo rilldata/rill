@@ -1,6 +1,7 @@
 package duckdb_test
 
 import (
+	"context"
 	"net/url"
 	"strings"
 	"testing"
@@ -104,8 +105,9 @@ func testExportedObjectExists(t *testing.T, driver string, rt *runtime.Runtime, 
 	require.NotNil(t, r, "export")
 	path := r.GetModel().State.ResultProperties.AsMap()["path"].(string)
 
-	cfg := testruntime.AcquireConnector(t, driver)
-	conn, err := drivers.Open(driver, "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	ctx := context.Background()
+	handle, _, err := rt.AcquireHandle(ctx, id, driver)
+	conn, err := drivers.Open(driver, "default", handle.Config(), storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
