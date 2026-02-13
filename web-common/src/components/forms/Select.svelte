@@ -52,9 +52,10 @@
     lg: "",
   };
 
-  $: selected = value
-    ? options.find((option) => option.value === value)
-    : undefined;
+  $: selected =
+    value !== "" && value != null
+      ? options.find((option) => option.value === value)
+      : undefined;
   // Increment to force bits-ui to reset internal state after clearing
   let selectKey = 0;
   $: filteredOptions = enableSearch
@@ -133,7 +134,7 @@
         />
         {#if clearable && value}
           <button
-            class="flex items-center justify-center size-4 rounded-full text-fg-tertiary hover:text-fg-primary hover:bg-gray-200 transition-colors shrink-0"
+            class="flex items-center justify-center size-4 rounded-full text-fg-tertiary hover:text-fg-primary hover:bg-surface-hover transition-colors shrink-0"
             on:click|stopPropagation|preventDefault={() => {
               value = "";
               onChange("");

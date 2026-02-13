@@ -74,7 +74,6 @@ export const mysqlSchema: MultiStepFormSchema = {
       type: "string",
       title: "SSL mode",
       enum: ["DISABLED", "PREFERRED", "REQUIRED"],
-      "x-display": "select",
       "x-placeholder": "Select SSL mode",
     },
     sql: {
