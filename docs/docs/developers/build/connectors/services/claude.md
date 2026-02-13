@@ -9,7 +9,7 @@ sidebar_position: 10
 
 ## API Key
 
-Rill will use your configured Claude connector if available, or fall back to its built-in LLM service if no custom configuration is provided. You can configure your API key in your project's `.env` file and reference the [credentials in a connector YAML](/reference/project-files/connectors#claude).
+Rill will use your configured Claude connector if available, or fall back to its built-in LLM service if no custom configuration is provided. Once configured, your API key will be used for AI features in both Rill Developer and Rill Cloud, including the AI Agent builder. You can configure your API key in your project's `.env` file and reference the [credentials in a connector YAML](/reference/project-files/connectors#claude).
 
 ### Claude API Key
 
