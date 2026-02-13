@@ -222,7 +222,7 @@ test.describe.serial("Reports", () => {
     );
   });
 
-  test.skip("Should delete report", async ({ adminPage }) => {
+  test("Should delete report", async ({ adminPage }) => {
     await adminPage.goto("/e2e/openrtb/-/reports");
 
     await adminPage
