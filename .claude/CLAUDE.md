@@ -9,7 +9,7 @@ Rill is a business intelligence platform built around the following principles:
 
 ## Architecture
 
-Users define projects as YAML and SQL files that describe _resources_ — connectors, models, metrics views, dashboards, and more — organized in a DAG. The runtime **parses** project files into resources and **reconciles** each resource to its desired state (e.g., materializing a model into DuckDB, validating a connector). On the frontend, metrics views power two dashboard types: **explore dashboards** (drill-down, slice-and-dice) and **canvas dashboards** (free-form charts and tables). The platform also supports alerts, scheduled reports, custom APIs, and a built-in AI assistant.
+Users define projects as YAML and SQL files that describe _resources_ — connectors, models, metrics views, dashboards, and more — organized in a DAG. The runtime **parses** project files into resources and **reconciles** each resource to its desired state (e.g., materializing a model into DuckDB, validating a metrics view's dimensions and measures). On the frontend, metrics views power two dashboard types: **explore dashboards** (drill-down, slice-and-dice) and **canvas dashboards** (free-form charts and tables). The platform also supports alerts, scheduled reports, custom APIs, and a built-in AI assistant.
 
 Two deployment modes share the same codebase:
 
@@ -47,7 +47,7 @@ APIs are defined in `.proto` files and mapped to REST via gRPC-Gateway. See `pro
 2. Run `make proto.generate`
 3. Implement handler in `runtime/server/` (or `admin/server/`)
 
-See `runtime/README.md` for details and analytical query patterns.
+See `runtime/README.md` for details.
 
 Frontend API clients are auto-generated from proto definitions using **Orval**. Do not hand-edit files under `web-common/src/runtime-client/` — regenerate them instead.
 
@@ -58,7 +58,7 @@ Frontend API clients are auto-generated from proto definitions using **Orval**. 
 Follow the conventions in `CONTRIBUTING.md`. Key points:
 
 - Use standard library `errors` (not `github.com/pkg/errors`)
-- `golangci-lint` enforces style — integrate it in your editor
+- `golangci-lint` enforces style
 - Non-trivial directories should have a `README.md`
 - Cloud deployments require backwards compatibility (see "Services" in `CONTRIBUTING.md`)
 
