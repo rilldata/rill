@@ -143,7 +143,12 @@ export function toConnectorDriver(
   if (!schema) return null;
   const category = schema["x-category"];
   const backendName = getBackendConnectorName(schemaName);
-  const docsCategory = category === "ai" ? "services" : "data-source";
+  const docsCategory =
+    category === "ai"
+      ? "services"
+      : category === "olap"
+        ? "olap"
+        : "data-source";
   return {
     name: backendName,
     displayName: schema.title ?? schemaName,
