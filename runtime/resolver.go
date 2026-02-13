@@ -39,6 +39,7 @@ type Resolver interface {
 	CacheKey(ctx context.Context) (key []byte, ok bool, err error)
 	// Refs access by the resolver. The output may be approximate, i.e. some of the refs may not exist.
 	// The output should avoid duplicates and be stable between invocations.
+	// This is also used while resolving transitive access rules, resources retuned by Refs() will be given access.
 	Refs() []*runtimev1.ResourceName
 	// Validate the properties and args without running any expensive operations.
 	Validate(ctx context.Context) error
