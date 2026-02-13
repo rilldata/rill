@@ -87,4 +87,3 @@ See [`.claude/rules/frontend.md`](.claude/rules/frontend.md) for frontend conven
 - **Monorepo**: Uses npm workspaces for frontend packages
 - **Path aliases**: Configured in tsconfig.json for `@rilldata/web-*` imports
 - **Git worktrees**: Create worktrees in `.claude/worktrees/` (e.g., `git worktree add .claude/worktrees/feature-branch feature-branch`)
-
