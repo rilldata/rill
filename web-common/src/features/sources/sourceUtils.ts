@@ -3,7 +3,7 @@ import type {
   V1ConnectorDriver,
   V1Source,
 } from "@rilldata/web-common/runtime-client";
-import { makeDotEnvConnectorKey } from "../connectors/code-utils";
+import { makeEnvVarKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 import { getConnectorSchema } from "./modal/connector-schemas";
 import {
@@ -68,7 +68,7 @@ export function compileSourceYAML(
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
         // For source files, we include secret properties
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
+        return `${key}: "{{ .env.${makeEnvVarKey(
           connector.name as string,
           key,
           opts?.existingEnvBlob,

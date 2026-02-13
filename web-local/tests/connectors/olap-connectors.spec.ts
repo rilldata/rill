@@ -137,9 +137,7 @@ test.describe("ClickHouse connector", () => {
       .getByRole("textbox");
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: clickhouse");
-    await expect(codeEditor).toContainText(
-      'dsn: "{{ .env.CLICKHOUSE_DSN }}"',
-    );
+    await expect(codeEditor).toContainText('dsn: "{{ .env.CLICKHOUSE_DSN }}"');
 
     // Go to the `.env` file and verify the CLICKHOUSE_DSN is set
     await page.getByRole("link", { name: ".env" }).click();

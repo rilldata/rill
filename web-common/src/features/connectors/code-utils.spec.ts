@@ -5,7 +5,7 @@ import {
   getGenericEnvVarName,
   envVarExists,
   findAvailableEnvVarName,
-  makeDotEnvConnectorKey,
+  makeEnvVarKey,
 } from "./code-utils";
 
 // Import the template for testing
@@ -311,7 +311,7 @@ describe("findAvailableEnvVarName", () => {
   });
 });
 
-describe("makeDotEnvConnectorKey", () => {
+describe("makeEnvVarKey", () => {
   // Mock schemas matching production x-env-var-name definitions
   const bigquerySchema = {
     properties: {
@@ -342,7 +342,7 @@ describe("makeDotEnvConnectorKey", () => {
 
   describe("Without existing env blob - returns schema-defined name", () => {
     it("should return GOOGLE_APPLICATION_CREDENTIALS for bigquery", () => {
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "bigquery",
         "google_application_credentials",
         undefined,
@@ -352,7 +352,7 @@ describe("makeDotEnvConnectorKey", () => {
     });
 
     it("should return MOTHERDUCK_TOKEN for motherduck", () => {
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "motherduck",
         "token",
         undefined,
@@ -362,12 +362,7 @@ describe("makeDotEnvConnectorKey", () => {
     });
 
     it("should return POSTGRES_PASSWORD for postgres", () => {
-      const result = makeDotEnvConnectorKey(
-        "postgres",
-        "password",
-        "",
-        postgresSchema,
-      );
+      const result = makeEnvVarKey("postgres", "password", "", postgresSchema);
       expect(result).toBe("POSTGRES_PASSWORD");
     });
   });
@@ -375,7 +370,7 @@ describe("makeDotEnvConnectorKey", () => {
   describe("With existing env blob - handles conflicts with _# suffix", () => {
     it("should append _1 when variable already exists", () => {
       const envBlob = `GOOGLE_APPLICATION_CREDENTIALS=existing_value`;
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "bigquery",
         "google_application_credentials",
         envBlob,
@@ -386,7 +381,7 @@ describe("makeDotEnvConnectorKey", () => {
 
     it("should return base name when no conflict exists", () => {
       const envBlob = `OTHER_VAR=value`;
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "bigquery",
         "google_application_credentials",
         envBlob,
@@ -397,7 +392,7 @@ describe("makeDotEnvConnectorKey", () => {
 
     it("should find next available number for multiple connectors of same type", () => {
       const envBlob = `GOOGLE_APPLICATION_CREDENTIALS=first_creds\nGOOGLE_APPLICATION_CREDENTIALS_1=second_creds\nGOOGLE_APPLICATION_CREDENTIALS_2=third_creds`;
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "bigquery",
         "google_application_credentials",
         envBlob,
@@ -408,7 +403,7 @@ describe("makeDotEnvConnectorKey", () => {
 
     it("should handle multiple different properties", () => {
       const envBlob = `AWS_ACCESS_KEY_ID=key1\nAWS_SECRET_ACCESS_KEY=secret1`;
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "s3",
         "aws_access_key_id",
         envBlob,
@@ -419,7 +414,7 @@ describe("makeDotEnvConnectorKey", () => {
 
     it("should handle driver-specific properties with conflicts", () => {
       const envBlob = `MOTHERDUCK_TOKEN=token1\nMOTHERDUCK_TOKEN_1=token2`;
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "motherduck",
         "token",
         envBlob,
@@ -435,7 +430,7 @@ MOTHERDUCK_TOKEN=token1
 MOTHERDUCK_TOKEN_1=token2
 # Another comment
 DATABASE_URL=something`;
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "motherduck",
         "token",
         envBlob,
@@ -448,7 +443,7 @@ DATABASE_URL=something`;
   describe("Integration - full workflows with schemas", () => {
     it("should support adding first BigQuery connector", () => {
       const emptyEnv = "";
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "bigquery",
         "google_application_credentials",
         emptyEnv,
@@ -459,7 +454,7 @@ DATABASE_URL=something`;
 
     it("should support adding second BigQuery connector", () => {
       const envAfterFirst = `GOOGLE_APPLICATION_CREDENTIALS=first_creds`;
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "bigquery",
         "google_application_credentials",
         envAfterFirst,
@@ -470,7 +465,7 @@ DATABASE_URL=something`;
 
     it("should support adding AWS credentials to existing non-AWS variables", () => {
       const envBlob = `MOTHERDUCK_TOKEN=token1\nGOOGLE_APPLICATION_CREDENTIALS=creds1`;
-      const result = makeDotEnvConnectorKey(
+      const result = makeEnvVarKey(
         "s3",
         "aws_access_key_id",
         envBlob,
@@ -481,7 +476,7 @@ DATABASE_URL=something`;
 
     it("should support adding multiple AWS connectors", () => {
       const envBlob = `AWS_ACCESS_KEY_ID=key1\nAWS_SECRET_ACCESS_KEY=secret1`;
-      const result1 = makeDotEnvConnectorKey(
+      const result1 = makeEnvVarKey(
         "s3",
         "aws_access_key_id",
         envBlob,
@@ -490,7 +485,7 @@ DATABASE_URL=something`;
       expect(result1).toBe("AWS_ACCESS_KEY_ID_1");
 
       const updatedEnv = `${envBlob}\nAWS_ACCESS_KEY_ID_1=key2`;
-      const result2 = makeDotEnvConnectorKey(
+      const result2 = makeEnvVarKey(
         "s3",
         "aws_secret_access_key",
         updatedEnv,

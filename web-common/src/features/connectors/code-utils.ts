@@ -232,7 +232,7 @@ driver: ${driverName}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        const envVarName = makeDotEnvConnectorKey(
+        const envVarName = makeEnvVarKey(
           connector.name as string,
           key,
           options?.existingEnvBlob,
@@ -307,7 +307,7 @@ export async function updateDotEnvWithSecrets(
       return;
     }
 
-    const connectorSecretKey = makeDotEnvConnectorKey(
+    const connectorSecretKey = makeEnvVarKey(
       connector.name as string,
       key,
       originalBlob,
@@ -329,7 +329,7 @@ export async function updateDotEnvWithSecrets(
       if (!entry.key?.trim() || !entry.value?.trim()) continue;
       if (!isSensitiveHeaderKey(entry.key)) continue;
       const envSegment = headerKeyToEnvSegment(entry.key);
-      const envKey = makeDotEnvConnectorKey(
+      const envKey = makeEnvVarKey(
         connector.name as string,
         envSegment,
         originalBlob,
@@ -466,7 +466,7 @@ export function findAvailableEnvVarName(
 }
 
 /**
- * Generate an environment variable key for a connector property.
+ * Generate an environment variable key for a property.
  * Uses schema-defined x-env-var-name when available, otherwise generates
  * DRIVER_NAME_PROPERTY_KEY format. Handles conflicts by appending _1, _2, etc.
  *
@@ -476,7 +476,7 @@ export function findAvailableEnvVarName(
  * @param schema - Optional schema with x-env-var-name annotations
  * @returns The environment variable name, with suffix if needed to avoid conflicts
  */
-export function makeDotEnvConnectorKey(
+export function makeEnvVarKey(
   driverName: string,
   key: string,
   existingEnvBlob?: string,
