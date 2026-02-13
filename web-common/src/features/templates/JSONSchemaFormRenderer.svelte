@@ -506,8 +506,8 @@
                       bind:checked={$form[childKey]}
                       {onStringInputChange}
                       {handleFileUpload}
-                      options={isRadioEnum(childProp)
-                        ? radioOptions(childProp)
+                      options={childProp.enum?.length
+                        ? selectOptions(childProp)
                         : undefined}
                       name={`${childKey}-radio`}
                       disabled={isDisabled(childKey)}
@@ -530,7 +530,7 @@
           bind:checked={$form[key]}
           {onStringInputChange}
           {handleFileUpload}
-          options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
+          options={prop.enum?.length ? selectOptions(prop) : undefined}
           name={`${key}-radio`}
           disabled={isDisabled(key)}
         />
