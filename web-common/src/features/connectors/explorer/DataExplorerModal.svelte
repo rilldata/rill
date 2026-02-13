@@ -68,6 +68,7 @@
   } | null = null;
 
   let isGenerating = false;
+  let generateError: string | null = null;
   let searchInput = "";
   let searchQuery = "";
   let searchTimeout: ReturnType<typeof setTimeout>;
@@ -107,9 +108,11 @@
     selectedTable = null;
     selectedConnector = null;
     isGenerating = false;
+    generateError = null;
     searchInput = "";
     searchQuery = "";
     selectionStore.clearSelection();
+    selectionStore.store.update((state) => ({ ...state, expandedItems: {} }));
   }
 
   function handleSelectConnector(connector: V1AnalyzedConnector) {
@@ -118,11 +121,13 @@
     searchInput = "";
     searchQuery = "";
     selectionStore.clearSelection();
+    selectionStore.store.update((state) => ({ ...state, expandedItems: {} }));
   }
 
   async function handleGenerateMetrics() {
     if (!selectedTable) return;
 
+    generateError = null;
     isGenerating = true;
     try {
       await generateMetricsFromTable(
@@ -139,6 +144,7 @@
       handleClose();
     } catch (error) {
       console.error("Failed to generate metrics:", error);
+      generateError = "Failed to generate metrics. Please try again.";
     } finally {
       isGenerating = false;
     }
@@ -261,23 +267,28 @@
     </div>
 
     <div class="p-4 border-t border-border flex items-center">
-      <Button type="secondary" onClick={handleClose}>Back</Button>
+      <Button type="secondary" onClick={handleClose}>Close</Button>
 
-      <Button
-        type="primary"
-        class="ml-auto"
-        disabled={!selectedTable || isGenerating}
-        loading={isGenerating}
-        loadingCopy="Generating..."
-        onClick={handleGenerateMetrics}
-      >
-        <span class="flex items-center gap-1.5">
-          {#if $ai}
-            <Wand2 size="14" />
-          {/if}
-          Generate Metrics{#if $ai}{" "}with AI{/if}
-        </span>
-      </Button>
+      <div class="ml-auto flex items-center gap-2">
+        {#if generateError}
+          <span class="text-sm text-destructive">{generateError}</span>
+        {/if}
+
+        <Button
+          type="primary"
+          disabled={!selectedTable || isGenerating}
+          loading={isGenerating}
+          loadingCopy="Generating..."
+          onClick={handleGenerateMetrics}
+        >
+          <span class="flex items-center gap-1.5">
+            {#if $ai}
+              <Wand2 size="14" />
+            {/if}
+            Generate Metrics{#if $ai}{" "}with AI{/if}
+          </span>
+        </Button>
+      </div>
     </div>
   </Dialog.Content>
 </Dialog.Root>

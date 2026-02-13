@@ -117,8 +117,6 @@ export function useListDatabaseSchemas(
     {
       query: {
         enabled: !!instanceId && !!connector && enabled,
-        retry: 3,
-        retryDelay: 1000,
         select: (data) => {
           const allSchemas = data.databaseSchemas ?? [];
 
@@ -180,8 +178,6 @@ export function useInfiniteListTables(
       !!connector &&
       (!!database || database === "") &&
       databaseSchema !== undefined,
-    retry: 3,
-    retryDelay: 1000,
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage: { nextPageToken?: string }) =>
       lastPage?.nextPageToken || undefined,

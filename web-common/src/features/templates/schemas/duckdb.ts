@@ -1,4 +1,3 @@
-import { olapExplorerFields } from "./olap-explorer-fields";
 import type { MultiStepFormSchema } from "./types";
 
 export const duckdbSchema: MultiStepFormSchema = {
@@ -54,7 +53,6 @@ export const duckdbSchema: MultiStepFormSchema = {
       },
       "x-step": "connector",
     },
-    ...olapExplorerFields("DuckDB"),
   },
   required: ["connector_type"],
   allOf: [

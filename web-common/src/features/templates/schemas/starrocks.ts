@@ -1,4 +1,3 @@
-import { olapExplorerFields } from "./olap-explorer-fields";
 import type { MultiStepFormSchema } from "./types";
 
 export const starrocksSchema: MultiStepFormSchema = {
@@ -86,7 +85,6 @@ export const starrocksSchema: MultiStepFormSchema = {
       title: "SSL",
       description: "Enable SSL/TLS encryption for the connection",
     },
-    ...olapExplorerFields("StarRocks"),
   },
   required: [],
   allOf: [

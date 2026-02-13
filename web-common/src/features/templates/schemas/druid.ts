@@ -1,4 +1,3 @@
-import { olapExplorerFields } from "./olap-explorer-fields";
 import type { MultiStepFormSchema } from "./types";
 
 export const druidSchema: MultiStepFormSchema = {
@@ -64,7 +63,6 @@ export const druidSchema: MultiStepFormSchema = {
       description: "Use SSL for the connection",
       default: true,
     },
-    ...olapExplorerFields("Druid"),
   },
   required: [],
   oneOf: [
