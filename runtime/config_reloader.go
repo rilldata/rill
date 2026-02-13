@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 	"time"
 
@@ -134,6 +135,17 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		r.updatedOn[instanceID] = cfg.UpdatedOn
 		// changes in archive asset IDs are correctly propogated via repo connection reopen only
 		restartController = restartController || cfg.UsesArchive
+		if !restartController {
+			// retrigger parser to pick up changes
+			ctrl, err := r.rt.Controller(ctx, instanceID)
+			if err != nil {
+				return err
+			}
+			err = ctrl.Reconcile(ctx, GlobalProjectParserName)
+			if err != nil {
+				return fmt.Errorf("failed to trigger parser: %w", err)
+			}
+		}
 	}
 
 	err = r.rt.EditInstance(ctx, inst, restartController)

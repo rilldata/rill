@@ -33,10 +33,14 @@ sql: |
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.Len(t, res.Schema, 3)
+		require.Equal(t, "id", res.Schema[0].Name)
+		require.Equal(t, "name", res.Schema[1].Name)
+		require.Equal(t, "value", res.Schema[2].Name)
 		require.Len(t, res.Data, 3)
-		require.EqualValues(t, 1, res.Data[0]["id"])
-		require.Equal(t, "Alice", res.Data[0]["name"])
-		require.EqualValues(t, 100, res.Data[0]["value"])
+		require.EqualValues(t, 1, res.Data[0][0])
+		require.Equal(t, "Alice", res.Data[0][1])
+		require.EqualValues(t, 100, res.Data[0][2])
 	})
 
 	t.Run("explicit connector", func(t *testing.T) {
@@ -47,8 +51,10 @@ sql: |
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.Len(t, res.Schema, 1)
+		require.Equal(t, "answer", res.Schema[0].Name)
 		require.Len(t, res.Data, 1)
-		require.EqualValues(t, 42, res.Data[0]["answer"])
+		require.EqualValues(t, 42, res.Data[0][0])
 	})
 
 	t.Run("aggregation query", func(t *testing.T) {
@@ -58,9 +64,12 @@ sql: |
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.Len(t, res.Schema, 2)
+		require.Equal(t, "count", res.Schema[0].Name)
+		require.Equal(t, "total", res.Schema[1].Name)
 		require.Len(t, res.Data, 1)
-		require.EqualValues(t, 3, res.Data[0]["count"])
-		require.EqualValues(t, 600, res.Data[0]["total"])
+		require.EqualValues(t, 3, res.Data[0][0])
+		require.EqualValues(t, 600, res.Data[0][1])
 	})
 
 	t.Run("missing sql", func(t *testing.T) {

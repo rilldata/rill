@@ -82,7 +82,7 @@ _[object]_ - Defines project-wide default settings for canvases. Unless overridd
 
 ```yaml
 # For complete examples, see: 
-# https://docs.rilldata.com/build/rill-project-file#dashboard-defaults
+# https://docs.rilldata.com/developers/build/rill-project-file#dashboard-defaults
 models:
     refresh:
         cron: '0 * * * *'

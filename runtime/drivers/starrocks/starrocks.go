@@ -23,7 +23,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "StarRocks",
 	Description: "Connect to StarRocks.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/starrocks",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/starrocks",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",

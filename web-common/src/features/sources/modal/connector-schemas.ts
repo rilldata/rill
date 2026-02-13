@@ -6,7 +6,6 @@ import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
-import { clickhousecloudSchema } from "../../templates/schemas/clickhousecloud";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { mysqlSchema } from "../../templates/schemas/mysql";
 import { postgresSchema } from "../../templates/schemas/postgres";
@@ -28,7 +27,6 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
   bigquery: bigquerySchema,
   clickhouse: clickhouseSchema,
-  clickhousecloud: clickhousecloudSchema,
   mysql: mysqlSchema,
   postgres: postgresSchema,
   redshift: redshiftSchema,
@@ -127,4 +125,12 @@ export function getFormHeight(schema: MultiStepFormSchema | null): string {
   return schema?.["x-form-height"] === "tall"
     ? FORM_HEIGHT_TALL
     : FORM_HEIGHT_DEFAULT;
+}
+
+/**
+ * Get the form width CSS class for a connector's add data modal.
+ * Some connectors with templates or more content use a wider form.
+ */
+export function getFormWidth(schema: MultiStepFormSchema | null): string {
+  return schema?.["x-form-width"] === "wide" ? "max-w-5xl" : "max-w-4xl";
 }

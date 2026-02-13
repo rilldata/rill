@@ -23,7 +23,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "https",
 	Description: "Connect to a remote file.",
-	DocsURL:     "https://docs.rilldata.com/build/connect/#adding-a-remote-source",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connect/#adding-a-remote-source",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{

@@ -25,7 +25,7 @@ Rill supports connecting to ClickHouse v22.7 or newer versions.
 
 When using ClickHouse for local development, you can connect via connection parameters or by using the DSN. Both local instances of ClickHouse and ClickHouse Cloud are supported.
 
-After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` directory and populate the `.env` file with `connector.clickhouse.password` or `connector.clickhouse.dsn` depending on which you select in the UI.
+After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` directory and populate the `.env` file with `CLICKHOUSE_PASSWORD` or `CLICKHOUSE_DSN` depending on which you select in the UI.
 
 For more information on supported parameters, see our [ClickHouse connector YAML reference docs](/reference/project-files/connectors#clickhouse).
 
@@ -36,7 +36,7 @@ driver: clickhouse
 host: <HOSTNAME>
 port: <PORT>
 username: <USERNAME>
-password: "{{ .env.connector.clickhouse.password }}"
+password: "{{ .env.CLICKHOUSE_PASSWORD }}"
 ssl: true # required for ClickHouse Cloud
 ```
 
@@ -50,19 +50,19 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 ### Connection String (DSN)
 
-Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
+Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `CLICKHOUSE_DSN` property in Rill.
 
 ```bash
-connector.clickhouse.dsn="clickhouse://<hostname>:<port>?username=<username>&password=<password>"
+CLICKHOUSE_DSN="clickhouse://<hostname>:<port>?username=<username>&password=<password>"
 ```
 
-Once the file is created, it will be added directly to the `.env` file in the project directory. To make changes to this connector, modify `connector.clickhouse.dsn`.
+Once the file is created, it will be added directly to the `.env` file in the project directory. To make changes to this connector, modify `CLICKHOUSE_DSN`.
 
 ```yaml
 type: connector
 driver: clickhouse
 
-dsn: "{{ .env.connector.clickhouse.dsn }}"
+dsn: "{{ .env.CLICKHOUSE_DSN }}"
 ```
 
 :::info Check your port
@@ -135,7 +135,7 @@ optimize_temporary_tables_before_partition_replace: true # default: false
 
 When deploying a ClickHouse-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
 1. If you have followed the UI to create your ClickHouse connector, the password or DSN should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
-2. If `connector.clickhouse.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
+2. If `CLICKHOUSE_DSN` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
 
 
 :::warning Local ClickHouse Server

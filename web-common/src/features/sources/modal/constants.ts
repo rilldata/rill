@@ -98,7 +98,6 @@ export const SOURCES = [
 
 export const OLAP_ENGINES = [
   "clickhouse",
-  "clickhousecloud",
   "motherduck",
   "duckdb",
   "druid",
