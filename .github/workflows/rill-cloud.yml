@@ -10,6 +10,7 @@ on:
       - "v*"
     branches:
       - "main"
+      - "manifest"
       - "release**"
   workflow_dispatch:
 
@@ -85,8 +86,7 @@ jobs:
             go build -o rill -mod=readonly -ldflags="-s -w -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           fi
           
-          docker build -t ${IMAGE}:${GITHUB_SHA}-${{ matrix.arch }} .
-          docker push ${IMAGE}:${GITHUB_SHA}-${{ matrix.arch }}
+          docker buildx build -o type=docker -t ${IMAGE}:${GITHUB_SHA}-${{ matrix.arch }} . --push
 
   docker:
     runs-on: ubuntu-latest
