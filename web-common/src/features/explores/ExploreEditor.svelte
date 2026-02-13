@@ -6,18 +6,22 @@
   import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { mapParseErrorToLine } from "@rilldata/web-common/features/metrics-views/errors";
   import { yaml } from "@codemirror/lang-yaml";
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
 
   export let exploreName: string;
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
-  export let lineBasedRuntimeErrors: LineStatus[];
+  export let parseError: V1ParseError | undefined = undefined;
+
+  $: ({ remoteContent } = fileArtifact);
 
   let editor: EditorView;
 
-  /** If the errors change, run the following transaction. */
-  $: if (editor) setLineStatuses(lineBasedRuntimeErrors, editor);
+  /** If the parse error changes, update the editor gutter. */
+  $: lineStatus = mapParseErrorToLine(parseError, $remoteContent ?? "");
+  $: if (editor) setLineStatuses(lineStatus ? [lineStatus] : [], editor);
 </script>
 
 <Editor

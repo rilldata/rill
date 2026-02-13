@@ -44,11 +44,8 @@ export async function wakeAllProjects(organization: string) {
     }
   } while (pageToken);
 
-  try {
-    await Promise.all(promises);
-  } catch {
-    // TODO
-  }
+  // Throw errors to the caller
+  await Promise.all(promises);
 
   void queryClient.refetchQueries({
     queryKey: getAdminServiceListProjectsForOrganizationQueryKey(organization),

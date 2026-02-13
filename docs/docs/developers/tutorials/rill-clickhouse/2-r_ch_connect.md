@@ -21,20 +21,18 @@ You have two options for your ClickHouse server:
 1. Use a [local running ClickHouse server](https://clickhouse.com/docs/en/install)
 2. Use [ClickHouse Cloud](https://clickhouse.com/docs/en/cloud/overview)
 
-Depending what you choose, the contents of your connection will change and I recommend looking through [our ClickHouse documentation](https://docs.rilldata.com/build/connectors/olap/clickhouse) for further information.
+Depending what you choose, the contents of your connection will change and I recommend looking through [our ClickHouse documentation](https://docs.rilldata.com/developers/build/connectors/olap/clickhouse) for further information.
 
 :::
 
 ### Connect to ClickHouse
 We can create the clickhouse connection by selection `+Add Data` > `ClickHouse` and fill in the components on the UI.
 
-<img src = '/img/tutorials/ch/clickhouse-connector.png' class='rounded-gif' />
-<br />
+![ClickHouse Connectionector](/img/tutorials/ch/clickhouse-connector.png)
 :::tip
 You can obtain the credentials from your ClickHouse Cloud account by clicking the `Connect` button in the left panel.:
 
-<img src = '/img/tutorials/ch/clickhouse-cloud-credential.png' class='rounded-gif' />
-<br />
+![ClickHouse Cloud Credential](/img/tutorials/ch/clickhouse-cloud-credential.png)
 ```
 "https://<hostname>:<port>?username=<username>&password=<password>&secure=true&skip_verify=true"
 ```
@@ -63,7 +61,7 @@ dsn: "clickhouse://localhost:9000"
  You can either add the credentials in plain text or dsn via the yaml file or add the credentials via the CLI.
 
 
-Please see our documentation to find the DSN for [your ClickHouse Cloud instance](https://docs.rilldata.com/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud). 
+Please see our documentation to find the DSN for [your ClickHouse Cloud instance](https://docs.rilldata.com/developers/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud). 
 
 ### How to pass the credentials to Rill
 There are a few way to define the credentials within Rill.
@@ -102,8 +100,8 @@ Afterwards, create a file called clickhouse.yaml and add the following contents:
 type: connector
 driver: clickhouse
 
-host: '{{ .env.host }}'
-port: '{{ .env.port }}'
+host: "{{ .env.host }}"
+port: "{{ .env.port }}"
 ```
 
 
@@ -114,16 +112,16 @@ port: '{{ .env.port }}'
   <TabItem value="env" label="via .env">
 There's a few way to generate the .env file. Making a source that requires credentials will automatically generate it. Else, you can create it using `touch .env` in the rill directory.
 
-```yaml
-connector.clickhouse.host="localhost"
-connector.clickhouse.port=9000
-connector.clickhouse.username 
-connector.clickhouse.password 
-connector.clickhouse.ssl 
+```
+CLICKHOUSE_HOST="localhost"
+CLICKHOUSE_PORT=9000
+CLICKHOUSE_USERNAME=""
+CLICKHOUSE_PASSWORD=""
+CLICKHOUSE_SSL=false
 
 or
 
-connector.clickhouse.dsn="..."
+CLICKHOUSE_DSN="..."
 ```
 
   </TabItem>
@@ -137,4 +135,4 @@ If you connect to ClickHouse via the UI, this will automatically create a templa
 
 You should now be able to see the contents of your ClickHouse database in the left panel of your UI.
 
-<img src = '/img/tutorials/ch/olap-connector.png' class='rounded-gif' />
+![Olap Connectionector](/img/tutorials/ch/olap-connector.png)

@@ -50,15 +50,23 @@
   export let isOverlay = false;
 
   type SummaryMemo = {
+    connectors: number;
     sources: number;
     models: number;
     metrics: number;
     dashboards: number;
     resources: V1Resource[];
-    activeToken: "sources" | "metrics" | "models" | "dashboards" | null;
+    activeToken:
+      | "connectors"
+      | "sources"
+      | "metrics"
+      | "models"
+      | "dashboards"
+      | null;
   };
   function summaryEquals(a: SummaryMemo, b: SummaryMemo) {
     return (
+      a.connectors === b.connectors &&
       a.sources === b.sources &&
       a.models === b.models &&
       a.metrics === b.metrics &&
@@ -103,6 +111,7 @@
   // Determine which overview node should be highlighted based on current seeds
   // For Canvas with MetricsView seeds, prioritize the Canvas token (dashboards) over MetricsView tokens
   $: overviewActiveToken = (function ():
+    | "connectors"
     | "sources"
     | "metrics"
     | "models"
@@ -196,35 +205,44 @@
   // Compute resource counts for the summary graph header.
   // We compute directly in a single pass rather than using filter().length for performance.
   // This is more efficient (O(n) instead of O(4n)) and clearer in intent.
-  $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } =
-    (function computeCounts() {
-      let sources = 0,
-        models = 0,
-        metrics = 0,
-        dashboards = 0;
-      for (const r of normalizedResources) {
-        if (r?.meta?.hidden) continue;
-        const k = coerceResourceKind(r);
-        if (!k) continue;
-        if (k === ResourceKind.Source) sources++;
-        else if (k === ResourceKind.Model) models++;
-        else if (k === ResourceKind.MetricsView) metrics++;
-        else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
-          dashboards++;
-      }
-      return {
-        sourcesCount: sources,
-        modelsCount: models,
-        metricsCount: metrics,
-        dashboardsCount: dashboards,
-      };
-    })());
+  $: ({
+    connectorsCount,
+    sourcesCount,
+    modelsCount,
+    metricsCount,
+    dashboardsCount,
+  } = (function computeCounts() {
+    let connectors = 0,
+      sources = 0,
+      models = 0,
+      metrics = 0,
+      dashboards = 0;
+    for (const r of normalizedResources) {
+      if (r?.meta?.hidden) continue;
+      const k = coerceResourceKind(r);
+      if (!k) continue;
+      if (k === ResourceKind.Connector) connectors++;
+      else if (k === ResourceKind.Source) sources++;
+      else if (k === ResourceKind.Model) models++;
+      else if (k === ResourceKind.MetricsView) metrics++;
+      else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
+        dashboards++;
+    }
+    return {
+      connectorsCount: connectors,
+      sourcesCount: sources,
+      modelsCount: models,
+      metricsCount: metrics,
+      dashboardsCount: dashboards,
+    };
+  })());
 
   // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
   // Without this, the SummaryGraph component would re-render on every resource array change
   // even if counts haven't actually changed. The summaryEquals function does shallow comparison
   // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
+    connectors: 0,
     sources: 0,
     models: 0,
     metrics: 0,
@@ -234,6 +252,7 @@
   };
   $: {
     const nextSummary: SummaryMemo = {
+      connectors: connectorsCount,
       sources: sourcesCount,
       models: modelsCount,
       metrics: metricsCount,
@@ -502,12 +521,14 @@
       {#if showSummary}
         <slot
           name="summary"
+          connectors={connectorsCount}
           {sourcesCount}
           {metricsCount}
           {modelsCount}
           dashboards={dashboardsCount}
         >
           <ResourceKindSelector
+            connectors={summaryMemo.connectors}
             sources={summaryMemo.sources}
             models={summaryMemo.models}
             metrics={summaryMemo.metrics}

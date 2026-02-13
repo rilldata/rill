@@ -737,7 +737,8 @@ describe("seed-utils", () => {
   });
 
   describe("ALLOWED_FOR_GRAPH", () => {
-    it("should include Source, Model, MetricsView, Explore, and Canvas", () => {
+    it("should include Connector, Source, Model, MetricsView, Explore, and Canvas", () => {
+      expect(ALLOWED_FOR_GRAPH.has(ResourceKind.Connector)).toBe(true);
       expect(ALLOWED_FOR_GRAPH.has(ResourceKind.Source)).toBe(true);
       expect(ALLOWED_FOR_GRAPH.has(ResourceKind.Model)).toBe(true);
       expect(ALLOWED_FOR_GRAPH.has(ResourceKind.MetricsView)).toBe(true);
@@ -745,8 +746,8 @@ describe("seed-utils", () => {
       expect(ALLOWED_FOR_GRAPH.has(ResourceKind.Canvas)).toBe(true);
     });
 
-    it("should have exactly 5 kinds", () => {
-      expect(ALLOWED_FOR_GRAPH.size).toBe(5);
+    it("should have exactly 6 kinds", () => {
+      expect(ALLOWED_FOR_GRAPH.size).toBe(6);
     });
   });
 
