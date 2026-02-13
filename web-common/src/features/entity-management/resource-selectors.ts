@@ -101,7 +101,9 @@ export function resourceKindStyleName(kind: ResourceKind | undefined) {
 
 export type UserFacingResourceKinds = Exclude<
   ResourceKind,
-  ResourceKind.ProjectParser | ResourceKind.RefreshTrigger
+  | ResourceKind.ProjectParser
+  | ResourceKind.RefreshTrigger
+  | ResourceKind.Migration
 >;
 
 export const SingletonProjectParserName = "parser";
