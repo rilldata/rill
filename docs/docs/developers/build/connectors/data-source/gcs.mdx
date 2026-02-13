@@ -15,11 +15,12 @@ import { DeployToCloud } from '@site/src/components/connector';
 
 ## Authentication Methods
 
-To connect to Google Cloud Storage, you can choose from three authentication options:
+To connect to Google Cloud Storage, you can choose from four authentication options:
 
 1. **Service Account JSON** (recommended for production)
 2. **HMAC Keys** (alternative authentication method)
 3. **Public** (for publicly accessible buckets - no authentication required)
+4. **Local Google Cloud CLI credentials** (local development only - not recommended for production)
 
 When you add data from GCS through the Rill UI, you'll see three authentication options:
 
