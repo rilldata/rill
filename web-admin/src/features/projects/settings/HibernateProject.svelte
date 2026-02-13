@@ -80,8 +80,8 @@
         <AlertDialogHeader>
           <AlertDialogTitle>Hibernate this project?</AlertDialogTitle>
           <AlertDialogDescription>
-            The project will be paused and will not consume resources. It can
-            be woken up at any time.
+            The project will be paused and will not consume resources. It can be
+            woken up at any time.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
