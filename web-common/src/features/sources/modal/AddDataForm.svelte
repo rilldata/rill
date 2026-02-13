@@ -18,9 +18,12 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import { get } from "svelte/store";
   import { onMount } from "svelte";
-  import { getConnectorSchema } from "./connector-schemas";
+  import { get } from "svelte/store";
+  import {
+    getConnectorSchema,
+    shouldShowSkipLink as checkShouldShowSkipLink,
+  } from "./connector-schemas";
   import {
     getRequiredFieldsForValues,
     getSchemaButtonLabels,
@@ -33,12 +36,12 @@
   export let schemaName: string;
   export let formType: AddDataFormType;
   export let isSubmitting: boolean;
+  export let connectorInstanceName: string | null = null;
   export let onBack: () => void;
   export let onClose: () => void;
   export let onCloseAfterNavigation: () => void = onClose;
 
-  let saveAnyway = false;
-  let showSaveAnyway = false;
+  let saving = false;
 
   // Wire manager-provided onUpdate after declaration below
   let handleOnUpdate: (event: {
@@ -82,16 +85,20 @@
   const isSourceForm = formManager.isSourceForm;
   const isConnectorForm = formManager.isConnectorForm;
   let activeAuthMethod: string | null = null;
-  let prevAuthMethod: string | null = null;
-  let stepState = $connectorStepStore;
   let multiStepSubmitDisabled = false;
   let multiStepButtonLabel = "";
   let multiStepLoadingCopy = "";
-  let shouldShowSkipLink = false;
+  $: stepState = $connectorStepStore;
+
+  // Show skip link on connector step for non-OLAP connectors
+  $: shouldShowSkipLink = checkShouldShowSkipLink(
+    stepState.step,
+    connector?.name,
+    connectorInstanceName,
+    connector?.implementsOlap,
+  );
   let primaryButtonLabel = "";
   let primaryLoadingCopy = "";
-
-  $: stepState = $connectorStepStore;
 
   // Form IDs
   const baseFormId = formManager.formId;
@@ -126,7 +133,6 @@
       currentDeploymentType !== prevDeploymentType
     ) {
       paramsError = null;
-      showSaveAnyway = false;
     }
     prevDeploymentType = currentDeploymentType;
   }
@@ -146,14 +152,6 @@
       paramsError = null;
       paramsErrorDetails = undefined;
     }
-  }
-
-  // Hide Save Anyway once we advance to the model step in step flow connectors.
-  $: if (
-    isStepFlowConnector &&
-    (stepState.step === "source" || stepState.step === "explorer")
-  ) {
-    showSaveAnyway = false;
   }
 
   $: isSubmitDisabled = (() => {
@@ -205,23 +203,16 @@
       : "Testing connection...";
   })();
 
-  // Clear Save Anyway state whenever auth method changes (any direction).
-  $: if (activeAuthMethod !== prevAuthMethod) {
-    prevAuthMethod = activeAuthMethod;
-    showSaveAnyway = false;
-    saveAnyway = false;
-  }
-
   $: isSubmitting = submitting;
 
-  async function handleSaveAnyway() {
-    // Save Anyway should only work for connector forms
+  async function handleSave() {
+    // Save should only work for connector forms
     if (!isConnectorForm) {
       return;
     }
 
-    saveAnyway = true;
-    const result = await formManager.saveConnectorAnyway({
+    saving = true;
+    const result = await formManager.saveConnector({
       queryClient,
       values: $form,
     });
@@ -234,7 +225,7 @@
       paramsError = result.message;
       paramsErrorDetails = result.details;
     }
-    saveAnyway = false;
+    saving = false;
   }
 
   // Re-compute preview when existingEnvBlob is loaded (changes from null to string)
@@ -245,8 +236,12 @@
     formValues: $form,
     existingEnvBlob: existingEnvBlob ?? "",
   });
-  $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
-  $: saveAnywayLoading = submitting && saveAnyway;
+  // Show Save button for connector forms on the connector step (not for public auth which skips connection test)
+  $: shouldShowSaveButton =
+    isConnectorForm &&
+    stepState.step === "connector" &&
+    activeAuthMethod !== "public";
+  $: saveLoading = submitting && saving;
 
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
@@ -255,9 +250,6 @@
     setParamsError: (message: string | null, details?: string) => {
       paramsError = message;
       paramsErrorDetails = details;
-    },
-    setShowSaveAnyway: (value: boolean) => {
-      showSaveAnyway = value;
     },
   });
 
@@ -302,7 +294,6 @@
           bind:primaryButtonLabel={multiStepButtonLabel}
           bind:primaryLoadingCopy={multiStepLoadingCopy}
           bind:formId={multiStepFormId}
-          bind:shouldShowSkipLink
         />
       {:else if connectorSchema}
         <AddDataFormSection
@@ -340,15 +331,14 @@
       >
 
       <div class="flex gap-2">
-        {#if shouldShowSaveAnywayButton}
+        {#if shouldShowSaveButton}
           <Button
-            disabled={false}
-            loading={saveAnywayLoading}
+            loading={saveLoading}
             loadingCopy="Saving..."
-            onClick={handleSaveAnyway}
+            onClick={handleSave}
             type="secondary"
           >
-            Save Anyway
+            Save
           </Button>
         {/if}
 
