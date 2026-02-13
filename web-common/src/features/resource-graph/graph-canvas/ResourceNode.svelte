@@ -10,6 +10,7 @@
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import ResourceNodeActions from "./ResourceNodeActions.svelte";
 
   export let id: string;
   export let type: string;
@@ -125,6 +126,9 @@
         <p class="status" class:error={hasError}>{effectiveStatusLabel}</p>
       {/if}
     </div>
+    <div class="actions-trigger">
+      <ResourceNodeActions {data} />
+    </div>
   </div>
   <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
     <div class="error-tooltip-content">
@@ -189,6 +193,19 @@
 
   .status.error {
     @apply not-italic text-red-600;
+  }
+
+  .actions-trigger {
+    @apply absolute right-1 top-1 opacity-0 transition-opacity;
+  }
+
+  .node:hover .actions-trigger {
+    @apply opacity-100;
+  }
+
+  /* Keep visible when dropdown is open */
+  .actions-trigger:has([aria-expanded="true"]) {
+    @apply opacity-100;
   }
 
   /* Error tooltip styling */

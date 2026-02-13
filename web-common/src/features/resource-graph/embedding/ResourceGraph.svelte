@@ -21,7 +21,7 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
-  import SummaryGraph from "../summary/SummaryGraph.svelte";
+  import ResourceKindSelector from "../summary/ResourceKindSelector.svelte";
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
   import { isGraphExpanded } from "../inspector/graph-inspector-store";
@@ -451,30 +451,6 @@
   class="graph-root"
   style={`--graph-expanded-height-mobile:${expandedHeightMobile};--graph-expanded-height-desktop:${expandedHeightDesktop};`}
 >
-  {#if showSummary && currentExpandedId === null}
-    <slot
-      name="summary"
-      {sourcesCount}
-      {metricsCount}
-      {modelsCount}
-      dashboards={dashboardsCount}
-    >
-      <div class="top-summary">
-        <SummaryGraph
-          sources={summaryMemo.sources}
-          metrics={summaryMemo.metrics}
-          models={summaryMemo.models}
-          dashboards={summaryMemo.dashboards}
-          resources={summaryMemo.resources}
-          activeToken={summaryMemo.activeToken}
-        />
-      </div>
-      {#if hasGraphs}
-        <div class="graph-section-title">All Graphs</div>
-      {/if}
-    </slot>
-  {/if}
-
   {#if error}
     <div class="state error">
       <p>{error}</p>
@@ -494,6 +470,54 @@
     </slot>
   {:else}
     {@const hasExpandedItem = currentExpandedId !== null}
+    <!-- Combined toolbar: tabs on left, kind dropdown on right -->
+    <div class="graph-toolbar">
+      {#if visibleResourceGroups.length > 1}
+        <div class="group-tabs">
+          <button
+            class="group-tab"
+            class:active={currentExpandedId === null}
+            on:click={() => handleExpandChange(null)}
+          >
+            All ({visibleResourceGroups.length})
+          </button>
+          {#each visibleResourceGroups as group, index (group.id)}
+            {@const parts = groupTitleParts(group, index)}
+            <button
+              class="group-tab"
+              class:active={currentExpandedId === group.id}
+              on:click={() => handleExpandChange(group.id)}
+            >
+              <span>{group.label ?? `Graph ${index + 1}`}</span>
+              <span class="tab-count">{group.resources.length}</span>
+              {#if parts.errorCount > 0}
+                <span class="tab-error-dot"></span>
+              {/if}
+            </button>
+          {/each}
+        </div>
+      {:else}
+        <div></div>
+      {/if}
+      {#if showSummary}
+        <slot
+          name="summary"
+          {sourcesCount}
+          {metricsCount}
+          {modelsCount}
+          dashboards={dashboardsCount}
+        >
+          <ResourceKindSelector
+            sources={summaryMemo.sources}
+            models={summaryMemo.models}
+            metrics={summaryMemo.metrics}
+            dashboards={summaryMemo.dashboards}
+            activeToken={summaryMemo.activeToken}
+          />
+        </slot>
+      {/if}
+    </div>
+
     <div
       class="resource-graph-grid"
       class:has-expanded={hasExpandedItem}
@@ -561,7 +585,7 @@
                 rootNodeIds={groupRootNodeIds(group)}
                 showControls={false}
                 showLock={true}
-                fillParent={false}
+                fillParent={true}
                 enableExpand={enableExpansion}
                 {isOverlay}
                 {fitViewPadding}
@@ -579,13 +603,13 @@
 
 <style lang="postcss">
   .graph-root {
-    @apply relative h-full w-full overflow-auto flex flex-col min-h-0;
-    --graph-card-height: 260px;
+    @apply relative h-full w-full overflow-auto flex flex-col min-h-0 gap-y-3;
   }
 
   .resource-graph-grid {
     @apply grid gap-4 flex-1 min-h-0;
     grid-template-columns: repeat(1, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
   }
 
   @media (min-width: 1024px) {
@@ -595,7 +619,7 @@
   }
 
   .grid-item {
-    @apply relative;
+    @apply relative h-full;
   }
 
   .grid-item.hidden {
@@ -622,10 +646,50 @@
     @apply flex items-center gap-x-3;
   }
 
-  .top-summary {
-    @apply mb-2;
+  .graph-toolbar {
+    @apply flex items-end justify-between;
+
   }
-  .graph-section-title {
-    @apply text-sm font-semibold text-fg-primary mt-4 mb-2;
+
+  .group-tabs {
+    @apply flex items-end flex-wrap;
+  }
+
+  .group-tab {
+    @apply relative inline-flex items-center gap-1.5 px-4 py-2;
+    @apply text-xs font-medium text-fg-secondary whitespace-nowrap;
+    @apply bg-transparent border border-transparent;
+    @apply cursor-pointer transition-colors;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    margin-bottom: -1px;
+  }
+
+  .group-tab:hover:not(.active) {
+    @apply text-fg-primary;
+    background-color: color-mix(
+      in srgb,
+      var(--surface-subtle, #f8f8f8) 60%,
+      transparent
+    );
+  }
+
+  .group-tab.active {
+    @apply text-fg-primary font-semibold;
+    background-color: var(--surface-background, #ffffff);
+    border-color: var(--border, #e5e7eb);
+    border-bottom-color: var(--surface-background, #ffffff);
+  }
+
+  .tab-count {
+    @apply text-fg-muted text-[10px];
+  }
+
+  .group-tab.active .tab-count {
+    @apply text-fg-secondary;
+  }
+
+  .tab-error-dot {
+    @apply w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0;
   }
 </style>

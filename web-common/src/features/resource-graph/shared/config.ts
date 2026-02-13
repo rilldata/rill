@@ -139,7 +139,7 @@ export const UI_CONFIG = {
    * Default card height in pixels.
    * Sized to fit 3x3 grid comfortably on standard displays.
    */
-  CARD_HEIGHT_PX: 260,
+  CARD_HEIGHT_PX: 360,
 
   /**
    * Default grid columns for graph cards.

@@ -19,7 +19,6 @@
   import ResourceNode from "./ResourceNode.svelte";
   import type { ResourceNodeData } from "../shared/types";
   import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
-  import { selectGraphNode } from "../inspector/graph-inspector-store";
 
   export let resources: V1Resource[] = [];
   export let title: string | null = null;
@@ -190,10 +189,6 @@
         selected: false,
       })),
     );
-    // Immediately clear inspector selection
-    if (!isOverlay) {
-      selectGraphNode(null);
-    }
   }
 
   // Reactively compute highlighted edges tracing strictly upstream and downstream
@@ -205,19 +200,6 @@
     const edges = $edgesStore as Edge[];
     const selectedNodes = nodes.filter((n) => n.selected);
     const selectedIds = new Set(selectedNodes.map((n) => n.id));
-
-    // Update inspector with selected node data (only if not in overlay mode)
-    if (!isOverlay) {
-      if (selectedNodes.length === 1) {
-        selectGraphNode(selectedNodes[0].data);
-      } else if (selectedNodes.length === 0) {
-        selectGraphNode(null);
-      }
-      // For multiple selections, keep the first one for inspector
-      else {
-        selectGraphNode(selectedNodes[0].data);
-      }
-    }
 
     // No selection: apply default styling and clear highlights
     if (!selectedIds.size) {
@@ -314,20 +296,6 @@
 </script>
 
 <section class="graph-instance">
-  {#if titleLabel != null}
-    <h2 class="graph-title">
-      <span class:text-red-600={anchorError}>{titleLabel}</span>
-      {#if titleErrorCount && titleErrorCount > 0}
-        <span class="text-red-600">
-          {" "}
-          • {titleErrorCount} error{titleErrorCount === 1 ? "" : "s"}
-        </span>
-      {/if}
-    </h2>
-  {:else if title}
-    <h2 class="graph-title">{title}</h2>
-  {/if}
-
   {#if hasNodes}
     <div
       class="graph-container"
@@ -336,6 +304,18 @@
       bind:this={containerEl}
       style:height={containerInlineHeight}
     >
+      {#if titleLabel != null}
+        <div class="graph-watermark">
+          <span class:text-red-600={anchorError}>{titleLabel}</span>
+          {#if titleErrorCount && titleErrorCount > 0}
+            <span class="text-red-600">
+              • {titleErrorCount} error{titleErrorCount === 1 ? "" : "s"}
+            </span>
+          {/if}
+        </div>
+      {:else if title}
+        <div class="graph-watermark">{title}</div>
+      {/if}
       {#if enableExpand}
         <button
           class="expand-btn"
@@ -389,11 +369,7 @@
 
 <style lang="postcss">
   .graph-instance {
-    @apply flex h-full flex-col gap-y-3;
-  }
-
-  .graph-title {
-    @apply text-sm font-semibold text-fg-primary;
+    @apply flex h-full flex-col;
   }
 
   .graph-container {
@@ -415,6 +391,11 @@
 
   .expand-btn:hover {
     @apply bg-surface-muted text-fg-primary;
+  }
+
+  .graph-watermark {
+    @apply absolute bottom-3 right-3 z-10 pointer-events-none;
+    @apply text-xs font-semibold leading-tight text-fg-secondary opacity-70;
   }
 
   /* Override xyflow pane background to match app theme - scoped to this component */
