@@ -124,6 +124,5 @@ describe("connector-schemas", () => {
       expect(ch!.implementsOlap).toBe(true);
       expect(ch!.implementsAi).toBe(false);
     });
-
   });
 });
