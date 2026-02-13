@@ -667,7 +667,6 @@
 
   .graph-toolbar {
     @apply flex items-end justify-between;
-
   }
 
   .group-tabs {

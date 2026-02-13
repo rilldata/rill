@@ -296,7 +296,8 @@
               <AlertCircle size={14} />
               <span>Error</span>
             </div>
-            <pre class="describe-error-msg">{resource?.meta?.reconcileError}</pre>
+            <pre class="describe-error-msg">{resource?.meta
+                ?.reconcileError}</pre>
           {:else if statusLabel}
             <p class="describe-status">{statusLabel}</p>
           {/if}
@@ -336,10 +337,12 @@
                       on:click|preventDefault={() => {
                         describeOpen = false;
                         goto("/files/.env");
-                      }}
-                    >edit</a>
+                      }}>edit</a
+                    >
                   {:else}
-                    <span class="describe-prop-value" title={value}>{value}</span>
+                    <span class="describe-prop-value" title={value}
+                      >{value}</span
+                    >
                   {/if}
                 </div>
               {/each}
@@ -356,8 +359,8 @@
                 on:click|preventDefault={() => {
                   describeOpen = false;
                   goto("/files/.env");
-                }}
-              >.env</a>
+                }}>.env</a
+              >
             </div>
           {/if}
         </div>
@@ -380,7 +383,9 @@
           {#if metadata?.sourcePath}
             <div class="describe-row">
               <span class="describe-row-icon"><FileText size={14} /></span>
-              <span class="describe-mono" title={metadata.sourcePath}>{metadata.sourcePath}</span>
+              <span class="describe-mono" title={metadata.sourcePath}
+                >{metadata.sourcePath}</span
+              >
             </div>
           {/if}
         </div>
@@ -390,8 +395,12 @@
       {#if kind === ResourceKind.Model || kind === ResourceKind.Source}
         <div class="describe-section">
           <div class="describe-section-row">
-            <h4 class="describe-section-title">{displayResourceKind(kind)} Info</h4>
-            <span class="describe-badge">{metadata?.isSqlModel ? "SQL" : "YAML"}</span>
+            <h4 class="describe-section-title">
+              {displayResourceKind(kind)} Info
+            </h4>
+            <span class="describe-badge"
+              >{metadata?.isSqlModel ? "SQL" : "YAML"}</span
+            >
           </div>
           {#if metadata?.incremental}
             <div class="describe-row">
@@ -414,7 +423,11 @@
           {#if metadata?.testCount}
             <div class="describe-row">
               <span class="describe-row-icon"><Zap size={14} /></span>
-              <span>{metadata.testCount} test{metadata.testCount > 1 ? "s" : ""}</span>
+              <span
+                >{metadata.testCount} test{metadata.testCount > 1
+                  ? "s"
+                  : ""}</span
+              >
             </div>
           {/if}
         </div>
@@ -445,13 +458,22 @@
           {#if metadata?.dimensions?.length}
             <div class="describe-row">
               <span class="describe-row-icon"><BarChart3 size={14} /></span>
-              <span>{metadata.dimensions.length} dimension{metadata.dimensions.length > 1 ? "s" : ""}</span>
+              <span
+                >{metadata.dimensions.length} dimension{metadata.dimensions
+                  .length > 1
+                  ? "s"
+                  : ""}</span
+              >
             </div>
           {/if}
           {#if metadata?.measures?.length}
             <div class="describe-row">
               <span class="describe-row-icon"><BarChart3 size={14} /></span>
-              <span>{metadata.measures.length} measure{metadata.measures.length > 1 ? "s" : ""}</span>
+              <span
+                >{metadata.measures.length} measure{metadata.measures.length > 1
+                  ? "s"
+                  : ""}</span
+              >
             </div>
           {/if}
         </div>
@@ -483,13 +505,19 @@
           {#if metadata?.componentCount}
             <div class="describe-row">
               <span class="describe-row-icon"><Component size={14} /></span>
-              <span>{metadata.componentCount} component{metadata.componentCount > 1 ? "s" : ""}</span>
+              <span
+                >{metadata.componentCount} component{metadata.componentCount > 1
+                  ? "s"
+                  : ""}</span
+              >
             </div>
           {/if}
           {#if metadata?.rowCount}
             <div class="describe-row">
               <span class="describe-row-icon"><LayoutGrid size={14} /></span>
-              <span>{metadata.rowCount} row{metadata.rowCount > 1 ? "s" : ""}</span>
+              <span
+                >{metadata.rowCount} row{metadata.rowCount > 1 ? "s" : ""}</span
+              >
             </div>
           {/if}
           {#if metadata?.theme}
@@ -508,13 +536,19 @@
           {#if metadata?.alertCount}
             <div class="describe-row">
               <span class="describe-row-icon"><Bell size={14} /></span>
-              <span>{metadata.alertCount} alert{metadata.alertCount > 1 ? "s" : ""}</span>
+              <span
+                >{metadata.alertCount} alert{metadata.alertCount > 1
+                  ? "s"
+                  : ""}</span
+              >
             </div>
           {/if}
           {#if metadata?.apiCount}
             <div class="describe-row">
               <span class="describe-row-icon"><Plug size={14} /></span>
-              <span>{metadata.apiCount} API{metadata.apiCount > 1 ? "s" : ""}</span>
+              <span
+                >{metadata.apiCount} API{metadata.apiCount > 1 ? "s" : ""}</span
+              >
             </div>
           {/if}
         </div>
