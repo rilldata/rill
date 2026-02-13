@@ -1,0 +1,137 @@
+---
+title: HTTPS
+description: Connect to remote data sources via HTTP/HTTPS
+sidebar_label: HTTPS
+sidebar_position: 25
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+## Overview
+
+The HTTPS connector allows you to import data from remote sources accessible via HTTP or HTTPS URLs into your Rill project. This includes publicly accessible files hosted on web servers, CDNs, or cloud storage services—perfect for working with datasets that are regularly updated or shared publicly.
+
+## Authentication Methods
+
+To connect to data via HTTPS, you need to choose an authentication approach. Rill supports two methods:
+
+1. **Use Authenticated Endpoints** (for private APIs or protected resources)
+2. **Use Public URLs** (for publicly accessible files without authentication)
+
+<TwoStepFlowIntro
+  connector="HTTPS"
+  step1Description="Set up your HTTPS connector with authentication headers (if required)"
+  step2Description="Define the URL path to your data file"
+/>
+
+## Method 1: Authenticated Endpoints (Recommended for Protected Resources)
+
+If your endpoint requires authentication, create an HTTPS connector with your credentials. This method works for both local development and Rill Cloud deployments.
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **HTTPS** as the data source type
+3. In the authentication step:
+   - Configure authentication headers (e.g., Bearer token)
+4. In the data model configuration step, enter the full URL to your data
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/https.yaml`:
+
+```yaml
+type: connector
+driver: https
+
+headers:
+  Authorization: "Bearer {{ .env.connector.https.token }}"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+connector.https.token=your_api_token_here
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Method 2: Public URLs
+
+For publicly accessible files that don't require authentication, you can use the HTTPS connector directly without credentials.
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **HTTPS** as the data source type
+3. In the authentication step, skip or leave authentication blank
+4. In the data model configuration step, enter the full public URL
+5. Click **Create** to finalize
+
+### Manual Configuration
+
+For public URLs, you can create a simple connector or use the built-in `https` connector:
+
+Create `connectors/public_https.yaml`:
+
+```yaml
+type: connector
+driver: https
+```
+
+Then, [create your first model](#create-your-first-model).
+
+## Create Your First Model
+
+Once your connector is configured using any method above, create a model to define what data to pull.
+
+Create `models/https_data.yaml`:
+
+```yaml
+type: model
+connector: https
+
+path: https://api.endpoint.com/v1/data/export.csv
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Supported URL Types
+
+The HTTPS connector supports various remote data sources:
+
+- **Public HTTP/HTTPS URLs**: Direct links to CSV, JSON, Parquet, and other data files
+- **Cloud Storage URLs**: Public links to files in Google Cloud Storage, Amazon S3, or other cloud providers
+- **API Endpoints**: REST APIs that return data in supported formats
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="HTTPS"
+  connectorId="https"
+  credentialDescription="authentication credentials for protected HTTPS endpoints"
+/>
+
+## Best Practices
+
+- **Use HTTPS URLs**: Prefer secure HTTPS connections over HTTP when possible
+- **Check File Accessibility**: Ensure your URLs are publicly accessible or properly authenticated
+- **Monitor File Size**: Large files may take longer to download and process
+- **Regular Updates**: Set up automated refreshes for frequently updated datasets
+
+## Reference
+
+For advanced configuration options and properties, see the [Connector YAML Reference](/reference/project-files/connectors#https).

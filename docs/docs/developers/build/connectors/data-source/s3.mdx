@@ -5,7 +5,9 @@ sidebar_label: S3
 sidebar_position: 60
 ---
 
-<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+import { EnvPullTip, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
 
 ## Overview
 [Amazon S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) is a scalable, fully managed, and highly reliable object storage solution offered by AWS, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common storage formats such as CSV and Parquet. Rill natively supports connecting to S3 using the provided [S3 URI](https://repost.aws/questions/QUFXlwQxxJQQyg9PMn2b6nTg/what-is-s3-uri-in-simple-storage-service) of your bucket to retrieve and read files.
@@ -25,9 +27,7 @@ To connect to Amazon S3, you can choose from four authentication options:
 You can also connect to S3-compatible storage services by specifying a custom endpoint in your connector configuration.
 :::
 
-## Using the Add Data UI
-
-When you add an S3 data model through the Rill UI, you'll see two authentication options:
+When you add data from S3 through the Rill UI, you'll see two authentication options:
 
 - **Access Key/Secret Key**: The process follows two steps:
   1. **Configure Authentication** - Set up your S3 connector with credentials
@@ -40,9 +40,7 @@ When you add an S3 data model through the Rill UI, you'll see two authentication
 
 :::note Manual Configuration Only
 IAM Role Assumption and Local AWS credentials are only available through manual configuration. See [Method 2: IAM Role Assumption](#method-2-iam-role-assumption) and [Method 4: Local AWS Credentials](#method-4-local-aws-credentials-local-development-only) for setup instructions.
-::: 
-
----
+:::
 
 ## Method 1: Access Key/Secret Key (Recommended)
 
@@ -56,66 +54,43 @@ Access Key/Secret Key credentials provide reliable authentication for S3. This m
    - Choose **Access Key/Secret Key**
    - Enter your Access Key ID
    - Enter your Secret Access Key
-   - Name your connector (e.g., `my_s3`)
-4. In the data model configuration step:
-   - Enter your bucket name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will automatically create both the connector file and model file for you.
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
-If you prefer to configure manually, create two files:
+If you prefer to configure manually:
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_s3.yaml`:
+Create `connectors/s3.yaml`:
 
 ```yaml
 type: connector
-driver: s3 
+driver: s3
 
 aws_access_key_id: "{{ .env.connector.s3.aws_access_key_id }}"
 aws_secret_access_key: "{{ .env.connector.s3.aws_secret_access_key }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_s3_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-create_secrets_from_connectors: my_s3
-
-sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
-
-# Add a refresh schedule
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.s3.aws_access_key_id=your_access_key_id
 connector.s3.aws_secret_access_key=your_secret_access_key
 ```
 
-:::tip Did you know?
+<EnvPullTip />
 
-If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/developers/build/connectors/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials that you have set locally for this source.
-
-:::
-
----
+Then, [create your first model](#create-your-first-model).
 
 ## Method 2: IAM Role Assumption
 
 Rill supports AWS IAM role assumption for enhanced security. This method allows Rill to temporarily assume an IAM role to access S3 resources. This method is only available through manual configuration.
 
-#### Benefits of Using IAM Roles
+### Benefits of Using IAM Roles
 
 - **Temporary Credentials**: No need to manage long-lived access keys.
 - **Enhanced Security**: Follows the principle of least privilege.
@@ -126,7 +101,7 @@ Rill supports AWS IAM role assumption for enhanced security. This method allows 
 
 **Step 1: Create connector configuration**
 
-Create `connectors/my_s3_role.yaml`:
+Create `connectors/s3_role.yaml`:
 
 ```yaml
 type: connector
@@ -136,29 +111,14 @@ aws_role_arn: "{{ .env.connector.s3.aws_role_arn }}"
 aws_external_id: "{{ .env.connector.s3.aws_external_id }}"
 ```
 
-**Step 2: Create model configuration**
-
-Create `models/my_s3_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-create_secrets_from_connectors: my_s3_role
-
-sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Step 3: Add credentials to `.env`**
+**Step 2: Add credentials to `.env`**
 
 ```bash
 connector.s3.aws_role_arn=arn:aws:iam::123456789012:role/RillDataAccess
 connector.s3.aws_external_id=your_external_id
 ```
 
----
+Then, [create your first model](#create-your-first-model).
 
 ## Method 3: Public Buckets
 
@@ -171,34 +131,18 @@ For publicly accessible S3 buckets, you don't need to create a connector. Simply
 3. In the authentication step:
    - Choose **Public**
    - The UI will skip connector creation and proceed directly to data model configuration
-4. In the data model configuration step:
-   - Enter your bucket name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will only create the model file (no connector file is created).
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
-For public buckets, you only need to create a model file. No connector configuration is required.
-
-Create `models/my_s3_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('s3://my-public-bucket/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
+No connector configuration is needed for public buckets. Proceed to [Create Your First Model](#create-your-first-model) below and omit the `create_secrets_from_connectors` line.
 
 :::warning Public Access Only
 This method only works with publicly accessible buckets. Most production S3 buckets are private and require authentication.
 :::
-
----
 
 ## Method 4: Local AWS Credentials (Local Development Only)
 
@@ -212,56 +156,15 @@ For local development, you can use credentials from the AWS CLI. This method is 
    - If your organization does not have SSO configured, follow the steps described under [How to create an AWS service account using the AWS Management Console](#how-to-create-an-aws-service-account-using-the-aws-management-console), then run `aws configure`
 3. Create your model file (no connector needed)
 
-### Model Configuration
+### Manual Configuration
 
-Create `models/my_s3_data.yaml`:
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
+No connector is needed when using local credentials. Proceed to [Create Your First Model](#create-your-first-model) below and omit the `create_secrets_from_connectors` line.
 
 Rill will automatically detect and use your local AWS CLI credentials when no connector is specified.
 
 :::warning
 This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Access Key/Secret Key or IAM Role Assumption for production deployments.
 :::
-
-
-## Using S3 Data in Models
-
-Once your connector is configured (or for public buckets, no connector needed), you can reference S3 paths in your model SQL queries using DuckDB's S3 functions.
-
-### Basic Example
-
-**With a connector (authenticated):**
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('s3://my-bucket/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
-
-**Public bucket (no connector needed):**
-
-```yaml
-type: model
-connector: duckdb
-
-sql: SELECT * FROM read_parquet('s3://my-public-bucket/data/*.parquet')
-
-refresh:
-  cron: "0 */6 * * *"
-```
 
 ### Path Patterns
 
@@ -281,16 +184,34 @@ SELECT * FROM read_parquet('s3://my-bucket/data/**/*.parquet')
 SELECT * FROM read_parquet('s3://my-bucket/data/2024-*.parquet')
 ```
 
----
+## Create Your First Model
+
+After setting up your authentication above, create a model to define what data to pull.
+
+Create `models/s3_data.yaml`:
+
+```yaml
+type: model
+connector: duckdb
+create_secrets_from_connectors: s3
+dev:
+  sql: SELECT * FROM read_parquet('s3://my-bucket/path/to/data/*.parquet')
+
+sql: SELECT * FROM read_parquet('s3://my-bucket/**/*.parquet')
+```
+
+- Replace `s3` in `create_secrets_from_connectors` with the name of the connector you created.
+- If you're using a public bucket or local credentials (no connector), omit the `create_secrets_from_connectors` line.
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
 
 ## Deploy to Rill Cloud
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide an access key and secret for an AWS service account with access to S3 used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#s3) for more information.
-
-If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
-```
-rill env push
-```
+<DeployToCloud
+  connector="S3"
+  connectorId="s3"
+  credentialDescription="an access key and secret for an AWS service account"
+/>
 
 ## Appendix
 
