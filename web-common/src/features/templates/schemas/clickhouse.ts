@@ -6,28 +6,41 @@ export const clickhouseSchema: MultiStepFormSchema = {
   title: "ClickHouse",
   "x-category": "olap",
   "x-form-height": "tall",
-  // TODO(APP-728): Re-enable Rill-managed ClickHouse when the feature is complete
-  // "x-button-labels": {
-  //   connector_type: {
-  //     "rill-managed": { idle: "Connect", loading: "Connecting..." },
-  //   },
-  // },
+  "x-form-width": "wide",
+  "x-button-labels": {
+    deployment_type: {
+      playground: { idle: "Connect", loading: "Connecting..." },
+      "rill-managed": { idle: "Connect", loading: "Connecting..." },
+    },
+  },
   properties: {
-    // TODO(APP-728): Re-enable Rill-managed ClickHouse when the feature is complete
-    // connector_type: {
-    //   type: "string",
-    //   title: "Connection type",
-    //   enum: ["rill-managed", "self-hosted"],
-    //   default: "self-hosted",
-    //   "x-display": "radio",
-    //   "x-enum-labels": ["Rill-managed ClickHouse", "Self-hosted ClickHouse"],
-    //   "x-ui-only": true,
-    //   "x-grouped-fields": {
-    //     "rill-managed": ["managed"],
-    //     "self-hosted": ["connection_mode"],
-    //   },
-    //   "x-step": "connector",
-    // },
+    deployment_type: {
+      type: "string",
+      title: "Connection type",
+      // TODO(APP-728): Re-enable "rill-managed" option when CH model file creation is complete
+      enum: ["cloud", "playground", "self-managed"],
+      default: "cloud",
+      "x-display": "select",
+      "x-select-style": "rich",
+      "x-enum-labels": [
+        "ClickHouse Cloud",
+        "ClickHouse Playground",
+        "Self Managed",
+      ],
+      "x-enum-descriptions": [
+        "Connect to your ClickHouse Cloud instance",
+        "Free public instance for testing and demos",
+        "Connect to your own self-hosted server",
+      ],
+      "x-ui-only": true,
+      "x-grouped-fields": {
+        cloud: ["connection_mode"],
+        playground: ["playground_info"],
+        "self-managed": ["connection_mode"],
+        "rill-managed": ["managed"],
+      },
+      "x-step": "connector",
+    },
     connection_mode: {
       type: "string",
       enum: ["parameters", "dsn"],
@@ -47,10 +60,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
         ],
         dsn: ["dsn"],
       },
-      // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-      // "x-visible-if": {
-      //   connector_type: "self-hosted",
-      // },
+      "x-visible-if": {
+        deployment_type: ["cloud", "self-managed"],
+      },
       "x-step": "connector",
     },
     dsn: {
@@ -61,49 +73,60 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder":
         "clickhouse://localhost:9000?username=default&password=password",
       "x-secret": true,
-      // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-      // "x-visible-if": {
-      //   connector_type: "self-hosted",
-      // },
+      "x-env-var-name": "CLICKHOUSE_DSN",
+      "x-visible-if": {
+        deployment_type: ["cloud", "self-managed"],
+      },
       "x-step": "connector",
     },
-    // TODO(APP-728): Re-enable Rill-managed ClickHouse when the feature is complete
-    // managed: {
-    //   type: "boolean",
-    //   title: "Managed",
-    //   description:
-    //     "This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance.",
-    //   default: false,
-    //   "x-informational": true,
-    //   "x-visible-if": {
-    //     connector_type: "rill-managed",
-    //   },
-    //   "x-step": "connector",
-    // },
+    managed: {
+      type: "boolean",
+      title: "Managed",
+      description:
+        "This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance.",
+      default: true,
+      "x-informational": true,
+      "x-visible-if": {
+        deployment_type: "rill-managed",
+      },
+      "x-step": "connector",
+    },
+    playground_info: {
+      type: "boolean",
+      title: "Playground",
+      description:
+        'Connect to ClickHouse\'s free public <a href="https://play.clickhouse.com/play?user=play" target="_blank" class="text-primary-600 hover:underline">playground instance</a>. This is a read-only demo environment with sample datasets, perfect for testing Rill\'s ClickHouse integration without any setup. No credentials required.',
+      default: true,
+      "x-informational": true,
+      "x-ui-only": true,
+      "x-visible-if": {
+        deployment_type: "playground",
+      },
+      "x-step": "connector",
+    },
     host: {
       type: "string",
       title: "Host",
       description: "Hostname or IP address of the ClickHouse server",
       "x-placeholder": "your.clickhouse.server.com",
       "x-hint": "Your ClickHouse hostname (e.g., your-server.com)",
-      // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-      // "x-visible-if": {
-      //   connector_type: "self-hosted",
-      // },
+      "x-visible-if": {
+        deployment_type: ["cloud", "self-managed"],
+      },
       "x-step": "connector",
     },
     port: {
       type: "string",
       title: "Port",
-      description: "Port number of the ClickHouse server",
+      description:
+        "Port number of the ClickHouse server. Common ports: 8443 (HTTPS), 9440 (Native TLS, secure), 8123 (HTTP, insecure), 9000 (Native TCP, insecure)",
       pattern: "^\\d+$",
       errorMessage: { pattern: "Port must be a number" },
-      default: "9000",
-      "x-placeholder": "9000",
-      // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-      // "x-visible-if": {
-      //   connector_type: "self-hosted",
-      // },
+      default: "8443",
+      "x-placeholder": "8443",
+      "x-visible-if": {
+        deployment_type: ["cloud", "self-managed"],
+      },
       "x-step": "connector",
     },
     username: {
@@ -112,10 +135,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Username to connect to the ClickHouse server",
       default: "default",
       "x-placeholder": "default",
-      // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-      // "x-visible-if": {
-      //   connector_type: "self-hosted",
-      // },
+      "x-visible-if": {
+        deployment_type: ["cloud", "self-managed"],
+      },
       "x-step": "connector",
     },
     password: {
@@ -124,10 +146,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Password to connect to the ClickHouse server",
       "x-placeholder": "Database password",
       "x-secret": true,
-      // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-      // "x-visible-if": {
-      //   connector_type: "self-hosted",
-      // },
+      "x-env-var-name": "CLICKHOUSE_PASSWORD",
+      "x-visible-if": {
+        deployment_type: ["cloud", "self-managed"],
+      },
       "x-step": "connector",
     },
     database: {
@@ -136,10 +158,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Name of the ClickHouse database to connect to",
       default: "default",
       "x-placeholder": "default",
-      // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-      // "x-visible-if": {
-      //   connector_type: "self-hosted",
-      // },
+      "x-visible-if": {
+        deployment_type: ["cloud", "self-managed"],
+      },
       "x-step": "connector",
     },
     cluster: {
@@ -148,10 +169,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description:
         "Cluster name. If set, models are created as distributed tables.",
       "x-placeholder": "Cluster name",
-      // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-      // "x-visible-if": {
-      //   connector_type: "self-hosted",
-      // },
+      "x-visible-if": {
+        deployment_type: ["cloud", "self-managed"],
+      },
       "x-step": "connector",
     },
     ssl: {
@@ -159,39 +179,78 @@ export const clickhouseSchema: MultiStepFormSchema = {
       title: "SSL",
       description: "Use SSL to connect to the ClickHouse server",
       default: true,
-      // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-      // "x-visible-if": {
-      //   connector_type: "self-hosted",
-      // },
+      "x-visible-if": {
+        deployment_type: ["cloud", "self-managed"],
+      },
       "x-step": "connector",
     },
   },
-  // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-  // required: ["connector_type"],
+  required: ["deployment_type"],
   allOf: [
-    // TODO(APP-728): Re-enable Rill-managed ClickHouse validation when the feature is complete
-    // {
-    //   if: { properties: { connector_type: { const: "rill-managed" } } },
-    //   then: {
-    //     required: ["managed"],
-    //     properties: {
-    //       managed: { const: true },
-    //     },
-    //   },
-    // },
+    {
+      if: { properties: { deployment_type: { const: "rill-managed" } } },
+      then: {
+        required: ["managed"],
+        properties: {
+          managed: { const: true },
+        },
+      },
+    },
+    {
+      if: { properties: { deployment_type: { const: "playground" } } },
+      then: {
+        properties: {
+          managed: { const: false },
+          host: { const: "play.clickhouse.com" },
+          port: { const: "9440" },
+          username: { const: "play" },
+          password: { const: "" },
+          database: { const: "default" },
+          ssl: { const: true },
+        },
+      },
+    },
     {
       if: {
         properties: {
-          // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-          // connector_type: { const: "self-hosted" },
+          deployment_type: { const: "cloud" },
+          connection_mode: { const: "parameters" },
+        },
+      },
+      then: {
+        required: ["host", "username", "port"],
+        properties: {
+          managed: { const: false },
+          ssl: { const: true },
+        },
+      },
+    },
+    {
+      if: {
+        properties: {
+          deployment_type: { const: "cloud" },
+          connection_mode: { const: "dsn" },
+        },
+      },
+      then: {
+        required: ["dsn"],
+        properties: {
+          managed: { const: false },
+        },
+      },
+    },
+    {
+      if: {
+        properties: {
+          deployment_type: { const: "self-managed" },
           connection_mode: { const: "parameters" },
         },
       },
       then: {
         required: ["host", "username"],
         properties: {
-          // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-          // managed: { const: false },
+          managed: { const: false },
+          port: { default: "9000" },
           ssl: { default: true },
         },
       },
@@ -199,17 +258,15 @@ export const clickhouseSchema: MultiStepFormSchema = {
     {
       if: {
         properties: {
-          // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-          // connector_type: { const: "self-hosted" },
+          deployment_type: { const: "self-managed" },
           connection_mode: { const: "dsn" },
         },
       },
       then: {
         required: ["dsn"],
-        // TODO(APP-728): Re-enable when Rill-managed ClickHouse is ready
-        // properties: {
-        //   managed: { const: false },
-        // },
+        properties: {
+          managed: { const: false },
+        },
       },
     },
   ],

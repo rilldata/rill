@@ -17,8 +17,7 @@ If this is the first time you have deployed a project onto Rill Cloud, you will 
 
 Select the `Deploy to share` button in the top right corner of a dashboard.
 
-<img src = '/img/tutorials/rill-basics/deploy-ui.gif' class='rounded-gif' />
-<br />
+![Deploy UI](/img/tutorials/rill-basics/deploy-ui.gif)
 
 Steps to deploy to Rill Cloud:
 1. Select the `Deploy to share` button.
@@ -29,8 +28,7 @@ Steps to deploy to Rill Cloud:
 
 
 Take note of the following features in the UI:
-<img src = '/img/tutorials/rill-basics/ui-explained.gif' class='rounded-gif' />
-
+![UI Explained](/img/tutorials/rill-basics/ui-explained.gif)
 ## In case of the following error:
 
 ```bash
@@ -39,4 +37,4 @@ connection: dial tcp 127.0.0.1:9000: connect: connection refused
 
 This is likely due to using a locally running ClickHouse server. If so, you will not be able to access your locally running server from Rill Cloud. Instead, we suggest using [ClickHouse Cloud](https://clickhouse.com/cloud). 
 
-For steps to setup ClickHouse Cloud, please refer to [our documentation](https://docs.rilldata.com/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud).
+For steps to setup ClickHouse Cloud, please refer to [our documentation](https://docs.rilldata.com/developers/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud).

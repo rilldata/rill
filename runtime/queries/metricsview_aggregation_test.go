@@ -39,6 +39,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_having_gt", func(t *testing.T) { testMetricsViewsAggregation_having_gt(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_having_same_name", func(t *testing.T) { testMetricsViewsAggregation_having_same_name(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_having", func(t *testing.T) { testMetricsViewsAggregation_having(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_with_limit", func(t *testing.T) { testMetricsViewsAggregation_having_with_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_where", func(t *testing.T) { testMetricsViewsAggregation_where(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_whereAndSQLBoth", func(t *testing.T) { testMetricsViewsAggregation_whereAndSQLBoth(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_filter_having_measure", func(t *testing.T) { testMetricsViewsAggregation_filter_having_measure(t, rt, instanceID) })
@@ -63,6 +64,9 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
 		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
 	})
+	t.Run("testMetricsViewsAggregation_comparison_date_dimension", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_date_dimension(t, rt, instanceID)
+	})
 }
 
 func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
@@ -79,6 +83,7 @@ func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_having_gt", func(t *testing.T) { testMetricsViewsAggregation_having_gt(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_having_same_name", func(t *testing.T) { testMetricsViewsAggregation_having_same_name(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_having", func(t *testing.T) { testMetricsViewsAggregation_having(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_with_limit", func(t *testing.T) { testMetricsViewsAggregation_having_with_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_where", func(t *testing.T) { testMetricsViewsAggregation_where(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_whereAndSQLBoth", func(t *testing.T) { testMetricsViewsAggregation_whereAndSQLBoth(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_filter_having_measure", func(t *testing.T) { testMetricsViewsAggregation_filter_having_measure(t, rt, instanceID) })
@@ -120,6 +125,7 @@ func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_having_gt", func(t *testing.T) { testMetricsViewsAggregation_having_gt(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_having_same_name", func(t *testing.T) { testMetricsViewsAggregation_having_same_name(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_having", func(t *testing.T) { testMetricsViewsAggregation_having(t, rt, instanceID) })
+	t.Run("testMetricsViewsAggregation_having_with_limit", func(t *testing.T) { testMetricsViewsAggregation_having_with_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_where", func(t *testing.T) { testMetricsViewsAggregation_where(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_whereAndSQLBoth", func(t *testing.T) { testMetricsViewsAggregation_whereAndSQLBoth(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_filter_having_measure", func(t *testing.T) { testMetricsViewsAggregation_filter_having_measure(t, rt, instanceID) })
@@ -1909,6 +1915,60 @@ func testMetricsViewsAggregation_having(t *testing.T, rt *runtime.Runtime, insta
 	require.Equal(t, 1, len(rows))
 	i := 0
 	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_0"))
+}
+
+// testMetricsViewsAggregation_having_with_limit tests that HAVING is applied before LIMIT.
+func testMetricsViewsAggregation_having_with_limit(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	limit := int64(1)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "inline_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+		},
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "inline_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(19000),
+							},
+						},
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "inline_1",
+			},
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	// HAVING filters to 2 rows (Facebook:19341, null:32897),
+	// then ORDER BY inline_1 ASC + LIMIT 1 returns 1 row: Facebook with 19341.
+	require.Equal(t, 1, len(rows))
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[0], "pub", "inline_1"))
 }
 
 func testMetricsViewsAggregation_where(t *testing.T, rt *runtime.Runtime, instanceID string) {
@@ -4997,4 +5057,50 @@ func fieldsToString(row *structpb.Struct, args ...string) string {
 		}
 	}
 	return strings.Join(s, ",")
+}
+
+// testMetricsViewsAggregation_comparison_date_dimension tests comparison queries with a DATE type dimension, they should not automatically convert to datetime type
+func testMetricsViewsAggregation_comparison_date_dimension(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "event_date",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "event_date",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Equal(t, "2022-01-01", q.Result.Data[0].Fields["event_date"].GetStringValue())
+	require.Equal(t, "2022-01-02", q.Result.Data[1].Fields["event_date"].GetStringValue())
 }

@@ -33,10 +33,14 @@ sql: |
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.Len(t, res.Schema, 3)
+		require.Equal(t, "id", res.Schema[0].Name)
+		require.Equal(t, "name", res.Schema[1].Name)
+		require.Equal(t, "value", res.Schema[2].Name)
 		require.Len(t, res.Data, 3)
-		require.EqualValues(t, 1, res.Data[0]["id"])
-		require.Equal(t, "Alice", res.Data[0]["name"])
-		require.EqualValues(t, 100, res.Data[0]["value"])
+		require.EqualValues(t, 1, res.Data[0][0])
+		require.Equal(t, "Alice", res.Data[0][1])
+		require.EqualValues(t, 100, res.Data[0][2])
 	})
 
 	t.Run("explicit connector", func(t *testing.T) {
@@ -47,8 +51,10 @@ sql: |
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.Len(t, res.Schema, 1)
+		require.Equal(t, "answer", res.Schema[0].Name)
 		require.Len(t, res.Data, 1)
-		require.EqualValues(t, 42, res.Data[0]["answer"])
+		require.EqualValues(t, 42, res.Data[0][0])
 	})
 
 	t.Run("aggregation query", func(t *testing.T) {
@@ -58,9 +64,12 @@ sql: |
 		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.Len(t, res.Schema, 2)
+		require.Equal(t, "count", res.Schema[0].Name)
+		require.Equal(t, "total", res.Schema[1].Name)
 		require.Len(t, res.Data, 1)
-		require.EqualValues(t, 3, res.Data[0]["count"])
-		require.EqualValues(t, 600, res.Data[0]["total"])
+		require.EqualValues(t, 3, res.Data[0][0])
+		require.EqualValues(t, 600, res.Data[0][1])
 	})
 
 	t.Run("missing sql", func(t *testing.T) {
@@ -76,4 +85,54 @@ sql: |
 		})
 		require.Error(t, err)
 	})
+}
+
+func TestQuerySQLLimit(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"models/test_data.yaml": `
+type: model
+sql: |
+  SELECT UNNEST(range(1, 11)) AS id
+`,
+		},
+		Variables: map[string]string{
+			"rill.ai.max_query_limit": "5",
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	s := newSession(t, rt, instanceID)
+
+	tests := []struct {
+		name        string
+		sql         string
+		wantRows    int
+		wantWarning string
+	}{
+		{
+			name:        "result under limit",
+			sql:         "SELECT * FROM test_data WHERE id <= 2 ORDER BY id",
+			wantRows:    2,
+			wantWarning: "",
+		},
+		{
+			name:        "result truncated at limit",
+			sql:         "SELECT * FROM test_data ORDER BY id",
+			wantRows:    5,
+			wantWarning: "The system truncated the result to 5 rows",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var res *ai.QuerySQLResult
+			_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QuerySQLName, &res, &ai.QuerySQLArgs{
+				SQL: tt.sql,
+			})
+			require.NoError(t, err)
+			require.Len(t, res.Data, tt.wantRows)
+			require.Equal(t, tt.wantWarning, res.TruncationWarning)
+		})
+	}
 }

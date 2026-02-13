@@ -46,9 +46,7 @@
       hasPermission: projectPermissions.manageProject,
     },
     {
-      // TODO: Change this back to `/${organization}/${project}/-/settings`
-      // Once project settings are implemented
-      route: `/${organization}/${project}/-/settings/environment-variables`,
+      route: `/${organization}/${project}/-/settings`,
       label: "Settings",
       hasPermission: projectPermissions.manageProject,
     },

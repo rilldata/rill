@@ -8,8 +8,7 @@ sidebar_position: 15
 [MotherDuck](https://motherduck.com/) is a cloud-native DuckDB service that provides scalable analytics and data processing capabilities. Built on the same core engine as DuckDB, MotherDuck offers the familiar SQL interface and performance characteristics while adding cloud-native features like serverless compute, automatic scaling, and collaborative data sharing.
 
 
-<img src='/img/build/connectors/olap-engines/motherduck/rill-developer.png' class='rounded-gif' />
-<br />
+![Rill Developer](/img/build/connectors/olap-engines/motherduck/rill-developer.png)
 
 
 
@@ -28,8 +27,7 @@ To connect to MotherDuck, you'll need a access token from your MotherDuck accoun
 3. Go to **Access Tokens**
 4. Create a new access token or copy an existing one
    
-<img src='/img/build/connectors/olap-engines/motherduck/service-token.png' class='rounded-gif' />
-<br />
+![Service Token](/img/build/connectors/olap-engines/motherduck/service-token.png)
 
 :::warning Keep Your Token Secure
 
@@ -40,7 +38,7 @@ Your MotherDuck access token provides access to your data. Keep it secure and ne
 
 ## Configuring Rill Developer with MotherDuck
 
-Connect to your OLAP engine via Add Data. This will automatically create the motherduck.yaml file in your connectors folder and populate the .env file with `.connector.motherduck.token`.
+Connect to your OLAP engine via Add Data. This will automatically create the motherduck.yaml file in your connectors folder and populate the .env file with `MOTHERDUCK_TOKEN`.
 
 For more information on supported parameters, see our [MotherDuck connector YAML reference docs](/reference/project-files/connectors#motherduck).
 
@@ -49,7 +47,7 @@ For more information on supported parameters, see our [MotherDuck connector YAML
 type: connector 
 driver: duckdb 
 
-token: '{{ .env.connector.motherduck.token }}' 
+token: "{{ .env.MOTHERDUCK_TOKEN }}" 
 path: "md:my_database" 
 schema_name: "my_schema"
 ```
