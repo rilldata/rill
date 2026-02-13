@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DOMPurify from "dompurify";
   import InfoCircle from "../icons/InfoCircle.svelte";
   import LongDescription from "../tooltip/LongDescription.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
@@ -26,7 +27,7 @@
       </a>
       <TooltipContent slot="tooltip-content">
         <LongDescription>
-          {@html hint}
+          {@html DOMPurify.sanitize(hint)}
         </LongDescription>
       </TooltipContent>
     </Tooltip>
