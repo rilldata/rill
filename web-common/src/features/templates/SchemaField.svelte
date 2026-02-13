@@ -25,6 +25,7 @@
     | Array<{ value: string; label: string; description?: string }>
     | undefined;
   export let name: string | undefined;
+  export let disabled: boolean = false;
 </script>
 
 {#if prop["x-informational"]}
@@ -50,6 +51,7 @@
     label={prop.title ?? id}
     hint={prop.description ?? prop["x-hint"]}
     {optional}
+    {disabled}
   />
 {:else if prop["x-display"] === "key-value"}
   <KeyValueInput
@@ -60,21 +62,8 @@
     bind:value
     keyPlaceholder={prop["x-placeholder"]}
   />
-{:else if options?.length && prop["x-display"] === "radio"}
-  <Radio bind:value {options} {name} />
 {:else if options?.length}
-  <Select
-    {id}
-    label={prop.title ?? id}
-    tooltip={prop.description ?? prop["x-hint"] ?? ""}
-    {options}
-    {optional}
-    placeholder={prop["x-placeholder"] ?? ""}
-    bind:value
-    full
-    sameWidth
-    clearable
-  />
+  <Radio bind:value {options} {name} {disabled} />
 {:else}
   <Input
     {id}
@@ -86,8 +75,9 @@
     errors={normalizeErrors(errors)}
     bind:value
     multiline={prop["x-display"] === "textarea"}
-    fontFamily="inherit"
+    fontFamily={prop["x-monospace"] ? "monospace" : "inherit"}
     onInput={(_, e) => onStringInputChange(e)}
     alwaysShowError
+    {disabled}
   />
 {/if}
