@@ -71,7 +71,7 @@
         {showControls}
         showLock={false}
         enableExpand={false}
-        isOverlay={true}
+
         {fitViewPadding}
         {fitViewMinZoom}
         {fitViewMaxZoom}

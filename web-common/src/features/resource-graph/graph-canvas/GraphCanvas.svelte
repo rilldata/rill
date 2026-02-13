@@ -26,8 +26,6 @@
   export let titleLabel: string | null = null;
   export let titleErrorCount: number | null = null;
   export let anchorError: boolean = false;
-  // Preselect specific nodes by id on initial render (e.g., the seeded anchor)
-  export let preselectNodeIds: string[] | undefined = undefined;
   // Emphasize particular nodes (e.g., the root/seed node for this graph)
   export let rootNodeIds: string[] | undefined = undefined;
   // Unique flow id to isolate multiple SvelteFlow instances
@@ -42,8 +40,6 @@
   export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
-  export let overlay = false;
-  export let isOverlay = false;
   export let onExpand: () => void = () => {};
 
   let hasNodes = false;
@@ -285,21 +281,12 @@
     }
   }
 
-  // Apply preselection for seeded anchors (runs when preselectNodeIds or nodes change)
-  $: (function applyPreselection() {
-    const ids = new Set(preselectNodeIds ?? []);
-    // Always set selected based on current ids; if empty, clear selection
-    nodesStore.update((nds) =>
-      nds.map((n) => ({ ...n, selected: ids.has(n.id) })),
-    );
-  })();
 </script>
 
 <section class="graph-instance">
   {#if hasNodes}
     <div
       class="graph-container"
-      class:overlay
       class:h-full={fillParent}
       bind:this={containerEl}
       style:height={containerInlineHeight}
@@ -378,10 +365,6 @@
 
   .state {
     @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm text-fg-muted;
-  }
-
-  .overlay {
-    @apply border-none rounded-t-none;
   }
 
   .expand-btn {

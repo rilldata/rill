@@ -24,7 +24,6 @@
   import ResourceKindSelector from "../summary/ResourceKindSelector.svelte";
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
-  import { isGraphExpanded } from "../inspector/graph-inspector-store";
   import type { ResourceStatusFilter } from "../shared/types";
 
   export let resources: V1Resource[] | undefined;
@@ -47,7 +46,6 @@
   export let gridColumns: number = UI_CONFIG.DEFAULT_GRID_COLUMNS;
   export let expandedHeightMobile: string = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
   export let expandedHeightDesktop: string = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
-  export let isOverlay = false;
 
   type SummaryMemo = {
     connectors: number;
@@ -309,8 +307,6 @@
   // Derive current expanded ID for template usage (computed from props/state)
   $: currentExpandedId = isControlledMode ? expandedId : internalExpandedId;
 
-  // Update the global expanded state store
-  $: isGraphExpanded.set(!!currentExpandedId);
 
   // When the URL seeds change, re-open the first seeded graph in expanded view
   let lastSeedsSignature = "";
@@ -579,7 +575,7 @@
               showLock={false}
               fillParent={true}
               enableExpand={enableExpansion}
-              {isOverlay}
+
               {fitViewPadding}
               {fitViewMinZoom}
               {fitViewMaxZoom}
@@ -606,7 +602,7 @@
                 showLock={true}
                 fillParent={true}
                 enableExpand={enableExpansion}
-                {isOverlay}
+  
                 {fitViewPadding}
                 {fitViewMinZoom}
                 {fitViewMaxZoom}
