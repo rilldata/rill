@@ -19,8 +19,6 @@
   // CLI commands
   $: cloneCommand = `rill project clone --org ${organization} ${project}`;
   $: rillStartCommand = `rill start ${githubUrl}.git`;
-  $: envPullCommand = `rill env pull --org ${organization} --project ${project}`;
-
   let copiedCommand: string | null = null;
 
   function onCopy(command: string) {
@@ -42,7 +40,7 @@
       <span class="text-sm text-fg-secondary">
         Clone this project to develop locally.
         <a
-          href="https://docs.rilldata.com/developers/guides/clone-a-project"
+          href="https://docs.rilldata.com/developers/tutorials/clone-a-project"
           target="_blank"
           rel="noopener noreferrer"
           class="text-primary-600"
@@ -67,26 +65,6 @@
               {/if}
             </span>
           </button>
-
-          <div class="env-note">
-            <span class="text-[11px] text-fg-secondary">
-              Then pull environment variables:
-            </span>
-            <button
-              class="command-box"
-              title={envPullCommand}
-              on:click={() => onCopy(envPullCommand)}
-            >
-              <code class="text-[11px] truncate">{envPullCommand}</code>
-              <span class="text-fg-muted">
-                {#if copiedCommand === envPullCommand}
-                  <Check size="14px" color="#22c55e" />
-                {:else}
-                  <CopyIcon size="14px" />
-                {/if}
-              </span>
-            </button>
-          </div>
         {:else}
           <button
             class="command-box"
@@ -118,9 +96,5 @@
 
   .command-box:hover {
     @apply bg-surface-hover;
-  }
-
-  .env-note {
-    @apply flex flex-col gap-y-1 mt-1 pt-2 border-t border-gray-200;
   }
 </style>

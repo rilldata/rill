@@ -25,7 +25,7 @@
     },
     {
       label: "Logs",
-      route: "/project-logs",
+      route: "/logs",
       hasPermission: true,
     },
     {

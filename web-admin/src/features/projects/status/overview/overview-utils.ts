@@ -6,6 +6,15 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
 export type ResourceCount = { kind: string; label: string; count: number };
 
+const pluralOverrides: Record<string, string> = {
+  Canvas: "Canvases",
+};
+
+export function pluralizeKind(label: string, count: number): string {
+  if (count === 1) return label;
+  return pluralOverrides[label] ?? label + "s";
+}
+
 export const displayKinds = [
   ResourceKind.Source,
   ResourceKind.Model,

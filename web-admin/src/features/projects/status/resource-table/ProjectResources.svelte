@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
@@ -24,20 +25,64 @@
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
+  import { onMount } from "svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  // Initialize filter from URL search params (e.g. ?kind=rill.runtime.v1.Model or ?error=true)
+  // Initialize filters from URL search params
   const kindParam = $page.url.searchParams.get("kind");
-  const errorParam = $page.url.searchParams.get("error") === "true";
+  const statusParam = $page.url.searchParams.get("status");
+  const qParam = $page.url.searchParams.get("q");
 
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
-  let searchText = "";
-  let selectedTypes: string[] = kindParam ? [kindParam] : [];
-  let selectedStatuses: string[] = errorParam ? ["error"] : [];
+  let searchText = qParam ?? "";
+  let selectedTypes: string[] = kindParam
+    ? kindParam.split(",").filter(Boolean)
+    : [];
+  let selectedStatuses: string[] = statusParam
+    ? statusParam.split(",").filter(Boolean)
+    : [];
+  let mounted = false;
+
+  // Sync filter state to URL params
+  $: if (mounted) {
+    syncFiltersToUrl(selectedTypes, selectedStatuses, searchText);
+  }
+
+  onMount(() => {
+    mounted = true;
+  });
+
+  function syncFiltersToUrl(
+    types: string[],
+    statuses: string[],
+    search: string,
+  ) {
+    const url = new URL(window.location.href);
+    if (types.length > 0) {
+      url.searchParams.set("kind", types.join(","));
+    } else {
+      url.searchParams.delete("kind");
+    }
+    if (statuses.length > 0) {
+      url.searchParams.set("status", statuses.join(","));
+    } else {
+      url.searchParams.delete("status");
+    }
+    if (search) {
+      url.searchParams.set("q", search);
+    } else {
+      url.searchParams.delete("q");
+    }
+    void goto(url.pathname + url.search, {
+      replaceState: true,
+      noScroll: true,
+      keepFocus: true,
+    });
+  }
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [

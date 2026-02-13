@@ -3,7 +3,7 @@
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useResources } from "../selectors";
-  import { countByKind } from "./overview-utils";
+  import { countByKind, pluralizeKind } from "./overview-utils";
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -26,7 +26,7 @@
             <svelte:component this={resourceIconMapping[kind]} size="12px" />
           {/if}
           <span class="font-medium">{count}</span>
-          <span class="text-fg-secondary">{label}{count !== 1 ? "s" : ""}</span>
+          <span class="text-fg-secondary">{pluralizeKind(label, count)}</span>
         </a>
       {/each}
     </div>

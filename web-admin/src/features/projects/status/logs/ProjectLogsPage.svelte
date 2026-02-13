@@ -91,6 +91,10 @@
     logsConnection.close(true);
   });
 
+  function isNearBottom(el: HTMLElement, threshold = 50): boolean {
+    return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+  }
+
   function handleMessage(message: { data: string; type?: string }) {
     try {
       if (message.type && message.type !== "log") return;
@@ -100,7 +104,7 @@
       if (log) {
         logs = [...logs, { ...log, _id: nextLogId++ }].slice(-MAX_LOGS);
 
-        if (logsContainer) {
+        if (logsContainer && isNearBottom(logsContainer)) {
           requestAnimationFrame(() => {
             logsContainer.scrollTop = logsContainer.scrollHeight;
           });

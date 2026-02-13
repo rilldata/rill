@@ -13,7 +13,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useResources } from "../selectors";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
-  import { groupErrorsByKind } from "./overview-utils";
+  import { groupErrorsByKind, pluralizeKind } from "./overview-utils";
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -44,7 +44,7 @@
     // Don't navigate if the click was on a chip link
     if ((e.target as HTMLElement).closest(".error-chip")) return;
     if (totalErrors > 0) {
-      void goto(`${basePage}/resources?error=true`);
+      void goto(`${basePage}/resources?status=error`);
     }
   }
 </script>
@@ -53,15 +53,17 @@
   class="section"
   class:section-error={totalErrors > 0}
   class:section-clickable={totalErrors > 0}
-  role="button"
-  tabindex="0"
-  on:click={handleSectionClick}
-  on:keydown={(e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleSectionClick(e);
-    }
-  }}
+  role={totalErrors > 0 ? "button" : undefined}
+  tabindex={totalErrors > 0 ? 0 : undefined}
+  on:click={totalErrors > 0 ? handleSectionClick : undefined}
+  on:keydown={totalErrors > 0
+    ? (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleSectionClick(e);
+        }
+      }
+    : undefined}
 >
   <div class="section-header">
     <h3 class="section-title flex items-center gap-2">
@@ -72,12 +74,16 @@
     </h3>
   </div>
 
-  {#if totalErrors === 0}
+  {#if $projectParserQuery.isError || $resourcesQuery.isError}
+    <p class="text-sm text-fg-secondary">Unable to check for errors.</p>
+  {:else if $projectParserQuery.isLoading || $resourcesQuery.isLoading}
+    <p class="text-sm text-fg-secondary">Checking for errors...</p>
+  {:else if totalErrors === 0}
     <p class="text-sm text-fg-secondary">No errors detected.</p>
   {:else}
     <div class="error-chips">
       {#if parseErrors.length > 0}
-        <a href="{basePage}/resources?error=true" class="error-chip">
+        <a href="{basePage}/resources?status=error" class="error-chip">
           <AlertCircleOutline size="12px" />
           <span class="font-medium">{parseErrors.length}</span>
           <span>Parse error{parseErrors.length !== 1 ? "s" : ""}</span>
@@ -86,14 +92,14 @@
 
       {#each errorsByKind as { kind, label, count }}
         <a
-          href="{basePage}/resources?error=true&kind={kind}"
+          href="{basePage}/resources?status=error&kind={kind}"
           class="error-chip"
         >
           {#if resourceIconMapping[kind]}
             <svelte:component this={resourceIconMapping[kind]} size="12px" />
           {/if}
           <span class="font-medium">{count}</span>
-          <span>{label}{count !== 1 ? "s" : ""}</span>
+          <span>{pluralizeKind(label, count)}</span>
         </a>
       {/each}
     </div>
