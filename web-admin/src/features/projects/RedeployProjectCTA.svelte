@@ -51,28 +51,51 @@
   <CtaContentContainer>
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
-        {#if $redeployMutation.isPending}
-          <LoadingCircleOutline size="104px" className="text-gray-300" />
-          <CtaHeader variant="bold">Waking up your project...</CtaHeader>
-          <CtaNeedHelp />
-        {:else}
-          <MoonCircleOutline
-            size="104px"
-            className="text-gray-300"
-            gradientStopColor="slate-200"
-          />
-          <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
-          <Button type="primary" wide onClick={handleWakeProject}>
-            Wake project
-          </Button>
+        <div class="relative size-[104px]">
+          <div
+            class="absolute inset-0 transition-opacity duration-200"
+            class:opacity-0={$redeployMutation.isPending}
+          >
+            <MoonCircleOutline
+              size="104px"
+              className="text-gray-300"
+              gradientStopColor="slate-200"
+            />
+          </div>
+          <div
+            class="absolute inset-0 transition-opacity duration-200"
+            class:opacity-0={!$redeployMutation.isPending}
+          >
+            <LoadingCircleOutline size="104px" className="text-gray-300" />
+          </div>
+        </div>
+        <CtaHeader variant="bold">
+          {$redeployMutation.isPending
+            ? "Waking up your project..."
+            : "Your project is hibernating"}
+        </CtaHeader>
+        <Button
+          type="primary"
+          wide
+          loading={$redeployMutation.isPending}
+          loadingCopy="Waking..."
+          onClick={handleWakeProject}
+        >
+          Wake project
+        </Button>
+        <div
+          class="flex flex-col items-center gap-y-6 transition-opacity duration-200"
+          class:opacity-40={$redeployMutation.isPending}
+          class:pointer-events-none={$redeployMutation.isPending}
+        >
           <CtaMessage>
             You can also run the following command in the Rill CLI:
           </CtaMessage>
           <CLICommandDisplay
             command="rill project hibernate {project} --redeploy"
           />
-          <CtaNeedHelp />
-        {/if}
+        </div>
+        <CtaNeedHelp />
       </svelte:fragment>
       <svelte:fragment slot="read-project">
         <MoonCircleOutline
