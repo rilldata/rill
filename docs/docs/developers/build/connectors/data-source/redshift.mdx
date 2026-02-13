@@ -1,0 +1,174 @@
+---
+title: Amazon Redshift
+description: Connect to data in Amazon Redshift
+sidebar_label: Redshift
+sidebar_position: 55
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
+
+## Overview
+
+[Amazon Redshift](https://docs.aws.amazon.com/redshift/) is a fully managed, petabyte-scale data warehouse service in the cloud, offering fast query and I/O performance for data analysis applications. It enables users to run complex analytical queries against structured data using SQL, ETL processes, and BI tools, leveraging massively parallel processing (MPP) to efficiently handle large volumes of data. Redshift's architecture is designed for high performance on large datasets, supporting data warehousing and analytics of all sizes, making it a pivotal component in a modern data-driven decision-making ecosystem. By leveraging the AWS SDK for Go and utilizing intermediary Parquet files in S3 (to ensure performance), you can connect to and read from Redshift data warehouses.
+
+## Authentication Methods
+
+To connect to Amazon Redshift, you need to provide authentication credentials. Rill supports two methods:
+
+1. **Use Access Key/Secret Key** (recommended for production)
+2. **Use Local AWS credentials** (local development only - not recommended for production)
+
+<TwoStepFlowIntro
+  connector="Redshift"
+  step1Description="Set up your Redshift connector with AWS credentials (Access Key/Secret Key)"
+  step2Description="Define which database, table, or query to execute"
+/>
+
+## Method 1: Access Key and Secret Key (Recommended)
+
+Access Key and Secret Key credentials provide the most reliable authentication for Redshift. This method works for both local development and Rill Cloud deployments.
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **Amazon Redshift** as the data source type
+3. In the authentication step:
+   - Enter your AWS Access Key ID
+   - Enter your AWS Secret Access Key
+   - Specify your database name
+   - Specify the workgroup (for Serverless) or cluster identifier
+4. In the data model configuration step, enter your SQL query
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/redshift.yaml`:
+
+```yaml
+type: connector
+driver: redshift
+
+aws_access_key_id: "{{ .env.connector.redshift.aws_access_key_id }}"
+aws_secret_access_key: "{{ .env.connector.redshift.aws_secret_access_key }}"
+database: "dev"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+connector.redshift.aws_access_key_id=AKIAIOSFODNN7EXAMPLE
+connector.redshift.aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Method 2: Local AWS Credentials
+
+For local development, you can use credentials from the AWS CLI. This method is **not suitable for production** or Rill Cloud deployments.
+
+:::warning Not recommended for production
+Local AWS credentials only work for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Always use Access Key/Secret Key for production deployments.
+:::
+
+### Setup
+
+1. Install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) if not already installed
+2. Authenticate with your AWS account:
+   - If your organization has SSO configured, reach out to your admin for instructions on how to authenticate using `aws sso login`
+   - Otherwise, run `aws configure` and provide your access key, secret, and default region
+3. Verify your authentication:
+   ```bash
+   aws iam get-user --no-cli-pager
+   ```
+
+### Manual Configuration
+
+Create `connectors/redshift.yaml`:
+
+```yaml
+type: connector
+driver: redshift
+
+database: "dev"
+```
+
+When no explicit credentials are provided in the connector, Rill will automatically use your local AWS CLI credentials. Then, [create your first model](#create-your-first-model).
+
+## Create Your First Model
+
+Once your connector is configured using any method above, create a model to define what data to pull.
+
+Create `models/redshift_data.yaml`:
+
+```yaml
+type: model
+connector: redshift
+dev:
+  sql: SELECT * FROM my_schema.my_table limit 10000
+
+sql: SELECT * FROM my_schema.my_table
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="Redshift"
+  connectorId="redshift"
+  credentialDescription="an access key and secret for an AWS service account"
+/>
+
+## Appendix
+
+:::warning Check your service account permissions
+Your account or service account will need to have the **appropriate permissions** necessary to perform these requests.
+:::
+
+### Redshift Serverless Permissions
+
+When using **Redshift Serverless**, make sure to associate an [IAM role (that has S3 access)](https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-iam.html) with the Serverless namespace or the Redshift cluster.
+
+:::info What happens when Rill is reading from Redshift Serverless?
+
+Our Redshift connector will place temporary files in Parquet format in S3 to help accelerate the extraction process (maximizing performance). To provide more details, the Redshift connector will execute the following queries/requests while ingesting data from Redshift:
+
+1. Redshift Serverless: [`GetCredentials`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html) if you are using a _Workgroup_ name to connect.
+2. Redshift Data API: [`DescribeStatement`, `ExecuteStatement`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html) to unload data to S3.
+3. S3: [`ListObjects`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html) to identify files unloaded by Redshift.
+4. S3: [`GetObject`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html) to ingest files unloaded by Redshift.
+
+:::
+
+### Redshift Cluster Permissions
+
+Similarly, when using **Redshift Cluster**, make sure to associate an [IAM role (that has S3 access)](https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-iam-authentication-access-control.html) with the appropriate Redshift cluster.
+
+:::info What happens when Rill is reading from a Redshift Cluster?
+
+Our Redshift connector will place temporary files in Parquet format in S3 to help accelerate the extraction process (maximizing performance). To provide more details, the Redshift connector will execute the following queries/requests while ingesting data from Redshift:
+
+1. Redshift: [`GetClusterCredentialsWithIAM`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html) if you are using a _Cluster Identifier_ to connect.
+2. Redshift Data API: [`DescribeStatement`, `ExecuteStatement`](https://docs.aws.amazon.com/redshift-data/latest/APIReference/API_ExecuteStatement.html) to unload data to S3.
+3. S3: [`ListObjects`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html) to identify files unloaded by Redshift.
+4. S3: [`GetObject`](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html) to ingest files unloaded by Redshift.
+
+:::
+
+### How to Create an AWS Service Account
+
+For detailed instructions on creating an AWS service account with the appropriate permissions, see the [S3 connector documentation](./s3#how-to-create-an-aws-service-account-using-the-aws-management-console).

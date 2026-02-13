@@ -1,0 +1,176 @@
+---
+title: BigQuery
+description: Connect to data in BigQuery
+sidebar_label: BigQuery
+sidebar_position: 10
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
+
+## Overview
+
+[Google BigQuery](https://cloud.google.com/bigquery/docs) is a fully managed, serverless data warehouse that enables scalable and cost-effective analysis of large datasets using SQL-like queries. It supports a highly scalable and flexible architecture, allowing users to analyze large amounts of data in real time, making it suitable for BI/ML applications. Rill supports natively connecting to and reading from BigQuery as a source by leveraging the [BigQuery SDK](https://cloud.google.com/bigquery/docs/reference/libraries).
+
+## Authentication Methods
+
+To connect to Google BigQuery, you need to provide authentication credentials. Rill supports two methods:
+
+1. **Use Service Account JSON** (recommended for production)
+2. **Use Local Google Cloud CLI credentials** (local development only - not recommended for production)
+
+<TwoStepFlowIntro
+  connector="BigQuery"
+  step1Description="Set up your BigQuery connector with credentials (Service Account JSON)"
+  step2Description="Define which dataset, table, or query to execute"
+/>
+
+## Method 1: Service Account JSON (Recommended)
+
+Service Account JSON credentials provide the most secure and reliable authentication for BigQuery. This method works for both local development and Rill Cloud deployments.
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **Google BigQuery** as the data source type
+3. In the authentication step:
+   - Upload your JSON key file or paste its contents
+   - Specify your Google Cloud Project ID
+4. In the data model configuration step, enter your SQL query
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/bigquery.yaml`:
+
+```yaml
+type: connector
+driver: bigquery
+
+google_application_credentials: "{{ .env.connector.bigquery.google_application_credentials }}"
+project_id: "my-gcp-project"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+connector.bigquery.google_application_credentials=<json_credentials>
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Method 2: Local Google Cloud CLI Credentials
+
+For local development, you can use credentials from the Google Cloud CLI. This method is **not suitable for production** or Rill Cloud deployments.
+
+:::warning Not recommended for production
+Local Google Cloud CLI credentials only work for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Always use Service Account JSON for production deployments.
+:::
+
+### Setup
+
+1. Install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) if not already installed
+2. Initialize and authenticate:
+   ```bash
+   gcloud init
+   ```
+3. **Important**: Set up Application Default Credentials (ADC):
+   ```bash
+   gcloud auth application-default login
+   ```
+
+:::tip Service Accounts
+If you are using a service account, run the following command instead:
+```bash
+gcloud auth activate-service-account --key-file=path_to_json_key_file
+```
+:::
+
+### Manual Configuration
+
+Create `connectors/bigquery.yaml`:
+
+```yaml
+type: connector
+driver: bigquery
+
+project_id: "my-gcp-project"
+```
+
+When no explicit credentials are provided in the connector, Rill will automatically use your local Google Cloud CLI credentials. Then, [create your first model](#create-your-first-model).
+
+## Create Your First Model
+
+Once your connector is configured using any method above, create a model to define what data to pull.
+
+Create `models/bigquery_data.yaml`:
+
+```yaml
+type: model
+connector: bigquery
+
+dev:
+  sql: SELECT * FROM my_dataset.my_table limit 10000
+
+sql: SELECT * FROM my_dataset.my_table
+
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="BigQuery"
+  connectorId="bigquery"
+  credentialDescription="a JSON key file for a Google Cloud service account"
+/>
+
+## Appendix
+
+### How to Create a Service Account Using the Google Cloud Console
+
+Here is a step-by-step guide on how to create a Google Cloud service account with access to BigQuery:
+
+1. Navigate to the [Service Accounts page](https://console.cloud.google.com/iam-admin/serviceaccounts) under "IAM & Admin" in the Google Cloud Console.
+
+2. Click the "Create Service Account" button at the top of the page.
+
+3. In the "Create Service Account" window, enter a name for the service account, then click "Create and continue".
+
+4. In the "Role" field, search for and select the following [BigQuery roles](https://cloud.google.com/bigquery/docs/access-control):
+   - [roles/bigquery.dataViewer](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataViewer) (Lowest-level resources: Table, View)
+     - Provides the ability to read data and metadata from the project's datasets/dataset's tables/table or view.
+   - [roles/bigquery.readSessionUser](https://cloud.google.com/bigquery/docs/access-control#bigquery.readSessionUser) (Lowest-level resources: Project)
+     - Provides the ability to create and use read sessions that can be used to read data from BigQuery managed tables using the Storage API (to read data from BigQuery at high speeds). The role does not provide any other permissions related to BigQuery datasets, tables, or other resources.
+   - [roles/bigquery.jobUser](https://cloud.google.com/bigquery/docs/access-control#bigquery.jobUser) (Lowest-level resources: Project)
+     - Provides permissions to run BigQuery-specific jobs (including queries), within the project and respecting limits set by roles above.
+
+   Click "Continue", then click "Done".
+
+   **Note**: BigQuery has storage and compute [separated](https://cloud.google.com/blog/products/bigquery/separation-of-storage-and-compute-in-bigquery) from each other, so the lowest-level resource where compute-specific roles are granted is a project, while the lowest-level for data-specific roles is table/view.
+
+5. On the "Service Accounts" page, locate the service account you just created and click on the three dots on the right-hand side. Select "Manage Keys" from the dropdown menu.
+
+6. On the "Keys" page, click the "Add key" button and select "Create new key".
+
+7. Choose the "JSON" key type and click "Create".
+
+8. Download and save the JSON key file to a secure location on your computer.
+
+:::note Permission denied?
+You'll need to contact your internal cloud admin to create your Service Account JSON credentials for you.
+:::

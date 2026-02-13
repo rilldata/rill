@@ -1,0 +1,141 @@
+---
+title: PostgreSQL
+description: Connect to data in PostgreSQL
+sidebar_label: PostgreSQL
+sidebar_position: 50
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
+
+## Overview
+
+[PostgreSQL](https://www.postgresql.org/docs/current/intro-whatis.html) is an open-source object-relational database system known for its reliability, feature robustness, and performance. With support for advanced data types, full ACID compliance for transactional integrity, and an extensible architecture, PostgreSQL provides a highly scalable environment for managing diverse datasets, ranging from small applications to large-scale data warehouses. Its extensive SQL compliance, support for various programming languages, and strong community backing make it a versatile choice for a wide range of business intelligence and analytical applications. You can connect to and read from PostgreSQL databases using either a [supported connection string](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) or [connection URI syntax](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS).
+
+## Authentication Methods
+
+To connect to PostgreSQL, you need to provide database connection credentials. Rill supports two approaches:
+
+1. **Use Individual Parameters** (recommended for clarity)
+2. **Use Connection String/URI** (alternative format)
+
+<TwoStepFlowIntro
+  connector="PostgreSQL"
+  step1Description="Set up your PostgreSQL connector with database credentials"
+  step2Description="Define which table or query to execute"
+/>
+
+## Method 1: Individual Parameters (Recommended)
+
+Using individual parameters provides clear, readable configuration for your PostgreSQL connection.
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **PostgreSQL** as the data source type
+3. In the authentication step:
+   - Enter your host (e.g., `localhost` or your database server address)
+   - Enter the port (default: `5432`)
+   - Enter your database name
+   - Enter your username
+   - Enter your password
+4. In the data model configuration step, enter your SQL query
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/postgres.yaml`:
+
+```yaml
+type: connector
+driver: postgres
+
+host: "localhost"
+port: "5432"
+user: "postgres"
+password: "{{ .env.connector.postgres.password }}"
+dbname: "my_database"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+connector.postgres.password=your_password_here
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Method 2: Connection String/URI
+
+You can also use a connection string or URI format to configure your PostgreSQL connection.
+
+### Connection String Format
+
+```bash
+host=localhost port=5432 dbname=postgres_db user=postgres_user password=postgres_pass
+```
+
+### Connection URI Format
+
+```bash
+postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
+```
+
+### Manual Configuration
+
+**Step 1: Create connector configuration**
+
+Create `connectors/postgres.yaml`:
+
+```yaml
+type: connector
+driver: postgres
+
+dsn: "{{ .env.connector.postgres.dsn }}"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+connector.postgres.dsn=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
+```
+
+Then, [create your first model](#create-your-first-model).
+
+## Create Your First Model
+
+Once your connector is configured using any method above, create a model to define what data to pull.
+
+Create `models/postgres_data.yaml`:
+
+```yaml
+type: model
+connector: postgres
+dev:
+  sql: SELECT * FROM my_table limit 10000
+
+sql: SELECT * FROM my_table
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="PostgreSQL"
+  connectorId="postgres"
+  credentialDescription="the PostgreSQL connection credentials"
+/>
