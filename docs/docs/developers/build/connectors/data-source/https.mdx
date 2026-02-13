@@ -52,13 +52,13 @@ type: connector
 driver: https
 
 headers:
-  Authorization: "Bearer {{ .env.connector.https.token }}"
+  Authorization: "Bearer {{ .env.HTTPS_TOKEN }}"
 ```
 
 **Step 2: Add credentials to `.env`**
 
 ```bash
-connector.https.token=your_api_token_here
+HTTPS_TOKEN=your_api_token_here
 ```
 
 <EnvPullTip />

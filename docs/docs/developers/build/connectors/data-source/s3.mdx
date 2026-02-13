@@ -71,15 +71,15 @@ Create `connectors/s3.yaml`:
 type: connector
 driver: s3
 
-aws_access_key_id: "{{ .env.connector.s3.aws_access_key_id }}"
-aws_secret_access_key: "{{ .env.connector.s3.aws_secret_access_key }}"
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
+aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}"
 ```
 
 **Step 2: Add credentials to `.env`**
 
 ```bash
-connector.s3.aws_access_key_id=your_access_key_id
-connector.s3.aws_secret_access_key=your_secret_access_key
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
 ```
 
 <EnvPullTip />
@@ -107,15 +107,15 @@ Create `connectors/s3_role.yaml`:
 type: connector
 driver: s3
 
-aws_role_arn: "{{ .env.connector.s3.aws_role_arn }}"
-aws_external_id: "{{ .env.connector.s3.aws_external_id }}"
+aws_role_arn: "{{ .env.AWS_ROLE_ARN }}"
+aws_external_id: "{{ .env.AWS_EXTERNAL_ID }}"
 ```
 
 **Step 2: Add credentials to `.env`**
 
 ```bash
-connector.s3.aws_role_arn=arn:aws:iam::123456789012:role/RillDataAccess
-connector.s3.aws_external_id=your_external_id
+AWS_ROLE_ARN=arn:aws:iam::123456789012:role/RillDataAccess
+AWS_EXTERNAL_ID=your_external_id
 ```
 
 Then, [create your first model](#create-your-first-model).

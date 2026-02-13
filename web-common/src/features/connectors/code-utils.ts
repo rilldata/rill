@@ -171,6 +171,8 @@ export function compileConnectorYAML(
     connectorInstanceName?: string;
     secretKeys?: string[];
     stringKeys?: string[];
+    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+    existingEnvBlob?: string;
   },
 ) {
   // Add instructions to the top of the file
@@ -235,12 +237,13 @@ driver: ${driverName}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        const placeholder = `{{ .env.${makeDotEnvConnectorKey(
+        const envVarName = makeEnvVarKey(
           connector.name as string,
           key,
-          options?.connectorInstanceName,
-        )} }}`;
-        return `${key}: "${placeholder}"`;
+          options?.existingEnvBlob,
+          options?.schema,
+        );
+        return `${key}: "{{ .env.${envVarName} }}"`; // uses standard Go template syntax
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -261,10 +264,11 @@ export async function updateDotEnvWithSecrets(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
-  formType: "source" | "connector",
-  connectorInstanceName?: string,
-  opts?: { secretKeys?: string[] },
-): Promise<string> {
+  opts?: {
+    secretKeys?: string[];
+    schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
+  },
+): Promise<{ newBlob: string; originalBlob: string }> {
   const instanceId = get(runtime).instanceId;
 
   // Invalidate the cache to ensure we get fresh .env content
@@ -275,16 +279,19 @@ export async function updateDotEnvWithSecrets(
 
   // Get the existing .env file with fresh data
   let blob: string;
+  let originalBlob: string;
   try {
     const file = await queryClient.fetchQuery({
       queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
       queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
     });
     blob = file.blob || "";
+    originalBlob = blob; // Keep original for conflict detection
   } catch (error) {
     // Handle the case where the .env file does not exist
     if (error?.response?.data?.message?.includes("no such file")) {
       blob = "";
+      originalBlob = "";
     } else {
       throw error;
     }
@@ -295,19 +302,21 @@ export async function updateDotEnvWithSecrets(
 
   // In reality, all connectors have secret keys, but this is a safeguard
   if (!secretKeys) {
-    return blob;
+    return { newBlob: blob, originalBlob };
   }
 
   // Update the blob with the new secrets
+  // Use originalBlob for conflict detection so all secrets use consistent naming
   secretKeys.forEach((key) => {
     if (!key || !formValues[key]) {
       return;
     }
 
-    const connectorSecretKey = makeDotEnvConnectorKey(
+    const connectorSecretKey = makeEnvVarKey(
       connector.name as string,
       key,
-      connectorInstanceName,
+      originalBlob,
+      opts?.schema,
     );
 
     blob = replaceOrAddEnvVariable(
@@ -325,10 +334,11 @@ export async function updateDotEnvWithSecrets(
       if (!entry.key?.trim() || !entry.value?.trim()) continue;
       if (!isSensitiveHeaderKey(entry.key)) continue;
       const envSegment = headerKeyToEnvSegment(entry.key);
-      const envKey = makeDotEnvConnectorKey(
+      const envKey = makeEnvVarKey(
         connector.name as string,
         envSegment,
-        connectorInstanceName,
+        originalBlob,
+        opts?.schema,
       );
       const raw = entry.value.trim();
       const split = splitAuthSchemePrefix(raw);
@@ -336,7 +346,7 @@ export async function updateDotEnvWithSecrets(
     }
   }
 
-  return blob;
+  return { newBlob: blob, originalBlob };
 }
 
 export function replaceOrAddEnvVariable(
@@ -381,15 +391,112 @@ export function deleteEnvVariable(
   return newBlob;
 }
 
-export function makeDotEnvConnectorKey(
+/**
+ * Get a generic ALL_CAPS environment variable name for a connector property.
+ * If schema provides x-env-var-name, use it directly.
+ * Otherwise uses DRIVER_NAME_PROPERTY_KEY format.
+ *
+ * @param driverName - The connector driver name (e.g., "clickhouse", "s3")
+ * @param propertyKey - The property key (e.g., "password", "aws_access_key_id")
+ * @param schema - Optional schema with x-env-var-name annotations
+ * @returns The environment variable name in SCREAMING_SNAKE_CASE
+ *
+ * @example
+ * getGenericEnvVarName("clickhouse", "password") // "CLICKHOUSE_PASSWORD"
+ * getGenericEnvVarName("s3", "aws_access_key_id", s3Schema) // "AWS_ACCESS_KEY_ID" (from x-env-var-name)
+ */
+export function getGenericEnvVarName(
+  driverName: string,
+  propertyKey: string,
+  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
+): string {
+  // If schema provides explicit env var name, use it
+  const field = schema?.properties?.[propertyKey];
+  if (field?.["x-env-var-name"]) {
+    return field["x-env-var-name"];
+  }
+
+  // Convert property key to SCREAMING_SNAKE_CASE
+  const propertyKeyUpper = propertyKey
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/[._-]+/g, "_")
+    .toUpperCase();
+
+  // Otherwise, use DriverName_PropertyKey format
+  const driverNameUpper = driverName
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/[._-]+/g, "_")
+    .toUpperCase();
+
+  return `${driverNameUpper}_${propertyKeyUpper}`;
+}
+
+/**
+ * Check if an environment variable exists in the env blob.
+ *
+ * @param envBlob - The contents of the .env file as a string
+ * @param varName - The environment variable name to check for
+ * @returns true if the variable exists, false otherwise
+ */
+export function envVarExists(envBlob: string, varName: string): boolean {
+  const lines = envBlob.split("\n");
+  return lines.some((line) => line.startsWith(`${varName}=`));
+}
+
+/**
+ * Find the next available environment variable name by appending _1, _2, etc.
+ * Used to avoid conflicts when creating multiple connectors of the same type.
+ *
+ * @param envBlob - The contents of the .env file as a string
+ * @param baseName - The base environment variable name to check
+ * @returns The first available name (baseName, baseName_1, baseName_2, etc.)
+ *
+ * @example
+ * // If .env contains "AWS_ACCESS_KEY_ID=xxx"
+ * findAvailableEnvVarName(envBlob, "AWS_ACCESS_KEY_ID") // "AWS_ACCESS_KEY_ID_1"
+ */
+export function findAvailableEnvVarName(
+  envBlob: string,
+  baseName: string,
+): string {
+  let varName = baseName;
+  let counter = 1;
+
+  while (envVarExists(envBlob, varName)) {
+    varName = `${baseName}_${counter}`;
+    counter++;
+  }
+
+  return varName;
+}
+
+/**
+ * Generate an environment variable key for a property.
+ * Uses schema-defined x-env-var-name when available, otherwise generates
+ * DRIVER_NAME_PROPERTY_KEY format. Handles conflicts by appending _1, _2, etc.
+ *
+ * @param driverName - The connector driver name (e.g., "clickhouse", "s3")
+ * @param key - The property key (e.g., "password", "dsn")
+ * @param existingEnvBlob - Optional existing .env content for conflict detection
+ * @param schema - Optional schema with x-env-var-name annotations
+ * @returns The environment variable name, with suffix if needed to avoid conflicts
+ */
+export function makeEnvVarKey(
   driverName: string,
   key: string,
-  connectorInstanceName?: string,
-) {
-  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
-  // This enables configuring multiple connectors that use the same driver with unique env keys.
-  const nameToUse = connectorInstanceName || driverName;
-  return `connector.${nameToUse}.${key}`;
+  existingEnvBlob?: string,
+  schema?: { properties?: Record<string, { "x-env-var-name"?: string }> },
+): string {
+  // Generate generic ALL_CAPS environment variable name
+  const baseGenericName = getGenericEnvVarName(driverName, key, schema);
+
+  // If no existing env blob is provided, just return the base generic name
+  if (!existingEnvBlob) {
+    return baseGenericName;
+  }
+
+  // Check for conflicts and append _# if necessary
+  return findAvailableEnvVarName(existingEnvBlob, baseGenericName);
 }
 
 export async function updateRillYAMLWithOlapConnector(
