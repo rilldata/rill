@@ -13,6 +13,7 @@ import {
   getConnectorSchema,
   getFormHeight,
   hasExplorerStep as hasExplorerStepSchema,
+  isAiConnector as isAiConnectorSchema,
   isMultiStepConnector as isMultiStepConnectorSchema,
 } from "./connector-schemas";
 import {
@@ -74,6 +75,11 @@ export class AddDataFormManager {
   private formType: AddDataFormType;
   private schemaName: string;
 
+  // Cached schema-derived flags (immutable after construction)
+  private readonly _isMultiStepConnector: boolean;
+  private readonly _hasExplorerStep: boolean;
+  private readonly _isAiConnector: boolean;
+
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
     return normalizeConnectorError(this.connector.name ?? "", e);
@@ -124,6 +130,11 @@ export class AddDataFormManager {
 
     // Layout height (derived from schema metadata)
     this.formHeight = getFormHeight(schema);
+
+    // Cache schema-derived flags once (schema name is immutable)
+    this._isMultiStepConnector = isMultiStepConnectorSchema(schema);
+    this._hasExplorerStep = hasExplorerStepSchema(schema);
+    this._isAiConnector = isAiConnectorSchema(schema);
   }
 
   get isSourceForm(): boolean {
@@ -135,13 +146,15 @@ export class AddDataFormManager {
   }
 
   get isMultiStepConnector(): boolean {
-    const schema = getConnectorSchema(this.schemaName);
-    return isMultiStepConnectorSchema(schema);
+    return this._isMultiStepConnector;
   }
 
   get hasExplorerStep(): boolean {
-    const schema = getConnectorSchema(this.schemaName);
-    return hasExplorerStepSchema(schema);
+    return this._hasExplorerStep;
+  }
+
+  get isAiConnector(): boolean {
+    return this._isAiConnector;
   }
 
   /**
@@ -159,8 +172,8 @@ export class AddDataFormManager {
   }): boolean {
     const { isConnectorForm, event, stepState, selectedAuthMethod } = args;
 
-    // Only show for connector forms (not sources)
-    if (!isConnectorForm) return false;
+    // Only show for connector forms (not sources or AI connectors)
+    if (!isConnectorForm || this.isAiConnector) return false;
 
     // Need a submission result to show the button
     if (!event?.result) return false;
@@ -220,6 +233,10 @@ export class AddDataFormManager {
     }
 
     if (isConnectorForm) {
+      // AI connectors save directly without testing
+      if (this.isAiConnector) {
+        return submitting ? "Saving..." : "Save";
+      }
       // Step 1 of multi-step: "Test and Connect" or "Continue" for public auth
       if (isStepFlowConnector && isOnConnectorStep) {
         const labels =
@@ -369,12 +386,12 @@ export class AddDataFormManager {
           await submitAddSourceForm(queryClient, connector, submitValues);
           onClose();
         } else {
-          // Single-step connector form
+          // Single-step connector form (AI connectors skip test via saveAnyway)
           await submitAddConnectorForm(
             queryClient,
             connector,
             submitValues,
-            false,
+            this.isAiConnector,
           );
           onClose();
         }

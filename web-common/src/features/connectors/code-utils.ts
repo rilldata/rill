@@ -177,8 +177,13 @@ export function compileConnectorYAML(
 ) {
   // Add instructions to the top of the file
   const driverName = getDriverNameForConnector(connector.name as string);
+  const docsCategory = connector.implementsAi
+    ? "services"
+    : connector.implementsOlap
+      ? "olap"
+      : "data-source";
   const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/${docsCategory}/${driverName}
 
 type: connector
 
@@ -526,6 +531,38 @@ export function replaceOlapConnectorInYAML(
     return blob.replace(olapConnectorRegex, `olap_connector: ${newConnector}`);
   } else {
     return `${blob}${blob !== "" ? "\n" : ""}olap_connector: ${newConnector}\n`;
+  }
+}
+
+export async function updateRillYAMLWithAiConnector(
+  queryClient: QueryClient,
+  newConnector: string,
+): Promise<string> {
+  const instanceId = get(runtime).instanceId;
+  const file = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+      path: "rill.yaml",
+    }),
+    queryFn: () => runtimeServiceGetFile(instanceId, { path: "rill.yaml" }),
+  });
+  const blob = file.blob || "";
+  return replaceAiConnectorInYAML(blob, newConnector);
+}
+
+/**
+ * Update the `ai_connector` key in a YAML file.
+ * This function uses a regex approach to preserve comments and formatting.
+ */
+export function replaceAiConnectorInYAML(
+  blob: string,
+  newConnector: string,
+): string {
+  const aiConnectorRegex = /^ai_connector: .+$/m;
+
+  if (aiConnectorRegex.test(blob)) {
+    return blob.replace(aiConnectorRegex, `ai_connector: ${newConnector}`);
+  } else {
+    return `${blob}${blob !== "" ? "\n" : ""}ai_connector: ${newConnector}\n`;
   }
 }
 
