@@ -92,6 +92,6 @@ latest.txt
 # Claude Code — personal / ephemeral (do not commit)
 .claude/CLAUDE.local.md
 .claude/settings.local.json
-.claude/rules/*.local.md
+.claude/**/*.local.md
 .claude/plans/
 .claude/worktrees/
