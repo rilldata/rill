@@ -232,13 +232,11 @@
           {onStringInputChange}
           {handleFileUpload}
           submitting={$paramsSubmitting}
-          {connectorInstanceName}
           bind:activeAuthMethod
           bind:isSubmitDisabled={multiStepSubmitDisabled}
           bind:primaryButtonLabel={multiStepButtonLabel}
           bind:primaryLoadingCopy={multiStepLoadingCopy}
           bind:formId={multiStepFormId}
-          {shouldShowSkipLink}
         />
       {:else if connectorSchema}
         <AddDataFormSection

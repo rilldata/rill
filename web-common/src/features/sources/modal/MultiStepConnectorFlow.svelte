@@ -29,7 +29,6 @@
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
   export let submitting: boolean;
-  export let connectorInstanceName: string | null = null;
 
   // Outputs bound by parent
   export let activeAuthMethod: string | null = null;
@@ -37,7 +36,6 @@
   export let primaryLoadingCopy = "";
   export let isSubmitDisabled = true;
   export let formId = baseFormId;
-  export let shouldShowSkipLink = false;
 
   const selectedAuthMethodStore = {
     subscribe: (run: (value: string) => void) =>
