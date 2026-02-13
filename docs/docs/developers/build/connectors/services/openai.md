@@ -34,9 +34,10 @@ To configure OpenAI access, you'll need to obtain an API key and configure it in
    ```env
    OPENAI_API_KEY=sk-...
    ```
+   
 4. **Configure OpenAI as the default AI connector:**
 
-   Add the following to your `rill.yaml` to use Claude as the AI provider for your project:
+   Add the following to your `rill.yaml` to use OpenAI as the AI provider for your project:
 
    ```yaml
    ai_connector: openai
