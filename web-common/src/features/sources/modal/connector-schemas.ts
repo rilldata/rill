@@ -143,9 +143,11 @@ export function toConnectorDriver(
   if (!schema) return null;
   const category = schema["x-category"];
   const backendName = getBackendConnectorName(schemaName);
+  const docsCategory = category === "ai" ? "services" : "data-source";
   return {
     name: backendName,
     displayName: schema.title ?? schemaName,
+    docsUrl: `https://docs.rilldata.com/developers/build/connectors/${docsCategory}/${backendName}`,
     implementsObjectStore: category === "objectStore",
     implementsOlap: category === "olap",
     implementsSqlStore: category === "sqlStore",

@@ -175,8 +175,9 @@ export function compileConnectorYAML(
 ) {
   // Add instructions to the top of the file
   const driverName = getDriverNameForConnector(connector.name as string);
+  const docsCategory = connector.implementsAi ? "services" : "data-source";
   const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/${docsCategory}/${driverName}
 
 type: connector
 
