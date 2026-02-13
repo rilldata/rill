@@ -21,16 +21,24 @@ export type JSONSchemaField = {
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
   "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "key-value";
+  /** Visual style for select fields. "rich" renders with icons and colored cards. */
+  "x-select-style"?: "standard" | "rich";
+  /** Render the field value in a monospace font. */
+  "x-monospace"?: boolean;
   /** Which modal step this field belongs to. */
   "x-step"?: "connector" | "source" | "explorer";
   /** Field holds a secret value that should be stored in .env, not in YAML. */
   "x-secret"?: boolean;
   /** Show this field only when other fields match the given values. */
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
+  /** Disable this field (read-only) when other fields match the given values. */
+  "x-disabled-if"?: Record<string, JSONSchemaVisibleIfValue>;
   /** Human-readable labels for each enum option, in the same order as `enum`. */
   "x-enum-labels"?: string[];
   /** Descriptive text for each enum option, in the same order as `enum`. */
   "x-enum-descriptions"?: string[];
+  /** Icon identifiers for each enum option, in the same order as `enum`. */
+  "x-enum-icons"?: string[];
   /** Placeholder text shown in the input when empty. */
   "x-placeholder"?: string;
   /** Helper text displayed below the input. */
@@ -117,6 +125,12 @@ export type JSONSchemaObject = {
    * "default" = standard form height
    */
   "x-form-height"?: "default" | "tall";
+  /**
+   * Form width for the add data modal.
+   * "wide" = wider form for connectors with templates or more content
+   * "default" = standard form width
+   */
+  "x-form-width"?: "default" | "wide";
   /**
    * Backend connector name when different from schema name.
    * Used when a UI variant (e.g., "clickhousecloud") should map

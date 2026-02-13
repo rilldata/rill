@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DOMPurify from "dompurify";
   import InfoCircle from "../icons/InfoCircle.svelte";
   import LongDescription from "../tooltip/LongDescription.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
@@ -11,7 +12,7 @@
 
 <div class="flex flex-row items-center gap-x-1">
   <div class="text-fg-secondary">
-    {description}
+    {@html DOMPurify.sanitize(description)}
   </div>
   {#if hint}
     <Tooltip location="bottom" alignment="middle" distance={8}>
@@ -26,7 +27,7 @@
       </a>
       <TooltipContent slot="tooltip-content">
         <LongDescription>
-          {@html hint}
+          {@html DOMPurify.sanitize(hint)}
         </LongDescription>
       </TooltipContent>
     </Tooltip>
