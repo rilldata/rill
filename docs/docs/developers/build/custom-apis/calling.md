@@ -1,13 +1,11 @@
 ---
-title: "Custom API Integration"
-description: How to call and consume custom APIs from your applications
-sidebar_label: "Custom API Integration"
-sidebar_position: 20
+title: Calling Custom APIs
+description: How to call and consume your custom APIs from external applications
+sidebar_label: Calling APIs
+sidebar_position: 70
 ---
 
-Rill exposes [custom APIs](/developers/build/custom-apis) as HTTP endpoints that return JSON. This page covers how to call your APIs from external applications.
-
-To learn how to **build** custom APIs, see the [Custom APIs documentation](/developers/build/custom-apis).
+Custom APIs are exposed as HTTP endpoints that return JSON. You can call them from any language or tool that supports HTTP requests.
 
 ## API endpoints
 

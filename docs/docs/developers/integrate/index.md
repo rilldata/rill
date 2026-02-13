@@ -13,7 +13,8 @@ Extend Rill's capabilities by integrating dashboards and data into your existing
 - **[See it Live](https://rill-embedding-example.netlify.app/)** - View a live example of embedded Rill dashboards
 
 ### Custom APIs
-- **[Integrate with Custom APIs](/developers/integrate/custom-api)** - Integrate and use your custom APIs in external applications 
+- **[Custom APIs](/developers/build/custom-apis)** - Build and expose custom API endpoints from your Rill project
+- **[Calling APIs](/developers/build/custom-apis/calling)** - HTTP endpoints, authentication, and calling APIs from external applications
 
 ### Dashboard URL Parameters
 - **[URL Parameters Reference](/developers/integrate/url-parameters)** - Complete reference guide for all dashboard URL parameters

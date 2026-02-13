@@ -1259,7 +1259,11 @@ const config = {
           },
           {
             from: '/integrate/custom-api',
-            to: '/developers/integrate/custom-api',
+            to: '/developers/build/custom-apis/calling',
+          },
+          {
+            from: '/developers/integrate/custom-api',
+            to: '/developers/build/custom-apis/calling',
           },
           {
             from: '/integrate/embed-api',

@@ -68,7 +68,7 @@ curl "https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime
   -H "Authorization: Bearer <token>"
 ```
 
-See [Custom API Integration](/developers/integrate/custom-api) for full details on authentication and calling APIs.
+See [Calling APIs](/developers/build/custom-apis/calling) for full details on authentication and calling APIs.
 
 ## Make it dynamic
 
@@ -113,4 +113,4 @@ Each customer sees only their own data, based on the [custom attributes](/develo
 - [**Templating**](/developers/build/custom-apis/templating) — Dynamic arguments, user attributes, and conditional logic
 - [**Security & Access Control**](/developers/build/custom-apis/security) — Custom attributes, multi-tenant patterns, and access rules
 - [**OpenAPI Documentation**](/developers/build/custom-apis/openapi) — Document your APIs with OpenAPI specs
-- [**Calling APIs**](/developers/integrate/custom-api) — HTTP endpoints, authentication, and client generation
+- [**Calling APIs**](/developers/build/custom-apis/calling) — HTTP endpoints, authentication, and client generation
