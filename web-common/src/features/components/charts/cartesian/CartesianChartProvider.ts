@@ -245,15 +245,19 @@ export class CartesianChartProvider {
         const topNXData = $topNXQuery?.data?.data;
 
         const topNColorData = $topNColorQuery?.data?.data;
+
+        // For nominal x-axis, wait for topN data before running the main query
+        // This prevents issues when exclude filters cause empty topN results
+        const waitingForTopNXData =
+          config.x?.type === "nominal" &&
+          !Array.isArray(config.x?.sort) &&
+          topNXData === undefined;
+
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           !!dimensions?.length &&
-          (hasColorDimension &&
-          config.x?.type === "nominal" &&
-          !Array.isArray(config.x?.sort)
-            ? topNXData !== undefined
-            : true) &&
+          !waitingForTopNXData &&
           (hasColorDimension && colorDimensionName && colorLimit
             ? topNColorData !== undefined
             : true);
