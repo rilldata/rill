@@ -416,6 +416,9 @@ export async function submitAddConnectorForm(
         );
       }
 
+      // Note: Currently unreachable for AI connectors (they always use
+      // saveAnyway via isAiConnector), but kept as a safety net in case
+      // the flow changes to allow AI connectors through the test path.
       if (AI_CONNECTORS.includes(connector.name as string)) {
         await setAiConnectorInRillYAML(
           queryClient,

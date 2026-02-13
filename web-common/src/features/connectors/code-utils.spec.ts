@@ -136,4 +136,18 @@ describe("replaceAiConnectorInYAML", () => {
       `# here's a comment\ntitle: test project\n\nai_connector: claude\n`,
     );
   });
+
+  it("should handle a blob without a trailing newline", () => {
+    const existingBlob = `title: test project`;
+    const updatedBlob = replaceAiConnectorInYAML(existingBlob, "claude");
+    expect(updatedBlob).toBe(`title: test project\nai_connector: claude\n`);
+  });
+
+  it("should replace ai_connector in the middle of the file", () => {
+    const existingBlob = `title: test project\nai_connector: openai\nolap_connector: clickhouse\n`;
+    const updatedBlob = replaceAiConnectorInYAML(existingBlob, "gemini");
+    expect(updatedBlob).toBe(
+      `title: test project\nai_connector: gemini\nolap_connector: clickhouse\n`,
+    );
+  });
 });
