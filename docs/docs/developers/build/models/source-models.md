@@ -42,10 +42,7 @@ retry:
   delay: 5s
   exponential_backoff: true
   if_error_matches:
-    - ".*OvercommitTracker.*"
-    - ".*Bad Gateway.*"
-    - ".*Timeout.*"
-    - ".*Connection refused.*"
+    - ".*NetException.*" # overrides defaults
 ```
 
 You can customize the retry behavior to better suit your specific needs. For example, you might want to increase the number of attempts for critical models, adjust the delay between retries, or only retry on specific error types. Use the following configuration in your source YAML:
@@ -60,6 +57,7 @@ retry:
     - ".*Bad Gateway.*"
     - ".*Timeout.*"
     - ".*Connection refused.*"
+    - ".*NetException.*"
 ```
 
 
