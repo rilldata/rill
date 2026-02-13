@@ -33,6 +33,7 @@ export const mysqlSchema: MultiStepFormSchema = {
         "Full DSN, e.g. mysql://user:password@host:3306/database?ssl-mode=REQUIRED",
       "x-placeholder": "mysql://user:password@host:3306/database",
       "x-secret": true,
+      "x-env-var-name": "MYSQL_DSN",
       "x-hint":
         "Use DSN or fill host/user/password/database below (not both at once).",
     },
@@ -69,6 +70,7 @@ export const mysqlSchema: MultiStepFormSchema = {
       description: "MySQL password",
       "x-placeholder": "your_password",
       "x-secret": true,
+      "x-env-var-name": "MYSQL_PASSWORD",
     },
     "ssl-mode": {
       type: "string",
