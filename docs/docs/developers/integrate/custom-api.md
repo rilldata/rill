@@ -1,123 +1,130 @@
 ---
 title: "Custom API Integration"
-description: How to integrate custom APIs with your application
+description: How to call and consume custom APIs from your applications
 sidebar_label: "Custom API Integration"
 sidebar_position: 20
 ---
 
-Rill exposes [custom APIs](/developers/build/custom-apis) you have created with `type: api` as HTTP endpoints 
-at `https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<name of api>`.
+Rill exposes [custom APIs](/developers/build/custom-apis) as HTTP endpoints that return JSON. This page covers how to call your APIs from external applications.
 
-## Accessing custom APIs
+To learn how to **build** custom APIs, see the [Custom APIs documentation](/developers/build/custom-apis).
 
-Custom APIs accept both GET and POST requests to the API endpoint with a bearer token in the `Authorization` header. Parameters can always be passed using query arguments in the URL. For example:
+## API endpoints
+
+### Rill Cloud
+
+```
+https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<api-name>
+```
+
+### Local development
+
+```
+http://localhost:9009/v1/instances/default/api/<api-name>
+```
+
+Where `<api-name>` is the name of your API file without the `.yaml` extension (e.g., `my-api.yaml` → `my-api`).
+
+## Making requests
+
+Custom APIs accept both GET and POST requests.
+
+### GET with query parameters
 
 ```bash
-curl https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<name of api>[?query-args] \
+curl "https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/api/my-api?domain=google.com&limit=10" \
   -H "Authorization: Bearer <token>"
 ```
 
-For POST requests, if you send the `Content-Type: application/json` header, you can optionally also pass arguments as a JSON object in the request body.
+### POST with JSON body
 
 ```bash
-curl -X POST https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<name of api> \
+curl -X POST "https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/api/my-api" \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"param1": "value1", "param2": "value2"}'
+  -d '{"domain": "google.com", "limit": 10}'
 ```
 
-## Testing custom APIs locally
+Both methods produce the same result. If you provide both query parameters and a JSON body, query parameters take precedence.
 
-When developing and testing custom APIs with Rill Developer on localhost, you can access your APIs without authentication at:
+### Response format
 
+APIs return a JSON array of objects:
+
+```json
+[
+  {"publisher": "Facebook", "domain": "google.com", "total": 15234},
+  {"publisher": "Google", "domain": "google.com", "total": 12876}
+]
 ```
-http://localhost:9009/v1/instances/default/api/<filename>
-```
 
-Where `<filename>` is the name of your API file (without the `.yaml` extension).
+## Testing locally
 
-### Local API examples
+Local development does not require authentication:
 
-For a custom API defined in `my-api.yaml`:
-
-**GET request:**
 ```bash
-curl "http://localhost:9009/v1/instances/default/api/my-api?param1=value1&param2=value2"
-```
+# GET request
+curl "http://localhost:9009/v1/instances/default/api/my-api?domain=google.com"
 
-**POST request:**
-```bash
+# POST request
 curl -X POST http://localhost:9009/v1/instances/default/api/my-api \
   -H "Content-Type: application/json" \
-  -d '{"param1": "value1", "param2": "value2"}'
-```
-
-### Local OpenAPI schema
-
-You can also access the OpenAPI spec locally without authentication:
-```bash
-curl http://localhost:9009/v1/instances/default/api/openapi -o openapi.json
+  -d '{"domain": "google.com"}'
 ```
 
 :::note
-Local development URLs do not require authentication tokens. This makes it easy to test your APIs during development, but remember to implement proper authentication when deploying to production.
+User attributes (`{{ .user.* }}`) are not available during local testing since no authentication token is provided. To test APIs that depend on user attributes, deploy to Rill Cloud and use a service token with [custom attributes](/developers/build/custom-apis/security#custom-attributes-on-service-tokens).
 :::
-
-## OpenAPI schema
-
-Rill automatically generates an OpenAPI spec that combines the built-in metrics APIs with your custom API definitions. You can use this OpenAPI spec to generate a typed client for accessing Rill from your programming language of choice. You can download the customized OpenAPI spec with:
-```bash
-curl https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/openapi \
-  -H "Authorization: Bearer <token>" \
-  -o openapi.json
-```
 
 ## Authentication
 
-Rill APIs require authentication tokens. Choose the appropriate token type for your use case:
+Rill Cloud APIs require a bearer token in the `Authorization` header.
 
-### Quick Start
+### For development and testing
 
-**For local testing (No authentication required when running locally):**  
-```bash
-# Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>-
+Create a [user token](/guide/administration/access-tokens/user-tokens) (inherits your personal permissions):
 
-# Test your API endpoint locally (no auth required)
-curl http://localhost:9009/v1/instances/default/api/<filename>
-```
-
-**For Rill Cloud testing:**
 ```bash
 rill token issue --display-name "API Testing"
 # Returns: rill_usr_...
 
-curl https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/api/<api-name> \
+curl "https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/api/my-api" \
   -H "Authorization: Bearer rill_usr_..."
 ```
 
-**For production systems:**
+### For production systems
+
+Create a [service token](/guide/administration/access-tokens/service-tokens) with optional custom attributes:
+
 ```bash
-rill service create my-api \
+rill service create my-api-service \
+  --project my-project \
   --project-role viewer \
-  --attributes '{"customer_id":"acme-corp"}'
+  --attributes '{"customer_id": "acme-corp"}'
 # Returns: rill_svc_...
 ```
 
-:::tip Token Documentation
-For comprehensive guidance on token types, roles, custom attributes, and management:
-- **[User Tokens](/guide/administration/access-tokens/user-tokens** - Personal access tokens for development
-- **[Service Tokens](/guide/administration/access-tokens/service-tokens)** - Long-lived tokens for production systems
-- **[Roles and Permissions](/guide/administration/users-and-access/roles-permissions)** - Understand access levels
+Custom attributes on the token are available in your API templates as `{{ .user.customer_id }}`. See [Security & Access Control](/developers/build/custom-apis/security) for details on how to use custom attributes to build multi-tenant APIs.
 
+:::tip Token Documentation
+For full guidance on token types, roles, and management:
+- **[User Tokens](/guide/administration/access-tokens/user-tokens)** — Personal access tokens for development
+- **[Service Tokens](/guide/administration/access-tokens/service-tokens)** — Long-lived tokens for production systems
+- **[Roles and Permissions](/guide/administration/users-and-access/roles-permissions)** — Understand access levels
 :::
 
-### Using custom attributes with security policies
+## OpenAPI schema
 
-Service tokens can include custom attributes for fine-grained access control. Reference these attributes in your [security policies](/developers/build/metrics-view/security#advanced-example-custom-attributes-embed-dashboards):
+Rill automatically generates an OpenAPI spec for your project. Download it to generate typed clients:
 
-```yaml
-# In your metrics view
-security:
-  access: true
-  row_filter: customer_id = '{{ .user.customer_id }}'
+```bash
+# From Rill Cloud
+curl "https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/api/openapi" \
+  -H "Authorization: Bearer <token>" \
+  -o openapi.json
+
+# Locally
+curl http://localhost:9009/v1/instances/default/api/openapi -o openapi.json
 ```
+
+See [OpenAPI Documentation](/developers/build/custom-apis/openapi) for how to add request and response schemas to your API definitions.
