@@ -18,6 +18,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import { onMount } from "svelte";
   import { get } from "svelte/store";
   import {
     getConnectorSchema,
