@@ -167,139 +167,139 @@
     <h2 class="text-lg font-medium">Resources</h2>
   </div>
 
-    <!-- Filter and Search Controls -->
-    <div class="flex items-center gap-x-3">
-      <DropdownMenu.Root bind:open={filterDropdownOpen}>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button builders={[builder]} type="tertiary">
-            <span class="flex items-center gap-x-1.5">
-              {#if selectedTypes.length === 0}
-                All types
-              {:else if selectedTypes.length === 1}
-                {prettyResourceKind(selectedTypes[0])}
-              {:else}
-                {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length -
-                  1} other{selectedTypes.length > 2 ? "s" : ""}
-              {/if}
-              {#if filterDropdownOpen}
-                <CaretUpIcon size="12px" />
-              {:else}
-                <CaretDownIcon size="12px" />
-              {/if}
-            </span>
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start" class="w-48">
-          {#each filterableTypes as type}
-            <DropdownMenu.CheckboxItem
-              checked={selectedTypes.includes(type)}
-              onCheckedChange={() => toggleType(type)}
-            >
-              {prettyResourceKind(type)}
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+  <!-- Filter and Search Controls -->
+  <div class="flex items-center gap-x-3">
+    <DropdownMenu.Root bind:open={filterDropdownOpen}>
+      <DropdownMenu.Trigger asChild let:builder>
+        <Button builders={[builder]} type="tertiary">
+          <span class="flex items-center gap-x-1.5">
+            {#if selectedTypes.length === 0}
+              All types
+            {:else if selectedTypes.length === 1}
+              {prettyResourceKind(selectedTypes[0])}
+            {:else}
+              {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length -
+                1} other{selectedTypes.length > 2 ? "s" : ""}
+            {/if}
+            {#if filterDropdownOpen}
+              <CaretUpIcon size="12px" />
+            {:else}
+              <CaretDownIcon size="12px" />
+            {/if}
+          </span>
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" class="w-48">
+        {#each filterableTypes as type}
+          <DropdownMenu.CheckboxItem
+            checked={selectedTypes.includes(type)}
+            onCheckedChange={() => toggleType(type)}
+          >
+            {prettyResourceKind(type)}
+          </DropdownMenu.CheckboxItem>
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
 
-      <DropdownMenu.Root bind:open={statusDropdownOpen}>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button builders={[builder]} type="tertiary">
-            <span class="flex items-center gap-x-1.5">
-              {#if selectedStatuses.length === 0}
-                All statuses
-              {:else if selectedStatuses.length === 1}
-                {statusFilters.find((s) => s.value === selectedStatuses[0])
-                  ?.label ?? selectedStatuses[0]}
-              {:else}
-                {statusFilters.find((s) => s.value === selectedStatuses[0])
-                  ?.label}, +{selectedStatuses.length - 1} other{selectedStatuses.length >
-                2
-                  ? "s"
-                  : ""}
-              {/if}
-              {#if statusDropdownOpen}
-                <CaretUpIcon size="12px" />
-              {:else}
-                <CaretDownIcon size="12px" />
-              {/if}
-            </span>
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start" class="w-48">
-          {#each statusFilters as status}
-            <DropdownMenu.CheckboxItem
-              checked={selectedStatuses.includes(status.value)}
-              onCheckedChange={() => toggleStatus(status.value)}
-            >
-              {status.label}
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+    <DropdownMenu.Root bind:open={statusDropdownOpen}>
+      <DropdownMenu.Trigger asChild let:builder>
+        <Button builders={[builder]} type="tertiary">
+          <span class="flex items-center gap-x-1.5">
+            {#if selectedStatuses.length === 0}
+              All statuses
+            {:else if selectedStatuses.length === 1}
+              {statusFilters.find((s) => s.value === selectedStatuses[0])
+                ?.label ?? selectedStatuses[0]}
+            {:else}
+              {statusFilters.find((s) => s.value === selectedStatuses[0])
+                ?.label}, +{selectedStatuses.length - 1} other{selectedStatuses.length >
+              2
+                ? "s"
+                : ""}
+            {/if}
+            {#if statusDropdownOpen}
+              <CaretUpIcon size="12px" />
+            {:else}
+              <CaretDownIcon size="12px" />
+            {/if}
+          </span>
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" class="w-48">
+        {#each statusFilters as status}
+          <DropdownMenu.CheckboxItem
+            checked={selectedStatuses.includes(status.value)}
+            onCheckedChange={() => toggleStatus(status.value)}
+          >
+            {status.label}
+          </DropdownMenu.CheckboxItem>
+        {/each}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
 
-      {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
-        <button
-          class="text-sm text-primary-500 hover:text-primary-600"
-          on:click={clearFilters}
-        >
-          Clear filters
-        </button>
-      {/if}
-
-      <!-- Spacer -->
-      <div class="flex-1" />
-
-      <div class="w-64">
-        <Search
-          bind:value={searchText}
-          placeholder="Search by name..."
-          autofocus={false}
-        />
-      </div>
-
-      <Button
-        type="secondary"
-        onClick={() => {
-          isConfirmDialogOpen = true;
-        }}
-        disabled={isRefreshButtonDisabled}
+    {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
+      <button
+        class="text-sm text-primary-500 hover:text-primary-600"
+        on:click={clearFilters}
       >
-        Refresh all sources and models
-      </Button>
-    </div>
-
-    {#if $resources.data}
-      <ProjectResourcesTable data={filteredResources} />
-    {:else if $resources.isError}
-      <div class="text-red-500">
-        Error loading resources: {$resources.error?.message}
-      </div>
-    {:else}
-      <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
+        Clear filters
+      </button>
     {/if}
 
-    <div class="parse-errors">
-      <h3 class="parse-errors-header">
-        Parse Errors
-        {#if parseErrors.length > 0}
-          <span class="parse-errors-badge">{parseErrors.length}</span>
-        {/if}
-      </h3>
-      {#if parseErrors.length === 0}
-        <p class="text-sm text-fg-secondary">No parse errors</p>
-      {:else}
-        <div class="parse-errors-list">
-          {#each parseErrors as error ((error.filePath ?? "") + ":" + error.message)}
-            <div class="parse-error-item">
-              {#if error.filePath}
-                <span class="parse-error-file">{error.filePath}</span>
-              {/if}
-              <span class="parse-error-message">{error.message}</span>
-            </div>
-          {/each}
-        </div>
-      {/if}
+    <!-- Spacer -->
+    <div class="flex-1" />
+
+    <div class="w-64">
+      <Search
+        bind:value={searchText}
+        placeholder="Search by name..."
+        autofocus={false}
+      />
     </div>
+
+    <Button
+      type="secondary"
+      onClick={() => {
+        isConfirmDialogOpen = true;
+      }}
+      disabled={isRefreshButtonDisabled}
+    >
+      Refresh all sources and models
+    </Button>
+  </div>
+
+  {#if $resources.data}
+    <ProjectResourcesTable data={filteredResources} />
+  {:else if $resources.isError}
+    <div class="text-red-500">
+      Error loading resources: {$resources.error?.message}
+    </div>
+  {:else}
+    <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
+  {/if}
+
+  <div class="parse-errors">
+    <h3 class="parse-errors-header">
+      Parse Errors
+      {#if parseErrors.length > 0}
+        <span class="parse-errors-badge">{parseErrors.length}</span>
+      {/if}
+    </h3>
+    {#if parseErrors.length === 0}
+      <p class="text-sm text-fg-secondary">No parse errors</p>
+    {:else}
+      <div class="parse-errors-list">
+        {#each parseErrors as error ((error.filePath ?? "") + ":" + error.message)}
+          <div class="parse-error-item">
+            {#if error.filePath}
+              <span class="parse-error-file">{error.filePath}</span>
+            {/if}
+            <span class="parse-error-message">{error.message}</span>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
 </section>
 
 <RefreshAllSourcesAndModelsConfirmDialog

@@ -33,80 +33,80 @@
 </script>
 
 <Popover.Root bind:open>
-    <Popover.Trigger asChild let:builder>
-      <Button type="secondary" builders={[builder]}>Download Project</Button>
-    </Popover.Trigger>
+  <Popover.Trigger asChild let:builder>
+    <Button type="secondary" builders={[builder]}>Download Project</Button>
+  </Popover.Trigger>
 
-    <Popover.Content class="w-[380px]" align="end" sideOffset={8}>
-      <div class="flex flex-col gap-y-3">
-        <span class="text-sm text-fg-secondary">
-          Clone this project to develop locally.
-          <a
-            href="https://docs.rilldata.com/developers/guides/clone-a-project"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-primary-600"
+  <Popover.Content class="w-[380px]" align="end" sideOffset={8}>
+    <div class="flex flex-col gap-y-3">
+      <span class="text-sm text-fg-secondary">
+        Clone this project to develop locally.
+        <a
+          href="https://docs.rilldata.com/developers/guides/clone-a-project"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary-600"
+        >
+          Learn more ->
+        </a>
+      </span>
+
+      <div class="flex flex-col gap-y-2">
+        {#if isGithubConnected}
+          <button
+            class="command-box"
+            title={rillStartCommand}
+            on:click={() => onCopy(rillStartCommand)}
           >
-            Learn more ->
-          </a>
-        </span>
+            <code class="text-xs truncate">{rillStartCommand}</code>
+            <span class="text-fg-muted">
+              {#if copiedCommand === rillStartCommand}
+                <Check size="14px" color="#22c55e" />
+              {:else}
+                <CopyIcon size="14px" />
+              {/if}
+            </span>
+          </button>
 
-        <div class="flex flex-col gap-y-2">
-          {#if isGithubConnected}
+          <div class="env-note">
+            <span class="text-[11px] text-fg-secondary">
+              Then pull environment variables:
+            </span>
             <button
               class="command-box"
-              title={rillStartCommand}
-              on:click={() => onCopy(rillStartCommand)}
+              title={envPullCommand}
+              on:click={() => onCopy(envPullCommand)}
             >
-              <code class="text-xs truncate">{rillStartCommand}</code>
+              <code class="text-[11px] truncate">{envPullCommand}</code>
               <span class="text-fg-muted">
-                {#if copiedCommand === rillStartCommand}
+                {#if copiedCommand === envPullCommand}
                   <Check size="14px" color="#22c55e" />
                 {:else}
                   <CopyIcon size="14px" />
                 {/if}
               </span>
             </button>
-
-            <div class="env-note">
-              <span class="text-[11px] text-fg-secondary">
-                Then pull environment variables:
-              </span>
-              <button
-                class="command-box"
-                title={envPullCommand}
-                on:click={() => onCopy(envPullCommand)}
-              >
-                <code class="text-[11px] truncate">{envPullCommand}</code>
-                <span class="text-fg-muted">
-                  {#if copiedCommand === envPullCommand}
-                    <Check size="14px" color="#22c55e" />
-                  {:else}
-                    <CopyIcon size="14px" />
-                  {/if}
-                </span>
-              </button>
-            </div>
-          {:else}
-            <button
-              class="command-box"
-              title={cloneCommand}
-              on:click={() => onCopy(cloneCommand)}
-            >
-              <code class="text-xs truncate">{cloneCommand}</code>
-              <span class="text-fg-muted">
-                {#if copiedCommand === cloneCommand}
-                  <Check size="14px" color="#22c55e" />
-                {:else}
-                  <CopyIcon size="14px" />
-                {/if}
-              </span>
-            </button>
-          {/if}
-        </div>
+          </div>
+        {:else}
+          <button
+            class="command-box"
+            title={cloneCommand}
+            on:click={() => onCopy(cloneCommand)}
+          >
+            <code class="text-xs truncate">{cloneCommand}</code>
+            <span class="text-fg-muted">
+              {#if copiedCommand === cloneCommand}
+                <Check size="14px" color="#22c55e" />
+              {:else}
+                <CopyIcon size="14px" />
+              {/if}
+            </span>
+          </button>
+        {/if}
       </div>
-    </Popover.Content>
-  </Popover.Root>
+    </div>
+  </Popover.Content>
+</Popover.Root>
 
 <style lang="postcss">
   .command-box {
