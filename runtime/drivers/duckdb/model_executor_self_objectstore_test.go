@@ -4,9 +4,12 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 )
 
 func TestDuckDBToObjectStoreS3(t *testing.T) {
+	testmode.Expensive(t)
+
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"s3"},
 		Files: map[string]string{
@@ -32,6 +35,8 @@ output:
 }
 
 func TestDuckDBToObjectStoreS3FixedPath(t *testing.T) {
+	testmode.Expensive(t)
+
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"s3"},
 		Files: map[string]string{
@@ -57,6 +62,8 @@ output:
 }
 
 func TestDuckDBToObjectStoreGCS(t *testing.T) {
+	testmode.Expensive(t)
+
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"gcs_s3_compat"},
 		Files: map[string]string{
