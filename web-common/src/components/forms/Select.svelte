@@ -41,6 +41,7 @@
   export let enableSearch = false;
   export let lockable = false;
   export let forcedTriggerStyle = "";
+  /** When true, shows an X button to clear the selection back to empty */
   export let clearable = false;
   export let onChange: (value: string) => void = () => {};
 
@@ -56,7 +57,9 @@
     value !== "" && value != null
       ? options.find((option) => option.value === value)
       : undefined;
-  // Increment to force bits-ui to reset internal state after clearing
+  // bits-ui Select.Root caches the selected item internally and won't
+  // reflect an external reset to "" unless the component remounts.
+  // Incrementing this key via {#key selectKey} forces a remount on clear.
   let selectKey = 0;
   $: filteredOptions = enableSearch
     ? options.filter((option) =>
