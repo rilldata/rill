@@ -18,9 +18,9 @@
 
   const kindConfig = [
     { token: "connectors" as const, label: "Connectors" },
-    { token: "sources" as const, label: "Sources" },
+    { token: "sources" as const, label: "Source Models" },
     { token: "models" as const, label: "Models" },
-    { token: "metrics" as const, label: "Metrics" },
+    { token: "metrics" as const, label: "Metric Views" },
     { token: "dashboards" as const, label: "Dashboards" },
   ];
 

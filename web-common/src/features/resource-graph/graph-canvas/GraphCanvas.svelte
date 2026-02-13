@@ -280,7 +280,6 @@
       });
     }
   }
-
 </script>
 
 <section class="graph-instance">

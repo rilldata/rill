@@ -307,7 +307,6 @@
   // Derive current expanded ID for template usage (computed from props/state)
   $: currentExpandedId = isControlledMode ? expandedId : internalExpandedId;
 
-
   // When the URL seeds change, re-open the first seeded graph in expanded view
   let lastSeedsSignature = "";
   $: areKindOnlySeeds =
@@ -575,7 +574,6 @@
               showLock={false}
               fillParent={true}
               enableExpand={enableExpansion}
-
               {fitViewPadding}
               {fitViewMinZoom}
               {fitViewMaxZoom}
@@ -602,7 +600,6 @@
                 showLock={true}
                 fillParent={true}
                 enableExpand={enableExpansion}
-  
                 {fitViewPadding}
                 {fitViewMinZoom}
                 {fitViewMaxZoom}
