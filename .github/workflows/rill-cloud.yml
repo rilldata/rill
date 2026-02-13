@@ -86,8 +86,7 @@ jobs:
             go build -o rill -mod=readonly -ldflags="-s -w -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           fi
           
-          docker buildx build --platform linux/${{ matrix.arch }} -o type=docker -t ${IMAGE}:${GITHUB_SHA}-${{ matrix.arch }} . --load 
-          docker push ${IMAGE}:${GITHUB_SHA}-${{ matrix.arch }}
+          docker buildx build --platform linux/${{ matrix.arch }} -t ${IMAGE}:${GITHUB_SHA}-${{ matrix.arch }} . --push --provenance=false --sbom=false  
 
   docker:
     runs-on: ubuntu-latest
