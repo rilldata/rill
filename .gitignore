@@ -89,6 +89,9 @@ latest.txt
 /postgres/
 /clickhouse/
 
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # Claude resources
 /CLAUDE.md
 .claude/
