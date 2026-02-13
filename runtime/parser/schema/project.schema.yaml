@@ -1350,8 +1350,9 @@ definitions:
                   exponential_backoff: true
                   if_error_matches:
                     - ".*OvercommitTracker.*"
-                    - ".*Timeout.*"
                     - ".*Bad Gateway.*"
+                    - ".*Timeout.*"
+                    - ".*Connection refused.*"
           timeout:
             type: string
             description: The maximum time to wait for model ingestion
@@ -3701,4 +3702,3 @@ definitions:
             additionalProperties: false
         additionalProperties: false
   
-

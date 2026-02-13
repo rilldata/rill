@@ -137,7 +137,7 @@ Furthermore, our `model.sql` file contains the following SQL:
 
 ```sql
 SELECT * FROM {{ ref "snowflake" }}
-WHERE original_language = "{{ .env.language }}"
+WHERE original_language = '{{ .env.language }}'
 {{if dev}} LIMIT {{ .env.local_limit }} {{end}}
 ```
 

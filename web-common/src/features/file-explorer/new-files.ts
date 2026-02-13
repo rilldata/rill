@@ -168,7 +168,7 @@ export function generateBlobForNewResourceFile(
       return ""; // This is constructed in the `features/sources/modal` directory
     case ResourceKind.Model:
       return `-- Model SQL
--- Reference documentation: https://docs.rilldata.com/build/models
+-- Reference documentation: https://docs.rilldata.com/developers/build/models
 
 SELECT 'Hello, World!' AS Greeting`;
     case ResourceKind.MetricsView:

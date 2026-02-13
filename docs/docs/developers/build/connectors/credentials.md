@@ -145,14 +145,16 @@ aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
 
 #### Case-Insensitive Variable Lookups
 
-The `{{ .env.VAR_NAME }}` function provides case-insensitive variable lookups, which can be useful when variable names may have inconsistent casing:
+The `{{ env "VAR_NAME" }}` function (note: not `{{ .env.VAR_NAME }}`) provides case-insensitive variable lookups, which can be useful when variable names may have inconsistent casing:
 
 ```yaml
 # All of these will match POSTGRES_PASSWORD in your .env file:
-password: "{{ .env.POSTGRES_PASSWORD }}"
-password: "{{ .env.postgres_password }}"
-password: "{{ .env.Postgres_Password }}"
+password: '{{ env "POSTGRES_PASSWORD" }}'
+password: '{{ env "postgres_password" }}'
+password: '{{ env "Postgres_Password" }}'
 ```
+
+Note that `{{ .env.VAR_NAME }}` is **case-sensitive** — the variable name must match exactly.
 
 :::note Legacy Naming Convention
 Older projects may use the `connector.<connector_name>.<property>` syntax (e.g., `connector.druid.dsn`, `connector.clickhouse.dsn`). This format is still supported for backwards compatibility.
