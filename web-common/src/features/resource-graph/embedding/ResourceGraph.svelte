@@ -238,7 +238,7 @@
   })());
 
   // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
-  // Without this, the SummaryGraph component would re-render on every resource array change
+  // Without this, the kind selector would re-render on every resource array change
   // even if counts haven't actually changed. The summaryEquals function does shallow comparison
   // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
@@ -309,7 +309,7 @@
   // Derive current expanded ID for template usage (computed from props/state)
   $: currentExpandedId = isControlledMode ? expandedId : internalExpandedId;
 
-  // Update the global expanded state store for components like GraphInspector
+  // Update the global expanded state store
   $: isGraphExpanded.set(!!currentExpandedId);
 
   // When the URL seeds change, re-open the first seeded graph in expanded view

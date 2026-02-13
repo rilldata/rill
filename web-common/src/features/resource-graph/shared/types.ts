@@ -31,38 +31,19 @@ export interface MeasureInfo {
 export interface ResourceMetadata {
   // Model/Source metadata
   connector?: string; // inputConnector name
-  outputConnector?: string; // output connector name
-  stageConnector?: string; // staging connector name
   sourcePath?: string; // file path for file-based sources
   incremental?: boolean;
   partitioned?: boolean;
-  partitionsWatermarkField?: string;
-  partitionsConcurrencyLimit?: number;
   hasSchedule?: boolean;
   scheduleDescription?: string; // "cron: 0 * * * *" or "every 3600s"
-  timeoutSeconds?: number;
-  retryAttempts?: number;
-  retryDelaySeconds?: number;
-  retryExponentialBackoff?: boolean;
-  retryYaml?: string; // YAML representation of retry config
   isSqlModel?: boolean; // true if model defined via SQL file
   sqlQuery?: string; // SQL query for models
-  changeMode?: string; // RESET | MANUAL | PATCH
   testCount?: number; // number of tests defined
-  testsYaml?: string; // YAML representation of tests
-  scheduleYaml?: string; // YAML representation of schedule
-
-  // Model state
-  refreshedOn?: string;
-  resultTable?: string;
-  executionDurationMs?: string;
-  partitionsHaveErrors?: boolean;
 
   // Dashboard metadata
   theme?: string; // theme name (not embedded)
 
   // MetricsView metadata
-  metricsConnector?: string;
   metricsTable?: string;
   metricsModel?: string;
   timeDimension?: string;

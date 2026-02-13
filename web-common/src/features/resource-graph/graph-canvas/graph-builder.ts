@@ -93,97 +93,6 @@ function formatScheduleDescription(
 }
 
 /**
- * Format a schedule as YAML.
- */
-function formatScheduleYaml(
-  schedule:
-    | {
-        cron?: string;
-        tickerSeconds?: number;
-        timeZone?: string;
-        runInDev?: boolean;
-      }
-    | undefined,
-): string | undefined {
-  if (!schedule) return undefined;
-  const lines: string[] = [];
-  if (schedule.cron) {
-    lines.push(`cron: "${schedule.cron}"`);
-  }
-  if (schedule.tickerSeconds) {
-    lines.push(`ticker_seconds: ${schedule.tickerSeconds}`);
-  }
-  if (schedule.timeZone) {
-    lines.push(`time_zone: "${schedule.timeZone}"`);
-  }
-  if (schedule.runInDev !== undefined) {
-    lines.push(`run_in_dev: ${schedule.runInDev}`);
-  }
-  return lines.length > 0 ? lines.join("\n") : undefined;
-}
-
-/**
- * Format retry configuration as YAML.
- */
-function formatRetryYaml(
-  retryAttempts?: number,
-  retryDelaySeconds?: number,
-  retryExponentialBackoff?: boolean,
-): string | undefined {
-  if (!retryAttempts) return undefined;
-  const lines: string[] = [];
-  lines.push(`retry_attempts: ${retryAttempts}`);
-  if (retryDelaySeconds !== undefined) {
-    lines.push(`retry_delay_seconds: ${retryDelaySeconds}`);
-  }
-  if (retryExponentialBackoff !== undefined) {
-    lines.push(`retry_exponential_backoff: ${retryExponentialBackoff}`);
-  }
-  return lines.join("\n");
-}
-
-/**
- * Format tests as YAML.
- * Tests have: name, resolver (type), and resolver_properties (containing sql/expression)
- */
-function formatTestsYaml(
-  tests:
-    | Array<{
-        name?: string;
-        resolver?: string;
-        resolverProperties?: Record<string, unknown>;
-      }>
-    | undefined,
-): string | undefined {
-  if (!tests || tests.length === 0) return undefined;
-  const lines: string[] = [];
-  for (const test of tests) {
-    // Get the test name or use resolver type as fallback
-    const testName = test.name || test.resolver || "test";
-    lines.push(`- ${testName}:`);
-
-    // Extract sql or expression from resolver_properties
-    const props = test.resolverProperties as
-      | { sql?: string; expression?: string }
-      | undefined;
-    if (props?.sql) {
-      // Handle multi-line SQL
-      if (props.sql.includes("\n")) {
-        lines.push(`    sql: |`);
-        for (const sqlLine of props.sql.split("\n")) {
-          lines.push(`      ${sqlLine}`);
-        }
-      } else {
-        lines.push(`    sql: "${props.sql}"`);
-      }
-    } else if (props?.expression) {
-      lines.push(`    expression: "${props.expression}"`);
-    }
-  }
-  return lines.length > 0 ? lines.join("\n") : undefined;
-}
-
-/**
  * Extract rich metadata from a resource for badge display.
  */
 function extractResourceMetadata(
@@ -212,8 +121,6 @@ function extractResourceMetadata(
 
     // Connector info
     metadata.connector = connector;
-    if (spec.outputConnector) metadata.outputConnector = spec.outputConnector;
-    if (spec.stageConnector) metadata.stageConnector = spec.stageConnector;
 
     // Source path for file-based sources
     if (inputProps?.path) {
@@ -223,20 +130,6 @@ function extractResourceMetadata(
     // Processing configuration
     metadata.incremental = spec.incremental;
     metadata.partitioned = Boolean(spec.partitionsResolver);
-    if (spec.partitionsWatermarkField) {
-      metadata.partitionsWatermarkField = spec.partitionsWatermarkField;
-    }
-    if (spec.partitionsConcurrencyLimit) {
-      metadata.partitionsConcurrencyLimit = spec.partitionsConcurrencyLimit;
-    }
-
-    // Change mode
-    if (
-      spec.changeMode &&
-      spec.changeMode !== "MODEL_CHANGE_MODE_UNSPECIFIED"
-    ) {
-      metadata.changeMode = spec.changeMode.replace("MODEL_CHANGE_MODE_", "");
-    }
 
     // Schedule configuration
     metadata.hasSchedule = Boolean(
@@ -245,25 +138,10 @@ function extractResourceMetadata(
     metadata.scheduleDescription = formatScheduleDescription(
       spec.refreshSchedule,
     );
-    metadata.scheduleYaml = formatScheduleYaml(spec.refreshSchedule);
-    if (spec.timeoutSeconds) metadata.timeoutSeconds = spec.timeoutSeconds;
-
-    // Retry configuration
-    if (spec.retryAttempts) {
-      metadata.retryAttempts = spec.retryAttempts;
-      metadata.retryDelaySeconds = spec.retryDelaySeconds;
-      metadata.retryExponentialBackoff = spec.retryExponentialBackoff;
-      metadata.retryYaml = formatRetryYaml(
-        spec.retryAttempts,
-        spec.retryDelaySeconds,
-        spec.retryExponentialBackoff,
-      );
-    }
 
     // Tests
     if (spec.tests && spec.tests.length > 0) {
       metadata.testCount = spec.tests.length;
-      metadata.testsYaml = formatTestsYaml(spec.tests);
     }
 
     // Extract SQL query
@@ -274,14 +152,6 @@ function extractResourceMetadata(
     // Check if model is defined via SQL file
     const filePaths = resource.meta?.filePaths ?? [];
     metadata.isSqlModel = filePaths.some((fp) => fp.endsWith(".sql"));
-
-    // Model state info
-    if (model.state) {
-      metadata.refreshedOn = model.state.refreshedOn;
-      metadata.resultTable = model.state.resultTable;
-      metadata.executionDurationMs = model.state.latestExecutionDurationMs;
-      metadata.partitionsHaveErrors = model.state.partitionsHaveErrors;
-    }
   }
 
   if (source?.spec) {
@@ -310,7 +180,6 @@ function extractResourceMetadata(
   const metricsView = resource.metricsView;
   if (metricsView?.spec) {
     const mvSpec = metricsView.spec;
-    metadata.metricsConnector = mvSpec.connector;
     metadata.metricsTable = mvSpec.table;
     metadata.metricsModel = mvSpec.model;
     metadata.timeDimension = mvSpec.timeDimension;

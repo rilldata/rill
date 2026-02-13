@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
 
   export let connectors = 0;
   export let sources = 0;
