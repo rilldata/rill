@@ -3,15 +3,10 @@
   import { marked } from "marked";
 
   export let content: string;
-
-  // Sometimes LLM response adds markdown syntax around the content, so we need to remove it
-  $: sanitisedContext = content
-    .replace(/^```markdown\n/m, "")
-    .replace(/\n```$/m, "");
 </script>
 
 <div class="chat-markdown">
-  {#await marked(sanitisedContext) then html}
+  {#await marked(content) then html}
     {@html DOMPurify.sanitize(html)}
   {/await}
 </div>
@@ -118,7 +113,7 @@
   }
 
   :global(.chat-markdown pre) {
-    @apply bg-gray-100 text-xs;
+    @apply bg-surface-muted border text-xs;
     padding: 0.5rem;
     border-radius: 0.25rem;
     margin-bottom: 0.5rem;
@@ -170,5 +165,10 @@
 
   :global(.chat-markdown tr:nth-child(even)) {
     @apply bg-surface-background;
+  }
+
+  :global(code[class*="language-"], pre[class*="language-"]) {
+    @apply text-fg-primary;
+    text-shadow: none;
   }
 </style>

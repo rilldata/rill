@@ -48,6 +48,84 @@ explore:
 	require.Contains(t, res.OpenURL, "/-/open-query?query=")
 }
 
+func TestMetricsViewQueryLimit(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"test_data.sql": `SELECT UNNEST(range(1, 11)) AS id`,
+			"test_metrics.yaml": `
+type: metrics_view
+model: test_data
+dimensions:
+- column: id
+measures:
+- name: row_count
+  expression: COUNT(*)
+explore:
+  skip: true
+`,
+		},
+		Variables: map[string]string{
+			"rill.ai.default_query_limit": "3",
+			"rill.ai.max_query_limit":     "5",
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	s := newSession(t, rt, instanceID)
+
+	tests := []struct {
+		name        string
+		limit       any // nil means omit limit from args
+		wantRows    int
+		wantWarning string
+	}{
+		{
+			name:        "no limit applies default",
+			limit:       nil,
+			wantRows:    3,
+			wantWarning: "The system truncated the result to 3 rows; to fetch more rows, explicitly set a limit (max allowed limit: 5)",
+		},
+		{
+			name:        "user limit below max",
+			limit:       2,
+			wantRows:    2,
+			wantWarning: "",
+		},
+		{
+			name:        "user limit at max",
+			limit:       5,
+			wantRows:    5,
+			wantWarning: "",
+		},
+		{
+			name:        "user limit above max is capped",
+			limit:       100,
+			wantRows:    5,
+			wantWarning: "The system truncated the result to 5 rows",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := ai.QueryMetricsViewArgs{
+				"metrics_view": "test_metrics",
+				"dimensions":   []map[string]any{{"name": "id"}},
+				"measures":     []map[string]any{{"name": "row_count"}},
+				"sort":         []map[string]any{{"name": "id"}},
+			}
+			if tt.limit != nil {
+				args["limit"] = tt.limit
+			}
+
+			var res *ai.QueryMetricsViewResult
+			_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, args)
+			require.NoError(t, err)
+			require.Len(t, res.Data, tt.wantRows)
+			require.Equal(t, tt.wantWarning, res.TruncationWarning)
+		})
+	}
+}
+
 func TestMetricsViewQueryNaN(t *testing.T) {
 	// Setup a basic project with a metrics view that can produce NaN
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{

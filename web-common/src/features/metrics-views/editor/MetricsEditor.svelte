@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import { clearMostRecentExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -10,7 +9,9 @@
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { mapParseErrorToLine } from "@rilldata/web-common/features/metrics-views/errors";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { yamlSchema } from "codemirror-json-schema/yaml";
   import type { JSONSchema7 } from "json-schema";
   import { createPlaceholder } from "./create-placeholder";
@@ -18,9 +19,12 @@
 
   export let filePath: string;
   export let metricsViewName: string;
-  export let errors: LineStatus[];
+  export let parseError: V1ParseError | undefined = undefined;
+  export let rootCauseReconcileError: string | undefined = undefined;
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
+
+  $: ({ remoteContent } = fileArtifact);
 
   let editor: EditorView;
   const metricsJsonSchema = metricsSchema as JSONSchema7;
@@ -31,14 +35,14 @@
   $: placeholderElements = createPlaceholder(filePath, metricsViewName);
   $: if (editor) placeholderElements.component.setEditorView(editor);
 
-  /** If the errors change, run the following transaction. */
-  $: if (editor) setLineStatuses(errors, editor);
-
-  /** display the main error (the first in this array) at the bottom */
-  $: mainError = errors?.at(0);
+  /** If the parse error changes, update the editor gutter. */
+  $: lineStatus = mapParseErrorToLine(parseError, $remoteContent ?? "");
+  $: if (editor) setLineStatuses(lineStatus ? [lineStatus] : [], editor);
 </script>
 
-<WorkspaceEditorContainer error={mainError?.message}>
+<WorkspaceEditorContainer
+  error={parseError?.message ?? rootCauseReconcileError}
+>
   <Editor
     bind:autoSave
     bind:editor

@@ -35,6 +35,7 @@ import {
   getSchemaStringKeys,
 } from "../../templates/schema-utils";
 import type { ButtonLabels } from "../../templates/schemas/types";
+import { processFileContent } from "../../templates/file-encoding";
 
 type FormData = Record<string, unknown>;
 // Use unknown to be compatible with superforms' complex ValidationErrors type
@@ -424,32 +425,34 @@ export class AddDataFormManager {
     }
   };
 
-  async handleFileUpload(file: File): Promise<string> {
+  async handleFileUpload(file: File, fieldKey?: string): Promise<string> {
     const content = await file.text();
-    try {
-      const parsed = JSON.parse(content);
-      const sanitized = JSON.stringify(parsed);
-      if (this.connector.name === "bigquery" && parsed.project_id) {
-        const formStore = this.formStore;
-        formStore.update(
-          ($form) => {
-            $form.project_id = parsed.project_id;
-            return $form;
-          },
-          { taint: false },
-        );
+
+    if (fieldKey) {
+      const schema = getConnectorSchema(this.schemaName);
+      const field = schema?.properties?.[fieldKey];
+      if (field?.["x-file-encoding"]) {
+        const result = processFileContent(content, field);
+
+        if (Object.keys(result.extractedValues).length > 0) {
+          this.formStore.update(
+            ($form) => {
+              for (const [key, value] of Object.entries(
+                result.extractedValues,
+              )) {
+                $form[key] = value;
+              }
+              return $form;
+            },
+            { taint: false },
+          );
+        }
+
+        return result.encodedContent;
       }
-      return sanitized;
-    } catch (error: unknown) {
-      if (error instanceof SyntaxError) {
-        throw new Error(`Invalid JSON file: ${error.message}`);
-      }
-      const message =
-        error && typeof error === "object" && "message" in error
-          ? String((error as { message: unknown }).message)
-          : "Unknown error";
-      throw new Error(`Failed to read file: ${message}`);
     }
+
+    return content;
   }
 
   /**

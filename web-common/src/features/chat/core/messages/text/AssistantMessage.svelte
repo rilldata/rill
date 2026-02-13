@@ -7,8 +7,11 @@
 
   export let message: V1Message;
 
-  // Message content and styling
-  $: content = extractMessageText(message);
+  // Safety net: strip wrapper if the LLM wraps the entire response in ```markdown fences
+  $: content = extractMessageText(message).replace(
+    /^```markdown\n([\s\S]*)\n```$/,
+    "$1",
+  );
 </script>
 
 <div class="chat-message">

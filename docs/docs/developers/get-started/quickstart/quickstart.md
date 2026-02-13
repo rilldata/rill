@@ -8,7 +8,7 @@ import Video from '@site/src/components/Video';
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 :::tip Rill's Default Engine
-This guide assumes you'll be using Rill's default embedded engine, DuckDB. If you're looking to set up Rill with ClickHouse, check out our [ClickHouse Guide](/developers/guides/rill-clickhouse)!
+This guide assumes you'll be using Rill's default embedded engine, DuckDB. If you're looking to set up Rill with ClickHouse, check out our [ClickHouse Guide](/developers/tutorials/rill-clickhouse)!
 :::
 
 ## What is Rill Developer?
@@ -38,9 +38,7 @@ This will:
 - Create a new project directory
 - Launch the Rill interface in your browser
 
-<img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
-
-<br/>
+![New Rill Project](/img/tutorials/rill-basics/new-rill-project.png)
 :::note Rill Developer vs Rill Cloud
 Rill Developer is your local development environment where you build and test your analytics projects. Once ready, you can deploy to Rill Cloud for team collaboration and production use. For more details, see our [Developer vs Cloud comparison](/developers/deploy/cloud-vs-developer).
 :::
@@ -129,4 +127,4 @@ This quick start covered the basics, but Rill offers much more:
 - **[Metrics Layer](/developers/build/metrics-view)** - Define business KPIs and calculations
 - **[Deployment](/developers/deploy/deploy-dashboard)** - Share your dashboards with your team
 
-Ready to build something more complex? Check out our [comprehensive tutorial](/developers/guides/rill-basics/launch) for a complete walkthrough of Rill's advanced features.
+Ready to build something more complex? Check out our [comprehensive tutorial](/developers/tutorials/rill-basics/launch) for a complete walkthrough of Rill's advanced features.

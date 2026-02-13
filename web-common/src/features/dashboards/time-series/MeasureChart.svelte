@@ -190,6 +190,9 @@
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
 
+  $: measureSelection.setZone(zone);
+  $: measureSelection.setTimeGrain(timeGrain);
+
   function inBounds(min, max, value) {
     return value >= min && value <= max;
   }
