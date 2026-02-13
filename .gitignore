@@ -89,6 +89,9 @@ latest.txt
 /postgres/
 /clickhouse/
 
+# Vite temp files
+vite.config.ts.timestamp-*
+
 # TypeScript incremental build cache
 *.tsbuildinfo
 
