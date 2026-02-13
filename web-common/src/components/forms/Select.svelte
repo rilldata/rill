@@ -169,41 +169,8 @@
               <Spinner size="18px" status={EntityStatus.Running} />
             </div>
           </div>
-        </div>
-      {:else}
-        {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon } (value)}
-          <Select.Item
-            {value}
-            {label}
-            {description}
-            {disabled}
-            class="text-[{fontSize}px] gap-x-2 items-start"
-          >
-            {#if tooltip}
-              <Tooltip.Root portal="body">
-                <Tooltip.Trigger class="select-tooltip cursor-default">
-                  {#if icon}
-                    <svelte:component this={icon} size="16px" />
-                  {:else if type}
-                    <DataTypeIcon {type} />
-                  {/if}
-                  {label ?? value}
-                </Tooltip.Trigger>
-                <Tooltip.Content side="right" sideOffset={8}>
-                  {tooltip}
-                </Tooltip.Content>
-              </Tooltip.Root>
-            {:else}
-              {#if icon}
-                <svelte:component this={icon} size="16px" />
-              {:else if type}
-                <DataTypeIcon {type} />
-              {/if}
-              {label ?? value}
-            {/if}
-          </Select.Item>
         {:else}
-          {#each filteredOptions as { type, value, label, description, disabled, tooltip } (value)}
+          {#each filteredOptions as { type, value, label, description, disabled, tooltip, icon } (value)}
             <Select.Item
               {value}
               {label}
@@ -214,7 +181,9 @@
               {#if tooltip}
                 <Tooltip.Root portal="body">
                   <Tooltip.Trigger class="select-tooltip cursor-default">
-                    {#if type}
+                    {#if icon}
+                      <svelte:component this={icon} size="16px" />
+                    {:else if type}
                       <DataTypeIcon {type} />
                     {/if}
                     {label ?? value}
@@ -224,7 +193,9 @@
                   </Tooltip.Content>
                 </Tooltip.Root>
               {:else}
-                {#if type}
+                {#if icon}
+                  <svelte:component this={icon} size="16px" />
+                {:else if type}
                   <DataTypeIcon {type} />
                 {/if}
                 {label ?? value}

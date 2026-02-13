@@ -62,8 +62,22 @@
     bind:value
     keyPlaceholder={prop["x-placeholder"]}
   />
-{:else if options?.length}
+{:else if options?.length && prop["x-display"] === "radio"}
   <Radio bind:value {options} {name} {disabled} />
+{:else if options?.length}
+  <Select
+    {id}
+    label={prop.title ?? id}
+    tooltip={prop.description ?? prop["x-hint"] ?? ""}
+    {options}
+    {optional}
+    placeholder={prop["x-placeholder"] ?? ""}
+    bind:value
+    full
+    sameWidth
+    clearable
+    {disabled}
+  />
 {:else}
   <Input
     {id}
