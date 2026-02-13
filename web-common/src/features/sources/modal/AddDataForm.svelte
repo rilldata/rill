@@ -135,7 +135,6 @@
     }
   }
 
-
   $: isSubmitDisabled = (() => {
     if (isStepFlowConnector) {
       return multiStepSubmitDisabled;
