@@ -48,7 +48,7 @@ function normalizePluralToSingular(kind: string): string {
     metrics: "metricsview",
     models: "model",
     sources: "source",
-    dashboards: "explore",
+    dashboards: "explore", // Maps to explore for token resolution, but expandSeedsByKind handles both Explore and Canvas
     // Also handle "dashboard" -> "explore" for consistency
     dashboard: "explore",
     // Handle "metric" -> "metricsview"
@@ -80,6 +80,7 @@ export const ALLOWED_FOR_GRAPH = new Set<ResourceKind>([
   ResourceKind.Model,
   ResourceKind.MetricsView,
   ResourceKind.Explore,
+  ResourceKind.Canvas,
 ]);
 
 /**
@@ -151,6 +152,7 @@ export function isKindToken(s: string): ResourceKind | undefined {
  *
  * @example
  * tokenForKind(ResourceKind.Model) // "models"
+ * tokenForKind(ResourceKind.Source) // "sources"
  * tokenForKind("rill.runtime.v1.Source") // "sources"
  */
 export function tokenForKind(
@@ -162,7 +164,12 @@ export function tokenForKind(
   if (key.includes("source")) return "sources";
   if (key.includes("model")) return "models";
   if (key.includes("metricsview") || key.includes("metric")) return "metrics";
-  if (key.includes("explore") || key.includes("dashboard")) return "dashboards";
+  if (
+    key.includes("explore") ||
+    key.includes("dashboard") ||
+    key.includes("canvas")
+  )
+    return "dashboards";
   return null;
 }
 
@@ -170,11 +177,13 @@ export function tokenForKind(
  * Convert a seed string to its display token.
  * Parses the kind from the seed and converts it to a token.
  *
- * @param seed - Seed string (e.g., "model:orders", "metrics", "orders")
+ * @param seed - Seed string (e.g., "model:orders", "source:raw_data", "metrics", "orders")
  * @returns Token string or null
  *
  * @example
  * tokenForSeedString("model:orders") // "models"
+ * tokenForSeedString("source:raw_data") // "sources"
+ * tokenForSeedString("sources") // "sources"
  * tokenForSeedString("metrics") // "metrics"
  * tokenForSeedString("orders") // "metrics" (defaults to metrics)
  */
@@ -193,6 +202,14 @@ export function tokenForSeedString(
   const idx = normalized.indexOf(":");
   if (idx !== -1) {
     const kindPart = normalized.slice(0, idx);
+    // Handle "dashboard:" or "canvas:" prefix - treat as "dashboards"
+    if (
+      kindPart === "dashboard" ||
+      kindPart === "dashboards" ||
+      kindPart === "canvas"
+    ) {
+      return "dashboards";
+    }
     const mapped = resolveKindAlias(kindPart);
     if (mapped) return tokenForKind(mapped);
     return tokenForKind(kindPart);
@@ -207,7 +224,7 @@ export function tokenForSeedString(
  * Handles three input formats:
  * 1. Explicit seeds ("kind:name") - kept as-is
  * 2. Name-only seeds ("name") - defaults to MetricsView
- * 3. Kind tokens ("metrics", "sources") - expands to all visible resources of that kind
+ * 3. Kind tokens ("metrics", "models", "sources", "dashboards") - expands to all visible resources of that kind
  *
  * @param seedStrings - Array of seed strings to expand
  * @param resources - All resources to consider for expansion
@@ -218,8 +235,11 @@ export function tokenForSeedString(
  * expandSeedsByKind(["metrics"], resources, coerceKind)
  * // Returns one seed per MetricsView resource
  *
- * expandSeedsByKind(["model:orders", "sources"], resources, coerceKind)
- * // Returns the orders model plus one seed per Source resource
+ * expandSeedsByKind(["models"], resources, coerceKind)
+ * // Returns one seed per Model resource
+ *
+ * expandSeedsByKind(["sources"], resources, coerceKind)
+ * // Returns one seed per Source resource
  */
 export function expandSeedsByKind(
   seedStrings: string[] | undefined,
@@ -263,8 +283,22 @@ export function expandSeedsByKind(
     }
 
     // Expand: one seed per visible resource of this kind
+    // Special case: "dashboards" includes both Explore and Canvas
+    const isDashboardsToken =
+      raw.toLowerCase() === "dashboards" || raw.toLowerCase() === "dashboard";
     for (const r of visible) {
-      if (coerceKindFn(r) !== kindToken) continue;
+      const resourceKind = coerceKindFn(r);
+      if (isDashboardsToken) {
+        // Include both Explore and Canvas for dashboards token
+        if (
+          resourceKind !== ResourceKind.Explore &&
+          resourceKind !== ResourceKind.Canvas
+        )
+          continue;
+      } else {
+        // Normal kind matching
+        if (resourceKind !== kindToken) continue;
+      }
       const name = r.meta?.name?.name;
       const kind = r.meta?.name?.kind; // use actual runtime kind for matching ids
       if (!name || !kind) continue;
@@ -280,7 +314,7 @@ export function expandSeedsByKind(
  */
 export interface GraphUrlParams {
   /**
-   * Kind filter (e.g., "metrics", "models", "sources", "dashboards").
+   * Kind filter (e.g., "metrics", "sources", "models", "dashboards").
    * When set, shows all graphs of this resource kind.
    */
   kind: KindToken | null;
@@ -323,7 +357,10 @@ export function parseGraphUrlParams(
 
   // Parse kind parameter
   const kindParam = params.get(URL_PARAMS.KIND)?.trim().toLowerCase() || null;
-  const validKind = kindParam as KindToken | null;
+  // Normalize singular "source" to plural "sources"
+  const normalizedKindParam = kindParam === "source" ? "sources" : kindParam;
+
+  const validKind = normalizedKindParam as KindToken | null;
   const kind =
     validKind &&
     ["connectors", "metrics", "sources", "models", "dashboards"].includes(

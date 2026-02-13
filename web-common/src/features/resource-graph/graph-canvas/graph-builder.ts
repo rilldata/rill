@@ -13,9 +13,10 @@ import type {
   V1Resource,
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
-import type { ResourceNodeData } from "../shared/types";
+import type { ResourceNodeData, ResourceMetadata } from "../shared/types";
 import { graphCache } from "../shared/cache/position-cache";
 import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "../shared/config";
+import { detectConnectorFromContent } from "@rilldata/web-common/features/connectors/connector-type-detector";
 
 // Use centralized configuration
 const MIN_NODE_WIDTH = NODE_CONFIG.MIN_WIDTH;
@@ -39,6 +40,7 @@ const ALLOWED_KINDS = new Set<ResourceKind>([
   ResourceKind.Model,
   ResourceKind.MetricsView,
   ResourceKind.Explore,
+  ResourceKind.Canvas,
 ]);
 
 function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
@@ -62,6 +64,228 @@ function estimateNodeWidth(label?: string | null) {
   );
 }
 
+/**
+ * Format a V1Schedule into a short human-readable description for the header.
+ */
+function formatScheduleDescription(
+  schedule:
+    | { cron?: string; tickerSeconds?: number; timeZone?: string }
+    | undefined,
+): string | undefined {
+  if (!schedule) return undefined;
+  if (schedule.cron) {
+    // Just show the cron expression - timezone is in the YAML
+    return schedule.cron;
+  }
+  if (schedule.tickerSeconds) {
+    const seconds = schedule.tickerSeconds;
+    if (seconds >= 3600 && seconds % 3600 === 0) {
+      const hours = seconds / 3600;
+      return `every ${hours}h`;
+    }
+    if (seconds >= 60 && seconds % 60 === 0) {
+      const minutes = seconds / 60;
+      return `every ${minutes}m`;
+    }
+    return `every ${seconds}s`;
+  }
+  return undefined;
+}
+
+/**
+ * Extract rich metadata from a resource for badge display.
+ */
+function extractResourceMetadata(
+  resource: V1Resource,
+  kind: ResourceKind | undefined,
+  allResources: V1Resource[],
+): ResourceMetadata {
+  const metadata: ResourceMetadata = {};
+
+  // Model/Source metadata
+  const model = resource.model;
+  const source = resource.source;
+
+  if (model?.spec) {
+    const spec = model.spec;
+    let connector = spec.inputConnector;
+
+    // For DuckDB connector, infer the actual source type from the path
+    const inputProps = spec.inputProperties as
+      | { path?: string; sql?: string }
+      | undefined;
+    if (connector?.toLowerCase() === "duckdb") {
+      const content = inputProps?.path || inputProps?.sql;
+      connector = detectConnectorFromContent(content);
+    }
+
+    // Connector info
+    metadata.connector = connector;
+
+    // Source path for file-based sources
+    if (inputProps?.path) {
+      metadata.sourcePath = inputProps.path;
+    }
+
+    // Processing configuration
+    metadata.incremental = spec.incremental;
+    metadata.partitioned = Boolean(spec.partitionsResolver);
+
+    // Schedule configuration
+    metadata.hasSchedule = Boolean(
+      spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
+    );
+    metadata.scheduleDescription = formatScheduleDescription(
+      spec.refreshSchedule,
+    );
+
+    // Tests
+    if (spec.tests && spec.tests.length > 0) {
+      metadata.testCount = spec.tests.length;
+    }
+
+    // Extract SQL query
+    if (inputProps?.sql) {
+      metadata.sqlQuery = inputProps.sql;
+    }
+
+    // Check if model is defined via SQL file
+    const filePaths = resource.meta?.filePaths ?? [];
+    metadata.isSqlModel = filePaths.some((fp) => fp.endsWith(".sql"));
+  }
+
+  if (source?.spec) {
+    const spec = source.spec;
+    let connector = spec.sourceConnector;
+
+    // For DuckDB connector, infer the actual source type from the path
+    if (connector?.toLowerCase() === "duckdb") {
+      const props = spec.properties as
+        | { path?: string; sql?: string }
+        | undefined;
+      const content = props?.path || props?.sql;
+      connector = detectConnectorFromContent(content);
+    }
+
+    metadata.connector = connector;
+    metadata.hasSchedule = Boolean(
+      spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
+    );
+    metadata.scheduleDescription = formatScheduleDescription(
+      spec.refreshSchedule,
+    );
+  }
+
+  // MetricsView metadata
+  const metricsView = resource.metricsView;
+  if (metricsView?.spec) {
+    const mvSpec = metricsView.spec;
+    metadata.metricsTable = mvSpec.table;
+    metadata.metricsModel = mvSpec.model;
+    metadata.timeDimension = mvSpec.timeDimension;
+
+    // Extract dimensions
+    if (mvSpec.dimensions && mvSpec.dimensions.length > 0) {
+      metadata.dimensions = mvSpec.dimensions.map((d) => ({
+        name: d.name ?? "",
+        displayName: d.displayName,
+        description: d.description,
+        type: d.type?.replace("DIMENSION_TYPE_", ""),
+        column: d.column,
+        expression: d.expression,
+      }));
+    }
+
+    // Extract measures
+    if (mvSpec.measures && mvSpec.measures.length > 0) {
+      metadata.measures = mvSpec.measures.map((m) => ({
+        name: m.name ?? "",
+        displayName: m.displayName,
+        description: m.description,
+        expression: m.expression,
+        type: m.type?.replace("MEASURE_TYPE_", ""),
+      }));
+    }
+  }
+
+  // Dashboard (Explore/Canvas) theme metadata
+  const explore = resource.explore;
+  const canvas = resource.canvas;
+
+  if (explore?.spec) {
+    if (explore.spec.theme && !explore.spec.embeddedTheme) {
+      metadata.theme = explore.spec.theme;
+    }
+    metadata.metricsViewName = explore.spec.metricsView;
+  }
+
+  if (canvas?.spec) {
+    if (canvas.spec.theme && !canvas.spec.embeddedTheme) {
+      metadata.theme = canvas.spec.theme;
+    }
+    // Count components across all rows
+    const rows = canvas.spec.rows ?? [];
+    metadata.rowCount = rows.length;
+    let componentCount = 0;
+    for (const row of rows) {
+      componentCount += row.items?.length ?? 0;
+    }
+    if (componentCount > 0) {
+      metadata.componentCount = componentCount;
+    }
+  }
+
+  // Connector metadata
+  const connector = resource.connector;
+  if (connector?.spec) {
+    const cSpec = connector.spec;
+    if (cSpec.driver) metadata.connectorDriver = cSpec.driver;
+    metadata.connectorProvision = cSpec.provision ?? false;
+    if (cSpec.properties) {
+      const safeProps: Record<string, string> = {};
+      const templated = new Set(cSpec.templatedProperties ?? []);
+      for (const [key, value] of Object.entries(cSpec.properties)) {
+        safeProps[key] = templated.has(key) ? "" : String(value ?? "");
+      }
+      metadata.connectorProperties = safeProps;
+    }
+    if (cSpec.templatedProperties?.length) {
+      metadata.connectorTemplatedProperties = cSpec.templatedProperties;
+    }
+  }
+
+  // Count alerts and APIs that reference this resource
+  const resourceId = createResourceId(resource.meta);
+  if (resourceId) {
+    let alertCount = 0;
+    let apiCount = 0;
+
+    for (const res of allResources) {
+      const resKind = res.meta?.name?.kind;
+      const refs = res.meta?.refs ?? [];
+
+      // Check if this resource references our target
+      const refsTarget = refs.some((ref) => {
+        const refId = resourceNameToId(ref);
+        return refId === resourceId;
+      });
+
+      if (refsTarget) {
+        if (resKind === "rill.runtime.v1.Alert") {
+          alertCount++;
+        } else if (resKind === "rill.runtime.v1.API") {
+          apiCount++;
+        }
+      }
+    }
+
+    if (alertCount > 0) metadata.alertCount = alertCount;
+    if (apiCount > 0) metadata.apiCount = apiCount;
+  }
+
+  return metadata;
+}
+
 type BuildGraphOptions = {
   // Namespace for caching node positions. Using a per-graph id avoids reusing
   // coordinates from unrelated graphs, which can place nodes far away.
@@ -76,12 +300,13 @@ type BuildGraphOptions = {
  * Uses Dagre for automatic layout and maintains cached node positions for stability.
  *
  * This function:
- * - Filters resources to only allowed kinds (Source, Model, MetricsView, Explore)
+ * - Filters resources to only allowed kinds (Source, Model, MetricsView, Explore, Canvas)
+ *   Note: Sources and Models are merged in the UI (Source is deprecated)
  * - Creates nodes with dynamic widths based on label length
  * - Generates edges based on resource references
  * - Applies Dagre layout with configurable spacing
  * - Caches node positions per namespace for consistent placement
- * - Enforces rank constraints (Sources at top, Explores/Canvas at bottom)
+ * - Enforces rank constraints (Explores/Canvas at bottom, Sources/Models flow naturally)
  *
  * @param resources - Array of V1Resource objects to visualize
  * @param opts - Optional configuration for layout and caching
@@ -130,7 +355,9 @@ export function buildResourceGraph(
     switch (kind) {
       case ResourceKind.Connector:
       case ResourceKind.Source:
-        rankConstraint = "min";
+      case ResourceKind.Model:
+        // No special rank constraint - let them flow naturally in the graph
+        rankConstraint = undefined;
         break;
       case ResourceKind.Explore:
       case ResourceKind.Canvas:
@@ -146,6 +373,8 @@ export function buildResourceGraph(
       rank: rankConstraint,
     });
 
+    const metadata = extractResourceMetadata(resource, kind, resources);
+
     const nodeDef: Node<ResourceNodeData> = {
       id,
       width: nodeWidth,
@@ -154,6 +383,7 @@ export function buildResourceGraph(
         resource,
         kind,
         label,
+        metadata,
       },
       type: "resource-node",
       position: { x: 0, y: 0 },
@@ -163,6 +393,8 @@ export function buildResourceGraph(
     nodeDefinitions.set(id, nodeDef);
   }
 
+  // Build adjacency map for edges
+  // dependentsMap: sourceId -> Set of dependentIds (outgoing edges from source)
   const dependentsMap = new Map<string, Set<string>>();
 
   for (const resource of resourceMap.values()) {
@@ -175,6 +407,7 @@ export function buildResourceGraph(
       if (!resourceMap.has(sourceId)) continue;
       if (sourceId === dependentId) continue;
 
+      // Track outgoing edges (source -> dependent)
       if (!dependentsMap.has(sourceId)) dependentsMap.set(sourceId, new Set());
       dependentsMap.get(sourceId)!.add(dependentId);
     }
@@ -511,7 +744,7 @@ function updateGroupingCaches(groups: ResourceGraphGrouping[]): void {
 export function partitionResourcesBySeeds(
   resources: V1Resource[],
   seeds: (string | V1ResourceName)[],
-  filterKind?: ResourceKind,
+  filterKind?: ResourceKind | "dashboards",
 ): ResourceGraphGrouping[] {
   const resourceMap = buildVisibleResourceMap(resources);
   const { incoming, outgoing } = buildDirectedAdjacency(resourceMap);
@@ -535,10 +768,14 @@ export function partitionResourcesBySeeds(
 
   // If filtering by a specific kind, remove groups that don't contain any resource of that kind
   // Use coerceResourceKind to handle "defined-as-source" models correctly
+  // Special case: "dashboards" includes both Explore and Canvas
   if (filterKind) {
     return groups.filter((group) =>
       group.resources.some((r) => {
         const kind = coerceResourceKind(r);
+        if (filterKind === "dashboards") {
+          return kind === ResourceKind.Explore || kind === ResourceKind.Canvas;
+        }
         return kind === filterKind;
       }),
     );

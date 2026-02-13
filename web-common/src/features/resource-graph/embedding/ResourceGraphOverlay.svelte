@@ -20,7 +20,8 @@
     | ResourceKind.Source
     | ResourceKind.Model
     | ResourceKind.MetricsView
-    | ResourceKind.Explore;
+    | ResourceKind.Explore
+    | ResourceKind.Canvas;
 
   const NAME_SEED_ALIAS: Record<GraphableKind, string> = {
     [ResourceKind.Connector]: "connector",
@@ -28,6 +29,7 @@
     [ResourceKind.Model]: "model",
     [ResourceKind.MetricsView]: "metrics",
     [ResourceKind.Explore]: "dashboard",
+    [ResourceKind.Canvas]: "canvas",
   };
 
   const KIND_TOKEN_BY_KIND: Record<GraphableKind, string> = {
@@ -36,27 +38,53 @@
     [ResourceKind.Model]: "models",
     [ResourceKind.MetricsView]: "metrics",
     [ResourceKind.Explore]: "dashboards",
+    [ResourceKind.Canvas]: "dashboards",
   };
 
   $: anchorName = anchorResource?.meta?.name?.name ?? null;
-  $: anchorKind = anchorResource?.meta?.name?.kind as ResourceKind | undefined;
-  $: supportsGraph = anchorKind ? ALLOWED_FOR_GRAPH.has(anchorKind) : false;
+  // Normalize Source to Model immediately (Source is deprecated)
+  $: rawAnchorKind = anchorResource?.meta?.name?.kind as
+    | ResourceKind
+    | undefined;
+  $: anchorKind =
+    rawAnchorKind === ResourceKind.Source ? ResourceKind.Model : rawAnchorKind;
+
+  // Check if kind is allowed (handles both enum and string values)
+  $: supportsGraph = anchorKind
+    ? ALLOWED_FOR_GRAPH.has(String(anchorKind) as ResourceKind)
+    : false;
 
   // Type-safe access to graphable kind properties
   $: graphableKind =
     supportsGraph && anchorKind ? (anchorKind as GraphableKind) : null;
 
-  $: anchorSeed =
-    graphableKind && anchorName
-      ? `${NAME_SEED_ALIAS[graphableKind]}:${anchorName}`
-      : null;
+  // Use the same seed format as the project graph page
+  // This ensures consistent behavior between overlay and project graph
+  // Note: anchorKind is already normalized (Source -> Model) above
+  $: overlaySeeds = (function (): string[] | undefined {
+    if (!anchorName || !anchorKind) return undefined;
 
-  $: overlaySeeds = anchorSeed ? [anchorSeed] : undefined;
+    // Use the correct kind prefix to match the actual resource type
+    // Canvas and Explore need different prefixes since they're different resource kinds
+    if (anchorKind === ResourceKind.Canvas) {
+      return [`canvas:${anchorName}`];
+    } else if (anchorKind === ResourceKind.Explore) {
+      return [`explore:${anchorName}`];
+    } else if (anchorKind === ResourceKind.Model) {
+      return [`model:${anchorName}`];
+    } else if (anchorKind === ResourceKind.MetricsView) {
+      return [`metrics:${anchorName}`];
+    }
+
+    return undefined;
+  })();
+
   $: graphHref = graphableKind
     ? `/graph?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
     : "/graph";
 
-  $: emptyReason = !anchorSeed ? "unsupported" : null;
+  $: emptyReason =
+    !overlaySeeds || overlaySeeds.length === 0 ? "unsupported" : null;
 
   function closeOverlay() {
     if (onClose) {
@@ -145,7 +173,7 @@
                 syncExpandedParam={false}
                 showSummary={false}
                 showCardTitles={false}
-                maxGroups={1}
+                maxGroups={null}
                 showControls={false}
                 enableExpansion={false}
                 fitViewPadding={0.08}

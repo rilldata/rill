@@ -2,7 +2,11 @@
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ResourceGraph from "../embedding/ResourceGraph.svelte";
+  import type { ResourceStatusFilter } from "../shared/types";
+
   export let seeds: string[] | undefined;
+  export let searchQuery = "";
+  export let statusFilter: ResourceStatusFilter = "all";
 
   $: ({ instanceId } = $runtime);
 
@@ -26,4 +30,6 @@
   isLoading={$resourcesQuery.isLoading}
   error={errorMessage}
   {seeds}
+  {searchQuery}
+  {statusFilter}
 />

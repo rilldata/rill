@@ -23,9 +23,9 @@ export const NODE_CONFIG = {
 
   /**
    * Default height for single-line text with padding.
-   * Optimized for 16px font size.
+   * Optimized for 16px font size and metadata badges.
    */
-  DEFAULT_HEIGHT: 56,
+  DEFAULT_HEIGHT: 64,
 
   /**
    * Average pixel width per character in node label font.
@@ -54,8 +54,9 @@ export const DAGRE_CONFIG = {
 
   /**
    * Vertical spacing between graph layers/ranks.
+   * Increased to accommodate metadata badges below nodes.
    */
-  RANKSEP: 72,
+  RANKSEP: 84,
 
   /**
    * Minimum spacing between edge paths.
@@ -138,7 +139,7 @@ export const UI_CONFIG = {
    * Default card height in pixels.
    * Sized to fit 3x3 grid comfortably on standard displays.
    */
-  CARD_HEIGHT_PX: 260,
+  CARD_HEIGHT_PX: 360,
 
   /**
    * Default grid columns for graph cards.

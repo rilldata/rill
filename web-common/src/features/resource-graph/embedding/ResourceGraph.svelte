@@ -21,9 +21,10 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
-  import SummaryGraph from "../summary/SummaryGraph.svelte";
+  import ResourceKindSelector from "../summary/ResourceKindSelector.svelte";
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
+  import type { ResourceStatusFilter } from "../shared/types";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -35,6 +36,8 @@
   export let maxGroups: number | null = null;
   export let showControls = true;
   export let enableExpansion = true;
+  export let searchQuery = "";
+  export let statusFilter: ResourceStatusFilter = "all";
 
   // New props for modularity
   export let onExpandedChange: ((id: string | null) => void) | null = null;
@@ -47,14 +50,14 @@
   type SummaryMemo = {
     connectors: number;
     sources: number;
-    metrics: number;
     models: number;
+    metrics: number;
     dashboards: number;
     resources: V1Resource[];
     activeToken:
       | "connectors"
-      | "metrics"
       | "sources"
+      | "metrics"
       | "models"
       | "dashboards"
       | null;
@@ -63,8 +66,8 @@
     return (
       a.connectors === b.connectors &&
       a.sources === b.sources &&
-      a.metrics === b.metrics &&
       a.models === b.models &&
+      a.metrics === b.metrics &&
       a.dashboards === b.dashboards &&
       a.resources === b.resources &&
       a.activeToken === b.activeToken
@@ -85,7 +88,8 @@
 
   // Determine if we're filtering by a specific kind (e.g., ?kind=metrics)
   // This is used to filter out groups that don't contain any resource of the filtered kind
-  $: filterKind = (function (): ResourceKind | undefined {
+  // Special case: "dashboards" includes both Explore and Canvas
+  $: filterKind = (function (): ResourceKind | "dashboards" | undefined {
     const rawSeeds = seeds ?? [];
     // Only apply kind filter if all seeds are kind tokens (e.g., ["metrics"] or ["sources"])
     if (rawSeeds.length === 0) return undefined;
@@ -93,19 +97,34 @@
       const kind = isKindToken((raw || "").toLowerCase());
       if (!kind) return undefined; // Mixed seeds, no single kind filter
     }
+    // Check if it's the dashboards token (which includes both Explore and Canvas)
+    const firstSeed = (rawSeeds[0] || "").toLowerCase();
+    if (firstSeed === "dashboards" || firstSeed === "dashboard") {
+      return "dashboards"; // Special token to indicate both Explore and Canvas
+    }
     // All seeds are kind tokens - return the first one's kind
-    return isKindToken((rawSeeds[0] || "").toLowerCase());
+    return isKindToken(firstSeed);
   })();
 
   // Determine which overview node should be highlighted based on current seeds
+  // For Canvas with MetricsView seeds, prioritize the Canvas token (dashboards) over MetricsView tokens
   $: overviewActiveToken = (function ():
     | "connectors"
-    | "metrics"
     | "sources"
+    | "metrics"
     | "models"
     | "dashboards"
     | null {
     const rawSeeds = seeds ?? [];
+
+    // Check the first seed first - this should be the anchor resource (e.g., Canvas)
+    // This ensures Canvas/Explore tokens are prioritized over MetricsView tokens
+    if (rawSeeds.length > 0) {
+      const firstToken = tokenForSeedString(rawSeeds[0]);
+      if (firstToken) return firstToken;
+    }
+
+    // Fall back to checking all seeds if first seed didn't yield a token
     for (const raw of rawSeeds) {
       const token = tokenForSeedString(raw);
       if (token) return token;
@@ -131,10 +150,42 @@
           filterKind,
         )
       : partitionResourcesByMetrics(normalizedResources);
+  // Filter groups by search query and status
+  $: filteredResourceGroups = (() => {
+    let groups = resourceGroups;
+
+    // Filter by search query (matches resource names)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      groups = groups.filter((group) =>
+        group.resources.some((r) =>
+          r.meta?.name?.name?.toLowerCase().includes(query),
+        ),
+      );
+    }
+
+    // Filter by status
+    if (statusFilter === "pending") {
+      groups = groups.filter((group) =>
+        group.resources.some(
+          (r) =>
+            r.meta?.reconcileStatus &&
+            r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE",
+        ),
+      );
+    } else if (statusFilter === "errored") {
+      groups = groups.filter((group) =>
+        group.resources.some((r) => !!r.meta?.reconcileError),
+      );
+    }
+
+    return groups;
+  })();
+
   $: visibleResourceGroups =
     typeof maxGroups === "number" && maxGroups >= 0
-      ? resourceGroups.slice(0, maxGroups)
-      : resourceGroups;
+      ? filteredResourceGroups.slice(0, maxGroups)
+      : filteredResourceGroups;
   $: hasGraphs = visibleResourceGroups.length > 0;
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
@@ -172,7 +223,8 @@
       else if (k === ResourceKind.Source) sources++;
       else if (k === ResourceKind.Model) models++;
       else if (k === ResourceKind.MetricsView) metrics++;
-      else if (k === ResourceKind.Explore) dashboards++;
+      else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
+        dashboards++;
     }
     return {
       connectorsCount: connectors,
@@ -184,7 +236,7 @@
   })());
 
   // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
-  // Without this, the SummaryGraph component would re-render on every resource array change
+  // Without this, the kind selector would re-render on every resource array change
   // even if counts haven't actually changed. The summaryEquals function does shallow comparison
   // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
@@ -200,8 +252,8 @@
     const nextSummary: SummaryMemo = {
       connectors: connectorsCount,
       sources: sourcesCount,
-      metrics: metricsCount,
       models: modelsCount,
+      metrics: metricsCount,
       dashboards: dashboardsCount,
       resources: normalizedResources,
       activeToken: overviewActiveToken,
@@ -413,32 +465,6 @@
   class="graph-root"
   style={`--graph-expanded-height-mobile:${expandedHeightMobile};--graph-expanded-height-desktop:${expandedHeightDesktop};`}
 >
-  {#if showSummary && currentExpandedId === null}
-    <slot
-      name="summary"
-      connectors={connectorsCount}
-      sources={sourcesCount}
-      {metricsCount}
-      {modelsCount}
-      dashboards={dashboardsCount}
-    >
-      <div class="top-summary">
-        <SummaryGraph
-          connectors={summaryMemo.connectors}
-          sources={summaryMemo.sources}
-          metrics={summaryMemo.metrics}
-          models={summaryMemo.models}
-          dashboards={summaryMemo.dashboards}
-          resources={summaryMemo.resources}
-          activeToken={summaryMemo.activeToken}
-        />
-      </div>
-      {#if hasGraphs}
-        <div class="graph-section-title">All Graphs</div>
-      {/if}
-    </slot>
-  {/if}
-
   {#if error}
     <div class="state error">
       <p>{error}</p>
@@ -458,6 +484,54 @@
     </slot>
   {:else}
     {@const hasExpandedItem = currentExpandedId !== null}
+    <!-- Combined toolbar: tabs on left, kind dropdown on right -->
+    <div class="graph-toolbar">
+      {#if visibleResourceGroups.length > 1}
+        <div class="group-tabs">
+          <button
+            class="group-tab"
+            class:active={currentExpandedId === null}
+            on:click={() => handleExpandChange(null)}
+          >
+            All ({visibleResourceGroups.length})
+          </button>
+          {#each visibleResourceGroups as group, index (group.id)}
+            {@const parts = groupTitleParts(group, index)}
+            <button
+              class="group-tab"
+              class:active={currentExpandedId === group.id}
+              class:errored={parts.errorCount > 0}
+              on:click={() => handleExpandChange(group.id)}
+            >
+              <span>{group.label ?? `Graph ${index + 1}`}</span>
+              <span class="tab-count">{group.resources.length}</span>
+            </button>
+          {/each}
+        </div>
+      {:else}
+        <div></div>
+      {/if}
+      {#if showSummary}
+        <slot
+          name="summary"
+          connectors={connectorsCount}
+          sources={sourcesCount}
+          metrics={metricsCount}
+          models={modelsCount}
+          dashboards={dashboardsCount}
+        >
+          <ResourceKindSelector
+            connectors={summaryMemo.connectors}
+            sources={summaryMemo.sources}
+            models={summaryMemo.models}
+            metrics={summaryMemo.metrics}
+            dashboards={summaryMemo.dashboards}
+            activeToken={summaryMemo.activeToken}
+          />
+        </slot>
+      {/if}
+    </div>
+
     <div
       class="resource-graph-grid"
       class:has-expanded={hasExpandedItem}
@@ -524,7 +598,7 @@
                 rootNodeIds={groupRootNodeIds(group)}
                 showControls={false}
                 showLock={true}
-                fillParent={false}
+                fillParent={true}
                 enableExpand={enableExpansion}
                 {fitViewPadding}
                 {fitViewMinZoom}
@@ -541,13 +615,13 @@
 
 <style lang="postcss">
   .graph-root {
-    @apply relative h-full w-full overflow-auto flex flex-col min-h-0;
-    --graph-card-height: 260px;
+    @apply relative h-full w-full overflow-auto flex flex-col min-h-0 gap-y-3;
   }
 
   .resource-graph-grid {
     @apply grid gap-4 flex-1 min-h-0;
     grid-template-columns: repeat(1, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
   }
 
   @media (min-width: 1024px) {
@@ -557,7 +631,7 @@
   }
 
   .grid-item {
-    @apply relative;
+    @apply relative h-full;
   }
 
   .grid-item.hidden {
@@ -584,10 +658,53 @@
     @apply flex items-center gap-x-3;
   }
 
-  .top-summary {
-    @apply mb-2;
+  .graph-toolbar {
+    @apply flex items-end justify-between;
   }
-  .graph-section-title {
-    @apply text-sm font-semibold text-fg-primary mt-4 mb-2;
+
+  .group-tabs {
+    @apply flex items-end flex-wrap;
+  }
+
+  .group-tab {
+    @apply relative inline-flex items-center gap-1.5 px-4 py-2;
+    @apply text-xs font-medium text-fg-secondary whitespace-nowrap;
+    @apply bg-transparent border border-transparent;
+    @apply cursor-pointer transition-colors;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    margin-bottom: -1px;
+  }
+
+  .group-tab:hover:not(.active) {
+    @apply text-fg-primary;
+    background-color: color-mix(
+      in srgb,
+      var(--surface-subtle, #f8f8f8) 60%,
+      transparent
+    );
+  }
+
+  .group-tab.active {
+    @apply text-fg-primary font-semibold;
+    background-color: var(--surface-background, #ffffff);
+    border-color: var(--border, #e5e7eb);
+    border-bottom-color: var(--surface-background, #ffffff);
+  }
+
+  .tab-count {
+    @apply text-fg-muted text-[10px];
+  }
+
+  .group-tab.active .tab-count {
+    @apply text-fg-secondary;
+  }
+
+  .group-tab.errored {
+    @apply text-red-600 font-bold;
+  }
+
+  .group-tab.errored.active {
+    @apply text-red-600 font-bold;
   }
 </style>

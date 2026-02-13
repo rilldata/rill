@@ -43,8 +43,7 @@ The graph page supports two URL parameters:
 Navigate to `/graph?kind=<kind>` to show all graphs of a resource kind:
 
 - `?kind=metrics` - Show all MetricsView graphs
-- `?kind=models` - Show all Model graphs
-- `?kind=sources` - Show all Source graphs
+- `?kind=models` - Show all Model graphs (includes Sources, as Source is deprecated)
 - `?kind=dashboards` - Show all Dashboard/Explore graphs
 
 ### Show specific resources
