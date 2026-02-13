@@ -69,20 +69,25 @@
     return `${first}, +${selectedLevels.length - 1} other${selectedLevels.length > 2 ? "s" : ""}`;
   })();
 
+  let unsubs: (() => void)[] = [];
+
   onMount(() => {
     const { host, instanceId } = $runtime;
     if (!host || !instanceId) return;
 
     const url = `${host}/v1/instances/${instanceId}/sse?events=log&logs_replay=true&logs_replay_limit=${REPLAY_LIMIT}`;
 
-    logsConnection.on("message", handleMessage);
-    logsConnection.on("error", handleError);
-    logsConnection.on("open", handleOpen);
+    unsubs = [
+      logsConnection.on("message", handleMessage),
+      logsConnection.on("error", handleError),
+      logsConnection.on("open", handleOpen),
+    ];
 
     logsConnection.start(url);
   });
 
   onDestroy(() => {
+    unsubs.forEach((fn) => fn());
     logsConnection.close(true);
   });
 

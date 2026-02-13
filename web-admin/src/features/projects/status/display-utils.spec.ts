@@ -197,10 +197,16 @@ describe("display-utils", () => {
       expect(formatConnectorName("claude")).toBe("Claude");
     });
 
+    it("formats 'mysql' correctly", () => {
+      expect(formatConnectorName("mysql")).toBe("MySQL");
+    });
+
+    it("formats 'bigquery' correctly", () => {
+      expect(formatConnectorName("bigquery")).toBe("BigQuery");
+    });
+
     it("capitalizes first letter for unknown connectors", () => {
       expect(formatConnectorName("postgres")).toBe("Postgres");
-      expect(formatConnectorName("mysql")).toBe("Mysql");
-      expect(formatConnectorName("bigquery")).toBe("Bigquery");
     });
   });
 
