@@ -323,6 +323,51 @@ func TestGitRepo_pullInner(t *testing.T) {
 				require.Equal(t, "rename content", string(content))
 			},
 		},
+		{
+			name: "editable mode - primary branch changes on existing repo",
+			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
+				// Remove the local directory to simulate no existing repo
+				require.NoError(t, os.RemoveAll(localDir))
+				return &gitRepo{
+					h:             &Handle{logger: zap.NewNop()},
+					repoDir:       localDir,
+					remoteURL:     remoteURL,
+					defaultBranch: "edit-branch",
+					primaryBranch: "main",
+					editableDepl:  true,
+					subpath:       "",
+					managedRepo:   true,
+				}
+			},
+			setupRemote: func(t *testing.T, remoteDir string) {
+				// Only main branch exists initially
+			},
+			force:       true,
+			expectError: false,
+			validate: func(t *testing.T, repo *gitRepo, localDir string) {
+				// First pull (clone) succeeded — edit-branch created from main
+				verifyCurrentBranch(t, localDir, "edit-branch")
+
+				// Create "new-primary" branch on remote (simulates a primary branch rename)
+				createRemoteBranch(t, repo.remoteURL, "new-primary", "new_file.txt", "new content", "Create new-primary")
+
+				// Simulate primary branch change
+				repo.primaryBranch = "new-primary"
+
+				// Second pull uses the existing-repo fetch path.
+				// The fetch only targets defaultBranch ("edit-branch"), never fetching "new-primary".
+				// The merge at the end of pullInner tries to merge "new-primary" but its refs were never fetched.
+				ctx := context.Background()
+				err := repo.pullInner(ctx, true)
+				require.NoError(t, err, "pullInner should succeed after primary branch change")
+
+				// Verify the new primary branch content was merged into edit-branch
+				newFilePath := filepath.Join(localDir, "new_file.txt")
+				content, err := os.ReadFile(newFilePath)
+				require.NoError(t, err, "new_file.txt should exist after merge from new primary branch")
+				require.Equal(t, "new content", string(content))
+			},
+		},
 	}
 
 	for _, tt := range tests {

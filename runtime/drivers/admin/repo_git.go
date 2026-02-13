@@ -95,16 +95,22 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 			return fmt.Errorf("failed to set remote URL: %w", err)
 		}
 
-		// Fetch the remote changes
-		refSpecs := []config.RefSpec{
-			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.defaultBranch, r.defaultBranch)),
+		// Fetch the remote changes.
+		// We fetch each branch individually because a NoMatchingRefSpecError for one branch (e.g., an edit branch
+		// that doesn't exist on the remote yet) would cause a combined fetch to skip all branches.
+		branches := []string{r.defaultBranch}
+		if r.primaryBranch != r.defaultBranch {
+			branches = append(branches, r.primaryBranch)
 		}
-		err = remote.Fetch(&git.FetchOptions{
-			RefSpecs: refSpecs,
-			Force:    true,
-		})
-		if err != nil && !(errors.Is(err, git.NoErrAlreadyUpToDate) || errors.Is(err, plumbing.ErrReferenceNotFound)) {
-			return fmt.Errorf("failed to fetch from remote: %w", err)
+		for _, branch := range branches {
+			refSpec := config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch))
+			err = remote.Fetch(&git.FetchOptions{
+				RefSpecs: []config.RefSpec{refSpec},
+				Force:    true,
+			})
+			if err != nil && !(errors.Is(err, git.NoErrAlreadyUpToDate) || git.NoMatchingRefSpecError{}.Is(err)) {
+				return fmt.Errorf("failed to fetch from remote: %w", err)
+			}
 		}
 	}
 
@@ -169,10 +175,11 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 	// To reduce the chance of conflicts, we should also try to merge the primary branch into the default branch (but only force merge if `force` is true).
 
 	// merge primary branch into edit branch
+	mergeBranch := "origin/" + r.primaryBranch
 	if force {
-		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.primaryBranch)
+		err = gitutil.MergeWithTheirsStrategy(r.repoDir, mergeBranch)
 	} else {
-		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.primaryBranch)
+		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, mergeBranch)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to merge primary branch %q into default branch %q: %w", r.primaryBranch, r.defaultBranch, err)
