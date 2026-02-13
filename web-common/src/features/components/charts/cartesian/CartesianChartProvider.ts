@@ -274,11 +274,13 @@ export class CartesianChartProvider {
 
         if (dimensionName) {
           this.customSortXItems = includedXValues;
-          const filterForTopXValues = createInExpression(
-            dimensionName,
-            includedXValues,
-          );
-          combinedWhere = mergeFilters(combinedWhere, filterForTopXValues);
+          if (includedXValues.length > 0) {
+            const filterForTopXValues = createInExpression(
+              dimensionName,
+              includedXValues,
+            );
+            combinedWhere = mergeFilters(combinedWhere, filterForTopXValues);
+          }
         }
 
         // Apply topN filter for color dimension

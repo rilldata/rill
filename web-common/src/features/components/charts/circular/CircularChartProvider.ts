@@ -180,11 +180,13 @@ export class CircularChartProvider {
 
         if (colorDimensionName) {
           this.customColorValues = topColorValues;
-          const filterForTopColorValues = createInExpression(
-            colorDimensionName,
-            topColorValues,
-          );
-          combinedWhere = mergeFilters(where, filterForTopColorValues);
+          if (topColorValues.length > 0) {
+            const filterForTopColorValues = createInExpression(
+              colorDimensionName,
+              topColorValues,
+            );
+            combinedWhere = mergeFilters(where, filterForTopColorValues);
+          }
         }
 
         // Store combinedWhere for use in BaseChart

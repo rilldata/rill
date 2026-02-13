@@ -188,14 +188,16 @@ export class FunnelChartProvider {
 
           if (stageDimensionName) {
             this.customSortStageItems = includedStageValues;
-            const filterForTopStageValues = createInExpression(
-              stageDimensionName,
-              includedStageValues,
-            );
-            combinedWhere = mergeFilters(
-              combinedWhere,
-              filterForTopStageValues,
-            );
+            if (includedStageValues.length > 0) {
+              const filterForTopStageValues = createInExpression(
+                stageDimensionName,
+                includedStageValues,
+              );
+              combinedWhere = mergeFilters(
+                combinedWhere,
+                filterForTopStageValues,
+              );
+            }
           }
         }
 
