@@ -8,7 +8,9 @@ import (
 	"time"
 )
 
-func ParsePath(path string) (bucket, key, fullPath string, err error) {
+// NormalizeOutputPath takes an output path and normalizes it by ensuring it has the correct schema, bucket, and key format.
+// It also checks that the file extension is .parquet, and if the path is a directory (i.e. has no file extension), it appends a timestamped filename with .parquet extension.
+func NormalizeOutputPath(path string) (bucket, key, fullPath string, err error) {
 	uri, err := url.Parse(path)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to parse path %q: %w", path, err)

@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/clickhouseutil"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/clickhouseutil"
 )
 
 // ToValue converts a value scanned from a database/sql driver to a Go type that can be marshaled to JSON.

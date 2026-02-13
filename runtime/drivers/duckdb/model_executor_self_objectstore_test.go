@@ -1,10 +1,19 @@
 package duckdb_test
 
 import (
+	"net/url"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
+	activity "github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestDuckDBToObjectStoreS3(t *testing.T) {
@@ -32,6 +41,7 @@ output:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
+	testExportedObjectExists(t, "s3", rt, id)
 }
 
 func TestDuckDBToObjectStoreS3FixedPath(t *testing.T) {
@@ -59,6 +69,7 @@ output:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
+	testExportedObjectExists(t, "s3", rt, id)
 }
 
 func TestDuckDBToObjectStoreGCS(t *testing.T) {
@@ -85,4 +96,28 @@ output:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
+	testExportedObjectExists(t, "gcs", rt, id)
+}
+
+func testExportedObjectExists(t *testing.T, driver string, rt *runtime.Runtime, id string) {
+	r := testruntime.GetResource(t, rt, id, runtime.ResourceKindModel, "export")
+	require.NotNil(t, r, "export")
+	path := r.GetModel().State.ResultProperties.AsMap()["path"].(string)
+
+	cfg := testruntime.AcquireConnector(t, driver)
+	conn, err := drivers.Open(driver, "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	objectStore, ok := conn.AsObjectStore()
+	require.True(t, ok)
+
+	uri, err := url.Parse(path)
+	require.NoError(t, err)
+	objects, nextToken, err := objectStore.ListObjects(t.Context(), uri.Host, strings.TrimPrefix(uri.Path, "/"), "/", 100, "")
+
+	require.NoError(t, err)
+	require.Empty(t, nextToken)
+	require.Len(t, objects, 1)
+	require.WithinDuration(t, objects[0].UpdatedOn, time.Now(), 30*time.Second)
 }

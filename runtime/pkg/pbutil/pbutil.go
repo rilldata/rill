@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/clickhouseutil"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/clickhouseutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 

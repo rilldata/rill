@@ -51,10 +51,10 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 		return nil, fmt.Errorf("duckdb-to-objectstore executor does not support incremental runs")
 	}
 
-	// Parse the output path
-	bucket, _, fullPath, err := exportutil.ParsePath(outputProps.Path)
+	// Normalize the output path
+	bucket, _, fullPath, err := exportutil.NormalizeOutputPath(outputProps.Path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse output path: %w", err)
+		return nil, fmt.Errorf("failed to normalize output path: %w", err)
 	}
 
 	connectorsForSecrets, autoDetected := connectorsForSecrets(inputProps.CreateSecretsFromConnectors, e.c.config.CreateSecretsFromConnectors, opts.Env.Connectors)

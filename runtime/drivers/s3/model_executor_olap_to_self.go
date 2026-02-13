@@ -54,6 +54,17 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, fmt.Errorf("olap-to-objectstore executor does not support incremental runs")
 	}
 
+	// Normalize the output path
+	bucket, key, fullPath, err := exportutil.NormalizeOutputPath(outputProps.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to normalize output path: %w", err)
+	}
+
+	client, err := getS3Client(ctx, e.c.config, bucket)
+	if err != nil {
+		return nil, err
+	}
+
 	// Execute the SQL
 	res, err := e.olap.Query(ctx, &drivers.Statement{
 		Query:    inputProps.SQL,
@@ -85,17 +96,6 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		return nil, err
 	}
 	defer f.Close()
-
-	// Parse the output path
-	bucket, key, fullPath, err := exportutil.ParsePath(outputProps.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := getS3Client(ctx, e.c.config, bucket)
-	if err != nil {
-		return nil, err
-	}
 
 	// Upload the file to the object store
 	_, err = client.PutObject(ctx, &s3.PutObjectInput{
