@@ -68,6 +68,9 @@ type DB interface {
 
 	// Schema returns the schema of the database.
 	Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error)
+
+	// DDL returns the DDL (CREATE statement) for the named table or view. Returns "" if unavailable.
+	DDL(ctx context.Context, name string) (string, error)
 }
 
 type DBOptions struct {
