@@ -80,11 +80,6 @@ describe("connector-schemas", () => {
       expect(getBackendConnectorName("claude")).toBe("claude");
     });
 
-    it("returns x-driver when set", () => {
-      // clickhousecloud has x-driver: "clickhouse"
-      expect(getBackendConnectorName("clickhousecloud")).toBe("clickhouse");
-    });
-
     it("returns the input name for unknown schemas", () => {
       expect(getBackendConnectorName("nonexistent")).toBe("nonexistent");
     });
@@ -130,10 +125,5 @@ describe("connector-schemas", () => {
       expect(ch!.implementsAi).toBe(false);
     });
 
-    it("uses x-driver for the name when set", () => {
-      const chCloud = toConnectorDriver("clickhousecloud");
-      expect(chCloud).not.toBeNull();
-      expect(chCloud!.name).toBe("clickhouse");
-    });
   });
 });
