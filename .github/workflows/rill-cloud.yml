@@ -10,7 +10,6 @@ on:
       - "v*"
     branches:
       - "main"
-      - "manifest"
       - "release**"
   workflow_dispatch:
 
