@@ -31,6 +31,11 @@
       hasPermission: true,
     },
     {
+      route: `/${organization}/${project}/-/query`,
+      label: "Query",
+      hasPermission: false,
+    },
+    {
       route: `/${organization}/${project}/-/reports`,
       label: "Reports",
       hasPermission: $reports,

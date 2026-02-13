@@ -34,6 +34,7 @@ export enum ResourceKind {
   Canvas = "rill.runtime.v1.Canvas",
   API = "rill.runtime.v1.API",
   RefreshTrigger = "rill.runtime.v1.RefreshTrigger",
+  Migration = "rill.runtime.v1.Migration",
 }
 
 export function displayResourceKind(kind: ResourceKind | undefined) {
@@ -100,7 +101,9 @@ export function resourceKindStyleName(kind: ResourceKind | undefined) {
 
 export type UserFacingResourceKinds = Exclude<
   ResourceKind,
-  ResourceKind.ProjectParser | ResourceKind.RefreshTrigger
+  | ResourceKind.ProjectParser
+  | ResourceKind.RefreshTrigger
+  | ResourceKind.Migration
 >;
 
 export const SingletonProjectParserName = "parser";

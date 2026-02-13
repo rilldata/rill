@@ -7,7 +7,7 @@
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { useProjectDeployment } from "./selectors";
+  import { useProjectDeployment } from "../selectors";
 
   const queryClient = useQueryClient();
 

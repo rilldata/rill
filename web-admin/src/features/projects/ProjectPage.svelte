@@ -14,7 +14,7 @@
   $: ({ isLoading, isError, isSuccess, error } = $query);
 </script>
 
-<ContentContainer title="Project {kind}s">
+<ContentContainer title="{kind.charAt(0).toUpperCase() + kind.slice(1)}s">
   <div class="flex flex-col items-center gap-y-4">
     {#if isLoading}
       <div class="m-auto mt-20">
