@@ -1,4 +1,3 @@
-import { olapExplorerFields } from "./olap-explorer-fields";
 import type { MultiStepFormSchema } from "./types";
 
 export const pinotSchema: MultiStepFormSchema = {
@@ -86,7 +85,6 @@ export const pinotSchema: MultiStepFormSchema = {
       description: "Use SSL",
       default: true,
     },
-    ...olapExplorerFields("Pinot"),
   },
   required: [],
   oneOf: [
