@@ -299,13 +299,21 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
+		wherePerMetricsView := map[string]*metricsview.Expression{}
+		for m, e := range req.AnalystAgentContext.WherePerMetricsView {
+			wherePerMetricsView[m] = metricsview.NewExpressionFromProto(e)
+		}
+
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.AnalystAgentContext.Explore,
-			Dimensions: req.AnalystAgentContext.Dimensions,
-			Measures:   req.AnalystAgentContext.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
-			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
-			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+			Explore:             req.AnalystAgentContext.Explore,
+			Canvas:              req.AnalystAgentContext.Canvas,
+			CanvasComponent:     req.AnalystAgentContext.CanvasComponent,
+			WherePerMetricsView: wherePerMetricsView,
+			Dimensions:          req.AnalystAgentContext.Dimensions,
+			Measures:            req.AnalystAgentContext.Measures,
+			Where:               metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:           req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:             req.AnalystAgentContext.TimeEnd.AsTime(),
 		}
 	}
 	var developerAgentArgs *ai.DeveloperAgentArgs
@@ -421,13 +429,21 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
+		wherePerMetricsView := map[string]*metricsview.Expression{}
+		for m, e := range req.AnalystAgentContext.WherePerMetricsView {
+			wherePerMetricsView[m] = metricsview.NewExpressionFromProto(e)
+		}
+
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.AnalystAgentContext.Explore,
-			Dimensions: req.AnalystAgentContext.Dimensions,
-			Measures:   req.AnalystAgentContext.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
-			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
-			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+			Explore:             req.AnalystAgentContext.Explore,
+			Canvas:              req.AnalystAgentContext.Canvas,
+			CanvasComponent:     req.AnalystAgentContext.CanvasComponent,
+			WherePerMetricsView: wherePerMetricsView,
+			Dimensions:          req.AnalystAgentContext.Dimensions,
+			Measures:            req.AnalystAgentContext.Measures,
+			Where:               metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:           req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:             req.AnalystAgentContext.TimeEnd.AsTime(),
 		}
 	}
 	var developerAgentArgs *ai.DeveloperAgentArgs

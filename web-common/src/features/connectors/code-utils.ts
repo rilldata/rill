@@ -1,7 +1,6 @@
 import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import {
-  ConnectorDriverPropertyType,
   type V1ConnectorDriver,
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
@@ -27,35 +26,164 @@ import {
   makeSufficientlyQualifiedTableName,
 } from "./connectors-utils";
 
-const YAML_MODEL_TEMPLATE = `type: model
-materialize: true\n
-connector: {{ connector }}\n
+function yamlModelTemplate(driverName: string) {
+  return `# Model YAML
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+
+type: model
+materialize: true
+
+connector: {{ connector }}
+
 sql: {{ sql }}{{ dev_section }}
 `;
+}
+
+const SENSITIVE_HEADER_PATTERN =
+  /^(authorization|x-api-key|api-key|token|x-token|x-auth|x-secret|proxy-authorization)$/i;
+
+/**
+ * Returns true when a header key likely carries a secret value (e.g. tokens,
+ * API keys). Only these headers are stored in `.env`; the rest stay as plain
+ * text in the connector YAML.
+ */
+function isSensitiveHeaderKey(headerKey: string): boolean {
+  return SENSITIVE_HEADER_PATTERN.test(headerKey.trim());
+}
+
+/**
+ * Sanitize a header key into a valid .env variable segment.
+ * Lowercases, replaces non-alphanumeric characters with underscores, and
+ * collapses consecutive underscores.
+ */
+function headerKeyToEnvSegment(headerKey: string): string {
+  return headerKey
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+/**
+ * Common HTTP authentication scheme prefixes.
+ * When a sensitive header value starts with one of these (case-insensitive),
+ * only the token portion after the prefix is stored in `.env`, while the
+ * scheme keyword is kept as plain text in the connector YAML.
+ */
+const AUTH_SCHEME_PREFIXES = ["Bearer ", "Basic ", "Token ", "Bot "];
+
+/**
+ * If `value` begins with a recognised auth scheme prefix (e.g. "Bearer "),
+ * returns `{ scheme, secret }` where `scheme` includes the trailing space.
+ * Returns `null` when no known prefix is detected.
+ */
+function splitAuthSchemePrefix(
+  value: string,
+): { scheme: string; secret: string } | null {
+  for (const prefix of AUTH_SCHEME_PREFIXES) {
+    if (
+      value.length > prefix.length &&
+      value.slice(0, prefix.length).toLowerCase() === prefix.toLowerCase()
+    ) {
+      return {
+        scheme: value.slice(0, prefix.length),
+        secret: value.slice(prefix.length),
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Convert header entries into a YAML map block.
+ * Accepts an array of {key, value} objects (new key-value input) or a legacy
+ * multi-line "Header-Name: value" string. Returns empty string when there are
+ * no valid entries.
+ *
+ * When `driverName` is provided, header values are replaced with
+ * `{{ .env.connector.<name>.<header_key> }}` references so that secrets are
+ * stored in `.env` rather than in the connector YAML file.
+ */
+function formatHeadersAsYamlMap(
+  value: Array<{ key: string; value: string }> | string,
+  driverName?: string,
+  connectorInstanceName?: string,
+): string {
+  const nameForEnv = connectorInstanceName || driverName;
+
+  if (typeof value === "string") {
+    // Legacy textarea format: parse "Key: Value" lines
+    const lines = value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.includes(":"));
+    if (lines.length === 0) return "";
+    const entries = lines.map((line) => {
+      const idx = line.indexOf(":");
+      const k = line.substring(0, idx).trim().replace(/^"|"$/g, "");
+      const raw = line
+        .substring(idx + 1)
+        .trim()
+        .replace(/^"|"$/g, "");
+      let v: string;
+      if (nameForEnv && isSensitiveHeaderKey(k)) {
+        const envRef = `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`;
+        const split = splitAuthSchemePrefix(raw);
+        v = split ? `${split.scheme}${envRef}` : envRef;
+      } else {
+        v = raw;
+      }
+      return `    "${k}": "${v}"`;
+    });
+    return `headers:\n${entries.join("\n")}`;
+  }
+
+  // Array of {key, value} objects from key-value input
+  const valid = value.filter((e) => e.key.trim() !== "");
+  if (valid.length === 0) return "";
+  const entries = valid.map((e) => {
+    const k = e.key.trim();
+    let v: string;
+    if (nameForEnv && isSensitiveHeaderKey(k)) {
+      const envRef = `{{ .env.connector.${nameForEnv}.${headerKeyToEnvSegment(k)} }}`;
+      const split = splitAuthSchemePrefix(e.value.trim());
+      v = split ? `${split.scheme}${envRef}` : envRef;
+    } else {
+      v = e.value.trim();
+    }
+    return `    "${k}": "${v}"`;
+  });
+  return `headers:\n${entries.join("\n")}`;
+}
 
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   options?: {
-    fieldFilter?: (property: ConnectorDriverProperty) => boolean;
-    orderedProperties?: ConnectorDriverProperty[];
+    fieldFilter?: (
+      property:
+        | ConnectorDriverProperty
+        | { key?: string; type?: string; secret?: boolean; internal?: boolean },
+    ) => boolean;
+    orderedProperties?: Array<
+      | ConnectorDriverProperty
+      | { key?: string; type?: string; secret?: boolean }
+    >;
     connectorInstanceName?: string;
+    secretKeys?: string[];
+    stringKeys?: string[];
   },
 ) {
   // Add instructions to the top of the file
+  const driverName = getDriverNameForConnector(connector.name as string);
   const topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
+# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+
 type: connector
 
-driver: ${getDriverNameForConnector(connector.name as string)}`;
+driver: ${driverName}`;
 
-  // Use the provided orderedProperties if available, otherwise fall back to configProperties/sourceProperties
-  let properties =
-    options?.orderedProperties ??
-    connector.configProperties ??
-    connector.sourceProperties ??
-    [];
+  // Use the provided orderedProperties if available.
+  let properties = options?.orderedProperties ?? [];
 
   // Optionally filter properties
   if (options?.fieldFilter) {
@@ -63,18 +191,10 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
   }
 
   // Get the secret property keys
-  const secretPropertyKeys =
-    connector.configProperties
-      ?.filter((property) => property.secret)
-      .map((property) => property.key) || [];
+  const secretPropertyKeys = options?.secretKeys ?? [];
 
   // Get the string property keys
-  const stringPropertyKeys =
-    connector.configProperties
-      ?.filter(
-        (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
-      )
-      .map((property) => property.key) || [];
+  const stringPropertyKeys = options?.stringKeys ?? [];
 
   // Compile key value pairs in the order of properties
   const compiledKeyValues = properties
@@ -84,6 +204,8 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;
+      // Filter out empty arrays (e.g. key-value inputs with no entries)
+      if (Array.isArray(value) && value.length === 0) return false;
       // For ClickHouse, exclude managed: false as it's the default behavior
       // When managed=false, it's the default self-managed mode and doesn't need to be explicit
       if (
@@ -98,13 +220,22 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
       const key = property.key as string;
       const value = formValues[key] as string;
 
+      if (key === "headers") {
+        return formatHeadersAsYamlMap(
+          value as Array<{ key: string; value: string }> | string,
+          driverName,
+          options?.connectorInstanceName,
+        );
+      }
+
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
+        const placeholder = `{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
           options?.connectorInstanceName,
-        )} }}"`;
+        )} }}`;
+        return `${key}: "${placeholder}"`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -114,6 +245,7 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
 
       return `${key}: ${value}`;
     })
+    .filter((line) => line !== "")
     .join("\n");
 
   // Return the compiled YAML
@@ -126,10 +258,17 @@ export async function updateDotEnvWithSecrets(
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
   connectorInstanceName?: string,
+  opts?: { secretKeys?: string[] },
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
-  // Get the existing .env file
+  // Invalidate the cache to ensure we get fresh .env content
+  // This prevents overwriting credentials added by a previous step
+  await queryClient.invalidateQueries({
+    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+  });
+
+  // Get the existing .env file with fresh data
   let blob: string;
   try {
     const file = await queryClient.fetchQuery({
@@ -147,13 +286,7 @@ export async function updateDotEnvWithSecrets(
   }
 
   // Get the secret keys
-  const properties =
-    formType === "source"
-      ? connector.sourceProperties
-      : connector.configProperties;
-  const secretKeys = properties
-    ?.filter((property) => property.secret)
-    .map((property) => property.key);
+  const secretKeys = opts?.secretKeys ?? [];
 
   // In reality, all connectors have secret keys, but this is a safeguard
   if (!secretKeys) {
@@ -178,6 +311,25 @@ export async function updateDotEnvWithSecrets(
       formValues[key] as string,
     );
   });
+
+  // Persist sensitive header values (e.g. Authorization, API keys) as
+  // individual .env entries so tokens are not stored as raw text in YAML.
+  const headers = formValues.headers;
+  if (Array.isArray(headers)) {
+    for (const entry of headers as Array<{ key: string; value: string }>) {
+      if (!entry.key?.trim() || !entry.value?.trim()) continue;
+      if (!isSensitiveHeaderKey(entry.key)) continue;
+      const envSegment = headerKeyToEnvSegment(entry.key);
+      const envKey = makeDotEnvConnectorKey(
+        connector.name as string,
+        envSegment,
+        connectorInstanceName,
+      );
+      const raw = entry.value.trim();
+      const split = splitAuthSchemePrefix(raw);
+      blob = replaceOrAddEnvVariable(blob, envKey, split ? split.secret : raw);
+    }
+  }
 
   return blob;
 }
@@ -321,7 +473,8 @@ export async function createYamlModelFromTable(
     ? `\n\ndev:\n  sql: ${selectStatement} limit 10000`
     : "";
 
-  const yamlContent = YAML_MODEL_TEMPLATE.replace("{{ connector }}", connector)
+  const yamlContent = yamlModelTemplate(driverName)
+    .replace("{{ connector }}", connector)
     .replace(/{{ sql }}/g, selectStatement)
     .replace("{{ dev_section }}", devSection);
 
@@ -399,8 +552,7 @@ export async function createSqlModelFromTable(
   );
 
   // Create model
-  const topComments =
-    "-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/build/models";
+  const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,

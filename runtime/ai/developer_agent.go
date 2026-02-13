@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -97,6 +98,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 			ShowTableName,
 			QuerySQLName,
 			DevelopFileName,
+			NavigateName,
 		},
 		MaxIterations: 20,
 		UnwrapCall:    true,
@@ -121,7 +123,7 @@ func (t *DeveloperAgent) systemPrompt() (string, error) {
 
 func (t *DeveloperAgent) userPrompt(ctx context.Context, args *DeveloperAgentArgs) (string, error) {
 	// Get default OLAP info
-	olapConnector, olapDriver, olapModeReadwrite, err := defaultOLAPInfo(ctx, t.Runtime, GetSession(ctx).InstanceID())
+	olapInfo, err := defaultOLAPInfo(ctx, t.Runtime, GetSession(ctx).InstanceID())
 	if err != nil {
 		return "", err
 	}
@@ -129,13 +131,11 @@ func (t *DeveloperAgent) userPrompt(ctx context.Context, args *DeveloperAgentArg
 	// Prepare template data.
 	session := GetSession(ctx)
 	data := map[string]any{
-		"prompt":                 args.Prompt,
-		"init_project":           args.InitProject,
-		"current_file_path":      args.CurrentFilePath,
-		"ai_instructions":        session.ProjectInstructions(),
-		"default_olap_connector": olapConnector,
-		"default_olap_driver":    olapDriver,
-		"default_olap_readwrite": olapModeReadwrite,
+		"prompt":            args.Prompt,
+		"init_project":      args.InitProject,
+		"current_file_path": args.CurrentFilePath,
+		"ai_instructions":   session.ProjectInstructions(),
+		"default_olap_info": olapInfo,
 	}
 
 	// Generate the system prompt
@@ -157,9 +157,11 @@ Feel free to change the default OLAP connector if it makes sense for the task.
 The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}
 {{ end }}
 
-This may not relate to the user's task, but for context, the project's default OLAP connector is named {{ .default_olap_connector }} (driver: {{ .default_olap_driver }}).
-{{ if .default_olap_readwrite }} The default OLAP is in readwrite mode, so you can use it in models if you want.
-{{ else }} The default OLAP is in read-only mode, so you cannot create models in it. {{ end }}
+For context, here are some details about the project's default OLAP connector: {{ .default_olap_info }}.
+Note that you can only use it in model resources if it is not readonly.
+
+Call "navigate" tool for the main file created/edited (not if it is deleted) in the conversation. Use kind "file" and pass the written file path.
+Prefer dashboard or metrics view files over other files.
 
 Task: {{ .prompt }}
 `, data)
@@ -189,25 +191,37 @@ func checkDeveloperAccess(ctx context.Context, rt *runtime.Runtime, internal boo
 	return ff["developer_agent"], nil
 }
 
-// defaultOLAPInfo retrieves the default OLAP connector name, driver, and whether it is in readwrite mode.
-func defaultOLAPInfo(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, string, bool, error) {
+// defaultOLAPInfo returns info about the default OLAP connector name, driver, and whether it is in readwrite mode.
+func defaultOLAPInfo(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
 	// Get instance config
 	inst, err := rt.Instance(ctx, instanceID)
 	if err != nil {
-		return "", "", false, err
+		return "", err
 	}
 	olapConnector := inst.ResolveOLAPConnector()
 
 	// Open OLAP handle
-	olap, release, err := rt.AcquireHandle(ctx, instanceID, olapConnector)
+	handle, release, err := rt.AcquireHandle(ctx, instanceID, olapConnector)
 	if err != nil {
-		return "", "", false, err
+		if errors.Is(err, ctx.Err()) {
+			return "", err
+		}
+		return fmt.Sprintf("name: %q, error: %v", olapConnector, err), nil
 	}
 	defer release()
 
+	// Get dialect
+
+	// Add OLAP dialect
+	olap, ok := handle.AsOLAP(instanceID)
+	if !ok {
+		return fmt.Sprintf("name: %q, error: not an OLAP connector", olapConnector), nil
+	}
+	dialect := olap.Dialect()
+
 	// Determine if OLAP can run models
-	_, err = olap.AsModelManager(instanceID)
+	_, err = handle.AsModelManager(instanceID)
 	olapModeReadwrite := err == nil
 
-	return olapConnector, olap.Driver(), olapModeReadwrite, nil
+	return fmt.Sprintf("name: %q, driver: %q, dialect: %q, readonly: %v", olapConnector, handle.Driver(), dialect.String(), !olapModeReadwrite), nil
 }

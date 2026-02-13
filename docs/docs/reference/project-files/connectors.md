@@ -12,6 +12,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**ClickHouse**](#clickhouse) - ClickHouse analytical database
 - [**Druid**](#druid) - Apache Druid
 - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
+- [**External DuckDB**](#external-duckdb) - External DuckDB database
 - [**MotherDuck**](#motherduck) - MotherDuck cloud database
 - [**Pinot**](#pinot) - Apache Pinot
 - [**StarRocks**](#starrocks) - StarRocks analytical database
@@ -27,17 +28,20 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**PostgreSQL**](#postgres) - PostgreSQL databases
 - [**SQLite**](#sqlite) - SQLite databases
 
-### _Cloud Storage_
+### _Object Storage_
 - [**Azure**](#azure) - Azure Blob Storage
 - [**GCS**](#gcs) - Google Cloud Storage
 - [**S3**](#s3) - Amazon S3 storage
 
-### _Other_
-- [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
-- [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**OpenAI**](#openai) - OpenAI data
-- [**Salesforce**](#salesforce) - Salesforce data
+### Service Integrations
+- [**Claude**](#claude) - Claude connector for chat with your own API key
+- [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
+- [**Gemini**](#gemini) - Gemini connector for chat with your own API key
 - [**Slack**](#slack) - Slack data
+
+### _Other_
+- [**HTTPS**](#https) - Public files via HTTP/HTTPS
+- [**Salesforce**](#salesforce) - Salesforce data
 
 :::warning Security Recommendation
 For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developers/build/connectors/credentials/) for complete setup instructions.
@@ -665,6 +669,86 @@ model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
 api_type: "openai" # The type of OpenAI API to use  
 api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD  
+```
+
+## Claude
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "claude" 
+
+### `api_key`
+
+_[string]_ - API key for connecting to Claude _(required)_
+
+### `model`
+
+_[string]_ - The Claude model to use (e.g., 'claude-opus-4-5') 
+
+### `max_tokens`
+
+_[number]_ - Maximum number of tokens in the response (e.g., 8192) 
+
+### `temperature`
+
+_[number]_ - Sampling temperature to use (e.g., 0.0) 
+
+### `base_url`
+
+_[string]_ - The base URL for the Claude API 
+
+```yaml
+# Example: Claude connector configuration
+type: connector
+driver: claude
+api_key: "{{ .env.claude_api_key }}"
+model: claude-opus-4-5
+```
+
+## Gemini
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "gemini" 
+
+### `api_key`
+
+_[string]_ - API key for connecting to Gemini _(required)_
+
+### `model`
+
+_[string]_ - The Gemini model to use (e.g., 'gemini-2.5-pro-preview-05-06') 
+
+### `include_thoughts`
+
+_[boolean]_ - Whether to include thinking/reasoning in the response 
+
+### `thinking_level`
+
+_[string]_ - Level of 'thinking' for the model's response (e.g., 'MINIMAL', 'LOW', 'MEDIUM', 'HIGH'). Default is 'LOW'. 
+
+### `max_output_tokens`
+
+_[number]_ - Maximum number of tokens in the response (e.g., 8192) 
+
+### `temperature`
+
+_[number]_ - Sampling temperature to use (0.0-2.0) 
+
+### `top_p`
+
+_[number]_ - Nucleus sampling parameter 
+
+### `top_k`
+
+_[number]_ - Top-K sampling parameter 
+
+```yaml
+# Example: Gemini connector configuration
+type: connector
+driver: gemini
+api_key: "{{ .env.gemini_api_key }}"
+model: gemini-2.5-pro-preview-05-06
 ```
 
 ## Pinot

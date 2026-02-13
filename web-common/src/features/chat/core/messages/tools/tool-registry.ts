@@ -8,9 +8,20 @@
  */
 
 import type { V1Message } from "@rilldata/web-common/runtime-client";
-import { ToolName } from "../../types";
+import { MessageContentType, ToolName } from "../../types";
 import { createChartBlock, type ChartBlock } from "../chart/chart-block";
-import { type FileDiffBlock } from "../file-diff/file-diff-block";
+import {
+  createFileDiffBlock,
+  type FileDiffBlock,
+  type WriteFileCallData,
+} from "../file-diff/file-diff-block";
+import { goto } from "$app/navigation";
+import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+import {
+  createSimpleTooCall,
+  type SimpleToolCall,
+} from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
+import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils.ts";
 
 // =============================================================================
 // RENDER MODES
@@ -29,7 +40,7 @@ export type ToolRenderMode = "grouped" | "block" | "hidden";
 // =============================================================================
 
 /** Block types that can be created by tools */
-export type ToolBlockType = ChartBlock | FileDiffBlock;
+export type ToolBlockType = ChartBlock | FileDiffBlock | SimpleToolCall;
 
 /**
  * Configuration for a tool's rendering behavior.
@@ -46,6 +57,12 @@ export interface ToolConfig {
   ) => ToolBlockType | null;
 
   groups?: string[];
+  /** Used to process any UI action or side effects from tool calls. */
+  onCall?: (callMessage: V1Message) => void;
+  onResult?: (
+    callMessage: V1Message | undefined,
+    resultMessage: V1Message,
+  ) => void;
 }
 
 /**
@@ -81,6 +98,14 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
   [ToolName.WRITE_FILE]: {
     renderMode: "grouped",
     groups: ["thinking", "develop"],
+    createBlock: createFileDiffBlock,
+    onResult: handleWriteFilesToolResult,
+  },
+
+  [ToolName.NAVIGATE]: {
+    renderMode: "block",
+    createBlock: createSimpleTooCall,
+    onCall: handleNavigateToolCall,
   },
 
   // All other tools default to "inline" (shown in thinking blocks)
@@ -104,4 +129,44 @@ export function getToolConfig(toolName: string | undefined): ToolConfig {
  */
 export function isHiddenTool(toolName: string | undefined): boolean {
   return getToolConfig(toolName).renderMode === "hidden";
+}
+
+function handleNavigateToolCall(callMessage: V1Message) {
+  if (!callMessage.contentData) return;
+  try {
+    const content = JSON.parse(callMessage.contentData);
+    if (!content.kind || !content.name) return;
+    switch (content.kind) {
+      case "file":
+        void goto(`/files${addLeadingSlash(content.name)}`);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+/**
+ * If a file is successfully removed and the removed file was the active page, navigate to the home page.
+ * @param callMessage
+ * @param resultMessage
+ */
+function handleWriteFilesToolResult(
+  callMessage: V1Message,
+  resultMessage: V1Message,
+) {
+  if (
+    !callMessage.contentData ||
+    resultMessage.contentType === MessageContentType.ERROR
+  )
+    return;
+  try {
+    const content = JSON.parse(callMessage.contentData) as WriteFileCallData;
+    if (!content.remove) return;
+    const filePath = addLeadingSlash(content.path);
+    if (isCurrentActivePage(filePath, false)) {
+      void goto("/");
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }

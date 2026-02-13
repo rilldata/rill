@@ -519,6 +519,11 @@ export class Instance extends Message$1<Instance> {
    */
   frontendUrl = "";
 
+  /**
+   * @generated from field: string theme = 26;
+   */
+  theme = "";
+
   constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
@@ -544,6 +549,7 @@ export class Instance extends Message$1<Instance> {
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 23, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 24, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 26, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -4501,6 +4507,20 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   explore = "";
 
   /**
+   * Optional canvas dashboard.
+   *
+   * @generated from field: string canvas = 10;
+   */
+  canvas = "";
+
+  /**
+   * Optional canvas component within a dashboard.
+   *
+   * @generated from field: string canvas_component = 11;
+   */
+  canvasComponent = "";
+
+  /**
    * Optional dimensions.
    *
    * @generated from field: repeated string dimensions = 5;
@@ -4520,6 +4540,15 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
    * @generated from field: rill.runtime.v1.Expression where = 7;
    */
   where?: Expression;
+
+  /**
+   * Filter expressions as key-value pairs for the canvas.
+   * Key: Metrics view name
+   * Value: Expression object
+   *
+   * @generated from field: map<string, rill.runtime.v1.Expression> where_per_metrics_view = 12;
+   */
+  wherePerMetricsView: { [key: string]: Expression } = {};
 
   /**
    * Optional start of a time range.
@@ -4544,9 +4573,12 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   static readonly typeName = "rill.runtime.v1.AnalystAgentContext";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "canvas_component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 12, name: "where_per_metrics_view", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 8, name: "time_start", kind: "message", T: Timestamp },
     { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);

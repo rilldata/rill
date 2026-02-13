@@ -19,6 +19,7 @@ import {
   type DevelopBlock,
   createDevelopBlock,
 } from "@rilldata/web-common/features/chat/core/messages/develop/develop-block.ts";
+import type { SimpleToolCall } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 
 // =============================================================================
 // TYPES & TRANSFORMATION
@@ -30,7 +31,8 @@ export type Block =
   | ChartBlock
   | FileDiffBlock
   | WorkingBlock
-  | DevelopBlock;
+  | DevelopBlock
+  | SimpleToolCall;
 
 // Re-export individual block types for convenience
 export type {
@@ -39,6 +41,7 @@ export type {
   TextBlock,
   ThinkingBlock,
   WorkingBlock,
+  SimpleToolCall,
 };
 
 /**

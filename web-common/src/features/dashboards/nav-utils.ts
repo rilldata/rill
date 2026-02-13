@@ -45,6 +45,14 @@ export function getExploreNameStore() {
   });
 }
 
+export function getCanvasNameStore() {
+  return derived(page, (pageState) => {
+    const dashboardResource = getDashboardResourceFromPage(pageState);
+    if (dashboardResource?.kind !== ResourceKind.Canvas) return ""; // TODO: merge with getExploreNameStore?
+    return dashboardResource.name;
+  });
+}
+
 export function getActiveMetricsViewNameStore() {
   const exploreNameStore = getExploreNameStore();
   const validSpecQuery = createQuery(

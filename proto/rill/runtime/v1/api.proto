@@ -457,6 +457,7 @@ message Instance {
   map<string, string> annotations = 14;
   string ai_instructions = 23;
   string frontend_url = 24;
+  string theme = 26;
 }
  
 message Connector {
@@ -1072,12 +1073,20 @@ message Message {
 message AnalystAgentContext {
   // Optional explore dashboard.
   string explore = 4;
+  // Optional canvas dashboard.
+  string canvas = 10;
+  // Optional canvas component within a dashboard.
+  string canvas_component = 11;
   // Optional dimensions.
   repeated string dimensions = 5;
   // Optional measures.
   repeated string measures = 6;
   // Optional filters.
   rill.runtime.v1.Expression where = 7;
+  // Filter expressions as key-value pairs for the canvas.
+  // Key: Metrics view name
+  // Value: Expression object
+  map<string, rill.runtime.v1.Expression> where_per_metrics_view = 12;
   // Optional start of a time range.
   google.protobuf.Timestamp time_start = 8;
   // Optional end of a time range.

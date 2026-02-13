@@ -77,7 +77,7 @@
 
   $: resource = resourceQuery ? $resourceQuery?.data : undefined;
 
-  $: errorMessage = !validSpec
+  $: reconcileErrorMessage = !validSpec
     ? reconcileError || resource?.meta?.reconcileError
     : undefined;
 
@@ -180,4 +180,4 @@
   <title>{canvasTitle || `${canvasName} - Rill`}</title>
 </svelte:head>
 
-<slot {ready} {errorMessage} {isLoading} {isReconciling} />
+<slot {ready} {reconcileErrorMessage} {isLoading} {isReconciling} />

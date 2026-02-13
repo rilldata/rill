@@ -1,6 +1,6 @@
-import { EditorView } from "@codemirror/view";
-import type { Extension } from "@codemirror/state";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import type { Extension } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
 
 const blue = "var(--color-blue-800)";
@@ -10,8 +10,8 @@ const emerald = "var(--color-emerald-700)";
 const gray = "var(--fg-muted)";
 const amber = "var(--color-amber-600)";
 const highlightBackground = "var(--line-highlight)";
-const background = "var(--surface-subtle)";
-const tooltipBackground = "var(--popover)";
+const background = "var(--surface-background)";
+const tooltipBackground = "var(--tooltip)";
 const selection = "var(--editor-selection)";
 const cursor = "var(--color-gray-800)";
 const orange = "var(--color-orange-700)";
@@ -47,8 +47,8 @@ export const editorTheme = EditorView.theme(
     ".cm-panels.cm-panels-bottom": { borderTop: "2px solid black" },
 
     ".cm-searchMatch": {
-      backgroundColor: "#72a1ff59",
-      outline: "1px solid #457dff",
+      backgroundColor: "var(--color-blue-500)",
+      outline: "1px solid var(--color-blue-600)",
     },
     ".cm-searchMatch.cm-searchMatch-selected": {
       backgroundColor: selection,
@@ -102,9 +102,13 @@ export const editorTheme = EditorView.theme(
       borderBottomColor: tooltipBackground,
     },
     ".cm-tooltip-autocomplete": {
+      padding: "0.25rem",
+      backgroundColor: "var(--popover)",
+      color: "var(--popover-foreground)",
+      border: "solid 1px var(--border)",
       "& > ul > li[aria-selected]": {
-        backgroundColor: highlightBackground,
-        color: emerald,
+        backgroundColor: "var(--popover-accent)",
+        color: "var(--popover-foreground)",
       },
     },
   },
