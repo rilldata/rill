@@ -3,19 +3,15 @@ package ai
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
 const QueryMetricsViewName = "query_metrics_view"
@@ -29,9 +25,10 @@ var _ Tool[QueryMetricsViewArgs, *QueryMetricsViewResult] = (*QueryMetricsView)(
 type QueryMetricsViewArgs map[string]any
 
 type QueryMetricsViewResult struct {
-	Data              []map[string]any `json:"data"`
-	OpenURL           string           `json:"open_url,omitempty"`
-	TruncationWarning string           `json:"truncation_warning,omitempty"`
+	Schema            []SchemaField `json:"schema"`
+	Data              [][]any       `json:"data"`
+	OpenURL           string        `json:"open_url,omitempty"`
+	TruncationWarning string        `json:"truncation_warning,omitempty"`
 }
 
 func (t *QueryMetricsView) Spec() *mcp.Tool {
@@ -221,30 +218,10 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 	defer res.Close()
 
-	// Gather the result rows
-	var data []map[string]any
-	schema := &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, StructType: res.Schema()}
-	for {
-		row, err := res.Next()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
-
-		// Cast non-JSON types to JSON-compatible types
-		v, err := jsonval.ToValue(row, schema)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert row to value: %w", err)
-		}
-		var ok bool
-		row, ok = v.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("expected row to be map[string]any, got %T", v)
-		}
-
-		data = append(data, row)
+	// Gather the result in tabular format
+	schema, data, err := resolverResultToTabular(res)
+	if err != nil {
+		return nil, err
 	}
 
 	// Generate an open URL for the query
@@ -255,6 +232,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 
 	// Build the result
 	result := &QueryMetricsViewResult{
+		Schema:  schema,
 		Data:    data,
 		OpenURL: openURL,
 	}
