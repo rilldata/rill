@@ -406,7 +406,7 @@ const url = `https://ui.rilldata.com/org/project/explore/dashboard-name?${params
 
 ## Integration with Embed API
 
-When using the [Embed API](/developers/integrate/embed-iframe-api), you can use these URL parameters in the `setState` method:
+When using the [Embed API](/developers/embed/embed-iframe-api), you can use these URL parameters in the `setState` method:
 
 ```javascript
 iframe.contentWindow.postMessage({
@@ -422,7 +422,7 @@ The state string passed to `setState` should use the same format as the URL quer
 
 ## See Also
 
-- [Embed Dashboards](/developers/integrate/embedding) - Learn how to embed Rill dashboards
-- [Embed Iframe API](/developers/integrate/embed-iframe-api) - Programmatically control embedded dashboards
+- [Embed Dashboards](/developers/embed/embedding) - Learn how to embed Rill dashboards
+- [Embed Iframe API](/developers/embed/embed-iframe-api) - Programmatically control embedded dashboards
 - [Time Series Filter]/guide/dashboards/time-series/time-series) - Detailed guide on time range syntax and usage
 
