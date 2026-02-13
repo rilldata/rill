@@ -20,7 +20,7 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
+  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "key-value";
   /** Visual style for select fields. "rich" renders with icons and colored cards. */
   "x-select-style"?: "standard" | "rich";
   /** Render the field value in a monospace font. */

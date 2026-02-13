@@ -4,6 +4,7 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
+  import KeyValueInput from "@rilldata/web-common/components/forms/KeyValueInput.svelte";
   import { normalizeErrors } from "./error-utils";
   import { getFileAccept } from "./file-encoding";
   import type { JSONSchemaField } from "./schemas/types";
@@ -50,6 +51,15 @@
     hint={prop.description ?? prop["x-hint"]}
     {optional}
     {disabled}
+  />
+{:else if prop["x-display"] === "key-value"}
+  <KeyValueInput
+    {id}
+    label={prop.title ?? id}
+    hint={prop.description ?? prop["x-hint"]}
+    {optional}
+    bind:value
+    keyPlaceholder={prop["x-placeholder"]}
   />
 {:else if options?.length}
   <Radio bind:value {options} {name} {disabled} />

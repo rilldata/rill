@@ -23,6 +23,7 @@
     getBackendConnectorName,
     getConnectorSchema,
     getFormWidth,
+    isMultiStepConnector as isMultiStepConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
   import { ICONS } from "./icons";
@@ -143,7 +144,10 @@
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
-      selectedConnector?.name !== "salesforce");
+      selectedConnector?.name !== "salesforce") ||
+    isMultiStepConnectorSchema(
+      getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
+    );
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
