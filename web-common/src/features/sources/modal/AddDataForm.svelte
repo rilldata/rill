@@ -32,6 +32,7 @@
   export let isSubmitting: boolean;
   export let onBack: () => void;
   export let onClose: () => void;
+  export let onCloseAfterNavigation: () => void = onClose;
 
   let saveAnyway = false;
   let showSaveAnyway = false;
@@ -206,7 +207,10 @@
       values: $form,
     });
     if (result.ok) {
-      onClose();
+      // Use quiet close — saveConnectorAnyway already navigated via goto().
+      // The normal resetModal() fires a synthetic popstate that races with
+      // SvelteKit's router and can revert the navigation.
+      onCloseAfterNavigation();
     } else {
       paramsError = result.message;
       paramsErrorDetails = result.details;

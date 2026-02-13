@@ -123,6 +123,20 @@
     resetConnectorStep();
   }
 
+  /**
+   * Reset modal UI state without history manipulation.
+   * Use this after goto() has already navigated — firing a synthetic popstate
+   * races with SvelteKit's router and can revert the navigation.
+   */
+  function resetModalQuietly() {
+    step = 0;
+    selectedConnector = null;
+    selectedSchemaName = null;
+    requestConnector = false;
+    isSubmittingForm = false;
+    resetConnectorStep();
+  }
+
   async function onCancelDialog() {
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
@@ -257,6 +271,7 @@
             schemaName={selectedSchemaName}
             formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
+            onCloseAfterNavigation={resetModalQuietly}
             onBack={back}
             bind:isSubmitting={isSubmittingForm}
           />
