@@ -30,22 +30,35 @@
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  // Initialize filters from URL search params
-  const kindParam = $page.url.searchParams.get("kind");
-  const statusParam = $page.url.searchParams.get("status");
-  const qParam = $page.url.searchParams.get("q");
+  // Reactively track URL search params (updates on back/forward navigation)
+  $: kindParam = $page.url.searchParams.get("kind");
+  $: statusParam = $page.url.searchParams.get("status");
+  $: qParam = $page.url.searchParams.get("q");
 
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
-  let searchText = qParam ?? "";
-  let selectedTypes: string[] = kindParam
-    ? kindParam.split(",").filter(Boolean)
-    : [];
-  let selectedStatuses: string[] = statusParam
-    ? statusParam.split(",").filter(Boolean)
-    : [];
+  let searchText = $page.url.searchParams.get("q") ?? "";
+  let selectedTypes: string[] = (() => {
+    const k = $page.url.searchParams.get("kind");
+    return k ? k.split(",").filter(Boolean) : [];
+  })();
+  let selectedStatuses: string[] = (() => {
+    const s = $page.url.searchParams.get("status");
+    return s ? s.split(",").filter(Boolean) : [];
+  })();
   let mounted = false;
+  let lastSyncedSearch = $page.url.search;
+
+  // Sync URL → local state on external navigation (back/forward)
+  $: if (mounted && $page.url.search !== lastSyncedSearch) {
+    lastSyncedSearch = $page.url.search;
+    selectedTypes = kindParam ? kindParam.split(",").filter(Boolean) : [];
+    selectedStatuses = statusParam
+      ? statusParam.split(",").filter(Boolean)
+      : [];
+    searchText = qParam ?? "";
+  }
 
   // Sync filter state to URL params
   $: if (mounted) {
@@ -61,7 +74,7 @@
     statuses: string[],
     search: string,
   ) {
-    const url = new URL(window.location.href);
+    const url = new URL($page.url);
     if (types.length > 0) {
       url.searchParams.set("kind", types.join(","));
     } else {
@@ -77,6 +90,7 @@
     } else {
       url.searchParams.delete("q");
     }
+    lastSyncedSearch = url.search;
     void goto(url.pathname + url.search, {
       replaceState: true,
       noScroll: true,
@@ -313,14 +327,14 @@
     </Button>
   </div>
 
-  {#if $resources.data}
-    <ProjectResourcesTable data={filteredResources} />
+  {#if $resources.isLoading}
+    <DelayedSpinner isLoading={true} size="16px" />
   {:else if $resources.isError}
     <div class="text-red-500">
       Error loading resources: {$resources.error?.message}
     </div>
-  {:else}
-    <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
+  {:else if $resources.data}
+    <ProjectResourcesTable data={filteredResources} />
   {/if}
 
   <div class="parse-errors">

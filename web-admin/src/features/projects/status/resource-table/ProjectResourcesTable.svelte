@@ -202,9 +202,7 @@
     },
   ];
 
-  $: tableData = data.filter(
-    (resource) => resource.meta.name.kind !== ResourceKind.Component,
-  );
+  $: tableData = data;
 </script>
 
 <VirtualizedTable

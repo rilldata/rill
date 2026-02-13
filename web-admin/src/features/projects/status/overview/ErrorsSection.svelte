@@ -78,7 +78,7 @@
         </a>
       {/if}
 
-      {#each errorsByKind as { kind, label, count }}
+      {#each errorsByKind as { kind, label, count } (kind)}
         <a
           href="{basePage}/resources?status=error&kind={kind}"
           class="error-chip"
