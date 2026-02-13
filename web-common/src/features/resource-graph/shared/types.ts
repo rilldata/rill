@@ -76,6 +76,12 @@ export interface ResourceMetadata {
   componentCount?: number;
   rowCount?: number;
 
+  // Connector metadata
+  connectorDriver?: string;
+  connectorProvision?: boolean;
+  connectorProperties?: Record<string, string>;
+  connectorTemplatedProperties?: string[];
+
   // Consumer counts (for any resource)
   alertCount?: number;
   apiCount?: number;

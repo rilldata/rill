@@ -3,20 +3,27 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
 
+  export let connectors = 0;
   export let sources = 0;
   export let models = 0;
   export let metrics = 0;
   export let dashboards = 0;
   export let activeToken:
+    | "connectors"
     | "sources"
     | "metrics"
     | "models"
     | "dashboards"
     | null = null;
 
-  $: total = sources + models + metrics + dashboards;
+  $: total = connectors + sources + models + metrics + dashboards;
 
   const kindConfig = [
+    {
+      token: "connectors" as const,
+      label: "Connectors",
+      kind: ResourceKind.Connector,
+    },
     {
       token: "sources" as const,
       label: "Sources",
@@ -40,9 +47,11 @@
   ];
 
   function getCount(
-    token: "sources" | "models" | "metrics" | "dashboards",
+    token: "connectors" | "sources" | "models" | "metrics" | "dashboards",
   ): number {
     switch (token) {
+      case "connectors":
+        return connectors;
       case "sources":
         return sources;
       case "models":

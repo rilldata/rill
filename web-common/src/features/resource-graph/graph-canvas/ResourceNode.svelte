@@ -196,16 +196,7 @@
   }
 
   .actions-trigger {
-    @apply absolute right-1 top-1 opacity-0 transition-opacity;
-  }
-
-  .node:hover .actions-trigger {
-    @apply opacity-100;
-  }
-
-  /* Keep visible when dropdown is open */
-  .actions-trigger:has([aria-expanded="true"]) {
-    @apply opacity-100;
+    @apply absolute right-1 top-1;
   }
 
   /* Error tooltip styling */

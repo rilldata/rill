@@ -505,13 +505,11 @@
             <button
               class="group-tab"
               class:active={currentExpandedId === group.id}
+              class:errored={parts.errorCount > 0}
               on:click={() => handleExpandChange(group.id)}
             >
               <span>{group.label ?? `Graph ${index + 1}`}</span>
               <span class="tab-count">{group.resources.length}</span>
-              {#if parts.errorCount > 0}
-                <span class="tab-error-dot"></span>
-              {/if}
             </button>
           {/each}
         </div>
@@ -710,7 +708,11 @@
     @apply text-fg-secondary;
   }
 
-  .tab-error-dot {
-    @apply w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0;
+  .group-tab.errored {
+    @apply text-red-600 font-bold;
+  }
+
+  .group-tab.errored.active {
+    @apply text-red-600 font-bold;
   }
 </style>

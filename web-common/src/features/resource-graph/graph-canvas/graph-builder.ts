@@ -366,6 +366,25 @@ function extractResourceMetadata(
     }
   }
 
+  // Connector metadata
+  const connector = resource.connector;
+  if (connector?.spec) {
+    const cSpec = connector.spec;
+    if (cSpec.driver) metadata.connectorDriver = cSpec.driver;
+    metadata.connectorProvision = cSpec.provision ?? false;
+    if (cSpec.properties) {
+      const safeProps: Record<string, string> = {};
+      const templated = new Set(cSpec.templatedProperties ?? []);
+      for (const [key, value] of Object.entries(cSpec.properties)) {
+        safeProps[key] = templated.has(key) ? "" : String(value ?? "");
+      }
+      metadata.connectorProperties = safeProps;
+    }
+    if (cSpec.templatedProperties?.length) {
+      metadata.connectorTemplatedProperties = cSpec.templatedProperties;
+    }
+  }
+
   // Count alerts and APIs that reference this resource
   const resourceId = createResourceId(resource.meta);
   if (resourceId) {
