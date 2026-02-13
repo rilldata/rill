@@ -7,10 +7,12 @@
   import {
     findRadioEnumKey,
     getRadioEnumOptions,
+    getSchemaButtonLabels,
     getSchemaInitialValues,
   } from "../../templates/schema-utils";
   import { getConnectorSchema } from "./connector-schemas";
   import { isMultiStepConnectorDisabled } from "./utils";
+  import { ICONS } from "./icons";
   import type { AddDataFormManager } from "./AddDataFormManager";
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
   import type { ConnectorStepState } from "./connectorStepStore";
@@ -27,7 +29,10 @@
   ) => unknown;
   export let baseFormId: string;
   export let onStringInputChange: (e: Event) => void;
-  export let handleFileUpload: (file: File) => Promise<string>;
+  export let handleFileUpload: (
+    file: File,
+    fieldKey: string,
+  ) => Promise<string>;
   export let submitting: boolean;
 
   // Outputs bound by parent
@@ -167,18 +172,22 @@
     $paramsErrors,
     stepState.step,
   );
+  $: schemaButtonLabels = getSchemaButtonLabels(activeSchema, $form);
   $: primaryButtonLabel = formManager.getPrimaryButtonLabel({
     isConnectorForm: formManager.isConnectorForm,
     step: stepState.step,
     submitting,
+    schemaButtonLabels,
     selectedAuthMethod: activeAuthMethod ?? selectedAuthMethod,
   });
   $: primaryLoadingCopy =
     stepState.step === "source" || stepState.step === "explorer"
       ? "Importing data..."
-      : activeAuthMethod === "public"
-        ? "Continuing..."
-        : "Testing connection...";
+      : schemaButtonLabels?.loading
+        ? schemaButtonLabels.loading
+        : activeAuthMethod === "public"
+          ? "Continuing..."
+          : "Testing connection...";
   $: formId = baseFormId;
   $: shouldShowSkipLink =
     stepState.step === "connector" && formManager.isMultiStepConnector;
@@ -196,5 +205,6 @@
     errors={$paramsErrors}
     {onStringInputChange}
     {handleFileUpload}
+    iconMap={ICONS}
   />
 </AddDataFormSection>
