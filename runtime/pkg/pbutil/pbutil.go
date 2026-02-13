@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers/clickhouse"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/clickhouseutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -172,7 +172,7 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			case runtimev1.Type_CODE_INTERVAL:
 				// ClickHouse currently returns INTERVALs as strings.
 				// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.
-				v2, ok := clickhouse.ParseIntervalToMillis(v)
+				v2, ok := clickhouseutil.ParseIntervalToMillis(v)
 				if ok {
 					return structpb.NewNumberValue(float64(v2)), nil
 				}
