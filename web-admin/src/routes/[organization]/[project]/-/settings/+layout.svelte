@@ -10,7 +10,6 @@
   $: basePage = `/${organization}/${project}/-/settings`;
 
   const navItems = [
-    { label: "General", route: "", hasPermission: true },
     {
       label: "General",
       route: "",
