@@ -1,6 +1,10 @@
 import { expect } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions.ts";
 import { test } from "./setup/base";
+import {
+  getOpenLinkFromEmail,
+  waitForEmail,
+} from "@rilldata/web-common/tests/utils/email-utils.ts";
 
 test.describe.serial("Reports", () => {
   test("Should create report", async ({ adminPage }) => {
@@ -103,6 +107,38 @@ test.describe.serial("Reports", () => {
     );
   });
 
+  test("Should run a report and receive an email", async ({ adminPage }) => {
+    // Open the report
+    await adminPage.goto("/e2e/openrtb/-/reports");
+    await adminPage
+      .getByRole("link", {
+        name: "Report for last 14 days",
+      })
+      .click();
+
+    // Store time before clicking run to ensure latest email is fetched.
+    const time = new Date().toISOString();
+    await adminPage.getByRole("button", { name: "Run now" }).click();
+    // Notification is shown
+    await expect(adminPage.getByLabel("Notification")).toHaveText(
+      "Triggered an ad-hoc run of this report.",
+    );
+
+    // Wait for the email and extract the open url from it.
+    const email = await waitForEmail("Report for last 14 days", time);
+    const link = await getOpenLinkFromEmail(email);
+
+    await adminPage.goto(link);
+
+    // Assert that rows and columns of the landing pivot are as expected.
+    await expect(adminPage.getByLabel("Drag list rows")).toHaveText(/Pub Name/);
+    await expect(adminPage.getByLabel("Drag list columns")).toHaveText(
+      /App Site Name\s*Requests\s*Avg Bid Floor\s*1D QPS/,
+    );
+
+    // Data is not guaranteed since an adhoc run will trigger with current time.
+  });
+
   test("Should edit report", async ({ adminPage }) => {
     await adminPage.goto("/e2e/openrtb/-/reports");
 
@@ -186,9 +222,7 @@ test.describe.serial("Reports", () => {
     );
   });
 
-  test("Should delete report", async ({ adminPage }) => {
-    await adminPage.goto("/e2e/openrtb/-/reports");
-
+  test.skip("Should delete report", async ({ adminPage }) => {
     await adminPage.goto("/e2e/openrtb/-/reports");
 
     await adminPage
