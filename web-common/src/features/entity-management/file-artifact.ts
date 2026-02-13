@@ -316,15 +316,23 @@ export class FileArtifact {
     ) as ReturnType<typeof useResource<V1Resource>>;
   };
 
-  getParseError = (queryClient: QueryClient, instanceId: string) => {
-    return derived(
+  getParseError = (
+    queryClient: QueryClient,
+    instanceId: string,
+  ): Readable<V1ParseError | undefined> => {
+    const store = derived(
       useProjectParser(queryClient, instanceId),
       (projectParser) => {
-        return projectParser.data?.projectParser?.state?.parseErrors?.find(
-          (e) => e.filePath === this.path,
-        );
+        if (projectParser.isFetching) {
+          return get(store);
+        }
+        return (
+          projectParser.data?.projectParser?.state?.parseErrors ?? []
+        ).find((e) => e.filePath === this.path);
       },
+      undefined as V1ParseError | undefined,
     );
+    return store;
   };
 
   getAllErrors = (

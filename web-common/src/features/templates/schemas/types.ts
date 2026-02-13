@@ -20,7 +20,7 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   /** Render style override for the field (e.g. radio buttons, tabs, file picker). */
-  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
+  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs" | "key-value";
   /** Which modal step this field belongs to. */
   "x-step"?: "connector" | "source" | "explorer";
   /** Field holds a secret value that should be stored in .env, not in YAML. */
@@ -35,8 +35,14 @@ export type JSONSchemaField = {
   "x-placeholder"?: string;
   /** Helper text displayed below the input. */
   "x-hint"?: string;
-  /** Accepted file types for file inputs (e.g. ".json,.csv"). */
+  /** @deprecated Use "x-file-accept" instead. */
   "x-accept"?: string;
+  /** Accepted file types for file inputs (e.g. ".json,.pem"). */
+  "x-file-accept"?: string;
+  /** How to encode file content: base64, json (parse+stringify), or raw (pass-through). */
+  "x-file-encoding"?: "base64" | "json" | "raw";
+  /** Extract values from parsed file content into other form fields. Maps form field key to JSON property name. */
+  "x-file-extract"?: Record<string, string>;
   /** Field is read-only and shown for informational purposes only. */
   "x-informational"?: boolean;
   /** URL to external documentation for this field, shown as a help link. */

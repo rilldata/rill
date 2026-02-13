@@ -282,6 +282,9 @@
     {/if}
 
     {#if onCanvasDashboardPage && hasUserAccess}
+      {#if $dashboardChat && !onPublicURLPage}
+        <ChatToggle />
+      {/if}
       <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover {createMagicAuthTokens} />
     {/if}

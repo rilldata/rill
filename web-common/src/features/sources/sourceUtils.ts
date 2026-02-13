@@ -113,7 +113,10 @@ export function compileLocalFileSourceYAML(path: string) {
   return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
-function buildDuckDbQuery(path: string | undefined): string {
+function buildDuckDbQuery(
+  path: string | undefined,
+  options?: { defaultToJson?: boolean },
+): string {
   const safePath = typeof path === "string" ? path : "";
   const extension = extractFileExtension(safePath);
   if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
@@ -121,6 +124,10 @@ function buildDuckDbQuery(path: string | undefined): string {
   } else if (extensionContainsParts(extension, [".parquet"])) {
     return `select * from read_parquet('${safePath}')`;
   } else if (extensionContainsParts(extension, [".json", ".ndjson"])) {
+    return `select * from read_json('${safePath}', auto_detect=true, format='auto')`;
+  }
+
+  if (options?.defaultToJson) {
     return `select * from read_json('${safePath}', auto_detect=true, format='auto')`;
   }
 
@@ -223,15 +230,6 @@ export function maybeRewriteToDuckDb(
         }
       }
     // falls through to rewrite as DuckDB
-    case "https":
-      // HTTP sources are typically public; avoid surfacing secret wiring unless
-      // the user is explicitly targeting a configured connector instance.
-      if (connectorInstanceName && secretConnectorName) {
-        if (!formValues.create_secrets_from_connectors) {
-          formValues.create_secrets_from_connectors = secretConnectorName;
-        }
-      }
-    // falls through to rewrite as DuckDB
     case "local_file":
       connectorCopy.name = "duckdb";
 
@@ -239,6 +237,25 @@ export function maybeRewriteToDuckDb(
       delete formValues.path;
 
       break;
+    case "https": {
+      // HTTP sources are typically public; avoid surfacing secret wiring unless
+      // the user is explicitly targeting a configured connector instance.
+      if (connectorInstanceName && secretConnectorName) {
+        if (!formValues.create_secrets_from_connectors) {
+          formValues.create_secrets_from_connectors = secretConnectorName;
+        }
+      }
+
+      connectorCopy.name = "duckdb";
+      // Default to read_json for HTTPS URLs without a recognized file extension,
+      // since most HTTP endpoints return JSON responses.
+      formValues.sql = buildDuckDbQuery(formValues.path as string, {
+        defaultToJson: true,
+      });
+      delete formValues.path;
+
+      break;
+    }
     case "sqlite":
       connectorCopy.name = "duckdb";
 

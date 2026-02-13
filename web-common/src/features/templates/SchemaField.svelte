@@ -4,7 +4,9 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
+  import KeyValueInput from "@rilldata/web-common/components/forms/KeyValueInput.svelte";
   import { normalizeErrors } from "./error-utils";
+  import { getFileAccept } from "./file-encoding";
   import type { JSONSchemaField } from "./schemas/types";
 
   export let id: string;
@@ -12,7 +14,10 @@
   export let optional: boolean;
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
-  export let handleFileUpload: (file: File) => Promise<string>;
+  export let handleFileUpload: (
+    file: File,
+    fieldKey: string,
+  ) => Promise<string>;
   export let value: any;
   export let checked: boolean | undefined;
   export let options:
@@ -34,8 +39,8 @@
     hint={prop.description ?? prop["x-hint"]}
     {optional}
     bind:value
-    uploadFile={handleFileUpload}
-    accept={prop["x-accept"]}
+    uploadFile={(file) => handleFileUpload(file, id)}
+    accept={getFileAccept(prop)}
   />
 {:else if prop.type === "boolean"}
   <Checkbox
@@ -44,6 +49,15 @@
     label={prop.title ?? id}
     hint={prop.description ?? prop["x-hint"]}
     {optional}
+  />
+{:else if prop["x-display"] === "key-value"}
+  <KeyValueInput
+    {id}
+    label={prop.title ?? id}
+    hint={prop.description ?? prop["x-hint"]}
+    {optional}
+    bind:value
+    keyPlaceholder={prop["x-placeholder"]}
   />
 {:else if options?.length}
   <Radio bind:value {options} {name} />
