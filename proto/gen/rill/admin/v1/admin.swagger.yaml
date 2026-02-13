@@ -455,7 +455,7 @@ paths:
           type: string
       x-visibility: public
     patch:
-      summary: UpdateOrganization deletes an organizations
+      summary: UpdateOrganization updates an organization
       operationId: AdminService_UpdateOrganization
       responses:
         "200":
@@ -936,7 +936,7 @@ paths:
           type: string
   /v1/orgs/{org}/projects:
     get:
-      summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
+      summary: ListProjectsForOrganization lists all the projects currently available for a given organization.
       operationId: AdminService_ListProjectsForOrganization
       responses:
         "200":
@@ -1094,7 +1094,7 @@ paths:
           type: boolean
       x-visibility: public
     delete:
-      summary: DeleteProject deletes an project
+      summary: DeleteProject deletes a project
       operationId: AdminService_DeleteProject
       responses:
         "200":
@@ -2277,7 +2277,7 @@ paths:
                 description: list of resources to grant access to.
   /v1/orgs/{org}/projects/{project}/usergroups:
     get:
-      summary: ListProjectMemberUsergroups lists the project's user groups
+      summary: ListProjectMemberUsergroups lists the user groups assigned to a project
       operationId: AdminService_ListProjectMemberUsergroups
       responses:
         "200":
@@ -2345,7 +2345,7 @@ paths:
           type: string
       x-visibility: public
     post:
-      summary: AddProjectMemberUsergroupRole adds the role for the user group
+      summary: AddProjectMemberUsergroup adds a user group to the project with a role
       operationId: AdminService_AddProjectMemberUsergroup
       responses:
         "200":
@@ -2854,7 +2854,7 @@ paths:
             type: object
   /v1/orgs/{org}/usergroups:
     get:
-      summary: ListOrganizationMemberUsergroups lists the org's user groups
+      summary: ListOrganizationMemberUsergroups lists the organization's user groups
       operationId: AdminService_ListOrganizationMemberUsergroups
       responses:
         "200":
@@ -2949,7 +2949,7 @@ paths:
           type: string
   /v1/orgs/{org}/usergroups/{usergroup}:
     get:
-      summary: GetUsergroups returns the user group details
+      summary: GetUsergroup returns the user group details
       operationId: AdminService_GetUsergroup
       responses:
         "200":
@@ -3001,14 +3001,14 @@ paths:
           required: true
           type: string
       x-visibility: public
-    post:
-      summary: RenameUsergroup renames the user group
-      operationId: AdminService_RenameUsergroup
+    patch:
+      summary: UpdateUsergroup updates a user group's name and/or description
+      operationId: AdminService_UpdateUsergroup
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RenameUsergroupResponse'
+            $ref: '#/definitions/v1UpdateUsergroupResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3028,35 +3028,8 @@ paths:
           schema:
             type: object
             properties:
-              name:
+              newName:
                 type: string
-    put:
-      summary: EditUsergroup renames the user group
-      operationId: AdminService_EditUsergroup
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1EditUsergroupResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: org
-          in: path
-          required: true
-          type: string
-        - name: usergroup
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
               description:
                 type: string
       x-visibility: public
@@ -4968,8 +4941,6 @@ definitions:
     type: object
   v1EditReportResponse:
     type: object
-  v1EditUsergroupResponse:
-    type: object
   v1ExportFormat:
     type: string
     enum:
@@ -6172,8 +6143,6 @@ definitions:
     type: object
   v1RemoveWhitelistedDomainResponse:
     type: object
-  v1RenameUsergroupResponse:
-    type: object
   v1RenewBillingSubscriptionResponse:
     type: object
     properties:
@@ -6651,6 +6620,11 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1UpdateUsergroupResponse:
+    type: object
+    properties:
+      usergroup:
+        $ref: '#/definitions/v1Usergroup'
   v1User:
     type: object
     properties:

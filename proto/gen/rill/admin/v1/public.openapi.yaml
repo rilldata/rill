@@ -542,8 +542,6 @@ components:
             type: object
         v1EditReportResponse:
             type: object
-        v1EditUsergroupResponse:
-            type: object
         v1ExportFormat:
             default: EXPORT_FORMAT_UNSPECIFIED
             enum:
@@ -1709,8 +1707,6 @@ components:
             type: object
         v1RemoveWhitelistedDomainResponse:
             type: object
-        v1RenameUsergroupResponse:
-            type: object
         v1RenewBillingSubscriptionResponse:
             properties:
                 organization:
@@ -2184,6 +2180,11 @@ components:
                 preferences:
                     $ref: '#/components/schemas/v1UserPreferences'
             type: object
+        v1UpdateUsergroupResponse:
+            properties:
+                usergroup:
+                    $ref: '#/components/schemas/v1Usergroup'
+            type: object
         v1User:
             properties:
                 createdOn:
@@ -2477,7 +2478,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: UpdateOrganization deletes an organizations
+            summary: UpdateOrganization updates an organization
             x-visibility: public
     /v1/orgs/{org}/billing/issues: {}
     /v1/orgs/{org}/billing/payments/portal-url: {}
@@ -2669,7 +2670,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
+            summary: ListProjectsForOrganization lists all the projects currently available for a given organization.
             x-visibility: public
         post:
             operationId: AdminService_CreateProject
@@ -2763,7 +2764,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: DeleteProject deletes an project
+            summary: DeleteProject deletes a project
             x-visibility: public
         get:
             operationId: AdminService_GetProject
@@ -3191,7 +3192,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: ListProjectMemberUsergroups lists the project's user groups
+            summary: ListProjectMemberUsergroups lists the user groups assigned to a project
             x-visibility: public
     /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles:
         delete:
@@ -3274,7 +3275,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: AddProjectMemberUsergroupRole adds the role for the user group
+            summary: AddProjectMemberUsergroup adds a user group to the project with a role
             x-visibility: public
         put:
             operationId: AdminService_SetProjectMemberUsergroupRole
@@ -3418,7 +3419,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: ListOrganizationMemberUsergroups lists the org's user groups
+            summary: ListOrganizationMemberUsergroups lists the organization's user groups
             x-visibility: public
         post:
             operationId: AdminService_CreateUsergroup
@@ -3518,10 +3519,10 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: GetUsergroups returns the user group details
+            summary: GetUsergroup returns the user group details
             x-visibility: public
-        put:
-            operationId: AdminService_EditUsergroup
+        patch:
+            operationId: AdminService_UpdateUsergroup
             parameters:
                 - in: path
                   name: org
@@ -3540,6 +3541,8 @@ paths:
                             properties:
                                 description:
                                     type: string
+                                newName:
+                                    type: string
                             type: object
                 required: true
                 x-originalParamName: body
@@ -3548,7 +3551,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1EditUsergroupResponse'
+                                $ref: '#/components/schemas/v1UpdateUsergroupResponse'
                     description: A successful response.
                 default:
                     content:
@@ -3556,7 +3559,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: EditUsergroup renames the user group
+            summary: UpdateUsergroup updates a user group's name and/or description
             x-visibility: public
     /v1/orgs/{org}/usergroups/{usergroup}/members:
         get:

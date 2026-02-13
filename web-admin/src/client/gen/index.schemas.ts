@@ -430,10 +430,6 @@ export interface V1EditReportResponse {
   [key: string]: unknown;
 }
 
-export interface V1EditUsergroupResponse {
-  [key: string]: unknown;
-}
-
 export type V1ExportFormat =
   (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
 
@@ -1204,10 +1200,6 @@ export interface V1RemoveWhitelistedDomainResponse {
   [key: string]: unknown;
 }
 
-export interface V1RenameUsergroupResponse {
-  [key: string]: unknown;
-}
-
 export interface V1RenewBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
@@ -1560,6 +1552,10 @@ export interface V1UpdateUserPreferencesResponse {
   preferences?: V1UserPreferences;
 }
 
+export interface V1UpdateUsergroupResponse {
+  usergroup?: V1Usergroup;
+}
+
 export interface V1User {
   id?: string;
   email?: string;
@@ -1659,10 +1655,6 @@ export type AdminServiceSetProjectMemberUserRoleBodyBody = {
 
 export type AdminServiceCreateReportBodyBody = {
   options?: V1ReportOptions;
-};
-
-export type AdminServiceCreateUsergroupBodyBody = {
-  name?: string;
 };
 
 export type AdminServiceGetDeploymentBodyAttributes = {
@@ -2079,6 +2071,10 @@ export type AdminServiceListOrganizationMemberUsergroupsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceCreateUsergroupBody = {
+  name?: string;
+};
+
 export type AdminServiceListUsergroupsForOrganizationAndUserParams = {
   userId?: string;
   pageSize?: number;
@@ -2090,7 +2086,8 @@ export type AdminServiceGetUsergroupParams = {
   pageToken?: string;
 };
 
-export type AdminServiceEditUsergroupBody = {
+export type AdminServiceUpdateUsergroupBody = {
+  newName?: string;
   description?: string;
 };
 

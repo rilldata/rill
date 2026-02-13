@@ -90,7 +90,7 @@ service AdminService {
     };
   }
 
-  // UpdateOrganization deletes an organizations
+  // UpdateOrganization updates an organization
   rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
     option (google.api.http) = {
       patch: "/v1/orgs/{org}",
@@ -106,7 +106,7 @@ service AdminService {
     };
   }
 
-  // ListProjectsForOrganization lists all the projects currently available for given organizations.
+  // ListProjectsForOrganization lists all the projects currently available for a given organization.
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -175,7 +175,7 @@ service AdminService {
     };
   }
 
-  // DeleteProject deletes an project
+  // DeleteProject deletes a project
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -529,7 +529,7 @@ service AdminService {
     };
   }
 
-  // GetUsergroups returns the user group details
+  // GetUsergroup returns the user group details
   rpc GetUsergroup(GetUsergroupRequest) returns (GetUsergroupResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/usergroups/{usergroup}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -542,18 +542,10 @@ service AdminService {
     };
   }
 
-  // RenameUsergroup renames the user group
-  rpc RenameUsergroup(RenameUsergroupRequest) returns (RenameUsergroupResponse) {
+  // UpdateUsergroup updates a user group's name and/or description
+  rpc UpdateUsergroup(UpdateUsergroupRequest) returns (UpdateUsergroupResponse) {
     option (google.api.http) = {
-      post: "/v1/orgs/{org}/usergroups/{usergroup}",
-      body: "*"
-    };
-  }
-
-  // EditUsergroup renames the user group
-  rpc EditUsergroup(EditUsergroupRequest) returns (EditUsergroupResponse) {
-    option (google.api.http) = {
-      put: "/v1/orgs/{org}/usergroups/{usergroup}",
+      patch: "/v1/orgs/{org}/usergroups/{usergroup}",
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -566,7 +558,7 @@ service AdminService {
     };
   }
 
-  // ListOrganizationMemberUsergroups lists the org's user groups
+  // ListOrganizationMemberUsergroups lists the organization's user groups
   rpc ListOrganizationMemberUsergroups(ListOrganizationMemberUsergroupsRequest) returns (ListOrganizationMemberUsergroupsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/usergroups"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -579,7 +571,7 @@ service AdminService {
     };
   }
 
-  // ListProjectMemberUsergroups lists the project's user groups
+  // ListProjectMemberUsergroups lists the user groups assigned to a project
   rpc ListProjectMemberUsergroups(ListProjectMemberUsergroupsRequest) returns (ListProjectMemberUsergroupsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/usergroups"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -626,7 +618,7 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/orgs/{org}/usergroups/{usergroup}/role"};
   }
 
-  // AddProjectMemberUsergroupRole adds the role for the user group
+  // AddProjectMemberUsergroup adds a user group to the project with a role
   rpc AddProjectMemberUsergroup(AddProjectMemberUsergroupRequest) returns (AddProjectMemberUsergroupResponse) {
     option (google.api.http) = {
       post: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles",
@@ -2226,21 +2218,16 @@ message GetUsergroupResponse {
   string next_page_token = 2;
 }
 
-message RenameUsergroupRequest {
+message UpdateUsergroupRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string usergroup = 2 [(validate.rules).string.min_len = 1];
-  string name = 3 [(validate.rules).string.min_len = 1];
+  optional string new_name = 3;
+  optional string description = 4;
 }
 
-message RenameUsergroupResponse {}
-
-message EditUsergroupRequest {
-  string org = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-  string description = 3;
+message UpdateUsergroupResponse {
+  Usergroup usergroup = 1;
 }
-
-message EditUsergroupResponse {}
 
 message ListOrganizationMemberUsergroupsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
