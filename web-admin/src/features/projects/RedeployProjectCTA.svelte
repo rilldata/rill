@@ -9,7 +9,10 @@
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import CLICommandDisplay from "@rilldata/web-common/components/commands/CLICommandDisplay.svelte";
+  import LoadingCircleOutline from "@rilldata/web-common/components/icons/LoadingCircleOutline.svelte";
+  import MoonCircleOutline from "@rilldata/web-common/components/icons/MoonCircleOutline.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
@@ -48,28 +51,40 @@
   <CtaContentContainer>
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
-        <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
-        <Button
-          type="primary"
-          wide
-          loading={$redeployMutation.isPending}
-          loadingCopy="Waking project..."
-          onClick={handleWakeProject}
-        >
-          Wake project
-        </Button>
-        <CtaMessage>
-          You can also run the following command in the Rill CLI:
-        </CtaMessage>
-        <CLICommandDisplay
-          command="rill project hibernate {project} --redeploy"
-        />
+        {#if $redeployMutation.isPending}
+          <LoadingCircleOutline size="104px" className="text-gray-300" />
+          <CtaHeader variant="bold">Waking up your project...</CtaHeader>
+          <CtaNeedHelp />
+        {:else}
+          <MoonCircleOutline
+            size="104px"
+            className="text-gray-300"
+            gradientStopColor="slate-200"
+          />
+          <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
+          <Button type="primary" wide onClick={handleWakeProject}>
+            Wake project
+          </Button>
+          <CtaMessage>
+            You can also run the following command in the Rill CLI:
+          </CtaMessage>
+          <CLICommandDisplay
+            command="rill project hibernate {project} --redeploy"
+          />
+          <CtaNeedHelp />
+        {/if}
       </svelte:fragment>
       <svelte:fragment slot="read-project">
+        <MoonCircleOutline
+          size="104px"
+          className="text-gray-300"
+          gradientStopColor="slate-200"
+        />
         <CtaHeader variant="bold">This project is hibernating</CtaHeader>
         <CtaMessage>
           Contact the project's administrator to redeploy the project.
         </CtaMessage>
+        <CtaNeedHelp />
       </svelte:fragment>
     </ProjectAccessControls>
   </CtaContentContainer>
