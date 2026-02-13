@@ -104,7 +104,7 @@
 
       <WorkspaceEditorContainer
         slot="body"
-        error={mainError}
+        error={mainError?.message}
         showError={!!$remoteContent && selectedView === "code"}
       >
         {#if selectedView === "code"}

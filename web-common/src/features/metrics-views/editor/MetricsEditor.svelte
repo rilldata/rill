@@ -38,7 +38,7 @@
   $: mainError = errors?.at(0);
 </script>
 
-<WorkspaceEditorContainer error={mainError}>
+<WorkspaceEditorContainer error={mainError?.message}>
   <Editor
     bind:autoSave
     bind:editor

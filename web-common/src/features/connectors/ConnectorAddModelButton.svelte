@@ -14,9 +14,9 @@
   $: connectorName = resource?.meta?.name?.name;
   $: driverName = resource?.connector?.spec?.driver;
   $: hasReconcileError = !!resource?.meta?.reconcileError;
-  $: isDataSource = schemaName ? SOURCES.includes(schemaName) : false;
   // Map driver name to schema name for connector lookup
   $: schemaName = driverName ? getSchemaNameFromDriver(driverName) : null;
+  $: isDataSource = schemaName ? SOURCES.includes(schemaName) : false;
 
   /**
    * Opens the Add Data modal pre-configured for this connector.

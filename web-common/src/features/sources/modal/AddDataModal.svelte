@@ -103,6 +103,10 @@
       pendingConnectorName = null;
       // Ensure step stays at 2 for Import Data flow
       step = 2;
+    } else {
+      // Connector not found (e.g., deleted); clear pending state and reset
+      pendingConnectorName = null;
+      step = 0;
     }
   }
 

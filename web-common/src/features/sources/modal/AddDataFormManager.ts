@@ -148,16 +148,15 @@ export class AddDataFormManager {
     // Only allow skipping when on connector step
     if (stepState.step !== "connector") return;
 
+    setConnectorConfig({});
+    setConnectorInstanceName(null);
+
     // For multi-step connectors, skip to source step
     if (this.isMultiStepConnector) {
-      setConnectorConfig({});
-      setConnectorInstanceName(null);
       setStep("source");
     }
     // For connectors with explorer step (warehouses/databases), skip to explorer step
     else if (this.hasExplorerStep) {
-      setConnectorConfig({});
-      setConnectorInstanceName(null);
       setStep("explorer");
     }
   }
