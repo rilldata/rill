@@ -125,7 +125,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		}
 		defer release()
 
-		err = repo.Pull(ctx, &drivers.PullOptions{ForceHandshake: true})
+		err = repo.Pull(ctx, &drivers.PullOptions{ForceHandshake: true, UserTriggered: true})
 		if err != nil {
 			r.rt.Logger.Error("ReloadConfig: failed to pull repo", zap.String("instance_id", inst.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
