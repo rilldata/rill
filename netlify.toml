@@ -4,14 +4,15 @@
   [headers.values]
     Content-Security-Policy = """\
       default-src 'self'; \
-      script-src 'self' https: 'unsafe-inline' 'unsafe-eval' *.usepylon.com *.posthog.com *.pusher.com; \
-      style-src https: 'unsafe-inline'; \
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.posthog.com https://*.pusher.com https://us.i.posthog.com; \
+      style-src 'self' https: 'unsafe-inline'; \
       img-src https: data: blob:; \
       frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:; \
-      frame-ancestors *; \
+      frame-ancestors 'self'; \
+      form-action 'self'; \
       object-src 'none'; \
-      connect-src https: *.usepylon.com *.posthog.com wss://*.pusher.com; \
-      font-src 'self' https://fonts.gstatic.com *.usepylon.com;
+      connect-src 'self' https: wss://*.pusher.com; \
+      font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
     Referrer-Policy = "no-referrer"
@@ -19,5 +20,5 @@
     Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
-    X-Frame-Options = "allow-from *"
+    X-Frame-Options = "SAMEORIGIN"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
