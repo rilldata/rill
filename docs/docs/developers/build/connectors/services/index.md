@@ -11,6 +11,7 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
 ## AI Integrations
 
 ### Claude
+### Gemini
 ### OpenAI
 
 
@@ -25,14 +26,6 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
     referenceLink="claude"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="OpenAI" className="sheets-icon" />}
-    header="AI"
-    content="Create and define an OpenAI Connector with your own API key."
-    link="/developers/build/connectors/services/openai"
-    linkLabel="Learn more"
-    referenceLink="openai"
-  />
-  <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Gemini.svg" alt="Gemini" className="sheets-icon" />}
     header="Gemini"
     content="Create and define a Gemini Connector with your own API key."
@@ -40,6 +33,15 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
     linkLabel="Learn more"
     referenceLink="gemini"
   />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="OpenAI" className="sheets-icon" />}
+    header="AI"
+    content="Create and define an OpenAI Connector with your own API key."
+    link="/developers/build/connectors/services/openai"
+    linkLabel="Learn more"
+    referenceLink="openai"
+  />
+
 </div>
 
 
