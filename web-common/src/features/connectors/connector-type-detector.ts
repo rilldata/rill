@@ -3,7 +3,7 @@
  *
  * Provides centralized logic for detecting cloud storage connector types
  * from file paths, URLs, and SQL content. Used by the resource graph and
- * inspector components.
+ * resource graph components.
  */
 
 /**

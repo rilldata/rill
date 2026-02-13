@@ -25,7 +25,7 @@ export interface MeasureInfo {
 }
 
 /**
- * Rich metadata extracted from resources for inspector display.
+ * Rich metadata extracted from resources for Describe modal display.
  * All fields are optional since not all resource types have all metadata.
  */
 export interface ResourceMetadata {

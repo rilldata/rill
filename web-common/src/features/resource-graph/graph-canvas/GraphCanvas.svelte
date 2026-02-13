@@ -251,7 +251,7 @@
     const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map(
       (node) => ({
         ...node,
-        data: { ...node.data, isRoot: rootSet.has(node.id), isOverlay },
+        data: { ...node.data, isRoot: rootSet.has(node.id) },
       }),
     );
     nodesStore.set(nodesWithRoots);

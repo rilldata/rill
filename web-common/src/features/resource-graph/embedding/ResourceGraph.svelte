@@ -520,9 +520,9 @@
         <slot
           name="summary"
           connectors={connectorsCount}
-          {sourcesCount}
-          {metricsCount}
-          {modelsCount}
+          sources={sourcesCount}
+          metrics={metricsCount}
+          models={modelsCount}
           dashboards={dashboardsCount}
         >
           <ResourceKindSelector

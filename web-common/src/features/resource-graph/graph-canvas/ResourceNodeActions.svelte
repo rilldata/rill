@@ -146,7 +146,6 @@
   function openFile() {
     if (!filePath) return;
     isOpen = false;
-    goto(`/files${filePath}`);
     try {
       const prefs = JSON.parse(localStorage.getItem(filePath) || "{}");
       localStorage.setItem(
@@ -156,6 +155,7 @@
     } catch (error) {
       console.warn(`Failed to save file view preference:`, error);
     }
+    goto(`/files${filePath}`);
   }
 
   function handleViewLineage() {

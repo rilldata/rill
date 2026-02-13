@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   export let connectors = 0;
   export let sources = 0;
@@ -18,31 +17,11 @@
   $: total = connectors + sources + models + metrics + dashboards;
 
   const kindConfig = [
-    {
-      token: "connectors" as const,
-      label: "Connectors",
-      kind: ResourceKind.Connector,
-    },
-    {
-      token: "sources" as const,
-      label: "Sources",
-      kind: ResourceKind.Source,
-    },
-    {
-      token: "models" as const,
-      label: "Models",
-      kind: ResourceKind.Model,
-    },
-    {
-      token: "metrics" as const,
-      label: "Metrics",
-      kind: ResourceKind.MetricsView,
-    },
-    {
-      token: "dashboards" as const,
-      label: "Dashboards",
-      kind: ResourceKind.Explore,
-    },
+    { token: "connectors" as const, label: "Connectors" },
+    { token: "sources" as const, label: "Sources" },
+    { token: "models" as const, label: "Models" },
+    { token: "metrics" as const, label: "Metrics" },
+    { token: "dashboards" as const, label: "Dashboards" },
   ];
 
   function getCount(
