@@ -1,0 +1,114 @@
+---
+title: MySQL
+description: Connect to data in MySQL
+sidebar_label: MySQL
+sidebar_position: 40
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
+
+## Overview
+
+[MySQL](https://dev.mysql.com/doc/refman/8.0/en/introduction.html) is an open-source relational database management system (RDBMS) known for its reliability, performance, and ease of use. It is widely used for a variety of applications, from small to large enterprise projects, supporting structured data storage, retrieval, and management with SQL queries. MySQL offers a comprehensive ecosystem with support for advanced features such as replication, transactions, and full-text indexing, making it a versatile choice for integrating with BI tools. You can connect to and read from MySQL databases directly.
+
+## Authentication Methods
+
+To connect to MySQL, you need to provide database connection credentials. Rill supports connecting via individual parameters (host, port, user, password, database).
+
+<TwoStepFlowIntro
+  connector="MySQL"
+  step1Description="Set up your MySQL connector with connection credentials (host, port, user, password, database)"
+  step2Description="Define which table or query to execute"
+/>
+
+### Connection String Format
+
+When connecting to MySQL, you can also specify an appropriate Data Source Name (DSN) using the following syntax:
+
+```bash
+<scheme>://<user>:<password>@<host>:<port>/<database>
+```
+
+- **scheme**: The transport protocol to use. Use `mysql` for classic MySQL protocol connections and `mysqlx` for X Protocol connections.
+- **user** and **password**: Should correspond to the user credentials that Rill will use to connect to MySQL.
+- **host** and **port**: Should correspond to the IP address/hostname and port (default 3306) of your MySQL database.
+- **database**: Should correspond to the database in MySQL that you are using.
+
+For more details, see the [MySQL documentation on DSN formats](https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri).
+
+## Method 1: Connection Credentials
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **MySQL** as the data source type
+3. In the authentication step:
+   - Enter your MySQL host and port
+   - Enter your database name
+   - Enter your username and password
+   - Configure SSL mode if needed
+4. In the data model configuration step, enter your SQL query
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/mysql.yaml`:
+
+```yaml
+type: connector
+driver: mysql
+
+host: "localhost"
+port: 3306
+database: "mydatabase"
+user: "myusername"
+password: "{{ .env.connector.mysql.password }}"
+ssl_mode: "DISABLED"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+connector.mysql.password=your-secure-password
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Create Your First Model
+
+Once your connector is configured, create a model to define what data to pull.
+
+Create `models/mysql_data.yaml`:
+
+```yaml
+type: model
+connector: mysql
+dev:
+  sql: SELECT * FROM my_table limit 10000
+
+sql: SELECT * FROM my_table
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="MySQL"
+  connectorId="mysql"
+  credentialDescription="the MySQL connection credentials"
+/>

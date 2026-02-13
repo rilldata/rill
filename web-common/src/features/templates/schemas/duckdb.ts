@@ -16,8 +16,13 @@ export const duckdbSchema: MultiStepFormSchema = {
       title: "Connection type",
       enum: ["rill-managed", "self-hosted"],
       default: "rill-managed",
-      "x-display": "radio",
-      "x-enum-labels": ["Rill-managed DuckDB", "Self-hosted DuckDB"],
+      "x-display": "select",
+      "x-select-style": "rich",
+      "x-enum-labels": ["Rill Managed", "Local File"],
+      "x-enum-descriptions": [
+        "Rill manages your DuckDB infrastructure",
+        "Connect to your own DuckDB database file",
+      ],
       "x-ui-only": true,
       "x-grouped-fields": {
         "rill-managed": ["managed"],
@@ -32,6 +37,7 @@ export const duckdbSchema: MultiStepFormSchema = {
         "This option uses DuckDB as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your DuckDB instance.",
       default: false,
       "x-informational": true,
+      "x-ui-only": true,
       "x-visible-if": {
         connector_type: "rill-managed",
       },

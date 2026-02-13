@@ -98,7 +98,6 @@ export const MODEL_CONNECTORS = ["public", "local_file"];
 
 export const OLAP_ENGINES = [
   "clickhouse",
-  "clickhousecloud",
   "motherduck",
   "duckdb",
   "druid",
