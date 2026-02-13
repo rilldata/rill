@@ -1,19 +1,7 @@
-<script lang="ts" context="module">
-  export type ButtonType =
-    | "primary"
-    | "secondary"
-    | "tertiary"
-    | "neutral"
-    | "destructive"
-    | "ghost"
-    | "link"
-    | "text"
-    | "toolbar";
-</script>
-
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
+  import type { ButtonType } from "./types";
 
   export let type: ButtonType = "tertiary";
   export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
