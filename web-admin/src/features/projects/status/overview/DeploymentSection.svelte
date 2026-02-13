@@ -44,7 +44,7 @@
   $: runtimeVersionQuery = useRuntimeVersion();
   $: version = $runtimeVersionQuery.data?.version ?? "";
 
-  // Connectors
+  // Connectors — sensitive: true is needed to read projectConnectors (OLAP/AI connector types)
   $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
   });
@@ -60,7 +60,12 @@
 <section class="section">
   <div class="section-header">
     <h3 class="section-title">Deployment</h3>
-    <ProjectClone {organization} {project} />
+    <ProjectClone
+      {organization}
+      {project}
+      gitRemote={projectData?.gitRemote}
+      managedGitId={projectData?.managedGitId}
+    />
   </div>
 
   <div class="info-grid">

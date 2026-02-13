@@ -74,13 +74,16 @@ export function getStatusLabel(status: V1DeploymentStatus): string {
  */
 export function formatConnectorName(connector: string | undefined): string {
   if (!connector) return "—";
-  // Capitalize first letter and clean up common names
-  if (connector === "duckdb") return "DuckDB";
-  if (connector === "clickhouse") return "ClickHouse";
-  if (connector === "druid") return "Druid";
-  if (connector === "pinot") return "Pinot";
-  if (connector === "openai") return "OpenAI";
-  if (connector === "claude") return "Claude";
+  const lower = connector.toLowerCase();
+  if (lower === "duckdb") return "DuckDB";
+  if (lower === "clickhouse") return "ClickHouse";
+  if (lower === "mysql") return "MySQL";
+  if (lower === "bigquery") return "BigQuery";
+  if (lower === "openai") return "OpenAI";
+  if (lower === "druid") return "Druid";
+  if (lower === "pinot") return "Pinot";
+  if (lower === "claude") return "Claude";
+  if (lower === "gemini") return "Gemini";
   return connector.charAt(0).toUpperCase() + connector.slice(1);
 }
 

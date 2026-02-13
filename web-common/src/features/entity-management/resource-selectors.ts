@@ -34,6 +34,7 @@ export enum ResourceKind {
   Canvas = "rill.runtime.v1.Canvas",
   API = "rill.runtime.v1.API",
   RefreshTrigger = "rill.runtime.v1.RefreshTrigger",
+  Migration = "rill.runtime.v1.Migration",
 }
 
 export function displayResourceKind(kind: ResourceKind | undefined) {

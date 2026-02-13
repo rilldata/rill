@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
@@ -11,10 +10,9 @@
 
   export let organization: string;
   export let project: string;
+  export let gitRemote: string | undefined = undefined;
+  export let managedGitId: string | undefined = undefined;
 
-  $: proj = createAdminServiceGetProject(organization, project);
-  $: gitRemote = $proj.data?.project?.gitRemote;
-  $: managedGitId = $proj.data?.project?.managedGitId;
   $: githubUrl = gitRemote ? getGitUrlFromRemote(gitRemote) : "";
   $: isGithubConnected = !!gitRemote && !managedGitId && !!githubUrl;
 
@@ -34,8 +32,7 @@
   }
 </script>
 
-{#if $proj.data}
-  <Popover.Root bind:open>
+<Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
       <Button type="secondary" builders={[builder]}>Download Project</Button>
     </Popover.Trigger>
@@ -47,6 +44,7 @@
           <a
             href="https://docs.rilldata.com/developers/guides/clone-a-project"
             target="_blank"
+            rel="noopener noreferrer"
             class="text-primary-600"
           >
             Learn more ->
@@ -109,7 +107,6 @@
       </div>
     </Popover.Content>
   </Popover.Root>
-{/if}
 
 <style lang="postcss">
   .command-box {

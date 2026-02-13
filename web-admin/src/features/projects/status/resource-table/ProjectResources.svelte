@@ -11,7 +11,6 @@
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  // import Switch from "@rilldata/web-common/components/forms/Switch.svelte"; // Re-import when DAG viewer is implemented
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -36,7 +35,6 @@
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
-  let showDagViewer = false;
   let searchText = "";
   let selectedTypes: string[] = kindParam ? [kindParam] : [];
   let selectedStatuses: string[] = errorParam ? ["error"] : [];
@@ -167,19 +165,8 @@
 <section class="flex flex-col gap-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
-    <!-- <div class="flex items-center gap-2">
-      <span class="text-sm text-fg-secondary">DAG Viewer</span>
-      <Switch bind:checked={showDagViewer} small />
-    </div> -->
   </div>
 
-  {#if showDagViewer}
-    <div
-      class="flex items-center justify-center h-64 border border-border rounded-lg text-fg-secondary text-sm"
-    >
-      DAG Viewer coming soon
-    </div>
-  {:else}
     <!-- Filter and Search Controls -->
     <div class="flex items-center gap-x-3">
       <DropdownMenu.Root bind:open={filterDropdownOpen}>
@@ -302,7 +289,7 @@
         <p class="text-sm text-fg-secondary">No parse errors</p>
       {:else}
         <div class="parse-errors-list">
-          {#each parseErrors as error, i (i)}
+          {#each parseErrors as error ((error.filePath ?? "") + ":" + error.message)}
             <div class="parse-error-item">
               {#if error.filePath}
                 <span class="parse-error-file">{error.filePath}</span>
@@ -313,7 +300,6 @@
         </div>
       {/if}
     </div>
-  {/if}
 </section>
 
 <RefreshAllSourcesAndModelsConfirmDialog
