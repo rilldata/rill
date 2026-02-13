@@ -153,6 +153,9 @@ describe("replaceAiConnectorInYAML", () => {
     expect(updatedBlob).toBe(
       `title: test project\nai_connector: gemini\nolap_connector: clickhouse\n`,
     );
+  });
+});
+
 describe("getGenericEnvVarName", () => {
   describe("Schema-driven x-env-var-name (production behavior)", () => {
     it("should use x-env-var-name from schema when provided", () => {

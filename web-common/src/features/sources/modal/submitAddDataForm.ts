@@ -146,31 +146,6 @@ async function setAiConnectorInRillYAML(
   });
 }
 
-// Check for an existing `.env` file
-// Store the original `.env` blob so we can restore it in case of errors
-async function getOriginalEnvBlob(
-  queryClient: QueryClient,
-  instanceId: string,
-): Promise<string | undefined> {
-  try {
-    const envFile = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
-    });
-    return envFile.blob;
-  } catch (error) {
-    const fileNotFound =
-      error?.response?.data?.message?.includes("no such file");
-    if (fileNotFound) {
-      // Do nothing. We'll create the `.env` file below.
-      return undefined;
-    } else {
-      // We have a problem. Throw the error.
-      throw error;
-    }
-  }
-}
-
 async function saveConnectorAnyway(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
