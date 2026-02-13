@@ -49,38 +49,26 @@
   }
 </script>
 
-<div
-  class="section"
-  class:section-error={totalErrors > 0}
-  class:section-clickable={totalErrors > 0}
-  role={totalErrors > 0 ? "button" : undefined}
-  tabindex={totalErrors > 0 ? 0 : undefined}
-  on:click={totalErrors > 0 ? handleSectionClick : undefined}
-  on:keydown={totalErrors > 0
-    ? (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleSectionClick(e);
-        }
+{#if totalErrors > 0}
+  <div
+    class="section section-error section-clickable"
+    role="button"
+    tabindex="0"
+    on:click={handleSectionClick}
+    on:keydown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handleSectionClick(e);
       }
-    : undefined}
->
-  <div class="section-header">
-    <h3 class="section-title flex items-center gap-2">
-      Errors
-      {#if totalErrors > 0}
+    }}
+  >
+    <div class="section-header">
+      <h3 class="section-title flex items-center gap-2">
+        Errors
         <span class="error-badge">{totalErrors}</span>
-      {/if}
-    </h3>
-  </div>
+      </h3>
+    </div>
 
-  {#if $projectParserQuery.isError || $resourcesQuery.isError}
-    <p class="text-sm text-fg-secondary">Unable to check for errors.</p>
-  {:else if $projectParserQuery.isLoading || $resourcesQuery.isLoading}
-    <p class="text-sm text-fg-secondary">Checking for errors...</p>
-  {:else if totalErrors === 0}
-    <p class="text-sm text-fg-secondary">No errors detected.</p>
-  {:else}
     <div class="error-chips">
       {#if parseErrors.length > 0}
         <a href="{basePage}/resources?status=error" class="error-chip">
@@ -103,8 +91,22 @@
         </a>
       {/each}
     </div>
-  {/if}
-</div>
+  </div>
+{:else}
+  <div class="section">
+    <div class="section-header">
+      <h3 class="section-title flex items-center gap-2">Errors</h3>
+    </div>
+
+    {#if $projectParserQuery.isError || $resourcesQuery.isError}
+      <p class="text-sm text-fg-secondary">Unable to check for errors.</p>
+    {:else if $projectParserQuery.isLoading || $resourcesQuery.isLoading}
+      <p class="text-sm text-fg-secondary">Checking for errors...</p>
+    {:else}
+      <p class="text-sm text-fg-secondary">No errors detected.</p>
+    {/if}
+  </div>
+{/if}
 
 <style lang="postcss">
   .section {
