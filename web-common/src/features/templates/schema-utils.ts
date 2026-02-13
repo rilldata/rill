@@ -259,7 +259,9 @@ export function getSchemaInitialValues(
     }
     if (
       prop.enum?.length &&
-      (prop["x-display"] === "radio" || prop["x-display"] === "tabs")
+      (prop["x-display"] === "radio" ||
+        prop["x-display"] === "tabs" ||
+        prop["x-display"] === "select")
     ) {
       initial[key] = String(prop.enum[0]);
     }

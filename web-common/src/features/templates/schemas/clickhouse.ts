@@ -25,13 +25,11 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "ClickHouse Cloud",
         "ClickHouse Playground",
         "Self Managed",
-        "Rill Managed",
       ],
       "x-enum-descriptions": [
         "Connect to your ClickHouse Cloud instance",
         "Free public instance for testing and demos",
         "Connect to your own self-hosted server",
-        "Rill manages your ClickHouse infrastructure",
       ],
       "x-ui-only": true,
       "x-grouped-fields": {
