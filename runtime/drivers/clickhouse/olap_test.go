@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/clickhouseutil"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
@@ -440,7 +441,7 @@ func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 		require.True(t, rows.Next())
 		var s string
 		require.NoError(t, rows.Scan(&s))
-		ms, ok := ParseIntervalToMillis(s)
+		ms, ok := clickhouseutil.ParseIntervalToMillis(s)
 		require.True(t, ok)
 		require.Equal(t, c.ms, ms)
 		require.NoError(t, rows.Close())
