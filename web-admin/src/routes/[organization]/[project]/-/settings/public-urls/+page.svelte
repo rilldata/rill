@@ -58,7 +58,11 @@
   });
 
   function useValidDashboardTitle(dashboard: V1Resource) {
-    return dashboard?.explore?.spec?.displayName || dashboard?.meta.name.name;
+    return (
+      dashboard?.explore?.spec?.displayName ||
+      dashboard?.canvas?.spec?.displayName ||
+      dashboard?.meta.name.name
+    );
   }
 
   // REVISIT when server-side sorting is implemented
