@@ -89,6 +89,9 @@ latest.txt
 /postgres/
 /clickhouse/
 
-# Claude resources
-/CLAUDE.md
-.claude/
+# Claude Code — personal / ephemeral (do not commit)
+.claude/CLAUDE.local.md
+.claude/settings.local.json
+.claude/**/*.local.md
+.claude/plans/
+.claude/worktrees/
