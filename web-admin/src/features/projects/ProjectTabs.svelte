@@ -6,6 +6,7 @@
   import Tab from "@rilldata/web-admin/components/nav/Tab.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1ProjectPermissions } from "../../client";
+  import { viewAsUserStore } from "../view-as-user/viewAsUserStore";
 
   export let projectPermissions: V1ProjectPermissions;
   export let organization: string;
@@ -13,6 +14,11 @@
   export let pathname: string;
 
   const { chat, reports, alerts } = featureFlags;
+
+  // When "View As" is active, hide admin-only features to simulate the impersonated user's view
+  $: isViewingAsOtherUser = !!$viewAsUserStore;
+  $: effectiveManageProject =
+    projectPermissions.manageProject && !isViewingAsOtherUser;
 
   $: tabs = [
     {
@@ -43,14 +49,14 @@
     {
       route: `/${organization}/${project}/-/status`,
       label: "Status",
-      hasPermission: projectPermissions.manageProject,
+      hasPermission: effectiveManageProject,
     },
     {
       // TODO: Change this back to `/${organization}/${project}/-/settings`
       // Once project settings are implemented
       route: `/${organization}/${project}/-/settings/environment-variables`,
       label: "Settings",
-      hasPermission: projectPermissions.manageProject,
+      hasPermission: effectiveManageProject,
     },
   ];
 

@@ -259,7 +259,8 @@
     {/if}
     <!-- NOTE: only project admin and editor can manage project members -->
     <!-- https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions -->
-    {#if onProjectPage && manageProjectMembers}
+    <!-- Hide when "View As" is active to simulate the impersonated user's view -->
+    {#if onProjectPage && manageProjectMembers && !$viewAsUserStore}
       <ShareProjectPopover
         {organization}
         {project}
