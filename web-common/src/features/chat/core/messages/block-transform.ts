@@ -15,6 +15,10 @@ import {
 } from "./thinking/thinking-block";
 import { getToolConfig, type ToolConfig } from "./tools/tool-registry";
 import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
+import {
+  type DevelopBlock,
+  createDevelopBlock,
+} from "@rilldata/web-common/features/chat/core/messages/develop/develop-block.ts";
 import type { SimpleToolCall } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 
 // =============================================================================
@@ -27,6 +31,7 @@ export type Block =
   | ChartBlock
   | FileDiffBlock
   | WorkingBlock
+  | DevelopBlock
   | SimpleToolCall;
 
 // Re-export individual block types for convenience
@@ -51,23 +56,39 @@ export function transformToBlocks(
 
   // Build result map for correlating tool calls with their results
   const resultMap = buildResultMessageMap(messages);
-
-  // Accumulator for messages going into the current thinking block
-  let thinkingMessages: V1Message[] = [];
+  const groupedMessages = new Map<string, V1Message[]>();
 
   // Helper to flush the thinking block accumulator
   function flushThinking(isComplete: boolean): void {
-    if (thinkingMessages.length > 0) {
-      blocks.push(
-        createThinkingBlock(
-          thinkingMessages,
-          resultMap,
-          `thinking-${blocks.length}`,
-          isComplete,
-        ),
-      );
-      thinkingMessages = [];
+    const thinkingMessages = groupedMessages.get("thinking");
+    if (!thinkingMessages || thinkingMessages.length === 0) {
+      return;
     }
+    groupedMessages.delete("thinking");
+
+    blocks.push(
+      createThinkingBlock(
+        thinkingMessages,
+        resultMap,
+        `thinking-${blocks.length}`,
+        isComplete,
+      ),
+    );
+  }
+
+  function flushDevelop(): void {
+    const developMessages = groupedMessages.get("develop");
+    if (!developMessages || developMessages.length === 0) {
+      return;
+    }
+    groupedMessages.delete("develop");
+
+    const block = createDevelopBlock(
+      developMessages,
+      `develop-${blocks.length}`,
+      resultMap,
+    );
+    if (block) blocks.push(block);
   }
 
   // Process each message
@@ -76,15 +97,24 @@ export function transformToBlocks(
 
     switch (routing.route) {
       case "text":
-        // Text blocks close any open thinking block
+        // Text blocks close any open blocks
         flushThinking(true);
+        flushDevelop();
         blocks.push(createTextBlock(msg));
         break;
 
-      case "thinking":
-        // Accumulate in current thinking block
-        thinkingMessages.push(msg);
+      case "group": {
+        const groups = routing.config?.groups ?? ["thinking"];
+        groups.forEach((group) => {
+          if (groupedMessages.has(group)) {
+            groupedMessages.get(group)!.push(msg);
+          } else {
+            groupedMessages.set(group, [msg]);
+          }
+        });
+
         break;
+      }
 
       case "block": {
         // Block tools render their own header, so flush thinking first
@@ -127,7 +157,7 @@ export function transformToBlocks(
  */
 type BlockRoute =
   | { route: "text" }
-  | { route: "thinking" }
+  | { route: "group"; config?: ToolConfig }
   | { route: "block"; config: ToolConfig }
   | { route: "skip" };
 
@@ -153,7 +183,7 @@ function getBlockRoute(msg: V1Message): BlockRoute {
 
   // Progress messages always go to thinking block
   if (msg.type === MessageType.PROGRESS) {
-    return { route: "thinking" };
+    return { route: "group" };
   }
 
   // Tool calls: consult the registry
@@ -165,9 +195,9 @@ function getBlockRoute(msg: V1Message): BlockRoute {
         return { route: "block", config };
       case "hidden":
         return { route: "skip" };
-      case "inline":
+      case "grouped":
       default:
-        return { route: "thinking" };
+        return { route: "group", config };
     }
   }
 

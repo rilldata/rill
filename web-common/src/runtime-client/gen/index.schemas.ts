@@ -832,6 +832,9 @@ This should only be used when the project directory contains an empty project (e
   /** Optional path to the file that the user is currently viewing/editing.
 This helps the agent understand which file the user is referring to in their request. */
   currentFilePath?: string;
+  /** Optional toggle to enable checkpoint commit before any files are changed.
+Can be used to undo the changes reverting to the commit. */
+  enableCheckpointCommits?: boolean;
 }
 
 export interface V1DirEntry {
@@ -2306,6 +2309,10 @@ export interface V1RestoreGitCommitResponse {
   newCommitSha?: string;
 }
 
+export interface V1RevertWriteToolCallsResponse {
+  [key: string]: unknown;
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2692,6 +2699,10 @@ export type RuntimeServiceListConversationsParams = {
 };
 
 export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
+
+export type RuntimeServiceRevertWriteToolCallsBody = {
+  writeToolCalls?: string[];
+};
 
 export type RuntimeServiceShareConversationBody = {
   /** optional message ID up to which to share otherwise share all current messages

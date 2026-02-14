@@ -29,11 +29,11 @@ import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer
 
 /**
  * How a tool call renders in the UI:
- * - "inline": Shown as a collapsible tool call in thinking blocks
+ * - "grouped": TODO: update. Shown as a collapsible tool call in thinking blocks
  * - "block": Renders as a standalone block with its own header (chart, diff, etc.)
  * - "hidden": Not shown (internal orchestration agents)
  */
-export type ToolRenderMode = "inline" | "block" | "hidden";
+export type ToolRenderMode = "grouped" | "block" | "hidden";
 
 // =============================================================================
 // TOOL CONFIGURATION
@@ -56,6 +56,7 @@ export interface ToolConfig {
     resultMessage: V1Message | undefined,
   ) => ToolBlockType | null;
 
+  groups?: string[];
   /** Used to process any UI action or side effects from tool calls. */
   onCall?: (callMessage: V1Message) => void;
   onResult?: (
@@ -69,7 +70,8 @@ export interface ToolConfig {
  * Most tools render inline within thinking blocks.
  */
 const DEFAULT_TOOL_CONFIG: ToolConfig = {
-  renderMode: "inline",
+  renderMode: "grouped",
+  groups: ["thinking"],
 };
 
 /**
@@ -94,7 +96,8 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createChartBlock,
   },
   [ToolName.WRITE_FILE]: {
-    renderMode: "block",
+    renderMode: "grouped",
+    groups: ["thinking", "develop"],
     createBlock: createFileDiffBlock,
     onResult: handleWriteFilesToolResult,
   },

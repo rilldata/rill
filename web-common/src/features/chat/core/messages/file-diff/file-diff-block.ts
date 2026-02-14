@@ -1,4 +1,8 @@
-import type { V1Message } from "@rilldata/web-common/runtime-client";
+import {
+  type V1Message,
+  V1ReconcileStatus,
+  type V1ResourceName,
+} from "@rilldata/web-common/runtime-client";
 import { MessageContentType } from "../../types";
 
 // =============================================================================
@@ -23,6 +27,7 @@ interface WriteFileResultData {
     reconcile_error: string;
   }>;
   parse_error?: string;
+  checkpoint_commit_hash?: string;
 }
 
 // =============================================================================
@@ -41,6 +46,8 @@ export type FileDiffBlock = {
   filePath: string;
   diff: string;
   isNewFile: boolean;
+  checkpointCommitHash: string | null;
+  generatedResources: V1ResourceName[];
 };
 
 /**
@@ -63,6 +70,19 @@ export function createFileDiffBlock(
       resultMessage.contentData || "{}",
     );
 
+    const generatedResources: FileDiffBlock["generatedResources"] = [];
+
+    resultData.resources?.forEach((r) => {
+      const invalidResource =
+        r.reconcile_error ||
+        r.reconcile_status !== V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+      if (invalidResource) return;
+      generatedResources.push({
+        kind: r.kind,
+        name: r.name,
+      });
+    });
+
     return {
       type: "file-diff",
       id: `file-diff-${message.id}`,
@@ -71,6 +91,8 @@ export function createFileDiffBlock(
       filePath,
       diff: resultData.diff || "",
       isNewFile: resultData.is_new_file || false,
+      checkpointCommitHash: resultData.checkpoint_commit_hash || null,
+      generatedResources,
     };
   } catch {
     return null;

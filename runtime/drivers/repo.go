@@ -57,6 +57,8 @@ type RepoStore interface {
 	CommitAndPush(ctx context.Context, message string, force bool) error
 	// RestoreCommit creates a new commit that restores the state of the repo to the specified commit SHA.
 	RestoreCommit(ctx context.Context, commitSHA string) (string, error)
+	// ApplyPatch applies a patch to the current state of the repo.
+	ApplyPatch(ctx context.Context, patch string) error
 	// CommitHash returns a unique ID for the state of the remote files currently served (does not change on uncommitted local changes).
 	CommitHash(ctx context.Context) (string, error)
 	// CommitTimestamp returns the update timestamp for the current remote files (does not change on uncommitted local changes).

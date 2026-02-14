@@ -60,6 +60,7 @@ import type {
   RuntimeServiceReloadConfigBody,
   RuntimeServiceRenameFileBody,
   RuntimeServiceRestoreGitCommitBody,
+  RuntimeServiceRevertWriteToolCallsBody,
   RuntimeServiceShareConversationBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
@@ -117,6 +118,7 @@ import type {
   V1ReloadConfigResponse,
   V1RenameFileResponse,
   V1RestoreGitCommitResponse,
+  V1RevertWriteToolCallsResponse,
   V1ShareConversationResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
@@ -1523,6 +1525,110 @@ export const createRuntimeServiceForkConversation = <
 > => {
   const mutationOptions =
     getRuntimeServiceForkConversationMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+export const runtimeServiceRevertWriteToolCalls = (
+  instanceId: string,
+  conversationId: string,
+  runtimeServiceRevertWriteToolCallsBody: RuntimeServiceRevertWriteToolCallsBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1RevertWriteToolCallsResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/revert-write-calls`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceRevertWriteToolCallsBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceRevertWriteToolCallsMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+    TError,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceRevertWriteToolCallsBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceRevertWriteToolCallsBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceRevertWriteToolCalls"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceRevertWriteToolCallsBody;
+    }
+  > = (props) => {
+    const { instanceId, conversationId, data } = props ?? {};
+
+    return runtimeServiceRevertWriteToolCalls(instanceId, conversationId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceRevertWriteToolCallsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>
+>;
+export type RuntimeServiceRevertWriteToolCallsMutationBody =
+  RuntimeServiceRevertWriteToolCallsBody;
+export type RuntimeServiceRevertWriteToolCallsMutationError =
+  ErrorType<RpcStatus>;
+
+export const createRuntimeServiceRevertWriteToolCalls = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+      TError,
+      {
+        instanceId: string;
+        conversationId: string;
+        data: RuntimeServiceRevertWriteToolCallsBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceRevertWriteToolCalls>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceRevertWriteToolCallsBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceRevertWriteToolCallsMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -3414,6 +3520,109 @@ export const getRuntimeServiceListGitCommitsQueryKey = (
     ...(params ? [params] : []),
   ] as const;
 };
+
+export const getRuntimeServiceListGitCommitsInfiniteQueryOptions = <
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    RuntimeServiceListGitCommitsParams["pageToken"]
+  >,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        QueryKey,
+        RuntimeServiceListGitCommitsParams["pageToken"]
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListGitCommitsQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    QueryKey,
+    RuntimeServiceListGitCommitsParams["pageToken"]
+  > = ({ signal, pageParam }) =>
+    runtimeServiceListGitCommits(
+      instanceId,
+      { ...params, pageToken: pageParam || params?.["pageToken"] },
+      signal,
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateInfiniteQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    TError,
+    TData,
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    QueryKey,
+    RuntimeServiceListGitCommitsParams["pageToken"]
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListGitCommitsInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListGitCommits>>
+>;
+export type RuntimeServiceListGitCommitsInfiniteQueryError =
+  ErrorType<RpcStatus>;
+
+export function createRuntimeServiceListGitCommitsInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    RuntimeServiceListGitCommitsParams["pageToken"]
+  >,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        TError,
+        TData,
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        QueryKey,
+        RuntimeServiceListGitCommitsParams["pageToken"]
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListGitCommitsInfiniteQueryOptions(
+    instanceId,
+    params,
+    options,
+  );
+
+  const query = createInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as CreateInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 export const getRuntimeServiceListGitCommitsQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,

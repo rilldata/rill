@@ -26,10 +26,11 @@ type WriteFileArgs struct {
 }
 
 type WriteFileResult struct {
-	Diff       string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
-	IsNewFile  bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
-	Resources  []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
-	ParseError string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
+	Diff                 string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
+	IsNewFile            bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
+	Resources            []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
+	ParseError           string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
+	CheckpointCommitHash string           `json:"checkpoint_commit_hash,omitempty" jsonschema:"The commit hash of the checkpoint just before writing any file in the current message chain."`
 }
 
 func (t *WriteFile) Spec() *mcp.Tool {

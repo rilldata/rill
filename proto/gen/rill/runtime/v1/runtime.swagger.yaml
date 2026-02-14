@@ -570,6 +570,39 @@ paths:
             title: Request message for RuntimeService.ForkConversation
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/revert-write-calls:
+    post:
+      operationId: RuntimeService_RevertWriteToolCalls
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevertWriteToolCallsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              writeToolCalls:
+                type: array
+                items:
+                  type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
     post:
       summary: ShareConversation enables sharing of the conversation by adding metadata.
@@ -4942,6 +4975,11 @@ definitions:
         description: |-
           Optional path to the file that the user is currently viewing/editing.
           This helps the agent understand which file the user is referring to in their request.
+      enableCheckpointCommits:
+        type: boolean
+        description: |-
+          Optional toggle to enable checkpoint commit before any files are changed.
+          Can be used to undo the changes reverting to the commit.
     description: Context for prompts handled by the developer_agent.
   v1DirEntry:
     type: object
@@ -7383,6 +7421,8 @@ definitions:
       newCommitSha:
         type: string
     title: Response message for RuntimeService.RestoreGitCommit
+  v1RevertWriteToolCallsResponse:
+    type: object
   v1Schedule:
     type: object
     properties:

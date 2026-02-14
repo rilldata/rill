@@ -275,6 +275,13 @@ service RuntimeService {
     };
   }
 
+  rpc RevertWriteToolCalls(RevertWriteToolCallsRequest) returns (RevertWriteToolCallsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/revert-write-calls",
+      body: "*"
+    };
+  }
+
   // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
   // Note that it covers all registered tools, but the current user may not have access to all of them.
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
@@ -1094,6 +1101,9 @@ message DeveloperAgentContext {
   // Optional path to the file that the user is currently viewing/editing.
   // This helps the agent understand which file the user is referring to in their request.
   string current_file_path = 2;
+  // Optional toggle to enable checkpoint commit before any files are changed.
+  // Can be used to undo the changes reverting to the commit.
+  bool enable_checkpoint_commits = 3;
 }
 
 // Request message for RuntimeService.ListConversations
@@ -1139,6 +1149,14 @@ message ForkConversationRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string conversation_id = 2 [(validate.rules).string.min_len = 1];
 }
+
+message RevertWriteToolCallsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+  repeated string write_tool_calls = 3;
+}
+
+message RevertWriteToolCallsResponse {}
 
 // Response message for RuntimeService.ForkConversation
 message ForkConversationResponse {
