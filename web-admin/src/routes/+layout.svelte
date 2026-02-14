@@ -30,7 +30,12 @@
   import "@rilldata/web-common/app.css";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
-  import type { V1Organization } from "@rilldata/web-admin/client";
+  import {
+    type V1Organization,
+    createAdminServiceGetOrganizationMemberUser,
+  } from "@rilldata/web-admin/client";
+  import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
+  import { getEffectiveOrgPermissions } from "@rilldata/web-admin/features/view-as-user/getViewAsUserPermissions";
 
   export let data;
 
@@ -53,6 +58,26 @@
   } = $page);
 
   $: organization = organizationName;
+
+  // Fetch the impersonated user's org membership to get their role
+  $: viewAsUserEmail = $viewAsUserStore?.email;
+  $: viewAsOrgMemberQuery = createAdminServiceGetOrganizationMemberUser(
+    organization ?? "",
+    viewAsUserEmail ?? "",
+    {
+      query: {
+        enabled: !!viewAsUserEmail && !!organization,
+      },
+    },
+  );
+  $: viewAsOrgRole = $viewAsOrgMemberQuery.data?.member?.roleName;
+
+  // Compute effective org permissions based on the impersonated user's role
+  $: effectiveOrgPermissions = getEffectiveOrgPermissions(
+    organizationPermissions ?? {},
+    viewAsOrgRole,
+    !!$viewAsUserStore,
+  );
 
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -146,22 +171,29 @@
   >
     <BannerCenter />
     {#if !hideBillingManager}
-      <BillingBannerManager {organization} {organizationPermissions} />
+      <BillingBannerManager
+        {organization}
+        organizationPermissions={effectiveOrgPermissions}
+      />
     {/if}
     {#if !isEmbed && !hideTopBar}
       <TopNavigationBar
         createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
         manageProjectMembers={projectPermissions?.manageProjectMembers}
         manageProjectAdmins={projectPermissions?.manageProjectAdmins}
-        manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-        manageOrgMembers={organizationPermissions?.manageOrgMembers}
-        readProjects={organizationPermissions?.readProjects}
+        manageOrgAdmins={effectiveOrgPermissions?.manageOrgAdmins}
+        manageOrgMembers={effectiveOrgPermissions?.manageOrgMembers}
+        readProjects={effectiveOrgPermissions?.readProjects}
         {planDisplayName}
         {organizationLogoUrl}
       />
 
       {#if withinOnlyOrg}
-        <OrganizationTabs {organization} {organizationPermissions} {pathname} />
+        <OrganizationTabs
+          {organization}
+          organizationPermissions={effectiveOrgPermissions}
+          {pathname}
+        />
       {/if}
     {/if}
     <ErrorBoundary>
