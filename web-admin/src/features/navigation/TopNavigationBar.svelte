@@ -17,6 +17,7 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
+    createAdminServiceGetProjectMemberUser,
     type V1Organization,
   } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
@@ -26,6 +27,7 @@
     isViewAsValidForProject,
     clearViewAsUser,
   } from "../../features/view-as-user/viewAsUserStore";
+  import { roleToPermissions } from "../../features/view-as-user/getViewAsUserPermissions";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
@@ -96,6 +98,30 @@
   $: showViewAsChip =
     $viewAsUserStore &&
     isViewAsValidForProject($viewAsUserStateStore$, project);
+
+  // Fetch the impersonated user's project membership to get their role
+  $: viewAsUserEmail = $viewAsUserStore?.email;
+  $: viewAsUserMemberQuery = createAdminServiceGetProjectMemberUser(
+    organization ?? "",
+    project ?? "",
+    viewAsUserEmail ?? "",
+    {
+      query: {
+        enabled:
+          !!viewAsUserEmail && !!organization && !!project && showViewAsChip,
+      },
+    },
+  );
+  $: viewAsUserRole = $viewAsUserMemberQuery.data?.member?.roleName;
+  $: viewAsPermissions = viewAsUserRole
+    ? roleToPermissions(viewAsUserRole)
+    : null;
+
+  // Compute effective permissions for UI elements when View As is active
+  $: effectiveManageProjectMembers =
+    viewAsPermissions !== null
+      ? manageProjectMembers && !!viewAsPermissions.manageProjectMembers
+      : manageProjectMembers;
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -259,8 +285,8 @@
     {/if}
     <!-- NOTE: only project admin and editor can manage project members -->
     <!-- https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions -->
-    <!-- Hide when "View As" is active to simulate the impersonated user's view -->
-    {#if onProjectPage && manageProjectMembers && !$viewAsUserStore}
+    <!-- When "View As" is active, use the impersonated user's effective permissions -->
+    {#if onProjectPage && effectiveManageProjectMembers}
       <ShareProjectPopover
         {organization}
         {project}
