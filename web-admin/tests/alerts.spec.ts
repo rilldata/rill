@@ -1,6 +1,10 @@
 import { expect, type Locator } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions.ts";
 import { test } from "./setup/base";
+import {
+  getOpenLinkFromEmail,
+  waitForEmail,
+} from "@rilldata/web-common/tests/utils/email-utils.ts";
 
 // These tests are highly dependent on comparisons. So we need to fix that with rill time. Will be in a separate PR
 test.describe.serial("Alerts", () => {
@@ -85,6 +89,8 @@ test.describe.serial("Alerts", () => {
         .getByTitle("Alert name")
         .fill("Requests for App Site Name % change vs previous period alert");
 
+      // Store time before clicking run to ensure latest email is fetched.
+      const time = new Date().toISOString();
       // Create the alert
       await alertForm.getByRole("button", { name: "Create" }).click();
 
@@ -119,6 +125,25 @@ test.describe.serial("Alerts", () => {
       await expect(adminPage.getByLabel("Alert criteria")).toHaveText(
         /Criteria\s*requests\s*% change from previous period\s*> 0%\s*requests\s*% change from previous period\s*< 100%/m,
       );
+
+      // Wait for the email and extract the open url from it.
+      const email = await waitForEmail(
+        "Requests for App Site Name % change vs previous period alert",
+        time,
+      );
+      const link = await getOpenLinkFromEmail(email);
+
+      await adminPage.goto(link);
+
+      // Assert that the data is as expected
+      await expect(
+        adminPage
+          .getByLabel("app_site_name leaderboard")
+          .getByRole("row", { name: "My Little Universe" }),
+      ).toHaveText(/My Little Universe\s+4.6k\s+3.2k\s+229%/);
+      await expect(
+        adminPage.getByRole("button", { name: "Requests 162k" }),
+      ).toHaveText(/Requests\s+162k\s+-16,000\s+-9%/);
     });
 
     test("Should edit alert with filters", async ({ adminPage }) => {
