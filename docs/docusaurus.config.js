@@ -299,7 +299,7 @@ const config = {
           },
           {
             from: '/integration/embedding',
-            to: '/developers/integrate/embedding',
+            to: '/developers/embed/embedding',
           },
           {
             from: '/develop/import-data',
@@ -1247,31 +1247,51 @@ const config = {
             to: '/developers/tutorials/rill-clickhouse/r_ch_ingest',
           },
           // ============================================
-          // /integrate/* → /developers/integrate/*
+          // /integrate/* → /developers/embed/* (renamed)
           // ============================================
           {
             from: '/integrate',
-            to: '/developers/integrate',
+            to: '/developers/embed',
           },
           {
             from: '/integrate/index',
-            to: '/developers/integrate',
+            to: '/developers/embed',
+          },
+          {
+            from: '/developers/integrate',
+            to: '/developers/embed',
           },
           {
             from: '/integrate/custom-api',
-            to: '/developers/integrate/custom-api',
+            to: '/developers/build/custom-apis/calling',
+          },
+          {
+            from: '/developers/integrate/custom-api',
+            to: '/developers/build/custom-apis/calling',
           },
           {
             from: '/integrate/embed-api',
-            to: '/developers/integrate/embed-iframe-api',
+            to: '/developers/embed/embed-iframe-api',
+          },
+          {
+            from: '/developers/integrate/embed-iframe-api',
+            to: '/developers/embed/embed-iframe-api',
           },
           {
             from: '/integrate/embedding',
-            to: '/developers/integrate/embedding',
+            to: '/developers/embed/embedding',
+          },
+          {
+            from: '/developers/integrate/embedding',
+            to: '/developers/embed/embedding',
           },
           {
             from: '/integrate/url-parameters',
-            to: '/developers/integrate/url-parameters',
+            to: '/developers/embed/url-parameters',
+          },
+          {
+            from: '/developers/integrate/url-parameters',
+            to: '/developers/embed/url-parameters',
           },
           {
             from: '/integrate/custom-apis',

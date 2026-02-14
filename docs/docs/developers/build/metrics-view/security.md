@@ -186,9 +186,9 @@ If you want to test what your users are seeing in Rill Cloud after deploying, yo
 
 ### Embedded Dashboards
 
-When [requesting an embedded dashboard from Rill](/developers/integrate/embedding) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
+When [requesting an embedded dashboard from Rill](/developers/embed/embedding) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
 
-For more information, see [our embedding docs](/developers/integrate/embedding#backend-build-an-iframe-url).
+For more information, see [our embedding docs](/developers/embed/embedding#backend-build-an-iframe-url).
 
 
 ## Examples
@@ -312,7 +312,7 @@ security:
 
 ### Advanced Example: Custom attributes (Embed Dashboards)
 
-Another use case for row access policies is to ensure that your embedded dashboard provides a specific view for your end users. During the [embed dashboard request](/developers/integrate/embedding), you can pass custom attributes (other than the ones provided out-of-the-box) that map directly to a value within your Rill explore dashboard.
+Another use case for row access policies is to ensure that your embedded dashboard provides a specific view for your end users. During the [embed dashboard request](/developers/embed/embedding), you can pass custom attributes (other than the ones provided out-of-the-box) that map directly to a value within your Rill explore dashboard.
 
 ```yaml
 security:
