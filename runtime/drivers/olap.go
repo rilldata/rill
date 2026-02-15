@@ -304,9 +304,12 @@ func (d Dialect) SupportsILike() bool {
 	return d != DialectDruid && d != DialectPinot && d != DialectStarRocks
 }
 
-// RequiresCastForLike returns true if the dialect requires an expression used in a LIKE or ILIKE condition to explicitly be cast to type TEXT.
-func (d Dialect) RequiresCastForLike() bool {
-	return d == DialectClickHouse
+// GetCastExprForLike returns the cast expression for use in a LIKE or ILIKE condition, or an empty string if no cast is necessary.
+func (d Dialect) GetCastExprForLike() string {
+	if d == DialectClickHouse {
+		return "::Nullable(TEXT)"
+	}
+	return ""
 }
 
 func (d Dialect) SupportsRegexMatch() bool {
