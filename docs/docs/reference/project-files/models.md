@@ -97,10 +97,6 @@ _[object]_ - Refers to the retry configuration for the model. (optional)
 
   - **`if_error_matches`** - _[array of string]_ - The error messages to match. 
 
-The default `if_error_matches` values are:
-`".*OvercommitTracker.*"`, `".*Bad Gateway.*"`, `".*Timeout.*"`, and `".*Connection refused.*"`.
-Setting `retry.if_error_matches` overrides this default list (it does not merge with it).
-
 ```yaml
 retry:
     attempts: 5
