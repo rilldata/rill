@@ -5,21 +5,33 @@
     type V1User,
   } from "../../client";
   import { errorStore } from "../../components/errors/error-store";
-  import { viewAsUserStore } from "./viewAsUserStore";
+  import { setViewAsUser } from "./viewAsUserStore";
 
   export let organization: string;
   export let project: string;
   export let onSelectUser: (user: V1User) => void;
+  /**
+   * If true, the "View As" is being activated at org-level (user is an org admin).
+   * This means the view-as state will persist across all projects in the org.
+   */
+  export let isOrgLevel: boolean = false;
 
   // Note: this approach will break down if/when there are more than 1000 users in a project
   $: projectUsers = createAdminServiceSearchProjectUsers(
     organization,
     project,
     { emailQuery: "%", pageSize: 1000, pageToken: undefined },
+    {
+      query: {
+        enabled: !!organization && !!project,
+      },
+    },
   );
 
   function handleViewAsUser(user: V1User) {
-    viewAsUserStore.set(user);
+    // Always store the source project for querying users later
+    // isOrgLevel determines whether view-as persists across projects
+    setViewAsUser(user, project, isOrgLevel);
     errorStore.reset();
     onSelectUser(user);
   }

@@ -5,7 +5,11 @@
   import { getHomeBookmarkExploreState } from "@rilldata/web-admin/features/bookmarks/selectors";
   import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
-  import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
+  import {
+    clearViewAsUser,
+    viewAsUserStateStore$,
+  } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
+  import { get } from "svelte/store";
   import {
     DashboardBannerID,
     DashboardBannerPriority,
@@ -82,7 +86,21 @@
   );
 
   onNavigate(({ from, to }) => {
-    viewAsUserStore.set(null);
+    // Only clear "View As" state when navigating outside of the current project
+    // AND the view-as is not org-level (org-level view-as should persist across projects)
+    const changedProject =
+      !from ||
+      !to ||
+      from.params.organization !== to.params.organization ||
+      from.params.project !== to.params.project;
+
+    if (changedProject) {
+      const viewAsState = get(viewAsUserStateStore$);
+      // Only clear if it's a project-scoped view-as, not an org-level one
+      if (viewAsState && !viewAsState.isOrgLevel) {
+        clearViewAsUser();
+      }
+    }
     errorStore.reset();
 
     const changedDashboard =

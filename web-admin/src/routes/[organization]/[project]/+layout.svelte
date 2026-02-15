@@ -48,6 +48,14 @@
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
+  import {
+    createAdminServiceGetProjectMemberUser,
+    type V1ProjectPermissions,
+  } from "@rilldata/web-admin/client";
+  import {
+    getEffectivePermissions,
+    roleToPermissions,
+  } from "@rilldata/web-admin/features/view-as-user/getViewAsUserPermissions";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
@@ -122,6 +130,23 @@
   $: ({ data: mockedUserDeploymentCredentials } =
     $mockedUserDeploymentCredentialsQuery);
 
+  /**
+   * Fetch the impersonated user's project membership to get their role.
+   * This is used to determine what UI permissions they should have.
+   */
+  $: mockedUserEmail = $viewAsUserStore?.email;
+  $: viewAsUserMemberQuery = createAdminServiceGetProjectMemberUser(
+    organization,
+    project,
+    mockedUserEmail ?? "",
+    {
+      query: {
+        enabled: !!mockedUserEmail && !!organization && !!project,
+      },
+    },
+  );
+  $: viewAsUserRole = $viewAsUserMemberQuery.data?.member?.roleName;
+
   $: ({ data: projectData, error: projectError } = $projectQuery);
   $: deploymentStatus = projectData?.deployment?.status;
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
@@ -146,6 +171,17 @@
 
   $: error = projectError as HTTPError;
 
+  /**
+   * Compute effective permissions based on the impersonated user's role.
+   * When View As is active, we use the impersonated user's role to determine
+   * what UI permissions they should have, intersected with the actual user's permissions.
+   */
+  $: effectivePermissions = getEffectivePermissions(
+    projectData?.projectPermissions ?? {},
+    viewAsUserRole,
+    !!$viewAsUserStore,
+  );
+
   $: authContext = (
     mockedUserId && mockedUserDeploymentCredentials
       ? "mock"
@@ -168,7 +204,7 @@
 
 {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
   <ProjectTabs
-    projectPermissions={projectData.projectPermissions}
+    projectPermissions={effectivePermissions}
     {organization}
     {pathname}
     {project}
