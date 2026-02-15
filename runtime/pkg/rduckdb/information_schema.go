@@ -19,6 +19,29 @@ type Table struct {
 	SizeBytes      int64  `db:"-"`
 }
 
+func (d *db) DDL(ctx context.Context, name string) (string, error) {
+	connx, release, err := d.AcquireReadConnection(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = release() }()
+
+	// The read connection is pinned to the current schema; match by name only.
+	// Lookup reports a synthetic DatabaseSchema ("main") that doesn't match the
+	// internal schema names used by duckdb_tables()/duckdb_views().
+	q := `
+		SELECT sql FROM duckdb_tables() WHERE table_name = ?
+		UNION ALL
+		SELECT sql FROM duckdb_views() WHERE view_name = ?
+	`
+	var sqlStr *string
+	err = connx.QueryRowxContext(ctx, q, name, name).Scan(&sqlStr)
+	if err != nil || sqlStr == nil {
+		return "", nil
+	}
+	return *sqlStr, nil
+}
+
 func (d *db) Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error) {
 	if ilike != "" && name != "" {
 		return nil, "", fmt.Errorf("cannot specify both `ilike` and `name`")

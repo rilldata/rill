@@ -400,6 +400,28 @@ func (m *generic) RenameTable(ctx context.Context, oldName, newName string) (res
 	return err
 }
 
+// DDL implements DB.
+func (m *generic) DDL(ctx context.Context, name string) (string, error) {
+	conn, err := m.acquireConn(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = conn.Close() }()
+
+	// Filter by current_database()/current_schema() to avoid collisions across attached databases.
+	q := `
+		SELECT sql FROM duckdb_tables() WHERE database_name = current_database() AND schema_name = current_schema() AND table_name = ?
+		UNION ALL
+		SELECT sql FROM duckdb_views() WHERE database_name = current_database() AND schema_name = current_schema() AND view_name = ?
+	`
+	var sqlStr *string
+	err = conn.QueryRowxContext(ctx, q, name, name).Scan(&sqlStr)
+	if err != nil || sqlStr == nil {
+		return "", nil
+	}
+	return *sqlStr, nil
+}
+
 // Schema implements DB.
 func (m *generic) Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error) {
 	conn, err := m.acquireConn(ctx)

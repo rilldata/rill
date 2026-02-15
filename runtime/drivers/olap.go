@@ -176,6 +176,9 @@ type OLAPInformationSchema interface {
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 	// It should be called after All or Lookup and not on manually created tables.
 	LoadPhysicalSize(ctx context.Context, tables []*OlapTable) error
+	// LoadDDL populates the DDL field of a single table's metadata.
+	// Drivers that don't support DDL retrieval should return nil (leaving DDL empty).
+	LoadDDL(ctx context.Context, table *OlapTable) error
 }
 
 // OlapTable represents a table in an information schema.
@@ -190,6 +193,7 @@ type OlapTable struct {
 	Schema            *runtimev1.StructType
 	UnsupportedCols   map[string]string
 	PhysicalSizeBytes int64
+	DDL               string
 }
 
 // Dialect enumerates OLAP query languages.

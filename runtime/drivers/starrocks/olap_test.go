@@ -143,6 +143,10 @@ func TestStarRocksOLAP(t *testing.T) {
 	t.Run("DecimalPrecision", func(t *testing.T) {
 		testDecimalPrecision(t, olap)
 	})
+
+	t.Run("LoadDDL", func(t *testing.T) {
+		testLoadDDL(t, conn)
+	})
 }
 
 func testVarcharNotBinary(t *testing.T, olap drivers.OLAPStore) {
@@ -1297,6 +1301,19 @@ func testAllTypesOutput(t *testing.T, olap drivers.OLAPStore) {
 	}
 
 	t.Log("================================================================================")
+}
+
+func testLoadDDL(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("default")
+	ctx := context.Background()
+
+	// Test DDL for the all_types table
+	table, err := olap.InformationSchema().Lookup(ctx, "", "test_db", "all_types")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(ctx, table)
+	require.NoError(t, err)
+	require.Contains(t, table.DDL, "CREATE TABLE")
+	require.Contains(t, table.DDL, "all_types")
 }
 
 // formatValue formats a value for display, truncating long strings

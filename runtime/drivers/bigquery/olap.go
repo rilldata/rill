@@ -133,6 +133,35 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	client, err := c.getClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	q := fmt.Sprintf("SELECT ddl FROM `%s.%s.INFORMATION_SCHEMA.TABLES` WHERE table_name = @name", table.Database, table.DatabaseSchema)
+	cq := client.Query(q)
+	cq.Parameters = []bigquery.QueryParameter{
+		{Name: "name", Value: table.Name},
+	}
+
+	it, err := cq.Read(ctx)
+	if err != nil {
+		return err
+	}
+
+	var row struct {
+		DDL string `bigquery:"ddl"`
+	}
+	err = it.Next(&row)
+	if err != nil {
+		return err
+	}
+	table.DDL = row.DDL
+	return nil
+}
+
 // Lookup implements drivers.OLAPInformationSchema.
 func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	client, err := c.getClient(ctx)

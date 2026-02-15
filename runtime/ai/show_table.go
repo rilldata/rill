@@ -29,11 +29,12 @@ type ShowTableResult struct {
 	IsView            bool         `json:"is_view"`
 	Columns           []ColumnInfo `json:"columns"`
 	PhysicalSizeBytes int64        `json:"physical_size_bytes,omitempty" jsonschema:"The physical size of the table in bytes. If 0 or omitted, size information is not available."`
+	DDL               string       `json:"ddl,omitempty" jsonschema:"The SQL DDL statement (CREATE TABLE/VIEW) for this table, if available."`
 }
 
 type ColumnInfo struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+	Name string `json:"name" jsonschema:"The name of the column."`
+	Type string `json:"type" jsonschema:"The data type of the column. This is a generic type code and does not exactly match the underlying SQL type."`
 }
 
 func (t *ShowTable) Spec() *mcp.Tool {
@@ -75,11 +76,15 @@ func (t *ShowTable) Handler(ctx context.Context, args *ShowTableArgs) (*ShowTabl
 	// Load physical size
 	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.OlapTable{table})
 
+	// Load DDL
+	_ = olap.InformationSchema().LoadDDL(ctx, table)
+
 	// Build result
 	result := &ShowTableResult{
 		Name:              table.Name,
 		IsView:            table.View,
 		PhysicalSizeBytes: table.PhysicalSizeBytes,
+		DDL:               table.DDL,
 		Columns:           make([]ColumnInfo, 0),
 	}
 
