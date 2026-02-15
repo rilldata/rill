@@ -28,9 +28,8 @@ import {
   type Writable,
 } from "svelte/store";
 import {
-  DIRECTORIES_WITHOUT_AUTOSAVE,
   FILE_SAVE_DEBOUNCE_TIME,
-  FILES_WITHOUT_AUTOSAVE,
+  isFileWithoutAutosave,
 } from "../editor/config";
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
@@ -105,9 +104,7 @@ export class FileArtifact {
     this.folderName = folderName;
     this.fileName = fileName;
 
-    this.disableAutoSave =
-      FILES_WITHOUT_AUTOSAVE.includes(filePath) ||
-      DIRECTORIES_WITHOUT_AUTOSAVE.includes(folderName);
+    this.disableAutoSave = isFileWithoutAutosave(filePath);
 
     if (this.disableAutoSave) {
       this.autoSave = writable(false);

@@ -454,7 +454,7 @@ export async function submitAddSourceForm(
     ? undefined
     : connectorInstanceName;
 
-  // Make a new <source>.yaml file
+  // Create model YAML file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
     newSourceName,
     EntityType.Table,
