@@ -10,11 +10,26 @@
 
   export let message: string;
   export let status: V1ReconcileStatus;
+
+  // Check if the error message indicates waiting for an upstream dependency
+  $: isWaitingForUpstreamDependency = message && (
+    message.includes("is not idle") || 
+    message.startsWith("dependency error:")
+  );
 </script>
 
 <div class="container">
-  {#if status === V1ReconcileStatus.RECONCILE_STATUS_PENDING || status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
-    <LoadingSpinner size="18px" />
+  {#if status === V1ReconcileStatus.RECONCILE_STATUS_PENDING || status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING || isWaitingForUpstreamDependency}
+    {#if isWaitingForUpstreamDependency}
+      <Tooltip distance={8}>
+        <LoadingSpinner size="18px" />
+        <TooltipContent slot="tooltip-content" maxWidth="300px">
+          <p>Waiting for upstream dependencies to finish processing</p>
+        </TooltipContent>
+      </Tooltip>
+    {:else}
+      <LoadingSpinner size="18px" />
+    {/if}
   {:else if message}
     <Tooltip distance={8}>
       <button
