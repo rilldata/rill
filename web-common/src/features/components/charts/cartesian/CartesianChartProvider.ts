@@ -389,11 +389,6 @@ export class CartesianChartProvider {
           );
         }
 
-        const isComparisonActive =
-          showTimeComparison &&
-          !!comparisonTimeRange?.start &&
-          !!comparisonTimeRange?.end;
-
         const measuresWithComparison: V1MetricsViewAggregationMeasure[] =
           Array.from(measuresSet)
             .map((measureName) => {
@@ -407,26 +402,11 @@ export class CartesianChartProvider {
                     },
                   },
                 ];
-                // Include delta computed measure when delta sort is active
-                if (sortIsDelta) {
-                  result.push({
-                    name: measureName + ComparisonDeltaAbsoluteSuffix,
-                    comparisonDelta: {
-                      measure: measureName,
-                    },
-                  });
-                }
                 return result;
               }
               return { name: measureName };
             })
             .flat();
-
-        const mainQuerySort = this.resolveXAxisSort(
-          config,
-          isMultiMeasure,
-          isComparisonActive,
-        );
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
           $runtime.instanceId,
@@ -434,7 +414,6 @@ export class CartesianChartProvider {
           {
             measures: measuresWithComparison,
             dimensions,
-            sort: mainQuerySort ? [mainQuerySort] : undefined,
             where: combinedWhere,
             timeRange,
             comparisonTimeRange:
