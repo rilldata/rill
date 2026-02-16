@@ -1,0 +1,230 @@
+syntax = "proto3";
+
+package rill.runtime.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+// QueryBackendType identifies the query execution backend.
+enum QueryBackendType {
+  QUERY_BACKEND_TYPE_UNSPECIFIED = 0;
+  QUERY_BACKEND_TYPE_EMBEDDED_ENGINE = 1;
+  QUERY_BACKEND_TYPE_EXTERNAL_WAREHOUSE = 2;
+}
+
+// QueryStatus describes the outcome of a query execution request.
+enum QueryStatus {
+  QUERY_STATUS_UNSPECIFIED = 0;
+  QUERY_STATUS_SUCCESS = 1;
+  QUERY_STATUS_WARNING_COST = 2;
+  QUERY_STATUS_BLOCKED_LIMIT = 3;
+  QUERY_STATUS_FAILED = 4;
+  QUERY_STATUS_CANCELLED = 5;
+}
+
+// ModelType classifies a published model based on its data lineage.
+enum ModelType {
+  MODEL_TYPE_UNSPECIFIED = 0;
+  MODEL_TYPE_SOURCE_MODEL = 1;
+  MODEL_TYPE_DERIVED_MODEL = 2;
+}
+
+// DataExplorerTreeNode represents a node in the data explorer object tree.
+message DataExplorerTreeNode {
+  // Name of the node (e.g., table name, schema name, connector name).
+  string name = 1;
+  // Type of the node.
+  DataExplorerTreeNodeType type = 2;
+  // Children of this node in the tree.
+  repeated DataExplorerTreeNode children = 3;
+  // Fully qualified path to the object (e.g., "connector.schema.table").
+  // Only set for leaf nodes that reference a queryable object.
+  string object_path = 4;
+  // The connector name this node belongs to.
+  string connector = 5;
+  // The database name, if applicable.
+  string database = 6;
+  // The schema name, if applicable.
+  string schema = 7;
+}
+
+// DataExplorerTreeNodeType identifies the kind of node in the data explorer tree.
+enum DataExplorerTreeNodeType {
+  DATA_EXPLORER_TREE_NODE_TYPE_UNSPECIFIED = 0;
+  DATA_EXPLORER_TREE_NODE_TYPE_CONNECTOR = 1;
+  DATA_EXPLORER_TREE_NODE_TYPE_DATABASE = 2;
+  DATA_EXPLORER_TREE_NODE_TYPE_SCHEMA = 3;
+  DATA_EXPLORER_TREE_NODE_TYPE_TABLE = 4;
+  DATA_EXPLORER_TREE_NODE_TYPE_VIEW = 5;
+  DATA_EXPLORER_TREE_NODE_TYPE_SOURCE = 6;
+  DATA_EXPLORER_TREE_NODE_TYPE_MODEL = 7;
+  DATA_EXPLORER_TREE_NODE_TYPE_METRICS_VIEW = 8;
+}
+
+// ColumnSchema describes a single column of a table or query result.
+message ColumnSchema {
+  // Column name.
+  string name = 1;
+  // Column data type as reported by the database (e.g., "VARCHAR", "INTEGER").
+  string type = 2;
+  // Whether the column is nullable.
+  bool nullable = 3;
+  // Optional human-readable description.
+  string description = 4;
+}
+
+// QueryResultPreview contains a preview of query results.
+message QueryResultPreview {
+  // Column definitions for the result set.
+  repeated ColumnSchema columns = 1;
+  // Row data. Each Struct represents a row, with keys matching column names.
+  repeated google.protobuf.Struct rows = 2;
+  // Whether the result was truncated (more rows exist beyond the preview limit).
+  bool truncated = 3;
+  // Total number of rows in the full result (if known, otherwise -1).
+  int64 total_rows = 4;
+}
+
+// GuardrailThreshold represents a configured guardrail limit.
+message GuardrailThreshold {
+  // Soft limit in bytes scanned. Exceeding triggers a cost warning.
+  int64 soft_limit_bytes_scanned = 1;
+  // Hard limit in bytes scanned. Exceeding blocks execution.
+  int64 hard_limit_bytes_scanned = 2;
+  // Soft limit on query runtime in milliseconds.
+  int64 soft_limit_runtime_ms = 3;
+  // Hard limit on query runtime in milliseconds.
+  int64 hard_limit_runtime_ms = 4;
+}
+
+// CostEstimate contains the estimated cost of executing a query.
+message CostEstimate {
+  // Estimated bytes that will be scanned.
+  int64 bytes_scanned = 1;
+  // Estimated monetary cost in USD, if available.
+  optional double estimated_cost_usd = 2;
+  // Whether cost estimation is supported by the backend.
+  bool supported = 3;
+}
+
+// ListDataExplorerObjectsRequest is the request message for RuntimeService.ListDataExplorerObjects.
+message ListDataExplorerObjectsRequest {
+  string instance_id = 1 [(validate.rules).string.min_len = 1];
+  // Optional connector filter. If set, only objects for this connector are returned.
+  string connector = 2;
+}
+
+// ListDataExplorerObjectsResponse is the response message for RuntimeService.ListDataExplorerObjects.
+message ListDataExplorerObjectsResponse {
+  // Tree of data objects available in the instance.
+  repeated DataExplorerTreeNode nodes = 1;
+}
+
+// GetDataExplorerSchemaRequest is the request message for RuntimeService.GetDataExplorerSchema.
+message GetDataExplorerSchemaRequest {
+  string instance_id = 1 [(validate.rules).string.min_len = 1];
+  // Fully qualified path to the object (e.g., "connector.schema.table" or just "table_name").
+  string object_path = 2 [(validate.rules).string.min_len = 1];
+  // The connector to use for schema lookup. If empty, uses the instance's default OLAP connector.
+  string connector = 3;
+  // Database name, if applicable.
+  string database = 4;
+  // Schema name within the database, if applicable.
+  string database_schema = 5;
+  // Table or view name.
+  string table_name = 6;
+}
+
+// GetDataExplorerSchemaResponse is the response message for RuntimeService.GetDataExplorerSchema.
+message GetDataExplorerSchemaResponse {
+  // Column definitions for the object.
+  repeated ColumnSchema columns = 1;
+  // The object's type (table, view, source, model, etc.).
+  DataExplorerTreeNodeType object_type = 2;
+  // Row count if available, otherwise -1.
+  int64 row_count = 3;
+}
+
+// ExecuteQueryRequest is the request message for RuntimeService.ExecuteQuery.
+message ExecuteQueryRequest {
+  string instance_id = 1 [(validate.rules).string.min_len = 1];
+  // The SQL query to execute.
+  string sql = 2 [(validate.rules).string.min_len = 1];
+  // Hint for which backend to use. If unspecified, the server chooses the default.
+  QueryBackendType backend_hint = 3;
+  // The connector to execute against. If empty, uses the instance's default OLAP connector.
+  string connector = 4;
+  // Maximum number of rows to return in the preview. Capped server-side.
+  int32 preview_row_limit = 5;
+  // If true, the user has confirmed they want to proceed despite a cost warning.
+  bool confirm_cost_override = 6;
+  // Client-generated query ID for cancellation support.
+  string query_id = 7;
+}
+
+// ExecuteQueryResponse is the response message for RuntimeService.ExecuteQuery.
+message ExecuteQueryResponse {
+  // Status of the query execution.
+  QueryStatus status = 1;
+  // The query result preview. Only populated when status is SUCCESS.
+  QueryResultPreview result = 2;
+  // Cost estimate, if available. Populated when status is WARNING_COST or on successful execution.
+  CostEstimate cost_estimate = 3;
+  // Human-readable message providing context (e.g., warning text, error description).
+  string message = 4;
+  // Actual execution time in milliseconds.
+  int64 execution_time_ms = 5;
+  // Actual bytes scanned during execution (if reported by the backend).
+  int64 bytes_scanned = 6;
+  // The backend that was used for execution.
+  QueryBackendType backend_type = 7;
+  // Guardrail thresholds that were applied.
+  GuardrailThreshold guardrail_thresholds = 8;
+  // The query ID (echoed back from the request or server-generated).
+  string query_id = 9;
+}
+
+// CancelQueryRequest is the request message for RuntimeService.CancelQuery.
+message CancelQueryRequest {
+  string instance_id = 1 [(validate.rules).string.min_len = 1];
+  // The query ID to cancel (must match the query_id from ExecuteQueryRequest).
+  string query_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// CancelQueryResponse is the response message for RuntimeService.CancelQuery.
+message CancelQueryResponse {
+  // Whether the cancellation was successful.
+  bool cancelled = 1;
+  // Human-readable message (e.g., "Query cancelled" or "Query not found or already completed").
+  string message = 2;
+}
+
+// PublishModelRequest is the request message for RuntimeService.PublishModel.
+message PublishModelRequest {
+  string instance_id = 1 [(validate.rules).string.min_len = 1];
+  // Name for the new model. Must be unique within the project.
+  string name = 2 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 255,
+    pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$"
+  }];
+  // The SQL query that defines the model.
+  string sql = 3 [(validate.rules).string.min_len = 1];
+  // Optional human-readable description for the model.
+  string description = 4;
+  // The connector the query was executed against. Used for classification.
+  string connector = 5;
+}
+
+// PublishModelResponse is the response message for RuntimeService.PublishModel.
+message PublishModelResponse {
+  // The name of the created model.
+  string name = 1;
+  // The file path where the model YAML was written.
+  string file_path = 2;
+  // The classified model type.
+  ModelType model_type = 3;
+  // Timestamp when the model was created.
+  google.protobuf.Timestamp created_at = 4;
+}

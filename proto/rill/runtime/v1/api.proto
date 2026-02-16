@@ -2,48 +2,49 @@ syntax = "proto3";
 package rill.runtime.v1;
 
 import "google/api/annotations.proto";
-import "google/protobuf/timestamp.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
-import "rill/ai/v1/ai.proto";
-import "rill/runtime/v1/schema.proto";
-import "rill/runtime/v1/resources.proto";
+import "google/protobuf/timestamp.proto";
+import "rill/runtime/v1/catalog.proto";
+import "rill/runtime/v1/colors.proto";
+import "rill/runtime/v1/connector.proto";
+import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
+import "rill/runtime/v1/query_console.proto";
+import "rill/runtime/v1/resources.proto";
+import "rill/runtime/v1/schema.proto";
+import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
 
-// RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
-// It has a concept of instances, which are fully isolated data projects, enabling optional multi-tenancy.
 service RuntimeService {
   // Ping returns information about the runtime
   rpc Ping(PingRequest) returns (PingResponse) {
-    option (google.api.http) = {get: "/v1/ping"};
-  }
-
-  // Health runs a health check on the runtime.
-  rpc Health(HealthRequest) returns (HealthResponse) {
-    option (google.api.http) = {get: "/v1/health"};
-  }
-
-  // InstanceHealth runs a health check on a specific instance.
-  rpc InstanceHealth(InstanceHealthRequest) returns (InstanceHealthResponse) {
-    option (google.api.http) = {get: "/v1/health/instances/{instance_id}"};
+    option (google.api.http) = {
+      get: "/v1/ping"
+    };
   }
 
   // Instances
 
   // ListInstances lists all the instances currently managed by the runtime
   rpc ListInstances(ListInstancesRequest) returns (ListInstancesResponse) {
-    option (google.api.http) = {get: "/v1/instances"};
+    option (google.api.http) = {
+      get: "/v1/instances"
+    };
   }
 
   // GetInstance returns information about a specific instance
   rpc GetInstance(GetInstanceRequest) returns (GetInstanceResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}"};
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}"
+    };
   }
 
   // CreateInstance creates a new instance
   rpc CreateInstance(CreateInstanceRequest) returns (CreateInstanceResponse) {
     option (google.api.http) = {
-      post: "/v1/instances",
+      post: "/v1/instances"
       body: "*"
     };
   }
@@ -51,7 +52,7 @@ service RuntimeService {
   // EditInstance edits an existing instance
   rpc EditInstance(EditInstanceRequest) returns (EditInstanceResponse) {
     option (google.api.http) = {
-      patch: "/v1/instances/{instance_id}",
+      patch: "/v1/instances/{instance_id}"
       body: "*"
     };
   }
@@ -59,785 +60,357 @@ service RuntimeService {
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}",
-      body: "*"
+      delete: "/v1/instances/{instance_id}"
     };
   }
 
-  // ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
-  // If the instance doesn't have an admin connector, this RPC does nothing.
-  rpc ReloadConfig(ReloadConfigRequest) returns (ReloadConfigResponse) {
+  // Resources
+
+  // ListResources lists the resources stored in the catalog
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/reload-config",
+      get: "/v1/instances/{instance_id}/resources"
+    };
+  }
+
+  // WatchResources watches for changes to resources stored in the catalog
+  rpc WatchResources(WatchResourcesRequest) returns (stream WatchResourcesResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/resources/-/watch"
+    };
+  }
+
+  // GetResource looks up a specific catalog resource
+  rpc GetResource(GetResourceRequest) returns (GetResourceResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/resource"
+    };
+  }
+
+  // CreateResource creates a resource
+  rpc CreateResource(CreateResourceRequest) returns (CreateResourceResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/resources"
       body: "*"
     };
   }
 
-  // Repos
+  // DeleteResource deletes a resource
+  rpc DeleteResource(DeleteResourceRequest) returns (DeleteResourceResponse) {
+    option (google.api.http) = {
+      delete: "/v1/instances/{instance_id}/resource"
+    };
+  }
 
-  // ListFiles lists all the files matching a glob in a repo.
-  // The files are sorted by their full path.
+  // Files
+
+  // ListFiles lists all the files matching a glob in a repo
   rpc ListFiles(ListFilesRequest) returns (ListFilesResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/files"};
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/files"
+    };
   }
 
-  // WatchFiles streams repo file update events. It is not supported on all backends.
+  // WatchFiles streams repo file update events
   rpc WatchFiles(WatchFilesRequest) returns (stream WatchFilesResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/files/watch"};
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/files/watch"
+    };
   }
 
-  // GetFile returns the contents of a specific file in a repo.
+  // GetFile returns the contents of a specific file in a repo
   rpc GetFile(GetFileRequest) returns (GetFileResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/files/entry"};
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/files/-"
+    };
   }
 
   // PutFile creates or updates a file in a repo
   rpc PutFile(PutFileRequest) returns (PutFileResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/entry",
-      body: "*"
-    };
-  }
-
-  // CreateDirectory create a directory for the given path
-  rpc CreateDirectory(CreateDirectoryRequest) returns (CreateDirectoryResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/dir",
+      post: "/v1/instances/{instance_id}/files/-"
       body: "*"
     };
   }
 
   // DeleteFile deletes a file from a repo
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
-    option (google.api.http) = {delete: "/v1/instances/{instance_id}/files/entry"};
+    option (google.api.http) = {
+      delete: "/v1/instances/{instance_id}/files/-"
+    };
   }
 
   // RenameFile renames a file in a repo
   rpc RenameFile(RenameFileRequest) returns (RenameFileResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/rename",
-      body: "*"
-    };
-  }
-
-  // ListExamples lists all the examples embedded into binary
-  rpc ListExamples(ListExamplesRequest) returns (ListExamplesResponse) {
-    option (google.api.http) = {get: "/v1/examples"};
-  }
-
-  // UnpackExample unpacks an example project
-  rpc UnpackExample(UnpackExampleRequest) returns (UnpackExampleResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/unpack-example",
-      body: "*"
-    };
-  }
-
-  // UnpackEmpty unpacks an empty project
-  rpc UnpackEmpty(UnpackEmptyRequest) returns (UnpackEmptyResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/unpack-empty",
-      body: "*"
-    };
-  }
-
-  // GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
-  rpc GenerateMetricsViewFile(GenerateMetricsViewFileRequest) returns (GenerateMetricsViewFileResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/generate-metrics-view",
-      body: "*"
-    };
-  }
-
-  // GenerateCanvasFile generates a canvas YAML file from a metrics view
-  rpc GenerateCanvasFile(GenerateCanvasFileRequest) returns (GenerateCanvasFileResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/files/generate-canvas",
-      body: "*"
-    };
-  }
-
-  // GenerateResolver generates resolver and resolver properties from a table or a metrics view
-  rpc GenerateResolver(GenerateResolverRequest) returns (GenerateResolverResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/generate/resolver",
-      body: "*"
-    };
-  }
-
-  // GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
-  rpc GenerateRenderer(GenerateRendererRequest) returns (GenerateRendererResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/generate/renderer",
-      body: "*"
-    };
-  }
-
-  // QueryResolver queries a resolver with the given properties and arguments
-  rpc QueryResolver(QueryResolverRequest) returns (QueryResolverResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/query/resolver",
-      body: "*"
-    };
-  }
-
-  // Controller
-  
-  // GetLogs returns recent logs from a controller
-  rpc GetLogs(GetLogsRequest) returns (GetLogsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/logs"};
-  }
-
-  // WatchLogs streams new logs emitted from a controller
-  rpc WatchLogs(WatchLogsRequest) returns (stream WatchLogsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/logs/watch"};
-  }
-
-  // ListResources lists the resources stored in the catalog
-  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/resources"};
-  }
-  
-  // WatchResources streams updates to catalog resources (including creation and deletion events)
-  rpc WatchResources(WatchResourcesRequest) returns (stream WatchResourcesResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/-/watch"};
-  }
-  
-  // GetResource looks up a specific catalog resource
-  rpc GetResource(GetResourceRequest) returns (GetResourceResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/resource"};
-  }
-
-  // GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
-  rpc GetExplore(GetExploreRequest) returns (GetExploreResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/explore"};
-  }
-
-  // GetModelPartitions returns the partitions of a model
-  rpc GetModelPartitions(GetModelPartitionsRequest) returns (GetModelPartitionsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/partitions"};
-  }
-  
-  // CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
-  // Triggers are ephemeral resources that will be cleaned up by the controller.
-  rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/trigger",
+      post: "/v1/instances/{instance_id}/files/rename"
       body: "*"
     };
   }
 
   // Connectors
 
-  // ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
-  // including their configuration specs and the capabilities they support.
+  // ListConnectors lists all the connectors available to an instance
   rpc ListConnectorDrivers(ListConnectorDriversRequest) returns (ListConnectorDriversResponse) {
-    option (google.api.http) = {get: "/v1/connectors/meta"};
+    option (google.api.http) = {
+      get: "/v1/connector-drivers"
+    };
   }
 
-  // AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
+  // AnalyzeConnectors scans all connectors used by the project's sources and models
   rpc AnalyzeConnectors(AnalyzeConnectorsRequest) returns (AnalyzeConnectorsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/analyze"};
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/connectors/analyze"
+    };
   }
 
-  // ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
-  // This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
-  rpc ListNotifierConnectors(ListNotifierConnectorsRequest) returns (ListNotifierConnectorsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
+  // ScanConnectors scans the artifacts managed by a specific connector
+  rpc ScanConnectors(ScanConnectorsRequest) returns (ScanConnectorsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/connectors/scan"
+    };
+  }
+
+  // OLAPListTables lists all tables across all databases/schemas accessible via the OLAP connector
+  rpc OLAPListTables(OLAPListTablesRequest) returns (OLAPListTablesResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/olap/tables"
+    };
+  }
+
+  // OLAPGetTable returns metadata about a single table in the OLAP connector
+  rpc OLAPGetTable(OLAPGetTableRequest) returns (OLAPGetTableResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/olap/tables/{table_name}"
+    };
+  }
+
+  // Reconcile
+
+  // CreateTrigger creates a trigger for a resource
+  rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/trigger"
+      body: "*"
+    };
   }
 
   // AI
 
-  // ListConversations lists all AI chat conversations for an instance.
-  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
-  }
-
-  // GetConversation returns a specific AI chat conversation.
-  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
-  }
-
-  // ShareConversation enables sharing of the conversation by adding metadata.
-  rpc ShareConversation(ShareConversationRequest) returns (ShareConversationResponse) {
+  // CompleteAI completes a prompt using an AI model
+  rpc CompleteAI(CompleteAIRequest) returns (CompleteAIResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/share",
+      post: "/v1/instances/{instance_id}/ai/complete"
       body: "*"
     };
   }
 
-  // ForkConversation creates a new conversation by copying messages from an existing one.
-  // If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
-  rpc ForkConversation(ForkConversationRequest) returns (ForkConversationResponse) {
+  // GenerateResolver generates a resolver and resolver properties from a prompt
+  rpc GenerateResolver(GenerateResolverRequest) returns (GenerateResolverResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/fork",
+      post: "/v1/instances/{instance_id}/ai/generate-resolver"
       body: "*"
     };
   }
 
-  // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
-  // Note that it covers all registered tools, but the current user may not have access to all of them.
-  rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/tools"};
-  }
-
-  // Complete runs a language model completion (LLM chat) using the configured AI connector.
-  rpc Complete(CompleteRequest) returns (CompleteResponse) {
+  // GenerateRenderer generates a renderer and renderer properties from a prompt
+  rpc GenerateRenderer(GenerateRendererRequest) returns (GenerateRendererResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/ai/complete",
+      post: "/v1/instances/{instance_id}/ai/generate-renderer"
       body: "*"
     };
   }
 
-  // CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
-  rpc CompleteStreaming(CompleteStreamingRequest) returns (stream CompleteStreamingResponse) {
+  // Query
+
+  // Query runs a SQL query against the instance's OLAP datastore.
+  rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/ai/complete/stream",
+      post: "/v1/instances/{instance_id}/query"
       body: "*"
     };
   }
 
-  // Access management
-
-  // IssueDevJWT issues a JWT for mimicking a user in local development.
-  rpc IssueDevJWT(IssueDevJWTRequest) returns (IssueDevJWTResponse) {
+  // QueryBatch runs multiple queries against the instance's OLAP datastore.
+  rpc QueryBatch(QueryBatchRequest) returns (stream QueryBatchResponse) {
     option (google.api.http) = {
-      post: "/v1/dev-jwt",
+      post: "/v1/instances/{instance_id}/query/batch"
       body: "*"
     };
   }
 
-  // Variables
-
-  // AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
-  rpc AnalyzeVariables(AnalyzeVariablesRequest) returns (AnalyzeVariablesResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/variables/analyze"};
-  }
-
-  // Git APIs
-
-  rpc ListGitCommits(ListGitCommitsRequest) returns (ListGitCommitsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/commits"};
-  }
-
-  // GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
-  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
-  }
-
-  rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/branches"};
-  }
-
-  // GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
-  rpc GitCommit(GitCommitRequest) returns (GitCommitResponse) {
+  // Export exports the result of a query as a file.
+  rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/git/commit",
+      post: "/v1/instances/{instance_id}/query/export"
       body: "*"
     };
   }
 
-  // RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
-  // This effectively discards all the changes made after the specified commit.
-  rpc RestoreGitCommit(RestoreGitCommitRequest) returns (RestoreGitCommitResponse) {
+  // Resolvers
+
+  // Resolve resolves a component using its associated resolver.
+  rpc Resolve(ResolveRequest) returns (ResolveResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/git/restore/{commit_sha}",
+      post: "/v1/instances/{instance_id}/resolve"
       body: "*"
     };
   }
 
-  // GitMergeToBranch merges current branch to the specified branch.
-  // Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
-  // It restores back to the original branch after the merge.
-  rpc GitMergeToBranch(GitMergeToBranchRequest) returns (GitMergeToBranchResponse) {
+  // Logs
+
+  // GetLogs returns recent logs from the runtime
+  rpc GetLogs(GetLogsRequest) returns (GetLogsResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/git/merge",
+      get: "/v1/instances/{instance_id}/logs"
+    };
+  }
+
+  // Query Console
+
+  // ListDataExplorerObjects lists data objects (tables, views, sources, models) available
+  // in the instance for browsing in the query console's data explorer.
+  rpc ListDataExplorerObjects(ListDataExplorerObjectsRequest) returns (ListDataExplorerObjectsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/query-console/objects"
+    };
+  }
+
+  // GetDataExplorerSchema returns the schema (column names and types) for a specific data object.
+  rpc GetDataExplorerSchema(GetDataExplorerSchemaRequest) returns (GetDataExplorerSchemaResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/query-console/schema"
+    };
+  }
+
+  // ExecuteQuery executes an ad-hoc SQL query against the instance's data,
+  // with guardrail checks (cost estimation, soft/hard limits) and telemetry.
+  rpc ExecuteQuery(ExecuteQueryRequest) returns (ExecuteQueryResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/query-console/execute"
       body: "*"
     };
   }
 
-  rpc GitSwitchBranch(GitSwitchBranchRequest) returns (GitSwitchBranchResponse) {
+  // CancelQuery cancels a running query console query.
+  rpc CancelQuery(CancelQueryRequest) returns (CancelQueryResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/git/branches/switch",
+      post: "/v1/instances/{instance_id}/query-console/cancel"
       body: "*"
     };
   }
 
-  // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
-  // If there are any merge conflicts the pull is aborted.
-  // Force can be set to true to force the pull and overwrite any local changes.
-  rpc GitPull(GitPullRequest) returns (GitPullResponse) {
+  // PublishModel publishes the result of a query console SQL query as a new model
+  // in the project, triggering reconciliation.
+  rpc PublishModel(PublishModelRequest) returns (PublishModelResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/git/pull",
-      body: "*"
-    };
-  }
-  
-  // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
-  // It only pushes the changes to the existing remote repo.
-  rpc GitPush(GitPushRequest) returns (GitPushResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/git/push",
+      post: "/v1/instances/{instance_id}/query-console/publish"
       body: "*"
     };
   }
 }
 
-// Request message for RuntimeService.Ping
-message PingRequest {}
+// Ping
 
-// Response message for RuntimeService.Ping
+message PingRequest {
+}
+
 message PingResponse {
   // Runtime version
   string version = 1;
-
   // Runtime server time
   google.protobuf.Timestamp time = 2;
 }
 
-message HealthRequest {}
-
-message HealthResponse {
-  string limiter_error = 1;
-  string conn_cache_error = 2;
-  string metastore_error = 3;
-  string network_error = 4;
-  map<string, InstanceHealth> instances_health = 5;
-}
-
-message InstanceHealthRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-}
-
-message InstanceHealthResponse {
-  InstanceHealth instance_health = 1;
-}
-
-message InstanceHealth {
-  string controller_error = 1;
-  string olap_error = 2;
-  string repo_error = 3;
-  map<string, string> metrics_view_errors = 4;
-  int32 parse_error_count = 5;
-  int32 reconcile_error_count = 6;
-}
-
-// **********
 // Instances
-// **********
 
-// Instance represents a single data project, meaning one set of code artifacts,
-// one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-// metadata (such as reconciliation state). Instances are the unit of isolation within
-// the runtime. They enable one runtime deployment to serve not only multiple data
-// projects, but also multiple tenants. On local, the runtime will usually have
-// just a single instance.
-message Instance {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string environment = 20;
-  string project_display_name = 25;
-  string olap_connector = 2;
-  string repo_connector = 4;
-  string admin_connector = 19;
-  string ai_connector = 21;
-  google.protobuf.Timestamp created_on = 11;
-  google.protobuf.Timestamp updated_on = 12;
-  repeated Connector connectors = 10;
-  repeated Connector project_connectors = 13;
-  map<string, string> variables = 7;
-  map<string, string> project_variables = 8;
-  map<string, bool> feature_flags = 22;
-  map<string, string> annotations = 14;
-  string ai_instructions = 23;
-  string frontend_url = 24;
-  string theme = 26;
-}
- 
-message Connector {
-  // Type of the connector. One of the infra driver supported.
-  string type = 1;
-  // Name of the connector
-  string name = 2;
-  // Config for the connector
-  google.protobuf.Struct config = 3;
-  // Properties in config that use templating
-  repeated string templated_properties = 5;
-  // Provision settings if its a managed connector
-  bool provision = 6;
-  google.protobuf.Struct provision_args = 7;
-}
-
-// Request message for RuntimeService.ListInstances
 message ListInstancesRequest {
-  uint32 page_size = 1; 
+  uint32 page_size = 1;
   string page_token = 2;
 }
 
-// Response message for RuntimeService.ListInstances
 message ListInstancesResponse {
   repeated Instance instances = 1;
   string next_page_token = 2;
 }
 
-// Request message for RuntimeService.GetInstance
 message GetInstanceRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string instance_id = 1;
   bool sensitive = 2;
 }
 
-// Response message for RuntimeService.GetInstance
 message GetInstanceResponse {
   Instance instance = 1;
 }
 
-// Request message for RuntimeService.CreateInstance.
-// See message Instance for field descriptions.
 message CreateInstanceRequest {
-  string instance_id = 1 [(validate.rules).string = {
-    ignore_empty: true,
-    pattern: "^[_\\-a-zA-Z0-9]+$"
-  }];
-  string environment = 16;
-  string olap_connector = 2;
-  string repo_connector = 4;
-  string admin_connector = 15;
-  string ai_connector = 17;
-  repeated Connector connectors = 10;
-  map<string, string> variables = 7;
+  string instance_id = 1;
+  string olap_connector = 4;
+  string repo_connector = 5;
+  string admin_connector = 6;
+  string ai_connector = 11;
+  repeated ConnectorV2 connectors = 7;
+  map<string, string> variables = 8;
   map<string, string> annotations = 9;
-  string frontend_url = 18;
+  string embed_catalog = 10;
 }
 
-// Response message for RuntimeService.CreateInstance
 message CreateInstanceResponse {
   Instance instance = 1;
 }
 
-// Request message for RuntimeService.DeleteInstance
-message DeleteInstanceRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-}
-
-// Response message for RuntimeService.DeleteInstance
-message DeleteInstanceResponse {}
-
-// Request message for RuntimeService.EditInstance.
-// See message Instance for field descriptions.
 message EditInstanceRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  optional string environment = 17;
-  optional string olap_connector = 2;
-  optional string repo_connector = 4;
-  optional string admin_connector = 16;
-  optional string ai_connector = 18;
-  repeated Connector connectors = 9;
+  string instance_id = 1;
+  optional string olap_connector = 4;
+  optional string repo_connector = 5;
+  optional string admin_connector = 6;
+  optional string ai_connector = 11;
+  repeated ConnectorV2 connectors = 7;
+  map<string, string> variables = 8;
+  map<string, string> annotations = 9;
+  optional string embed_catalog = 10;
 }
 
-// Response message for RuntimeService.EditInstance
 message EditInstanceResponse {
   Instance instance = 1;
 }
 
-// Request message for RuntimeService.ReloadConfig
-message ReloadConfigRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+message DeleteInstanceRequest {
+  string instance_id = 1;
+  bool drop_db = 2;
 }
 
-// Response message for RuntimeService.ReloadConfig
-message ReloadConfigResponse {}
-
-// **********
-// Repos
-// **********
-
-// Request message for RuntimeService.ListFiles
-message ListFilesRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string glob = 2;
+message DeleteInstanceResponse {
 }
 
-// Response message for RuntimeService.ListFiles
-message ListFilesResponse {
-  repeated DirEntry files = 1;
+// Instance represents a single data project, including its connections and configuration.
+message Instance {
+  string instance_id = 1;
+  string olap_connector = 4;
+  string repo_connector = 5;
+  string admin_connector = 6;
+  string ai_connector = 12;
+  repeated ConnectorV2 connectors = 7;
+  map<string, string> variables = 8;
+  map<string, string> annotations = 9;
+  string embed_catalog = 10;
+  google.protobuf.Timestamp created_on = 11;
+  string project_variables_version = 13;
 }
 
-message DirEntry {
-  string path = 1;
-  bool is_dir = 2;
-}
-
-// FileEvent describes a file change.
-enum FileEvent {
-  FILE_EVENT_UNSPECIFIED = 0;
-  FILE_EVENT_WRITE = 1;
-  FILE_EVENT_DELETE = 2;
-}
-
-// Request message for RuntimeService.WatchFiles
-message WatchFilesRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  bool replay = 2;
-}
-
-// Response message for RuntimeService.WatchFiles
-message WatchFilesResponse {
-  FileEvent event = 1;
-  string path = 2;
-  bool is_dir = 3;
-}
-
-// Request message for RuntimeService.GetFile
-message GetFileRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string path = 2 [(validate.rules).string.min_len = 1];
-}
-
-// Response message for RuntimeService.GetFile
-message GetFileResponse {
-  string blob = 1;
-  google.protobuf.Timestamp updated_on = 2;
-}
-
-// Request message for RuntimeService.PutFile
-message PutFileRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string path = 2 [(validate.rules).string.min_len = 1];
-  string blob = 3;
-  // Create indicates whether to create the file if it doesn't already exist
-  bool create = 4;
-  // Will cause the operation to fail if the file already exists.
-  // It should only be set when create = true.
-  bool create_only = 5;
-}
-
-// Response message for RuntimeService.PutFile
-message PutFileResponse {
-  string file_path = 1; // TODO: Redundant, should be removed (but frontend currently uses it)
-}
-
-// Request message for RuntimeService.CreateDirectory
-message CreateDirectoryRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string path = 2 [(validate.rules).string.min_len = 1];
-}
-
-// Response message for RuntimeService.CreateDirectory
-message CreateDirectoryResponse {}
-
-// Request message for RuntimeService.DeleteFile
-message DeleteFileRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string path = 2 [(validate.rules).string.min_len = 1];
-  bool force = 3;
-}
-
-// Response message for RuntimeService.DeleteFile
-message DeleteFileResponse {}
-
-// Request message for RuntimeService.RenameFile
-message RenameFileRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string from_path = 2 [(validate.rules).string.min_len = 1];
-  string to_path = 3 [(validate.rules).string.min_len = 1];
-}
-
-// Response message for RuntimeService.RenameFile
-message RenameFileResponse {}
-
-// Example contains metadata about an example project that is available for unpacking.
-message Example {
+// ConnectorV2 represents a connector specification.
+message ConnectorV2 {
   string name = 1;
-  string display_name = 2;
-  string description = 3;
+  string type = 2;
+  map<string, string> config = 3;
 }
 
-// Request message for RuntimeService.ListExamples
-message ListExamplesRequest {}
-
-// Response message for RuntimeService.ListExamples
-message ListExamplesResponse {
-  repeated Example examples = 1;
-}
-
-// Request message for RuntimeService.UnpackExample
-message UnpackExampleRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string name = 2 [(validate.rules).string.min_len = 1];
-  bool force = 3;
-}
-
-// Response message for RuntimeService.UnpackExample
-message UnpackExampleResponse {}
-
-// Request message for RuntimeService.UnpackEmpty
-message UnpackEmptyRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string display_name = 2;
-  string olap = 4;
-  bool force = 3;
-}
-
-// Response message for RuntimeService.UnpackEmpty
-message UnpackEmptyResponse {}
-
-// Request message for RuntimeService.GenerateMetricsViewFile
-message GenerateMetricsViewFileRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Model to base the metrics view on.
-  // If you set this, do NOT set connector, database, database_schema or table.
-  string model = 8;
-  // Connector for the table.
-  // See "table" for more details.
-  string connector = 2;
-  // Database for the table.
-  // See "table" for more details.
-  string database = 6;
-  // Database schema for the table.
-  // See "table" for more details.
-  string database_schema = 7;
-  // Table to base the metrics view on.
-  // If you set this, do NOT set model.
-  string table = 3;
-  // Path to save the metrics view file to.
-  string path = 4;
-  // If true, the AI will be used to generate the metrics view file.
-  // Otherwise, it falls back to a simpler heuristic approach.
-  bool use_ai = 5;
-  // Optional prompt to guide AI generation.
-  string prompt = 9;
-}
-
-// Response message for RuntimeService.GenerateMetricsViewFile
-message GenerateMetricsViewFileResponse {
-  // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
-  bool ai_succeeded = 1;
-}
-
-// Request message for RuntimeService.GenerateCanvasFile
-message GenerateCanvasFileRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Metrics view name to base the canvas on.
-  string metrics_view_name = 2;
-  // Path to save the canvas file to.
-  string path = 3;
-  // If true, the AI will be used to generate the canvas file.
-  // Otherwise, it falls back to a simpler heuristic approach.
-  bool use_ai = 4;
-}
-
-// Response message for RuntimeService.GenerateCanvasFile
-message GenerateCanvasFileResponse {
-  // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
-  bool ai_succeeded = 1;
-}
-
-message GenerateResolverRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string prompt = 2;
-  // Both connector and table must be specified if metrics_view is not.
-  string connector = 3;
-  string table = 4;
-  // table and connector should not be provided if metrics_view is provided.
-  string metrics_view = 5;
-}
-
-message GenerateResolverResponse {
-  string resolver = 1;
-  google.protobuf.Struct resolver_properties = 2;
-}
-
-message GenerateRendererRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string prompt = 2;
-  string resolver = 3;
-  google.protobuf.Struct resolver_properties = 4;
-}
-
-message GenerateRendererResponse {
-  string renderer = 1;
-  google.protobuf.Struct renderer_properties = 2;
-}
-
-message QueryResolverRequest {
-  string instance_id = 1;
-  string resolver = 2;
-  google.protobuf.Struct resolver_properties = 3;
-  google.protobuf.Struct resolver_args = 4;
-  int32 limit = 5;
-}
-
-message QueryResolverResponse {
-  google.protobuf.Struct meta = 3;
-  StructType schema = 1;
-  repeated google.protobuf.Struct data = 2;
-}
-
-// **********
-// Controller
-// **********
-
-message Log {
-  LogLevel level = 1;
-  google.protobuf.Timestamp time = 2;
-  string message = 3;
-  string json_payload = 4;
-}
-
-enum LogLevel {
-  LOG_LEVEL_UNSPECIFIED = 0;
-  LOG_LEVEL_DEBUG = 4;
-  LOG_LEVEL_INFO = 8;
-  LOG_LEVEL_WARN = 12;
-  LOG_LEVEL_ERROR = 16;
-  LOG_LEVEL_FATAL = 20;
-}
-
-enum ResourceEvent {
-  RESOURCE_EVENT_UNSPECIFIED = 0;
-  RESOURCE_EVENT_WRITE = 1;
-  RESOURCE_EVENT_DELETE = 2;
-}
-
-message ModelPartition {
-  string key = 1;
-  google.protobuf.Struct data = 2;
-  google.protobuf.Timestamp watermark = 3;
-  google.protobuf.Timestamp executed_on = 4;
-  string error = 5;
-  uint32 elapsed_ms = 6;
-}
-
-message GetLogsRequest {
-  string instance_id = 1;
-  bool ascending = 2;
-  int32 limit = 3 [(validate.rules).int32 = {gte: -1}];
-  LogLevel level = 4;
-}
-
-message GetLogsResponse {
-  repeated Log logs = 1;
-}
-
-message WatchLogsRequest {
-  string instance_id = 1;
-  bool replay = 2;
-  int32 replay_limit = 3 [(validate.rules).int32 = {gte: -1}];
-  LogLevel level = 4;
-}
-
-message WatchLogsResponse {
-  Log log = 1;
-}
+// Resources
 
 message ListResourcesRequest {
-  // Instance to list resources from.
   string instance_id = 1;
-  // Filter by resource kind (optional).
-  string kind = 2;
-  // Filter by resource path (optional).
-  string path = 3;
-  // Skip security checks
-  bool skip_security_checks = 4;
+  optional ResourceName kind = 2;
+  optional string path = 3;
 }
 
 message ListResourcesResponse {
@@ -846,531 +419,335 @@ message ListResourcesResponse {
 
 message WatchResourcesRequest {
   string instance_id = 1;
-  string kind = 2;
+  optional ResourceName kind = 2;
   bool replay = 3;
 }
 
 message WatchResourcesResponse {
   ResourceEvent event = 1;
-  ResourceName name = 2;
-  Resource resource = 3;
 }
 
 message GetResourceRequest {
   string instance_id = 1;
   ResourceName name = 2;
-  bool skip_security_checks = 3;
 }
 
 message GetResourceResponse {
   Resource resource = 1;
 }
 
-message GetExploreRequest {
+message CreateResourceRequest {
   string instance_id = 1;
-  string name = 2;
+  Resource resource = 2;
 }
 
-message GetExploreResponse {
-  Resource explore = 1;
-  Resource metrics_view = 2;
+message CreateResourceResponse {
+  Resource resource = 1;
 }
 
-message GetModelPartitionsRequest {
+message DeleteResourceRequest {
   string instance_id = 1;
-  string model = 2;
-  bool pending = 5;
-  bool errored = 6;
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
-  string page_token = 4;
+  ResourceName name = 2;
 }
 
-message GetModelPartitionsResponse {
-  repeated ModelPartition partitions = 1;
-  string next_page_token = 2;
+message DeleteResourceResponse {
 }
 
-message CreateTriggerRequest {
-  // Instance to target.
+// Files
+
+message ListFilesRequest {
   string instance_id = 1;
-  // Resources to trigger. See RefreshTriggerSpec for details.
-  repeated ResourceName resources = 4;
-  // Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
-  repeated RefreshModelTrigger models = 5;
-  // Parser is a convenience flag to trigger the global project parser.
-  // Triggering the project parser ensures a pull of the repository and a full parse of all files.
-  bool parser = 6;
-  // Convenience flag to trigger all resources.
-  // Note: Despite the name, it does not currently trigger alerts and reports.
-  bool all = 7;
-  // Convenience flag to trigger all resources with full refreshes for resources that support it.
-  // Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
-  // Note: Despite the name, it does not currently trigger alerts and reports.
-  bool all_full = 8;
+  string glob = 2;
 }
 
-message CreateTriggerResponse {}
+message ListFilesResponse {
+  repeated DirEntry files = 1;
+}
 
-// **********
+message WatchFilesRequest {
+  string instance_id = 1;
+  bool replay = 2;
+}
+
+message WatchFilesResponse {
+  FileEvent event = 1;
+}
+
+message GetFileRequest {
+  string instance_id = 1;
+  string path = 2;
+}
+
+message GetFileResponse {
+  string blob = 1;
+  google.protobuf.Timestamp updated_on = 2;
+}
+
+message PutFileRequest {
+  string instance_id = 1;
+  string path = 2;
+  string blob = 3;
+  bool create = 4;
+  bool create_only = 5;
+}
+
+message PutFileResponse {
+  string file_path = 1;
+}
+
+message DeleteFileRequest {
+  string instance_id = 1;
+  string path = 2;
+  bool force = 3;
+}
+
+message DeleteFileResponse {
+}
+
+message RenameFileRequest {
+  string instance_id = 1;
+  string from_path = 2;
+  string to_path = 3;
+}
+
+message RenameFileResponse {
+}
+
+message DirEntry {
+  string path = 1;
+  bool is_dir = 2;
+}
+
+enum FileEvent {
+  FILE_EVENT_UNSPECIFIED = 0;
+  FILE_EVENT_WRITE = 1;
+  FILE_EVENT_DELETE = 2;
+}
+
 // Connectors
-// **********
 
-// ConnectorDriver represents a connector driver available in the runtime.
-message ConnectorDriver {
-  // Property represents the spec of one of the driver's config properties
-  message Property {
-    // Type of the property
-    enum Type {
-      TYPE_UNSPECIFIED = 0;
-      TYPE_NUMBER = 1;
-      TYPE_BOOLEAN = 2;
-      TYPE_STRING = 3;
-      TYPE_FILE = 4;
-      TYPE_INFORMATIONAL = 5;
-    }
-    // The property key
-    string key = 1;
-    // The type expected for this property
-    Type type = 2;
-    // Required is true if the field must be set
-    bool required = 3;
-    // Pretty name for the property
-    string display_name = 4;
-    // Human readable description of the field
-    string description = 5;
-    // Link to documentation for this property
-    string docs_url = 6;
-    // Additional textual explanation for use in UIs
-    string hint = 7;
-    // Default value for the property
-    string default = 8;
-    // Placeholder value for use in UIs
-    string placeholder = 9;
-    // If true, the property is a secret and should not be displayed in UIs
-    bool secret = 10;
-    // If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
-    bool no_prompt = 11;
-  }
-  // Name is the name of the connector
-  string name = 1;
-  // Properties for configuring the connector
-  repeated Property config_properties = 2;
-  // Properties that can be provided to the connector when using it as a source
-  repeated Property source_properties = 3;
-  // Pretty display name for use in UIs
-  string display_name = 4;
-  // Human readable description of the connector
-  string description = 5;
-  // Docs url for the connector
-  string docs_url = 21;
-  // Capabilities supported by the connector
-  bool implements_registry = 10;
-  bool implements_catalog = 11;
-  bool implements_repo = 12;
-  bool implements_admin = 13;
-  bool implements_ai = 14;
-  bool implements_sql_store = 15;
-  bool implements_olap = 16;
-  bool implements_object_store = 17;
-  bool implements_file_store = 18;
-  bool implements_notifier = 19;
-  bool implements_warehouse = 20;
+message ListConnectorDriversRequest {
 }
 
-// AnalyzedConnector contains information about a connector that is referenced in the project files.
-message AnalyzedConnector {
-  // Connector name
-  string name = 1;
-  // Connector driver metadata
-  ConnectorDriver driver = 2;
-  // Combined config properties for the connector
-  google.protobuf.Struct config = 3;
-  // Config properties preset by the runtime or when the instance was created
-  google.protobuf.Struct preset_config = 4;
-  // Config properties set in project YAML files
-  google.protobuf.Struct project_config = 5;
-  // Config properties set as dynamic variables
-  map<string, string> env_config = 6;
-  // Provision indicates if its a managed connector
-  bool provision = 10;
-  // Provision args for the provisioner if provision is true
-  google.protobuf.Struct provision_args = 11;
-  // True if the connector can be accessed without credentials
-  bool has_anonymous_access = 7;
-  // List of resources that appear to use the connector
-  repeated ResourceName used_by = 8;
-  // Error message if the connector is misconfigured
-  string error_message = 9;
-}
-
-// Request message for RuntimeService.ListConnectorDrivers
-message ListConnectorDriversRequest {}
-
-// Response message for RuntimeService.ListConnectorDrivers
 message ListConnectorDriversResponse {
   repeated ConnectorDriver connectors = 1;
 }
 
-// Request message for RuntimeService.AnalyzeConnectors
 message AnalyzeConnectorsRequest {
   string instance_id = 1;
 }
 
-// Response message for RuntimeService.AnalyzeConnectors
 message AnalyzeConnectorsResponse {
-  repeated AnalyzedConnector connectors = 1;
+  repeated ConnectorV2 connectors = 1;
 }
 
-// Request message for RuntimeService.ListNotifierConnectors
-message ListNotifierConnectorsRequest {
+message ScanConnectorsRequest {
   string instance_id = 1;
+  string connector = 2;
 }
 
-// Response message for RuntimeService.ListNotifierConnectors
-message ListNotifierConnectorsResponse {
-  // Note: In this list, the Connector.config property will always be empty.
-  repeated Connector connectors = 1;
+message ScanConnectorsResponse {
+  repeated ScannedConnector connectors = 1;
 }
 
-// **********
+message ScannedConnector {
+  string name = 1;
+  string type = 2;
+  bool has_anonymous_access = 3;
+  repeated ScannedTable tables = 4;
+}
+
+message ScannedTable {
+  string name = 1;
+  string schema = 2;
+  string database = 3;
+}
+
+message OLAPListTablesRequest {
+  string instance_id = 1;
+  string connector = 2;
+}
+
+message OLAPListTablesResponse {
+  repeated TableInfo tables = 1;
+}
+
+message OLAPGetTableRequest {
+  string instance_id = 1;
+  string table_name = 2;
+  string connector = 3;
+}
+
+message OLAPGetTableResponse {
+  string schema = 1;
+  string database = 2;
+  bool is_default_database = 3;
+  bool is_default_schema = 4;
+  TableInfo table = 5;
+}
+
+message TableInfo {
+  string name = 1;
+  string database = 2;
+  string schema = 3;
+  bool is_default_database = 4;
+  bool is_default_schema = 5;
+  repeated ColumnInfo columns = 6;
+  bool unsupported_columns = 7;
+}
+
+message ColumnInfo {
+  string name = 1;
+  string type = 2;
+  bool nullable = 3;
+}
+
+// Reconcile
+
+message CreateTriggerRequest {
+  string instance_id = 1;
+  // If set, will trigger all models and wait for them to idle.
+  bool all_models = 11;
+  // If set, will trigger all sources and wait for them to idle.
+  bool all_sources = 12;
+  // If set, will trigger a reconcile for the resources specified.
+  repeated ResourceName resources = 3;
+}
+
+message CreateTriggerResponse {
+}
+
 // AI
-// **********
 
-// Conversation metadata and messages
-message Conversation {
-  string id = 1;
-  string owner_id = 2;
-  string title = 3;
-  string user_agent = 6;
-  google.protobuf.Timestamp created_on = 4;
-  google.protobuf.Timestamp updated_on = 5;
-  repeated Message messages = 7; // NOTE: Deprecated.
-}
-
-// Message exchanged in a conversation
-message Message {
-  string id = 1;
-  string parent_id = 2;
-  google.protobuf.Timestamp created_on = 3;
-  google.protobuf.Timestamp updated_on = 4;
-  uint32 index = 5;
-  string role = 6;
-  string type = 7;
-  string tool = 8;
-  string content_type = 9;
-  string content_data = 10;
-  repeated rill.ai.v1.ContentBlock content = 11; // Convenience field
-}
-
-// Context for prompts handled by the analyst_agent.
-message AnalystAgentContext {
-  // Optional explore dashboard.
-  string explore = 4;
-  // Optional canvas dashboard.
-  string canvas = 10;
-  // Optional canvas component within a dashboard.
-  string canvas_component = 11;
-  // Optional dimensions.
-  repeated string dimensions = 5;
-  // Optional measures.
-  repeated string measures = 6;
-  // Optional filters.
-  rill.runtime.v1.Expression where = 7;
-  // Filter expressions as key-value pairs for the canvas.
-  // Key: Metrics view name
-  // Value: Expression object
-  map<string, rill.runtime.v1.Expression> where_per_metrics_view = 12;
-  // Optional start of a time range.
-  google.protobuf.Timestamp time_start = 8;
-  // Optional end of a time range.
-  google.protobuf.Timestamp time_end = 9;
-}
-
-// Context for prompts handled by the developer_agent.
-message DeveloperAgentContext {
-  // Set to true if the prompt is provided as part of project initialization.
-  // This should only be used when the project directory contains an empty project (except for the boilerplate generated by UnpackEmpty).
-  bool init_project = 1;
-  // Optional path to the file that the user is currently viewing/editing.
-  // This helps the agent understand which file the user is referring to in their request.
-  string current_file_path = 2;
-}
-
-// Context for prompts handled by the feedback_agent.
-// When provided, the agent records feedback and, for negative sentiment, runs attribution.
-message FeedbackAgentContext {
-  // The ID of the message being rated.
-  string target_message_id = 1;
-  // Sentiment: "positive" or "negative".
-  string sentiment = 2;
-  // Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other".
-  repeated string categories = 3;
-  // Optional free-text comment.
-  string comment = 4;
-}
-
-// Request message for RuntimeService.ListConversations
-message ListConversationsRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Optional search pattern for filtering by user agent.
-  string user_agent_pattern = 2;
-}
-
-// Response message for RuntimeService.ListConversations
-message ListConversationsResponse {
-  repeated Conversation conversations = 1;
-}
-
-// Request message for RuntimeService.GetConversation
-message GetConversationRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string conversation_id = 2;
-}
-
-// Response message for RuntimeService.GetConversation
-message GetConversationResponse {
-  Conversation conversation = 1;
-  repeated Message messages = 2;
-  bool is_owner = 3; // would be false for shared conversations accessed by non-owners
-}
-
-// Request message for RuntimeService.ShareConversation
-message ShareConversationRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string conversation_id = 2 [(validate.rules).string.min_len = 1];
-  // optional message ID up to which to share otherwise share all current messages
-  // only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
-  // It supports a special value of "none" to unshare the conversation.
-  string until_message_id = 3;
-}
-
-// Response message for RuntimeService.ShareConversation
-message ShareConversationResponse {}
-
-// Request message for RuntimeService.ForkConversation
-message ForkConversationRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string conversation_id = 2 [(validate.rules).string.min_len = 1];
-}
-
-// Response message for RuntimeService.ForkConversation
-message ForkConversationResponse {
-  string conversation_id = 1; // new conversation ID
-}
-
-// Request message for RuntimeService.ListTools
-message ListToolsRequest {
+message CompleteAIRequest {
   string instance_id = 1;
+  repeated AIMessage messages = 2;
+  string system_prompt = 3;
 }
 
-// Response message for RuntimeService.ListTools
-message ListToolsResponse {
-  repeated rill.ai.v1.Tool tools = 1;
+message CompleteAIResponse {
+  string message = 1;
 }
 
-// Request message for RuntimeService.Complete
-message CompleteRequest {
-  // Instance to run the completion against.
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Conversation ID to continue. If empty, a new conversation is created.
-  string conversation_id = 2;
-  // The prompt to complete.
-  string prompt = 3;
-  // Optional agent to use for the completion.
-  // If not set, it will infer an agent based on the prompt and conversation history.
-  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent", "feedback_agent"]}];
-  // Optional context for prompts handled by the analyst_agent.
-  // The field is ignored if another agent is selected.
-  AnalystAgentContext analyst_agent_context = 11;
-  // Optional context for prompts handled by the developer_agent.
-  // The field is ignored if another agent is selected.
-  DeveloperAgentContext developer_agent_context = 12;
-  // Optional context for prompts handled by the feedback_agent.
-  // The field is ignored if another agent is selected.
-  FeedbackAgentContext feedback_agent_context = 13;
+message AIMessage {
+  string role = 1;
+  string data = 2;
 }
 
-// Response message for RuntimeService.Complete
-message CompleteResponse {
-  string conversation_id = 1;
-  repeated Message messages = 2;
-}
-
-// Request message for RuntimeService.CompleteStreaming
-message CompleteStreamingRequest {
-  // Instance to run the completion against.
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Conversation ID to continue. If empty, a new conversation is created.
-  string conversation_id = 2;
-  // The prompt to complete.
-  string prompt = 3;
-  // Optional agent to use for the completion.
-  // If not set, it will infer an agent based on the prompt and conversation history.
-  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent", "feedback_agent"]}];
-  // Optional context for prompts handled by the analyst_agent.
-  // The field is ignored if another agent is selected.
-  AnalystAgentContext analyst_agent_context = 11;
-  // Optional context for prompts handled by the developer_agent.
-  // The field is ignored if another agent is selected.
-  DeveloperAgentContext developer_agent_context = 12;
-  // Optional context for prompts handled by the feedback_agent.
-  // The field is ignored if another agent is selected.
-  FeedbackAgentContext feedback_agent_context = 13;
-}
-
-// Response message for RuntimeService.CompleteStreaming
-message CompleteStreamingResponse {
-  string conversation_id = 1;
-  Message message = 2;
-}
-
-// **********
-// Access management
-// **********
-
-// Request message for RuntimeService.IssueDevJWT
-message IssueDevJWTRequest {
-  string name = 1 [(validate.rules).string.min_len = 1];
-  string email = 2 [(validate.rules).string.min_len = 1];
-  repeated string groups = 3;
-  bool admin = 4;
-  // Additional arbitrary attributes to include in the JWT.
-  // They take precedence if they collide with name, email, groups or admin.
-  google.protobuf.Struct attributes = 5;
-}
-
-// Response message for RuntimeService.IssueDevJWT
-message IssueDevJWTResponse {
-  string jwt = 1;
-}
-
-// Request message for RuntimeService.AnalyzeVariables
-message AnalyzeVariablesRequest {
+message GenerateResolverRequest {
   string instance_id = 1;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
+  string prompt = 4;
 }
 
-// Response message for RuntimeService.AnalyzeVariables
-message AnalyzeVariablesResponse {
-  repeated AnalyzedVariable variables = 1;
+message GenerateResolverResponse {
+  string resolver = 1;
+  google.protobuf.Struct resolver_properties = 2;
 }
 
-message AnalyzedVariable {
-  // Name of the variable.
-  string name = 1;
-  // Default value set for the variable in rill.yaml, if any.
-  string default_value = 2;
-  // List of resources that appear to use the connector.
-  repeated ResourceName used_by = 8;
+message GenerateRendererRequest {
+  string instance_id = 1;
+  string renderer = 2;
+  google.protobuf.Struct renderer_properties = 3;
+  string prompt = 4;
 }
 
-message ListGitCommitsRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  uint32 page_size = 2;
-  string page_token = 3;
+message GenerateRendererResponse {
+  string renderer = 1;
+  google.protobuf.Struct renderer_properties = 2;
 }
 
-message ListGitCommitsResponse {
-  repeated GitCommit commits = 1;
-  string next_page_token = 2;
+// Query
+
+message QueryRequest {
+  string instance_id = 1;
+  string sql = 2;
+  repeated google.protobuf.Value args = 3;
+  int32 priority = 4;
+  int32 limit = 5;
+  string connector = 6;
 }
 
-message GitCommit {
-  string commit_sha = 1;
-  string author_name = 2;
-  string author_email = 3;
-  google.protobuf.Timestamp committed_on = 4;
-  string message = 5;
+message QueryResponse {
+  StructType meta = 1;
+  repeated google.protobuf.Struct data = 2;
 }
 
-message GitStatusRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+message QueryBatchRequest {
+  string instance_id = 1;
+  repeated Query queries = 2;
 }
 
-message GitStatusResponse {
-  // The current branch of the git repo.
-  string branch = 1;
-  // The remote url of the git repo.
-  string github_url = 2;
-  // If the repo is managed by Rill.
-  bool managed_git = 3;
-  // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
-  bool local_changes = 4;
-  // local_commits returns number of local commits that are not pushed to the remote git repo.
-  int32 local_commits = 5;
-  // remote_commits returns number of remote commits not pulled yet.
-  int32 remote_commits = 6;
+message Query {
+  string sql = 1;
+  repeated google.protobuf.Value args = 2;
+  int32 priority = 3;
+  int32 limit = 4;
+  string connector = 5;
 }
 
-message ListGitBranchesRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+message QueryBatchResponse {
+  int32 index = 1;
+  oneof result {
+    QueryResult query_result = 2;
+    string error = 3;
+  }
 }
 
-message ListGitBranchesResponse {
-  string current_branch = 1;
-  repeated GitBranch branches = 2;
+message QueryResult {
+  StructType meta = 1;
+  repeated google.protobuf.Struct data = 2;
 }
 
-message GitBranch {
-  string name = 1;
-  bool has_deployment = 2;
-  bool editable_deployment = 3;
+message ExportRequest {
+  string instance_id = 1;
+  int32 limit = 2;
+  ExportFormat format = 3;
+  oneof request {
+    QueryRequest query = 4;
+  }
+  string bakedQuery = 5;
 }
 
-message GitCommitRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string commit_message = 2;
+message ExportResponse {
+  string download_url_path = 1;
 }
 
-message GitCommitResponse {
-  string commit_sha = 1;
+// Resolvers
+
+message ResolveRequest {
+  string instance_id = 1;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
+  google.protobuf.Struct args = 4;
+  map<string, string> claims = 5;
+  int32 limit = 6;
+  int32 offset = 7;
 }
 
-// Request message for RuntimeService.RestoreGitCommit
-message RestoreGitCommitRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string commit_sha = 2 [(validate.rules).string.min_len = 1];
+message ResolveResponse {
+  StructType schema = 1;
+  repeated google.protobuf.Struct data = 2;
+  bool cache = 3;
 }
 
-// Response message for RuntimeService.RestoreGitCommit
-message RestoreGitCommitResponse {
-  string new_commit_sha = 1;
+// Logs
+
+message GetLogsRequest {
+  string instance_id = 1;
+  bool ascending = 2;
+  int32 limit = 3;
+  string level = 4;
 }
 
-message GitMergeToBranchRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string branch = 2;
-  // In case of merge conflicts, prefer current changes.
-  bool force = 3;
+message GetLogsResponse {
+  repeated Log logs = 1;
 }
 
-message GitMergeToBranchResponse {
-  // The output of the git merge command. Only set for unsuccessful merges.
-  string output = 1;
+message Log {
+  string level = 1;
+  google.protobuf.Timestamp time = 2;
+  string message = 3;
+  string json_payload = 4;
 }
-
-message GitSwitchBranchRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string branch = 2;
-  bool create = 3;
-  bool ignore_local_changes = 4;
-}
-
-message GitSwitchBranchResponse {}
-
-message GitPullRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  bool discard_local = 2;
-}
-
-message GitPullResponse {
-  // The output of the git pull command. Only set for unsuccessful pulls.
-  string output = 1;
-}
-
-message GitPushRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string commit_message = 2;
-  bool force = 3;
-}
-
-message GitPushResponse {}
