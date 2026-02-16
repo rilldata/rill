@@ -40,6 +40,8 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
 	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
+	t.Run("CreateTableAsSelect_WithPrePostExec", func(t *testing.T) { testCreateTableAsSelect_WithPrePostExec(t, c, olap) })
+	t.Run("InsertTableAsSelect_WithPrePostExec", func(t *testing.T) { testInsertTableAsSelect_WithPrePostExec(t, c, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -100,10 +102,10 @@ func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
 func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	ctx := context.Background()
 	opts := &ModelOutputProperties{Typ: "VIEW"}
-	_, err := c.createTableAsSelect(ctx, "foo_view", "SELECT 1 AS id", opts)
+	_, err := c.createTableAsSelect(ctx, "foo_view", "SELECT 1 AS id", opts, "", "")
 	require.NoError(t, err)
 
-	_, err = c.createTableAsSelect(ctx, "bar_view", "SELECT 'city' AS name", opts)
+	_, err = c.createTableAsSelect(ctx, "bar_view", "SELECT 'city' AS name", opts, "", "")
 	require.NoError(t, err)
 
 	// rename to unknown view
@@ -156,7 +158,7 @@ func testCreateTableAsSelect(t *testing.T, c *Connection) {
 		Engine:                 "MergeTree",
 		Table:                  "tbl",
 		DistributedShardingKey: "rand()",
-	})
+	}, "", "")
 	require.NoError(t, err)
 }
 
@@ -168,7 +170,7 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, c *Connection, olap driver
 		IncrementalStrategy:    drivers.IncrementalStrategyAppend,
 	}
 
-	_, err := c.createTableAsSelect(context.Background(), "append_tbl", "SELECT 1 AS id, 'Earth' AS planet", props)
+	_, err := c.createTableAsSelect(context.Background(), "append_tbl", "SELECT 1 AS id, 'Earth' AS planet", props, "", "")
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyAppend}
@@ -225,7 +227,7 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 		IncrementalStrategy:    drivers.IncrementalStrategyMerge,
 		OrderBy:                "id",
 	}
-	_, err := c.createTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props)
+	_, err := c.createTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props, "", "")
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyMerge}
@@ -276,7 +278,7 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, c *Connection,
 		PartitionBy:            "id",
 		PrimaryKey:             "id",
 	}
-	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props)
+	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", props, "", "")
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{
@@ -339,7 +341,7 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 		PartitionBy:            "dt",
 		PrimaryKey:             "dt",
 	}
-	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", props)
+	_, err := c.createTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", props, "", "")
 	require.NoError(t, err)
 
 	insertOpts := &InsertTableOptions{
@@ -401,7 +403,7 @@ func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 		props.DictionarySourceUser = "default"
 		props.DictionarySourcePassword = "default"
 	}
-	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", props)
+	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", props, "", "")
 	require.NoError(t, err)
 
 	err = c.renameEntity(context.Background(), "dict", "dict1")
@@ -518,6 +520,80 @@ func testOptimizeTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 		{3, "test3"},
 	}
 	require.Equal(t, expected, results)
+}
+
+func testCreateTableAsSelect_WithPrePostExec(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+	ctx := context.Background()
+
+	// beforeCreate: create a source table that the main query will read from
+	beforeCreate := "CREATE TABLE pre_exec_src ENGINE=Memory AS SELECT 1 AS id, 'Earth' AS planet"
+	// afterCreate: drop the source table after the main table is created
+	afterCreate := "DROP TABLE IF EXISTS pre_exec_src"
+
+	props := &ModelOutputProperties{
+		Engine: "MergeTree",
+		Table:  "pre_post_tbl",
+	}
+	_, err := c.createTableAsSelect(ctx, "pre_post_tbl", "SELECT * FROM pre_exec_src", props, beforeCreate, afterCreate)
+	require.NoError(t, err)
+
+	// Verify: main table has the data
+	res, err := olap.Query(ctx, &drivers.Statement{Query: "SELECT id, planet FROM pre_post_tbl"})
+	require.NoError(t, err)
+	require.True(t, res.Next())
+	var id int
+	var planet string
+	require.NoError(t, res.Scan(&id, &planet))
+	require.Equal(t, 1, id)
+	require.Equal(t, "Earth", planet)
+	require.NoError(t, res.Close())
+
+	// Verify: post_exec ran — source table should be gone
+	notExists(t, olap, "pre_exec_src")
+}
+
+func testInsertTableAsSelect_WithPrePostExec(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+	ctx := context.Background()
+
+	// Create the base table first
+	props := &ModelOutputProperties{
+		Engine:              "MergeTree",
+		Table:               "pre_post_append_tbl",
+		IncrementalStrategy: drivers.IncrementalStrategyAppend,
+	}
+	_, err := c.createTableAsSelect(ctx, "pre_post_append_tbl", "SELECT 1 AS id, 'Earth' AS planet", props, "", "")
+	require.NoError(t, err)
+
+	// Now do an incremental insert using pre/post exec
+	beforeInsert := "CREATE TABLE pre_exec_insert_src ENGINE=Memory AS SELECT 2 AS id, 'Mars' AS planet"
+	afterInsert := "DROP TABLE IF EXISTS pre_exec_insert_src"
+
+	insertOpts := &InsertTableOptions{
+		Strategy:     drivers.IncrementalStrategyAppend,
+		BeforeInsert: beforeInsert,
+		AfterInsert:  afterInsert,
+	}
+	_, err = c.insertTableAsSelect(ctx, "pre_post_append_tbl", "SELECT * FROM pre_exec_insert_src", insertOpts, props)
+	require.NoError(t, err)
+
+	// Verify: table has both rows
+	res, err := olap.Query(ctx, &drivers.Statement{Query: "SELECT id, planet FROM pre_post_append_tbl ORDER BY id"})
+	require.NoError(t, err)
+
+	resultSet := make(map[int]string)
+	for res.Next() {
+		var id int
+		var planet string
+		require.NoError(t, res.Scan(&id, &planet))
+		resultSet[id] = planet
+	}
+	require.NoError(t, res.Close())
+
+	require.Equal(t, "Earth", resultSet[1])
+	require.Equal(t, "Mars", resultSet[2])
+
+	// Verify: post_exec ran — source table should be gone
+	notExists(t, olap, "pre_exec_insert_src")
 }
 
 func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {
@@ -821,7 +897,7 @@ func testDualDSNModelOperations(t *testing.T, c *Connection, olap drivers.OLAPSt
 	}
 
 	// Create table using model operations (should use write connection)
-	_, err := c.createTableAsSelect(context.Background(), "dual_dsn_model_test", "SELECT 1 AS id, 'initial' AS status", props)
+	_, err := c.createTableAsSelect(context.Background(), "dual_dsn_model_test", "SELECT 1 AS id, 'initial' AS status", props, "", "")
 	require.NoError(t, err)
 
 	// Insert more data using model operations (should use write connection)
