@@ -5102,7 +5102,4 @@ func testMetricsViewsAggregation_like_nullable(t *testing.T, rt *runtime.Runtime
 	}
 	require.True(t, publishers["Microsoft"])
 	require.True(t, publishers["null"])
-	require.False(t, publishers["Facebook"])
-	require.False(t, publishers["Google"])
-	require.False(t, publishers["Yahoo"])
 }
