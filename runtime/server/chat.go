@@ -532,12 +532,12 @@ func (s *Server) GetAIToolCall(ctx context.Context, req *runtimev1.GetAIToolCall
 		Claims:     claims,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "failed to find the conversaion %q", req.ConversationId)
+		return nil, status.Errorf(codes.NotFound, "failed to find the conversation: %q", req.ConversationId)
 	}
 
 	callMsg, ok := session.Message(ai.FilterByID(req.CallId))
 	if !ok {
-		return nil, status.Errorf(codes.NotFound, "call message with ID %q not found", req.CallId)
+		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.CallId)
 	}
 
 	rawReq, err := session.UnmarshalMessageContent(callMsg)
