@@ -1,297 +1,233 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { Search } from "@rilldata/web-common/components/search";
-  import { Button } from "@rilldata/web-common/components/button";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-  } from "@rilldata/web-common/components/dropdown-menu";
-  import { EllipsisIcon, KeyRound, Trash2, Eye } from "lucide-svelte";
   import { createUserTokenListQuery } from "./token-queries";
-  import { timeAgo } from "@rilldata/web-common/lib/time";
+  import { deleteUserTokenMutation } from "./token-queries";
+  import DeleteTokenDialog from "./DeleteTokenDialog.svelte";
+  import TokenDetailsDrawer from "./TokenDetailsDrawer.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import { formatTimeAgo } from "@rilldata/web-common/lib/time";
 
-  export let organization: string;
+  export let orgId: string;
 
-  const dispatch = createEventDispatcher<{
-    create: void;
-    delete: { tokenId: string; tokenName: string };
-    viewDetails: { tokenId: string };
-  }>();
+  const dispatch = createEventDispatcher();
 
-  let searchText = "";
+  let search = "";
   let debouncedSearch = "";
-  let debounceTimer: ReturnType<typeof setTimeout>;
   let pageToken: string | undefined = undefined;
-  let pageTokenStack: string[] = [];
+  let deleteDialogOpen = false;
+  let tokenToDelete: { id: string; name: string } | null = null;
+  let drawerOpen = false;
+  let selectedTokenId: string | null = null;
 
-  function handleSearchInput(value: string) {
-    searchText = value;
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      debouncedSearch = searchText;
-      pageToken = undefined;
-      pageTokenStack = [];
-    }, 300);
-  }
+  const debouncedSetSearch = debounce((value: string) => {
+    debouncedSearch = value;
+    pageToken = undefined;
+  }, 300);
 
-  $: listQuery = createUserTokenListQuery({
-    pageSize: 20,
+  $: debouncedSetSearch(search);
+
+  $: tokenListQuery = createUserTokenListQuery({
+    search: debouncedSearch || undefined,
     pageToken,
   });
 
-  $: tokens = $listQuery.data?.tokens ?? [];
-  $: nextPageToken = $listQuery.data?.nextPageToken;
-  $: isLoading = $listQuery.isLoading;
-  $: isError = $listQuery.isError;
-  $: error = $listQuery.error;
+  $: tokens = $tokenListQuery?.data?.tokens ?? [];
+  $: nextPageToken = $tokenListQuery?.data?.nextPageToken;
+  $: isLoading = $tokenListQuery?.isLoading ?? true;
+  $: isError = $tokenListQuery?.isError ?? false;
+  $: error = $tokenListQuery?.error;
 
-  // Client-side search filtering since user token API may not support server-side search
-  $: filteredTokens = debouncedSearch
-    ? tokens.filter(
-        (t) =>
-          t.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          t.id?.toLowerCase().includes(debouncedSearch.toLowerCase()),
-      )
-    : tokens;
+  const deleteMutation = deleteUserTokenMutation();
 
-  function isExpired(expiresAt: string | undefined): boolean {
-    if (!expiresAt) return false;
-    return new Date(expiresAt) < new Date();
+  function handleSearch(event: Event) {
+    search = (event.target as HTMLInputElement).value;
   }
 
-  function formatDate(dateStr: string | undefined): string {
-    if (!dateStr) return "Never";
-    return timeAgo(new Date(dateStr));
-  }
-
-  function formatExpiration(expiresAt: string | undefined): string {
-    if (!expiresAt) return "Never";
-    const date = new Date(expiresAt);
-    if (date < new Date()) {
-      return `Expired ${timeAgo(date)}`;
-    }
-    return timeAgo(date);
-  }
-
-  function getTokenPrefix(token: { id?: string }): string {
-    // The API may return a tokenPrefix field or we derive from id
-    return (token as any).tokenPrefix ?? `rilluser_****`;
-  }
-
-  function getTokenName(token: { description?: string; id?: string }): string {
-    return token.description || token.id || "Unnamed token";
-  }
-
-  function handleNextPage() {
+  function handleLoadMore() {
     if (nextPageToken) {
-      if (pageToken) {
-        pageTokenStack = [...pageTokenStack, pageToken];
-      }
       pageToken = nextPageToken;
     }
   }
 
-  function handlePrevPage() {
-    if (pageTokenStack.length > 0) {
-      const stack = [...pageTokenStack];
-      pageToken = stack.pop();
-      pageTokenStack = stack;
-    } else {
-      pageToken = undefined;
-    }
+  function openDeleteDialog(token: { id: string; name: string }) {
+    tokenToDelete = token;
+    deleteDialogOpen = true;
   }
 
-  function handleDelete(token: { id?: string; description?: string }) {
-    dispatch("delete", {
-      tokenId: token.id ?? "",
-      tokenName: getTokenName(token),
+  function closeDeleteDialog() {
+    deleteDialogOpen = false;
+    tokenToDelete = null;
+  }
+
+  function openDrawer(tokenId: string) {
+    selectedTokenId = tokenId;
+    drawerOpen = true;
+  }
+
+  function closeDrawer() {
+    drawerOpen = false;
+    selectedTokenId = null;
+  }
+
+  async function handleDelete() {
+    if (!tokenToDelete) return;
+    await $deleteMutation.mutateAsync({ tokenId: tokenToDelete.id });
+    eventBus.emit("notification", {
+      message: `Token "${tokenToDelete.name}" has been revoked.`,
+      type: "success",
     });
+    closeDeleteDialog();
   }
 
-  function handleViewDetails(token: { id?: string }) {
-    dispatch("viewDetails", { tokenId: token.id ?? "" });
+  function isExpired(expiresAt: string | undefined | null): boolean {
+    if (!expiresAt) return false;
+    return new Date(expiresAt) < new Date();
+  }
+
+  function handleRowClick(tokenId: string) {
+    openDrawer(tokenId);
+  }
+
+  function handleRowKeydown(event: KeyboardEvent, tokenId: string) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openDrawer(tokenId);
+    }
   }
 </script>
 
-<div class="flex flex-col gap-4">
-  <!-- Search -->
-  <div class="flex items-center gap-2">
-    <div class="w-full max-w-sm">
-      <Search
-        value={searchText}
-        on:input={(e) => handleSearchInput(e.detail ?? e.target?.value ?? "")}
-        placeholder="Search tokens..."
-      />
-    </div>
+<div class="user-token-list">
+  <div class="list-toolbar">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Search user tokens..."
+      value={search}
+      on:input={handleSearch}
+    />
   </div>
 
-  <!-- Loading state -->
   {#if isLoading}
-    <div class="border rounded-md overflow-hidden">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b bg-gray-50">
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Name</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Token Prefix</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Created</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Expires</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Last Used</th>
-            <th class="text-right py-3 px-4 font-medium text-gray-600">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each Array(5) as _}
-            <tr class="border-b">
-              <td class="py-3 px-4"><div class="h-4 w-32 bg-gray-200 rounded animate-pulse" /></td>
-              <td class="py-3 px-4"><div class="h-4 w-24 bg-gray-200 rounded animate-pulse" /></td>
-              <td class="py-3 px-4"><div class="h-4 w-20 bg-gray-200 rounded animate-pulse" /></td>
-              <td class="py-3 px-4"><div class="h-4 w-20 bg-gray-200 rounded animate-pulse" /></td>
-              <td class="py-3 px-4"><div class="h-4 w-20 bg-gray-200 rounded animate-pulse" /></td>
-              <td class="py-3 px-4"><div class="h-4 w-6 bg-gray-200 rounded animate-pulse ml-auto" /></td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+    <div class="skeleton-container">
+      {#each Array(5) as _}
+        <div class="skeleton-row">
+          <div class="skeleton-cell wide" />
+          <div class="skeleton-cell medium" />
+          <div class="skeleton-cell medium" />
+          <div class="skeleton-cell medium" />
+          <div class="skeleton-cell medium" />
+          <div class="skeleton-cell narrow" />
+        </div>
+      {/each}
     </div>
-
-  <!-- Error state -->
   {:else if isError}
-    <div class="border rounded-md p-8 flex flex-col items-center gap-4 bg-red-50">
-      <p class="text-red-600 text-sm">
-        {error?.message ?? "Failed to load user tokens. Please try again."}
+    <div class="error-state">
+      <p class="error-message">
+        Failed to load user tokens{error?.message ? `: ${error.message}` : ""}.
       </p>
-      <Button variant="secondary" on:click={() => $listQuery.refetch()}>
-        Retry
-      </Button>
-    </div>
-
-  <!-- Empty state -->
-  {:else if filteredTokens.length === 0 && !debouncedSearch}
-    <div class="border rounded-md p-12 flex flex-col items-center gap-4">
-      <div class="rounded-full bg-gray-100 p-3">
-        <KeyRound class="h-6 w-6 text-gray-400" />
-      </div>
-      <div class="text-center">
-        <p class="text-sm font-medium text-gray-900">No personal tokens yet</p>
-        <p class="text-sm text-gray-500 mt-1">
-          Create one to use the Rill CLI or API.
-        </p>
-      </div>
-      <Button on:click={() => dispatch("create")}>
-        Create User Token
-      </Button>
-    </div>
-
-  <!-- Empty search results -->
-  {:else if filteredTokens.length === 0 && debouncedSearch}
-    <div class="border rounded-md p-8 flex flex-col items-center gap-3">
-      <p class="text-sm text-gray-500">
-        No tokens matching "<span class="font-medium">{debouncedSearch}</span>"
-      </p>
-      <Button
-        variant="secondary"
-        on:click={() => {
-          searchText = "";
-          debouncedSearch = "";
-        }}
+      <button
+        class="retry-button"
+        on:click={() => $tokenListQuery.refetch()}
       >
-        Clear search
-      </Button>
+        Retry
+      </button>
     </div>
-
-  <!-- Token table -->
+  {:else if tokens.length === 0 && !debouncedSearch}
+    <div class="empty-state">
+      <div class="empty-icon">🔑</div>
+      <h3>No personal tokens yet</h3>
+      <p>Create one to use the Rill CLI or API.</p>
+      <button
+        class="create-button"
+        on:click={() => dispatch("create")}
+      >
+        Create User Token
+      </button>
+    </div>
+  {:else if tokens.length === 0 && debouncedSearch}
+    <div class="empty-state">
+      <p>No tokens match "{debouncedSearch}".</p>
+    </div>
   {:else}
-    <div class="border rounded-md overflow-hidden">
-      <table class="w-full text-sm">
+    <div class="table-container">
+      <table class="token-table">
         <thead>
-          <tr class="border-b bg-gray-50">
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Name</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Token Prefix</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Created</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Expires</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Last Used</th>
-            <th class="text-right py-3 px-4 font-medium text-gray-600">Actions</th>
+          <tr>
+            <th>Name</th>
+            <th>Token Prefix</th>
+            <th>Created</th>
+            <th>Expires</th>
+            <th>Last Used</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {#each filteredTokens as token (token.id)}
-            {@const expired = isExpired(token.expiresOn)}
+          {#each tokens as token (token.id)}
+            {@const expired = isExpired(token.expiresAt)}
             <tr
-              class="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer transition-colors"
-              class:opacity-60={expired}
-              on:click={() => handleViewDetails(token)}
+              class="token-row"
+              class:expired
+              role="button"
+              tabindex="0"
+              on:click={() => handleRowClick(token.id)}
+              on:keydown={(e) => handleRowKeydown(e, token.id)}
             >
-              <td class="py-3 px-4">
-                <div class="flex items-center gap-2">
-                  <span
-                    class="font-medium text-gray-900"
-                    class:line-through={expired}
-                  >
-                    {getTokenName(token)}
-                  </span>
-                  {#if expired}
-                    <span
-                      class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
-                    >
-                      Expired
-                    </span>
-                  {/if}
-                </div>
+              <td class="name-cell">
+                <span class="token-name" class:expired-text={expired}>
+                  {token.name || "Unnamed Token"}
+                </span>
+                {#if expired}
+                  <span class="badge badge-expired">Expired</span>
+                {/if}
               </td>
-              <td class="py-3 px-4">
-                <code class="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">
-                  {getTokenPrefix(token)}
+              <td class="prefix-cell">
+                <code class="token-prefix" class:expired-text={expired}>
+                  {token.tokenPrefix || "rilluser_****"}
                 </code>
               </td>
-              <td class="py-3 px-4 text-gray-600">
-                {formatDate(token.createdOn)}
+              <td class="date-cell">
+                {token.createdAt ? formatTimeAgo(new Date(token.createdAt)) : "—"}
               </td>
-              <td class="py-3 px-4">
-                <span
-                  class:text-red-600={expired}
-                  class:font-medium={expired}
-                  class:text-gray-600={!expired}
-                >
-                  {formatExpiration(token.expiresOn)}
-                </span>
+              <td class="date-cell">
+                {#if token.expiresAt}
+                  <span class:expired-text={expired}>
+                    {formatTimeAgo(new Date(token.expiresAt))}
+                  </span>
+                {:else}
+                  <span class="never-text">Never</span>
+                {/if}
               </td>
-              <td class="py-3 px-4 text-gray-600">
-                {formatDate(token.lastUsedOn)}
+              <td class="date-cell">
+                {token.lastUsedAt ? formatTimeAgo(new Date(token.lastUsedAt)) : "Never"}
               </td>
-              <td class="py-3 px-4 text-right">
-                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                <div
-                  on:click|stopPropagation
-                  role="presentation"
-                >
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild let:builder>
-                      <Button
-                        builders={[builder]}
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8"
-                      >
-                        <EllipsisIcon class="h-4 w-4" />
-                        <span class="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem on:click={() => handleViewDetails(token)}>
-                        <Eye class="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        class="text-red-600"
-                        on:click={() => handleDelete(token)}
-                      >
-                        <Trash2 class="h-4 w-4 mr-2" />
-                        Revoke Token
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+              <td class="actions-cell">
+                <div class="actions-menu">
+                  <button
+                    class="action-button"
+                    title="Actions"
+                    on:click|stopPropagation={() => {}}
+                  >
+                    ⋮
+                  </button>
+                  <div class="dropdown-menu">
+                    <button
+                      class="dropdown-item"
+                      on:click|stopPropagation={() => openDrawer(token.id)}
+                    >
+                      View Details
+                    </button>
+                    <button
+                      class="dropdown-item destructive"
+                      on:click|stopPropagation={() =>
+                        openDeleteDialog({
+                          id: token.id,
+                          name: token.name || "Unnamed Token",
+                        })}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -300,31 +236,375 @@
       </table>
     </div>
 
-    <!-- Pagination -->
-    {#if nextPageToken || pageTokenStack.length > 0}
-      <div class="flex items-center justify-between pt-2">
-        <p class="text-sm text-gray-500">
-          Showing {filteredTokens.length} tokens
-        </p>
-        <div class="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pageTokenStack.length === 0 && !pageToken}
-            on:click={handlePrevPage}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!nextPageToken}
-            on:click={handleNextPage}
-          >
-            Next
-          </Button>
-        </div>
+    {#if nextPageToken}
+      <div class="pagination">
+        <button class="load-more-button" on:click={handleLoadMore}>
+          Load More
+        </button>
       </div>
     {/if}
   {/if}
 </div>
+
+{#if deleteDialogOpen && tokenToDelete}
+  <DeleteTokenDialog
+    tokenName={tokenToDelete.name}
+    tokenType="user"
+    onConfirm={handleDelete}
+    onCancel={closeDeleteDialog}
+  />
+{/if}
+
+<TokenDetailsDrawer
+  tokenId={selectedTokenId ?? ""}
+  tokenType="user"
+  {orgId}
+  open={drawerOpen}
+  on:close={closeDrawer}
+  on:revoke={(e) => {
+    closeDrawer();
+    openDeleteDialog({ id: e.detail.tokenId, name: e.detail.tokenName });
+  }}
+/>
+
+<style lang="postcss">
+  .user-token-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .list-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .search-input {
+    flex: 1;
+    max-width: 320px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .search-input:focus {
+    border-color: var(--color-primary, #6366f1);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+  }
+
+  .skeleton-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .skeleton-row {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    background: var(--color-surface, #f8fafc);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-cell {
+    height: 1rem;
+    border-radius: 4px;
+    background: var(--color-border, #e2e8f0);
+  }
+
+  .skeleton-cell.wide {
+    flex: 2;
+  }
+
+  .skeleton-cell.medium {
+    flex: 1;
+  }
+
+  .skeleton-cell.narrow {
+    flex: 0.5;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .error-message {
+    color: var(--color-error, #ef4444);
+    font-size: 0.875rem;
+  }
+
+  .retry-button {
+    padding: 0.5rem 1rem;
+    background: var(--color-primary, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  .retry-button:hover {
+    opacity: 0.9;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--color-text-secondary, #64748b);
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text, #1e293b);
+    margin: 0;
+  }
+
+  .empty-state p {
+    font-size: 0.875rem;
+    margin: 0;
+  }
+
+  .create-button {
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-primary, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .create-button:hover {
+    opacity: 0.9;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 8px;
+  }
+
+  .token-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .token-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary, #64748b);
+    background: var(--color-surface, #f8fafc);
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
+    white-space: nowrap;
+  }
+
+  .token-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-light, #f1f5f9);
+    white-space: nowrap;
+  }
+
+  .token-row {
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+
+  .token-row:hover {
+    background-color: var(--color-surface, #f8fafc);
+  }
+
+  .token-row:focus-visible {
+    outline: 2px solid var(--color-primary, #6366f1);
+    outline-offset: -2px;
+  }
+
+  .token-row.expired {
+    opacity: 0.7;
+  }
+
+  .name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .token-name {
+    font-weight: 500;
+    color: var(--color-text, #1e293b);
+  }
+
+  .expired-text {
+    text-decoration: line-through;
+    color: var(--color-text-secondary, #94a3b8);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .badge-expired {
+    background: var(--color-error-light, #fef2f2);
+    color: var(--color-error, #ef4444);
+  }
+
+  .prefix-cell code {
+    font-family: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono",
+      Menlo, monospace;
+    font-size: 0.8125rem;
+    padding: 0.125rem 0.375rem;
+    background: var(--color-surface, #f1f5f9);
+    border-radius: 4px;
+  }
+
+  .date-cell {
+    color: var(--color-text-secondary, #64748b);
+    font-size: 0.8125rem;
+  }
+
+  .never-text {
+    color: var(--color-text-tertiary, #94a3b8);
+    font-style: italic;
+  }
+
+  .actions-cell {
+    width: 3rem;
+    text-align: center;
+  }
+
+  .actions-menu {
+    position: relative;
+    display: inline-block;
+  }
+
+  .action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-text-secondary, #64748b);
+    font-size: 1.125rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .action-button:hover {
+    background: var(--color-surface, #f1f5f9);
+    color: var(--color-text, #1e293b);
+  }
+
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 20;
+    min-width: 140px;
+    background: white;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 6px;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 0.25rem;
+  }
+
+  .actions-menu:focus-within .dropdown-menu {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    text-align: left;
+    font-size: 0.8125rem;
+    color: var(--color-text, #1e293b);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .dropdown-item:hover {
+    background: var(--color-surface, #f8fafc);
+  }
+
+  .dropdown-item.destructive {
+    color: var(--color-error, #ef4444);
+  }
+
+  .dropdown-item.destructive:hover {
+    background: var(--color-error-light, #fef2f2);
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem 0;
+  }
+
+  .load-more-button {
+    padding: 0.5rem 1.5rem;
+    background: white;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--color-text, #1e293b);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .load-more-button:hover {
+    background: var(--color-surface, #f8fafc);
+    border-color: var(--color-border-dark, #cbd5e1);
+  }
+</style>
