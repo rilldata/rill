@@ -5,7 +5,10 @@ import {
   type FunnelBreakdownMode,
   type FunnelChartSpec as FunnelChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/funnel/FunnelChartProvider";
-import type { ChartFieldsMap } from "@rilldata/web-common/features/components/charts/types";
+import {
+  ChartSortType,
+  type ChartFieldsMap,
+} from "@rilldata/web-common/features/components/charts/types";
 import { isMultiFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
@@ -22,7 +25,7 @@ import type {
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
 const DEFAULT_STAGE_LIMIT = 15;
-const DEFAULT_SORT = "-y";
+const DEFAULT_SORT = ChartSortType.Y_DESC;
 
 export type FunnelCanvasChartSpec = BaseChartConfig & FunnelChartSpecBase;
 

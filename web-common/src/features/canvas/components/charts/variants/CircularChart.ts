@@ -4,7 +4,10 @@ import {
   CircularChartProvider,
   type CircularChartSpec as CircularChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/circular/CircularChartProvider";
-import type { ChartFieldsMap } from "@rilldata/web-common/features/components/charts/types";
+import {
+  ChartSortType,
+  type ChartFieldsMap,
+} from "@rilldata/web-common/features/components/charts/types";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   MetricsViewSpecDimensionType,
@@ -20,7 +23,7 @@ import type {
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
 const DEFAULT_COLOR_LIMIT = 20;
-const DEFAULT_SORT = "-measure";
+const DEFAULT_SORT = ChartSortType.MEASURE_DESC;
 
 export type CircularCanvasChartSpec = BaseChartConfig & CircularChartSpecBase;
 

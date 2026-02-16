@@ -5,14 +5,15 @@ import type { Color } from "chroma-js";
 import chroma from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
-import type {
-  ChartDataResult,
-  ChartDomainValues,
-  ChartSortDirection,
-  ChartSpec,
-  ChartType,
-  ColorMapping,
-  FieldConfig,
+import {
+  ChartSortType,
+  type ChartDataResult,
+  type ChartDomainValues,
+  type ChartSortDirection,
+  type ChartSpec,
+  type ChartType,
+  type ColorMapping,
+  type FieldConfig,
 } from "./types";
 import { getChroma } from "../../themes/theme-utils";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
@@ -326,7 +327,10 @@ export function colorToVariableReference(
 export function sanitizeSortFieldForVega(sort: ChartSortDirection | undefined) {
   if (!sort) return undefined;
 
-  if (sort === "measure" || sort === "-measure") {
+  if (
+    sort === ChartSortType.MEASURE_ASC ||
+    sort === ChartSortType.MEASURE_DESC
+  ) {
     return undefined;
   }
   return sort;
