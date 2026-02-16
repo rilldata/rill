@@ -1,54 +1,62 @@
-<!-- ORG SETTINGS -->
-
 <script lang="ts">
   import { page } from "$app/stores";
-  import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
-  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
-  import type { PageData } from "./$types";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-
-  export let data: PageData;
-
-  $: ({ subscription, neverSubscribed, billingPortalUrl } = data);
+  import SettingsNav from "@rilldata/web-admin/src/lib/components/navigation/SettingsNav.svelte";
 
   $: organization = $page.params.organization;
-  $: basePage = `/${organization}/-/settings`;
-  $: onEnterprisePlan =
-    subscription?.plan?.name && isEnterprisePlan(subscription.plan.name);
-  $: hideBillingSettings = neverSubscribed;
-  $: hideUsageSettings = onEnterprisePlan || !billingPortalUrl;
 
-  $: navItems = [
-    { label: "General", route: "", hasPermission: true },
+  const settingsNavItems = [
+    {
+      label: "General",
+      href: `/${organization}/-/settings`,
+      exactMatch: true,
+    },
+    {
+      label: "Members",
+      href: `/${organization}/-/settings/members`,
+    },
     {
       label: "Billing",
-      route: "/billing",
-      hasPermission: !hideBillingSettings,
+      href: `/${organization}/-/settings/billing`,
     },
     {
-      label: "Usage",
-      route: "/usage",
-      hasPermission: !hideBillingSettings && !hideUsageSettings,
+      label: "Tokens",
+      href: `/${organization}/-/settings/tokens`,
     },
   ];
+
+  // Reactive: update hrefs when organization changes
+  $: navItems = settingsNavItems.map((item) => ({
+    ...item,
+    href: item.href.replace(
+      settingsNavItems[0].href.split("/-/settings")[0],
+      `/${organization}`,
+    ),
+  }));
 </script>
 
-<ContentContainer title="Organization settings" maxWidth={1100}>
-  <div class="container flex-col md:flex-row">
-    <LeftNav
-      {basePage}
-      baseRoute="/[organization]/-/settings"
-      {navItems}
-      minWidth="180px"
-    />
-    <div class="flex flex-col gap-y-6 w-full">
+<div class="flex flex-col gap-5 p-5 w-full max-w-[900px] mx-auto">
+  <h1 class="text-2xl font-bold">Settings</h1>
+  <div class="flex gap-8">
+    <nav class="flex flex-col gap-1 min-w-[160px] shrink-0">
+      {#each navItems as item}
+        {@const isActive = item.exactMatch
+          ? $page.url.pathname === item.href ||
+            $page.url.pathname === item.href + "/"
+          : $page.url.pathname.startsWith(item.href)}
+        <a
+          href={item.href}
+          class="px-3 py-1.5 rounded-sm text-sm font-medium transition-colors
+            {isActive
+            ? 'bg-gray-100 text-gray-900'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}"
+          aria-current={isActive ? "page" : undefined}
+        >
+          {item.label}
+        </a>
+      {/each}
+    </nav>
+    <div class="flex-1 min-w-0">
       <slot />
     </div>
   </div>
-</ContentContainer>
-
-<style lang="postcss">
-  .container {
-    @apply flex pt-6 gap-6 max-w-full overflow-hidden;
-  }
-</style>
+</div>
