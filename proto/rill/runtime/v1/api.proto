@@ -300,7 +300,7 @@ service RuntimeService {
   // GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
   rpc GetAIToolCall(GetAIToolCallRequest) returns (GetAIToolCallResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/query/{query_id}"
+      get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/call/{call_id}"
     };
   }
 
@@ -1216,7 +1216,7 @@ message CompleteStreamingResponse {
 message GetAIToolCallRequest {
   string instance_id = 1;
   string conversation_id = 2;
-  string query_id = 3;
+  string call_id = 3;
 }
 
 // Response message for RuntimeService.GetAIToolCall

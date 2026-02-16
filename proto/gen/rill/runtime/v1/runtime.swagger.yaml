@@ -538,7 +538,7 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/ai/conversations/{conversationId}/calls/{callId}:
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/call/{callId}:
     get:
       summary: GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
       operationId: RuntimeService_GetAIToolCall

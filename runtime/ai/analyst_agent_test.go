@@ -1,10 +1,6 @@
 package ai_test
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"regexp"
 	"testing"
 	"time"
 
@@ -75,7 +71,6 @@ func TestAnalystOpenRTB(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		AIConnector: "openai",
 		Files:       files,
-		FrontendURL: "http://localhost:8080",
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
 
@@ -146,30 +141,21 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Equal(t, ai.GetMetricsViewName, calls[1].Tool)
 		require.Equal(t, ai.QueryMetricsViewName, calls[2].Tool)
 
-		assertQuery := func(qry metricsview.Query) {
-			// Assert that the time range is sent using the context
-			require.Equal(t, parseTestTime(t, "2023-09-11T00:00:00Z"), qry.TimeRange.Start)
-			require.Equal(t, parseTestTime(t, "2023-09-14T00:00:00Z"), qry.TimeRange.End)
-			// Assert that the filter is sent using the context
-			require.NotNil(t, qry.Where)
-			require.NotNil(t, qry.Where.Condition)
-			expr := maybeUnwrapJoinerExpr(qry.Where)
-			require.Len(t, expr.Condition.Expressions, 2)
-			require.Equal(t, "device_os", expr.Condition.Expressions[0].Name)
-			require.Equal(t, "Android", expr.Condition.Expressions[1].Value)
-		}
-
 		// Map the request sent and assert that context was honored.
 		rawQry, err := s.UnmarshalMessageContent(calls[2])
 		require.NoError(t, err)
 		var qry metricsview.Query
 		err = mapstructureutil.WeakDecode(rawQry, &qry)
 		require.NoError(t, err)
-		assertQuery(qry)
-
-		// Get query in the citation url in the final summary message and assert that context was honored.
-		citationUrlQuery := agentMessageToMetricsResolverQuery(t, s, res.Result)
-		assertQuery(citationUrlQuery)
+		// Assert that the time range is sent using the context
+		require.Equal(t, parseTestTime(t, "2023-09-11T00:00:00Z"), qry.TimeRange.Start)
+		require.Equal(t, parseTestTime(t, "2023-09-14T00:00:00Z"), qry.TimeRange.End)
+		// Assert that the filter is sent using the context
+		require.NotNil(t, qry.Where)
+		require.NotNil(t, qry.Where.Condition)
+		require.Len(t, qry.Where.Condition.Expressions, 2)
+		require.Equal(t, "device_os", qry.Where.Condition.Expressions[0].Name)
+		require.Equal(t, "Android", qry.Where.Condition.Expressions[1].Value)
 	})
 
 	t.Run("CanvasContext", func(t *testing.T) {
@@ -202,40 +188,31 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Equal(t, ai.GetMetricsViewName, calls[2].Tool)
 		require.Equal(t, ai.QueryMetricsViewName, calls[3].Tool)
 
-		assertQuery := func(qry metricsview.Query) {
-			// Assert that the time range is sent using the context
-			require.Equal(t, parseTestTime(t, "2023-09-11T00:00:00Z"), qry.TimeRange.Start)
-			require.Equal(t, parseTestTime(t, "2023-09-14T00:00:00Z"), qry.TimeRange.End)
-			// Assert that the filter is sent using the context
-			require.NotNil(t, qry.Where)
-			require.NotNil(t, qry.Where.Condition)
-			expr := maybeUnwrapJoinerExpr(qry.Where)
-			require.Len(t, expr.Condition.Expressions, 2)
-
-			auctionTypeCond := expr.Condition.Expressions[0]
-			appOrSiteCond := expr.Condition.Expressions[1]
-			if auctionTypeCond.Condition.Expressions[0].Name != "auction_type" {
-				auctionTypeCond = expr.Condition.Expressions[1]
-				appOrSiteCond = expr.Condition.Expressions[0]
-			}
-
-			require.Equal(t, "auction_type", auctionTypeCond.Condition.Expressions[0].Name)
-			require.Equal(t, "First Price", auctionTypeCond.Condition.Expressions[1].Value)
-			require.Equal(t, "app_or_site", appOrSiteCond.Condition.Expressions[0].Name)
-			require.Equal(t, "App", appOrSiteCond.Condition.Expressions[1].Value)
-		}
-
 		// Map the request sent and assert that context was honored.
 		rawQry, err := s.UnmarshalMessageContent(calls[3])
 		require.NoError(t, err)
 		var qry metricsview.Query
 		err = mapstructureutil.WeakDecode(rawQry, &qry)
 		require.NoError(t, err)
-		assertQuery(qry)
+		// Assert that the time range is sent using the context
+		require.Equal(t, parseTestTime(t, "2023-09-11T00:00:00Z"), qry.TimeRange.Start)
+		require.Equal(t, parseTestTime(t, "2023-09-14T00:00:00Z"), qry.TimeRange.End)
+		// Assert that the filter is sent using the context
+		require.NotNil(t, qry.Where)
+		require.NotNil(t, qry.Where.Condition)
+		require.Len(t, qry.Where.Condition.Expressions, 2)
 
-		// Get query in the citation url in the final summary message and assert that context was honored.
-		citationUrlQuery := agentMessageToMetricsResolverQuery(t, s, res.Result)
-		assertQuery(citationUrlQuery)
+		auctionTypeCond := qry.Where.Condition.Expressions[0]
+		appOrSiteCond := qry.Where.Condition.Expressions[1]
+		if auctionTypeCond.Condition.Expressions[0].Name != "auction_type" {
+			auctionTypeCond = qry.Where.Condition.Expressions[1]
+			appOrSiteCond = qry.Where.Condition.Expressions[0]
+		}
+
+		require.Equal(t, "auction_type", auctionTypeCond.Condition.Expressions[0].Name)
+		require.Equal(t, "First Price", auctionTypeCond.Condition.Expressions[1].Value)
+		require.Equal(t, "app_or_site", appOrSiteCond.Condition.Expressions[0].Name)
+		require.Equal(t, "App", appOrSiteCond.Condition.Expressions[1].Value)
 	})
 }
 
@@ -243,35 +220,4 @@ func parseTestTime(tst *testing.T, t string) time.Time {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)
 	return ts
-}
-
-var citationUrlRegex = regexp.MustCompile(`open-query\?query=(.*?)\)`)
-
-func agentMessageToMetricsResolverQuery(t *testing.T, s *ai.Session, msg *ai.Message) metricsview.Query {
-	rawRes, err := s.UnmarshalMessageContent(msg)
-	require.NoError(t, err)
-	var analystRes ai.AnalystAgentResult
-	err = mapstructureutil.WeakDecode(rawRes, &analystRes)
-	require.NoError(t, err)
-
-	matches := citationUrlRegex.FindStringSubmatch(analystRes.Response)
-	require.Len(t, matches, 2)
-	queryParam, err := url.QueryUnescape(matches[1])
-	require.NoError(t, err)
-	var qry metricsview.Query
-	err = json.Unmarshal([]byte(queryParam), &qry)
-	if err != nil {
-		fmt.Println(queryParam)
-	}
-	require.NoError(t, err)
-	return qry
-}
-
-func maybeUnwrapJoinerExpr(expr *metricsview.Expression) *metricsview.Expression {
-	if expr.Condition == nil ||
-		(expr.Condition.Operator != metricsview.OperatorOr && expr.Condition.Operator != metricsview.OperatorAnd) ||
-		len(expr.Condition.Expressions) != 1 {
-		return expr
-	}
-	return expr.Condition.Expressions[0]
 }

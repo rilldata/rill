@@ -515,25 +515,9 @@ func (s *Server) GetAIToolCall(ctx context.Context, req *runtimev1.GetAIToolCall
 		return nil, status.Errorf(codes.NotFound, "failed to find the conversaion %q", req.ConversationId)
 	}
 
-	msg, ok := session.Message(ai.FilterByTool(ai.QueryMetricsViewName), ai.FilterByType(ai.MessageTypeResult), func(message *ai.Message) bool {
-		rawRes, err := session.UnmarshalMessageContent(message)
-		if err != nil {
-			return false
-		}
-		var res ai.QueryMetricsViewResult
-		err = mapstructureutil.WeakDecode(rawRes, &res)
-		if err != nil {
-			return false
-		}
-		return res.QueryID == req.CallId
-	})
+	callMsg, ok := session.Message(ai.FilterByID(req.CallId))
 	if !ok {
-		return nil, status.Errorf(codes.NotFound, "message with ID %q not found", req.CallId)
-	}
-
-	callMsg, ok := session.Message(ai.FilterByID(msg.ParentID))
-	if !ok {
-		return nil, status.Errorf(codes.NotFound, "call message with ID %q not found", msg.ParentID)
+		return nil, status.Errorf(codes.NotFound, "call message with ID %q not found", req.CallId)
 	}
 
 	rawReq, err := session.UnmarshalMessageContent(callMsg)

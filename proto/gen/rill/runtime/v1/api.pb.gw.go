@@ -4115,7 +4115,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetAIToolCall", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/ai/conversations/{conversation_id}/calls/{call_id}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetAIToolCall", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/ai/conversations/{conversation_id}/call/{call_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -5378,7 +5378,7 @@ func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetAIToolCall", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/ai/conversations/{conversation_id}/calls/{call_id}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.RuntimeService/GetAIToolCall", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/ai/conversations/{conversation_id}/call/{call_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -5724,7 +5724,7 @@ var (
 
 	pattern_RuntimeService_CompleteStreaming_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 2, 5}, []string{"v1", "instances", "instance_id", "ai", "complete", "stream"}, ""))
 
-	pattern_RuntimeService_GetAIToolCall_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7}, []string{"v1", "instances", "instance_id", "ai", "conversations", "conversation_id", "calls", "call_id"}, ""))
+	pattern_RuntimeService_GetAIToolCall_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6, 1, 0, 4, 1, 5, 7}, []string{"v1", "instances", "instance_id", "ai", "conversations", "conversation_id", "call", "call_id"}, ""))
 
 	pattern_RuntimeService_IssueDevJWT_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "dev-jwt"}, ""))
 

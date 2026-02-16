@@ -1426,7 +1426,7 @@ export const runtimeServiceGetAIToolCall = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetAIToolCallResponse>({
-    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/calls/${callId}`,
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/call/${callId}`,
     method: "GET",
     signal,
   });
@@ -1438,7 +1438,7 @@ export const getRuntimeServiceGetAIToolCallQueryKey = (
   callId: string,
 ) => {
   return [
-    `/v1/instances/${instanceId}/ai/conversations/${conversationId}/calls/${callId}`,
+    `/v1/instances/${instanceId}/ai/conversations/${conversationId}/call/${callId}`,
   ] as const;
 };
 
