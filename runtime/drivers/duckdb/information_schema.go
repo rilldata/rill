@@ -280,7 +280,7 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	}
 	defer func() { _ = release() }()
 
-	ddl, err := db.DDL(ctx, table.Name)
+	ddl, err := db.DDL(ctx, table.Database, table.DatabaseSchema, table.Name)
 	if err != nil {
 		return c.checkErr(err)
 	}

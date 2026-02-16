@@ -19,21 +19,20 @@ type Table struct {
 	SizeBytes      int64  `db:"-"`
 }
 
-func (d *db) DDL(ctx context.Context, name string) (string, error) {
+func (d *db) DDL(ctx context.Context, database, schema, name string) (string, error) {
 	connx, release, err := d.AcquireReadConnection(ctx)
 	if err != nil {
 		return "", err
 	}
 	defer func() { _ = release() }()
 
-	// The read connection is pinned to the current schema; match by name only.
-	// Lookup reports a synthetic DatabaseSchema ("main") that doesn't match the
-	// internal schema names used by duckdb_tables()/duckdb_views().
+	// We disregard database and schema since they're not applicable here due to how we use them for table versioning (see treatment in Schema(...) below).
 	q := `
 		SELECT sql FROM duckdb_tables() WHERE table_name = ?
 		UNION ALL
 		SELECT sql FROM duckdb_views() WHERE view_name = ?
 	`
+
 	var sqlStr *string
 	err = connx.QueryRowxContext(ctx, q, name, name).Scan(&sqlStr)
 	if err != nil || sqlStr == nil {

@@ -129,7 +129,7 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	// For tables it returns columns: [Table, Create Table].
 	// For views it returns columns: [View, Create View, character_set_client, collation_connection].
 	// We extract the DDL by column name to avoid depending on column order or count.
-	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", drivers.DialectMySQL.EscapeIdentifier(table.Name)))
+	rows, err := db.QueryxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", drivers.DialectMySQL.EscapeTable(table.Database, table.DatabaseSchema, table.Name)))
 	if err != nil {
 		return err
 	}

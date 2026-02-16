@@ -416,7 +416,7 @@ func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 
 	schema := table.DatabaseSchema
 	if schema == "" {
-		schema = c.config.Database
+		schema = c.config.Database // In Clickhouse, this is actually like a schema
 	}
 
 	var ddl string
