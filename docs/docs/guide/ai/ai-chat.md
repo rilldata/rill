@@ -13,8 +13,7 @@ AI Chat is powered by [Rill's Model Context Protocol (MCP)](/guide/ai/mcp) integ
 
 **What makes AI Chat different?** Every response includes direct links to your Explore dashboards with filters pre-applied, so you can always **verify where the numbers came from**. No black box—just transparent, trustworthy analytics.
 
-<img src='/img/explore/chat/project-chat.png' class='rounded-gif'/>
-<br />
+![Project Chat](/img/explore/chat/project-chat.png)
 
 ## How It Works 
 
@@ -39,8 +38,7 @@ You can also access AI Chat directly while exploring a dashboard, making it easy
 1. While viewing any [Explore dashboard](/guide/dashboards/explore), look for the **AI Chat icon** in the top navigation bar
 2. Click the AI Chat icon to open the chat panel alongside your dashboard
 3. Ask questions about the data you're currently viewing
-<img src='/img/explore/chat/dashboard-chat.png' class='rounded-gif'/>
-<br />
+![Dashboard Chat](/img/explore/chat/dashboard-chat.png)
 
 When you open AI Chat from a dashboard, the AI is automatically aware of:
 - **Current dashboard context** - The metrics view you're viewing

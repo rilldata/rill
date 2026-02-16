@@ -52,5 +52,4 @@ For more information, refer to our [metrics view YAML configuration](/reference/
 
 If you're using the UI to select your table, choosing a live connector will automatically configure the YAML with the correct `table`, `connector`, and `database_schema` fields.
 
-<img src='/img/build/metrics-view/clickhouse-metrics-view.png' class='rounded-gif' />
-<br />
+![ClickHouse Metrics View](/img/build/metrics-view/clickhouse-metrics-view.png)

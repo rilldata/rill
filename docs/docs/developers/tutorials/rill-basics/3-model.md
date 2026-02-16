@@ -17,8 +17,7 @@ A model in Rill is used to perform intermediate processing as well as any last-m
 
 Go ahead and select the `Create Model` button in the top right-hand corner of the commits dataset.
 
-<img src = '/img/tutorials/rill-basics/Add-Model.gif' class='rounded-gif' />
-<br />
+![Add Model](/img/tutorials/rill-basics/Add-Model.gif)
 
 You'll be automatically redirected to the model page. On the left panel, you'll see a models folder created with the file `commits__model.sql`. On the right panel, you'll find general information about your model table, the column values, and at the bottom of the page, a preview of the data.
 
@@ -34,8 +33,7 @@ select * from commits order by author_date DESC
 Notice that the preview table is automatically updated as we modify the SQL. This is due to our auto-save feature. In case any errors are encountered, the UI will update accordingly and display the error.
 
 
-<img src = '/img/tutorials/rill-basics/Model-SQL.gif' class='rounded-gif' />
-<br />
+![Model Sql](/img/tutorials/rill-basics/Model-SQL.gif)
 
 
 
@@ -56,7 +54,7 @@ We will grab all the columns from `commits` and only a few from `modified_files`
 
 ```SQL
 -- Model SQL
--- Reference documentation: https://docs.rilldata.com/build/models
+-- Reference documentation: https://docs.rilldata.com/developers/build/models
 -- @materialize: true
 
 SELECT

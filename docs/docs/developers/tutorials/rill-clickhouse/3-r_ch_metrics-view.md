@@ -20,8 +20,7 @@ In the case that you have not already added this table to your local or Cloud da
 
 Let's create a metrics view based on the table via the `Generate metrics via AI`.
 
-<img src = '/img/tutorials/ch/ai-generate.gif' class='rounded-gif' />
-<br />
+![AI Generate](/img/tutorials/ch/ai-generate.gif)
 
 ### What are we looking at?
 
@@ -47,10 +46,7 @@ measures:
     ...
 ```
 
-
-
-
-While we go into more details in our [Rill Basics course](/developers/tutorials/rill-basics/dashboard) and [our documentation](https://docs.rilldata.com/build/dashboards), let's go over it quickly.
+While we go into more details in our [Rill Basics course](/developers/tutorials/rill-basics/dashboard) and [our documentation](https://docs.rilldata.com/developers/build/dashboards), let's go over it quickly.
 
 ---
 

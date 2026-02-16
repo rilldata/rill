@@ -25,17 +25,17 @@ var _ Tool[*AnalystAgentArgs, *AnalystAgentResult] = (*AnalystAgent)(nil)
 
 type AnalystAgentArgs struct {
 	Prompt     string   `json:"prompt"`
-	Explore    string   `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
-	Dimensions []string `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
-	Measures   []string `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
+	Explore    string   `json:"explore,omitempty" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Dimensions []string `json:"dimensions,omitempty" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
+	Measures   []string `json:"measures,omitempty" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
 
-	Canvas              string                             `json:"canvas" yaml:"canvas" jsonschema:"Optional canvas name. If provided, the exploration will be limited to this canvas."`
-	CanvasComponent     string                             `json:"canvas_component" yaml:"canvas_component" jsonschema:"Optional canvas component name. If provided, the exploration will be limited to this canvas component."`
-	WherePerMetricsView map[string]*metricsview.Expression `json:"where_per_metrics_view" yaml:"where_per_metrics_view" jsonschema:"Optional filter for queries per metrics view. If provided, this filter will be applied to queries for each metrics view."`
+	Canvas              string                             `json:"canvas,omitempty" yaml:"canvas" jsonschema:"Optional canvas name. If provided, the exploration will be limited to this canvas."`
+	CanvasComponent     string                             `json:"canvas_component,omitempty" yaml:"canvas_component" jsonschema:"Optional canvas component name. If provided, the exploration will be limited to this canvas component."`
+	WherePerMetricsView map[string]*metricsview.Expression `json:"where_per_metrics_view,omitempty" yaml:"where_per_metrics_view" jsonschema:"Optional filter for queries per metrics view. If provided, this filter will be applied to queries for each metrics view."`
 
-	Where     *metricsview.Expression `json:"where" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
-	TimeStart time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
-	TimeEnd   time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
+	Where     *metricsview.Expression `json:"where,omitempty" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	TimeStart time.Time               `json:"time_start,omitempty" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
+	TimeEnd   time.Time               `json:"time_end,omitempty" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -201,6 +201,16 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
+
+	instance, err := t.Runtime.Instance(ctx, session.InstanceID())
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance: %w", err)
+	}
+	instanceCfg, err := instance.Config()
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance config: %w", err)
+	}
+
 	ff, err := t.Runtime.FeatureFlags(ctx, session.InstanceID(), session.Claims())
 	if err != nil {
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
@@ -211,16 +221,27 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		metricsViewsQuoted[i] = fmt.Sprintf("`%s`", mv)
 	}
 
+	dimensionsQuoted := make([]string, len(args.Dimensions))
+	for i, dim := range args.Dimensions {
+		dimensionsQuoted[i] = fmt.Sprintf("`%s`", dim)
+	}
+
+	measuresQuoted := make([]string, len(args.Measures))
+	for i, measure := range args.Measures {
+		measuresQuoted[i] = fmt.Sprintf("`%s`", measure)
+	}
+
 	data := map[string]any{
 		"ai_instructions":  session.ProjectInstructions(),
 		"metrics_views":    strings.Join(metricsViewsQuoted, ", "),
 		"explore":          args.Explore,
 		"canvas":           args.Canvas,
 		"canvas_component": args.CanvasComponent,
-		"dimensions":       strings.Join(args.Dimensions, ", "),
-		"measures":         strings.Join(args.Measures, ", "),
+		"dimensions":       strings.Join(dimensionsQuoted, ", "),
+		"measures":         strings.Join(measuresQuoted, ", "),
 		"feature_flags":    ff,
 		"now":              time.Now(),
+		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
@@ -272,8 +293,8 @@ The metrics view's definition and time range of available data has been provided
 Here is an overview of the settings the user has currently applied to the dashboard:
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
-{{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
-{{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}
+{{ if .measures }}Use measures: {{ .measures }}{{ end }}
+{{ if .dimensions }}Use dimensions: {{ .dimensions }}{{ end }}
 
 You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
@@ -348,6 +369,8 @@ Choose the appropriate chart type based on your data:
 - Focus on insights that are surprising, actionable, and quantified
 - Never repeat identical queries - each should explore new analytical angles
 - Use <thinking> tags between queries to evaluate results and plan next steps
+- Aim to make queries with high information density; keep row limits as low as possible and avoid pagination
+- The combined data you load across all queries should be below 10000 rows, ideally much less
 
 **Quality Standards**:
 - Prioritize findings that contradict expectations or reveal hidden patterns
@@ -377,21 +400,20 @@ After each query in Phase 2, think through:
 </thinking>
 
 <output_format>
-**Format your analysis as follows**:
-{{ backticks }}markdown
+**Format your analysis using markdown as follows**:
+
 Based on the data analysis, here are the key insights:
 
 1. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-2. ## [Headline with specific impact/number]  
+2. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
 [Optional: Offer specific follow-up analysis options]
-{{ backticks }}
 
 **Citation Requirements**:
 - Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user
@@ -400,11 +422,14 @@ Based on the data analysis, here are the key insights:
 - When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph
 </output_format>
 
+<additional_context>
+The system allows a max row limit of {{ .max_query_limit }} per query.
+
 {{ if .ai_instructions }}
-<additional_user_provided_instructions>
+The administrator has provided the following project-wide instructions, which may or may not be relevant to this task:
 {{ .ai_instructions }}
-</additional_user_provided_instructions>
 {{ end }}
+</additional_context>
 `, data)
 }
 

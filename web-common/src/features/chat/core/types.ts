@@ -53,6 +53,9 @@ export const ToolName = {
   READ_FILE: "read_file",
   WRITE_FILE: "write_file",
 
+  // Feedback agent
+  FEEDBACK_AGENT: "feedback_agent",
+
   // Common tools
   NAVIGATE: "navigate",
 } as const;

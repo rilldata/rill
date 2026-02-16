@@ -276,7 +276,7 @@
     );
   }
 
-  async function onSelectRange(alias: string) {
+  async function onSelectRange(alias: string, tz = activeTimeZone) {
     // If we don't have a valid time range, early return
     if (!allTimeRange?.end) return;
 
@@ -297,7 +297,7 @@
     const { interval, grain } = await deriveInterval(
       alias,
       metricsViewName,
-      activeTimeZone,
+      tz,
       selectedTimeDimension,
     );
 
@@ -366,7 +366,7 @@
     } as DashboardTimeControls);
   }
 
-  function onSelectTimeZone(timeZone: string) {
+  async function onSelectTimeZone(timeZone: string) {
     if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
@@ -379,8 +379,10 @@
           ?.setZone(timeZone, { keepLocalTime: true })
           .toJSDate(),
       });
+    } else if (selectedRangeAlias) {
+      // Trigger range selection so that MetricsViewTimeRanges is called with the new time zone
+      await onSelectRange(selectedRangeAlias, timeZone);
     }
-
     metricsExplorerStore.setTimeZone($exploreName, timeZone);
   }
 

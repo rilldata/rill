@@ -23,7 +23,7 @@ import (
 var spec = drivers.Spec{
 	DisplayName: "Amazon S3",
 	Description: "Connect to AWS S3 Storage.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/s3",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/s3",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "aws_access_key_id",
@@ -261,6 +261,11 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	if opts.OutputHandle == c {
+		if olap, ok := opts.InputHandle.AsOLAP(instanceID); ok {
+			return &olapToSelfExecutor{c, olap}, nil
+		}
+	}
 	return nil, drivers.ErrNotImplemented
 }
 

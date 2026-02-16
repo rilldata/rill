@@ -1,80 +1,80 @@
-- id: 0b90904b-c880-4b0f-bc43-5f0ecbe428d4
+- id: 4dc6d84e-bfc0-43b1-865e-442234632e42
   parent_id: ""
-  session_id: 4a1af563-4ad9-4ed5-b0e8-bd9c91c00bd5
-  time: 2026-02-09T16:16:16.397413+05:30
+  session_id: d2d5f551-0bcf-430b-aaf1-fcf6c51c4626
+  time: 2026-02-12T14:33:09.615928+03:00
   index: 0
   role: user
   type: call
   tool: analyst_agent
   content_type: json
-  content: '{"prompt":"Tell me which app_site_name has the most impressions","explore":"bids_metrics","dimensions":null,"measures":null,"canvas":"","canvas_component":"","where_per_metrics_view":null,"where":{"name":"","val":null,"cond":{"op":"eq","exprs":[{"name":"device_os","val":null,"cond":null,"subquery":null},{"name":"","val":"Android","cond":null,"subquery":null}]},"subquery":null},"time_start":"2023-09-11T00:00:00Z","time_end":"2023-09-14T00:00:00Z"}'
-- id: 9b84cc14-97d8-4bbe-87fc-e63c7501f356
-  parent_id: 0b90904b-c880-4b0f-bc43-5f0ecbe428d4
-  session_id: 4a1af563-4ad9-4ed5-b0e8-bd9c91c00bd5
-  time: 2026-02-09T16:16:16.397432+05:30
+  content: '{"prompt":"Tell me which app_site_name has the most impressions","explore":"bids_metrics","where":{"cond":{"op":"eq","exprs":[{"name":"device_os"},{"val":"Android"}]}},"time_start":"2023-09-11T00:00:00Z","time_end":"2023-09-14T00:00:00Z"}'
+- id: 47897b6c-bee3-4c45-ab6c-d4e82981b1b5
+  parent_id: 4dc6d84e-bfc0-43b1-865e-442234632e42
+  session_id: d2d5f551-0bcf-430b-aaf1-fcf6c51c4626
+  time: 2026-02-12T14:33:09.615964+03:00
   index: 1
   role: assistant
   type: call
   tool: query_metrics_view_summary
   content_type: json
   content: '{"metrics_view":"bids_metrics"}'
-- id: 24285b7e-fba2-4e92-9c05-1c55496ac7c7
-  parent_id: 9b84cc14-97d8-4bbe-87fc-e63c7501f356
-  session_id: 4a1af563-4ad9-4ed5-b0e8-bd9c91c00bd5
-  time: 2026-02-09T16:16:16.409493+05:30
+- id: 9aef9b8d-d8f8-4811-ae07-70e2dbf402cb
+  parent_id: 47897b6c-bee3-4c45-ab6c-d4e82981b1b5
+  session_id: d2d5f551-0bcf-430b-aaf1-fcf6c51c4626
+  time: 2026-02-12T14:33:09.650117+03:00
   index: 2
   role: assistant
   type: result
   tool: query_metrics_view_summary
   content_type: json
-  content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2023-09-16T00:00:00Z","min_value":"2023-09-09T00:00:00Z","name":"__time"},{"data_type":"CODE_STRING","example_value":"prizepicks.com","max_value":"zyp.test","min_value":"1800petmeds.com","name":"adomain"},{"data_type":"CODE_STRING","example_value":"Prize Picks","max_value":"vertex","min_value":"6sense","name":"advertiser_name"},{"data_type":"CODE_STRING","example_value":"App","max_value":"Site","min_value":"App","name":"app_or_site"},{"data_type":"CODE_STRING","example_value":"Not Available","max_value":"zoosk.com","min_value":"1point3acres.com","name":"app_site_domain"},{"data_type":"CODE_STRING","example_value":"Happy Color® – Color by Number","max_value":"라인웹툰기본","min_value":"$''more","name":"app_site_name"},{"data_type":"CODE_STRING","example_value":"First Price","max_value":"Second Price","min_value":"First Price","name":"auction_type"},{"data_type":"CODE_STRING","example_value":"0.00-0.05","max_value":"9.50-10.00","min_value":"0.00-0.05","name":"bid_floor_bucket"},{"data_type":"CODE_STRING","example_value":"Prize Picks_BuzzBlaze","max_value":"vertex_PrimeProfit","min_value":"#N/A","name":"campaign_name"},{"data_type":"CODE_STRING","example_value":"BANNER","max_value":"VIDEO","min_value":"BANNER","name":"creative_type"},{"data_type":"CODE_STRING","example_value":"Android","max_value":"webOS","min_value":"Android","name":"device_os"},{"data_type":"CODE_STRING","example_value":"12","max_value":"XP","min_value":"10","name":"device_osv"},{"data_type":"CODE_STRING","example_value":"USA/IL","max_value":"wy","min_value":"000/00","name":"device_region"},{"data_type":"CODE_STRING","example_value":"Mobile/Tablet","max_value":"Tablet","min_value":"Connected Device","name":"device_type"},{"data_type":"CODE_STRING","example_value":"Interstitial/Full Screen","max_value":"Not Interstitial","min_value":"Interstitial/Full Screen","name":"interstitial"},{"data_type":"CODE_STRING","example_value":"Prize Picks_BuzzBlaze_34402","max_value":"vertex_PrimeProfit_33969","min_value":"#N/A","name":"line_item_name"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2023-09-16T00:00:00Z","min_value":"2023-09-09T00:00:00Z","name":"__time"}}}'
-- id: 761eda73-f415-4144-bee6-d9ae752465a5
-  parent_id: 0b90904b-c880-4b0f-bc43-5f0ecbe428d4
-  session_id: 4a1af563-4ad9-4ed5-b0e8-bd9c91c00bd5
-  time: 2026-02-09T16:16:16.409496+05:30
+  content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2023-09-16T00:00:00Z","min_value":"2023-09-09T00:00:00Z","name":"__time"},{"data_type":"CODE_STRING","example_value":"clorox.com","max_value":"zyp.test","min_value":"1800petmeds.com","name":"adomain"},{"data_type":"CODE_STRING","example_value":"Clorox","max_value":"vertex","min_value":"6sense","name":"advertiser_name"},{"data_type":"CODE_STRING","example_value":"App","max_value":"Site","min_value":"App","name":"app_or_site"},{"data_type":"CODE_STRING","example_value":"Not Available","max_value":"zoosk.com","min_value":"1point3acres.com","name":"app_site_domain"},{"data_type":"CODE_STRING","example_value":"BBC.com | News PBS","max_value":"라인웹툰기본","min_value":"$''more","name":"app_site_name"},{"data_type":"CODE_STRING","example_value":"First Price","max_value":"Second Price","min_value":"First Price","name":"auction_type"},{"data_type":"CODE_STRING","example_value":"0.00-0.05","max_value":"9.50-10.00","min_value":"0.00-0.05","name":"bid_floor_bucket"},{"data_type":"CODE_STRING","example_value":"Clorox_BoostBlast","max_value":"vertex_PrimeProfit","min_value":"#N/A","name":"campaign_name"},{"data_type":"CODE_STRING","example_value":"BANNER","max_value":"VIDEO","min_value":"BANNER","name":"creative_type"},{"data_type":"CODE_STRING","example_value":"Android","max_value":"webOS","min_value":"Android","name":"device_os"},{"data_type":"CODE_STRING","example_value":"8.1","max_value":"XP","min_value":"10","name":"device_osv"},{"data_type":"CODE_STRING","example_value":"CAN/MB","max_value":"wy","min_value":"000/00","name":"device_region"},{"data_type":"CODE_STRING","example_value":"Mobile/Tablet","max_value":"Tablet","min_value":"Connected Device","name":"device_type"},{"data_type":"CODE_STRING","example_value":"Not Interstitial","max_value":"Not Interstitial","min_value":"Interstitial/Full Screen","name":"interstitial"},{"data_type":"CODE_STRING","example_value":"Clorox_BoostBlast_15621","max_value":"vertex_PrimeProfit_33969","min_value":"#N/A","name":"line_item_name"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2023-09-16T00:00:00Z","min_value":"2023-09-09T00:00:00Z","name":"__time"}}}'
+- id: 7bce6f8d-0fef-4df6-a892-acdb941019c2
+  parent_id: 4dc6d84e-bfc0-43b1-865e-442234632e42
+  session_id: d2d5f551-0bcf-430b-aaf1-fcf6c51c4626
+  time: 2026-02-12T14:33:09.650122+03:00
   index: 3
   role: assistant
   type: call
   tool: get_metrics_view
   content_type: json
   content: '{"metrics_view":"bids_metrics"}'
-- id: 6fd667cc-07d7-4fc9-95d1-05105d88dd1b
-  parent_id: 761eda73-f415-4144-bee6-d9ae752465a5
-  session_id: 4a1af563-4ad9-4ed5-b0e8-bd9c91c00bd5
-  time: 2026-02-09T16:16:16.409796+05:30
+- id: bb004e51-51b6-4559-85f9-7ec893592c17
+  parent_id: 7bce6f8d-0fef-4df6-a892-acdb941019c2
+  session_id: d2d5f551-0bcf-430b-aaf1-fcf6c51c4626
+  time: 2026-02-12T14:33:09.650413+03:00
   index: 4
   role: assistant
   type: result
   tool: get_metrics_view
   content_type: json
   content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"__time","dataType":{"code":"CODE_TIMESTAMP","nullable":true},"displayName":"__time","name":"__time","smallestTimeGrain":"TIME_GRAIN_SECOND","type":"DIMENSION_TYPE_TIME"},{"column":"adomain","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Adomain","name":"adomain","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"advertiser_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Advertiser Name","name":"advertiser_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"app_or_site","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"App Or Site","name":"app_or_site","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"app_site_domain","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"App Site Domain","name":"app_site_domain","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"app_site_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"App Site Name","name":"app_site_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"auction_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Auction Type","name":"auction_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"bid_floor_bucket","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Bid Floor Bucket","name":"bid_floor_bucket","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"campaign_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Campaign Name","name":"campaign_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"creative_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Creative Type","name":"creative_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_os","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Os","name":"device_os","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_osv","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Osv","name":"device_osv","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_region","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Region","name":"device_region","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Type","name":"device_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"interstitial","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Interstitial","name":"interstitial","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"line_item_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Line Item Name","name":"line_item_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"placement_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Placement Type","name":"placement_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"platform_browser","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Platform Browser","name":"platform_browser","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"player_size","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Player Size","name":"player_size","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"privacy","dataType":{"code":"CODE_BOOL","nullable":true},"displayName":"Privacy","name":"privacy","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"pub_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Pub Name","name":"pub_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"sdk","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Sdk","name":"sdk","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"video_activity","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Video Activity","name":"video_activity","type":"DIMENSION_TYPE_CATEGORICAL"}],"displayName":"Bids Metrics","measures":[{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Total Spend","displayName":"Overall Spend","expression":"sum(media_spend_usd)/1000","formatPreset":"currency_usd","name":"overall_spend","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Bids","displayName":"Total Bids","expression":"sum(bid_cnt)","formatPreset":"humanize","name":"total_bids","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Impressions","displayName":"Impressions","expression":"sum(imp_cnt)","formatPreset":"humanize","name":"impressions","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Impressions / Bids","displayName":"Win Rate","expression":"sum(imp_cnt)*1.0/sum(bid_cnt)","formatPreset":"percentage","name":"win_rate","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Clicks","displayName":"Clicks","expression":"sum(click_reg_cnt)","formatPreset":"humanize","name":"clicks","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Click Through Rate","displayName":"Ctr","expression":"sum(click_reg_cnt)*1.0/nullif(sum(imp_cnt),0)","formatPreset":"percentage","name":"ctr","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Video Starts","displayName":"Video Starts","expression":"sum(video_start_cnt)","formatPreset":"humanize","name":"video_starts","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Video Completes","displayName":"Video Completes","expression":"sum(video_complete_cnt)","formatPreset":"humanize","name":"video_completes","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Video Completion Rate","displayName":"Video Completion Rate","expression":"sum(video_complete_cnt)*1.0/sum(video_start_cnt)","formatPreset":"percentage","name":"video_completion_rate","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Average Bid Price","displayName":"Avg Bid Price","expression":"sum(bid_price_usd)*1.0/sum(bid_cnt)/1000","formatPreset":"currency_usd","name":"avg_bid_price","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"eCPM","displayName":"Ecpm","expression":"sum(media_spend_usd)*1.0/1000/nullif(sum(imp_cnt),0)","formatPreset":"currency_usd","name":"ecpm","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Average Bid Floor","displayName":"Avg Bid Floor","expression":"sum(bid_floor)*1.0/sum(has_bid_floor_cnt)","formatPreset":"currency_usd","name":"avg_bid_floor","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"displayName":"Bids 7Day Rolling Avg","expression":"AVG(total_bids)","name":"bids_7day_rolling_avg","referencedMeasures":["total_bids"],"requiredDimensions":[{"name":"__time"}],"type":"MEASURE_TYPE_DERIVED","window":{"frameExpression":"RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW","orderBy":[{"name":"__time"}],"partition":true}}],"model":"bids_data","smallestTimeGrain":"TIME_GRAIN_HOUR","table":"bids_data","timeDimension":"__time"}}'
-- id: af4b60fe-97ee-4a3a-beb1-8e5c42c32517
-  parent_id: 0b90904b-c880-4b0f-bc43-5f0ecbe428d4
-  session_id: 4a1af563-4ad9-4ed5-b0e8-bd9c91c00bd5
-  time: 2026-02-09T16:16:19.498985+05:30
+- id: 6ff790e2-cf54-4f2e-a1d0-079e9c724172
+  parent_id: 4dc6d84e-bfc0-43b1-865e-442234632e42
+  session_id: d2d5f551-0bcf-430b-aaf1-fcf6c51c4626
+  time: 2026-02-12T14:33:12.28816+03:00
   index: 5
   role: assistant
   type: call
   tool: query_metrics_view
   content_type: json
-  content: '{"dimensions":[{"name":"app_site_name"}],"limit":1,"measures":[{"name":"impressions"}],"metrics_view":"bids_metrics","sort":[{"desc":true,"name":"impressions"}],"time_range":{"end":"2023-09-14T00:00:00Z","start":"2023-09-11T00:00:00Z"},"where":{"cond":{"exprs":[{"cond":{"exprs":[{"name":"device_os"},{"val":"Android"}],"op":"eq"}}],"op":"and"}}}'
-- id: 42514cd6-2b79-4cd7-8a7a-2236c17001c4
-  parent_id: af4b60fe-97ee-4a3a-beb1-8e5c42c32517
-  session_id: 4a1af563-4ad9-4ed5-b0e8-bd9c91c00bd5
-  time: 2026-02-09T16:16:19.514881+05:30
+  content: '{"dimensions":[{"name":"app_site_name"}],"limit":10,"measures":[{"name":"impressions"}],"metrics_view":"bids_metrics","sort":[{"desc":true,"name":"impressions"}],"time_range":{"end":"2023-09-14T00:00:00Z","start":"2023-09-11T00:00:00Z"},"where":{"cond":{"exprs":[{"name":"device_os"},{"val":"Android"}],"op":"eq"}}}'
+- id: 3dd2808f-32f7-4947-8a59-aa2a26d7047d
+  parent_id: 6ff790e2-cf54-4f2e-a1d0-079e9c724172
+  session_id: d2d5f551-0bcf-430b-aaf1-fcf6c51c4626
+  time: 2026-02-12T14:33:12.303003+03:00
   index: 6
   role: assistant
   type: result
   tool: query_metrics_view
   content_type: json
-  content: '{"data":[{"app_site_name":"Not Available","impressions":36706}],"open_url":"http://localhost:8080/-/open-query?query=%7B%22dimensions%22%3A%5B%7B%22name%22%3A%22app_site_name%22%7D%5D%2C%22limit%22%3A1%2C%22measures%22%3A%5B%7B%22name%22%3A%22impressions%22%7D%5D%2C%22metrics_view%22%3A%22bids_metrics%22%2C%22sort%22%3A%5B%7B%22desc%22%3Atrue%2C%22name%22%3A%22impressions%22%7D%5D%2C%22time_range%22%3A%7B%22end%22%3A%222023-09-14T00%3A00%3A00Z%22%2C%22start%22%3A%222023-09-11T00%3A00%3A00Z%22%7D%2C%22where%22%3A%7B%22cond%22%3A%7B%22exprs%22%3A%5B%7B%22cond%22%3A%7B%22exprs%22%3A%5B%7B%22name%22%3A%22device_os%22%7D%2C%7B%22val%22%3A%22Android%22%7D%5D%2C%22op%22%3A%22eq%22%7D%7D%5D%2C%22op%22%3A%22and%22%7D%7D%7D"}'
-- id: 38a13523-362f-480c-9d58-b26d5dbdd3b7
-  parent_id: 0b90904b-c880-4b0f-bc43-5f0ecbe428d4
-  session_id: 4a1af563-4ad9-4ed5-b0e8-bd9c91c00bd5
-  time: 2026-02-09T16:16:26.152951+05:30
+  content: '{"data":[{"app_site_name":"Not Available","impressions":36706},{"app_site_name":"Bleacher Report: Sports News","impressions":9032},{"app_site_name":"Bally Sports","impressions":6712},{"app_site_name":"Sudoku","impressions":3847},{"app_site_name":"BallySports","impressions":2416},{"app_site_name":"Tube Music","impressions":1752},{"app_site_name":"Wordscapes Search","impressions":1508},{"app_site_name":"Parchisi STAR Online","impressions":1496},{"app_site_name":"Art Puzzle - jigsaw art games","impressions":1482},{"app_site_name":"RealmCraft 3D Mine Block World","impressions":1443}]}'
+- id: 3e6af450-41f2-4250-b2e3-dc60fc99297e
+  parent_id: 4dc6d84e-bfc0-43b1-865e-442234632e42
+  session_id: d2d5f551-0bcf-430b-aaf1-fcf6c51c4626
+  time: 2026-02-12T14:33:15.725455+03:00
   index: 7
   role: user
   type: result
   tool: analyst_agent
   content_type: json
-  content: '{"response":"Based on the current dashboard filters (Android only, 2023-09-11 to 2023-09-14), **the `app_site_name` with the most impressions is `Not Available` with 36,706 impressions** ([App/site names by impressions](http://localhost:8080/-/open-query?query=%7B%22dimensions%22%3A%5B%7B%22name%22%3A%22app_site_name%22%7D%5D%2C%22limit%22%3A1%2C%22measures%22%3A%5B%7B%22name%22%3A%22impressions%22%7D%5D%2C%22metrics_view%22%3A%22bids_metrics%22%2C%22sort%22%3A%5B%7B%22desc%22%3Atrue%2C%22name%22%3A%22impressions%22%7D%5D%2C%22time_range%22%3A%7B%22end%22%3A%222023-09-14T00%3A00%3A00Z%22%2C%22start%22%3A%222023-09-11T00%3A00%3A00Z%22%7D%2C%22where%22%3A%7B%22cond%22%3A%7B%22exprs%22%3A%5B%7B%22cond%22%3A%7B%22exprs%22%3A%5B%7B%22name%22%3A%22device_os%22%7D%2C%7B%22val%22%3A%22Android%22%7D%5D%2C%22op%22%3A%22eq%22%7D%7D%5D%2C%22op%22%3A%22and%22%7D%7D%7D))."}'
+  content: '{"response":"Based on the current dashboard filters (Android only, 2023-09-11 to 2023-09-14), the **app_site_name with the most impressions is _“Not Available”_ with 36,706 impressions** ([Impressions by app/site name](https://ui.rilldata.com/-/dashboards/bids_metrics?metrics_view=bids_metrics\u0026time_range=2023-09-11T00%3A00%3A00Z%2F2023-09-14T00%3A00%3A00Z\u0026where=device_os%20%3D%20%27Android%27\u0026dimensions=app_site_name\u0026measures=impressions\u0026sort=-impressions\u0026limit=10))."}'

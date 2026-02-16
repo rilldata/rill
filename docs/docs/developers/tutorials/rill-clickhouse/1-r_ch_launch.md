@@ -15,7 +15,7 @@ You will need to [install Rill](https://docs.rilldata.com/developers/get-started
 curl https://rill.sh | sh
 ```
 
-You need access to either a [locally running ClickHouse Server](https://clickhouse.com/docs/en/install) or [ClickHouse Cloud](https://docs.rilldata.com/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud). We recommend using ClickHouse Cloud as this will make deploying to Rill Cloud easier. Please review the documentation, [here](https://docs.rilldata.com/build/connectors/olap/clickhouse).
+You need access to either a [locally running ClickHouse Server](https://clickhouse.com/docs/en/install) or [ClickHouse Cloud](https://docs.rilldata.com/developers/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud). We recommend using ClickHouse Cloud as this will make deploying to Rill Cloud easier. Please review the documentation, [here](https://docs.rilldata.com/developers/build/connectors/olap/clickhouse).
 :::
 ## Start Rill Developer
 
@@ -31,8 +31,7 @@ localhost:9009
 
 You should see the following webpage appear. 
 
-<img src = '/img/tutorials/rill-basics/new-rill-project.png' class='rounded-gif' />
-<br />
+![New Rill Project](/img/tutorials/rill-basics/new-rill-project.png)
 
 Let's go ahead and select `Start with an empty project`.
 

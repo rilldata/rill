@@ -64,19 +64,20 @@ The `.env` file serves several important purposes:
 
 - **Security**: Keeps sensitive credentials out of your codebase and Git repository (`.env` files are automatically ignored by `.gitignore`)
 - **Consistency**: Provides a standardized way to manage credentials across different environments (local development, staging, production)
-- **Integration**: Works seamlessly with Rill's templating system, allowing YAML files to reference credentials using `{{ env.VARIABLE_NAME }}` syntax
+- **Integration**: Works seamlessly with Rill's templating system, allowing YAML files to reference credentials using `"{{ .env.VARIABLE_NAME }}"` syntax
 
 Example `.env` file:
 ```bash
 # AWS S3 credentials
-connector.s3.access_key_id=AKIAIOSFODNN7EXAMPLE
-connector.s3.secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 # Google Cloud credentials
-connector.gcs.credentials_json={"type":"service_account","project_id":"my-project"}
+GOOGLE_APPLICATION_CREDENTIALS={"type":"service_account","project_id":"my-project"}
 
-# Database connection
-connector.postgres.dsn=postgres://username:password@localhost:5432/mydb
+# Database connections
+POSTGRES_PASSWORD=mypassword
+SNOWFLAKE_PASSWORD=mysnowflakepassword
 
 # Custom variables
 my_custom_variable=some_value
@@ -85,9 +86,79 @@ When creating any connector in Rill via the UI, these will be **automatically ge
 
 Additional variables can then be usable and referenceable for [templating](/developers/build/connectors/templating) purposes in the local instance of your project. 
 
-### Credentials Naming Schema 
+### Credentials Naming Schema
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard-coded project variables (that happen to correspond to the [Druid](/developers/build/connectors/olap/druid) and [ClickHouse](/developers/build/connectors/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)!
+When you create a connector through Rill's UI, credentials are automatically saved to your `.env` file using a standardized naming convention:
+
+#### Generic Credentials (Shared Across Connectors)
+
+Common cloud provider credentials use standard names without a driver prefix:
+
+| Property | Environment Variable |
+|----------|---------------------|
+| Google Application Credentials | `GOOGLE_APPLICATION_CREDENTIALS` |
+| AWS Access Key ID | `AWS_ACCESS_KEY_ID` |
+| AWS Secret Access Key | `AWS_SECRET_ACCESS_KEY` |
+| Azure Storage Connection String | `AZURE_STORAGE_CONNECTION_STRING` |
+| Azure Storage Key | `AZURE_STORAGE_KEY` |
+| Azure Storage SAS Token | `AZURE_STORAGE_SAS_TOKEN` |
+| Snowflake Private Key | `PRIVATE_KEY` |
+
+#### Driver-Specific Credentials
+
+Credentials specific to a database driver use the `DRIVER_PROPERTY` format:
+
+| Driver | Property | Environment Variable |
+|--------|----------|---------------------|
+| PostgreSQL | password | `POSTGRES_PASSWORD` |
+| PostgreSQL | dsn | `POSTGRES_DSN` |
+| MySQL | password | `MYSQL_PASSWORD` |
+| Snowflake | password | `SNOWFLAKE_PASSWORD` |
+| ClickHouse | password | `CLICKHOUSE_PASSWORD` |
+
+#### Handling Multiple Connectors
+
+When you create multiple connectors that use the same credential type, Rill automatically appends a numeric suffix to avoid conflicts:
+
+```bash
+# First BigQuery connector
+GOOGLE_APPLICATION_CREDENTIALS={"type":"service_account",...}
+
+# Second BigQuery connector
+GOOGLE_APPLICATION_CREDENTIALS_1={"type":"service_account",...}
+
+# Third BigQuery connector
+GOOGLE_APPLICATION_CREDENTIALS_2={"type":"service_account",...}
+```
+
+This ensures each connector can reference its own credentials without overwriting existing ones.
+
+#### Referencing Variables in YAML
+
+Use the `{{ .env.VARIABLE_NAME }}` syntax to reference environment variables in your connector YAML files:
+
+```yaml
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
+password: "{{ .env.POSTGRES_PASSWORD }}"
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
+```
+
+#### Case-Insensitive Variable Lookups
+
+The `{{ env "VAR_NAME" }}` function (note: not `{{ .env.VAR_NAME }}`) provides case-insensitive variable lookups, which can be useful when variable names may have inconsistent casing:
+
+```yaml
+# All of these will match POSTGRES_PASSWORD in your .env file:
+password: '{{ env "POSTGRES_PASSWORD" }}'
+password: '{{ env "postgres_password" }}'
+password: '{{ env "Postgres_Password" }}'
+```
+
+Note that `{{ .env.VAR_NAME }}` is **case-sensitive** — the variable name must match exactly.
+
+:::note Legacy Naming Convention
+Older projects may use the `connector.<connector_name>.<property>` syntax (e.g., `connector.druid.dsn`, `connector.clickhouse.dsn`). This format is still supported for backwards compatibility.
+:::
 
 :::tip Avoid committing sensitive information to Git
 
@@ -109,7 +180,7 @@ If you are making changes to an already deployed instance from Rill Cloud, it is
 
 For projects that have been deployed to Rill Cloud, an added benefit of our Rill Developer-Cloud architecture is that credentials that have been configured can be pulled locally for easier reuse (instead of having to manually reconfigure these credentials in Rill Developer). To do this, you can run `rill env pull` from your project's root directory to retrieve the latest credentials (after cloning the project's git repository to your local environment).
 
-![img](/img/build/credentials/rill-env-pull.png)
+![Rill Environment Pull](/img/build/credentials/rill-env-pull.png)
 
 :::info Overriding local credentials
 
@@ -126,6 +197,6 @@ As a project admin, you can use `rill env push` to push your credentials to your
 :::warning Overriding Cloud credentials
 
 If a credential and/or variable has already been configured in Rill Cloud, Rill will warn you about overriding if you attempt to push a new value in your `.env` file. This is because overriding credentials can impact your deployed project and/or other users (if they pull these credentials locally).
-![img](/img/build/credentials/rill-env-push.png)
+![Rill Environment Push](/img/build/credentials/rill-env-push.png)
 
 :::
