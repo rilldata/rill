@@ -28,7 +28,10 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
-import { sourceImportedPath } from "../sources/sources-store";
+import {
+  pendingSourceImports,
+  sourceImportedPath,
+} from "../sources/sources-store";
 import { isLeafResource } from "./dag-utils";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { SSEConnectionManager } from "@rilldata/web-common/runtime-client/sse-connection-manager";
@@ -367,12 +370,14 @@ export class FileAndResourceWatcher {
             const filePath = res.resource.meta?.filePaths?.[0];
             const isNewSource =
               res.name.kind === ResourceKind.Model &&
-              res.resource.model?.spec?.definedAsSource === true &&
+              filePath !== undefined &&
+              pendingSourceImports.has(filePath) &&
               res.resource.meta.specVersion === "1" && // First file version
               res.resource.meta.stateVersion === "2" && // First ingest is complete
               (await isLeafResource(res.resource, this.instanceId)); // Protects against existing projects reconciling anew
             if (isNewSource) {
-              sourceImportedPath.set(filePath as string);
+              pendingSourceImports.delete(filePath);
+              sourceImportedPath.set(filePath);
             }
 
             // Invalidate the model partitions query
