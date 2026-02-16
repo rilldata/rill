@@ -5095,7 +5095,7 @@ func testMetricsViewsAggregation_like_nullable(t *testing.T, rt *runtime.Runtime
 
 	rows = q.Result.Data
 	require.GreaterOrEqual(t, len(rows), 2)
-	// Should contain Microsoft and Yahoo, plus null publishers
+	// Should contain Microsoft and null publishers
 	publishers := make(map[string]bool)
 	for _, row := range rows {
 		publishers[fieldsToString(row, "publisher")] = true
