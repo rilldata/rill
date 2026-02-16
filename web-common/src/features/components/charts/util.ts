@@ -1,10 +1,12 @@
 import { CHART_CONFIG } from "@rilldata/web-common/features/components/charts/config";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import chroma from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
+import { getChroma } from "../../themes/theme-utils";
 import {
   ChartSortType,
   type ChartDataResult,
@@ -15,8 +17,6 @@ import {
   type ColorMapping,
   type FieldConfig,
 } from "./types";
-import { getChroma } from "../../themes/theme-utils";
-import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
   return (
@@ -329,7 +329,9 @@ export function sanitizeSortFieldForVega(sort: ChartSortDirection | undefined) {
 
   if (
     sort === ChartSortType.MEASURE_ASC ||
-    sort === ChartSortType.MEASURE_DESC
+    sort === ChartSortType.MEASURE_DESC ||
+    sort === ChartSortType.Y_DELTA_ASC ||
+    sort === ChartSortType.Y_DELTA_DESC
   ) {
     return undefined;
   }
