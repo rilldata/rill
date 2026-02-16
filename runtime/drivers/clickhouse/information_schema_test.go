@@ -393,6 +393,6 @@ func testLoadDDL(t *testing.T, conn drivers.Handle) {
 	require.NoError(t, err)
 	err = olap.InformationSchema().LoadDDL(ctx, view)
 	require.NoError(t, err)
-	require.Contains(t, view.DDL, "CREATE")
+	require.Contains(t, view.DDL, "CREATE VIEW")
 	require.Contains(t, view.DDL, "model")
 }
