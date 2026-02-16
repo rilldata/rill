@@ -63,6 +63,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
 		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
 	})
+	t.Run("testMetricsViewsAggregation_like_nullable", func(t *testing.T) { testMetricsViewsAggregation_like_nullable(t, rt, instanceID) })
 }
 
 func TestMetricViewAggregationAgainstStarRocks(t *testing.T) {
@@ -4957,6 +4958,61 @@ func testMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T, rt *r
 	require.Equal(t, "news.yahoo.com,77.00,0.07", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
 	require.Equal(t, "news.google.com,256.00,0.23", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+}
+
+func testMetricsViewsAggregation_like_nullable(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	// Test LIKE on a Nullable(String) column
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_nullable_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "publisher",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "total_records",
+			},
+		},
+		Where: expressionpb.Like(
+			expressionpb.Identifier("publisher"),
+			expressionpb.Value(structpb.NewStringValue("%oo%")),
+		),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "publisher",
+			},
+		},
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	require.Len(t, rows, 3)
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[0], "publisher", "total_records"))
+	require.Equal(t, "Google,18763", fieldsToString(rows[1], "publisher", "total_records"))
+	require.Equal(t, "Yahoo,18593", fieldsToString(rows[2], "publisher", "total_records"))
+
+	// Test NOT LIKE with nullable column — should include NULL publisher rows
+	q.Where = expressionpb.NotLike(
+		expressionpb.Identifier("publisher"),
+		expressionpb.Value(structpb.NewStringValue("%oo%")),
+	)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows = q.Result.Data
+	require.GreaterOrEqual(t, len(rows), 2)
+	// Should contain Microsoft and null publishers
+	publishers := make(map[string]bool)
+	for _, row := range rows {
+		publishers[fieldsToString(row, "publisher")] = true
+	}
+	require.True(t, publishers["Microsoft"])
+	require.True(t, publishers["null"])
 }
 
 func fieldsToString2digits(row *structpb.Struct, args ...string) string {
