@@ -431,6 +431,11 @@ paths:
                 description: |-
                   Optional context for prompts handled by the developer_agent.
                   The field is ignored if another agent is selected.
+              feedbackAgentContext:
+                $ref: '#/definitions/v1FeedbackAgentContext'
+                description: |-
+                  Optional context for prompts handled by the feedback_agent.
+                  The field is ignored if another agent is selected.
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -485,6 +490,11 @@ paths:
                 $ref: '#/definitions/v1DeveloperAgentContext'
                 description: |-
                   Optional context for prompts handled by the developer_agent.
+                  The field is ignored if another agent is selected.
+              feedbackAgentContext:
+                $ref: '#/definitions/v1FeedbackAgentContext'
+                description: |-
+                  Optional context for prompts handled by the feedback_agent.
                   The field is ignored if another agent is selected.
             title: Request message for RuntimeService.CompleteStreaming
       tags:
@@ -5237,6 +5247,26 @@ definitions:
         $ref: '#/definitions/v1Condition'
       subquery:
         $ref: '#/definitions/v1Subquery'
+  v1FeedbackAgentContext:
+    type: object
+    properties:
+      targetMessageId:
+        type: string
+        description: The ID of the message being rated.
+      sentiment:
+        type: string
+        description: 'Sentiment: "positive" or "negative".'
+      categories:
+        type: array
+        items:
+          type: string
+        description: 'Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other".'
+      comment:
+        type: string
+        description: Optional free-text comment.
+    description: |-
+      Context for prompts handled by the feedback_agent.
+      When provided, the agent records feedback and, for negative sentiment, runs attribution.
   v1FieldSelector:
     type: object
     properties:

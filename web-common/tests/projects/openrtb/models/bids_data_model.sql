@@ -1,5 +1,5 @@
 -- Model SQL
--- Reference documentation: https://docs.rilldata.com/build/models
+-- Reference documentation: https://docs.rilldata.com/developers/build/models
 select
     *
 from

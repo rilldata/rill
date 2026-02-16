@@ -1,3 +1,4 @@
+import type { ComponentType, SvelteComponent } from "svelte";
 import type {
   ButtonLabels,
   JSONSchemaConditional,
@@ -5,12 +6,134 @@ import type {
   MultiStepFormSchema,
 } from "./schemas/types";
 
+/**
+ * Radio option type used by getRadioEnumOptions() for multi-step connector flows.
+ * Has required description and optional hint for detailed radio button displays.
+ */
 export type RadioEnumOption = {
   value: string;
   label: string;
   description: string;
   hint?: string;
 };
+
+/**
+ * Enum option type used by select, tabs, and generic radio components.
+ * Has optional description and icon for flexible enum displays.
+ */
+export type EnumOption = {
+  value: string;
+  label: string;
+  description?: string;
+  icon?: ComponentType<SvelteComponent>;
+};
+
+/**
+ * Check if a field is an enum with a specific display type.
+ */
+export function isEnumWithDisplay(
+  prop: JSONSchemaField,
+  displayType: "radio" | "tabs" | "select",
+): boolean {
+  return Boolean(prop.enum && prop["x-display"] === displayType);
+}
+
+/**
+ * Check if a field is a radio enum (x-display: "radio").
+ */
+export function isRadioEnum(prop: JSONSchemaField): boolean {
+  return isEnumWithDisplay(prop, "radio");
+}
+
+/**
+ * Check if a field is a tabs enum (x-display: "tabs").
+ */
+export function isTabsEnum(prop: JSONSchemaField): boolean {
+  return isEnumWithDisplay(prop, "tabs");
+}
+
+/**
+ * Check if a field is a select enum (x-display: "select").
+ */
+export function isSelectEnum(prop: JSONSchemaField): boolean {
+  return isEnumWithDisplay(prop, "select");
+}
+
+/**
+ * Check if a field is a rich select enum (x-display: "select" with x-select-style: "rich").
+ * Rich selects render as ConnectionTypeSelector with icons and descriptions.
+ */
+export function isRichSelectEnum(prop: JSONSchemaField): boolean {
+  return Boolean(
+    prop.enum &&
+      prop["x-display"] === "select" &&
+      prop["x-select-style"] === "rich",
+  );
+}
+
+/**
+ * Build enum options from a JSONSchemaField.
+ */
+export function buildEnumOptions(
+  prop: JSONSchemaField,
+  opts: {
+    includeDescription?: boolean;
+    includeIcons?: boolean;
+    iconMap?: Record<string, ComponentType<SvelteComponent>>;
+  } = {},
+): EnumOption[] {
+  const {
+    includeDescription = false,
+    includeIcons = false,
+    iconMap = {},
+  } = opts;
+  return (
+    prop.enum?.map((value, idx) => {
+      const option: EnumOption = {
+        value: String(value),
+        label: prop["x-enum-labels"]?.[idx] ?? String(value),
+      };
+      if (includeDescription) {
+        option.description = prop["x-enum-descriptions"]?.[idx];
+      }
+      if (includeIcons) {
+        const iconKey = prop["x-enum-icons"]?.[idx];
+        if (iconKey && iconMap[iconKey]) {
+          option.icon = iconMap[iconKey];
+        }
+      }
+      return option;
+    }) ?? []
+  );
+}
+
+/**
+ * Build radio options (includes descriptions).
+ */
+export function radioOptions(prop: JSONSchemaField): EnumOption[] {
+  return buildEnumOptions(prop, { includeDescription: true });
+}
+
+/**
+ * Build tab options (no descriptions).
+ */
+export function tabOptions(prop: JSONSchemaField): EnumOption[] {
+  return buildEnumOptions(prop, { includeDescription: false });
+}
+
+/**
+ * Build select options (includes descriptions and icons).
+ */
+export function selectOptions(
+  prop: JSONSchemaField,
+  iconMap?: Record<string, ComponentType<SvelteComponent>>,
+): EnumOption[] {
+  return buildEnumOptions(prop, {
+    includeDescription: true,
+    includeIcons: true,
+    iconMap,
+  });
+}
 
 export function isStepMatch(
   schema: MultiStepFormSchema | null,
@@ -35,6 +158,25 @@ export function isVisibleForValues(
   if (!prop) return false;
   const conditions = prop["x-visible-if"];
   if (!conditions) return true;
+
+  return Object.entries(conditions).every(([depKey, expected]) => {
+    const actual = values?.[depKey];
+    if (Array.isArray(expected)) {
+      return expected.map(String).includes(String(actual));
+    }
+    return String(actual) === String(expected);
+  });
+}
+
+export function isDisabledForValues(
+  schema: MultiStepFormSchema,
+  key: string,
+  values: Record<string, unknown>,
+): boolean {
+  const prop = schema.properties?.[key];
+  if (!prop) return false;
+  const conditions = prop["x-disabled-if"];
+  if (!conditions) return false;
 
   return Object.entries(conditions).every(([depKey, expected]) => {
     const actual = values?.[depKey];
@@ -111,9 +253,15 @@ export function getSchemaInitialValues(
       initial[key] = prop.default;
       continue;
     }
+    if (prop["x-display"] === "key-value") {
+      initial[key] = [];
+      continue;
+    }
     if (
       prop.enum?.length &&
-      (prop["x-display"] === "radio" || prop["x-display"] === "tabs")
+      (prop["x-display"] === "radio" ||
+        prop["x-display"] === "tabs" ||
+        prop["x-display"] === "select")
     ) {
       initial[key] = String(prop.enum[0]);
     }
@@ -396,6 +544,7 @@ export function getBackendConnectorName(
 /**
  * Returns custom button labels from the schema based on current form values.
  * Looks up x-button-labels[fieldKey][fieldValue] for each field in values.
+ * A wildcard key "*" always matches regardless of form values.
  */
 export function getSchemaButtonLabels(
   schema: MultiStepFormSchema | null,
@@ -403,6 +552,10 @@ export function getSchemaButtonLabels(
 ): ButtonLabels | null {
   const buttonLabelsMap = schema?.["x-button-labels"];
   if (!buttonLabelsMap) return null;
+
+  // Check for wildcard match first
+  const wildcard = buttonLabelsMap["*"]?.["*"];
+  if (wildcard) return wildcard;
 
   for (const [fieldKey, valueLabels] of Object.entries(buttonLabelsMap)) {
     const currentValue = values[fieldKey];

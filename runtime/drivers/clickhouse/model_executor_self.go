@@ -60,7 +60,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 		// Create the table
 		var err error
-		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, outputProps)
+		metrics, err = e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, outputProps, inputProps.PreExec, inputProps.PostExec)
 		if err != nil {
 			_ = e.c.dropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
@@ -77,7 +77,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		// Insert into the table
 		var err error
 		metrics, err = e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, &InsertTableOptions{
-			Strategy: outputProps.IncrementalStrategy,
+			Strategy:     outputProps.IncrementalStrategy,
+			BeforeInsert: inputProps.PreExec,
+			AfterInsert:  inputProps.PostExec,
 		}, outputProps)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
