@@ -54,7 +54,11 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["y", "-y", "custom"],
+            options: [
+              ChartSortType.Y_ASC,
+              ChartSortType.Y_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           limitSelector: { defaultLimit: DEFAULT_STAGE_LIMIT },
           hideTimeDimension: true,

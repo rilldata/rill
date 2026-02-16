@@ -44,7 +44,15 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["x", "-x", "y", "-y", "y_delta", "-y_delta", "custom"],
+            options: [
+              ChartSortType.X_ASC,
+              ChartSortType.X_DESC,
+              ChartSortType.Y_ASC,
+              ChartSortType.Y_DESC,
+              ChartSortType.Y_DELTA_ASC,
+              ChartSortType.Y_DELTA_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           nullSelector: true,

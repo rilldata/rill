@@ -58,7 +58,13 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["color", "-color", "measure", "-measure", "custom"],
+            options: [
+              ChartSortType.COLOR_ASC,
+              ChartSortType.COLOR_DESC,
+              ChartSortType.MEASURE_ASC,
+              ChartSortType.MEASURE_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           colorMappingSelector: { enable: true },
         },

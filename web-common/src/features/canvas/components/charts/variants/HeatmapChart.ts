@@ -41,7 +41,13 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["x", "-x", "color", "-color", "custom"],
+            options: [
+              ChartSortType.X_ASC,
+              ChartSortType.X_DESC,
+              ChartSortType.COLOR_ASC,
+              ChartSortType.COLOR_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           axisTitleSelector: true,
           nullSelector: true,
@@ -59,7 +65,13 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["y", "-y", "color", "-color", "custom"],
+            options: [
+              ChartSortType.Y_ASC,
+              ChartSortType.Y_DESC,
+              ChartSortType.COLOR_ASC,
+              ChartSortType.COLOR_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           axisTitleSelector: true,
           nullSelector: true,

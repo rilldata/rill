@@ -42,7 +42,13 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["x", "-x", "y", "-y", "custom"],
+            options: [
+              ChartSortType.X_ASC,
+              ChartSortType.X_DESC,
+              ChartSortType.Y_ASC,
+              ChartSortType.Y_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           nullSelector: true,
