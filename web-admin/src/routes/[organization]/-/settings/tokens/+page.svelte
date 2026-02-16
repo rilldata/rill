@@ -1,143 +1,148 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { Button } from "@rilldata/web-common/components/button";
   import ServiceTokenList from "@rilldata/web-admin/lib/features/tokens/ServiceTokenList.svelte";
-  // import UserTokenList from "@rilldata/web-admin/lib/features/tokens/UserTokenList.svelte";
-  // import CreateServiceTokenDialog from "@rilldata/web-admin/lib/features/tokens/CreateServiceTokenDialog.svelte";
-  // import DeleteTokenDialog from "@rilldata/web-admin/lib/features/tokens/DeleteTokenDialog.svelte";
+  import UserTokenList from "@rilldata/web-admin/lib/features/tokens/UserTokenList.svelte";
+  import CreateServiceTokenDialog from "@rilldata/web-admin/lib/features/tokens/CreateServiceTokenDialog.svelte";
+  import CreateUserTokenDialog from "@rilldata/web-admin/lib/features/tokens/CreateUserTokenDialog.svelte";
+  import DeleteTokenDialog from "@rilldata/web-admin/lib/features/tokens/DeleteTokenDialog.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
+  import { Tab, TabList } from "@rilldata/web-common/components/tabs";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import {
+    deleteServiceTokenMutation,
+    deleteUserTokenMutation,
+  } from "@rilldata/web-admin/lib/features/tokens/token-queries";
 
+  const organization = $page.params.organization;
+
+  // Tab state
   type TabType = "service" | "user";
-
   let activeTab: TabType = "service";
-  let createDialogOpen = false;
-  let deleteDialogOpen = false;
-  let tokenToDelete: { id: string; name: string; type: TabType } | null = null;
 
-  $: organization = $page.params.organization;
+  // Dialog state
+  let showCreateServiceTokenDialog = false;
+  let showCreateUserTokenDialog = false;
+  let showDeleteDialog = false;
+  let deleteTokenId = "";
+  let deleteTokenName = "";
+  let deleteTokenType: "service" | "user" = "service";
 
-  function handleCreateToken() {
-    createDialogOpen = true;
+  // Mutations for delete
+  const deleteServiceToken = deleteServiceTokenMutation(organization);
+  const deleteUserToken = deleteUserTokenMutation();
+
+  function handleCreateClick() {
+    if (activeTab === "service") {
+      showCreateServiceTokenDialog = true;
+    } else {
+      showCreateUserTokenDialog = true;
+    }
   }
 
-  function handleCloseCreateDialog() {
-    createDialogOpen = false;
-  }
-
-  function handleRequestDelete(event: CustomEvent<{ id: string; name: string }>) {
-    tokenToDelete = {
-      id: event.detail.id,
-      name: event.detail.name,
-      type: activeTab,
-    };
-    deleteDialogOpen = true;
-  }
-
-  function handleCloseDeleteDialog() {
-    deleteDialogOpen = false;
-    tokenToDelete = null;
-  }
-
-  function setActiveTab(tab: TabType) {
-    // Only allow switching to "service" for now; "user" is Phase 2
-    if (tab === "user") return;
+  function handleTabChange(tab: TabType) {
     activeTab = tab;
   }
-</script>
 
-<svelte:head>
-  <title>Tokens - Settings - {organization}</title>
-</svelte:head>
+  function handleDeleteRequest(
+    event: CustomEvent<{
+      tokenId: string;
+      tokenName: string;
+      tokenType: "service" | "user";
+    }>,
+  ) {
+    deleteTokenId = event.detail.tokenId;
+    deleteTokenName = event.detail.tokenName;
+    deleteTokenType = event.detail.tokenType;
+    showDeleteDialog = true;
+  }
+
+  async function handleDeleteConfirm(): Promise<void> {
+    try {
+      if (deleteTokenType === "service") {
+        await $deleteServiceToken.mutateAsync({
+          organization,
+          tokenId: deleteTokenId,
+        });
+      } else {
+        await $deleteUserToken.mutateAsync({
+          tokenId: deleteTokenId,
+        });
+      }
+      showDeleteDialog = false;
+      eventBus.emit("notification", {
+        message: `Token "${deleteTokenName}" has been revoked`,
+        type: "success",
+      });
+    } catch (e) {
+      // Error is handled within DeleteTokenDialog
+      throw e;
+    }
+  }
+</script>
 
 <div class="flex flex-col gap-4 w-full">
   <!-- Page header -->
   <div class="flex items-center justify-between">
-    <div class="flex flex-col gap-1">
+    <div>
       <h2 class="text-lg font-semibold text-gray-900">Tokens</h2>
-      <p class="text-sm text-gray-500">
-        Manage service tokens and personal access tokens for API and CLI access.
+      <p class="text-sm text-gray-500 mt-1">
+        Manage API tokens for programmatic access to your organization.
       </p>
     </div>
-    <Button on:click={handleCreateToken} type="primary">
+    <Button on:click={handleCreateClick}>
       Create Token
     </Button>
   </div>
 
-  <!-- Tab bar -->
-  <div class="flex border-b border-gray-200">
-    <button
-      class="tab-button"
-      class:active={activeTab === "service"}
-      on:click={() => setActiveTab("service")}
-    >
-      Service Tokens
-    </button>
-    <button
-      class="tab-button tab-disabled"
-      disabled
-      title="Coming soon"
-      on:click={() => setActiveTab("user")}
-    >
-      User Tokens
-      <span class="ml-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-400 uppercase">
-        Soon
-      </span>
-    </button>
+  <!-- Tabs -->
+  <div class="border-b border-gray-200">
+    <TabList>
+      <Tab
+        active={activeTab === "service"}
+        on:click={() => handleTabChange("service")}
+      >
+        Service Tokens
+      </Tab>
+      <Tab
+        active={activeTab === "user"}
+        on:click={() => handleTabChange("user")}
+      >
+        User Tokens
+      </Tab>
+    </TabList>
   </div>
 
   <!-- Tab content -->
-  <div class="flex-1">
-    {#if activeTab === "service"}
-      <ServiceTokenList
-        {organization}
-        on:create={handleCreateToken}
-        on:delete={handleRequestDelete}
-      />
-    {:else if activeTab === "user"}
-      <!-- Phase 2: UserTokenList will be rendered here -->
-      <div class="flex items-center justify-center py-16 text-sm text-gray-400">
-        User token management coming soon.
-      </div>
-    {/if}
-  </div>
-</div>
-
-<!-- Create Service Token Dialog (Sprint 3) -->
-<!-- {#if createDialogOpen}
   {#if activeTab === "service"}
-    <CreateServiceTokenDialog
+    <ServiceTokenList
       {organization}
-      open={createDialogOpen}
-      on:close={handleCloseCreateDialog}
+      on:delete={handleDeleteRequest}
+    />
+  {:else}
+    <UserTokenList
+      on:delete={handleDeleteRequest}
     />
   {/if}
-{/if} -->
+</div>
 
-<!-- Delete Token Confirmation Dialog (Sprint 3) -->
-<!-- {#if deleteDialogOpen && tokenToDelete}
-  <DeleteTokenDialog
-    tokenName={tokenToDelete.name}
-    tokenType={tokenToDelete.type}
-    open={deleteDialogOpen}
-    on:close={handleCloseDeleteDialog}
-    on:confirm={async () => {
-      // Deletion logic handled by the dialog component via mutation
-      handleCloseDeleteDialog();
-    }}
-  />
-{/if} -->
+<!-- Create Service Token Dialog -->
+<CreateServiceTokenDialog
+  bind:open={showCreateServiceTokenDialog}
+  {organization}
+/>
 
-<style lang="postcss">
-  .tab-button {
-    @apply relative px-4 py-2.5 text-sm font-medium text-gray-500 transition-colors;
-    @apply hover:text-gray-700 focus:outline-none cursor-pointer;
-    @apply border-b-2 border-transparent -mb-px;
-  }
+<!-- Create User Token Dialog -->
+<CreateUserTokenDialog
+  bind:open={showCreateUserTokenDialog}
+/>
 
-  .tab-button.active {
-    @apply text-primary-600 border-primary-600;
-  }
-
-  .tab-disabled {
-    @apply cursor-not-allowed opacity-60 hover:text-gray-500;
-  }
-</style>
+<!-- Delete Token Dialog -->
+<DeleteTokenDialog
+  open={showDeleteDialog}
+  tokenName={deleteTokenName}
+  tokenType={deleteTokenType}
+  onConfirm={handleDeleteConfirm}
+  on:close={() => {
+    showDeleteDialog = false;
+  }}
+/>
