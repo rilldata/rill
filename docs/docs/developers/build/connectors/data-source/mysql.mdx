@@ -70,14 +70,14 @@ host: "localhost"
 port: 3306
 database: "mydatabase"
 user: "myusername"
-password: "{{ .env.connector.mysql.password }}"
+password: "{{ .env.MYSQL_PASSWORD }}"
 ssl_mode: "DISABLED"
 ```
 
 **Step 2: Add credentials to `.env`**
 
 ```bash
-connector.mysql.password=your-secure-password
+MYSQL_PASSWORD=your-secure-password
 ```
 
 <EnvPullTip />

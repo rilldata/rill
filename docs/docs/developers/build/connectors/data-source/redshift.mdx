@@ -56,16 +56,16 @@ Create `connectors/redshift.yaml`:
 type: connector
 driver: redshift
 
-aws_access_key_id: "{{ .env.connector.redshift.aws_access_key_id }}"
-aws_secret_access_key: "{{ .env.connector.redshift.aws_secret_access_key }}"
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
+aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}"
 database: "dev"
 ```
 
 **Step 2: Add credentials to `.env`**
 
 ```bash
-connector.redshift.aws_access_key_id=AKIAIOSFODNN7EXAMPLE
-connector.redshift.aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
 <EnvPullTip />
