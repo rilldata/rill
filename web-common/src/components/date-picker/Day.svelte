@@ -1,12 +1,14 @@
 <script lang="ts">
   import { DateTime, Interval } from "luxon";
 
-  enum OverlapType {
-    IN_RANGE = "in-range",
-    START = "start",
-    END = "end",
-    FULL_INTERVAL = "full-interval",
-  }
+  // Use const object instead of enum for Svelte 5 compatibility
+  const OverlapType = {
+    IN_RANGE: "in-range",
+    START: "start",
+    END: "end",
+    FULL_INTERVAL: "full-interval",
+  } as const;
+  type OverlapType = (typeof OverlapType)[keyof typeof OverlapType];
 
   export let date: DateTime<true>;
   export let interval: Interval<true>;

@@ -32,10 +32,12 @@
 
   const formats = [...formatsWithoutYear, ...formatsWithYear];
 
-  enum ErrorType {
-    INVALID = "invalid",
-    OUT_OF_RANGE = "out-of-range",
-  }
+  // Use const object instead of enum for Svelte 5 compatibility
+  const ErrorType = {
+    INVALID: "invalid",
+    OUT_OF_RANGE: "out-of-range",
+  } as const;
+  type ErrorType = (typeof ErrorType)[keyof typeof ErrorType];
 
   export let date: DateTime;
   export let zone: string;
