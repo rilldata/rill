@@ -68,9 +68,7 @@
   $: filteredDashboards = searchQuery.trim()
     ? dashboards.filter(
         (d) =>
-          getDisplayName(d)
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
+          getDisplayName(d).toLowerCase().includes(searchQuery.toLowerCase()) ||
           d.name.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : dashboards;
