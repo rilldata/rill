@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import { onMount, onDestroy } from "svelte";
   import {
     SSEConnectionManager,
@@ -28,8 +30,49 @@
   let logsContainer: HTMLDivElement;
   let connectionError: string | null = null;
   let filterDropdownOpen = false;
-  let searchText = "";
-  let selectedLevels: string[] = [];
+  let searchText = $page.url.searchParams.get("q") ?? "";
+  let selectedLevels: string[] = (() => {
+    const l = $page.url.searchParams.get("level");
+    return l ? l.split(",").filter(Boolean) : [];
+  })();
+  let mounted = false;
+  let lastSyncedSearch = $page.url.search;
+
+  // Reactive URL param tracking
+  $: qParam = $page.url.searchParams.get("q");
+  $: levelParam = $page.url.searchParams.get("level");
+
+  // Sync URL → local state on external navigation (back/forward)
+  $: if (mounted && $page.url.search !== lastSyncedSearch) {
+    lastSyncedSearch = $page.url.search;
+    searchText = qParam ?? "";
+    selectedLevels = levelParam ? levelParam.split(",").filter(Boolean) : [];
+  }
+
+  // Sync filter state → URL
+  $: if (mounted) {
+    syncFiltersToUrl(searchText, selectedLevels);
+  }
+
+  function syncFiltersToUrl(search: string, levels: string[]) {
+    const url = new URL($page.url);
+    if (search) {
+      url.searchParams.set("q", search);
+    } else {
+      url.searchParams.delete("q");
+    }
+    if (levels.length > 0) {
+      url.searchParams.set("level", levels.join(","));
+    } else {
+      url.searchParams.delete("level");
+    }
+    lastSyncedSearch = url.search;
+    void goto(url.pathname + url.search, {
+      replaceState: true,
+      noScroll: true,
+      keepFocus: true,
+    });
+  }
 
   const logsConnection = new SSEConnectionManager({
     maxRetryAttempts: 5,
@@ -72,6 +115,7 @@
   let unsubs: (() => void)[] = [];
 
   onMount(() => {
+    mounted = true;
     const { host, instanceId } = $runtime;
     if (!host || !instanceId) return;
 
@@ -255,6 +299,7 @@
         bind:value={searchText}
         placeholder="Search logs..."
         autofocus={false}
+        retainValueOnMount={true}
       />
     </div>
   </div>

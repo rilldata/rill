@@ -4,9 +4,10 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import {
     RefreshCcwIcon,
-    FileTextIcon,
     LayoutGridIcon,
     AlertCircleIcon,
+    CodeIcon,
+    ScrollTextIcon,
   } from "lucide-svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import {
@@ -23,6 +24,7 @@
   export let onRefreshErroredClick: (resource: V1Resource) => void;
   export let onIncrementalRefreshClick: (resource: V1Resource) => void;
   export let onFullRefreshClick: (resource: V1Resource) => void;
+  export let onViewLogsClick: (name: string) => void;
 
   $: isPartitioned = isModelPartitioned(resource);
   $: isIncremental = isModelIncremental(resource);
@@ -42,8 +44,18 @@
         on:click={() => onModelInfoClick(resource)}
       >
         <div class="flex items-center">
-          <FileTextIcon size="12px" />
-          <span class="ml-2">Model Information</span>
+          <CodeIcon size="12px" />
+          <span class="ml-2">Describe</span>
+        </div>
+      </DropdownMenu.Item>
+
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={() => onViewLogsClick(resource.meta?.name?.name ?? "")}
+      >
+        <div class="flex items-center">
+          <ScrollTextIcon size="12px" />
+          <span class="ml-2">View Logs</span>
         </div>
       </DropdownMenu.Item>
 

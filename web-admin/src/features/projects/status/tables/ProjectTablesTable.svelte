@@ -6,18 +6,15 @@
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { compareSizesDescending } from "./utils";
   import ModelSizeCell from "./ModelSizeCell.svelte";
-  import NameCell from "../NameCell.svelte";
+  import NameCell from "../resource-table/NameCell.svelte";
   import MaterializationCell from "./MaterializationCell.svelte";
   import ModelActionsCell from "./ModelActionsCell.svelte";
-  import ResourceErrorMessage from "../ResourceErrorMessage.svelte";
+  import ResourceErrorMessage from "../resource-table/ResourceErrorMessage.svelte";
 
   export let tables: V1OlapTableInfo[] = [];
   export let isView: Map<string, boolean> = new Map();
-  export let columnCount: Map<string, number> = new Map();
-  export let rowCount: Map<string, number> = new Map();
   export let modelResources: Map<string, V1Resource> = new Map();
   export let onModelInfoClick: (resource: V1Resource) => void = () => {};
   export let onViewPartitionsClick: (resource: V1Resource) => void = () => {};
@@ -26,6 +23,7 @@
     resource: V1Resource,
   ) => void = () => {};
   export let onFullRefreshClick: (resource: V1Resource) => void = () => {};
+  export let onViewLogsClick: (name: string) => void = () => {};
 
   let openDropdownTableName = "";
 
@@ -69,26 +67,6 @@
       },
     },
     {
-      id: "rows",
-      accessorFn: (row) => rowCount.get(row.name ?? ""),
-      header: "Rows",
-      sortDescFirst: true,
-      cell: ({ getValue }) => {
-        const value = getValue() as number | undefined;
-        return value !== undefined ? formatCompactInteger(value) : "-";
-      },
-    },
-    {
-      id: "columns",
-      accessorFn: (row) => columnCount.get(row.name ?? ""),
-      header: "Columns",
-      sortDescFirst: true,
-      cell: ({ getValue }) => {
-        const value = getValue() as number | undefined;
-        return value !== undefined ? String(value) : "-";
-      },
-    },
-    {
       id: "size",
       accessorFn: (row) => row.physicalSizeBytes,
       header: "Database Size",
@@ -121,6 +99,7 @@
           onRefreshErroredClick,
           onIncrementalRefreshClick,
           onFullRefreshClick,
+          onViewLogsClick,
         });
       },
     },
@@ -129,11 +108,11 @@
   $: tableData = tables;
 </script>
 
-{#key [isView, columnCount, rowCount, modelResources]}
+{#key [isView, modelResources]}
   <VirtualizedTable
     tableId="project-tables-table"
     data={tableData}
     {columns}
-    columnLayout="minmax(95px, 0.5fr) minmax(150px, 2fr) 64px minmax(80px, 0.8fr) minmax(80px, 0.8fr) minmax(100px, 1fr) 56px"
+    columnLayout="minmax(95px, 0.5fr) minmax(150px, 2fr) 64px minmax(100px, 1fr) 56px"
   />
 {/key}

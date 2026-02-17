@@ -18,7 +18,7 @@ import type {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 
-describe("model-overview utils", () => {
+describe("tables utils", () => {
   describe("filterTemporaryTables", () => {
     it("filters out __rill_tmp_ prefixed tables", () => {
       const tables: V1OlapTableInfo[] = [

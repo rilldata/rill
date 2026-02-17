@@ -313,6 +313,7 @@
         bind:value={searchText}
         placeholder="Search by name..."
         autofocus={false}
+        retainValueOnMount={true}
       />
     </div>
 
