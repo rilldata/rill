@@ -168,7 +168,7 @@
         canvasName={dashboardName}
         inPreviewMode={previewMode}
       />
-    {:else if showDeveloperChat}
+    {:else if showDeveloperChat && !previewMode}
       <ChatToggle beta />
     {/if}
     {#if showDeployCTA}
