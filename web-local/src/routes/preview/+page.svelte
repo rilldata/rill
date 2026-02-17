@@ -11,7 +11,7 @@
 </script>
 
 {#if data.initialized}
-  <ContentContainer title="Dashboards" maxWidth={1100}>
+  <ContentContainer title="Project Dashboards" maxWidth={1100}>
     <DashboardList showSearch />
   </ContentContainer>
 {:else}
