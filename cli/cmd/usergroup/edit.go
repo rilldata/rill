@@ -7,11 +7,11 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name string
+	var newName string
 	var description string
 
 	editCmd := &cobra.Command{
-		Use:   "edit [<name>]",
+		Use:   "edit <name>",
 		Short: "Edit a group",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -20,20 +20,21 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if len(args) == 1 {
-				name = args[0]
+			name := args[0]
+
+			req := &adminv1.UpdateUsergroupRequest{
+				Org:       ch.Org,
+				Usergroup: name,
 			}
 
-			err = cmdutil.StringPromptIfEmpty(&description, "Enter description")
-			if err != nil {
-				return err
+			if cmd.Flags().Changed("new-name") {
+				req.NewName = &newName
+			}
+			if cmd.Flags().Changed("description") {
+				req.Description = &description
 			}
 
-			_, err = client.EditUsergroup(cmd.Context(), &adminv1.EditUsergroupRequest{
-				Org:         ch.Org,
-				Usergroup:   name,
-				Description: description,
-			})
+			_, err = client.UpdateUsergroup(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -45,6 +46,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	editCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
+	editCmd.Flags().StringVar(&newName, "new-name", "", "New user group name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 
 	return editCmd
