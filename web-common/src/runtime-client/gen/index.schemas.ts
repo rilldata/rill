@@ -915,6 +915,9 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
   pivotRowLimit?: number;
+  /** Default filter expression (SQL syntax, parsed by metricssql). */
+  pinned?: string[];
+  filter?: V1DefaultMetricsSQLFilter;
 }
 
 export type V1ExploreSortType =

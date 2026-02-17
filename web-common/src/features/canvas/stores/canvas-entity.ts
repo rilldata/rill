@@ -37,7 +37,8 @@ import {
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import { FilterManager, flattenExpression } from "./filter-manager";
+import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { FilterManager } from "./filter-manager";
 import { getFilterParam } from "./filter-state";
 import { Grid } from "./grid";
 import { getComparisonTypeFromRangeString } from "./time-state";

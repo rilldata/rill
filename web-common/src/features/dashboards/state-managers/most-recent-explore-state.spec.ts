@@ -1,11 +1,16 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
+import { clearLastVisitedState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/last-visited-state";
 import {
   type HoistedPageForExploreTests,
   PageMockForExploreTests,
 } from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_EXPLORE_INIT,
@@ -27,10 +32,12 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   DashboardState_LeaderboardSortDirection,
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -72,8 +79,15 @@ const TestCases: {
     ],
 
     expectedUrlSearch:
-      "measures=bid_price&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
+      "tr=P4W&grain=week&f=publisher+IN+%28%27Google%27%29&measures=bid_price&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
     expectedExplore: {
+      selectedTimeRange: {
+        name: "P4W",
+        interval: V1TimeGrain.TIME_GRAIN_WEEK,
+      } as DashboardTimeControls,
+      whereFilter: createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
       allMeasuresVisible: false,
       visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
       allDimensionsVisible: false,
@@ -91,8 +105,15 @@ const TestCases: {
     mutations: [],
 
     expectedUrlSearch:
-      "measures=bid_price&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
+      "tr=P4W&grain=week&f=publisher+IN+%28%27Google%27%29&measures=bid_price&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC&leaderboard_measures=bid_price",
     expectedExplore: {
+      selectedTimeRange: {
+        name: "P4W",
+        interval: V1TimeGrain.TIME_GRAIN_WEEK,
+      } as DashboardTimeControls,
+      whereFilter: createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
       allMeasuresVisible: false,
       visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
       allDimensionsVisible: false,
@@ -130,6 +151,7 @@ describe("Most recent explore state", () => {
     sessionStorage.clear();
     queryClient.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    clearLastVisitedState(AD_BIDS_EXPLORE_NAME);
   });
 
   for (const {

@@ -4,8 +4,9 @@ import {
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
 import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
-import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
-import { getMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import { getPartialExploreStateFromViewState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { getLastVisitedState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/last-visited-state";
+import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -187,6 +188,7 @@ export class DashboardStateDataLoader {
       exploreStateFromYAMLConfig,
       rillDefaultExploreState,
       backButtonUsed,
+      skipLastVisitedState: true,
     });
   }
 
@@ -288,6 +290,7 @@ export class DashboardStateDataLoader {
     exploreStateFromYAMLConfig,
     rillDefaultExploreState,
     backButtonUsed,
+    skipLastVisitedState = false,
   }: {
     metricsViewSpec: V1MetricsViewSpec;
     exploreSpec: V1ExploreSpec;
@@ -296,13 +299,16 @@ export class DashboardStateDataLoader {
     exploreStateFromYAMLConfig: Partial<ExploreState>;
     rillDefaultExploreState: ExploreState;
     backButtonUsed: boolean;
+    skipLastVisitedState?: boolean;
   }) {
     urlSearchParams = cleanEmbedUrlParams(urlSearchParams);
 
-    const skipSessionStorage = backButtonUsed;
-    const exploreStateFromSessionStorage = skipSessionStorage
+    // Per-view state: restores full state when switching views (explore ↔ TDD ↔ pivot).
+    // Skipped on back button to avoid restoring stale state.
+    const skipViewState = backButtonUsed;
+    const exploreStateFromViewState = skipViewState
       ? null
-      : getPartialExploreStateFromSessionStorage(
+      : getPartialExploreStateFromViewState(
           this.exploreName,
           this.storageNamespacePrefix,
           urlSearchParams,
@@ -318,27 +324,34 @@ export class DashboardStateDataLoader {
         {},
       );
 
-    const { mostRecentPartialExploreState } = getMostRecentPartialExploreState(
-      this.exploreName,
-      this.storageNamespacePrefix,
-      metricsViewSpec,
-      exploreSpec,
-    );
+    // Check in-memory last visited state
+    let mostRecentPartialExploreState: Partial<ExploreState> | undefined;
+    const lastVisited = getLastVisitedState(this.exploreName);
+    if (lastVisited) {
+      try {
+        validateAndCleanExploreState(metricsViewSpec, exploreSpec, lastVisited);
+        mostRecentPartialExploreState = lastVisited;
+      } catch {
+        // Invalid state, ignore
+      }
+    }
 
     const shouldSkipOtherSources =
-      // If the url has some params that do not map to session storage then we need to only use state from url back-filled with rill defaults.
-      (urlSearchParams.size > 0 && !exploreStateFromSessionStorage) ||
+      // If the url has params that don't map to per-view state, only use url + rill defaults.
+      (urlSearchParams.size > 0 && !exploreStateFromViewState) ||
       // The exception to this is when back button is pressed and the user landed on empty url.
       backButtonUsed;
 
     const exploreStateOrder = [
-      // 1st priority is the state from url params. For certain params the state is from session storage.
-      // We need the state from session storage to make sure any state is not cleared while the user is still on the page but came back from a different dashboard.
-      // TODO: move all this logic based on url params to a "fromURL" method. Will replace convertURLSearchParamsToExploreState
-      exploreStateFromSessionStorage ??
+      // 1st priority: per-view state (when switching views) or URL params.
+      exploreStateFromViewState ??
         (urlSearchParams.size > 0 ? partialExploreStateFromUrl : null),
-      // Next priority is the most recent state user had visited. This is a small subset of the full state.
-      shouldSkipOtherSources || this.disableMostRecentDashboardState
+      // Next priority is the most recent in-memory state user had visited (sort/visibility preferences).
+      // Only used during init (navigating between dashboards within the same session).
+      // Skipped during URL-driven updates so that clearing URL params resets to defaults.
+      shouldSkipOtherSources ||
+      this.disableMostRecentDashboardState ||
+      skipLastVisitedState
         ? null
         : mostRecentPartialExploreState,
       // Next priority is one of the other source defined.

@@ -1,7 +1,8 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
-import { saveMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import { updateExploreViewState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import { setLastVisitedState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/last-visited-state";
 import {
   metricsExplorerStore,
   useExploreState,
@@ -12,7 +13,6 @@ import {
   createTimeControlStoreFromName,
   type TimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import type { AfterNavigate } from "@sveltejs/kit";
@@ -170,8 +170,8 @@ export class DashboardStateSync {
     // Get the updated url params. If we merged state other than the url we would need to navigate to it.
     const redirectUrl = this.getUrlForExploreState(initExploreState);
 
-    // Update session storage with the initial state
-    updateExploreSessionStore(
+    // Update per-view state for view switching (explore ↔ TDD ↔ pivot)
+    updateExploreViewState(
       this.exploreName,
       this.extraPrefix,
       initExploreState,
@@ -180,12 +180,8 @@ export class DashboardStateSync {
       timeControlsState,
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
-      // Update "most recent explore state" with the initial state
-      saveMostRecentPartialExploreState(
-        this.exploreName,
-        this.extraPrefix,
-        initExploreState,
-      );
+      // Update in-memory "last visited state" with the initial state
+      setLastVisitedState(this.exploreName, initExploreState);
     }
 
     // If the current url same as the new url then there is no need to do anything
@@ -270,10 +266,10 @@ export class DashboardStateSync {
     // The extra state could come from session storage, home bookmark or yaml defaults
     const redirectUrl = this.getUrlForExploreState(partialExplore);
 
-    // Get the full updated state and save to session storage
+    // Get the full updated state and save to per-view state store
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
-    updateExploreSessionStore(
+    updateExploreViewState(
       this.exploreName,
       this.extraPrefix,
       updatedExploreState,
@@ -282,12 +278,7 @@ export class DashboardStateSync {
       timeControlsState,
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
-      // Update "most recent explore state" with updated state from url
-      saveMostRecentPartialExploreState(
-        this.exploreName,
-        this.extraPrefix,
-        updatedExploreState,
-      );
+      setLastVisitedState(this.exploreName, updatedExploreState);
     }
 
     this.updating = false;
@@ -326,8 +317,8 @@ export class DashboardStateSync {
     // Get the new url params for the updated state
     const newUrl = this.getUrlForExploreState(exploreState);
 
-    // Update the session storage with the new explore state.
-    updateExploreSessionStore(
+    // Update per-view state for view switching
+    updateExploreViewState(
       this.exploreName,
       this.extraPrefix,
       exploreState,
@@ -336,13 +327,9 @@ export class DashboardStateSync {
       timeControlsState,
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
-      // Update "most recent explore state" with updated state.
+      // Update in-memory "last visited state" with updated state.
       // Since we do not update the state per action we do it here as blanket update.
-      saveMostRecentPartialExploreState(
-        this.exploreName,
-        this.extraPrefix,
-        exploreState,
-      );
+      setLastVisitedState(this.exploreName, exploreState);
     }
 
     // If the state didnt result in a new url then skip goto.

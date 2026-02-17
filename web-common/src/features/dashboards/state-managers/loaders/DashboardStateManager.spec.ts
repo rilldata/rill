@@ -1,7 +1,13 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
-import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
-import { setMostRecentExploreStateInLocalStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
+import {
+  clearExploreViewState,
+  setExploreStateForWebView,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+import {
+  clearLastVisitedState,
+  setLastVisitedStateRaw,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/last-visited-state";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
   type HoistedPageForExploreTests,
@@ -92,6 +98,8 @@ describe("DashboardStateManager", () => {
     sessionStorage.clear();
     queryClient.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    clearExploreViewState(AD_BIDS_EXPLORE_NAME, undefined);
+    clearLastVisitedState(AD_BIDS_EXPLORE_NAME);
   });
 
   describe("Dashboards with timeseries", () => {
@@ -202,7 +210,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
+      setLastVisitedStateRaw(AD_BIDS_EXPLORE_NAME, {
         visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
         allMeasuresVisible: false,
         visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
@@ -251,15 +259,20 @@ describe("DashboardStateManager", () => {
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
 
-    it("Should load from session dashboard state", async () => {
+    it("Should load from per-view state on view navigation", async () => {
+      renderDashboardStateManager(BookmarkSourceQueryResult);
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      // After init, overwrite the in-memory view state with custom params
       setExploreStateForWebView(
         AD_BIDS_EXPLORE_NAME,
         undefined,
         ExploreUrlWebView.Explore,
         "view=explore&tr=P14D&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC&leaderboard_measures=bid_price",
       );
-      renderDashboardStateManager(BookmarkSourceQueryResult);
-      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      // Navigate with just ?view=explore to trigger loading from the view state store
+      pageMock.gotoSearch("view=explore");
 
       assertExploreStateSubset({
         selectedTimeRange: {
@@ -281,16 +294,6 @@ describe("DashboardStateManager", () => {
         dashboardSortType: DashboardState_LeaderboardSortType.DELTA_ABSOLUTE,
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
       });
-      const initUrlSearch =
-        "tr=P14D&tz=Asia%2FKathmandu&compare_tr=rill-PW&grain=day&measures=bid_price&dims=domain&sort_by=bid_price&sort_type=delta_abs&leaderboard_measures=bid_price";
-      pageMock.assertSearchParams(initUrlSearch);
-
-      pageMock.popState("");
-      await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
-      );
-      // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
   });
 
@@ -354,7 +357,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should load most recent dashboard state", async () => {
-      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
+      setLastVisitedStateRaw(AD_BIDS_EXPLORE_NAME, {
         visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
         allMeasuresVisible: false,
         visibleDimensions: [AD_BIDS_DOMAIN_DIMENSION],
@@ -394,7 +397,7 @@ describe("DashboardStateManager", () => {
     });
 
     it("Should validate most recent dashboard state and correct invalid fields", async () => {
-      setMostRecentExploreStateInLocalStorage(AD_BIDS_EXPLORE_NAME, undefined, {
+      setLastVisitedStateRaw(AD_BIDS_EXPLORE_NAME, {
         visibleMeasures: [AD_BIDS_PUBLISHER_COUNT_MEASURE],
         allMeasuresVisible: false,
         visibleDimensions: [AD_BIDS_COUNTRY_DIMENSION],
@@ -432,16 +435,21 @@ describe("DashboardStateManager", () => {
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
 
-    it("Should load from session dashboard state", async () => {
+    it("Should load from per-view state on view navigation", async () => {
+      renderDashboardStateManager();
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      // After init, overwrite the in-memory view state with custom params
       setExploreStateForWebView(
         AD_BIDS_EXPLORE_NAME,
         undefined,
         ExploreUrlWebView.Explore,
         "view=explore&measures=bid_price&dims=domain&sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC&leaderboard_measures=bid_price",
       );
-      renderDashboardStateManager();
 
-      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+      // Navigate with just ?view=explore to trigger loading from the view state store
+      pageMock.gotoSearch("view=explore");
+
       assertExploreStateSubset({
         selectedComparisonTimeRange: undefined,
         selectedTimeRange: undefined,
@@ -457,16 +465,6 @@ describe("DashboardStateManager", () => {
         sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
         dashboardSortType: DashboardState_LeaderboardSortType.DELTA_ABSOLUTE,
       });
-      const initUrlSearch =
-        "measures=bid_price&dims=domain&sort_by=bid_price&sort_type=delta_abs&leaderboard_measures=bid_price";
-      pageMock.assertSearchParams(initUrlSearch);
-
-      pageMock.popState("");
-      await waitFor(() =>
-        assertExploreStateSubset(ExploreStateSubsetForRillDefaultState),
-      );
-      // only 2 urls should in history
-      expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
     });
   });
 });

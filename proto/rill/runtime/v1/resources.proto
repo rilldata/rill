@@ -529,6 +529,10 @@ message ExplorePreset {
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
   optional int32 pivot_row_limit = 33;
+
+  // Default filter expression (SQL syntax, parsed by metricssql).
+  repeated string pinned = 35;
+  DefaultMetricsSQLFilter filter = 36;
 }
 
 enum ExploreComparisonMode {

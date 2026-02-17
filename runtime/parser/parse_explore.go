@@ -7,6 +7,8 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
@@ -32,6 +34,8 @@ type ExploreYAML struct {
 		TimeRange           string             `yaml:"time_range"`
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
+		Filter              string             `yaml:"filter"`
+		Pinned              []string           `yaml:"pinned"`
 	} `yaml:"defaults"`
 	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
@@ -115,6 +119,15 @@ var exploreComparisonModes = map[string]runtimev1.ExploreComparisonMode{
 	"none":      runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
 	"time":      runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
 	"dimension": runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION,
+}
+
+var validRillComparisonOptions = map[string]bool{
+	"rill-PP": true, "rill-PD": true, "rill-PW": true,
+	"rill-PM": true, "rill-PQ": true, "rill-PY": true,
+}
+
+func isRillComparisonOption(s string) bool {
+	return validRillComparisonOptions[s]
 }
 
 func (p *Parser) parseExplore(node *Node) error {
@@ -214,11 +227,17 @@ func (p *Parser) parseExplore(node *Node) error {
 		}
 
 		mode := runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE
+		var compareTimeRange *string
 		if tmp.Defaults.ComparisonMode != "" {
 			var ok bool
 			mode, ok = exploreComparisonModes[tmp.Defaults.ComparisonMode]
 			if !ok {
-				return fmt.Errorf("invalid comparison mode %q (options: %s)", tmp.Defaults.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
+				if isRillComparisonOption(tmp.Defaults.ComparisonMode) {
+					mode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME
+					compareTimeRange = &tmp.Defaults.ComparisonMode
+				} else {
+					return fmt.Errorf("invalid comparison mode %q (options: %s)", tmp.Defaults.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
+				}
 			}
 		}
 
@@ -246,6 +265,26 @@ func (p *Parser) parseExplore(node *Node) error {
 		if tmp.Defaults.ComparisonDimension != "" {
 			compareDim = &tmp.Defaults.ComparisonDimension
 		}
+
+		var pinnedMeasuresOrDimensions []string
+		if len(tmp.Defaults.Pinned) > 0 {
+			pinnedMeasuresOrDimensions = tmp.Defaults.Pinned
+		}
+
+		var filter *runtimev1.DefaultMetricsSQLFilter
+		if tmp.Defaults.Filter != "" {
+			expr, err := metricssql.ParseFilter(tmp.Defaults.Filter)
+			if err != nil {
+				return fmt.Errorf("invalid filter expression: %q: %w", tmp.Defaults.Filter, err)
+			}
+
+			converted := metricsview.ExpressionToProto(expr)
+
+			filter = &runtimev1.DefaultMetricsSQLFilter{
+				Expression: converted,
+			}
+		}
+
 		defaultPreset = &runtimev1.ExplorePreset{
 			Dimensions:          presetDimensions,
 			DimensionsSelector:  presetDimensionsSelector,
@@ -253,7 +292,10 @@ func (p *Parser) parseExplore(node *Node) error {
 			MeasuresSelector:    presetMeasuresSelector,
 			TimeRange:           tr,
 			ComparisonMode:      mode,
+			CompareTimeRange:    compareTimeRange,
 			ComparisonDimension: compareDim,
+			Filter:              filter,
+			Pinned:              pinnedMeasuresOrDimensions,
 		}
 	}
 

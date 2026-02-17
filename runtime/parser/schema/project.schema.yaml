@@ -2341,12 +2341,18 @@ definitions:
                 description: Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
                 type: string
               comparison_mode:
-                description: 'Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values)'
+                description: 'Controls how to compare current data. Options: `none`, `time` (alias for `rill-PP`), `dimension`, or a specific comparison offset: `rill-PP` (previous period), `rill-PD` (previous day), `rill-PW` (previous week), `rill-PM` (previous month), `rill-PQ` (previous quarter), `rill-PY` (previous year)'
                 type: string
                 enum:
                   - none
                   - time
                   - dimension
+                  - rill-PP
+                  - rill-PD
+                  - rill-PW
+                  - rill-PM
+                  - rill-PQ
+                  - rill-PY
               comparison_dimension:
                 description: 'for dimension mode, specify the comparison dimension by name'
                 type: string
@@ -2558,12 +2564,18 @@ definitions:
                 description: Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions)
                 type: string
               comparison_mode:
-                description: 'Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values)'
+                description: 'Controls how to compare current data. Options: `none`, `time` (alias for `rill-PP`), `dimension`, or a specific comparison offset: `rill-PP` (previous period), `rill-PD` (previous day), `rill-PW` (previous week), `rill-PM` (previous month), `rill-PQ` (previous quarter), `rill-PY` (previous year)'
                 type: string
                 enum:
                   - none
                   - time
                   - dimension
+                  - rill-PP
+                  - rill-PD
+                  - rill-PW
+                  - rill-PM
+                  - rill-PQ
+                  - rill-PY
               comparison_dimension:
                 description: 'for dimension mode, specify the comparison dimension by name'
                 type: string
@@ -3687,7 +3699,17 @@ definitions:
                 description: Default time range to display when the explore view loads.
               comparison_mode:
                 type: string
-                description: Default comparison mode for metrics (none, time, or dimension).
+                description: 'Controls how to compare current data. Options: `none`, `time` (alias for `rill-PP`), `dimension`, or a specific comparison offset: `rill-PP` (previous period), `rill-PD` (previous day), `rill-PW` (previous week), `rill-PM` (previous month), `rill-PQ` (previous quarter), `rill-PY` (previous year)'
+                enum:
+                  - none
+                  - time
+                  - dimension
+                  - rill-PP
+                  - rill-PD
+                  - rill-PW
+                  - rill-PM
+                  - rill-PQ
+                  - rill-PY
               comparison_dimension:
                 type: string
                 description: Default dimension to use for comparison when comparison_mode is 'dimension'.

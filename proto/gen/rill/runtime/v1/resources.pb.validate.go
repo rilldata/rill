@@ -956,7 +956,6 @@ func (m *ResourceMeta) validate(all bool) error {
 	}
 
 	if m.Owner != nil {
-
 		if all {
 			switch v := interface{}(m.GetOwner()).(type) {
 			case interface{ ValidateAll() error }:
@@ -985,11 +984,9 @@ func (m *ResourceMeta) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.DeletedOn != nil {
-
 		if all {
 			switch v := interface{}(m.GetDeletedOn()).(type) {
 			case interface{ ValidateAll() error }:
@@ -1018,11 +1015,9 @@ func (m *ResourceMeta) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.RenamedFrom != nil {
-
 		if all {
 			switch v := interface{}(m.GetRenamedFrom()).(type) {
 			case interface{ ValidateAll() error }:
@@ -1051,7 +1046,6 @@ func (m *ResourceMeta) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if len(errors) > 0 {
@@ -5434,8 +5428,36 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	// no validation rules for ComparisonMode
 
-	if m.Where != nil {
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExplorePresetValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExplorePresetValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExplorePresetValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
+	if m.Where != nil {
 		if all {
 			switch v := interface{}(m.GetWhere()).(type) {
 			case interface{ ValidateAll() error }:
@@ -5464,7 +5486,6 @@ func (m *ExplorePreset) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.TimeRange != nil {
@@ -8885,7 +8906,6 @@ func (m *ThemeSpec) validate(all bool) error {
 	// no validation rules for SecondaryColorRaw
 
 	if m.PrimaryColor != nil {
-
 		if all {
 			switch v := interface{}(m.GetPrimaryColor()).(type) {
 			case interface{ ValidateAll() error }:
@@ -8914,11 +8934,9 @@ func (m *ThemeSpec) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.SecondaryColor != nil {
-
 		if all {
 			switch v := interface{}(m.GetSecondaryColor()).(type) {
 			case interface{ ValidateAll() error }:
@@ -8947,11 +8965,9 @@ func (m *ThemeSpec) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.Light != nil {
-
 		if all {
 			switch v := interface{}(m.GetLight()).(type) {
 			case interface{ ValidateAll() error }:
@@ -8980,11 +8996,9 @@ func (m *ThemeSpec) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if m.Dark != nil {
-
 		if all {
 			switch v := interface{}(m.GetDark()).(type) {
 			case interface{ ValidateAll() error }:
@@ -9013,7 +9027,6 @@ func (m *ThemeSpec) validate(all bool) error {
 				}
 			}
 		}
-
 	}
 
 	if len(errors) > 0 {

@@ -5093,6 +5093,13 @@ definitions:
       pivotRowLimit:
         type: integer
         format: int32
+      pinned:
+        type: array
+        items:
+          type: string
+        description: Default filter expression (SQL syntax, parsed by metricssql).
+      filter:
+        $ref: '#/definitions/v1DefaultMetricsSQLFilter'
   v1ExploreSortType:
     type: string
     enum:
