@@ -9,6 +9,8 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
@@ -68,6 +70,11 @@
 
   const isDropdownOpen = (resourceKey: string) => {
     return openDropdownResourceKey === resourceKey;
+  };
+
+  const handleViewLogsClick = (name: string) => {
+    const basePath = $page.url.pathname.replace(/\/resources\/?$/, "");
+    void goto(`${basePath}/logs?q=${encodeURIComponent(name)}`);
   };
 
   const handleRefresh = async () => {
@@ -190,6 +197,7 @@
               row.original.meta.name.kind === ResourceKind.Source),
           onClickRefreshDialog: openRefreshDialog,
           onClickViewSpec: openSpecDialog,
+          onViewLogsClick: handleViewLogsClick,
           isDropdownOpen: isDropdownOpen(resourceKey),
           onDropdownOpenChange: (isOpen: boolean) =>
             setDropdownOpen(resourceKey, isOpen),

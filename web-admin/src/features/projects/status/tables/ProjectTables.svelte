@@ -47,7 +47,7 @@
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
 
   $: tableMetadata = useTableMetadata(instanceId, "", filteredTables);
-  $: isViewMap = $tableMetadata?.data?.isView ?? new Map<string, boolean>();
+  $: isViewMap = new Map($tableMetadata?.data?.isView ?? []);
   $: modelResourcesQuery = useModelResources(instanceId);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
 

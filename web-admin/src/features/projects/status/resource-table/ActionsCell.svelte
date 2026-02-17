@@ -4,7 +4,7 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { RefreshCcwIcon, CodeIcon } from "lucide-svelte";
+  import { RefreshCcwIcon, CodeIcon, ScrollTextIcon } from "lucide-svelte";
 
   export let resourceKind: string;
   export let resourceName: string;
@@ -20,6 +20,7 @@
     resourceKind: string,
     resource: V1Resource,
   ) => void;
+  export let onViewLogsClick: (name: string) => void;
   export let isDropdownOpen: boolean;
   export let onDropdownOpenChange: (isOpen: boolean) => void;
 </script>
@@ -38,6 +39,15 @@
       <div class="flex items-center">
         <CodeIcon size="12px" />
         <span class="ml-2">Describe</span>
+      </div>
+    </DropdownMenu.Item>
+    <DropdownMenu.Item
+      class="font-normal flex items-center"
+      on:click={() => onViewLogsClick(resourceName)}
+    >
+      <div class="flex items-center">
+        <ScrollTextIcon size="12px" />
+        <span class="ml-2">View Logs</span>
       </div>
     </DropdownMenu.Item>
     {#if canRefresh}
