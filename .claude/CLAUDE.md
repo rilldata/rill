@@ -55,14 +55,24 @@ Frontend API clients are auto-generated from proto definitions using **Orval**. 
 
 ### Go
 
-Follow the conventions in `CONTRIBUTING.md`. Key points:
+General rules for writing Go code:
 
-- Use standard library `errors` (not `github.com/pkg/errors`)
-- `golangci-lint` enforces style
-- Non-trivial directories should have a `README.md`
-- Cloud deployments require backwards compatibility (see "Services" in `CONTRIBUTING.md`)
+- Write Go code in the style of Uber's Go style guide.
+- Use `golangci-lint` for linting.
+- Non-trivial directories should have a `README.md`. If a directory has a README, always read it before making changes in that directory.
+- Functions should be sorted roughly in call order; functions should be grouped by receiver; plain utility functions belong towards the end of a file.
+- Prefer colons or semi-colons in code comments instead of hyphens or dashes. This keeps comments shorter, which makes them more readable in a monospace font.
+- Before adding a dependency, check for newer major versions. Major versions 2+ require the `/vN` suffix in the import path (e.g., `go get github.com/foo/bar/v3@latest`). Without the suffix, `go get` only fetches v1.x.
+- Avoid short utility functions that are only used once; it is usually more readable to inline these in their parent function.
+- Avoid variables that only serve as aliases unless there's a large readability improvement (i.e. the expression is very long and used several times); for example, instead of `db := table.Database`, just reference `table.Database` directly.
+- Use the standard library `errors` (not `github.com/pkg/errors`).
 
-For runtime-specific patterns (drivers, reconcilers, queries), see `runtime/README.md`.
+Rules for contributing backend features in Rill:
+
+- See `CONTRIBUTING.md` for an overview of the various services.
+- Key concepts such as user management and provisioners are implemented in the `admin` package.
+- Key concepts such as connector drivers, reconcilers, and resolvers are implemented in the `runtime` package.
+- APIs used by the `cli/` package require long-term backwards compatibility.
 
 ### Frontend
 
