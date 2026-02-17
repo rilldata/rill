@@ -61,8 +61,6 @@
 
   // Derive connector info for Describe modal
   $: derivedConnector = (() => {
-    // For Connector resources, use the driver directly
-    if (metadata?.connectorDriver) return metadata.connectorDriver;
     const partitionsProps = resource?.model?.spec
       ?.partitionsResolverProperties as Record<string, unknown> | undefined;
     if (partitionsProps) {
@@ -101,7 +99,6 @@
       ? `var(--${resourceShorthandMapping[kind]})`
       : "#6B7280";
 
-  $: templatedKeys = new Set(metadata?.connectorTemplatedProperties ?? []);
   $: hasError = !!resource?.meta?.reconcileError;
   $: reconcileStatus = resource?.meta?.reconcileStatus;
   $: isIdle = reconcileStatus === "RECONCILE_STATUS_IDLE";
@@ -279,70 +276,8 @@
         </div>
       {/if}
 
-      <!-- Connector Resource Info -->
-      {#if kind === ResourceKind.Connector && metadata?.connectorDriver}
-        <div class="describe-section">
-          <h4 class="describe-section-title">Connector Info</h4>
-          <div class="describe-row">
-            <span class="describe-row-icon">
-              {#if connectorIcon}
-                <svelte:component this={connectorIcon} size="16" />
-              {:else}
-                <Database size={16} />
-              {/if}
-            </span>
-            <span>Driver: <strong>{metadata.connectorDriver}</strong></span>
-          </div>
-          {#if metadata?.connectorProvision}
-            <div class="describe-row">
-              <span class="describe-row-icon"><Layers size={14} /></span>
-              <span>Rill Managed</span>
-            </div>
-          {/if}
-          {#if metadata?.connectorProperties && Object.keys(metadata.connectorProperties).length > 0}
-            <div class="describe-props">
-              {#each Object.entries(metadata.connectorProperties) as [key, value]}
-                <div class="describe-prop-row">
-                  <span class="describe-prop-key">{key}</span>
-                  {#if templatedKeys.has(key)}
-                    <!-- svelte-ignore a11y-invalid-attribute -->
-                    <a
-                      href="#"
-                      class="describe-env-anchor text-xs"
-                      on:click|preventDefault={() => {
-                        describeOpen = false;
-                        goto("/files/.env");
-                      }}>edit</a
-                    >
-                  {:else}
-                    <span class="describe-prop-value" title={value}
-                      >{value}</span
-                    >
-                  {/if}
-                </div>
-              {/each}
-            </div>
-          {/if}
-          {#if metadata?.connectorTemplatedProperties?.length}
-            <div class="describe-env-link">
-              <ExternalLink size={14} />
-              <span>Credentials stored in</span>
-              <!-- svelte-ignore a11y-invalid-attribute -->
-              <a
-                href="#"
-                class="describe-env-anchor"
-                on:click|preventDefault={() => {
-                  describeOpen = false;
-                  goto("/files/.env");
-                }}>.env</a
-              >
-            </div>
-          {/if}
-        </div>
-      {/if}
-
       <!-- Connector (for Model/Source) -->
-      {#if kind !== ResourceKind.Connector && (derivedConnector || metadata?.sourcePath)}
+      {#if derivedConnector || metadata?.sourcePath}
         <div class="describe-section">
           <h4 class="describe-section-title">Connector</h4>
           <div class="describe-row">

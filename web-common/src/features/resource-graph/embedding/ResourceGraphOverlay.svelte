@@ -16,7 +16,6 @@
 
   // Type for resource kinds that support graph visualization
   type GraphableKind =
-    | ResourceKind.Connector
     | ResourceKind.Source
     | ResourceKind.Model
     | ResourceKind.MetricsView
@@ -24,7 +23,6 @@
     | ResourceKind.Canvas;
 
   const NAME_SEED_ALIAS: Record<GraphableKind, string> = {
-    [ResourceKind.Connector]: "connector",
     [ResourceKind.Source]: "source",
     [ResourceKind.Model]: "model",
     [ResourceKind.MetricsView]: "metrics",
@@ -33,7 +31,6 @@
   };
 
   const KIND_TOKEN_BY_KIND: Record<GraphableKind, string> = {
-    [ResourceKind.Connector]: "connectors",
     [ResourceKind.Source]: "sources",
     [ResourceKind.Model]: "models",
     [ResourceKind.MetricsView]: "metrics",
@@ -74,8 +71,6 @@
       return [`model:${anchorName}`];
     } else if (anchorKind === ResourceKind.MetricsView) {
       return [`metrics:${anchorName}`];
-    } else if (anchorKind === ResourceKind.Connector) {
-      return [`connector:${anchorName}`];
     }
 
     return undefined;

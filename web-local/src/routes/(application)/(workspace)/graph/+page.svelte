@@ -35,7 +35,6 @@
   // Node type filter config
   type NodeTypeOption = { label: string; token: KindToken };
   const nodeTypeOptions: NodeTypeOption[] = [
-    { label: "Connectors", token: "connectors" },
     { label: "Source Models", token: "sources" },
     { label: "Models", token: "models" },
     { label: "Metric Views", token: "metrics" },

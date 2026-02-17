@@ -35,7 +35,6 @@ const DEFAULT_EDGE_STYLE = EDGE_CONFIG.DEFAULT_STYLE;
 
 // Resource kinds that should be displayed in the graph
 const ALLOWED_KINDS = new Set<ResourceKind>([
-  ResourceKind.Connector,
   ResourceKind.Source,
   ResourceKind.Model,
   ResourceKind.MetricsView,
@@ -245,25 +244,6 @@ function extractResourceMetadata(
     }
   }
 
-  // Connector metadata
-  const connector = resource.connector;
-  if (connector?.spec) {
-    const cSpec = connector.spec;
-    if (cSpec.driver) metadata.connectorDriver = cSpec.driver;
-    metadata.connectorProvision = cSpec.provision ?? false;
-    if (cSpec.properties) {
-      const safeProps: Record<string, string> = {};
-      const templated = new Set(cSpec.templatedProperties ?? []);
-      for (const [key, value] of Object.entries(cSpec.properties)) {
-        safeProps[key] = templated.has(key) ? "" : String(value ?? "");
-      }
-      metadata.connectorProperties = safeProps;
-    }
-    if (cSpec.templatedProperties?.length) {
-      metadata.connectorTemplatedProperties = cSpec.templatedProperties;
-    }
-  }
-
   // Count alerts and APIs that reference this resource
   const resourceId = createResourceId(resource.meta);
   if (resourceId) {
@@ -363,7 +343,6 @@ export function buildResourceGraph(
     const nodeWidth = estimateNodeWidth(label);
     let rankConstraint: "min" | "max" | undefined;
     switch (kind) {
-      case ResourceKind.Connector:
       case ResourceKind.Source:
       case ResourceKind.Model:
         // No special rank constraint - let them flow naturally in the graph
@@ -420,26 +399,6 @@ export function buildResourceGraph(
       // Track outgoing edges (source -> dependent)
       if (!dependentsMap.has(sourceId)) dependentsMap.set(sourceId, new Set());
       dependentsMap.get(sourceId)!.add(dependentId);
-    }
-
-    // Synthetic edge: create_secrets_from_connectors → model
-    // This field references a connector for credentials but isn't in meta.refs.
-    const inputProps = resource.model?.spec?.inputProperties as
-      | { create_secrets_from_connectors?: string | string[] }
-      | undefined;
-    if (inputProps?.create_secrets_from_connectors) {
-      const secretConnectors = Array.isArray(
-        inputProps.create_secrets_from_connectors,
-      )
-        ? inputProps.create_secrets_from_connectors
-        : [inputProps.create_secrets_from_connectors];
-      for (const connName of secretConnectors) {
-        const connId = `${ResourceKind.Connector}:${connName}`;
-        if (!resourceMap.has(connId)) continue;
-        if (connId === dependentId) continue;
-        if (!dependentsMap.has(connId)) dependentsMap.set(connId, new Set());
-        dependentsMap.get(connId)!.add(dependentId);
-      }
     }
   }
 
@@ -860,24 +819,14 @@ export function partitionResourcesByMetrics(
     if (!adjacency.has(id)) adjacency.set(id, new Set());
   }
 
-  // Build adjacency but skip edges involving Connector resources.
-  // Shared connectors (e.g. DuckDB) would otherwise bridge unrelated groups.
-  const connectorIds = new Set<string>();
-  for (const [id, res] of resourceMap.entries()) {
-    if (toResourceKind(res.meta?.name) === ResourceKind.Connector) {
-      connectorIds.add(id);
-    }
-  }
-
+  // Build adjacency from resource refs.
   for (const res of resourceMap.values()) {
     const dependentId = createResourceId(res.meta);
     if (!dependentId) continue;
-    if (connectorIds.has(dependentId)) continue;
     for (const ref of res.meta?.refs ?? []) {
       const sourceId = createResourceId({ name: ref });
       if (!sourceId) continue;
       if (!resourceMap.has(sourceId)) continue;
-      if (connectorIds.has(sourceId)) continue;
       if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
       if (!adjacency.has(dependentId)) adjacency.set(dependentId, new Set());
       adjacency.get(dependentId)!.add(sourceId);
@@ -923,9 +872,9 @@ export function partitionResourcesByMetrics(
     graphCache.setLabel(m.id, m.label);
   }
 
-  // Group remaining non-connector resources not connected to any metrics view.
+  // Group remaining resources not connected to any metrics view.
   const remaining = Array.from(resourceMap.keys()).filter(
-    (id) => !assigned.has(id) && !connectorIds.has(id),
+    (id) => !assigned.has(id),
   );
   const remainingSet = new Set(remaining);
   while (remainingSet.size) {
@@ -942,54 +891,6 @@ export function partitionResourcesByMetrics(
         label: "Other resources",
       });
       for (const rid of ids) assigned.add(rid);
-    }
-  }
-
-  // Now assign connectors to each group that references them.
-  // Check both meta.refs and create_secrets_from_connectors.
-  // A connector can appear in multiple groups without bridging them.
-  for (const connId of connectorIds) {
-    const connRes = resourceMap.get(connId);
-    if (!connRes) continue;
-    const connName = connRes.meta?.name?.name;
-    for (const group of groups) {
-      const refsConnector = group.resources.some((r) => {
-        // Check meta.refs
-        const hasRef = (r.meta?.refs ?? []).some(
-          (ref) => createResourceId({ name: ref }) === connId,
-        );
-        if (hasRef) return true;
-        // Check create_secrets_from_connectors
-        const inputProps = r.model?.spec?.inputProperties as
-          | { create_secrets_from_connectors?: string | string[] }
-          | undefined;
-        if (inputProps?.create_secrets_from_connectors && connName) {
-          const secretConns = Array.isArray(
-            inputProps.create_secrets_from_connectors,
-          )
-            ? inputProps.create_secrets_from_connectors
-            : [inputProps.create_secrets_from_connectors];
-          if (secretConns.includes(connName)) return true;
-        }
-        return false;
-      });
-      if (refsConnector) {
-        group.resources.push(connRes);
-        assigned.add(connId);
-      }
-    }
-  }
-
-  // Any connectors not referenced by any group go to their own "Other resources" group.
-  for (const connId of connectorIds) {
-    if (assigned.has(connId)) continue;
-    const connRes = resourceMap.get(connId);
-    if (connRes) {
-      groups.push({
-        id: connId,
-        resources: [connRes],
-        label: "Other resources",
-      });
     }
   }
 

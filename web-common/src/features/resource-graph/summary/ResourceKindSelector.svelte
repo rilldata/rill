@@ -1,23 +1,20 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
 
-  export let connectors = 0;
   export let sources = 0;
   export let models = 0;
   export let metrics = 0;
   export let dashboards = 0;
   export let activeToken:
-    | "connectors"
     | "sources"
     | "metrics"
     | "models"
     | "dashboards"
     | null = null;
 
-  $: total = connectors + sources + models + metrics + dashboards;
+  $: total = sources + models + metrics + dashboards;
 
   const kindConfig = [
-    { token: "connectors" as const, label: "Connectors" },
     { token: "sources" as const, label: "Source Models" },
     { token: "models" as const, label: "Models" },
     { token: "metrics" as const, label: "Metric Views" },
@@ -25,11 +22,9 @@
   ];
 
   function getCount(
-    token: "connectors" | "sources" | "models" | "metrics" | "dashboards",
+    token: "sources" | "models" | "metrics" | "dashboards",
   ): number {
     switch (token) {
-      case "connectors":
-        return connectors;
       case "sources":
         return sources;
       case "models":

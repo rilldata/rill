@@ -27,12 +27,7 @@ export const URL_PARAMS = {
 /**
  * Valid kind tokens that can be used in the `kind` URL parameter.
  */
-export type KindToken =
-  | "connectors"
-  | "metrics"
-  | "sources"
-  | "models"
-  | "dashboards";
+export type KindToken = "metrics" | "sources" | "models" | "dashboards";
 
 /**
  * Normalize plural forms to singular forms for graph seed parsing.
@@ -44,7 +39,6 @@ function normalizePluralToSingular(kind: string): string {
 
   // Map plural forms to singular forms
   const pluralToSingular: Record<string, string> = {
-    connectors: "connector",
     metrics: "metricsview",
     models: "model",
     sources: "source",
@@ -75,7 +69,6 @@ function resolveKindAlias(kindAlias: string): ResourceKind | undefined {
  * Resource kinds that are allowed in the graph visualization.
  */
 export const ALLOWED_FOR_GRAPH = new Set<ResourceKind>([
-  ResourceKind.Connector,
   ResourceKind.Source,
   ResourceKind.Model,
   ResourceKind.MetricsView,
@@ -157,10 +150,9 @@ export function isKindToken(s: string): ResourceKind | undefined {
  */
 export function tokenForKind(
   kind?: ResourceKind | string | null,
-): "connectors" | "metrics" | "sources" | "models" | "dashboards" | null {
+): "metrics" | "sources" | "models" | "dashboards" | null {
   if (!kind) return null;
   const key = `${kind}`.toLowerCase();
-  if (key.includes("connector")) return "connectors";
   if (key.includes("source")) return "sources";
   if (key.includes("model")) return "models";
   if (key.includes("metricsview") || key.includes("metric")) return "metrics";
@@ -189,7 +181,7 @@ export function tokenForKind(
  */
 export function tokenForSeedString(
   seed?: string | null,
-): "connectors" | "metrics" | "sources" | "models" | "dashboards" | null {
+): "metrics" | "sources" | "models" | "dashboards" | null {
   if (!seed) return null;
   const normalized = seed.trim().toLowerCase();
   if (!normalized) return null;
@@ -363,9 +355,7 @@ export function parseGraphUrlParams(
   const validKind = normalizedKindParam as KindToken | null;
   const kind =
     validKind &&
-    ["connectors", "metrics", "sources", "models", "dashboards"].includes(
-      validKind,
-    )
+    ["metrics", "sources", "models", "dashboards"].includes(validKind)
       ? validKind
       : null;
 

@@ -27,7 +27,6 @@
   import type { Readable } from "svelte/store";
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
   import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
-  import ConnectorMenuItems from "../connectors/ConnectorMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { getIconComponent } from "../entity-management/resource-icon-mapping";
@@ -171,8 +170,6 @@
             <ExploreMenuItems {filePath} />
           {:else if resourceKind === ResourceKind.Canvas}
             <CanvasMenuItems {filePath} />
-          {:else if resourceKind === ResourceKind.Connector}
-            <ConnectorMenuItems {filePath} />
           {/if}
         {/if}
         <NavigationMenuSeparator />
