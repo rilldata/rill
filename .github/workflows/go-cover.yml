@@ -1,14 +1,8 @@
 on:
-  push:
-    branches:
-      - main
-      - cover
-    paths:
-      - ".github/workflows/go-cover.yml"
-      - "**.go"
-      - "go.mod"
-      - "**/testdata/**"
-name: Test Go code with coverage
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+name: Test Go code with coverage and race detector
 jobs:
   test:
     runs-on:
@@ -25,8 +19,9 @@ jobs:
         # Build list of packages to include in coverage, excluding generated code in 'proto/gen'
         PACKAGES=$(go list ./... | grep -v 'proto/gen/' | tr '\n' ',' | sed -e 's/,$//' | sed -e 's/github.com\/rilldata\/rill/./g')
         # Run tests with coverage output
-        go test ./... -timeout 30m -short -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
+        go test ./... -timeout 60m -short -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
       env:
+        RILL_RUNTIME_TEST_MODE: expensive
         RILL_RUNTIME_DRUID_TEST_DSN: ${{ secrets.RILL_RUNTIME_DRUID_TEST_DSN }}
         RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON }}
         RILL_RUNTIME_SNOWFLAKE_TEST_DSN: ${{ secrets.RILL_RUNTIME_SNOWFLAKE_TEST_DSN }}
@@ -47,3 +42,13 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: coverage.out
         flags: go
+    - name: Notify Slack
+      uses: ravsamhq/notify-slack-action@v2
+      if: always()
+      with:
+        status: ${{ job.status }}
+        notification_title: "{workflow} has {status_message}"
+        message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+        footer: "Linked Repo <{repo_url}|{repo}>"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEAM_PLATFORM }}

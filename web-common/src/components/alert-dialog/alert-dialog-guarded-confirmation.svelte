@@ -8,7 +8,10 @@
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
+  import {
+    Button,
+    type ButtonType,
+  } from "@rilldata/web-common/components/button/index.js";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
 
@@ -17,9 +20,11 @@
   export let title: string;
   export let description: string;
   export let confirmText: string;
+  export let confirmButtonText: string = "Continue";
+  export let confirmButtonType: ButtonType = "primary";
 
   export let loading: boolean;
-  export let error: string;
+  export let error: string | undefined = undefined;
   export let onConfirm: () => Promise<void>;
   export let onCancel: () => void = () => {};
 
@@ -63,14 +68,19 @@
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter class="mt-5">
-      <Button type="secondary" onClick={close}>Cancel</Button>
       <Button
-        type="primary"
+        type={confirmButtonType === "destructive" ? "tertiary" : "secondary"}
+        onClick={close}
+      >
+        Cancel
+      </Button>
+      <Button
+        type={confirmButtonType}
         onClick={handleContinue}
         disabled={!confirmed}
         {loading}
       >
-        Continue
+        {confirmButtonText}
       </Button>
     </AlertDialogFooter>
   </AlertDialogContent>
