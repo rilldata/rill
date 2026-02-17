@@ -90,7 +90,7 @@ test.describe.serial("Alerts", () => {
         .fill("Requests for App Site Name % change vs previous period alert");
 
       // Store time before clicking run to ensure latest email is fetched.
-      const time = new Date().toISOString();
+      const time = new Date();
       // Create the alert
       await alertForm.getByRole("button", { name: "Create" }).click();
 

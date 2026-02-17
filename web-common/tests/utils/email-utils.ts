@@ -14,7 +14,7 @@ type MailPitMessagesResponse = {
   messages: MailPitEmail[];
 };
 
-export async function waitForEmail(title: string, after: string) {
+export async function waitForEmail(title: string, after: Date) {
   let email: MailPitEmail | undefined = undefined;
   await expect
     .poll(
@@ -34,16 +34,34 @@ export async function waitForEmail(title: string, after: string) {
 
 const LinkExtractorRegex = /Open in browser \(\s*(.*?)\s*\)/;
 export async function getOpenLinkFromEmail(email: MailPitEmail) {
-  const resp = await axios.get(`${MAIL_PIT_API_URL}/message/${email.ID}`);
-  const completeEmail = resp.data as MailPitCompleteEmail;
-  const link = LinkExtractorRegex.exec(completeEmail.Text)?.[1];
-  if (!link)
-    throw new Error(`No link found in email with subject "${email.Subject}"`);
-  return decodeURI(link);
+  try {
+    const resp = await axios.get(`${MAIL_PIT_API_URL}/message/${email.ID}`);
+    const completeEmail = resp.data as MailPitCompleteEmail;
+    const link = LinkExtractorRegex.exec(completeEmail.Text)?.[1];
+    if (!link)
+      throw new Error(`No link found in email with subject "${email.Subject}"`);
+    return decodeURI(link);
+  } catch (err) {
+    console.error(err.errors?.[0]);
+    throw new Error(
+      `Error fetching email with subject "${email.Subject}". Ensure if mailpit is running in docker.`,
+    );
+  }
 }
 
-async function getEmail(title: string, after) {
-  const resp = await axios.get(`${MAIL_PIT_API_URL}/messages`);
-  const messages = (resp.data as MailPitMessagesResponse).messages;
-  return messages.find((m) => m.Subject.includes(title) && m.Created >= after);
+async function getEmail(title: string, after: Date) {
+  try {
+    const resp = await axios.get(`${MAIL_PIT_API_URL}/messages`);
+    const messages = (resp.data as MailPitMessagesResponse).messages;
+    return messages.find(
+      (m) =>
+        m.Subject.includes(title) &&
+        new Date(m.Created).getTime() >= after.getTime(),
+    );
+  } catch (err) {
+    console.error(err.errors?.[0]);
+    throw new Error(
+      `Error fetching email with subject "${title}". Ensure if mailpit is running in docker.`,
+    );
+  }
 }

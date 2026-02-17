@@ -117,7 +117,7 @@ test.describe.serial("Reports", () => {
       .click();
 
     // Store time before clicking run to ensure latest email is fetched.
-    const time = new Date().toISOString();
+    const time = new Date();
     await adminPage.getByRole("button", { name: "Run now" }).click();
     // Notification is shown
     await expect(adminPage.getByLabel("Notification")).toHaveText(
