@@ -1,4 +1,6 @@
 # This should be used for docs also
+
+# Default headers for main application (strict CSP)
 [[headers]]
   for = "/*"
   [headers.values]
@@ -21,4 +23,52 @@
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
     X-Frame-Options = "SAMEORIGIN"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+# Embed routes
+[[headers]]
+  for = "/-/embed/*"
+  [headers.values]
+    Content-Security-Policy = """\
+      default-src 'self'; \
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com; \
+      style-src 'self' https: 'unsafe-inline'; \
+      img-src https: data: blob:; \
+      frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:; \
+      frame-ancestors https:; \
+      form-action 'self'; \
+      object-src 'none'; \
+      connect-src 'self' https: wss://*.pusher.com; \
+      font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
+      """
+    Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
+    Referrer-Policy = "no-referrer"
+    X-Content-Type-Options = "nosniff"
+    Cross-Origin-Embedder-Policy = "credentialless"
+    Cross-Origin-Opener-Policy = "unsafe-none"
+    Cross-Origin-Resource-Policy = "cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+# Public share routes
+[[headers]]
+  for = "/*/-/share/*"
+  [headers.values]
+    Content-Security-Policy = """\
+      default-src 'self'; \
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.usepylon.com https://*.pusher.com; \
+      style-src 'self' https: 'unsafe-inline'; \
+      img-src https: data: blob:; \
+      frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:; \
+      frame-ancestors https:; \
+      form-action 'self'; \
+      object-src 'none'; \
+      connect-src 'self' https: wss://*.pusher.com; \
+      font-src 'self' https://fonts.gstatic.com https://*.usepylon.com;
+      """
+    Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
+    Referrer-Policy = "no-referrer"
+    X-Content-Type-Options = "nosniff"
+    Cross-Origin-Embedder-Policy = "credentialless"
+    Cross-Origin-Opener-Policy = "unsafe-none"
+    Cross-Origin-Resource-Policy = "cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
