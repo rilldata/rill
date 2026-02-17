@@ -19,9 +19,14 @@
   $: isDuckDB = !olapConnector || olapConnector.type === "duckdb";
 
   // Get tables list and metadata
-  $: tablesList = useTablesList(instanceId, "");
+  $: connectorName = instance?.olapConnector ?? "";
+  $: tablesList = useTablesList(instanceId, connectorName);
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
-  $: tableMetadata = useTableMetadata(instanceId, "", filteredTables);
+  $: tableMetadata = useTableMetadata(
+    instanceId,
+    connectorName,
+    filteredTables,
+  );
 
   // Count tables vs views
   $: viewCount = Array.from(
@@ -38,20 +43,18 @@
       <a href="{basePage}/tables" class="view-all">View all</a>
     </div>
     <div class="table-chips">
-      <a href="{basePage}/tables" class="table-chip">
+      <a href="{basePage}/tables?type=table" class="table-chip">
         <span class="font-medium">{tableCount}</span>
         <span class="text-fg-secondary"
           >{tableCount === 1 ? "Table" : "Tables"}</span
         >
       </a>
-      {#if isDuckDB}
-        <a href="{basePage}/tables" class="table-chip">
-          <span class="font-medium">{viewCount}</span>
-          <span class="text-fg-secondary"
-            >{viewCount === 1 ? "View" : "Views"}</span
-          >
-        </a>
-      {/if}
+      <a href="{basePage}/tables?type=view" class="table-chip">
+        <span class="font-medium">{viewCount}</span>
+        <span class="text-fg-secondary"
+          >{viewCount === 1 ? "View" : "Views"}</span
+        >
+      </a>
     </div>
   </section>
 {/if}

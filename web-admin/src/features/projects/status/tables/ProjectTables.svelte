@@ -40,13 +40,18 @@
     (c) => c.name === instance?.olapConnector,
   );
   $: isDuckDB = !olapConnector || olapConnector.type === "duckdb";
+  $: connectorName = instance?.olapConnector ?? "";
 
-  $: tablesList = useTablesList(instanceId, "");
+  $: tablesList = useTablesList(instanceId, connectorName);
 
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
 
-  $: tableMetadata = useTableMetadata(instanceId, "", filteredTables);
+  $: tableMetadata = useTableMetadata(
+    instanceId,
+    connectorName,
+    filteredTables,
+  );
   $: isViewMap = new Map($tableMetadata?.data?.isView ?? []);
   $: modelResourcesQuery = useModelResources(instanceId);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
@@ -108,32 +113,40 @@
     { label: "View", value: "view" },
   ];
 
-  $: metadataLoaded = !$tableMetadata?.isLoading;
   $: displayedTables = applyFilters(
     filteredTables,
     searchText,
     typeFilter,
     isViewMap,
-    metadataLoaded,
   );
+
+  /** Must match the heuristic in MaterializationCell.svelte */
+  function isLikelyView(
+    viewFlag: boolean | undefined,
+    physicalSizeBytes: string | number | undefined,
+  ): boolean {
+    return (
+      viewFlag === true ||
+      physicalSizeBytes === "-1" ||
+      physicalSizeBytes === 0 ||
+      !physicalSizeBytes
+    );
+  }
 
   function applyFilters(
     tables: V1OlapTableInfo[],
     search: string,
     type: "all" | "table" | "view",
     viewMap: Map<string, boolean>,
-    isMetadataLoaded: boolean,
   ): V1OlapTableInfo[] {
     return tables.filter((t) => {
       const name = t.name ?? "";
       const matchesSearch =
         !search || name.toLowerCase().includes(search.toLowerCase());
-      if (type === "all" || !isMetadataLoaded) return matchesSearch;
-      const isView = viewMap.get(name);
-      // If we don't have metadata for this item yet, include it
-      if (isView === undefined) return matchesSearch;
+      if (type === "all") return matchesSearch;
+      const likelyView = isLikelyView(viewMap.get(name), t.physicalSizeBytes);
       const matchesType =
-        (type === "view" && isView) || (type === "table" && !isView);
+        (type === "view" && likelyView) || (type === "table" && !likelyView);
       return matchesSearch && matchesType;
     });
   }

@@ -129,12 +129,12 @@ export function useTableMetadata(
         .filter((n) => !!n) as string[];
       const subscriptions: Array<() => void> = [];
 
-      let completedCount = 0;
+      const completedTables = new Set<string>();
       const totalOperations = tableNames.length;
 
       // Helper to update and notify
       const updateAndNotify = () => {
-        const isLoading = completedCount < totalOperations;
+        const isLoading = completedTables.size < totalOperations;
         set({
           data: { isView, columnCount },
           isLoading,
@@ -166,7 +166,10 @@ export function useTableMetadata(
           if (result.data?.schema?.fields !== undefined) {
             columnCount.set(tableName, result.data.schema.fields.length);
           }
-          completedCount++;
+          // Only mark complete when the query has finished loading
+          if (!result.isLoading) {
+            completedTables.add(tableName);
+          }
           updateAndNotify();
         });
 
@@ -226,12 +229,12 @@ export function useTableCardinality(
         .filter((n) => !!n) as string[];
       const subscriptions: Array<() => void> = [];
 
-      let completedCount = 0;
+      const completedTables = new Set<string>();
       const totalOperations = tableNames.length;
 
       // Helper to update and notify
       const updateAndNotify = () => {
-        const isLoading = completedCount < totalOperations;
+        const isLoading = completedTables.size < totalOperations;
         set({
           data: { rowCount },
           isLoading,
@@ -256,7 +259,10 @@ export function useTableCardinality(
           if (result.data?.cardinality !== undefined) {
             rowCount.set(tableName, parseInt(result.data.cardinality, 10) || 0);
           }
-          completedCount++;
+          // Only mark complete when the query has finished loading
+          if (!result.isLoading) {
+            completedTables.add(tableName);
+          }
           updateAndNotify();
         });
 
