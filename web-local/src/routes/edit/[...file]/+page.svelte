@@ -5,8 +5,6 @@
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
@@ -21,8 +19,6 @@
   ]);
 
   export let data: PageData;
-
-  $: ({ instanceId } = $runtime);
 
   $: ({ fileArtifact } = data);
   $: ({ fileName, resourceName, inferredResourceKind, path } = fileArtifact);

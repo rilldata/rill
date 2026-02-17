@@ -21,7 +21,7 @@
       <div class="column" in:fly={{ duration: 1600, delay: 1200, y: 4 }}>
         <ProjectCards />
       </div>
-      <GenerateSampleData initializeProject />
+      <GenerateSampleData type="init" />
     </div>
   </div>
 {/if}

@@ -115,6 +115,7 @@
         <DropdownMenu.Trigger asChild let:builder>
           <svelte:element
             this={dropdown ? "button" : "a"}
+            role={dropdown ? "button" : "link"}
             class:open
             class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
             class:selected={current}

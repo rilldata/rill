@@ -25,7 +25,7 @@
   );
   $: ({ isLoading, isSuccess, data, error } = $projectParserQuery);
 
-  $: parseErrors = data?.resource?.projectParser.state.parseErrors;
+  $: parseErrors = data?.resource?.projectParser?.state?.parseErrors;
   $: parserReconcileError = data?.resource?.meta?.reconcileError;
 </script>
 

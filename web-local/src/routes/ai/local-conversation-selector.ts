@@ -7,7 +7,7 @@
 
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { derived, type Readable } from "svelte/store";
+import { derived } from "svelte/store";
 import { NEW_CONVERSATION_ID } from "@rilldata/web-common/features/chat/core/utils";
 import type { ConversationSelector } from "@rilldata/web-common/features/chat/core/conversation-selector";
 

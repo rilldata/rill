@@ -31,14 +31,14 @@
     {
       accessorKey: "title",
       header: "Type",
-      accessorFn: (row) => row.meta.name.kind,
+      accessorFn: (row) => row.meta?.name?.kind,
       cell: ({ row }) =>
         flexRender(ResourceTypeBadge, {
-          kind: row.original.meta.name.kind as ResourceKind,
+          kind: row.original.meta?.name?.kind as ResourceKind,
         }),
     },
     {
-      accessorFn: (row) => row.meta.name.name,
+      accessorFn: (row) => row.meta?.name?.name,
       header: "Name",
       cell: ({ getValue }) =>
         flexRender(NameCell, {
@@ -46,11 +46,11 @@
         }),
     },
     {
-      accessorFn: (row) => row.meta.reconcileStatus,
+      accessorFn: (row) => row.meta?.reconcileStatus,
       header: "Status",
       sortingFn: (rowA, rowB) => {
         // Priority order: Running (highest) -> Pending -> Idle -> Unknown (lowest)
-        const getStatusPriority = (status: V1ReconcileStatus) => {
+        const getStatusPriority = (status: V1ReconcileStatus | undefined) => {
           switch (status) {
             case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
               return 4;
@@ -65,21 +65,21 @@
         };
 
         return (
-          getStatusPriority(rowB.original.meta.reconcileStatus) -
-          getStatusPriority(rowA.original.meta.reconcileStatus)
+          getStatusPriority(rowB.original.meta?.reconcileStatus) -
+          getStatusPriority(rowA.original.meta?.reconcileStatus)
         );
       },
       cell: ({ row }) =>
         flexRender(ResourceErrorMessage, {
-          message: row.original.meta.reconcileError,
-          status: row.original.meta.reconcileStatus,
+          message: row.original.meta?.reconcileError,
+          status: row.original.meta?.reconcileStatus,
         }),
       meta: {
         marginLeft: "1",
       },
     },
     {
-      accessorFn: (row) => row.meta.stateUpdatedOn,
+      accessorFn: (row) => row.meta?.stateUpdatedOn,
       header: "Last refresh",
       sortDescFirst: true,
       cell: (info) =>
@@ -88,7 +88,7 @@
         }),
     },
     {
-      accessorFn: (row) => row.meta.reconcileOn,
+      accessorFn: (row) => row.meta?.reconcileOn,
       header: "Next refresh",
       cell: (info) =>
         flexRender(RefreshCell, {
@@ -105,13 +105,13 @@
           status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
           status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
         if (!isRowReconciling) {
-          const resourceKey = `${row.original.meta.name.kind}:${row.original.meta.name.name}`;
+          const resourceKey = `${row.original.meta?.name?.kind}:${row.original.meta?.name?.name}`;
           return flexRender(ActionsCell, {
-            resourceKind: row.original.meta.name.kind,
-            resourceName: row.original.meta.name.name,
+            resourceKind: row.original.meta?.name?.kind,
+            resourceName: row.original.meta?.name?.name,
             canRefresh:
-              row.original.meta.name.kind === ResourceKind.Model ||
-              row.original.meta.name.kind === ResourceKind.Source,
+              row.original.meta?.name?.kind === ResourceKind.Model ||
+              row.original.meta?.name?.kind === ResourceKind.Source,
             resource: row.original,
             onRefresh,
             isDropdownOpen: isDropdownOpen(resourceKey),
@@ -129,8 +129,8 @@
 
   $: tableData = data.filter(
     (resource) =>
-      resource.meta.name.kind !== ResourceKind.Component &&
-      resource.meta.name.kind !== ResourceKind.ProjectParser,
+      resource.meta?.name?.kind !== ResourceKind.Component &&
+      resource.meta?.name?.kind !== ResourceKind.ProjectParser,
   );
 </script>
 

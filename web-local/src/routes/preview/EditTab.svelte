@@ -34,7 +34,6 @@
 
   let allResources: Resource[] = [];
   let metricsResources: Resource[] = [];
-  let exploreResources: Resource[] = [];
   let dashboardResources: Resource[] = [];
   let loading = false;
   let error: string | null = null;
@@ -70,7 +69,7 @@
       allResources = [];
 
       if (data?.resources) {
-        for (const resource of Object.values(data.resources || {})) {
+        for (const resource of Object.values(data.resources || {}) as any[]) {
           const resourceName = resource.meta?.name?.name || "Unknown";
           const filePath = resource.meta?.filePaths?.[0] || "";
 
@@ -100,9 +99,6 @@
       // Group by type
       metricsResources = allResources.filter(
         (r) => r.kind === ResourceKind.MetricsView,
-      );
-      exploreResources = allResources.filter(
-        (r) => r.kind === ResourceKind.Model,
       );
       dashboardResources = allResources.filter(
         (r) =>
@@ -232,7 +228,7 @@
               >
                 <CaretDownIcon
                   size="12px"
-                  class={`transition-transform ${!$resourceSectionState.metrics ? "-rotate-90" : ""}`}
+                  className={`transition-transform ${!$resourceSectionState.metrics ? "-rotate-90" : ""}`}
                 />
               </div>
               <h3
@@ -339,7 +335,7 @@
               >
                 <CaretDownIcon
                   size="12px"
-                  class={`transition-transform ${!$resourceSectionState.dashboards ? "-rotate-90" : ""}`}
+                  className={`transition-transform ${!$resourceSectionState.dashboards ? "-rotate-90" : ""}`}
                 />
               </div>
               <h3

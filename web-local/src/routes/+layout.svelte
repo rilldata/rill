@@ -89,8 +89,6 @@
 
   $: ({ host, instanceId } = $runtime);
 
-  $: ({ route } = $page);
-
   $: onDeployPage = isDeployPage($page);
 </script>
 

@@ -100,7 +100,6 @@
         {filePath}
         codeToggle={!hideCodeToggle}
         resourceKind={ResourceKind.Explore}
-        {inPreviewMode}
       >
         <div class="flex gap-x-2" slot="cta">
           {#if !inPreviewMode}

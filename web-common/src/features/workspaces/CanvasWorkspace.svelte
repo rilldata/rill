@@ -99,7 +99,6 @@
         codeToggle={!hideCodeToggle}
         onTitleChange={onChangeCallback}
         resourceKind={ResourceKind.Canvas}
-        {inPreviewMode}
       >
         <div class="flex gap-x-2" slot="cta">
           {#if !inPreviewMode}

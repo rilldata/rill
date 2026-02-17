@@ -9,7 +9,6 @@
   let isLoading = false;
   let isError = false;
   let error: Error | null = null;
-  let hasReconcilingResources = false;
 
   async function loadResources() {
     try {
@@ -31,15 +30,6 @@
 
       const data = await response.json();
       resources = data?.resources || [];
-
-      // Check if any resources are reconciling
-      hasReconcilingResources = resources.some((r) => {
-        const status = r.meta?.reconcileStatus;
-        return (
-          status === 2 || // RECONCILE_STATUS_PENDING
-          status === 3 // RECONCILE_STATUS_RUNNING
-        );
-      });
     } catch (err) {
       isError = true;
       error = err instanceof Error ? err : new Error("Unknown error");
@@ -55,35 +45,6 @@
     const interval = setInterval(loadResources, 5000);
     return () => clearInterval(interval);
   });
-
-  async function refreshAllSourcesAndModels() {
-    try {
-      if (!$runtime?.instanceId || $runtime?.host === undefined) {
-        throw new Error("Runtime not initialized");
-      }
-
-      const response = await fetch(
-        `${$runtime.host}/v1/instances/${$runtime.instanceId}/trigger`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            all: true,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to refresh resources: ${response.statusText}`);
-      }
-
-      await loadResources();
-    } catch (err) {
-      console.error("Error refreshing resources:", err);
-    }
-  }
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">

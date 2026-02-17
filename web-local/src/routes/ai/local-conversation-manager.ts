@@ -71,6 +71,9 @@ export class LocalConversationManager {
         conversation.on("stream-start", () =>
           this.enforceMaxConcurrentStreams(),
         );
+        conversation.on("conversation-forked", (newConversationId) =>
+          this.handleConversationForked($conversationId, newConversationId),
+        );
         this.conversations.set($conversationId, conversation);
         return conversation;
       },
@@ -146,6 +149,20 @@ export class LocalConversationManager {
   private handleConversationCreated(conversationId: string): void {
     this.rotateNewConversation(conversationId);
     this.conversationSelector.selectConversation(conversationId);
+    void invalidateConversationsList(this.instanceId);
+  }
+
+  private handleConversationForked(
+    originalConversationId: string,
+    newConversationId: string,
+  ): void {
+    const forkedConversation = this.conversations.get(originalConversationId);
+    if (forkedConversation) {
+      this.conversations.delete(originalConversationId);
+      this.conversations.set(newConversationId, forkedConversation);
+    }
+
+    this.conversationSelector.selectConversation(newConversationId);
     void invalidateConversationsList(this.instanceId);
   }
 
