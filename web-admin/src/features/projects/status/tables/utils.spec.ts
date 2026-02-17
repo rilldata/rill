@@ -78,6 +78,10 @@ describe("tables utils", () => {
       expect(isLikelyView(false, 0)).toBe(true);
     });
 
+    it("returns true when physicalSizeBytes is '0' (string)", () => {
+      expect(isLikelyView(false, "0")).toBe(true);
+    });
+
     it("returns true when physicalSizeBytes is undefined", () => {
       expect(isLikelyView(false, undefined)).toBe(true);
     });

@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { Code2 } from "lucide-svelte";
-  import { Database } from "lucide-svelte";
+  import { Code2, Database } from "lucide-svelte";
   import { isLikelyView as checkIsLikelyView } from "./utils";
 
   export let isView: boolean | undefined;

@@ -30,6 +30,7 @@ export function isLikelyView(
     viewFlag === true ||
     physicalSizeBytes === "-1" ||
     physicalSizeBytes === 0 ||
+    physicalSizeBytes === "0" ||
     !physicalSizeBytes
   );
 }

@@ -108,11 +108,9 @@
   $: tableData = tables;
 </script>
 
-{#key [isView, modelResources]}
-  <VirtualizedTable
-    tableId="project-tables-table"
-    data={tableData}
-    {columns}
-    columnLayout="minmax(95px, 0.5fr) minmax(150px, 2fr) 64px minmax(100px, 1fr) 56px"
-  />
-{/key}
+<VirtualizedTable
+  tableId="project-tables-table"
+  data={tableData}
+  {columns}
+  columnLayout="minmax(95px, 0.5fr) minmax(150px, 2fr) 64px minmax(100px, 1fr) 56px"
+/>

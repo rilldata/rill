@@ -19,7 +19,6 @@ import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interv
 export type TableMetadataResult = {
   data: {
     isView: Map<string, boolean>;
-    columnCount: Map<string, number>;
   };
   isLoading: boolean;
   isError: boolean;
@@ -102,7 +101,6 @@ export function useTableMetadata(
       {
         data: {
           isView: new Map<string, boolean>(),
-          columnCount: new Map<string, number>(),
         },
         isLoading: false,
         isError: false,
@@ -115,14 +113,12 @@ export function useTableMetadata(
     {
       data: {
         isView: new Map<string, boolean>(),
-        columnCount: new Map<string, number>(),
       },
       isLoading: true,
       isError: false,
     },
     (set) => {
       const isView = new Map<string, boolean>();
-      const columnCount = new Map<string, number>();
       const tableNames = (tables ?? [])
         .map((t) => t.name)
         .filter((n) => !!n) as string[];
@@ -136,7 +132,7 @@ export function useTableMetadata(
       const updateAndNotify = () => {
         const isLoading = completedTables.size < totalOperations;
         set({
-          data: { isView, columnCount },
+          data: { isView },
           isLoading,
           isError: erroredTables.size > 0,
         });
@@ -161,10 +157,6 @@ export function useTableMetadata(
           // Capture the view field from the response
           if (result.data?.view !== undefined) {
             isView.set(tableName, result.data.view);
-          }
-          // Capture the column count from the schema
-          if (result.data?.schema?.fields !== undefined) {
-            columnCount.set(tableName, result.data.schema.fields.length);
           }
           // Track errors
           if (result.isError) {
