@@ -36,10 +36,6 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
-  $: olapConnector = instance?.projectConnectors?.find(
-    (c) => c.name === instance?.olapConnector,
-  );
-  $: isDuckDB = !olapConnector || olapConnector.type === "duckdb";
   $: connectorName = instance?.olapConnector ?? "";
 
   $: tablesList = useTablesList(instanceId, connectorName);
@@ -195,16 +191,20 @@
   }) {
     if (!selectedModelName) return;
 
-    await $createTrigger.mutateAsync({
-      instanceId,
-      data: {
-        models: [{ model: selectedModelName, ...opts }],
-      },
-    });
+    try {
+      await $createTrigger.mutateAsync({
+        instanceId,
+        data: {
+          models: [{ model: selectedModelName, ...opts }],
+        },
+      });
 
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-    });
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+      });
+    } catch (error) {
+      console.error("Failed to refresh model:", error);
+    }
   }
 
   const handleRefreshErrored = () =>

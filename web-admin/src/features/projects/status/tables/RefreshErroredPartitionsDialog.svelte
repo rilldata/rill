@@ -11,7 +11,7 @@
 
   export let open = false;
   export let modelName: string;
-  export let onRefresh: () => void | Promise<void>;
+  export let onRefresh: () => Promise<void> | void;
 
   let isRefreshing = false;
 

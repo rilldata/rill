@@ -13,10 +13,6 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
-  $: olapConnector = instance?.projectConnectors?.find(
-    (c) => c.name === instance?.olapConnector,
-  );
-  $: isDuckDB = !olapConnector || olapConnector.type === "duckdb";
 
   // Get tables list and metadata
   $: connectorName = instance?.olapConnector ?? "";

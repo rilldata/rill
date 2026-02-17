@@ -227,7 +227,7 @@ test.describe("Project Status - Incremental Model Refresh (incremental-test)", (
 
     // Verify the message about re-running failed partitions
     await expect(
-      adminPage.getByText("re-run all partitions that failed"),
+      adminPage.getByText("re-execute all partitions that failed"),
     ).toBeVisible();
 
     // Close dialog by clicking cancel
