@@ -53,7 +53,7 @@
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
-  $: resource = $resourceQuery.data;
+  $: resource = $resourceQuery?.data?.resource;
 
   $: extensions =
     resourceKind === ResourceKind.API

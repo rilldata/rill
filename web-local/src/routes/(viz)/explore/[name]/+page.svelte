@@ -31,12 +31,12 @@
     ...(metricsView.meta?.filePaths ?? []),
   ];
   $: exploreQuery = useExploreValidSpec(instanceId, exploreName);
-  $: measures = $exploreQuery.data?.explore?.measures ?? [];
+  $: measures = exploreQuery.data?.explore?.measures ?? [];
   $: projectParserQuery = useProjectParser(queryClient, instanceId, {
     enabled: $selectedMockUserStore?.admin,
   });
 
-  $: hasBanner = !!$exploreQuery.data?.explore?.banner;
+  $: hasBanner = !!exploreQuery.data?.explore?.banner;
 
   $: if (hasBanner) {
     eventBus.emit("add-banner", {
@@ -44,18 +44,18 @@
       priority: DashboardBannerPriority,
       message: {
         type: "default",
-        message: $exploreQuery.data?.explore?.banner ?? "",
+        message: exploreQuery.data?.explore?.banner ?? "",
         iconType: "alert",
       },
     });
   }
 
   $: dashboardFileHasParseError =
-    $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
+    projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && $exploreQuery.error?.response?.status === 404;
+    $selectedMockUserStore && exploreQuery.error?.response?.status === 404;
 
   onNavigate(({ from, to }) => {
     const changedDashboard =
@@ -73,7 +73,7 @@
 
 {#if measures.length === 0 && $selectedMockUserStore !== null}
   <ErrorPage
-    statusCode={$exploreQuery.error?.response?.status}
+    statusCode={exploreQuery.error?.response?.status}
     header="Error fetching dashboard"
     body="No measures available"
   />
@@ -85,7 +85,7 @@
   />
 {:else if mockUserHasNoAccess}
   <ErrorPage
-    statusCode={$exploreQuery.error?.response?.status}
+    statusCode={exploreQuery.error?.response?.status}
     header="This user can't access this dashboard"
     body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
   />

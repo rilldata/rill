@@ -14,11 +14,11 @@
   let isNewOrgDialogOpen = false;
 
   const deployRouteGetter = getDeployOrGithubRouteGetter();
-  $: ({ isLoading, getter: deployRouteGetterFunc } = $deployRouteGetter);
+  $: ({ isLoading, getter: deployRouteGetterFunc } = deployRouteGetter);
   $: createProjectUrl = deployRouteGetterFunc(selectedOrg);
 
   $: orgOptions =
-    $user.data?.rillUserOrgs?.map((o) => ({ value: o, label: o })) ?? [];
+    user.data?.rillUserOrgs?.map((o) => ({ value: o, label: o })) ?? [];
 
   function handleCreateOrg(orgName: string) {
     selectedOrg = orgName;

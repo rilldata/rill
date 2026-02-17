@@ -33,22 +33,22 @@
   const matchingProjects = createLocalServiceListMatchingProjectsRequest();
 
   $: loading =
-    $user.isPending || $metadata.isPending || $matchingProjects.isPending;
+    user.isPending || metadata.isPending || matchingProjects.isPending;
   let error: Error | null = null;
-  $: error = $user.error ?? $metadata.error ?? $matchingProjects.error;
+  $: error = user.error ?? metadata.error ?? matchingProjects.error;
 
   function handleDeploy() {
     // Should not happen if the servers are up. If not, there should be a query error.
-    if (!$user.data || !$metadata.data?.loginUrl) {
+    if (!user.data || !metadata.data?.loginUrl) {
       error = new Error("Failed to fetch login URL.");
       return;
     }
 
-    const isUserLoggedIn = !!$user.data?.user;
+    const isUserLoggedIn = !!user.data?.user;
     if (!isUserLoggedIn) {
       // Redirect to login url provided from metadata query.
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
-      const u = new URL($metadata.data?.loginUrl);
+      const u = new URL(metadata.data?.loginUrl);
       // Set the redirect to this page so that deploy resumes after a login
       u.searchParams.set("redirect", get(page).url.toString());
       window.location.href = u.toString();
@@ -62,9 +62,9 @@
     maybeSetDeployingDashboard(get(page).url);
 
     // Cloud project doest exist.
-    const projectExists = !!$matchingProjects.data?.projects?.length;
+    const projectExists = !!matchingProjects.data?.projects?.length;
     if (!projectExists) {
-      const isPartOfAtLeastOneOrg = !!$user.data.rillUserOrgs?.length;
+      const isPartOfAtLeastOneOrg = !!user.data.rillUserOrgs?.length;
       if (isPartOfAtLeastOneOrg) {
         // If the user has at least one org we show the selector.
         // Note: The selector has the option to create a new org, so we show it even when there is only one org.
@@ -74,8 +74,8 @@
       }
     }
 
-    if ($matchingProjects.data!.projects.length === 1) {
-      const singleProject = $matchingProjects.data!.projects[0];
+    if (matchingProjects.data!.projects.length === 1) {
+      const singleProject = matchingProjects.data!.projects[0];
       // Project already exists. Run a redeploy
       return goto(
         getUpdateProjectRoute(
@@ -104,7 +104,7 @@
 <!-- This seems to be necessary to trigger tanstack query to update the query object -->
 <!-- TODO: find a config to avoid this -->
 <div class="hidden">
-  {$user.isLoading}-{$metadata.isLoading}-{$matchingProjects.isLoading}
+  {user.isLoading}-{metadata.isLoading}-{matchingProjects.isLoading}
 </div>
 
 {#if loading}
