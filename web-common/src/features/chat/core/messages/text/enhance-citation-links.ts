@@ -11,18 +11,24 @@ import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client.
 import type { RpcStatus } from "@rilldata/web-common/runtime-client";
 import { page } from "$app/stores";
 import { getUrlForExplore } from "@rilldata/web-common/features/explore-mappers/generate-explore-link.ts";
+import { getQueryFromUrl } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
+import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
 
-const DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
+const LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
+const DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/ai\/.*?\/call\/.*?\/?$/;
 
 /**
  * Adds a click handler to the given node, that intercepts clicks to links and uses svelte's goto.
  * Links added directly to the node are not intercepted by svelte so we need to manually intercept them.
  * Also adds a check to make sure url is actually a local link before using goto.
- * @param node
  */
-export function enhanceCitationLinks(node: HTMLElement) {
+export function enhanceCitationLinks(
+  node: HTMLElement,
+  conversation: Conversation,
+) {
   const isEmbedded = EmbedStore.isEmbedded();
-  const mapperStore = getMetricsResolverQueryToUrlParamsMapperStore();
+  const mapperStore =
+    getMetricsResolverQueryToUrlParamsMapperStore(conversation);
 
   function handleClick(e: MouseEvent) {
     if (!e.target || !(e.target instanceof HTMLElement)) return; // typesafety
@@ -63,7 +69,9 @@ export function enhanceCitationLinks(node: HTMLElement) {
  * Calls {@link mapMetricsResolverQueryToDashboard} to get partial explore state from a metrics resolver query.
  * Then calls {@link convertPartialExploreStateToUrlParams} to convert the partial explore to url params.
  */
-function getMetricsResolverQueryToUrlParamsMapperStore(): Readable<{
+function getMetricsResolverQueryToUrlParamsMapperStore(
+  conversation: Conversation,
+): Readable<{
   error: ErrorType<RpcStatus> | null;
   isLoading: boolean;
   data?: (url: URL) => string;
@@ -72,71 +80,86 @@ function getMetricsResolverQueryToUrlParamsMapperStore(): Readable<{
     getMetricsViewAndExploreSpecsQueryOptions(),
     queryClient,
   );
+  const conversationQuery = conversation.getConversationQuery();
 
-  return derived([page, resourcesQuery], ([page, resourcesResp]) => {
-    if (resourcesResp.error || resourcesResp.isLoading || !resourcesResp.data) {
-      return {
-        error: resourcesResp.error,
-        isLoading: resourcesResp.isLoading,
+  return derived(
+    [page, resourcesQuery, conversationQuery],
+    ([page, resourcesResp, conversationResp]) => {
+      const isError = conversationResp.error || resourcesResp.error;
+      const isLoading = conversationResp.isLoading || resourcesResp.isLoading;
+      const hasData = conversationResp.data?.messages && resourcesResp.data;
+      if (isError || isLoading || !hasData) {
+        return {
+          error: resourcesResp.error,
+          isLoading: resourcesResp.isLoading,
+        };
+      }
+
+      const { metricsViewSpecsMap, exploreSpecsMap, exploreForMetricViewsMap } =
+        resourcesResp.data;
+      const messages = conversationResp.data?.messages ?? [];
+
+      const mapper = (url: URL): string => {
+        let query: MetricsResolverQuery;
+        const isLegacyCitationUrl =
+          LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX.test(url.pathname) &&
+          url.searchParams.has("query");
+        if (isLegacyCitationUrl) {
+          try {
+            query = getQueryFromUrl(url);
+          } catch {
+            return url.href;
+          }
+        } else {
+          const isNewCitationUrl = DASHBOARD_CITATION_URL_PATHNAME_REGEX.test(
+            url.pathname,
+          );
+          if (!isNewCitationUrl) return url.href;
+
+          const callId = url.pathname.split("/").pop();
+          if (!callId) return url.href;
+          const callMessage = messages.find((m) => m.id === callId);
+          if (!callMessage?.content?.[0]?.toolCall?.input) return url.href;
+          query = callMessage.content?.[0]?.toolCall?.input;
+        }
+
+        const metricsViewName = query.metrics_view ?? "";
+        const metricsViewSpec = metricsViewSpecsMap.get(metricsViewName);
+        const exploreName = exploreForMetricViewsMap.get(metricsViewName);
+        if (!metricsViewSpec || !exploreName) return url.href;
+        const exploreSpec = exploreSpecsMap.get(exploreName);
+        if (!exploreSpec) return url.href;
+
+        const partialExploreState = mapMetricsResolverQueryToDashboard(
+          metricsViewSpec,
+          exploreSpec,
+          query,
+        );
+
+        const urlSearchParams = maybeGetExplorePageUrlSearchParams(
+          partialExploreState,
+          metricsViewSpec,
+          exploreSpec,
+        );
+        if (!urlSearchParams) return url.href;
+
+        const exploreUrl = getUrlForExplore(
+          exploreName,
+          page.params.organization,
+          page.params.project,
+        );
+        urlSearchParams.forEach((value, key) => {
+          exploreUrl.searchParams.set(key, value);
+        });
+
+        return exploreUrl.href;
       };
-    }
 
-    const { metricsViewSpecsMap, exploreSpecsMap, exploreForMetricViewsMap } =
-      resourcesResp.data;
-
-    const mapper = (url: URL): string => {
-      const queryJSON = url.searchParams.get("query");
-      // If the url does not have a query arg, do not change the link.
-      if (
-        !queryJSON ||
-        !DASHBOARD_CITATION_URL_PATHNAME_REGEX.test(url.pathname)
-      ) {
-        return url.href;
-      }
-
-      let query: MetricsResolverQuery;
-      try {
-        query = JSON.parse(queryJSON) as MetricsResolverQuery;
-      } catch {
-        return url.href;
-      }
-
-      const metricsViewName = query.metrics_view ?? "";
-      const metricsViewSpec = metricsViewSpecsMap.get(metricsViewName);
-      const exploreName = exploreForMetricViewsMap.get(metricsViewName);
-      if (!metricsViewSpec || !exploreName) return url.href;
-      const exploreSpec = exploreSpecsMap.get(exploreName);
-      if (!exploreSpec) return url.href;
-
-      const partialExploreState = mapMetricsResolverQueryToDashboard(
-        metricsViewSpec,
-        exploreSpec,
-        query,
-      );
-
-      const urlSearchParams = maybeGetExplorePageUrlSearchParams(
-        partialExploreState,
-        metricsViewSpec,
-        exploreSpec,
-      );
-      if (!urlSearchParams) return url.href;
-
-      const exploreUrl = getUrlForExplore(
-        exploreName,
-        page.params.organization,
-        page.params.project,
-      );
-      urlSearchParams.forEach((value, key) => {
-        exploreUrl.searchParams.set(key, value);
-      });
-
-      return exploreUrl.href;
-    };
-
-    return {
-      isLoading: false,
-      error: null,
-      data: mapper,
-    };
-  });
+      return {
+        isLoading: false,
+        error: null,
+        data: mapper,
+      };
+    },
+  );
 }

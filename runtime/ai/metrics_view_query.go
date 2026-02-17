@@ -247,7 +247,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 }
 
 // generateOpenURL generates an open URL for the given query parameters
-func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID string, sessionID string, callID string) (string, error) {
+func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID, sessionID, callID string) (string, error) {
 	// Get instance to access the configured frontend URL
 	instance, err := t.Runtime.Instance(ctx, instanceID)
 	if err != nil {
