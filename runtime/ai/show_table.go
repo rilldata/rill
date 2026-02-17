@@ -19,9 +19,9 @@ var _ Tool[*ShowTableArgs, *ShowTableResult] = (*ShowTable)(nil)
 
 type ShowTableArgs struct {
 	Connector      string `json:"connector,omitempty" jsonschema:"Optional OLAP connector name. Defaults to the instance's default OLAP connector."`
-	Table          string `json:"table" jsonschema:"The name of the table to describe."`
-	Database       string `json:"database,omitempty" jsonschema:"Optional database name for connectors that support multiple databases."`
-	DatabaseSchema string `json:"database_schema,omitempty" jsonschema:"Optional database schema name."`
+	Table          string `json:"table" jsonschema:"Name of the table to describe. Must be a simple table name; database/schema names should be provided using the separate fields."`
+	Database       string `json:"database,omitempty" jsonschema:"Database that contains the table (defaults to the connector's default database if applicable)."`
+	DatabaseSchema string `json:"database_schema,omitempty" jsonschema:"Database schema that contains the table (defaults to the connector's default schema if applicable)."`
 }
 
 type ShowTableResult struct {
@@ -41,7 +41,7 @@ func (t *ShowTable) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        ShowTableName,
 		Title:       "Show Table",
-		Description: "Show schema and column information for a table in an OLAP connector.",
+		Description: "Show schema and column information for a table in an OLAP connector. Note: Table, schema and database names passed to this tool are case sensitive; if you get an error and you're working with a database that folds unquoted identifiers (e.g Snowflake folds to uppercase), you may need to retry with the casing adjusted accordingly.",
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Getting table schema...",
 			"openai/toolInvocation/invoked":  "Got table schema",

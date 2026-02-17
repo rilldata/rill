@@ -3,6 +3,7 @@ package snowflake
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -105,7 +106,9 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 		return err
 	}
 
-	fqn := drivers.DialectSnowflake.EscapeTable(table.Database, table.DatabaseSchema, table.Name)
+	// HACK: Since All and Lookup don't always return the correct casing, we uppercase the table name here as that's usually necessary in Snowflake.
+	// This is a workaround until we return correct casing from All and Lookup.
+	fqn := drivers.DialectSnowflake.EscapeTable(strings.ToUpper(table.Database), strings.ToUpper(table.DatabaseSchema), strings.ToUpper(table.Name))
 
 	objectType := "TABLE"
 	if table.View {
