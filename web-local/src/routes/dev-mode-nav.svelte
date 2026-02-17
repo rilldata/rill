@@ -123,6 +123,8 @@
 
   .indicator {
     @apply h-[3px] bg-primary-500 rounded;
-    transition: transform 0.2s ease, width 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      width 0.2s ease;
   }
 </style>

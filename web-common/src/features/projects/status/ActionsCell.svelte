@@ -91,7 +91,9 @@
       >
         <div class="flex items-center">
           <RefreshCcwIcon size="12px" />
-          <span class="ml-2">{isLoading ? "Refreshing..." : "Full Refresh"}</span>
+          <span class="ml-2"
+            >{isLoading ? "Refreshing..." : "Full Refresh"}</span
+          >
         </div>
       </DropdownMenu.Item>
       {#if supportsIncremental}

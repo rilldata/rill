@@ -106,7 +106,9 @@
           {#if !inPreviewMode}
             <PreviewButton
               href="/explore/{exploreName}"
-              disabled={!!parseError || !!reconcileError || resourceIsReconciling}
+              disabled={!!parseError ||
+                !!reconcileError ||
+                resourceIsReconciling}
               reconciling={resourceIsReconciling}
             />
           {/if}

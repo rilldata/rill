@@ -2,9 +2,7 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import {
-    resourceIconMapping,
-  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { workspaces as workspaceStore } from "@rilldata/web-common/layout/workspace/workspace-stores";
@@ -100,14 +98,18 @@
       allResources.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
       // Group by type
-      metricsResources = allResources.filter((r) => r.kind === ResourceKind.MetricsView);
-      exploreResources = allResources.filter((r) => r.kind === ResourceKind.Model);
-      dashboardResources = allResources.filter((r) => r.kind === ResourceKind.Canvas || r.kind === ResourceKind.Explore);
+      metricsResources = allResources.filter(
+        (r) => r.kind === ResourceKind.MetricsView,
+      );
+      exploreResources = allResources.filter(
+        (r) => r.kind === ResourceKind.Model,
+      );
+      dashboardResources = allResources.filter(
+        (r) =>
+          r.kind === ResourceKind.Canvas || r.kind === ResourceKind.Explore,
+      );
     } catch (err) {
-      error =
-        err instanceof Error
-          ? err.message
-          : "Failed to load resources";
+      error = err instanceof Error ? err.message : "Failed to load resources";
       console.error("Error loading resources:", err);
     } finally {
       loading = false;
@@ -125,7 +127,9 @@
         selectedResource = resource;
 
         // Clean URL if there are other parameters
-        if ($page.url.search !== `?resource=${encodeURIComponent(resourceName)}`) {
+        if (
+          $page.url.search !== `?resource=${encodeURIComponent(resourceName)}`
+        ) {
           const url = new URL($page.url);
           url.search = `?resource=${encodeURIComponent(resourceName)}`;
           goto(url, { replaceState: true });
@@ -184,12 +188,14 @@
     if (state === "OK") return "Ready";
     return state.charAt(0) + state.slice(1).toLowerCase();
   }
-
 </script>
 
 <div class="h-full w-full flex" style="background: var(--surface-base)">
   <!-- Sidebar -->
-  <div class="w-80 max-w-sm border-r flex flex-col" style="border-color: var(--border); background: var(--surface-subtle)">
+  <div
+    class="w-80 max-w-sm border-r flex flex-col"
+    style="border-color: var(--border); background: var(--surface-subtle)"
+  >
     <!-- Header -->
     <div class="p-4 border-b" style="border-color: var(--border)">
       <h2 class="text-sm font-semibold" style="color: var(--fg-primary)">
@@ -200,14 +206,18 @@
     <!-- Content -->
     <div class="flex-1 overflow-y-auto">
       {#if error}
-        <div class="p-4 bg-red-50 dark:bg-red-900 border-b border-red-200 dark:border-red-800">
+        <div
+          class="p-4 bg-red-50 dark:bg-red-900 border-b border-red-200 dark:border-red-800"
+        >
           <p class="text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       {/if}
 
       {#if loading && allResources.length === 0}
         <div class="p-4 text-center">
-          <p class="text-sm" style="color: var(--fg-muted)">Loading resources...</p>
+          <p class="text-sm" style="color: var(--fg-muted)">
+            Loading resources...
+          </p>
         </div>
       {:else if metricsResources.length > 0 || dashboardResources.length > 0}
         <!-- Metrics Section -->
@@ -217,86 +227,101 @@
               on:click={() => resourceSectionState.toggle("metrics")}
               class="w-full flex items-center gap-1 px-3 py-1.5 transition-colors section-toggle"
             >
-              <div class="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+              <div
+                class="flex-shrink-0 w-4 h-4 flex items-center justify-center"
+              >
                 <CaretDownIcon
                   size="12px"
                   class={`transition-transform ${!$resourceSectionState.metrics ? "-rotate-90" : ""}`}
                 />
               </div>
-              <h3 class="text-xs font-semibold uppercase tracking-wide" style="color: var(--fg-muted)">
+              <h3
+                class="text-xs font-semibold uppercase tracking-wide"
+                style="color: var(--fg-muted)"
+              >
                 Metric Views ({metricsResources.length})
               </h3>
             </button>
 
             {#if $resourceSectionState.metrics}
               <ul class="list-none p-0 m-0 w-full">
-              {#each metricsResources as resource, idx (resource.name)}
-                <li
-                  class={`block w-full border transition-colors resource-row relative ${
-                    idx === 0 ? "rounded-t-lg" : "border-t-0"
-                  } ${
-                    idx === metricsResources.length - 1 ? "rounded-b-lg" : ""
-                  } ${
-                    resource.error ? "border-l-4 border-l-red-600" : ""
-                  }`}
-                  style="border-color: var(--border)"
-                  on:mouseenter={() => (hoveredResource = resource.name)}
-                  on:mouseleave={() => (hoveredResource = null)}
-                >
-                  <button
-                    on:click={() => navigateToEditor(resource)}
-
-                    class="flex items-center gap-x-3 group px-4 py-3 w-full"
+                {#each metricsResources as resource, idx (resource.name)}
+                  <li
+                    class={`block w-full border transition-colors resource-row relative ${
+                      idx === 0 ? "rounded-t-lg" : "border-t-0"
+                    } ${
+                      idx === metricsResources.length - 1 ? "rounded-b-lg" : ""
+                    } ${resource.error ? "border-l-4 border-l-red-600" : ""}`}
+                    style="border-color: var(--border)"
+                    on:mouseenter={() => (hoveredResource = resource.name)}
+                    on:mouseleave={() => (hoveredResource = null)}
                   >
-                    <!-- Icon Container -->
-                    <div class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center" style="background: var(--surface-subtle)">
-                      <svelte:component
-                        this={resourceIconMapping[resource.kind]}
-                        size="20px"
-                        color="var(--fg-secondary)"
-                      />
-                    </div>
-
-                    <!-- Content -->
-                    <div class="flex-1 min-w-0">
-                      <div class={`text-sm font-semibold truncate ${
-                        resource.error
-                          ? "text-red-600 dark:text-red-400"
-                          : "resource-name"
-                      }`}
-                        style:color={!resource.error ? 'var(--fg-secondary)' : undefined}
-                      >
-                        {resource.name}
-                      </div>
-                      <div class="text-xs truncate" style="color: var(--fg-muted)">
-                        {resource.path || "No path"}
-                      </div>
-                    </div>
-
-                    <!-- Status Circle -->
-                    <div class="flex-shrink-0 flex items-center gap-x-2">
+                    <button
+                      on:click={() => navigateToEditor(resource)}
+                      class="flex items-center gap-x-3 group px-4 py-3 w-full"
+                    >
+                      <!-- Icon Container -->
                       <div
-                        class="h-2.5 w-2.5 rounded-full"
-                        style={`background-color: ${
-                          resource.error
-                            ? "#DC2626"
-                            : (resource.state?.toUpperCase() === "RECONCILING" || resource.state?.toUpperCase() === "COMPILING"
-                              ? "#F59E0B"
-                              : "#10B981")
-                        }`}
-                        title={getStatusText(resource)}
-                      />
-                    </div>
-                  </button>
+                        class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center"
+                        style="background: var(--surface-subtle)"
+                      >
+                        <svelte:component
+                          this={resourceIconMapping[resource.kind]}
+                          size="20px"
+                          color="var(--fg-secondary)"
+                        />
+                      </div>
 
-                  <!-- Error Tooltip -->
-                  {#if hoveredResource === resource.name && resource.error}
-                    <div class="absolute left-0 top-full mt-1 z-50 bg-red-600 dark:bg-red-700 text-white text-xs rounded px-2 py-1 max-w-xs break-words">
-                      {resource.error}
-                    </div>
-                  {/if}
-                </li>
-              {/each}
+                      <!-- Content -->
+                      <div class="flex-1 min-w-0">
+                        <div
+                          class={`text-sm font-semibold truncate ${
+                            resource.error
+                              ? "text-red-600 dark:text-red-400"
+                              : "resource-name"
+                          }`}
+                          style:color={!resource.error
+                            ? "var(--fg-secondary)"
+                            : undefined}
+                        >
+                          {resource.name}
+                        </div>
+                        <div
+                          class="text-xs truncate"
+                          style="color: var(--fg-muted)"
+                        >
+                          {resource.path || "No path"}
+                        </div>
+                      </div>
+
+                      <!-- Status Circle -->
+                      <div class="flex-shrink-0 flex items-center gap-x-2">
+                        <div
+                          class="h-2.5 w-2.5 rounded-full"
+                          style={`background-color: ${
+                            resource.error
+                              ? "#DC2626"
+                              : resource.state?.toUpperCase() ===
+                                    "RECONCILING" ||
+                                  resource.state?.toUpperCase() === "COMPILING"
+                                ? "#F59E0B"
+                                : "#10B981"
+                          }`}
+                          title={getStatusText(resource)}
+                        />
+                      </div>
+                    </button>
+
+                    <!-- Error Tooltip -->
+                    {#if hoveredResource === resource.name && resource.error}
+                      <div
+                        class="absolute left-0 top-full mt-1 z-50 bg-red-600 dark:bg-red-700 text-white text-xs rounded px-2 py-1 max-w-xs break-words"
+                      >
+                        {resource.error}
+                      </div>
+                    {/if}
+                  </li>
+                {/each}
               </ul>
             {/if}
           </div>
@@ -309,86 +334,103 @@
               on:click={() => resourceSectionState.toggle("dashboards")}
               class="w-full flex items-center gap-1 px-3 py-1.5 transition-colors section-toggle"
             >
-              <div class="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+              <div
+                class="flex-shrink-0 w-4 h-4 flex items-center justify-center"
+              >
                 <CaretDownIcon
                   size="12px"
                   class={`transition-transform ${!$resourceSectionState.dashboards ? "-rotate-90" : ""}`}
                 />
               </div>
-              <h3 class="text-xs font-semibold uppercase tracking-wide" style="color: var(--fg-muted)">
+              <h3
+                class="text-xs font-semibold uppercase tracking-wide"
+                style="color: var(--fg-muted)"
+              >
                 Dashboards ({dashboardResources.length})
               </h3>
             </button>
 
             {#if $resourceSectionState.dashboards}
               <ul class="list-none p-0 m-0 w-full">
-              {#each dashboardResources as resource, idx (resource.name)}
-                <li
-                  class={`block w-full border transition-colors resource-row relative ${
-                    idx === 0 ? "rounded-t-lg" : "border-t-0"
-                  } ${
-                    idx === dashboardResources.length - 1 ? "rounded-b-lg" : ""
-                  } ${
-                    resource.error ? "border-l-4 border-l-red-600" : ""
-                  }`}
-                  style="border-color: var(--border)"
-                  on:mouseenter={() => (hoveredResource = resource.name)}
-                  on:mouseleave={() => (hoveredResource = null)}
-                >
-                  <button
-                    on:click={() => navigateToEditor(resource)}
-
-                    class="flex items-center gap-x-3 group px-4 py-3 w-full"
+                {#each dashboardResources as resource, idx (resource.name)}
+                  <li
+                    class={`block w-full border transition-colors resource-row relative ${
+                      idx === 0 ? "rounded-t-lg" : "border-t-0"
+                    } ${
+                      idx === dashboardResources.length - 1
+                        ? "rounded-b-lg"
+                        : ""
+                    } ${resource.error ? "border-l-4 border-l-red-600" : ""}`}
+                    style="border-color: var(--border)"
+                    on:mouseenter={() => (hoveredResource = resource.name)}
+                    on:mouseleave={() => (hoveredResource = null)}
                   >
-                    <!-- Icon Container -->
-                    <div class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center" style="background: var(--surface-subtle)">
-                      <svelte:component
-                        this={resourceIconMapping[resource.kind]}
-                        size="20px"
-                        color="var(--fg-secondary)"
-                      />
-                    </div>
-
-                    <!-- Content -->
-                    <div class="flex-1 min-w-0">
-                      <div class={`text-sm font-semibold truncate ${
-                        resource.error
-                          ? "text-red-600 dark:text-red-400"
-                          : "resource-name"
-                      }`}
-                        style:color={!resource.error ? 'var(--fg-secondary)' : undefined}
-                      >
-                        {resource.name}
-                      </div>
-                      <div class="text-xs truncate" style="color: var(--fg-muted)">
-                        {resource.path || "No path"}
-                      </div>
-                    </div>
-
-                    <!-- Status Circle -->
-                    <div class="flex-shrink-0 flex items-center gap-x-2">
+                    <button
+                      on:click={() => navigateToEditor(resource)}
+                      class="flex items-center gap-x-3 group px-4 py-3 w-full"
+                    >
+                      <!-- Icon Container -->
                       <div
-                        class="h-2.5 w-2.5 rounded-full"
-                        style={`background-color: ${
-                          resource.error
-                            ? "#DC2626"
-                            : (resource.state?.toUpperCase() === "RECONCILING" || resource.state?.toUpperCase() === "COMPILING"
-                              ? "#F59E0B"
-                              : "#10B981")
-                        }`}
-                        title={getStatusText(resource)}
-                      />
-                    </div>
-                  </button>
+                        class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center"
+                        style="background: var(--surface-subtle)"
+                      >
+                        <svelte:component
+                          this={resourceIconMapping[resource.kind]}
+                          size="20px"
+                          color="var(--fg-secondary)"
+                        />
+                      </div>
 
-                  <!-- Error Tooltip -->
-                  {#if hoveredResource === resource.name && resource.error}
-                    <div class="absolute left-0 top-full mt-1 z-50 bg-red-600 dark:bg-red-700 text-white text-xs rounded px-2 py-1 max-w-xs break-words">
-                      {resource.error}
-                    </div>
-                  {/if}
-                </li>
-              {/each}
+                      <!-- Content -->
+                      <div class="flex-1 min-w-0">
+                        <div
+                          class={`text-sm font-semibold truncate ${
+                            resource.error
+                              ? "text-red-600 dark:text-red-400"
+                              : "resource-name"
+                          }`}
+                          style:color={!resource.error
+                            ? "var(--fg-secondary)"
+                            : undefined}
+                        >
+                          {resource.name}
+                        </div>
+                        <div
+                          class="text-xs truncate"
+                          style="color: var(--fg-muted)"
+                        >
+                          {resource.path || "No path"}
+                        </div>
+                      </div>
+
+                      <!-- Status Circle -->
+                      <div class="flex-shrink-0 flex items-center gap-x-2">
+                        <div
+                          class="h-2.5 w-2.5 rounded-full"
+                          style={`background-color: ${
+                            resource.error
+                              ? "#DC2626"
+                              : resource.state?.toUpperCase() ===
+                                    "RECONCILING" ||
+                                  resource.state?.toUpperCase() === "COMPILING"
+                                ? "#F59E0B"
+                                : "#10B981"
+                          }`}
+                          title={getStatusText(resource)}
+                        />
+                      </div>
+                    </button>
+
+                    <!-- Error Tooltip -->
+                    {#if hoveredResource === resource.name && resource.error}
+                      <div
+                        class="absolute left-0 top-full mt-1 z-50 bg-red-600 dark:bg-red-700 text-white text-xs rounded px-2 py-1 max-w-xs break-words"
+                      >
+                        {resource.error}
+                      </div>
+                    {/if}
+                  </li>
+                {/each}
               </ul>
             {/if}
           </div>
@@ -426,7 +468,10 @@
     {#if workspace && fileArtifact}
       <svelte:component this={workspace} {fileArtifact} hideCodeToggle={true} />
     {:else}
-      <div class="flex items-center justify-center h-full" style="color: var(--fg-muted)">
+      <div
+        class="flex items-center justify-center h-full"
+        style="color: var(--fg-muted)"
+      >
         <div class="text-center">
           <p class="text-lg font-medium mb-2" style="color: var(--fg-primary)">
             Edit Resources
@@ -438,7 +483,6 @@
       </div>
     {/if}
   </div>
-
 </div>
 
 <style lang="postcss">

@@ -11,7 +11,10 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
 import { Conversation } from "@rilldata/web-common/features/chat/core/conversation";
-import { invalidateConversationsList, NEW_CONVERSATION_ID } from "@rilldata/web-common/features/chat/core/utils";
+import {
+  invalidateConversationsList,
+  NEW_CONVERSATION_ID,
+} from "@rilldata/web-common/features/chat/core/utils";
 import { LocalURLConversationSelector } from "./local-conversation-selector";
 
 /**
@@ -153,7 +156,10 @@ export class LocalConversationManager {
 }
 
 // Singleton management
-const localConversationManagerInstances = new Map<string, LocalConversationManager>();
+const localConversationManagerInstances = new Map<
+  string,
+  LocalConversationManager
+>();
 
 export function getLocalConversationManager(
   instanceId: string,

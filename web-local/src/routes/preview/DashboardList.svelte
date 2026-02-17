@@ -41,12 +41,17 @@
       .join(" ");
   }
 
-  $: resourcesQuery = createRuntimeServiceListResources($runtime.instanceId, {});
+  $: resourcesQuery = createRuntimeServiceListResources(
+    $runtime.instanceId,
+    {},
+  );
 
   $: dashboards = ($resourcesQuery.data?.resources ?? [])
     .filter((resource) => {
       const kind = resource.meta?.name?.kind;
-      return kind === "rill.runtime.v1.Explore" || kind === "rill.runtime.v1.Canvas";
+      return (
+        kind === "rill.runtime.v1.Explore" || kind === "rill.runtime.v1.Canvas"
+      );
     })
     .map((resource) => {
       const kind = resource.meta?.name?.kind;
@@ -81,12 +86,15 @@
       )
     : dashboards;
 
-  $: displayData = limit ? filteredDashboards.slice(0, limit) : filteredDashboards;
+  $: displayData = limit
+    ? filteredDashboards.slice(0, limit)
+    : filteredDashboards;
   $: hasMore = limit ? dashboards.length > limit : false;
 
   function navigateToDashboard(dashboard: Dashboard) {
     if (dashboard.hasError) return;
-    const dashboardSlug = dashboard.kind === "MetricsView" ? "explore" : "canvas";
+    const dashboardSlug =
+      dashboard.kind === "MetricsView" ? "explore" : "canvas";
     goto(`/${dashboardSlug}/${dashboard.name}`);
   }
 </script>
@@ -145,7 +153,8 @@
             class:border-t={i > 0}
             style:border-color={i > 0 ? "var(--border)" : undefined}
             on:click={() => navigateToDashboard(dashboard)}
-            on:keydown={(e) => e.key === "Enter" && navigateToDashboard(dashboard)}
+            on:keydown={(e) =>
+              e.key === "Enter" && navigateToDashboard(dashboard)}
             role={dashboard.hasError ? undefined : "button"}
             tabindex={dashboard.hasError ? -1 : 0}
             class="flex flex-col gap-y-1 group px-4 py-2.5 w-full transition-colors text-left dashboard-row"
@@ -165,7 +174,9 @@
                 class:dark:text-red-400={dashboard.hasError}
                 class:group-hover:text-primary-600={!dashboard.hasError}
                 class:dark:group-hover:text-primary-400={!dashboard.hasError}
-                style:color={!dashboard.hasError ? "var(--fg-primary)" : undefined}
+                style:color={!dashboard.hasError
+                  ? "var(--fg-primary)"
+                  : undefined}
               >
                 {getDisplayName(dashboard)}
               </span>

@@ -25,12 +25,7 @@
   $: ({ instanceId } = $runtime);
 
   $: ({ fileArtifact } = data);
-  $: ({
-    fileName,
-    resourceName,
-    inferredResourceKind,
-    path,
-  } = fileArtifact);
+  $: ({ fileName, resourceName, inferredResourceKind, path } = fileArtifact);
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
 

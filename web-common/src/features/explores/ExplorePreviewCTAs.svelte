@@ -42,7 +42,8 @@
   $: rillYamlPolicyCheck = useRillYamlPolicyCheck(instanceId);
 
   // Get last refreshed date for preview mode
-  $: lastRefreshedDate = $exploreQuery.data?.metricsView?.metricsView?.state?.dataRefreshedOn
+  $: lastRefreshedDate = $exploreQuery.data?.metricsView?.metricsView?.state
+    ?.dataRefreshedOn
     ? new Date($exploreQuery.data.metricsView.metricsView.state.dataRefreshedOn)
     : null;
 
@@ -82,8 +83,13 @@
       <Popover.Content align="end" class="w-64">
         <div class="flex flex-col gap-y-3">
           <div>
-            <p class="text-sm font-semibold" style="color: var(--fg-primary)">Default Home View</p>
-            <p class="text-xs mt-1" style="color: var(--fg-muted)">Set a default dashboard view for all users. They'll see the exact filters and settings you've configured.</p>
+            <p class="text-sm font-semibold" style="color: var(--fg-primary)">
+              Default Home View
+            </p>
+            <p class="text-xs mt-1" style="color: var(--fg-muted)">
+              Set a default dashboard view for all users. They'll see the exact
+              filters and settings you've configured.
+            </p>
           </div>
           <Button type="primary" href="/deploy" compact>
             <Rocket size="14px" />
@@ -96,15 +102,26 @@
     <!-- Bookmarks -->
     <Popover.Root>
       <Popover.Trigger asChild let:builder>
-        <Button type="secondary" compact gray builders={[builder]} label="Bookmarks">
+        <Button
+          type="secondary"
+          compact
+          gray
+          builders={[builder]}
+          label="Bookmarks"
+        >
           <BookmarkIcon class="inline-flex" size="16px" />
         </Button>
       </Popover.Trigger>
       <Popover.Content align="end" class="w-64">
         <div class="flex flex-col gap-y-3">
           <div>
-            <p class="text-sm font-semibold" style="color: var(--fg-primary)">Bookmarks</p>
-            <p class="text-xs mt-1" style="color: var(--fg-muted)">Save and share specific dashboard views with your team. Keep track of important metric combinations and filter states.</p>
+            <p class="text-sm font-semibold" style="color: var(--fg-primary)">
+              Bookmarks
+            </p>
+            <p class="text-xs mt-1" style="color: var(--fg-muted)">
+              Save and share specific dashboard views with your team. Keep track
+              of important metric combinations and filter states.
+            </p>
           </div>
           <Button type="primary" href="/deploy" compact>
             <Rocket size="14px" />
@@ -118,15 +135,26 @@
     {#if $alertsFlag}
       <Popover.Root>
         <Popover.Trigger asChild let:builder>
-          <Button type="secondary" compact gray builders={[builder]} label="Create alert">
+          <Button
+            type="secondary"
+            compact
+            gray
+            builders={[builder]}
+            label="Create alert"
+          >
             <BellPlusIcon class="inline-flex" size="16px" />
           </Button>
         </Popover.Trigger>
         <Popover.Content align="end" class="w-64">
           <div class="flex flex-col gap-y-3">
             <div>
-              <p class="text-sm font-semibold" style="color: var(--fg-primary)">Alerts</p>
-              <p class="text-xs mt-1" style="color: var(--fg-muted)">Get notified when metrics change beyond thresholds you define. Receive alerts via email, Slack, or webhooks.</p>
+              <p class="text-sm font-semibold" style="color: var(--fg-primary)">
+                Alerts
+              </p>
+              <p class="text-xs mt-1" style="color: var(--fg-muted)">
+                Get notified when metrics change beyond thresholds you define.
+                Receive alerts via email, Slack, or webhooks.
+              </p>
             </div>
             <Button type="primary" href="/deploy" compact>
               <Rocket size="14px" />
@@ -145,8 +173,13 @@
       <Popover.Content align="end" class="w-64">
         <div class="flex flex-col gap-y-3">
           <div>
-            <p class="text-sm font-semibold" style="color: var(--fg-primary)">Share Dashboards</p>
-            <p class="text-xs mt-1" style="color: var(--fg-muted)">Share dashboards with your team using public URLs, embed them in other tools, or set up role-based access controls.</p>
+            <p class="text-sm font-semibold" style="color: var(--fg-primary)">
+              Share Dashboards
+            </p>
+            <p class="text-xs mt-1" style="color: var(--fg-muted)">
+              Share dashboards with your team using public URLs, embed them in
+              other tools, or set up role-based access controls.
+            </p>
           </div>
           <Button type="primary" href="/deploy" compact>
             <Rocket size="14px" />

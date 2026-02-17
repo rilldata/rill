@@ -98,7 +98,6 @@
       )
       .join(", ");
   }
-
 </script>
 
 {#if upstreamResources.length}
@@ -119,17 +118,33 @@
             class:open
             class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
             class:selected={current}
-            class:disabled={($previewModeStore && resourceKind === ResourceKind.Model) || (upstream && $previewModeStore && resourceKind !== ResourceKind.MetricsView && resourceKind !== ResourceKind.Explore)}
+            class:disabled={($previewModeStore &&
+              resourceKind === ResourceKind.Model) ||
+              (upstream &&
+                $previewModeStore &&
+                resourceKind !== ResourceKind.MetricsView &&
+                resourceKind !== ResourceKind.Explore)}
             href={dropdown
               ? undefined
               : exampleResource
-                ? ($previewModeStore && resourceKind === ResourceKind.Model) || (upstream && $previewModeStore && resourceKind !== ResourceKind.MetricsView && resourceKind !== ResourceKind.Explore)
+                ? ($previewModeStore && resourceKind === ResourceKind.Model) ||
+                  (upstream &&
+                    $previewModeStore &&
+                    resourceKind !== ResourceKind.MetricsView &&
+                    resourceKind !== ResourceKind.Explore)
                   ? "#"
                   : $previewModeStore
                     ? `/edit?resource=${resourceName}`
                     : `/files${exampleResource?.meta?.filePaths?.[0] ?? filePath}`
                 : "#"}
-            on:click={($previewModeStore && resourceKind === ResourceKind.Model) || (upstream && $previewModeStore && resourceKind !== ResourceKind.MetricsView && resourceKind !== ResourceKind.Explore) ? (e) => e.preventDefault() : undefined}
+            on:click={($previewModeStore &&
+              resourceKind === ResourceKind.Model) ||
+            (upstream &&
+              $previewModeStore &&
+              resourceKind !== ResourceKind.MetricsView &&
+              resourceKind !== ResourceKind.Explore)
+              ? (e) => e.preventDefault()
+              : undefined}
             {...dropdown ? builder : {}}
             use:builderActions={{ builders: dropdown ? [builder] : [] }}
           >
@@ -148,8 +163,16 @@
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
               <DropdownMenu.Item
-                disabled={($previewModeStore && kind === ResourceKind.Model) || (upstream && $previewModeStore && kind !== ResourceKind.MetricsView && kind !== ResourceKind.Explore)}
-                href={($previewModeStore && kind === ResourceKind.Model) || (upstream && $previewModeStore && kind !== ResourceKind.MetricsView && kind !== ResourceKind.Explore)
+                disabled={($previewModeStore && kind === ResourceKind.Model) ||
+                  (upstream &&
+                    $previewModeStore &&
+                    kind !== ResourceKind.MetricsView &&
+                    kind !== ResourceKind.Explore)}
+                href={($previewModeStore && kind === ResourceKind.Model) ||
+                (upstream &&
+                  $previewModeStore &&
+                  kind !== ResourceKind.MetricsView &&
+                  kind !== ResourceKind.Explore)
                   ? "#"
                   : $previewModeStore
                     ? `/edit?resource=${resource?.meta?.name?.name}`

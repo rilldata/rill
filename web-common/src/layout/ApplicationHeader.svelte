@@ -30,7 +30,9 @@
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
   export let logoHref: string = "/";
-  export let breadcrumbResourceHref: ((resourceName: string, resourceKind: string) => string) | undefined = undefined;
+  export let breadcrumbResourceHref:
+    | ((resourceName: string, resourceKind: string) => string)
+    | undefined = undefined;
   export let noBorder = false;
   export let previewerMode = false;
 
@@ -71,7 +73,11 @@
         const customOption = { ...option };
         const isExplore = option.section === "explore";
         const isCanvas = option.section === "canvas";
-        const resourceKind = isExplore ? "explore" : isCanvas ? "canvas" : "resource";
+        const resourceKind = isExplore
+          ? "explore"
+          : isCanvas
+            ? "canvas"
+            : "resource";
         customOption.href = breadcrumbResourceHref(key, resourceKind);
         customOptions.set(key, customOption);
       });
@@ -136,28 +142,32 @@
       {#if $exploresQuery?.data}
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
+    {:else if $exploresQuery?.data}
+      <Breadcrumbs {pathParts} {currentPath} />
     {:else}
-      {#if $exploresQuery?.data}
-        <Breadcrumbs {pathParts} {currentPath} />
-      {:else}
-        <InputWithConfirm
-          size="md"
-          bumpDown
-          type="Project"
-          textClass="font-medium"
-          value={projectTitle}
-          onConfirm={submitTitleChange}
-          showIndicator={unsavedFileCount > 0}
-        />
-      {/if}
+      <InputWithConfirm
+        size="md"
+        bumpDown
+        type="Project"
+        textClass="font-medium"
+        value={projectTitle}
+        onConfirm={submitTitleChange}
+        showIndicator={unsavedFileCount > 0}
+      />
     {/if}
   {/if}
 
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
     {#if route.id?.includes("explore")}
-      <ExplorePreviewCTAs exploreName={dashboardName} inPreviewMode={previewMode} />
+      <ExplorePreviewCTAs
+        exploreName={dashboardName}
+        inPreviewMode={previewMode}
+      />
     {:else if route.id?.includes("canvas")}
-      <CanvasPreviewCTAs canvasName={dashboardName} inPreviewMode={previewMode} />
+      <CanvasPreviewCTAs
+        canvasName={dashboardName}
+        inPreviewMode={previewMode}
+      />
     {:else if showDeveloperChat}
       <ChatToggle beta />
     {/if}

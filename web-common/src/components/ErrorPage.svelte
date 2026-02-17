@@ -35,7 +35,9 @@
     <h2 class="header">{header}</h2>
     <CtaMessage>{body}</CtaMessage>
     {#if !fatal && !onEmbedPage}
-      <CtaButton variant="secondary" onClick={handleBackHome}>Back to home</CtaButton>
+      <CtaButton variant="secondary" onClick={handleBackHome}
+        >Back to home</CtaButton
+      >
     {/if}
     {#if detail}
       <section class="detail-section">

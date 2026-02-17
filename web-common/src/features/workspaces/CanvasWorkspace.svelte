@@ -109,7 +109,9 @@
 
             <PreviewButton
               href="/canvas/{canvasName}"
-              disabled={!!parseError || !!reconcileError || resourceIsReconciling}
+              disabled={!!parseError ||
+                !!reconcileError ||
+                resourceIsReconciling}
               reconciling={resourceIsReconciling}
             />
           {/if}

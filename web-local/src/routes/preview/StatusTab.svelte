@@ -27,7 +27,8 @@
             <h3 class="section-title">Deployment</h3>
           </div>
           <p class="text-sm text-fg-muted">
-            Deploy your project to Rill Cloud to monitor deployments, view logs, and manage your project.
+            Deploy your project to Rill Cloud to monitor deployments, view logs,
+            and manage your project.
           </p>
           <div class="mt-4">
             <Button type="primary" href="/deploy" compact>
@@ -36,11 +37,9 @@
             </Button>
           </div>
         </div>
-
       {:else if selectedPage === "resources"}
         <ResourcesSection />
         <ParseErrorsSection />
-
       {:else if selectedPage === "logs"}
         <div class="section">
           <div class="section-header">

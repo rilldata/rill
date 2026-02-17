@@ -29,10 +29,11 @@
     @apply flex items-center gap-x-1.5 px-2 py-1 rounded-md cursor-pointer;
     @apply text-xs font-medium;
     color: var(--fg-secondary);
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
   }
   .label {
     display: inline;
   }
-
 </style>

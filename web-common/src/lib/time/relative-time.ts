@@ -37,8 +37,7 @@ export function timeAgo(date: Date): string {
     return `${diffMinutes} ${diffMinutes === 1 ? "minute" : "minutes"} ago`;
 
   const hours = Math.round(diffMs / 3600000);
-  if (hours < 24)
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
 
   const days = Math.round(diffMs / 86400000);
   if (days < 7) return `${days} ${days === 1 ? "day" : "days"} ago`;
@@ -47,8 +46,7 @@ export function timeAgo(date: Date): string {
   if (weeks < 5) return `${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
 
   const months = Math.round(diffMs / 2592000000);
-  if (months < 12)
-    return `${months} ${months === 1 ? "month" : "months"} ago`;
+  if (months < 12) return `${months} ${months === 1 ? "month" : "months"} ago`;
 
   const years = Math.round(diffMs / 31536000000);
   return `${years} ${years === 1 ? "year" : "years"} ago`;

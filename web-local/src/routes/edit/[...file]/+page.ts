@@ -35,7 +35,8 @@ export const load = async ({ params: { file }, parent }) => {
     };
   } catch (e) {
     const statusCode = e?.response?.status;
-    const errorMessage = e?.response?.data?.message || e?.message || "Unknown error";
+    const errorMessage =
+      e?.response?.data?.message || e?.message || "Unknown error";
 
     if (statusCode === 404 || statusCode === 400) {
       throw error(404, "File not found: " + path);

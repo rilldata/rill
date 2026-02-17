@@ -102,11 +102,13 @@
         <RepresentingUserBanner />
         <ApplicationHeader
           logoHref={$previewModeStore ? "/home" : "/"}
-          breadcrumbResourceHref={$previewModeStore ? (name, kind) => `/${kind}/${name}` : undefined}
+          breadcrumbResourceHref={$previewModeStore
+            ? (name, kind) => `/${kind}/${name}`
+            : undefined}
           noBorder={$previewModeStore}
           previewerMode={data.previewerMode ?? false}
         />
-        {#if $previewModeStore && !$page.url.pathname.startsWith('/files') && !$page.url.pathname.startsWith('/explore') && !$page.url.pathname.startsWith('/canvas') && !onDeployPage}
+        {#if $previewModeStore && !$page.url.pathname.startsWith("/files") && !$page.url.pathname.startsWith("/explore") && !$page.url.pathname.startsWith("/canvas") && !onDeployPage}
           <DevModeNav />
         {/if}
         {#if $deploy}

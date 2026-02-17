@@ -24,11 +24,14 @@
             class="text-4xl font-semibold text-fg-secondary"
             aria-label="Project title"
           >
-            Welcome to <span class="text-accent-primary-action">Rill Cloud Preview</span>
+            Welcome to <span class="text-accent-primary-action"
+              >Rill Cloud Preview</span
+            >
           </h1>
           <p class="text-lg text-fg-muted">
             {#if $chat}
-              Ask questions about your data, get insights, and explore your dashboards with our new chat feature!
+              Ask questions about your data, get insights, and explore your
+              dashboards with our new chat feature!
             {:else}
               Explore your dashboards below
             {/if}
