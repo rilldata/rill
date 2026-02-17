@@ -29,14 +29,14 @@
 
   $: ({ instanceId } = $runtime);
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: resource = $resourceQuery.data;
+  $: resource = resourceQuery.data;
 
   /**
    * Get the name of the dashboard's underlying model (if any).
    * Note that not all dashboards have an underlying model. Some dashboards are
    * underpinned by a source/table.
    */
-  $: referenceModelName = $resourceQuery?.data?.meta?.refs?.filter(
+  $: referenceModelName = resourceQuery?.data?.meta?.refs?.filter(
     (ref) => ref.kind === ResourceKind.Model,
   )?.[0]?.name;
 

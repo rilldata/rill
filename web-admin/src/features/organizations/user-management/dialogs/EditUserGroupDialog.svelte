@@ -55,7 +55,7 @@
     groupName,
   );
 
-  $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
+  $: userGroupMembersUsers = listUsergroupMemberUsers.data?.members ?? [];
 
   // Query organization users when user types (debounced)
   // Use a more stable pattern - create query once and let params drive it
@@ -75,7 +75,7 @@
   );
 
   $: allOrganizationUsers =
-    $organizationUsersQuery.data?.members?.filter(
+    organizationUsersQuery.data?.members?.filter(
       (u) =>
         !selectedUsers.some((selected) => selected.userEmail === u.userEmail),
     ) ?? [];
@@ -105,7 +105,7 @@
 
   async function handleRename(groupName: string, newName: string) {
     try {
-      await $updateUserGroup.mutateAsync({
+      await updateUserGroup.mutateAsync({
         org: organization,
         usergroup: groupName,
         data: {
@@ -148,7 +148,7 @@
   async function applyPendingChanges() {
     try {
       for (const email of pendingAdditions) {
-        await $addUsergroupMemberUser.mutateAsync({
+        await addUsergroupMemberUser.mutateAsync({
           org: organization,
           usergroup: groupName,
           email: email,
@@ -157,7 +157,7 @@
       }
 
       for (const email of pendingRemovals) {
-        await $removeUserGroupMember.mutateAsync({
+        await removeUserGroupMember.mutateAsync({
           org: organization,
           usergroup: groupName,
           email: email,

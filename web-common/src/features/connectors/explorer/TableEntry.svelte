@@ -37,7 +37,7 @@
     runtimeInstanceId,
     connector,
   );
-  $: isModelingSupported = $isModelingSupportedForConnector.data;
+  $: isModelingSupported = isModelingSupportedForConnector.data;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,

@@ -24,7 +24,7 @@
 
   function refreshConnector() {
     if (!connectorName) return;
-    void $triggerMutation.mutateAsync({
+    void triggerMutation.mutateAsync({
       instanceId,
       data: {
         resources: [{ kind: ResourceKind.Connector, name: connectorName }],
@@ -39,10 +39,10 @@
       square
       type="secondary"
       onClick={refreshConnector}
-      disabled={$triggerMutation.isPending ||
+      disabled={triggerMutation.isPending ||
         isReconciling ||
         hasUnsavedChanges}
-      loading={$triggerMutation.isPending}
+      loading={triggerMutation.isPending}
       loadingCopy="Refreshing"
       label="Refresh Connector"
     >

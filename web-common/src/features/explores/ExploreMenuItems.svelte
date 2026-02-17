@@ -15,7 +15,7 @@
   $: ({ instanceId } = $runtime);
 
   $: exploreQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: exploreResource = $exploreQuery.data;
+  $: exploreResource = exploreQuery.data;
 
   function viewGraph() {
     if (!exploreResource) {

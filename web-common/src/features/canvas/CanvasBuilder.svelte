@@ -111,7 +111,7 @@
 
   $: dropZone.setMouseDelta(mouseDelta);
 
-  $: defaultMetrics = $metricsViewQuery?.data;
+  $: defaultMetrics = metricsViewQuery?.data;
 
   $: activelyDragging = !!dragComponent;
 

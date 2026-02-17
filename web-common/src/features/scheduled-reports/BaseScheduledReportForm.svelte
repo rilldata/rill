@@ -148,7 +148,7 @@
       plural="emails"
       placeholder="Enter an email address"
     />
-    {#if $hasSlackNotifier.data}
+    {#if hasSlackNotifier.data}
       <FormSection
         bind:enabled={$data["enableSlackNotification"]}
         showSectionToggle

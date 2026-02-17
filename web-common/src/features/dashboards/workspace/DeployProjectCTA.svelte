@@ -27,7 +27,7 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import { onMount } from "svelte";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import { writable, get, derived } from "svelte/store";
+  import { writable } from "svelte/store";
   import { Button } from "../../../components/button";
 
   export let hasValidDashboard: boolean;
@@ -44,21 +44,15 @@
   const gitPullMutation = createLocalServiceGitPull();
 
   $: ({ isPending: githubPullPending, error: githubPullError } =
-    $gitPullMutation);
+    gitPullMutation);
   let errorFromGitCommand: Error | null = null;
   $: error = githubPullError ?? errorFromGitCommand;
 
-  const deploymentState = derived(
-    [gitStatusQuery, userQuery, matchingProjectsQuery],
-    ([$git, $user, $projects]) => ({
-      // gitStatusQuery is refetched. So we have to check `isFetching` to get the correct loading status.
-      loading:
-        $git.isFetching || ($user.data?.user ? $projects.isLoading : false),
-      isDeployed: !!$projects.data?.projects?.length,
-      hasRemoteChanges: $git.data && $git.data.remoteCommits > 0,
-    }),
-  );
-  $: ({ loading, isDeployed, hasRemoteChanges } = $deploymentState);
+  // Compute deployment state reactively
+  $: loading =
+    gitStatusQuery.isFetching || (userQuery.data?.user ? matchingProjectsQuery.isLoading : false);
+  $: isDeployed = !!matchingProjectsQuery.data?.projects?.length;
+  $: hasRemoteChanges = gitStatusQuery.data && gitStatusQuery.data.remoteCommits > 0;
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
@@ -68,15 +62,15 @@
   });
 
   async function onDeploy(resumingDeploy = false) {
-    await waitUntil(() => !get(deploymentState).loading);
-    if (get(deploymentState).hasRemoteChanges) {
+    await waitUntil(() => !loading);
+    if (hasRemoteChanges) {
       remoteChangeDialog = true;
       return;
     }
 
     // Check user login
 
-    const userResp = get(userQuery).data;
+    const userResp = userQuery.data;
     if (!userResp?.user) {
       if (resumingDeploy) {
         // Redirect loop breaker.
@@ -89,14 +83,14 @@
         return;
       }
       // Login url is on a separate domain, so use window.open instead of goto.
-      window.location.href = `${$metadata.data!.loginUrl}?redirect=${redirectPageUrl}`;
+      window.location.href = `${metadata.data!.loginUrl}?redirect=${redirectPageUrl}`;
       return;
     }
 
     // Check matching projects
 
-    await waitUntil(() => !get(matchingProjectsQuery).isLoading);
-    const matchingProjects = get(matchingProjectsQuery).data?.projects;
+    await waitUntil(() => !matchingProjectsQuery.isLoading);
+    const matchingProjects = matchingProjectsQuery.data?.projects;
     if (matchingProjects?.length) {
       updateProjectDropdownOpen = true;
       return;
@@ -110,12 +104,12 @@
 
     // do not show the confirmation dialog for successive deploys
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-    window.open($deployPageUrl, "_blank");
+    window.open(deployPageUrl, "_blank");
   }
 
   async function handleForceFetchRemoteCommits() {
     errorFromGitCommand = null;
-    const resp = await $gitPullMutation.mutateAsync({
+    const resp = await gitPullMutation.mutateAsync({
       discardLocal: true,
     });
     // TODO: download diff once API is ready
@@ -149,7 +143,7 @@
 {#if isDeployed && !hasRemoteChanges}
   <UpdateProjectPopup
     bind:open={updateProjectDropdownOpen}
-    matchingProjects={$matchingProjectsQuery.data?.projects ?? []}
+    matchingProjects={matchingProjectsQuery.data?.projects ?? []}
   />
 {:else}
   <Tooltip distance={8}>

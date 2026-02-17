@@ -36,12 +36,12 @@
 
   $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: modelResource = $modelQuery.data;
+  $: modelResource = modelQuery.data;
   $: connector = modelResource?.model?.spec?.outputConnector;
   $: modelIsIdle =
     modelResource?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  $: disableCreateDashboard = $modelHasError || !modelIsIdle;
+  $: disableCreateDashboard = modelHasError || !modelIsIdle;
   $: tableName = modelResource?.model?.state?.resultTable ?? "";
 
   function viewGraph() {
@@ -137,7 +137,7 @@
     {/if}
   </div>
   <svelte:fragment slot="description">
-    {#if $modelHasError}
+    {#if modelHasError}
       Model has errors
     {:else if !modelIsIdle}
       Dependencies are being reconciled.
@@ -159,7 +159,7 @@
       {/if}
     </div>
     <svelte:fragment slot="description">
-      {#if $modelHasError}
+      {#if modelHasError}
         Model has errors
       {:else if !modelIsIdle}
         Dependencies are being reconciled.
@@ -181,7 +181,7 @@
     {/if}
   </div>
   <svelte:fragment slot="description">
-    {#if $modelHasError}
+    {#if modelHasError}
       Model has errors
     {:else if !modelIsIdle}
       Dependencies are being reconciled.

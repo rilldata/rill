@@ -134,12 +134,12 @@
     ? visibleMeasureNames.reduce(
         (acc, measureName) => {
           acc[measureName] =
-            ($totalsQuery?.data?.data?.[0]?.[measureName] as number) ?? 0;
+            (totalsQuery?.data?.data?.[0]?.[measureName] as number) ?? 0;
           return acc;
         },
         {} as { [key: string]: number },
       )
-    : (($totalsQuery?.data?.data?.[0]?.[
+    : ((totalsQuery?.data?.data?.[0]?.[
         $leaderboardSortByMeasureName
       ] as number) ?? 0);
 
@@ -176,7 +176,7 @@
     },
   );
 
-  $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
+  $: tableRows = $prepareDimTableRows(sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
     $selectedValues.data?.includes(row[dimensionName] as string),
@@ -230,7 +230,7 @@
   }
 </script>
 
-{#if $sortedQuery}
+{#if sortedQuery}
   <div
     class="h-full flex flex-col w-full"
     style:min-width="365px"
@@ -249,7 +249,7 @@
       <div class="grow" style="overflow-y: hidden;">
         <DimensionTable
           {onSelectItem}
-          isFetching={$sortedQuery?.isFetching}
+          isFetching={sortedQuery?.isFetching}
           {dimensionName}
           {columns}
           {selectedValues}

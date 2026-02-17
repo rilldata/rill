@@ -27,7 +27,7 @@
     $form["metricsViewName"],
   );
 
-  $: measure = $metricsView.data?.measures?.find(
+  $: measure = metricsView.data?.measures?.find(
     (m) => m.name === $form["measure"],
   );
   $: measureOptions = [
@@ -38,7 +38,7 @@
         : (measure?.expression ?? $form["measure"]),
     },
   ];
-  $: selectedMeasure = $metricsView.data?.measures?.find(
+  $: selectedMeasure = metricsView.data?.measures?.find(
     (m) => m.name === $form["criteria"][index].measure,
   );
 

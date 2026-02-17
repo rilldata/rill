@@ -15,15 +15,15 @@
     },
   });
 
-  $: resources = $resourcesQuery.data?.resources ?? [];
-  $: errorMessage = $resourcesQuery.error
+  $: resources = resourcesQuery.data?.resources ?? [];
+  $: errorMessage = resourcesQuery.error
     ? "Failed to load project resources."
     : null;
 </script>
 
 <ResourceGraph
   {resources}
-  isLoading={$resourcesQuery.isLoading}
+  isLoading={resourcesQuery.isLoading}
   error={errorMessage}
   {seeds}
 />

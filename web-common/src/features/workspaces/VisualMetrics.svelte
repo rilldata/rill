@@ -96,7 +96,7 @@
     sensitive: true,
   });
 
-  $: olapConnector = $instance.data?.instance?.olapConnector;
+  $: olapConnector = instance.data?.instance?.olapConnector;
 
   $: totalSelected = selected.measures.size + selected.dimensions.size;
 
@@ -113,7 +113,7 @@
   $: isModelingSupportedForConnector = olapConnector
     ? useIsModelingSupportedForConnector(instanceId, olapConnector)
     : null;
-  $: isModelingSupported = $isModelingSupportedForConnector?.data;
+  $: isModelingSupported = isModelingSupportedForConnector?.data;
 
   $: rawSmallestTimeGrain = parsedDocument.get("smallest_time_grain");
   $: rawTimeDimension = parsedDocument.get("timeseries");
@@ -136,9 +136,9 @@
   $: sourcesQuery = useSources(instanceId);
   $: metricsViewQuery = getResource(queryClient, instanceId);
 
-  $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
-  $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
-  $: dimensions = $metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
+  $: modelNames = modelsQuery?.data?.map(resourceToOption) ?? [];
+  $: sourceNames = sourcesQuery?.data?.map(resourceToOption) ?? [];
+  $: dimensions = metricsViewQuery?.data?.metricsView?.spec?.dimensions ?? [];
   $: hasSourceSelected =
     noTableProperties &&
     sourceNames.some(({ value }) => value === modelOrSourceOrTableName);
@@ -172,7 +172,7 @@
       },
     },
   );
-  $: hasNonDuckDBOLAPConnector = $hasNonDuckDBOLAPConnectorQuery.data;
+  $: hasNonDuckDBOLAPConnector = hasNonDuckDBOLAPConnectorQuery.data;
 
   $: resourceKind = hasSourceSelected
     ? ResourceKind.Source
@@ -187,8 +187,8 @@
   $: connector =
     yamlConnector ||
     (hasModelSelected
-      ? $resourceQuery?.data?.model?.spec?.outputConnector
-      : $resourceQuery?.data?.source?.spec?.sinkConnector) ||
+      ? resourceQuery?.data?.model?.spec?.outputConnector
+      : resourceQuery?.data?.source?.spec?.sinkConnector) ||
     olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
@@ -206,7 +206,7 @@
     },
   );
 
-  $: ({ data: columnsResponse } = $columnsQuery);
+  $: ({ data: columnsResponse } = columnsQuery);
 
   $: columns = columnsResponse?.profileColumns ?? [];
 
@@ -282,7 +282,7 @@
     },
   );
 
-  $: tables = $tablesQuery.data?.tables ?? [];
+  $: tables = tablesQuery.data?.tables ?? [];
 
   $: hasValidOLAPTableSelected =
     !hasValidModelOrSourceSelection &&

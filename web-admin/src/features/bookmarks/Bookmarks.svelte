@@ -68,10 +68,10 @@
   const projectIdQuery = createQuery(
     getProjectIdQueryOptions(orgAndProjectNameStore),
   );
-  $: projectId = $projectIdQuery.data ?? "";
+  $: projectId = projectIdQuery.data ?? "";
 
   $: projectPermissions = getProjectPermissions(organization, project);
-  $: manageProject = $projectPermissions.data?.manageProject;
+  $: manageProject = projectPermissions.data?.manageProject;
 
   $: curUrlParams = $page.url.searchParams;
 
@@ -88,7 +88,7 @@
     const homeBookmark = bookmarks.find(isHomeBookmark);
 
     if (homeBookmark) {
-      await $bookmarkUpdater.mutateAsync({
+      await bookmarkUpdater.mutateAsync({
         data: {
           bookmarkId: homeBookmark.id,
           displayName: "Go to Home",
@@ -99,7 +99,7 @@
         },
       });
     } else {
-      await $bookmarkCreator.mutateAsync({
+      await bookmarkCreator.mutateAsync({
         data: {
           displayName: "Go to Home",
           description: "",
@@ -132,7 +132,7 @@
 
   async function deleteBookmark(bookmark: BookmarkEntry) {
     // TODO: add confirmation?
-    await $bookmarkDeleter.mutateAsync({
+    await bookmarkDeleter.mutateAsync({
       bookmarkId: bookmark.resource.id,
     });
     eventBus.emit("notification", {

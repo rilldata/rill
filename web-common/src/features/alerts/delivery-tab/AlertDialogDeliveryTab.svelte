@@ -64,7 +64,7 @@
       options={SnoozeOptions}
     />
   </FormSection>
-  {#if $hasSlackNotifier.data}
+  {#if hasSlackNotifier.data}
     <FormSection
       bind:enabled={$form["enableSlackNotification"]}
       showSectionToggle

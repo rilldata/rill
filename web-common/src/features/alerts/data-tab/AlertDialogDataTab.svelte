@@ -23,7 +23,7 @@
   $: metricsView = useMetricsViewValidSpec(instanceId, metricsViewName);
 
   $: measureOptions =
-    $metricsView.data?.measures
+    metricsView.data?.measures
       ?.filter(
         (m) =>
           !m.window &&
@@ -40,7 +40,7 @@
       value: "",
       label: "None",
     },
-    ...($metricsView.data?.dimensions?.map((d) => ({
+    ...(metricsView.data?.dimensions?.map((d) => ({
       value: d.name as string,
       label: d.displayName?.length
         ? d.displayName

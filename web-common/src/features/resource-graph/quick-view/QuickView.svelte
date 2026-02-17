@@ -29,9 +29,9 @@
     queryClient,
   );
 
-  $: allResources = $resourcesQuery.data?.resources ?? [];
-  $: resourcesLoading = $resourcesQuery.isLoading;
-  $: resourcesError = $resourcesQuery.error
+  $: allResources = resourcesQuery.data?.resources ?? [];
+  $: resourcesLoading = resourcesQuery.isLoading;
+  $: resourcesError = resourcesQuery.error
     ? "Failed to load project resources."
     : null;
 

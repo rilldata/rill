@@ -31,7 +31,7 @@
 
   $: metricsViewsQuery = useGetMetricsViewsForModel(instanceId, modelName);
 
-  $: availableMetricsViews = $metricsViewsQuery.data ?? [];
+  $: availableMetricsViews = metricsViewsQuery.data ?? [];
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     instanceId,

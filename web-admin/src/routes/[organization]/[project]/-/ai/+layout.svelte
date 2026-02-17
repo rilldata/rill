@@ -13,7 +13,7 @@
   $: project = $page.params.project;
 
   $: projectQuery = createAdminServiceGetProject(organization, project);
-  $: isPublic = $projectQuery.data?.project?.public ?? true;
+  $: isPublic = projectQuery.data?.project?.public ?? true;
 
   let mcpDialogOpen = false;
 </script>

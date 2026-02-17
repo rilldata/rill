@@ -19,7 +19,7 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(instanceId);
-  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
+  $: isModelingSupported = isModelingSupportedForDefaultOlapDriver.data;
   $: models = useModels(instanceId);
 
   const buttonClasses =
@@ -69,13 +69,13 @@
           use:builder.action
           {...builder}
           class={buttonClasses}
-          disabled={!$models?.data?.length}
+          disabled={!models?.data?.length}
         >
           metrics configuration from an existing model
         </button>
       </DropdownMenu.Trigger>,
       <DropdownMenu.Content align="start" sameWidth>
-        {#each $models?.data ?? [] as model, i (i)}
+        {#each models?.data ?? [] as model, i (i)}
           {#if model?.model?.state?.resultTable}
             <DropdownMenu.Item
               on:click={() => {

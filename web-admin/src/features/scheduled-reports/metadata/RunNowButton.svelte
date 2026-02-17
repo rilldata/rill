@@ -22,8 +22,8 @@
 
   async function handleRunNow() {
     const lastExecution =
-      $reportQuery.data?.resource.report.state.executionHistory[0];
-    await $triggerReport.mutateAsync({
+      reportQuery.data?.resource.report.state.executionHistory[0];
+    await triggerReport.mutateAsync({
       org: organization,
       project,
       name: report,
@@ -37,8 +37,8 @@
 
     // Refetch the resource query until the new report run shows up in the recent history table
     while (
-      !$reportQuery.data ||
-      $reportQuery.data.resource.report.state.executionHistory[0] ===
+      !reportQuery.data ||
+      reportQuery.data.resource.report.state.executionHistory[0] ===
         lastExecution
     ) {
       await queryClient.invalidateQueries({
@@ -56,7 +56,7 @@
   <Button
     type="primary"
     onClick={handleRunNow}
-    disabled={$triggerReport.isPending}
+    disabled={triggerReport.isPending}
   >
     Run now
   </Button>

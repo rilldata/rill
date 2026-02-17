@@ -23,13 +23,13 @@
 
   // Deployment
   $: projectDeployment = useProjectDeployment(organization, project);
-  $: deployment = $projectDeployment.data;
+  $: deployment = projectDeployment.data;
   $: deploymentStatus =
     deployment?.status ?? V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
 
   // Project
   $: proj = createAdminServiceGetProject(organization, project);
-  $: projectData = $proj.data?.project;
+  $: projectData = proj.data?.project;
   $: primaryBranch = projectData?.primaryBranch;
   // Last synced
   $: githubLastSynced = useGithubLastSynced(instanceId);
@@ -38,17 +38,17 @@
     organization,
     project,
   );
-  $: lastUpdated = $githubLastSynced.data ?? $dashboardsLastUpdated;
+  $: lastUpdated = githubLastSynced.data ?? dashboardsLastUpdated;
 
   // Runtime
   $: runtimeVersionQuery = useRuntimeVersion();
-  $: version = $runtimeVersionQuery.data?.version ?? "";
+  $: version = runtimeVersionQuery.data?.version ?? "";
 
   // Connectors — sensitive: true is needed to read projectConnectors (OLAP/AI connector types)
   $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
   });
-  $: instance = $instanceQuery.data?.instance;
+  $: instance = instanceQuery.data?.instance;
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );

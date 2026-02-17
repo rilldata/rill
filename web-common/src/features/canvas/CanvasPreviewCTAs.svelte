@@ -10,7 +10,7 @@
   $: ({ instanceId } = $runtime);
 
   $: canvasQuery = useCanvas(instanceId, canvasName);
-  $: canvasFilePath = $canvasQuery.data?.filePath ?? "";
+  $: canvasFilePath = canvasQuery.data?.filePath ?? "";
 
   const { dashboardChat, readOnly } = featureFlags;
 </script>

@@ -26,9 +26,9 @@
         flexRender(AlertHistoryTableCompositeCell, {
           alertTime: info.row.original.executionTime,
           timeZone:
-            $alertQuery.data.resource.alert.spec.refreshSchedule.timeZone,
+            alertQuery.data.resource.alert.spec.refreshSchedule.timeZone,
           currentExecution:
-            $alertQuery.data.resource.alert.state.currentExecution,
+            alertQuery.data.resource.alert.state.currentExecution,
           result: info.row.original.result,
         }),
     },
@@ -40,19 +40,19 @@
     <h1 class="text-fg-secondary text-lg font-bold">Recent history</h1>
     <p class="text-fg-secondary text-sm">Showing up to 25 most recent checks</p>
   </div>
-  {#if $alertQuery.error}
+  {#if alertQuery.error}
     <div class="text-red-500">
-      {$alertQuery.error.message}
+      {alertQuery.error.message}
     </div>
-  {:else if $alertQuery.isLoading}
+  {:else if alertQuery.isLoading}
     <div class="text-fg-secondary">Loading...</div>
-  {:else if !$alertQuery.data?.resource.alert.state.executionHistory.length}
+  {:else if !alertQuery.data?.resource.alert.state.executionHistory.length}
     <NoAlertRunsYet />
   {:else}
     <ResourceList
       kind="alert"
       {columns}
-      data={$alertQuery.data?.resource.alert.state.executionHistory}
+      data={alertQuery.data?.resource.alert.state.executionHistory}
       toolbar={false}
       fixedRowHeight={false}
     />

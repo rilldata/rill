@@ -28,11 +28,11 @@
     { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
   );
   $: parseErrors =
-    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
+    projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
 
   // Resource errors grouped by kind
   $: resourcesQuery = useResources(instanceId);
-  $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
+  $: allResources = (resourcesQuery.data?.resources ?? []) as V1Resource[];
   $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
 
   $: errorsByKind = groupErrorsByKind(erroredResources);
@@ -98,9 +98,9 @@
       <h3 class="section-title flex items-center gap-2">Errors</h3>
     </div>
 
-    {#if $projectParserQuery.isError || $resourcesQuery.isError}
+    {#if projectParserQuery.isError || resourcesQuery.isError}
       <p class="text-sm text-fg-secondary">Unable to check for errors.</p>
-    {:else if $projectParserQuery.isLoading || $resourcesQuery.isLoading}
+    {:else if projectParserQuery.isLoading || resourcesQuery.isLoading}
       <p class="text-sm text-fg-secondary">Checking for errors...</p>
     {:else}
       <p class="text-sm text-fg-secondary">No errors detected.</p>

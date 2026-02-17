@@ -55,10 +55,10 @@
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start">
-    {#if !$mockUsers.data || $mockUsers.data?.length === 0}
+    {#if !mockUsers.data || mockUsers.data?.length === 0}
       <DropdownMenu.Item disabled>No mock users</DropdownMenu.Item>
-    {:else if $mockUsers.data?.length > 0}
-      {#each $mockUsers.data as user (user?.email)}
+    {:else if mockUsers.data?.length > 0}
+      {#each mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
           on:click={() => {
             updateDevJWT(queryClient, user);

@@ -43,17 +43,17 @@
 
   // Get dashboard
   $: exploreName = useReportDashboardName(instanceId, report);
-  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
-  $: exploreSpec = $validSpecResp.data?.explore;
-  $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
-  $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
+  $: validSpecResp = useExploreValidSpec(instanceId, exploreName.data);
+  $: exploreSpec = validSpecResp.data?.explore;
+  $: dashboardTitle = exploreSpec?.displayName || exploreName.data;
+  $: dashboardDoesNotExist = validSpecResp.error?.response?.status === 404;
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
     instanceId,
-    $exploreName.data,
+    exploreName.data,
   );
 
-  $: reportSpec = $reportQuery.data?.resource?.report?.spec;
+  $: reportSpec = reportQuery.data?.resource?.report?.spec;
 
   // Get human-readable frequency
   $: humanReadableFrequency = reportSpec?.refreshSchedule?.cron
@@ -65,7 +65,7 @@
 
   $: exploreUrl = getMappedExploreUrl(
     {
-      exploreName: $exploreName.data,
+      exploreName: exploreName.data,
       queryName: reportSpec?.queryName,
       queryArgsJson: reportSpec?.queryArgsJson,
     },
@@ -90,10 +90,10 @@
   }
 
   async function handleDeleteReport() {
-    await $deleteReport.mutateAsync({
+    await deleteReport.mutateAsync({
       org: organization,
       project,
-      name: $reportQuery.data.resource.meta.name.name,
+      name: reportQuery.data.resource.meta.name.name,
     });
     queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
@@ -134,7 +134,7 @@
         </h1>
         <div class="grow" />
         <RunNowButton {organization} {project} {report} />
-        {#if !$isReportCreatedByCode.data}
+        {#if !isReportCreatedByCode.data}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton ariaLabel="Report context menu">
@@ -144,7 +144,7 @@
             <DropdownMenu.Content align="start">
               <DropdownMenu.Item
                 on:click={handleEditReport}
-                disabled={!$exploreIsValid}
+                disabled={!exploreIsValid}
               >
                 Edit report
               </DropdownMenu.Item>
@@ -175,7 +175,7 @@
                 </Tooltip>
               </div>
             {:else}
-              <a href={$exploreUrl}>
+              <a href={exploreUrl}>
                 {dashboardTitle}
               </a>
             {/if}
@@ -183,7 +183,7 @@
         {:else}
           <MetadataLabel>Name</MetadataLabel>
           <MetadataValue>
-            {$reportQuery.data?.resource?.meta?.name?.name}
+            {reportQuery.data?.resource?.meta?.name?.name}
           </MetadataValue>
         {/if}
       </div>
@@ -201,7 +201,7 @@
         <MetadataLabel>Next run</MetadataLabel>
         <MetadataValue>
           {formatNextRunOn(
-            $reportQuery.data.resource.report.state.nextRunOn,
+            reportQuery.data.resource.report.state.nextRunOn,
             reportSpec?.refreshSchedule?.timeZone,
           )}
         </MetadataValue>
@@ -222,7 +222,7 @@
   </div>
 {/if}
 
-{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending && showEditReportDialog}
+{#if reportSpec && exploreIsValid && !validSpecResp.isPending && showEditReportDialog}
   <ScheduledReportDialog
     bind:open={showEditReportDialog}
     props={{

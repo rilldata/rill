@@ -48,8 +48,8 @@
   $: allErrors = $allErrorsStore;
 
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: resource = $resourceQuery.data;
-  $: model = $resourceQuery.data?.model;
+  $: resource = resourceQuery.data;
+  $: model = resourceQuery.data?.model;
   $: connector = (model as V1Model)?.spec?.outputConnector as string;
   const database = ""; // models use the default database
   const databaseSchema = ""; // models use the default databaseSchema
@@ -59,7 +59,7 @@
   $: hasResultTable = !!tableName;
 
   $: refreshedOn = model?.state?.refreshedOn;
-  $: isResourceReconciling = resourceIsLoading($resourceQuery.data);
+  $: isResourceReconciling = resourceIsLoading(resourceQuery.data);
 
   async function save() {
     httpRequestQueue.removeByName(assetName);

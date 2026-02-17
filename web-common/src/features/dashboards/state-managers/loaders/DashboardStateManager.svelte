@@ -28,7 +28,7 @@
 
   $: ({ instanceId } = $runtime);
   $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
-  $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
+  $: exploreSpec = exploreSpecQuery.data?.explore ?? {};
   $: metricsViewName = exploreSpec?.metricsView ?? "";
   $: exploreStore = useExploreState(exploreName);
 

@@ -20,12 +20,12 @@
   let mergeConflictResolutionDialog = false;
   $: inDeployPage = $page.route.id?.startsWith("/(misc)/deploy") ? true : false;
 
-  $: if ($gitStatusQuery.data) {
-    processGithubStatus($gitStatusQuery.data);
+  $: if (gitStatusQuery.data) {
+    processGithubStatus(gitStatusQuery.data);
   }
 
   $: ({ isPending: githubPullPending, error: githubPullError } =
-    $gitPullMutation);
+    gitPullMutation);
   let errorFromGitCommand: ConnectError | null = null;
   $: error = githubPullError ?? errorFromGitCommand;
 
@@ -36,7 +36,7 @@
   async function handleFetchRemoteCommits() {
     if (inDeployPage) return; // Do not show the modal in deploy pages
 
-    if ($gitStatusQuery.data!.localCommits > 0) {
+    if (gitStatusQuery.data!.localCommits > 0) {
       // Since we can't really merge remote commits with local commits,
       // we just show the user the merge conflicts dialog for confirmation to clear it.
       // We could directly show it since the data is in gitStatusQuery, but it feels like weird UX.
@@ -45,7 +45,7 @@
     }
 
     errorFromGitCommand = null;
-    const resp = await $gitPullMutation.mutateAsync({
+    const resp = await gitPullMutation.mutateAsync({
       discardLocal: false,
     });
     // TODO: download diff once API is ready
@@ -76,7 +76,7 @@
 
   async function handleForceFetchRemoteCommits() {
     errorFromGitCommand = null;
-    const resp = await $gitPullMutation.mutateAsync({
+    const resp = await gitPullMutation.mutateAsync({
       discardLocal: true,
     });
     // TODO: download diff once API is ready

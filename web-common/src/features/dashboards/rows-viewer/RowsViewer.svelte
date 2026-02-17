@@ -51,7 +51,7 @@
   // If too much date is requested, limit the query to 1000 rows
   $: if (
     // @ts-ignore
-    $tableQuery?.error?.response?.data?.code === 8 &&
+    tableQuery?.error?.response?.data?.code === 8 &&
     $limit > FALLBACK_SAMPLE_SIZE
   ) {
     // SK: Have to set the limit on the next tick or the tableQuery does not update. Not sure why, seems like a svelte-query issue.
@@ -63,9 +63,9 @@
   let rows;
   let tableColumns: VirtualizedTableColumns[];
   $: {
-    if ($tableQuery.isSuccess) {
-      rows = $tableQuery.data.data;
-      tableColumns = $tableQuery.data.meta as VirtualizedTableColumns[];
+    if (tableQuery.isSuccess) {
+      rows = tableQuery.data.data;
+      tableColumns = tableQuery.data.meta as VirtualizedTableColumns[];
     }
   }
 </script>

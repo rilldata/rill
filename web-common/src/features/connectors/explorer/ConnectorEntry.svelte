@@ -21,7 +21,7 @@
   $: instance = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
   });
-  $: olapConnector = $instance.data?.instance?.olapConnector;
+  $: olapConnector = instance.data?.instance?.olapConnector;
   $: isOlapConnector = olapConnector === connector.name;
   $: implementsOlap = connector.driver?.implementsOlap;
   $: implementsSqlStore = connector.driver?.implementsSqlStore;

@@ -46,7 +46,7 @@
       exploreNameStore,
     ),
   );
-  $: bookmarks = $bookmarksQuery.data?.bookmarks ?? [];
+  $: bookmarks = bookmarksQuery.data?.bookmarks ?? [];
 
   // Parse bookmarks and fill in metadata based on bookmark data.
   $: parsedBookmarks = parseBookmarks(

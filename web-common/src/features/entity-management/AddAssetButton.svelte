@@ -61,14 +61,14 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(instanceId);
-  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
+  $: isModelingSupported = isModelingSupportedForDefaultOlapDriver.data;
 
   $: metricsViewQuery = useFilteredResources(
     instanceId,
     ResourceKind.MetricsView,
   );
 
-  $: metricsViews = $metricsViewQuery?.data ?? [];
+  $: metricsViews = metricsViewQuery?.data ?? [];
 
   /**
    * Open the Add Data modal
@@ -90,14 +90,14 @@
   async function handleAddFolder() {
     const nextFolderName = getName(
       "untitled_folder",
-      $currentDirectoryDirectoryNamesQuery?.data ?? [],
+      currentDirectoryDirectoryNamesQuery?.data ?? [],
     );
     const path =
       currentDirectory !== ""
         ? `${removeLeadingSlash(currentDirectory)}/${nextFolderName}`
         : nextFolderName;
 
-    await $createFolder.mutateAsync({
+    await createFolder.mutateAsync({
       instanceId: instanceId,
       data: {
         path: path,
@@ -115,7 +115,7 @@
   async function handleAddBlankFile() {
     const nextFileName = getName(
       "untitled_file",
-      $currentDirectoryFileNamesQuery?.data ?? [],
+      currentDirectoryFileNamesQuery?.data ?? [],
     );
 
     const path =
@@ -123,7 +123,7 @@
         ? `${removeLeadingSlash(currentDirectory)}/${nextFileName}`
         : nextFileName;
 
-    await $createFile.mutateAsync({
+    await createFile.mutateAsync({
       instanceId: instanceId,
       data: {
         path,

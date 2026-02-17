@@ -72,7 +72,7 @@
     project,
   );
   $: projectMembersSet = new Set(
-    $listProjectMemberUsersQuery.data?.members?.map((m) => m.userEmail) ?? [],
+    listProjectMemberUsersQuery.data?.members?.map((m) => m.userEmail) ?? [],
   );
 
   $: exploreName =
@@ -81,7 +81,7 @@
       : getDashboardNameFromReport(props.reportSpec);
 
   $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
-  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: exploreSpec = validExploreSpec.data?.explore ?? {};
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
@@ -112,7 +112,7 @@
       metricsViewName,
       exploreName,
       aggregationRequest,
-      $allTimeRangeResp.data?.timeRangeSummary,
+      allTimeRangeResp.data?.timeRangeSummary,
     ));
 
   let currentProtobufState: string | undefined = undefined;
@@ -170,12 +170,12 @@
   $: initialValues =
     props.mode === "create"
       ? getNewReportInitialFormValues(
-          $user.data?.user?.email,
+          user.data?.user?.email,
           aggregationRequest,
         )
       : getExistingReportInitialFormValues(
           props.reportSpec,
-          $user.data?.user?.email,
+          user.data?.user?.email,
           aggregationRequest,
         );
 
@@ -198,7 +198,7 @@
     },
   ));
 
-  $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
+  $: generalErrors = $errors._errors?.[0] ?? mutation.error?.message;
 
   async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -225,7 +225,7 @@
     );
 
     try {
-      await $mutation.mutateAsync({
+      await mutation.mutateAsync({
         org: organization,
         project,
         name: reportName,

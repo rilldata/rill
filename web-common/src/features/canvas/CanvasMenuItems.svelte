@@ -15,7 +15,7 @@
   $: ({ instanceId } = $runtime);
 
   $: canvasQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: canvasResource = $canvasQuery.data;
+  $: canvasResource = canvasQuery.data;
 
   function viewGraph() {
     if (!canvasResource) {
