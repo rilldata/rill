@@ -1,6 +1,7 @@
 on:
   schedule:
     - cron: "0 5 * * *"
+  workflow_dispatch:
 name: Test Go code with coverage and race detector
 jobs:
   test:
@@ -49,6 +50,5 @@ jobs:
         notification_title: "{workflow} has {status_message}"
         message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
         footer: "Linked Repo <{repo_url}|{repo}>"
-        notify_when: "failure"
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEAM_PLATFORM }}
