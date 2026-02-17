@@ -37,7 +37,7 @@
   export let showControls = true;
   export let enableExpansion = true;
   export let searchQuery = "";
-  export let statusFilter: ResourceStatusFilter = "all";
+  export let statusFilter: ResourceStatusFilter = [];
 
   // New props for modularity
   export let onExpandedChange: ((id: string | null) => void) | null = null;
@@ -164,18 +164,22 @@
       );
     }
 
-    // Filter by status
-    if (statusFilter === "pending") {
+    // Filter by status (multi-select: show groups matching ANY selected status)
+    if (statusFilter.length > 0) {
       groups = groups.filter((group) =>
-        group.resources.some(
-          (r) =>
+        group.resources.some((r) => {
+          if (
+            statusFilter.includes("pending") &&
             r.meta?.reconcileStatus &&
-            r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE",
-        ),
-      );
-    } else if (statusFilter === "errored") {
-      groups = groups.filter((group) =>
-        group.resources.some((r) => !!r.meta?.reconcileError),
+            r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE"
+          ) {
+            return true;
+          }
+          if (statusFilter.includes("errored") && !!r.meta?.reconcileError) {
+            return true;
+          }
+          return false;
+        }),
       );
     }
 

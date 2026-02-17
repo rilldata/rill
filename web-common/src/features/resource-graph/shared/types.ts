@@ -36,6 +36,7 @@ export interface ResourceMetadata {
   partitioned?: boolean;
   hasSchedule?: boolean;
   scheduleDescription?: string; // "cron: 0 * * * *" or "every 3600s"
+  lastRefreshedOn?: string; // ISO timestamp of last execution
   isSqlModel?: boolean; // true if model defined via SQL file
   sqlQuery?: string; // SQL query for models
   testCount?: number; // number of tests defined
@@ -81,9 +82,10 @@ export interface ResourceNodeData extends Record<string, unknown> {
 }
 
 /**
- * Filter type for resource status in the graph view.
- * - "all": Show all resources
- * - "pending": Show only resources with non-idle reconcile status
- * - "errored": Show only resources with reconcile errors
+ * Filter values for resource status in the graph view.
+ * Empty array means "all" (no filter applied).
+ * - "pending": Resources with non-idle reconcile status
+ * - "errored": Resources with reconcile errors
  */
-export type ResourceStatusFilter = "all" | "pending" | "errored";
+export type ResourceStatusFilterValue = "pending" | "errored";
+export type ResourceStatusFilter = ResourceStatusFilterValue[];

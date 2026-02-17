@@ -6,7 +6,8 @@
 
   export let seeds: string[] | undefined;
   export let searchQuery = "";
-  export let statusFilter: ResourceStatusFilter = "all";
+  export let statusFilter: ResourceStatusFilter = [];
+  export let showSummary = true;
 
   $: ({ instanceId } = $runtime);
 
@@ -32,4 +33,5 @@
   {seeds}
   {searchQuery}
   {statusFilter}
+  {showSummary}
 />

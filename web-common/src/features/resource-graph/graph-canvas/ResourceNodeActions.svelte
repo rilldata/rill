@@ -414,10 +414,20 @@
               <span>Partitioned</span>
             </div>
           {/if}
+          {#if metadata?.lastRefreshedOn}
+            <div class="describe-row">
+              <span class="describe-row-icon"><Clock size={14} /></span>
+              <span
+                >Last refresh: {new Date(
+                  metadata.lastRefreshedOn,
+                ).toLocaleString()}</span
+              >
+            </div>
+          {/if}
           {#if metadata?.hasSchedule && metadata?.scheduleDescription}
             <div class="describe-row">
               <span class="describe-row-icon"><Clock size={14} /></span>
-              <span>{metadata.scheduleDescription}</span>
+              <span>Schedule: {metadata.scheduleDescription}</span>
             </div>
           {/if}
           {#if metadata?.testCount}
