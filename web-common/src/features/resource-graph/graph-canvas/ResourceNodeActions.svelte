@@ -568,33 +568,4 @@
     @apply border border-gray-200;
     max-height: 200px;
   }
-
-  .describe-props {
-    @apply mt-2 bg-surface-subtle rounded border border-gray-200 overflow-hidden;
-  }
-
-  .describe-prop-row {
-    @apply flex items-center justify-between px-3 py-1.5 text-xs;
-    @apply border-b border-gray-100;
-  }
-
-  .describe-prop-row:last-child {
-    @apply border-b-0;
-  }
-
-  .describe-prop-key {
-    @apply font-mono text-fg-secondary;
-  }
-
-  .describe-prop-value {
-    @apply font-mono text-fg-primary truncate max-w-[200px] text-right;
-  }
-
-  .describe-env-link {
-    @apply flex items-center gap-2 mt-3 text-xs text-fg-muted;
-  }
-
-  .describe-env-anchor {
-    @apply text-primary-600 font-medium underline;
-  }
 </style>

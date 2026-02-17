@@ -74,11 +74,14 @@
 
   .kind-dropdown {
     @apply h-7 px-2.5 pr-7 text-xs rounded border bg-surface-background text-fg-primary;
-    @apply focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500;
     @apply cursor-pointer appearance-none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.25rem center;
     background-repeat: no-repeat;
     background-size: 1.25rem 1.25rem;
+  }
+
+  .kind-dropdown:focus {
+    @apply outline-none ring-1 ring-primary-500 border-primary-500;
   }
 </style>

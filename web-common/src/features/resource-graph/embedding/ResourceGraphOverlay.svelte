@@ -22,14 +22,6 @@
     | ResourceKind.Explore
     | ResourceKind.Canvas;
 
-  const NAME_SEED_ALIAS: Record<GraphableKind, string> = {
-    [ResourceKind.Source]: "source",
-    [ResourceKind.Model]: "model",
-    [ResourceKind.MetricsView]: "metrics",
-    [ResourceKind.Explore]: "dashboard",
-    [ResourceKind.Canvas]: "canvas",
-  };
-
   const KIND_TOKEN_BY_KIND: Record<GraphableKind, string> = {
     [ResourceKind.Source]: "sources",
     [ResourceKind.Model]: "models",
