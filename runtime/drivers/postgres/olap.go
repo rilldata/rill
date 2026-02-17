@@ -99,6 +99,7 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 }
 
 // LoadDDL implements drivers.OLAPInformationSchema.
+// Note: table.Database is not used; in Postgres, the database is determined by the connection.
 func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -107,7 +108,9 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 
 	schema := table.DatabaseSchema
 	if schema == "" {
-		schema = "public"
+		if err := db.QueryRowContext(ctx, "SELECT current_schema()").Scan(&schema); err != nil {
+			return err
+		}
 	}
 
 	if table.View {
