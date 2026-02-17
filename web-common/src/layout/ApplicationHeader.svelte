@@ -31,6 +31,8 @@
 
   export let logoHref: string = "/";
   export let breadcrumbResourceHref: ((resourceName: string, resourceKind: string) => string) | undefined = undefined;
+  export let noBorder = false;
+  export let previewerMode = false;
 
   $: previewMode = $previewModeStore;
 
@@ -120,13 +122,15 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage} class="bg-surface-base">
+<header class:border-b={!onDeployPage && !noBorder} class="bg-surface-base">
   {#if !onDeployPage}
     <a href={logoHref}>
       <Rill />
     </a>
 
-    <ModeToggle />
+    {#if !previewerMode}
+      <ModeToggle />
+    {/if}
 
     {#if previewMode}
       {#if $exploresQuery?.data}

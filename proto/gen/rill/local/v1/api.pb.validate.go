@@ -414,6 +414,8 @@ func (m *GetMetadataResponse) validate(all bool) error {
 
 	// no validation rules for PreviewMode
 
+	// no validation rules for PreviewerMode
+
 	if len(errors) > 0 {
 		return GetMetadataResponseMultiError(errors)
 	}

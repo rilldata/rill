@@ -1,8 +1,12 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import { SettingsIcon } from "lucide-svelte";
+  import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import Rocket from "svelte-radix/Rocket.svelte";
 </script>
+
+<svelte:head>
+  <title>Alerts - Rill</title>
+</svelte:head>
 
 <main
   class="bg-surface-base size-full pt-8 pb-16 lg:pt-12 flex flex-col items-center px-8 sm:px-16 lg:px-32 2xl:px-40 overflow-y-auto"
@@ -13,17 +17,17 @@
       class="text-2xl text-fg-primary font-semibold"
       aria-label="Container title"
     >
-      Project settings
+      Alerts
     </h1>
 
     <div class="flex flex-col items-center gap-y-4 pt-16">
-      <SettingsIcon size="32px" class="text-fg-muted" />
+      <AlertIcon size="32px" />
       <div class="flex flex-col gap-y-2 items-center text-sm">
         <div class="text-fg-secondary font-semibold">
-          Settings are available on Rill Cloud
+          You don't have any alerts yet
         </div>
         <div class="text-fg-muted">
-          Deploy your project to manage environment variables, public URLs, and more
+          Create alerts from any dashboard or via code after deploying
         </div>
       </div>
       <div class="mt-4">

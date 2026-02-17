@@ -1,3 +1,6 @@
-import { writable } from "svelte/store";
+import { localStorageStore } from "../lib/store-utils/local-storage";
 
-export const previewModeStore = writable<boolean>(false);
+export const previewModeStore = localStorageStore<boolean>(
+  "rill:preview-mode",
+  false,
+);

@@ -21,6 +21,7 @@ export async function load({ url, depends, untrack }) {
   // Fetch metadata to check preview mode
   const metadata = await localServiceGetMetadata();
   const previewMode = metadata.previewMode ?? false;
+  const previewerMode = metadata.previewerMode ?? false;
 
   const instanceId = get(runtime).instanceId;
 
@@ -40,8 +41,8 @@ export async function load({ url, depends, untrack }) {
   const redirectPath = untrack(() => {
     if (!url.searchParams.get("redirect")) return false;
 
-    // In preview mode, redirect to /preview instead of /files
-    if (previewMode) {
+    // In preview/previewer mode, redirect to /home instead of /files
+    if (previewMode || previewerMode) {
       return url.pathname !== "/home" && "/home";
     }
 
@@ -54,14 +55,10 @@ export async function load({ url, depends, untrack }) {
   if (!initialized) {
     initialized = await handleUninitializedProject(instanceId);
   } else {
-    // Only redirect after project is initialized
-    if (previewMode && url.pathname === "/") {
-      throw redirect(303, "/home");
-    }
     if (redirectPath) {
       throw redirect(303, redirectPath);
     }
   }
 
-  return { initialized, previewMode };
+  return { initialized, previewMode, previewerMode };
 }

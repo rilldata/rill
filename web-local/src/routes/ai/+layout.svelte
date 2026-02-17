@@ -15,6 +15,6 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    background: #ffffff;
+    background: var(--surface-base);
   }
 </style>

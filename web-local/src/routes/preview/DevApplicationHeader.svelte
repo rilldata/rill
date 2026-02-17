@@ -2,11 +2,9 @@
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
-
-  const { darkMode } = featureFlags;
+  import ModeToggle from "@rilldata/web-common/layout/ModeToggle.svelte";
 
   $: ({ instanceId } = $runtime);
   $: projectTitleQuery = useProjectTitle(instanceId);
@@ -19,23 +17,23 @@
     <Rill />
   </a>
 
-  <span class="rounded-full px-2 border text-gray-800 bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 text-xs font-medium">
-    Developer
-  </span>
+  <ModeToggle />
 
-  <span class="text-gray-900 dark:text-white font-medium truncate">
+  <span class="font-medium truncate" style="color: var(--fg-primary)">
     {projectTitle}
   </span>
 
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
-    <LocalAvatarButton darkMode={$darkMode} />
+    <LocalAvatarButton />
   </div>
 </header>
 
 <style lang="postcss">
   header {
-    @apply w-full bg-white dark:bg-gray-950 box-border;
+    @apply w-full box-border;
     @apply flex gap-x-2 items-center px-4 flex-none;
-    @apply h-11 border-b border-gray-200 dark:border-gray-800;
+    @apply h-11;
+    background: var(--surface-base);
+    border-bottom: 1px solid var(--border);
   }
 </style>

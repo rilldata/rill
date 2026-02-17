@@ -124,38 +124,38 @@
 <div class="flex flex-col w-full gap-y-3">
   {#if $resourcesQuery.isLoading && dashboards.length === 0}
     <div class="flex items-center justify-center py-8">
-      <p class="text-gray-500 dark:text-gray-400">Loading dashboards...</p>
+      <p style="color: var(--fg-muted)">Loading dashboards...</p>
     </div>
   {:else if dashboards.length === 0}
     <div
-      class="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded"
+      class="flex items-center justify-center py-8 border-2 border-dashed rounded"
+      style="border-color: var(--border)"
     >
       <div class="text-center">
-        <p class="text-base font-medium text-gray-900 dark:text-white mb-1">
+        <p class="text-base font-medium mb-1" style="color: var(--fg-primary)">
           No dashboards found
         </p>
-        <p class="text-sm text-gray-600 dark:text-gray-400">
+        <p class="text-sm" style="color: var(--fg-secondary)">
           Create a metrics view or dashboard to get started
         </p>
       </div>
     </div>
   {:else}
     <div
-      class="space-y-0 w-full border border-gray-200 dark:border-gray-800 rounded overflow-hidden"
+      class="space-y-0 w-full border rounded overflow-hidden"
+      style="border-color: var(--border)"
     >
       {#each displayData as dashboard, i (dashboard.name)}
         <Tooltip distance={4} alignment="start" suppress={!dashboard.hasError}>
           <div
             class:border-t={i > 0}
-            class:border-gray-200={i > 0}
-            class:dark:border-gray-800={i > 0}
+            style:border-color={i > 0 ? 'var(--border)' : undefined}
             on:click={() => navigateToDashboard(dashboard)}
             on:keydown={(e) => e.key === "Enter" && navigateToDashboard(dashboard)}
             role={dashboard.hasError ? undefined : "button"}
             tabindex={dashboard.hasError ? -1 : 0}
-            class="flex flex-col gap-y-1 group px-4 py-2.5 w-full transition-colors text-left"
-            class:hover:bg-gray-50={!dashboard.hasError}
-            class:dark:hover:bg-gray-900={!dashboard.hasError}
+            class="flex flex-col gap-y-1 group px-4 py-2.5 w-full transition-colors text-left dashboard-row"
+            class:hoverable={!dashboard.hasError}
             class:cursor-pointer={!dashboard.hasError}
             class:opacity-60={dashboard.hasError}
           >
@@ -169,10 +169,9 @@
                 class="text-sm font-semibold truncate"
                 class:text-red-600={dashboard.hasError}
                 class:dark:text-red-400={dashboard.hasError}
-                class:text-gray-700={!dashboard.hasError}
-                class:dark:text-gray-100={!dashboard.hasError}
                 class:group-hover:text-primary-600={!dashboard.hasError}
                 class:dark:group-hover:text-primary-400={!dashboard.hasError}
+                style:color={!dashboard.hasError ? 'var(--fg-primary)' : undefined}
               >
                 {getDisplayName(dashboard)}
               </span>
@@ -189,8 +188,7 @@
               class="flex gap-x-1 text-xs font-normal min-h-[16px] overflow-hidden"
               class:text-red-500={dashboard.hasError}
               class:dark:text-red-400={dashboard.hasError}
-              class:text-gray-500={!dashboard.hasError}
-              class:dark:text-gray-400={!dashboard.hasError}
+              style:color={!dashboard.hasError ? 'var(--fg-muted)' : undefined}
             >
               <span class="shrink-0">
                 {dashboard.fullPath || dashboard.name}
@@ -226,3 +224,9 @@
     {/if}
   {/if}
 </div>
+
+<style lang="postcss">
+  .dashboard-row.hoverable:hover {
+    background: var(--surface-subtle);
+  }
+</style>

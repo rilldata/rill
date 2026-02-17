@@ -5,6 +5,7 @@
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import * as Popover from "@rilldata/web-common/components/popover";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
@@ -19,9 +20,8 @@
   import { featureFlags } from "../feature-flags";
   import { BookmarkIcon, BellPlusIcon } from "lucide-svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
+  import Rocket from "svelte-radix/Rocket.svelte";
   import { DateTime, Duration } from "luxon";
-
-  const disabledTooltip = "Deploy your project to access this feature";
 
   function timeAgo(date: Date): string {
     const now = DateTime.now();
@@ -89,42 +89,89 @@
     {/if}
   </StateManagersProvider>
   {#if inPreviewMode}
-    <Tooltip distance={8}>
-      <Button type="secondary" compact gray href="https://docs.rilldata.com/explore/bookmarks" target="_blank" label="Home">
-        <HomeBookmark size="16px" />
-      </Button>
-      <TooltipContent slot="tooltip-content">
-        <div>Set a default view for all users.</div>
-        <div class=" text-[10px] mt-1">Click to learn more</div>
-      </TooltipContent>
-    </Tooltip>
-    <Tooltip distance={8}>
-      <Button type="secondary" compact gray href="https://docs.rilldata.com/explore/bookmarks" target="_blank" label="Bookmarks">
-        <BookmarkIcon class="inline-flex" size="16px" />
-      </Button>
-      <TooltipContent slot="tooltip-content">
-        <div>Save and share dashboard views.</div>
-        <div class=" text-[10px] mt-1">Click to learn more</div>
-      </TooltipContent>
-    </Tooltip>
-    {#if $alertsFlag}
-      <Tooltip distance={8}>
-        <Button type="secondary" compact gray href="https://docs.rilldata.com/explore/alerts" target="_blank" label="Create alert">
-          <BellPlusIcon class="inline-flex" size="16px" />
+    <!-- Home View -->
+    <Popover.Root>
+      <Popover.Trigger asChild let:builder>
+        <Button type="secondary" compact gray builders={[builder]} label="Home">
+          <HomeBookmark size="16px" />
         </Button>
-        <TooltipContent slot="tooltip-content">
-          <div>Get notified when metrics change.</div>
-          <div class=" text-[10px] mt-1">Click to learn more</div>
-        </TooltipContent>
-      </Tooltip>
+      </Popover.Trigger>
+      <Popover.Content align="end" class="w-64">
+        <div class="flex flex-col gap-y-3">
+          <div>
+            <p class="text-sm font-semibold" style="color: var(--fg-primary)">Default Home View</p>
+            <p class="text-xs mt-1" style="color: var(--fg-muted)">Set a default dashboard view for all users. They'll see the exact filters and settings you've configured.</p>
+          </div>
+          <Button type="primary" href="/deploy" compact>
+            <Rocket size="14px" />
+            Deploy to unlock
+          </Button>
+        </div>
+      </Popover.Content>
+    </Popover.Root>
+
+    <!-- Bookmarks -->
+    <Popover.Root>
+      <Popover.Trigger asChild let:builder>
+        <Button type="secondary" compact gray builders={[builder]} label="Bookmarks">
+          <BookmarkIcon class="inline-flex" size="16px" />
+        </Button>
+      </Popover.Trigger>
+      <Popover.Content align="end" class="w-64">
+        <div class="flex flex-col gap-y-3">
+          <div>
+            <p class="text-sm font-semibold" style="color: var(--fg-primary)">Bookmarks</p>
+            <p class="text-xs mt-1" style="color: var(--fg-muted)">Save and share specific dashboard views with your team. Keep track of important metric combinations and filter states.</p>
+          </div>
+          <Button type="primary" href="/deploy" compact>
+            <Rocket size="14px" />
+            Deploy to unlock
+          </Button>
+        </div>
+      </Popover.Content>
+    </Popover.Root>
+
+    <!-- Alerts -->
+    {#if $alertsFlag}
+      <Popover.Root>
+        <Popover.Trigger asChild let:builder>
+          <Button type="secondary" compact gray builders={[builder]} label="Create alert">
+            <BellPlusIcon class="inline-flex" size="16px" />
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content align="end" class="w-64">
+          <div class="flex flex-col gap-y-3">
+            <div>
+              <p class="text-sm font-semibold" style="color: var(--fg-primary)">Alerts</p>
+              <p class="text-xs mt-1" style="color: var(--fg-muted)">Get notified when metrics change beyond thresholds you define. Receive alerts via email, Slack, or webhooks.</p>
+            </div>
+            <Button type="primary" href="/deploy" compact>
+              <Rocket size="14px" />
+              Deploy to unlock
+            </Button>
+          </div>
+        </Popover.Content>
+      </Popover.Root>
     {/if}
-    <Tooltip distance={8}>
-      <Button type="secondary" gray href="https://docs.rilldata.com/explore/public-url" target="_blank">Share</Button>
-      <TooltipContent slot="tooltip-content">
-        <div>Share dashboards with your team.</div>
-        <div class=" text-[10px] mt-1">Click to learn more</div>
-      </TooltipContent>
-    </Tooltip>
+
+    <!-- Share -->
+    <Popover.Root>
+      <Popover.Trigger asChild let:builder>
+        <Button type="secondary" gray builders={[builder]}>Share</Button>
+      </Popover.Trigger>
+      <Popover.Content align="end" class="w-64">
+        <div class="flex flex-col gap-y-3">
+          <div>
+            <p class="text-sm font-semibold" style="color: var(--fg-primary)">Share Dashboards</p>
+            <p class="text-xs mt-1" style="color: var(--fg-muted)">Share dashboards with your team using public URLs, embed them in other tools, or set up role-based access controls.</p>
+          </div>
+          <Button type="primary" href="/deploy" compact>
+            <Rocket size="14px" />
+            Deploy to unlock
+          </Button>
+        </div>
+      </Popover.Content>
+    </Popover.Root>
   {/if}
   {#if !$readOnly && !inPreviewMode}
     <DropdownMenu.Root>

@@ -27,6 +27,7 @@
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
+  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
   import DevModeNav from "./dev-mode-nav.svelte";
@@ -44,10 +45,20 @@
 
   let removeJavascriptListeners: () => void;
 
-  // previewMode comes from server (rill start --preview), defaults to false
-  $: previewMode = data.previewMode ?? false;
-
   onMount(async () => {
+    // If server says preview or previewer mode, lock into preview.
+    // Otherwise, respect the localStorage-persisted preference.
+    const serverPreviewMode = data.previewMode ?? false;
+    const serverPreviewerMode = data.previewerMode ?? false;
+    if (serverPreviewMode || serverPreviewerMode) {
+      previewModeStore.set(true);
+    }
+
+    // If in preview mode and on root, redirect to /home
+    if ($previewModeStore && window.location.pathname === "/") {
+      goto("/home");
+    }
+
     const config = await localServiceGetMetadata();
 
     const shouldSendAnalytics =
@@ -80,17 +91,7 @@
 
   $: ({ route } = $page);
 
-  $: isDevMode = route.id?.includes("preview") ||
-    route.id?.includes("edit") ||
-    route.id?.includes("status") ||
-    route.id?.includes("settings") ||
-    route.id?.includes("home");
-
-  $: mode = previewMode ? "Preview" : "Developer";
-
   $: onDeployPage = isDeployPage($page);
-
-  $: previewModeStore.set(previewMode);
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -100,11 +101,12 @@
         <BannerCenter />
         <RepresentingUserBanner />
         <ApplicationHeader
-          {mode}
-          logoHref={previewMode ? "/home" : "/"}
-          breadcrumbResourceHref={(name, kind) => `/${kind}/${name}`}
+          logoHref={$previewModeStore ? "/home" : "/"}
+          breadcrumbResourceHref={$previewModeStore ? (name, kind) => `/${kind}/${name}` : undefined}
+          noBorder={$previewModeStore}
+          previewerMode={data.previewerMode ?? false}
         />
-        {#if previewMode && !$page.url.pathname.startsWith('/files') && !$page.url.pathname.startsWith('/explore') && !$page.url.pathname.startsWith('/canvas') && !onDeployPage}
+        {#if $previewModeStore && !$page.url.pathname.startsWith('/files') && !$page.url.pathname.startsWith('/explore') && !$page.url.pathname.startsWith('/canvas') && !onDeployPage}
           <DevModeNav />
         {/if}
         {#if $deploy}
@@ -143,10 +145,5 @@
   /* Prevent trackpad navigation (like other code editors, like vscode.dev). */
   :global(body) {
     overscroll-behavior: none;
-  }
-
-  /* Remove border from application header */
-  :global(header) {
-    border-bottom: none !important;
   }
 </style>

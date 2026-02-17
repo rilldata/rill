@@ -134,16 +134,16 @@
   }
 </script>
 
-<div class="h-full w-full flex flex-col bg-white dark:bg-gray-950 overflow-hidden">
+<div class="h-full w-full flex flex-col overflow-hidden" style="background: var(--surface-base)">
   <div class="flex-1 overflow-auto flex flex-col items-center">
     <div class="w-full max-w-6xl p-8">
       <!-- Header -->
       <div class="mb-6">
         <div class="mb-4">
-          <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
+          <h2 class="text-2xl font-semibold mb-1" style="color: var(--fg-primary)">
             Dashboards
           </h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-sm" style="color: var(--fg-secondary)">
             {dashboards.length} dashboard{dashboards.length !== 1 ? "s" : ""} available
           </p>
         </div>
@@ -154,7 +154,8 @@
             type="text"
             placeholder="Search dashboards..."
             bind:value={searchQuery}
-            class="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style="border-color: var(--border); background: var(--surface-subtle); color: var(--fg-primary)"
           />
         {/if}
       </div>
@@ -169,47 +170,45 @@
       <!-- Loading State -->
       {#if $resourcesQuery.isLoading && dashboards.length === 0}
         <div class="flex items-center justify-center py-12">
-          <p class="text-gray-500 dark:text-gray-400">Loading dashboards...</p>
+          <p style="color: var(--fg-muted)">Loading dashboards...</p>
         </div>
       {:else if dashboards.length === 0}
         <!-- Empty State -->
-        <div class="flex items-center justify-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded">
+        <div class="flex items-center justify-center py-12 border-2 border-dashed rounded" style="border-color: var(--border)">
           <div class="text-center">
-            <p class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <p class="text-lg font-medium mb-2" style="color: var(--fg-primary)">
               No dashboards found
             </p>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
+            <p class="text-sm" style="color: var(--fg-secondary)">
               Create a metrics view or dashboard to get started
             </p>
           </div>
         </div>
       {:else if filteredDashboards.length === 0}
         <!-- No Results from Search -->
-        <div class="flex items-center justify-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded">
+        <div class="flex items-center justify-center py-12 border-2 border-dashed rounded" style="border-color: var(--border)">
           <div class="text-center">
-            <p class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <p class="text-lg font-medium mb-2" style="color: var(--fg-primary)">
               No dashboards match "{searchQuery}"
             </p>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
+            <p class="text-sm" style="color: var(--fg-secondary)">
               Try a different search term
             </p>
           </div>
         </div>
       {:else}
         <!-- Dashboard List -->
-        <div class="space-y-0 w-full border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
+        <div class="space-y-0 w-full border rounded overflow-hidden" style="border-color: var(--border)">
           {#each filteredDashboards as dashboard, i (dashboard.name)}
             <Tooltip distance={4} alignment="start" suppress={!dashboard.hasError}>
               <button
                 type="button"
                 class:border-t={i > 0}
-                class:border-gray-200={i > 0}
-                class:dark:border-gray-800={i > 0}
+                style:border-color={i > 0 ? 'var(--border)' : undefined}
                 on:click={() => navigateToDashboard(dashboard)}
                 disabled={dashboard.hasError}
-                class="flex flex-col gap-y-1 group px-4 py-2.5 w-full transition-colors text-left"
-                class:hover:bg-gray-50={!dashboard.hasError}
-                class:dark:hover:bg-gray-900={!dashboard.hasError}
+                class="flex flex-col gap-y-1 group px-4 py-2.5 w-full transition-colors text-left dashboard-row"
+                class:hoverable={!dashboard.hasError}
                 class:cursor-pointer={!dashboard.hasError}
                 class:opacity-60={dashboard.hasError}
               >
@@ -220,7 +219,7 @@
                     ? ResourceKind.Explore
                     : ResourceKind.Canvas}
                 />
-                <span class="text-sm font-semibold truncate" class:text-red-600={dashboard.hasError} class:dark:text-red-400={dashboard.hasError} class:text-gray-700={!dashboard.hasError} class:dark:text-gray-100={!dashboard.hasError} class:group-hover:text-primary-600={!dashboard.hasError} class:dark:group-hover:text-primary-400={!dashboard.hasError}>
+                <span class="text-sm font-semibold truncate dashboard-name" class:text-red-600={dashboard.hasError} class:dark:text-red-400={dashboard.hasError} class:group-hover:text-primary-600={!dashboard.hasError} class:dark:group-hover:text-primary-400={!dashboard.hasError} style:color={!dashboard.hasError ? 'var(--fg-primary)' : undefined}>
                   {getDisplayName(dashboard)}
                 </span>
                 {#if dashboard.hasError}
@@ -231,7 +230,7 @@
               </div>
 
               <!-- Bottom row: File Path on left, Last Refreshed and Description on right -->
-              <div class="flex gap-x-1 text-xs font-normal min-h-[16px] overflow-hidden" class:text-red-500={dashboard.hasError} class:dark:text-red-400={dashboard.hasError} class:text-gray-500={!dashboard.hasError} class:dark:text-gray-400={!dashboard.hasError}>
+              <div class="flex gap-x-1 text-xs font-normal min-h-[16px] overflow-hidden" class:text-red-500={dashboard.hasError} class:dark:text-red-400={dashboard.hasError} style:color={!dashboard.hasError ? 'var(--fg-muted)' : undefined}>
                 <span class="shrink-0">
                   {dashboard.fullPath || dashboard.name}
                 </span>
@@ -258,3 +257,9 @@
     </div>
   </div>
 </div>
+
+<style lang="postcss">
+  .dashboard-row.hoverable:hover {
+    background: var(--surface-subtle);
+  }
+</style>

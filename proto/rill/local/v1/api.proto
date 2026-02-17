@@ -86,6 +86,7 @@ message GetMetadataResponse {
   string login_url = 12;
   string admin_url = 13;
   bool preview_mode = 14;
+  bool previewer_mode = 15;
 }
 
 message GetVersionRequest {}

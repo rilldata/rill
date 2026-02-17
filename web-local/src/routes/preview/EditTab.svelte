@@ -4,7 +4,6 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import {
     resourceIconMapping,
-    resourceColorMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -231,12 +230,12 @@
 
 <svelte:window on:click={closeContextMenu} />
 
-<div class="h-full w-full flex bg-white dark:bg-gray-950">
+<div class="h-full w-full flex" style="background: var(--surface-base)">
   <!-- Sidebar -->
-  <div class="w-80 max-w-sm border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex flex-col">
+  <div class="w-80 max-w-sm border-r flex flex-col" style="border-color: var(--border); background: var(--surface-subtle)">
     <!-- Header -->
-    <div class="p-4 border-b border-gray-200 dark:border-gray-800">
-      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">
+    <div class="p-4 border-b" style="border-color: var(--border)">
+      <h2 class="text-sm font-semibold" style="color: var(--fg-primary)">
         {selectedResource?.name || "Resources"}
       </h2>
     </div>
@@ -251,7 +250,7 @@
 
       {#if loading && allResources.length === 0}
         <div class="p-4 text-center">
-          <p class="text-sm text-gray-500 dark:text-gray-400">Loading resources...</p>
+          <p class="text-sm" style="color: var(--fg-muted)">Loading resources...</p>
         </div>
       {:else if metricsResources.length > 0 || dashboardResources.length > 0}
         <!-- Metrics Section -->
@@ -259,7 +258,7 @@
           <div class="py-2">
             <button
               on:click={() => resourceSectionState.toggle("metrics")}
-              class="w-full flex items-center gap-1 px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              class="w-full flex items-center gap-1 px-3 py-1.5 transition-colors section-toggle"
             >
               <div class="flex-shrink-0 w-4 h-4 flex items-center justify-center">
                 <CaretDownIcon
@@ -267,7 +266,7 @@
                   class={`transition-transform ${!$resourceSectionState.metrics ? "-rotate-90" : ""}`}
                 />
               </div>
-              <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+              <h3 class="text-xs font-semibold uppercase tracking-wide" style="color: var(--fg-muted)">
                 Metric Views ({metricsResources.length})
               </h3>
             </button>
@@ -276,13 +275,14 @@
               <ul class="list-none p-0 m-0 w-full">
               {#each metricsResources as resource, idx (resource.name)}
                 <li
-                  class={`block w-full border border-gray-200 dark:border-gray-700 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 relative ${
+                  class={`block w-full border transition-colors resource-row relative ${
                     idx === 0 ? "rounded-t-lg" : "border-t-0"
                   } ${
                     idx === metricsResources.length - 1 ? "rounded-b-lg" : ""
                   } ${
                     resource.error ? "border-l-4 border-l-red-600" : ""
                   }`}
+                  style="border-color: var(--border)"
                   on:mouseenter={() => (hoveredResource = resource.name)}
                   on:mouseleave={() => (hoveredResource = null)}
                 >
@@ -292,11 +292,11 @@
                     class="flex items-center gap-x-3 group px-4 py-3 w-full"
                   >
                     <!-- Icon Container -->
-                    <div class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center" style={`background-color: ${resourceColorMapping[resource.kind]}20`}>
+                    <div class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center" style="background: var(--surface-subtle)">
                       <svelte:component
                         this={resourceIconMapping[resource.kind]}
                         size="20px"
-                        color={resourceColorMapping[resource.kind]}
+                        color="var(--fg-secondary)"
                       />
                     </div>
 
@@ -305,11 +305,13 @@
                       <div class={`text-sm font-semibold truncate ${
                         resource.error
                           ? "text-red-600 dark:text-red-400"
-                          : "text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400"
-                      }`}>
+                          : "resource-name"
+                      }`}
+                        style:color={!resource.error ? 'var(--fg-secondary)' : undefined}
+                      >
                         {resource.name}
                       </div>
-                      <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div class="text-xs truncate" style="color: var(--fg-muted)">
                         {resource.path || "No path"}
                       </div>
                     </div>
@@ -348,7 +350,7 @@
           <div class="py-2">
             <button
               on:click={() => resourceSectionState.toggle("dashboards")}
-              class="w-full flex items-center gap-1 px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              class="w-full flex items-center gap-1 px-3 py-1.5 transition-colors section-toggle"
             >
               <div class="flex-shrink-0 w-4 h-4 flex items-center justify-center">
                 <CaretDownIcon
@@ -356,7 +358,7 @@
                   class={`transition-transform ${!$resourceSectionState.dashboards ? "-rotate-90" : ""}`}
                 />
               </div>
-              <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+              <h3 class="text-xs font-semibold uppercase tracking-wide" style="color: var(--fg-muted)">
                 Dashboards ({dashboardResources.length})
               </h3>
             </button>
@@ -365,13 +367,14 @@
               <ul class="list-none p-0 m-0 w-full">
               {#each dashboardResources as resource, idx (resource.name)}
                 <li
-                  class={`block w-full border border-gray-200 dark:border-gray-700 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 relative ${
+                  class={`block w-full border transition-colors resource-row relative ${
                     idx === 0 ? "rounded-t-lg" : "border-t-0"
                   } ${
                     idx === dashboardResources.length - 1 ? "rounded-b-lg" : ""
                   } ${
                     resource.error ? "border-l-4 border-l-red-600" : ""
                   }`}
+                  style="border-color: var(--border)"
                   on:mouseenter={() => (hoveredResource = resource.name)}
                   on:mouseleave={() => (hoveredResource = null)}
                 >
@@ -381,11 +384,11 @@
                     class="flex items-center gap-x-3 group px-4 py-3 w-full"
                   >
                     <!-- Icon Container -->
-                    <div class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center" style={`background-color: ${resourceColorMapping[resource.kind]}20`}>
+                    <div class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center" style="background: var(--surface-subtle)">
                       <svelte:component
                         this={resourceIconMapping[resource.kind]}
                         size="20px"
-                        color={resourceColorMapping[resource.kind]}
+                        color="var(--fg-secondary)"
                       />
                     </div>
 
@@ -394,11 +397,13 @@
                       <div class={`text-sm font-semibold truncate ${
                         resource.error
                           ? "text-red-600 dark:text-red-400"
-                          : "text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400"
-                      }`}>
+                          : "resource-name"
+                      }`}
+                        style:color={!resource.error ? 'var(--fg-secondary)' : undefined}
+                      >
                         {resource.name}
                       </div>
-                      <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div class="text-xs truncate" style="color: var(--fg-muted)">
                         {resource.path || "No path"}
                       </div>
                     </div>
@@ -434,23 +439,24 @@
       {:else}
         <!-- Empty State -->
         <div class="p-4 text-center">
-          <p class="text-sm text-gray-500 dark:text-gray-400">No resources yet</p>
+          <p class="text-sm" style="color: var(--fg-muted)">No resources yet</p>
         </div>
       {/if}
     </div>
 
     <!-- Footer -->
-    <div class="border-t border-gray-200 dark:border-gray-800 p-3 space-y-2">
+    <div class="border-t p-3 space-y-2" style="border-color: var(--border)">
       <div class="flex items-center justify-between gap-2">
         {#if selectedResource?.path}
-          <span class="text-xs text-gray-500 dark:text-gray-400 truncate">
+          <span class="text-xs truncate" style="color: var(--fg-muted)">
             {selectedResource.path}
           </span>
         {/if}
         <button
           on:click={loadResources}
           disabled={loading}
-          class="flex-shrink-0 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50"
+          class="flex-shrink-0 px-3 py-2 text-sm rounded transition-colors disabled:opacity-50 refresh-btn"
+          style="color: var(--fg-secondary)"
         >
           {loading ? "Refreshing..." : "Refresh"}
         </button>
@@ -463,12 +469,12 @@
     {#if workspace && fileArtifact}
       <svelte:component this={workspace} {fileArtifact} hideCodeToggle={true} />
     {:else}
-      <div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+      <div class="flex items-center justify-center h-full" style="color: var(--fg-muted)">
         <div class="text-center">
-          <p class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          <p class="text-lg font-medium mb-2" style="color: var(--fg-primary)">
             Edit Resources
           </p>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="text-sm" style="color: var(--fg-muted)">
             Click a resource from the sidebar to edit it
           </p>
         </div>
@@ -479,18 +485,20 @@
   <!-- Context Menu -->
   {#if contextMenuResource && contextMenuPos}
     <div
-      class="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg"
-      style={`left: ${contextMenuPos.x}px; top: ${contextMenuPos.y}px;`}
+      class="fixed z-50 border rounded shadow-lg context-menu"
+      style={`left: ${contextMenuPos.x}px; top: ${contextMenuPos.y}px; background: var(--surface-base); border-color: var(--border)`}
     >
       <button
         on:click={() => handleRefreshResource(contextMenuResource)}
-        class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
+        class="w-full text-left px-4 py-2 text-sm border-b context-menu-item"
+        style="color: var(--fg-secondary); border-color: var(--border)"
       >
         Refresh
       </button>
       <button
         on:click={() => handleRenameResource(contextMenuResource)}
-        class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
+        class="w-full text-left px-4 py-2 text-sm border-b context-menu-item"
+        style="color: var(--fg-secondary); border-color: var(--border)"
       >
         Rename
       </button>
@@ -503,3 +511,29 @@
     </div>
   {/if}
 </div>
+
+<style lang="postcss">
+  .section-toggle:hover {
+    background: var(--surface-subtle);
+  }
+
+  .resource-row:hover {
+    background: var(--surface-subtle);
+  }
+
+  .resource-name {
+    color: var(--fg-secondary);
+  }
+
+  :global(.group):hover .resource-name {
+    color: var(--fg-primary);
+  }
+
+  .refresh-btn:hover {
+    background: var(--surface-subtle);
+  }
+
+  .context-menu-item:hover {
+    background: var(--surface-subtle);
+  }
+</style>
