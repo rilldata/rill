@@ -7,7 +7,6 @@ import {
   createRuntimeServicePing,
   createConnectorServiceOLAPListTables,
   createConnectorServiceOLAPGetTable,
-  createQueryServiceTableCardinality,
   type V1ListResourcesResponse,
   type V1OlapTableInfo,
   type V1Resource,
@@ -130,6 +129,7 @@ export function useTableMetadata(
       const subscriptions: Array<() => void> = [];
 
       const completedTables = new Set<string>();
+      const erroredTables = new Set<string>();
       const totalOperations = tableNames.length;
 
       // Helper to update and notify
@@ -138,7 +138,7 @@ export function useTableMetadata(
         set({
           data: { isView, columnCount },
           isLoading,
-          isError: false,
+          isError: erroredTables.size > 0,
         });
       };
 
@@ -166,98 +166,9 @@ export function useTableMetadata(
           if (result.data?.schema?.fields !== undefined) {
             columnCount.set(tableName, result.data.schema.fields.length);
           }
-          // Only mark complete when the query has finished loading
-          if (!result.isLoading) {
-            completedTables.add(tableName);
-          }
-          updateAndNotify();
-        });
-
-        subscriptions.push(unsubscribe);
-      }
-
-      // Return cleanup function
-      return () => {
-        subscriptions.forEach((unsub) => unsub());
-      };
-    },
-  );
-}
-
-/** Type for the table cardinality store result */
-export type TableCardinalityResult = {
-  data: {
-    rowCount: Map<string, number>;
-  };
-  isLoading: boolean;
-  isError: boolean;
-};
-
-/**
- * Fetches row count (cardinality) for each table.
- */
-export function useTableCardinality(
-  instanceId: string,
-  tables: V1OlapTableInfo[] | undefined,
-): Readable<TableCardinalityResult> {
-  // If no tables, return empty store immediately
-  if (!tables || tables.length === 0) {
-    return readable(
-      {
-        data: {
-          rowCount: new Map<string, number>(),
-        },
-        isLoading: false,
-        isError: false,
-      },
-      () => {},
-    );
-  }
-
-  return readable<TableCardinalityResult>(
-    {
-      data: {
-        rowCount: new Map<string, number>(),
-      },
-      isLoading: true,
-      isError: false,
-    },
-    (set) => {
-      const rowCount = new Map<string, number>();
-      const tableNames = (tables ?? [])
-        .map((t) => t.name)
-        .filter((n) => !!n) as string[];
-      const subscriptions: Array<() => void> = [];
-
-      const completedTables = new Set<string>();
-      const totalOperations = tableNames.length;
-
-      // Helper to update and notify
-      const updateAndNotify = () => {
-        const isLoading = completedTables.size < totalOperations;
-        set({
-          data: { rowCount },
-          isLoading,
-          isError: false,
-        });
-      };
-
-      // Fetch cardinality for each table in parallel
-      for (const tableName of tableNames) {
-        const cardinalityQuery = createQueryServiceTableCardinality(
-          instanceId,
-          tableName,
-          {},
-          {
-            query: {
-              enabled: !!instanceId && !!tableName,
-            },
-          },
-        );
-
-        const unsubscribe = cardinalityQuery.subscribe((result) => {
-          if (result.data?.cardinality !== undefined) {
-            rowCount.set(tableName, parseInt(result.data.cardinality, 10) || 0);
+          // Track errors
+          if (result.isError) {
+            erroredTables.add(tableName);
           }
           // Only mark complete when the query has finished loading
           if (!result.isLoading) {

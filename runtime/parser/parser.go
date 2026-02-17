@@ -634,13 +634,12 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 	// NOTE 2: Using a map since the two-way check (necessary for reparses) may match the same resource twice.
 	modelsWithNameErrs := make(map[ResourceName]string)
 	for _, r := range p.insertedResources {
-		switch r.Name.Kind {
-		case ResourceKindSource:
+		if r.Name.Kind == ResourceKindSource {
 			n := ResourceName{Kind: ResourceKindModel, Name: r.Name.Name}.Normalized()
 			if _, ok := p.Resources[n]; ok {
 				modelsWithNameErrs[n] = r.Name.Name
 			}
-		case ResourceKindModel:
+		} else if r.Name.Kind == ResourceKindModel {
 			n := ResourceName{Kind: ResourceKindSource, Name: r.Name.Name}.Normalized()
 			if r2, ok := p.Resources[n]; ok {
 				modelsWithNameErrs[r.Name.Normalized()] = r2.Name.Name

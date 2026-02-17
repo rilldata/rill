@@ -6,7 +6,7 @@
     V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import { compareSizesDescending } from "./utils";
+  import { compareSizes } from "./utils";
   import ModelSizeCell from "./ModelSizeCell.svelte";
   import NameCell from "../resource-table/NameCell.svelte";
   import MaterializationCell from "./MaterializationCell.svelte";
@@ -74,7 +74,7 @@
       sortingFn: (rowA, rowB) => {
         const sizeA = rowA.getValue("size") as string | number | undefined;
         const sizeB = rowB.getValue("size") as string | number | undefined;
-        return compareSizesDescending(sizeA, sizeB);
+        return compareSizes(sizeA, sizeB);
       },
       cell: ({ getValue }) =>
         flexRender(ModelSizeCell, {

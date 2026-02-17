@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   filterTemporaryTables,
+  isLikelyView,
   parseSizeForSorting,
-  compareSizesDescending,
-  formatLogTime,
-  getLogLevelClass,
-  getLogLevelLabel,
+  compareSizes,
   formatModelSize,
   isModelPartitioned,
   isModelIncremental,
@@ -67,6 +65,28 @@ describe("tables utils", () => {
     });
   });
 
+  describe("isLikelyView", () => {
+    it("returns true when viewFlag is true", () => {
+      expect(isLikelyView(true, "1024")).toBe(true);
+    });
+
+    it("returns true when physicalSizeBytes is '-1'", () => {
+      expect(isLikelyView(false, "-1")).toBe(true);
+    });
+
+    it("returns true when physicalSizeBytes is 0", () => {
+      expect(isLikelyView(false, 0)).toBe(true);
+    });
+
+    it("returns true when physicalSizeBytes is undefined", () => {
+      expect(isLikelyView(false, undefined)).toBe(true);
+    });
+
+    it("returns false for a table with valid size", () => {
+      expect(isLikelyView(false, "1024")).toBe(false);
+    });
+  });
+
   describe("parseSizeForSorting", () => {
     it("returns -1 for undefined", () => {
       expect(parseSizeForSorting(undefined)).toBe(-1);
@@ -80,92 +100,46 @@ describe("tables utils", () => {
       expect(parseSizeForSorting("-1")).toBe(-1);
     });
 
+    it("returns 0 for 0", () => {
+      expect(parseSizeForSorting(0)).toBe(0);
+    });
+
     it("returns number as-is", () => {
       expect(parseSizeForSorting(1024)).toBe(1024);
-      expect(parseSizeForSorting(0)).toBe(-1); // 0 is falsy
     });
 
     it("parses string to number", () => {
       expect(parseSizeForSorting("1024")).toBe(1024);
       expect(parseSizeForSorting("999999")).toBe(999999);
     });
+
+    it("returns -1 for non-numeric strings", () => {
+      expect(parseSizeForSorting("abc")).toBe(-1);
+    });
   });
 
-  describe("compareSizesDescending", () => {
-    it("sorts larger sizes first (descending)", () => {
-      expect(compareSizesDescending(100, 200)).toBeGreaterThan(0);
-      expect(compareSizesDescending(200, 100)).toBeLessThan(0);
-      expect(compareSizesDescending(100, 100)).toBe(0);
+  describe("compareSizes", () => {
+    it("sorts smaller sizes first (ascending)", () => {
+      expect(compareSizes(100, 200)).toBeLessThan(0);
+      expect(compareSizes(200, 100)).toBeGreaterThan(0);
+      expect(compareSizes(100, 100)).toBe(0);
     });
 
     it("handles string sizes", () => {
-      expect(compareSizesDescending("100", "200")).toBeGreaterThan(0);
-      expect(compareSizesDescending("200", "100")).toBeLessThan(0);
+      expect(compareSizes("100", "200")).toBeLessThan(0);
+      expect(compareSizes("200", "100")).toBeGreaterThan(0);
     });
 
     it("handles mixed string and number", () => {
-      expect(compareSizesDescending(100, "200")).toBeGreaterThan(0);
-      expect(compareSizesDescending("200", 100)).toBeLessThan(0);
+      expect(compareSizes(100, "200")).toBeLessThan(0);
+      expect(compareSizes("200", 100)).toBeGreaterThan(0);
     });
 
-    it("puts undefined/invalid values last", () => {
-      expect(compareSizesDescending(100, undefined)).toBeLessThan(0);
-      expect(compareSizesDescending(undefined, 100)).toBeGreaterThan(0);
-      expect(compareSizesDescending(undefined, undefined)).toBe(0);
+    it("puts undefined/invalid values first (as -1)", () => {
+      expect(compareSizes(100, undefined)).toBeGreaterThan(0);
+      expect(compareSizes(undefined, 100)).toBeLessThan(0);
+      expect(compareSizes(undefined, undefined)).toBe(0);
     });
-  });
-
-  describe("formatLogTime", () => {
-    it("returns empty string for undefined", () => {
-      expect(formatLogTime(undefined)).toBe("");
-    });
-
-    it("returns empty string for empty string", () => {
-      expect(formatLogTime("")).toBe("");
-    });
-
-    it("formats ISO timestamp to locale time", () => {
-      // Use a fixed timestamp to test formatting
-      const result = formatLogTime("2024-01-15T14:30:45.000Z");
-      // Result will vary by locale, but should contain time components
-      expect(result).toMatch(/\d{1,2}:\d{2}:\d{2}/);
-    });
-  });
-
-  describe("getLogLevelClass", () => {
-    const testCases: [string | undefined, string][] = [
-      ["LOG_LEVEL_ERROR", "text-red-600"],
-      ["LOG_LEVEL_FATAL", "text-red-600"],
-      ["LOG_LEVEL_WARN", "text-yellow-600"],
-      ["LOG_LEVEL_INFO", "text-fg-muted"],
-      ["LOG_LEVEL_DEBUG", "text-fg-muted"],
-      [undefined, "text-fg-muted"],
-      ["UNKNOWN", "text-fg-muted"],
-    ];
-
-    for (const [level, expectedClass] of testCases) {
-      it(`getLogLevelClass(${JSON.stringify(level)}) = ${expectedClass}`, () => {
-        expect(getLogLevelClass(level)).toBe(expectedClass);
-      });
-    }
-  });
-
-  describe("getLogLevelLabel", () => {
-    const testCases: [string | undefined, string][] = [
-      ["LOG_LEVEL_ERROR", "ERROR"],
-      ["LOG_LEVEL_FATAL", "FATAL"],
-      ["LOG_LEVEL_WARN", "WARN"],
-      ["LOG_LEVEL_INFO", "INFO"],
-      ["LOG_LEVEL_DEBUG", "DEBUG"],
-      [undefined, "INFO"],
-      ["UNKNOWN", "INFO"],
-    ];
-
-    for (const [level, expectedLabel] of testCases) {
-      it(`getLogLevelLabel(${JSON.stringify(level)}) = ${expectedLabel}`, () => {
-        expect(getLogLevelLabel(level)).toBe(expectedLabel);
-      });
-    }
   });
 
   describe("formatModelSize", () => {

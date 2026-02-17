@@ -20,7 +20,7 @@
     resourceKind: string,
     resource: V1Resource,
   ) => void;
-  export let onViewLogsClick: (name: string) => void;
+  export let onViewLogsClick: (name: string) => void = () => {};
   export let isDropdownOpen: boolean;
   export let onDropdownOpenChange: (isOpen: boolean) => void;
 </script>

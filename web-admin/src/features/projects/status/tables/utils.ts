@@ -19,75 +19,45 @@ export function filterTemporaryTables(
 }
 
 /**
+ * Determines whether a table is likely a view based on its metadata.
+ * Uses the view flag from OLAPGetTable, falling back to size heuristics.
+ */
+export function isLikelyView(
+  viewFlag: boolean | undefined,
+  physicalSizeBytes: string | number | undefined,
+): boolean {
+  return (
+    viewFlag === true ||
+    physicalSizeBytes === "-1" ||
+    physicalSizeBytes === 0 ||
+    !physicalSizeBytes
+  );
+}
+
+/**
  * Parses a size value (string or number) to a number for sorting.
  * Returns -1 for invalid/missing values.
  */
 export function parseSizeForSorting(size: string | number | undefined): number {
-  if (!size || size === "-1") {
+  if (size === undefined || size === null || size === "" || size === "-1") {
     return -1;
   }
-  return typeof size === "number" ? size : parseInt(size, 10);
+  if (typeof size === "number") return size;
+  const parsed = parseInt(size, 10);
+  return isNaN(parsed) ? -1 : parsed;
 }
 
 /**
- * Compares two size values for descending sort order.
- * Used for sorting tables by database size.
+ * Compares two size values for ascending sort order.
+ * TanStack Table handles direction via sortDescFirst.
  */
-export function compareSizesDescending(
+export function compareSizes(
   sizeA: string | number | undefined,
   sizeB: string | number | undefined,
 ): number {
   const numA = parseSizeForSorting(sizeA);
   const numB = parseSizeForSorting(sizeB);
-  return numB - numA;
-}
-
-/**
- * Formats a timestamp string to locale time (HH:MM:SS).
- */
-export function formatLogTime(time: string | undefined): string {
-  if (!time) return "";
-  const date = new Date(time);
-  return date.toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-/**
- * Returns the CSS class for a log level.
- */
-export function getLogLevelClass(level: string | undefined): string {
-  switch (level) {
-    case "LOG_LEVEL_ERROR":
-    case "LOG_LEVEL_FATAL":
-      return "text-red-600";
-    case "LOG_LEVEL_WARN":
-      return "text-yellow-600";
-    default:
-      return "text-fg-muted";
-  }
-}
-
-/**
- * Returns the display label for a log level.
- */
-export function getLogLevelLabel(level: string | undefined): string {
-  switch (level) {
-    case "LOG_LEVEL_ERROR":
-      return "ERROR";
-    case "LOG_LEVEL_FATAL":
-      return "FATAL";
-    case "LOG_LEVEL_WARN":
-      return "WARN";
-    case "LOG_LEVEL_INFO":
-      return "INFO";
-    case "LOG_LEVEL_DEBUG":
-      return "DEBUG";
-    default:
-      return "INFO";
-  }
+  return numA - numB;
 }
 
 // ============================================

@@ -22,7 +22,7 @@
     useTableMetadata,
     useModelResources,
   } from "../selectors";
-  import { filterTemporaryTables } from "./utils";
+  import { filterTemporaryTables, isLikelyView } from "./utils";
   import ResourceSpecDialog from "../resource-table/ResourceSpecDialog.svelte";
   import ModelPartitionsDialog from "./ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "./RefreshErroredPartitionsDialog.svelte";
@@ -120,19 +120,6 @@
     isViewMap,
   );
 
-  /** Must match the heuristic in MaterializationCell.svelte */
-  function isLikelyView(
-    viewFlag: boolean | undefined,
-    physicalSizeBytes: string | number | undefined,
-  ): boolean {
-    return (
-      viewFlag === true ||
-      physicalSizeBytes === "-1" ||
-      physicalSizeBytes === 0 ||
-      !physicalSizeBytes
-    );
-  }
-
   function applyFilters(
     tables: V1OlapTableInfo[],
     search: string,
@@ -202,13 +189,16 @@
     void goto(`${basePath}/logs?q=${encodeURIComponent(name)}`);
   }
 
-  async function handleRefreshErrored() {
+  async function refreshModel(opts: {
+    full?: boolean;
+    allErroredPartitions?: boolean;
+  }) {
     if (!selectedModelName) return;
 
     await $createTrigger.mutateAsync({
       instanceId,
       data: {
-        models: [{ model: selectedModelName, allErroredPartitions: true }],
+        models: [{ model: selectedModelName, ...opts }],
       },
     });
 
@@ -217,35 +207,10 @@
     });
   }
 
-  async function handleIncrementalRefresh() {
-    if (!selectedModelName) return;
-
-    await $createTrigger.mutateAsync({
-      instanceId,
-      data: {
-        models: [{ model: selectedModelName }],
-      },
-    });
-
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-    });
-  }
-
-  async function handleFullRefresh() {
-    if (!selectedModelName) return;
-
-    await $createTrigger.mutateAsync({
-      instanceId,
-      data: {
-        models: [{ model: selectedModelName, full: true }],
-      },
-    });
-
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-    });
-  }
+  const handleRefreshErrored = () =>
+    refreshModel({ allErroredPartitions: true });
+  const handleIncrementalRefresh = () => refreshModel({});
+  const handleFullRefresh = () => refreshModel({ full: true });
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
