@@ -1,54 +1,50 @@
-<!-- PROJECT SETTINGS -->
+<!-- PROJECT STATUS -->
 
 <script lang="ts">
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
-  $: basePage = `/${organization}/${project}/-/settings`;
+  $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   const navItems = [
     {
-      label: "General",
+      label: "Overview",
       route: "",
       hasPermission: true,
     },
     {
-      label: "Environment Variables",
-      route: "/environment-variables",
+      label: "Resources",
+      route: "/resources",
       hasPermission: true,
     },
     {
-      label: "Public URLs",
-      route: "/public-urls",
-      hasPermission: true,
-    },
-    {
-      label: "Token Management",
-      route: "/token-management",
+      label: "Tables",
+      route: "/model-details",
       hasPermission: false,
     },
     {
-      label: "Console",
-      route: "/console",
+      label: "Logs",
+      route: "/logs",
+      hasPermission: true,
+    },
+    {
+      label: "Analytics",
+      route: "/analytics",
       hasPermission: false,
     },
   ];
 </script>
 
-<ContentContainer title="Project settings" maxWidth={1100}>
+<ContentContainer title="Project Status" maxWidth={1100}>
   <div class="container flex-col md:flex-row">
     <LeftNav
       {basePage}
-      baseRoute="/[organization]/[project]/-/settings"
+      baseRoute="/[organization]/[project]/-/status"
       {navItems}
       minWidth="180px"
     />
-    <div class="flex flex-col gap-y-6 w-full">
-      <slot />
-    </div>
+    <slot />
   </div>
 </ContentContainer>
 
