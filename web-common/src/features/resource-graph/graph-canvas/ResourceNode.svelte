@@ -50,6 +50,8 @@
     positionAbsoluteY,
   );
 
+  $: showActions = data?.showNodeActions !== false;
+
   const DEFAULT_COLOR = "#6B7280";
   const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
 
@@ -126,9 +128,11 @@
         <p class="status" class:error={hasError}>{effectiveStatusLabel}</p>
       {/if}
     </div>
-    <div class="actions-trigger">
-      <ResourceNodeActions {data} />
-    </div>
+    {#if showActions}
+      <div class="actions-trigger">
+        <ResourceNodeActions {data} />
+      </div>
+    {/if}
   </div>
   <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
     <div class="error-tooltip-content">

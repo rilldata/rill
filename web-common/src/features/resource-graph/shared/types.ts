@@ -79,6 +79,8 @@ export interface ResourceNodeData extends Record<string, unknown> {
   isRoot?: boolean;
   // Rich metadata for badge indicators
   metadata?: ResourceMetadata;
+  // Whether to show the "..." actions button on this node
+  showNodeActions?: boolean;
 }
 
 /**

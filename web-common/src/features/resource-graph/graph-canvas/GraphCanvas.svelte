@@ -41,6 +41,7 @@
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
   export let onExpand: () => void = () => {};
+  export let showNodeActions = true;
 
   let hasNodes = false;
   const nodesStore = writable<Node<ResourceNodeData>[]>([]);
@@ -247,7 +248,7 @@
     const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map(
       (node) => ({
         ...node,
-        data: { ...node.data, isRoot: rootSet.has(node.id) },
+        data: { ...node.data, isRoot: rootSet.has(node.id), showNodeActions },
       }),
     );
     nodesStore.set(nodesWithRoots);

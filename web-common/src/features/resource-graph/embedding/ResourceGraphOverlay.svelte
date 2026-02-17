@@ -74,6 +74,8 @@
       return [`model:${anchorName}`];
     } else if (anchorKind === ResourceKind.MetricsView) {
       return [`metrics:${anchorName}`];
+    } else if (anchorKind === ResourceKind.Connector) {
+      return [`connector:${anchorName}`];
     }
 
     return undefined;
@@ -175,6 +177,7 @@
                 showCardTitles={false}
                 maxGroups={null}
                 showControls={false}
+                showNodeActions={false}
                 enableExpansion={false}
                 fitViewPadding={0.08}
                 fitViewMinZoom={0.01}

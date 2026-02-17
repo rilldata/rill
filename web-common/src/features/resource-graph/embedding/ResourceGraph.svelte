@@ -38,6 +38,7 @@
   export let enableExpansion = true;
   export let searchQuery = "";
   export let statusFilter: ResourceStatusFilter = [];
+  export let showNodeActions = true;
 
   // New props for modularity
   export let onExpandedChange: ((id: string | null) => void) | null = null;
@@ -575,6 +576,7 @@
                 : false}
               rootNodeIds={groupRootNodeIds(group)}
               {showControls}
+              {showNodeActions}
               showLock={false}
               fillParent={true}
               enableExpand={enableExpansion}
@@ -601,6 +603,7 @@
                   : false}
                 rootNodeIds={groupRootNodeIds(group)}
                 showControls={false}
+                {showNodeActions}
                 showLock={true}
                 fillParent={true}
                 enableExpand={enableExpansion}
