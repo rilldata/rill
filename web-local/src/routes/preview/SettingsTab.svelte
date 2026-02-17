@@ -1,37 +1,14 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
+  import PreviewPlaceholder from "@rilldata/web-common/components/preview/PreviewPlaceholder.svelte";
   import { SettingsIcon } from "lucide-svelte";
-  import Rocket from "svelte-radix/Rocket.svelte";
 </script>
 
-<main
-  class="bg-surface-base size-full pt-8 pb-16 lg:pt-12 flex flex-col items-center px-8 sm:px-16 lg:px-32 2xl:px-40 overflow-y-auto"
-  style="scrollbar-gutter: stable;"
->
-  <section class="w-full flex flex-col gap-y-3" style:max-width="800px">
-    <h1
-      class="text-2xl text-fg-primary font-semibold"
-      aria-label="Container title"
-    >
-      Project settings
-    </h1>
-
-    <div class="flex flex-col items-center gap-y-4 pt-16">
-      <SettingsIcon size="32px" class="text-fg-muted" />
-      <div class="flex flex-col gap-y-2 items-center text-sm">
-        <div class="text-fg-secondary font-semibold">
-          Settings are available on Rill Cloud
-        </div>
-        <div class="text-fg-muted">
-          Deploy your project to manage environment variables, public URLs, and more
-        </div>
-      </div>
-      <div class="mt-4">
-        <Button type="primary" href="/deploy">
-          <Rocket size="16px" />
-          Deploy to Rill Cloud
-        </Button>
-      </div>
-    </div>
-  </section>
-</main>
+<ContentContainer title="Project settings">
+  <PreviewPlaceholder
+    title="Settings are available on Rill Cloud"
+    description="Deploy your project to manage environment variables, public URLs, and more"
+  >
+    <SettingsIcon slot="icon" size="32px" class="text-fg-muted" />
+  </PreviewPlaceholder>
+</ContentContainer>

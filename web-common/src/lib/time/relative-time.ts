@@ -22,3 +22,34 @@ export function getRelativeTime(dateString: string): string {
     return "";
   }
 }
+
+/**
+ * Get human-readable relative time (e.g., "5 minutes ago", "2 days ago")
+ */
+export function timeAgo(date: Date): string {
+  const now = Date.now();
+  const diffMs = now - date.getTime();
+  const diffMinutes = Math.round(diffMs / 60000);
+
+  if (diffMinutes < 1) return "Just now";
+
+  if (diffMinutes < 60)
+    return `${diffMinutes} ${diffMinutes === 1 ? "minute" : "minutes"} ago`;
+
+  const hours = Math.round(diffMs / 3600000);
+  if (hours < 24)
+    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+
+  const days = Math.round(diffMs / 86400000);
+  if (days < 7) return `${days} ${days === 1 ? "day" : "days"} ago`;
+
+  const weeks = Math.round(diffMs / 604800000);
+  if (weeks < 5) return `${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
+
+  const months = Math.round(diffMs / 2592000000);
+  if (months < 12)
+    return `${months} ${months === 1 ? "month" : "months"} ago`;
+
+  const years = Math.round(diffMs / 31536000000);
+  return `${years} ${years === 1 ? "year" : "years"} ago`;
+}

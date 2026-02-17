@@ -4,13 +4,16 @@
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { fly } from "svelte/transition";
   import type { LayoutData } from "../$types";
-  import PreviewTab from "./PreviewTab.svelte";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
+  import DashboardList from "./DashboardList.svelte";
 
   export let data: LayoutData;
 </script>
 
 {#if data.initialized}
-  <PreviewTab />
+  <ContentContainer title="Dashboards" maxWidth={1100}>
+    <DashboardList showSearch />
+  </ContentContainer>
 {:else}
   <div class="scroll" in:fly={{ duration: 1600, delay: 400, y: 8 }}>
     <div class="wrapper column p-10 2xl:py-16">

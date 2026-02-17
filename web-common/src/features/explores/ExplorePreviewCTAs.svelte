@@ -20,25 +20,8 @@
   import { featureFlags } from "../feature-flags";
   import { BookmarkIcon, BellPlusIcon } from "lucide-svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
+  import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import { DateTime, Duration } from "luxon";
-
-  function timeAgo(date: Date): string {
-    const now = DateTime.now();
-    const then = DateTime.fromJSDate(date);
-    const diff = Duration.fromMillis(now.diff(then).milliseconds);
-
-    if (diff.as("minutes") < 1) return "Just now";
-
-    const minutes = Math.round(diff.as("minutes"));
-    if (diff.as("hours") < 1) return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
-
-    const hours = Math.round(diff.as("hours"));
-    if (diff.as("days") < 1) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
-
-    const days = Math.round(diff.as("days"));
-    return `${days} ${days === 1 ? "day" : "days"} ago`;
-  }
 
   export let exploreName: string;
   export let inPreviewMode = false;

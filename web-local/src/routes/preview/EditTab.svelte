@@ -41,8 +41,6 @@
   let loading = false;
   let error: string | null = null;
   let hoveredResource: string | null = null;
-  let contextMenuResource: string | null = null;
-  let contextMenuPos: { x: number; y: number } | null = null;
 
   let selectedResource: Resource | null = null;
   let fileArtifact: any = null;
@@ -179,20 +177,6 @@
     workspace = workspaceComponents.get(kind);
   }
 
-  function getStatusIcon(resource: Resource): string {
-    const state = (resource.state || "").toUpperCase();
-    if (resource.error) return "⚠";
-    if (state === "RECONCILING" || state === "COMPILING") return "⟳";
-    return "✓";
-  }
-
-  function getStatusColor(resource: Resource): string {
-    const state = (resource.state || "").toUpperCase();
-    if (resource.error) return "text-red-600 dark:text-red-400";
-    if (state === "RECONCILING" || state === "COMPILING") return "text-yellow-600 dark:text-yellow-400";
-    return "text-green-600 dark:text-green-400";
-  }
-
   function getStatusText(resource: Resource): string {
     const state = (resource.state || "").toUpperCase();
     if (resource.error) return "Error";
@@ -201,34 +185,7 @@
     return state.charAt(0) + state.slice(1).toLowerCase();
   }
 
-  function handleContextMenu(e: MouseEvent, resourceName: string) {
-    e.preventDefault();
-    contextMenuResource = resourceName;
-    contextMenuPos = { x: e.clientX, y: e.clientY };
-  }
-
-  function closeContextMenu() {
-    contextMenuResource = null;
-    contextMenuPos = null;
-  }
-
-  function handleDeleteResource(resourceName: string) {
-    console.log("Delete resource:", resourceName);
-    closeContextMenu();
-  }
-
-  function handleRefreshResource(resourceName: string) {
-    console.log("Refresh resource:", resourceName);
-    closeContextMenu();
-  }
-
-  function handleRenameResource(resourceName: string) {
-    console.log("Rename resource:", resourceName);
-    closeContextMenu();
-  }
 </script>
-
-<svelte:window on:click={closeContextMenu} />
 
 <div class="h-full w-full flex" style="background: var(--surface-base)">
   <!-- Sidebar -->
@@ -288,7 +245,7 @@
                 >
                   <button
                     on:click={() => navigateToEditor(resource)}
-                    on:contextmenu={(e) => handleContextMenu(e, resource.name)}
+
                     class="flex items-center gap-x-3 group px-4 py-3 w-full"
                   >
                     <!-- Icon Container -->
@@ -380,7 +337,7 @@
                 >
                   <button
                     on:click={() => navigateToEditor(resource)}
-                    on:contextmenu={(e) => handleContextMenu(e, resource.name)}
+
                     class="flex items-center gap-x-3 group px-4 py-3 w-full"
                   >
                     <!-- Icon Container -->
@@ -482,34 +439,6 @@
     {/if}
   </div>
 
-  <!-- Context Menu -->
-  {#if contextMenuResource && contextMenuPos}
-    <div
-      class="fixed z-50 border rounded shadow-lg context-menu"
-      style={`left: ${contextMenuPos.x}px; top: ${contextMenuPos.y}px; background: var(--surface-base); border-color: var(--border)`}
-    >
-      <button
-        on:click={() => handleRefreshResource(contextMenuResource)}
-        class="w-full text-left px-4 py-2 text-sm border-b context-menu-item"
-        style="color: var(--fg-secondary); border-color: var(--border)"
-      >
-        Refresh
-      </button>
-      <button
-        on:click={() => handleRenameResource(contextMenuResource)}
-        class="w-full text-left px-4 py-2 text-sm border-b context-menu-item"
-        style="color: var(--fg-secondary); border-color: var(--border)"
-      >
-        Rename
-      </button>
-      <button
-        on:click={() => handleDeleteResource(contextMenuResource)}
-        class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-      >
-        Delete
-      </button>
-    </div>
-  {/if}
 </div>
 
 <style lang="postcss">
@@ -530,10 +459,6 @@
   }
 
   .refresh-btn:hover {
-    background: var(--surface-subtle);
-  }
-
-  .context-menu-item:hover {
     background: var(--surface-subtle);
   }
 </style>
