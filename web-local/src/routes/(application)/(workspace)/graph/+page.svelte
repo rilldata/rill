@@ -98,6 +98,9 @@
             undefined,
           ),
         });
+      })
+      .catch((err) => {
+        console.error("Failed to refresh all sources and models:", err);
       });
   }
 </script>

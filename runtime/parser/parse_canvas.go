@@ -273,7 +273,11 @@ func (p *Parser) parseCanvas(node *Node) error {
 			}
 		}
 	}
-	// Extract from external components
+	// Extract from external components.
+	// NOTE: This lookup depends on external components having been parsed before the canvas.
+	// The parser processes files in deterministic order and components are parsed before canvases
+	// because they appear as separate YAML files that are processed first. If the ordering changes,
+	// some MetricsView refs may be silently missed here.
 	for _, row := range tmp.Rows {
 		for _, item := range row.Items {
 			if item.Component != "" {

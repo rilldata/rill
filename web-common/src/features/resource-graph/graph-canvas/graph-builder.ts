@@ -92,12 +92,39 @@ function formatScheduleDescription(
 }
 
 /**
+ * Build a reverse-reference map: resourceId -> { alerts, apis } counts.
+ * Built once in O(M) and queried in O(1) per node, avoiding O(N*M) per-node scanning.
+ */
+function buildReverseRefCounts(
+  resources: V1Resource[],
+): Map<string, { alerts: number; apis: number }> {
+  const counts = new Map<string, { alerts: number; apis: number }>();
+  for (const res of resources) {
+    const resKind = res.meta?.name?.kind;
+    if (
+      resKind !== "rill.runtime.v1.Alert" &&
+      resKind !== "rill.runtime.v1.API"
+    )
+      continue;
+    for (const ref of res.meta?.refs ?? []) {
+      const refId = resourceNameToId(ref);
+      if (!refId) continue;
+      const entry = counts.get(refId) ?? { alerts: 0, apis: 0 };
+      if (resKind === "rill.runtime.v1.Alert") entry.alerts++;
+      else entry.apis++;
+      counts.set(refId, entry);
+    }
+  }
+  return counts;
+}
+
+/**
  * Extract rich metadata from a resource for badge display.
  */
 function extractResourceMetadata(
   resource: V1Resource,
   kind: ResourceKind | undefined,
-  allResources: V1Resource[],
+  reverseRefCounts: Map<string, { alerts: number; apis: number }>,
 ): ResourceMetadata {
   const metadata: ResourceMetadata = {};
 
@@ -244,33 +271,14 @@ function extractResourceMetadata(
     }
   }
 
-  // Count alerts and APIs that reference this resource
+  // Look up alert/API counts from pre-built reverse-reference map (O(1))
   const resourceId = createResourceId(resource.meta);
   if (resourceId) {
-    let alertCount = 0;
-    let apiCount = 0;
-
-    for (const res of allResources) {
-      const resKind = res.meta?.name?.kind;
-      const refs = res.meta?.refs ?? [];
-
-      // Check if this resource references our target
-      const refsTarget = refs.some((ref) => {
-        const refId = resourceNameToId(ref);
-        return refId === resourceId;
-      });
-
-      if (refsTarget) {
-        if (resKind === "rill.runtime.v1.Alert") {
-          alertCount++;
-        } else if (resKind === "rill.runtime.v1.API") {
-          apiCount++;
-        }
-      }
+    const counts = reverseRefCounts.get(resourceId);
+    if (counts) {
+      if (counts.alerts > 0) metadata.alertCount = counts.alerts;
+      if (counts.apis > 0) metadata.apiCount = counts.apis;
     }
-
-    if (alertCount > 0) metadata.alertCount = alertCount;
-    if (apiCount > 0) metadata.apiCount = apiCount;
   }
 
   return metadata;
@@ -330,6 +338,9 @@ export function buildResourceGraph(
   const resourceMap = new Map<string, V1Resource>();
   const nodeDefinitions = new Map<string, Node<ResourceNodeData>>();
 
+  // Build reverse-reference counts once (O(M)) for O(1) per-node lookups
+  const reverseRefCounts = buildReverseRefCounts(resources);
+
   for (const resource of resources) {
     const id = createResourceId(resource.meta);
     if (!id) continue;
@@ -362,7 +373,7 @@ export function buildResourceGraph(
       rank: rankConstraint,
     });
 
-    const metadata = extractResourceMetadata(resource, kind, resources);
+    const metadata = extractResourceMetadata(resource, kind, reverseRefCounts);
 
     const nodeDef: Node<ResourceNodeData> = {
       id,
