@@ -58,7 +58,7 @@
     },
   });
 
-  $: ({ data: fileTree } = $getFileTree);
+  $: ({ data: fileTree } = getFileTree);
 
   let showRenameModelModal = false;
   let renameFilePath: string;

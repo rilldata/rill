@@ -21,8 +21,8 @@
   $: metadata = createLocalServiceGetMetadata();
 
   let loginUrl: string;
-  $: if ($metadata.data?.loginUrl) {
-    const u = new URL($metadata.data.loginUrl);
+  $: if (metadata.data?.loginUrl) {
+    const u = new URL(metadata.data.loginUrl);
     u.searchParams.set(
       "redirect",
       `${window.location.origin}${window.location.pathname}`,
@@ -31,16 +31,16 @@
   }
 
   let logoutUrl: string;
-  $: if ($metadata.data?.loginUrl) {
-    const u = new URL($metadata.data.loginUrl + "/logout");
+  $: if (metadata.data?.loginUrl) {
+    const u = new URL(metadata.data.loginUrl + "/logout");
     u.searchParams.set("redirect", $page.url.href);
     logoutUrl = u.toString();
   }
 
-  $: loggedIn = $user.isSuccess && $user.data?.user;
+  $: loggedIn = user.isSuccess && user.data?.user;
 
-  $: if ($user.data?.user) {
-    initPylonChat($user.data.user);
+  $: if (user.data?.user) {
+    initPylonChat(user.data.user);
   }
   function handlePylon() {
     window.Pylon("show");
@@ -49,7 +49,7 @@
   let photoUrlErrored = false;
 </script>
 
-{#if ($user.isLoading || $metadata.isLoading) && !$user.error && !$metadata.error}
+{#if (user.isLoading || metadata.isLoading) && !user.error && !metadata.error}
   <div class="flex flex-row items-center h-7 mx-1.5">
     <Spinner size="16px" status={EntityStatus.Running} />
   </div>
@@ -59,10 +59,10 @@
       class="flex-none w-7"
       aria-label="Avatar logged {loggedIn ? 'in' : 'out'}"
     >
-      {#if loggedIn && !photoUrlErrored && $user.data && $metadata.data}
+      {#if loggedIn && !photoUrlErrored && user.data && metadata.data}
         <Avatar
-          src={$user.data?.user?.photoUrl}
-          alt={$user.data?.user?.displayName || $user.data?.user?.email}
+          src={user.data?.user?.photoUrl}
+          alt={user.data?.user?.displayName || user.data?.user?.email}
           avatarSize="h-7 w-7"
         />
       {:else}
