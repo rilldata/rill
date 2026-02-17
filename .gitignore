@@ -80,6 +80,7 @@ rill-binary-sa.json
 gha-creds*
 .release-env
 binaries/
+
 # runtime test resources
 !runtime/testdata/**
 sysroot/
@@ -95,3 +96,9 @@ latest.txt
 .claude/**/*.local.md
 .claude/plans/
 .claude/worktrees/
+
+# Vite temp files
+vite.config.ts.timestamp-*
+
+# TypeScript incremental build cache
+*.tsbuildinfo

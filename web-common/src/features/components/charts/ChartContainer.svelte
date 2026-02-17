@@ -142,6 +142,9 @@
                 dimensionsWithInlistFilter={[]}
                 filters={whereFilter}
                 displayTimeRange={$timeAndFilterStore.timeRange}
+                displayComparisonTimeRange={$timeAndFilterStore.showTimeComparison
+                  ? $timeAndFilterStore.comparisonTimeRange
+                  : undefined}
                 queryTimeStart={$timeAndFilterStore.timeRange.start}
                 queryTimeEnd={$timeAndFilterStore.timeRange.end}
                 hasBoldTimeRange={false}
