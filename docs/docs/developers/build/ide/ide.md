@@ -21,21 +21,16 @@ You can edit these files in any IDE, and Rill will automatically detect changes 
 
 ![](https://cdn.rilldata.com/docs/release-notes/36_hot_reload.gif)
 
-## Using AI Agents to Help Build Rill Projects
+## Using AI Agents to Build Rill Projects
 
-You can also use IDEs with integrated AI agents like Cursor or WindSurf to accelerate your Rill development workflow.
+Rill ships built-in instructions that teach AI coding agents like **Claude Code** and **Cursor** how to build Rill projects. A single `rill init` command scaffolds everything your agent needs — resource schemas, best practices, and development conventions.
 
+```bash
+# Add Claude Code instructions to your project
+rill init --template claude
 
-### Best Practices When Using AI Agents
+# Or add Cursor rules
+rill init --template cursor
+```
 
-When working with AI agents, start with clear prompts that specify your Rill version, database engine, and project context. Always review generated code thoroughly rather than copying and pasting without understanding the logic. Test changes incrementally by validating small modifications before implementing larger ones. Cross-reference all parameters and syntax with official Rill documentation to ensure accuracy. Remember to treat AI-generated code as a starting template to refine rather than final production code.
-
-:::warning AI Agent Limitations
-
-**Important**: AI agents can hallucinate parameters, functions, and syntax that don't exist in Rill or your underlying database engine. Always verify:
-- Generated SQL syntax against your database's capabilities
-- YAML configuration parameters against Rill's documentation
-- Function names and parameters for accuracy
-- Generated code in a development environment before production use
-
-:::
+See the **[AI Agents (Claude & Cursor)](/developers/build/ai-agents)** guide for full setup instructions and example prompts.

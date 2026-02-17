@@ -22,9 +22,33 @@ rill start my-rill-project
 
 New to Rill? Follow the [Quickstart](/developers/get-started/quickstart) to build your first dashboard with a public dataset, or browse our [tutorials](/developers/tutorials/).
 
+## Build with AI Agents
+
+Use **Claude Code**, **Cursor**, or other AI coding agents to build Rill projects using natural language. Run `rill init --template claude` to scaffold instructions and skills that teach your agent Rill's resource types, YAML schemas, and development workflow — then start prompting.
+
+```bash
+# Install Rill and create a project
+curl https://rill.sh | sh
+rill init
+
+# Add Claude Code instructions and start building
+rill init --template claude
+claude
+```
+
+Connect to your running Rill instance via MCP for live data introspection and validation:
+
+```bash
+claude mcp add --transport http rill http://localhost:9009/mcp
+```
+
+See the [AI Agents guide](/developers/build/ai-agents) for full setup, or try the [Claude Code quickstart](/developers/get-started/claude-code-quickstart) to build your first project with AI.
+
 ## Start Developing
 
 Rill Developer is a local application that makes it easy to build end-to-end analytics pipelines. Connect to data sources, write SQL or YAML models for last-mile transformations, define a metrics layer with measures and dimensions, and preview interactive dashboards — all from your local machine. See the full [Build](/developers/build) docs for details.
+
+### Core Concepts
 
 <FeatureList items={[
   { name: "Connectors", description: "Connect to S3, GCS, BigQuery, Snowflake, ClickHouse, and more", link: "/developers/build/connectors" },
@@ -32,6 +56,7 @@ Rill Developer is a local application that makes it easy to build end-to-end ana
   { name: "Metrics Views", description: "Define measures, dimensions, and time series for dashboards", link: "/developers/build/metrics-view" },
   { name: "Dashboards", description: "Build Explore and Canvas dashboards", link: "/developers/build/dashboards" },
   { name: "Custom APIs", description: "Create API endpoints to retrieve data outside of Rill", link: "/developers/build/custom-apis" },
+  { name: "AI Agents", description: "Set up Claude Code or Cursor to build Rill projects with AI", link: "/developers/build/ai-agents" },
   { name: "Tutorials", description: "Guided walkthroughs and example projects to clone and explore", link: "/developers/tutorials/" },
 ]} />
 
