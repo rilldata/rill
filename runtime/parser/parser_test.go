@@ -255,6 +255,7 @@ schema: default
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 			Paths: []string{"/sources/s1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindConnector, Name: "s3"}},
 			ModelSpec: &runtimev1.ModelSpec{
 				InputConnector:   "s3",
 				OutputConnector:  "duckdb",
@@ -269,6 +270,7 @@ schema: default
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "s2"},
 			Paths: []string{"/sources/s2.sql"},
+			Refs:  []ResourceName{{Kind: ResourceKindConnector, Name: "postgres"}},
 			ModelSpec: &runtimev1.ModelSpec{
 				InputConnector:   "postgres",
 				OutputConnector:  "duckdb",
@@ -846,6 +848,82 @@ func TestRefInferrence(t *testing.T) {
 		Modified: []ResourceName{foo.Name},
 		Deleted:  []ResourceName{bar.Name},
 	}, diff)
+}
+
+func TestConnectorRef(t *testing.T) {
+	ctx := context.Background()
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// connector duckdb
+		`connectors/duckdb.yaml`: `
+driver: duckdb
+`,
+		// model m1
+		`models/m1.sql`: `
+SELECT 1
+`,
+	}
+	resources := []*Resource{
+		// m1
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			Refs:  []ResourceName{{Kind: ResourceKindConnector, Name: "duckdb"}},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+		// duckdb connector
+		{
+			Name:  ResourceName{Kind: ResourceKindConnector, Name: "duckdb"},
+			Paths: []string{"/connectors/duckdb.yaml"},
+			ConnectorSpec: &runtimev1.ConnectorSpec{
+				Driver: "duckdb",
+			},
+		},
+	}
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestConnectorDeletion(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`connectors/duckdb.yaml`: `
+type: connector
+driver: duckdb
+`,
+		`models/m1.sql`: `SELECT 1`,
+	})
+
+	// Initial parse - model should ref the connector
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+
+	m1 := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
+	require.NotNil(t, m1)
+	require.Contains(t, m1.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"})
+
+	// Delete the connector file
+	deleteRepo(t, repo, "/connectors/duckdb.yaml")
+
+	// Reparse - model should no longer ref the deleted connector
+	diff, err := p.Reparse(ctx, []string{"/connectors/duckdb.yaml"})
+	require.NoError(t, err)
+	require.Contains(t, diff.Deleted, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"})
+	require.Contains(t, diff.Modified, ResourceName{Kind: ResourceKindModel, Name: "m1"}, "model should be modified when connector is deleted")
+
+	m1Updated := p.Resources[ResourceName{Kind: ResourceKindModel, Name: "m1"}]
+	require.NotNil(t, m1Updated)
+	require.NotContains(t, m1Updated.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"}, "model should not ref deleted connector")
 }
 
 func BenchmarkReparse(b *testing.B) {

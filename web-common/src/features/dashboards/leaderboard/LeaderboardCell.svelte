@@ -77,18 +77,8 @@
       on:click={modified({
         shift: () => shiftClickHandler(value),
       })}
-      on:pointerover={() => {
-        if (value?.toString) {
-          // Always update the value in the store, but don't change visibility
-          cellInspectorStore.updateValue(value.toString());
-        }
-      }}
-      on:focus={() => {
-        if (value?.toString) {
-          // Always update the value in the store, but don't change visibility
-          cellInspectorStore.updateValue(value.toString());
-        }
-      }}
+      on:pointerover={() => cellInspectorStore.updateValue(value)}
+      on:focus={() => cellInspectorStore.updateValue(value)}
       on:mouseleave={() => (tooltipActive = false)}
       style:background
       class="{cellType}-cell {className}"

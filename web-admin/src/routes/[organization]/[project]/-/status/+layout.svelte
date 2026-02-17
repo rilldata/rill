@@ -5,25 +5,38 @@
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
-  $: basePage = `/${organization}/${project}/-/status`;
+  $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   const navItems = [
     {
-      label: "Project Status",
-      route: "/project-status",
+      label: "Overview",
+      route: "",
       hasPermission: true,
     },
     {
-      label: "Model Overview",
-      route: "/model-overview",
+      label: "Resources",
+      route: "/resources",
       hasPermission: true,
+    },
+    {
+      label: "Tables",
+      route: "/model-details",
+      hasPermission: false,
+    },
+    {
+      label: "Logs",
+      route: "/logs",
+      hasPermission: true,
+    },
+    {
+      label: "Analytics",
+      route: "/analytics",
+      hasPermission: false,
     },
   ];
 </script>
 
-<ContentContainer title="Project status" maxWidth={1100}>
+<ContentContainer title="Project Status" maxWidth={1100}>
   <div class="container flex-col md:flex-row">
     <LeftNav
       {basePage}

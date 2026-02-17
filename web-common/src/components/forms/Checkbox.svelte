@@ -41,7 +41,10 @@
     )}
   >
     <CheckboxPrimitive.Indicator
-      class={cn("flex items-center justify-center text-white")}
+      class={cn(
+        "flex items-center justify-center text-white",
+        "data-[state=unchecked]:hidden",
+      )}
     >
       <Check class="h-3.5 w-3.5" />
     </CheckboxPrimitive.Indicator>

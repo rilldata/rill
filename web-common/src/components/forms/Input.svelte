@@ -55,12 +55,12 @@
   export let onChange: (newValue: string) => void = voidFunction;
   export let onBlur: (
     e: FocusEvent & {
-      currentTarget: EventTarget & HTMLDivElement;
+      currentTarget: EventTarget & HTMLElement;
     },
   ) => void = voidFunction;
   export let onEnter: (
     e: KeyboardEvent & {
-      currentTarget: EventTarget & HTMLDivElement;
+      currentTarget: EventTarget & HTMLElement;
     },
   ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
@@ -87,7 +87,7 @@
   });
 
   function onElementBlur(
-    e: FocusEvent & { currentTarget: EventTarget & HTMLDivElement },
+    e: FocusEvent & { currentTarget: EventTarget & HTMLElement },
   ) {
     if (hitEnter) {
       hitEnter = false;
@@ -99,11 +99,12 @@
 
   function onKeydown(
     e: KeyboardEvent & {
-      currentTarget: EventTarget & HTMLDivElement;
+      currentTarget: EventTarget & HTMLElement;
     },
   ) {
     if (e.key === "Enter") {
-      if (e.shiftKey) return;
+      // In multiline mode, let Enter insert a newline normally
+      if (multiline || e.shiftKey) return;
       hitEnter = true;
       inputElement?.blur();
       onEnter(e);
@@ -161,17 +162,19 @@
       {/if}
 
       {#if multiline && typeof value !== "number"}
-        <div
+        <textarea
           {id}
-          contenteditable
           class="multiline-input"
-          class:pointer-events-none={disabled}
+          {disabled}
           {placeholder}
-          role="textbox"
-          tabindex="0"
-          aria-multiline="true"
+          name={id}
+          aria-label={label || title || placeholder}
           bind:this={inputElement}
-          bind:textContent={value}
+          bind:value
+          on:input={(e) => {
+            value = e.currentTarget.value;
+            onInput(value, e);
+          }}
           on:keydown={onKeydown}
           on:blur={onElementBlur}
           on:focus={() => (focus = true)}
@@ -316,7 +319,8 @@
     vertical-align: middle;
   }
 
-  input:disabled {
+  input:disabled,
+  .multiline-input:disabled {
     @apply bg-surface-background text-fg-secondary cursor-not-allowed;
   }
 
@@ -326,9 +330,11 @@
 
   .multiline-input {
     @apply h-fit w-full max-h-32 overflow-y-auto;
-    @apply py-1;
+    @apply py-1 bg-transparent;
     line-height: 1.58;
     word-wrap: break-word;
+    resize: none;
+    font-family: inherit;
   }
 
   .input-wrapper:focus-within {

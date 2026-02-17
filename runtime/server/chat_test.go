@@ -26,7 +26,7 @@ func TestConversations(t *testing.T) {
 
 	// Setup test runtime and server with an LLM configured.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 		Files: map[string]string{
 			"models/orders.yaml": `
 type: model
@@ -302,7 +302,7 @@ func TestAgentChoiceAndContext(t *testing.T) {
 
 	// Setup test runtime and server with an LLM configured.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 	})
 	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)

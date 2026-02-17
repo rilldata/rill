@@ -1,11 +1,8 @@
-import {
-  RillLegacyDaxInterval,
-  RillLegacyIsoInterval,
-  type RillTime,
-} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import type { DateTimeUnit } from "luxon";
+import type { DateTimeUnit, Interval } from "luxon";
+
+const MAX_BUCKETS = 1500;
 
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
 
@@ -115,7 +112,7 @@ export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
 }
 
 // We prevent users from aggregating by second or millisecond
-const allowedAggregationGrains = [
+export const allowedAggregationGrains = [
   V1TimeGrain.TIME_GRAIN_MINUTE,
   V1TimeGrain.TIME_GRAIN_HOUR,
   V1TimeGrain.TIME_GRAIN_DAY,
@@ -124,6 +121,9 @@ const allowedAggregationGrains = [
   V1TimeGrain.TIME_GRAIN_QUARTER,
   V1TimeGrain.TIME_GRAIN_YEAR,
 ];
+
+const ALLOWABLE_AGGREGATION_UNITS: DateTimeUnit[] =
+  allowedAggregationGrains.map((grain) => V1TimeGrainToDateTimeUnit[grain]);
 
 export const GrainAliasToOrder: Record<TimeGrainAlias, Order> = {
   ms: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
@@ -352,16 +352,6 @@ export const minTimeGrainToDefaultTimeRange: Record<V1TimeGrain, string> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "5y as of latest/Y",
 };
 
-export function getRangePrecision(rillTime: RillTime) {
-  const asOfSnap = rillTime.asOfLabel?.snap;
-
-  const asOfSnapV1Grain = GrainAliasToV1TimeGrain[asOfSnap as TimeGrainAlias];
-  const rangeV1Grain = rillTime.rangeGrain;
-  const intervalV1Grain = rillTime.interval.getGrain();
-
-  return getSmallestGrain([asOfSnapV1Grain, rangeV1Grain, intervalV1Grain]);
-}
-
 export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
   if (grains.length === 0) {
     return undefined;
@@ -379,33 +369,32 @@ export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
   );
 }
 
-export function getAggregationGrain(rillTime: RillTime | undefined) {
-  if (!rillTime) return undefined;
+export function allowedGrainsForInterval(
+  interval: Interval<true> | undefined,
+  minTimeGrain?: V1TimeGrain,
+): V1TimeGrain[] {
+  minTimeGrain = minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
+  if (!interval) return [];
 
-  const asOfSnap = rillTime.asOfLabel?.snap;
+  const validGrains = ALLOWABLE_AGGREGATION_UNITS.filter((unit) => {
+    return isGrainAllowed(unit, minTimeGrain);
+  });
 
-  const asOfSnapV1Grain = GrainAliasToV1TimeGrain[asOfSnap as TimeGrainAlias];
-  const rangeV1Grain = rillTime.rangeGrain;
-  const intervalV1Grain = rillTime.interval.getGrain();
+  const allowedGrains = validGrains
+    .filter((unit) => {
+      const grain = DateTimeUnitToV1TimeGrain[unit];
+      if (!grain) return false;
+      const bucketCount = interval.length(unit);
 
-  return getSmallestGrain([asOfSnapV1Grain, rangeV1Grain, intervalV1Grain]);
-}
+      return (
+        bucketCount >= 1 && (bucketCount <= MAX_BUCKETS || unit === "year")
+      );
+    })
+    .map((unit) => DateTimeUnitToV1TimeGrain[unit]!);
 
-export function getTruncationGrain(rillTime: RillTime | undefined) {
-  if (!rillTime) return undefined;
-
-  const asOfSnap = rillTime.asOfLabel?.snap;
-
-  if (asOfSnap) return GrainAliasToV1TimeGrain[asOfSnap as TimeGrainAlias];
-
-  if (rillTime.interval instanceof RillLegacyIsoInterval) {
-    return rillTime.interval.getGrain();
+  if (allowedGrains.length) {
+    return allowedGrains;
+  } else {
+    return [minTimeGrain];
   }
-
-  if (rillTime.interval instanceof RillLegacyDaxInterval) {
-    if (rillTime.interval.name.endsWith("C")) return undefined;
-    return V1TimeGrain.TIME_GRAIN_DAY;
-  }
-
-  return undefined;
 }

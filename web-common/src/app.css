@@ -87,11 +87,7 @@
     --icon-disabled: var(--color-gray-400);
     --icon-accent: var(--color-primary-500);
 
-    --input: color-mix(
-      in oklab,
-      var(--color-gray-400) calc(0.05 * 100%),
-      transparent
-    );
+    --input: color-mix(in oklab, var(--white) calc(0.05 * 100%), transparent);
     --border: var(--color-neutral-200);
 
     --ring-focus: var(--color-theme-300);

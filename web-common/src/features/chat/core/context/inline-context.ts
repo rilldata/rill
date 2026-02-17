@@ -2,6 +2,8 @@ export const INLINE_CHAT_CONTEXT_TAG = "chat-reference";
 
 export enum InlineContextType {
   MetricsView = "metricsView",
+  Canvas = "canvas",
+  CanvasComponent = "canvasComponent",
   TimeRange = "timeRange",
   Measure = "measure",
   Dimension = "dimension",
@@ -12,13 +14,18 @@ export enum InlineContextType {
 
 export type InlineContext = {
   type: InlineContextType;
+  // While label is display only, we set it to context so that filter can be applied on it.
   label?: string;
   // Main value for this context, used to run search and forms a unique identifier with type
   value: string;
   metricsView?: string;
+  canvas?: string;
+  canvasComponent?: string;
   measure?: string;
   dimension?: string;
   timeRange?: string;
+  timeZone?: string;
+  granularity?: string;
   values?: string[];
   model?: string;
   column?: string;
@@ -26,7 +33,7 @@ export type InlineContext = {
 };
 
 export function getIdForContext(ctx: InlineContext) {
-  const parentIdPart = ctx.metricsView ?? ctx.model;
+  const parentIdPart = ctx.metricsView ?? ctx.model ?? ctx.canvas;
   return `${ctx.type}__${ctx.value}${parentIdPart ? `__${parentIdPart}` : ""}`;
 }
 
@@ -35,6 +42,8 @@ export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
   switch (src.type) {
     case InlineContextType.MetricsView:
       return src.metricsView === tar.metricsView;
+    case InlineContextType.Canvas:
+      return src.canvas === tar.canvas;
     case InlineContextType.Model:
       return src.model === tar.model;
   }
@@ -50,6 +59,14 @@ export function normalizeInlineContext(ctx: InlineContext) {
   switch (normalisedContext.type) {
     case InlineContextType.MetricsView:
       normalisedContext.value = normalisedContext.metricsView!;
+      break;
+
+    case InlineContextType.Canvas:
+      normalisedContext.value = normalisedContext.canvas!;
+      break;
+
+    case InlineContextType.CanvasComponent:
+      normalisedContext.value = normalisedContext.canvasComponent!;
       break;
 
     case InlineContextType.Measure:
@@ -91,7 +108,9 @@ export function convertContextToInlinePrompt(ctx: InlineContext) {
     const isComputedKey = key === "value" || key === "label";
     const isNonStringKey = key === "values";
     if (isComputedKey || isNonStringKey) continue;
-    if (ctx[key] !== undefined) parts.push(`${key}="${ctx[key]}"`);
+    const value = ctx[key];
+    const hasValue = value !== undefined && value !== null;
+    if (hasValue) parts.push(`${key}="${value}"`);
   }
 
   // TODO: dimension value support

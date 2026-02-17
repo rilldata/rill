@@ -15,12 +15,12 @@
     type DimensionColumnProps,
     type MeasureColumnProps,
   } from "./pivot-column-definition";
-  import { isShowMoreRow } from "./pivot-utils";
   import {
     calculateMeasureWidth,
     calculateRowDimensionWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import { isShowMoreRow } from "./pivot-utils";
   import type { PivotDataRow } from "./types";
 
   // State props
@@ -346,20 +346,8 @@
             data-columnid={cell.column.id}
             data-rowheader={i === 0 || undefined}
             class:totals-column={i > 0 && i <= measureCount}
-            on:mouseover={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
-            on:focus={() => {
-              const value = cell.getValue();
-              if (value !== undefined && value !== null) {
-                // Always update the value in the store, but don't change visibility
-                cellInspectorStore.updateValue(String(value));
-              }
-            }}
+            on:mouseover={() => cellInspectorStore.updateValue(cell.getValue())}
+            on:focus={() => cellInspectorStore.updateValue(cell.getValue())}
           >
             {#if result?.component && result?.props}
               <svelte:component
@@ -457,12 +445,12 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    /* @apply bg-surface-subtle; */
+    @apply bg-surface-base;
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    /* @apply bg-surface-subtle; */
+    @apply bg-surface-base;
   }
 
   .with-row-dimension tr:hover > td:first-of-type {

@@ -10,9 +10,7 @@ import {
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
   type V1ConnectorDriver,
-  getRuntimeServiceGetFileQueryKey,
   runtimeServiceDeleteFile,
-  runtimeServiceGetFile,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
@@ -35,6 +33,12 @@ import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import { OLAP_ENGINES } from "./constants";
+import { getConnectorSchema } from "./connector-schemas";
+import {
+  getSchemaFieldMetaList,
+  getSchemaSecretKeys,
+  getSchemaStringKeys,
+} from "../../templates/schema-utils";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -48,9 +52,8 @@ const savedAnywayPaths = new Set<string>();
 const connectorSubmissions = new Map<
   string,
   {
-    promise: Promise<void>;
+    promise: Promise<string>;
     connectorName: string;
-    completed: boolean;
   }
 >();
 
@@ -129,31 +132,6 @@ async function setOlapConnectorInRillYAML(
   });
 }
 
-// Check for an existing `.env` file
-// Store the original `.env` blob so we can restore it in case of errors
-async function getOriginalEnvBlob(
-  queryClient: QueryClient,
-  instanceId: string,
-): Promise<string | undefined> {
-  try {
-    const envFile = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
-    });
-    return envFile.blob;
-  } catch (error) {
-    const fileNotFound =
-      error?.response?.data?.message?.includes("no such file");
-    if (fileNotFound) {
-      // Do nothing. We'll create the `.env` file below.
-      return undefined;
-    } else {
-      // We have a problem. Throw the error.
-      throw error;
-    }
-  }
-}
-
 async function saveConnectorAnyway(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -162,6 +140,16 @@ async function saveConnectorAnyway(
   instanceId?: string,
 ): Promise<void> {
   const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
+  const schema = getConnectorSchema(connector.name ?? "");
+  const schemaFields = schema
+    ? getSchemaFieldMetaList(schema, { step: "connector" })
+    : [];
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "connector" })
+    : [];
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "connector" })
+    : [];
 
   // Create connector file
   const newConnectorFilePath = getFileAPIPathFromNameAndType(
@@ -173,13 +161,11 @@ async function saveConnectorAnyway(
   savedAnywayPaths.add(newConnectorFilePath);
 
   // Update .env file with secrets (keep ordering consistent with Test and Connect)
-  const newEnvBlob = await updateDotEnvWithSecrets(
-    queryClient,
-    connector,
-    formValues,
-    "connector",
-    newConnectorName,
-  );
+  const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
+    await updateDotEnvWithSecrets(queryClient, connector, formValues, {
+      secretKeys: schemaSecretKeys,
+      schema: schema ?? undefined,
+    });
 
   await runtimeServicePutFile(resolvedInstanceId, {
     path: ".env",
@@ -193,6 +179,14 @@ async function saveConnectorAnyway(
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
       connectorInstanceName: newConnectorName,
+      orderedProperties: schemaFields,
+      secretKeys: schemaSecretKeys,
+      stringKeys: schemaStringKeys,
+      schema: schema ?? undefined,
+      existingEnvBlob: envBlobForYaml,
+      fieldFilter: schemaFields
+        ? (property) => !("internal" in property && property.internal)
+        : undefined,
     }),
     create: true,
     createOnly: false,
@@ -215,9 +209,19 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
-): Promise<void> {
+): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
+  const schema = getConnectorSchema(connector.name ?? "");
+  const schemaFields = schema
+    ? getSchemaFieldMetaList(schema, { step: "connector" })
+    : [];
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "connector" })
+    : [];
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "connector" })
+    : [];
 
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
@@ -236,13 +240,14 @@ export async function submitAddConnectorForm(
     if (saveAnyway) {
       // If Save Anyway is clicked while Test and Connect is running,
       // proceed immediately without waiting for the ongoing operation
-      // Clean up the existing submission
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
 
       // Use the same connector name from the ongoing operation
       const newConnectorName = existingSubmission.connectorName;
 
       // Proceed immediately with Save Anyway logic
+      // Use the pre-computed env blobs from the concurrent Test and Connect operation
+      // to ensure consistent variable naming (e.g., GOOGLE_APPLICATION_CREDENTIALS not _2)
       await saveConnectorAnyway(
         queryClient,
         connector,
@@ -250,13 +255,12 @@ export async function submitAddConnectorForm(
         newConnectorName,
         instanceId,
       );
-      return;
-    } else if (!existingSubmission.completed) {
-      // If Test and Connect is clicked while another operation is running,
-      // wait for it to complete
-      await existingSubmission.promise;
-      return;
+      return newConnectorName;
     }
+
+    // If Test and Connect is clicked while another operation is running,
+    // wait for it to complete
+    return existingSubmission.promise;
   }
 
   // Create abort controller for this submission
@@ -281,14 +285,18 @@ export async function submitAddConnectorForm(
       }
 
       // Capture original .env and compute updated contents up front
-      originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
-      const newEnvBlob = await updateDotEnvWithSecrets(
+      // Use originalBlob from updateDotEnvWithSecrets for consistent conflict detection
+      const envResult = await updateDotEnvWithSecrets(
         queryClient,
         connector,
         formValues,
-        "connector",
-        newConnectorName,
+        {
+          secretKeys: schemaSecretKeys,
+          schema: schema ?? undefined,
+        },
       );
+      const newEnvBlob = envResult.newBlob;
+      originalEnvBlob = envResult.originalBlob;
 
       if (saveAnyway) {
         // Save Anyway: bypass reconciliation entirely via centralized helper
@@ -299,7 +307,7 @@ export async function submitAddConnectorForm(
           newConnectorName,
           instanceId,
         );
-        return;
+        return newConnectorName;
       }
 
       /**
@@ -322,6 +330,14 @@ export async function submitAddConnectorForm(
           path: newConnectorFilePath,
           blob: compileConnectorYAML(connector, formValues, {
             connectorInstanceName: newConnectorName,
+            orderedProperties: schemaFields,
+            secretKeys: schemaSecretKeys,
+            stringKeys: schemaStringKeys,
+            schema: schema ?? undefined,
+            existingEnvBlob: originalEnvBlob,
+            fieldFilter: schemaFields
+              ? (property) => !("internal" in property && property.internal)
+              : undefined,
           }),
           create: true,
           createOnly: false,
@@ -359,11 +375,12 @@ export async function submitAddConnectorForm(
 
       // Go to the new connector file
       await goto(`/files/${newConnectorFilePath}`);
+      return newConnectorName;
     } catch (error) {
       // If the operation was aborted, don't treat it as an error
       if (abortController.signal.aborted) {
         console.log("Operation was cancelled");
-        return;
+        return newConnectorName;
       }
 
       const shouldRollbackConnectorFile =
@@ -390,10 +407,7 @@ export async function submitAddConnectorForm(
     } finally {
       // Mark the submission as completed but keep the connector name around
       // so a subsequent "Save Anyway" can still reuse the same connector file
-      const submission = connectorSubmissions.get(uniqueConnectorSubmissionKey);
-      if (submission) {
-        submission.completed = true;
-      }
+      connectorSubmissions.delete(uniqueConnectorSubmissionKey);
     }
   })();
 
@@ -401,27 +415,44 @@ export async function submitAddConnectorForm(
   connectorSubmissions.set(uniqueConnectorSubmissionKey, {
     promise: submissionPromise,
     connectorName: newConnectorName,
-    completed: false,
   });
 
   // Wait for the submission to complete
-  await submissionPromise;
+  const resolvedConnectorName = await submissionPromise;
+  return resolvedConnectorName;
 }
 
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
+  connectorInstanceName?: string,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
-
   const newSourceName = formValues.name as string;
 
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
     formValues,
+    { connectorInstanceName },
   );
+  const schema = getConnectorSchema(rewrittenConnector.name ?? "");
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "source" })
+    : [];
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "source" })
+    : [];
+
+  // When connector is rewritten to DuckDB (e.g., S3 -> DuckDB), don't use
+  // the original connectorInstanceName in YAML. The original connector is
+  // referenced via create_secrets_from_connectors for credential access.
+  const isRewrittenToDuckDb =
+    rewrittenConnector.name === "duckdb" && connector.name !== "duckdb";
+  const yamlConnectorInstanceName = isRewrittenToDuckDb
+    ? undefined
+    : connectorInstanceName;
 
   // Make a new <source>.yaml file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
@@ -430,20 +461,26 @@ export async function submitAddSourceForm(
   );
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
-    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
+      secretKeys: schemaSecretKeys,
+      stringKeys: schemaStringKeys,
+      connectorInstanceName: yamlConnectorInstanceName,
+      originalDriverName: connector.name || undefined,
+    }),
     create: true,
     createOnly: false,
   });
 
-  const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
-
   // Create or update the `.env` file
-  const newEnvBlob = await updateDotEnvWithSecrets(
-    queryClient,
-    rewrittenConnector,
-    rewrittenFormValues,
-    "source",
-  );
+  const { newBlob: newEnvBlob, originalBlob: originalEnvBlob } =
+    await updateDotEnvWithSecrets(
+      queryClient,
+      rewrittenConnector,
+      rewrittenFormValues,
+      {
+        secretKeys: schemaSecretKeys,
+      },
+    );
 
   // Make sure the file has reconciled before testing the connection
   await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
