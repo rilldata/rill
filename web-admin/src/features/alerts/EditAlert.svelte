@@ -5,7 +5,7 @@
   } from "@rilldata/web-common/components/dialog";
   import GuardedDialog from "@rilldata/web-common/components/dialog/GuardedDialog.svelte";
   import AlertForm from "@rilldata/web-common/features/alerts/AlertForm.svelte";
-  import type { V1AlertSpec } from "@rilldata/web-common/runtime-client";
+  import type { V1AlertSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import Button from "web-common/src/components/button/Button.svelte";
 
   export let alertSpec: V1AlertSpec;

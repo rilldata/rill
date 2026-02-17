@@ -11,7 +11,7 @@ import {
   addZoneOffset,
   removeLocalTimezoneOffset,
 } from "@rilldata/web-common/lib/time/timezone";
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../config";
 import {
   durationToMillis,
@@ -35,6 +35,7 @@ import {
   TimeRangePreset,
 } from "../types";
 import { DateTime, type DateTimeUnit } from "luxon";
+import { V1TimeGrainToDateTimeUnit } from "../new-grains";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -180,36 +181,28 @@ export function getAdjustedFetchTime(
 ) {
   if (!startTime || !endTime || !interval)
     return { start: startTime?.toISOString(), end: endTime?.toISOString() };
-  const offsetedStartTime = getOffset(
-    startTime,
-    TIME_GRAIN[interval].duration,
-    TimeOffsetType.SUBTRACT,
-  );
 
-  // the data point previous to the first date inside the chart.
-  const fetchStartTime = getStartOfPeriod(
-    offsetedStartTime,
-    TIME_GRAIN[interval].duration,
-    zone,
-  );
+  const luxonUnit = V1TimeGrainToDateTimeUnit[interval];
 
-  const offsetedEndTime = getOffset(
-    endTime,
-    TIME_GRAIN[interval].duration,
-    TimeOffsetType.ADD,
-  );
+  // Should only fail if somehow the Luxon unit is invalid
+  try {
+    const start = DateTime.fromJSDate(startTime, { zone: zone || "UTC" })
+      .minus({
+        [luxonUnit]: 1,
+      })
+      .startOf(luxonUnit);
 
-  // the data point after the last complete date.
-  const fetchEndTime = getStartOfPeriod(
-    offsetedEndTime,
-    TIME_GRAIN[interval].duration,
-    zone,
-  );
+    const end = DateTime.fromJSDate(endTime, { zone: zone || "UTC" })
+      .plus({ [luxonUnit]: 1 })
+      .startOf(luxonUnit);
 
-  return {
-    start: fetchStartTime.toISOString(),
-    end: fetchEndTime.toISOString(),
-  };
+    return {
+      start: start.toUTC().toISO(),
+      end: end.toUTC().toISO(),
+    };
+  } catch {
+    return { start: startTime?.toISOString(), end: endTime?.toISOString() };
+  }
 }
 
 /**
@@ -225,7 +218,14 @@ export function getAdjustedChartTime(
   defaultTimeRange: string | undefined,
   chartType: TDDChart,
 ) {
-  if (!start || !end || !interval)
+  if (
+    !start ||
+    !end ||
+    !interval ||
+    interval === V1TimeGrain.TIME_GRAIN_UNSPECIFIED ||
+    interval === V1TimeGrain.TIME_GRAIN_MILLISECOND ||
+    interval === V1TimeGrain.TIME_GRAIN_SECOND
+  )
     return {
       start,
       end,

@@ -1767,6 +1767,8 @@ message GetDeploymentConfigResponse {
   google.protobuf.Timestamp updated_on = 4;
   // Whether the deployment is git based or archive based.
   bool uses_archive = 5;
+  // Duckdb connector config for the deployment
+  google.protobuf.Struct duckdb_connector_config = 6;
 }
 
 message ListRolesRequest {}
@@ -2982,6 +2984,7 @@ message User {
   string display_name = 3;
   string photo_url = 4;
   UserQuotas quotas = 5;
+  string pylon_email_hash = 8;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp updated_on = 7;
 }

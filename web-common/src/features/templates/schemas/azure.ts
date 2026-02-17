@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const azureSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "Azure Blob Storage",
+  "x-category": "objectStore",
   properties: {
     auth_method: {
       type: "string",
@@ -23,6 +25,7 @@ export const azureSchema: MultiStepFormSchema = {
         "Provide the storage account name and SAS token.",
         "Access publicly readable blobs without credentials.",
       ],
+      "x-ui-only": true,
       "x-grouped-fields": {
         connection_string: ["azure_storage_connection_string"],
         account_key: ["azure_storage_account", "azure_storage_key"],
@@ -37,6 +40,7 @@ export const azureSchema: MultiStepFormSchema = {
       description: "Paste an Azure Storage connection string",
       "x-placeholder": "Enter Azure storage connection string",
       "x-secret": true,
+      "x-env-var-name": "AZURE_STORAGE_CONNECTION_STRING",
       "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },
     },
@@ -54,6 +58,7 @@ export const azureSchema: MultiStepFormSchema = {
       description: "Primary or secondary access key for the storage account",
       "x-placeholder": "Enter Azure storage access key",
       "x-secret": true,
+      "x-env-var-name": "AZURE_STORAGE_KEY",
       "x-step": "connector",
       "x-visible-if": { auth_method: "account_key" },
     },
@@ -64,6 +69,7 @@ export const azureSchema: MultiStepFormSchema = {
         "Shared Access Signature token for the storage account (starting with ?sv=)",
       "x-placeholder": "Enter Azure SAS token",
       "x-secret": true,
+      "x-env-var-name": "AZURE_STORAGE_SAS_TOKEN",
       "x-step": "connector",
       "x-visible-if": { auth_method: "sas_token" },
     },

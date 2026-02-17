@@ -31,6 +31,11 @@
       hasPermission: true,
     },
     {
+      route: `/${organization}/${project}/-/query`,
+      label: "Query",
+      hasPermission: false,
+    },
+    {
       route: `/${organization}/${project}/-/reports`,
       label: "Reports",
       hasPermission: $reports,
@@ -46,9 +51,7 @@
       hasPermission: projectPermissions.manageProject,
     },
     {
-      // TODO: Change this back to `/${organization}/${project}/-/settings`
-      // Once project settings are implemented
-      route: `/${organization}/${project}/-/settings/environment-variables`,
+      route: `/${organization}/${project}/-/settings`,
       label: "Settings",
       hasPermission: projectPermissions.manageProject,
     },
@@ -69,7 +72,7 @@
   }
 </script>
 
-<div>
+<div class="bg-surface-base">
   <nav>
     {#each tabs as tab, i (tab.route)}
       {#if tab.hasPermission}

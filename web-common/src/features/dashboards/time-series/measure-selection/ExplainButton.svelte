@@ -30,7 +30,7 @@
       <Bot size={16} class="stroke-primary cursor-pointer -mt-0.5" />
       <span
         role="presentation"
-        class="fill-primary stroke-surface cursor-pointer hover:underline"
+        class="fill-primary stroke-surface-background cursor-pointer hover:underline"
       >
         Explain (E)
       </span>

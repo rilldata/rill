@@ -405,9 +405,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 			}
 		}
 
-		if b.ast.Dialect.RequiresCastForLike() {
-			b.writeString("::TEXT")
-		}
+		b.writeString(b.ast.Dialect.GetCastExprForLike())
 
 		if not {
 			b.writeString(" NOT ILIKE ")
@@ -420,9 +418,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 			return err
 		}
 
-		if b.ast.Dialect.RequiresCastForLike() {
-			b.writeString("::TEXT")
-		}
+		b.writeString(b.ast.Dialect.GetCastExprForLike())
 	} else if b.ast.Dialect.SupportsRegexMatch() {
 		if not {
 			b.writeString(" NOT ")
@@ -475,9 +471,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 				return err
 			}
 		}
-		if b.ast.Dialect.RequiresCastForLike() {
-			b.writeString("::TEXT")
-		}
+		b.writeString(b.ast.Dialect.GetCastExprForLike())
 		b.writeByte(')')
 
 		if not {
@@ -491,9 +485,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if err != nil {
 			return err
 		}
-		if b.ast.Dialect.RequiresCastForLike() {
-			b.writeString("::TEXT")
-		}
+		b.writeString(b.ast.Dialect.GetCastExprForLike())
 		b.writeByte(')')
 	}
 
@@ -677,7 +669,7 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 			if f.Name == name {
 				// Note that we return "false" even though it may be an unnest dimension because it will already have been unnested since it's one of the dimensions included in the query.
 				// So we can filter against it as if it's a normal dimension.
-				return f.Expr, false, nil, nil
+				return f.Expr, false, f.LookupMeta, nil
 			}
 		}
 
@@ -692,19 +684,13 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
 
-		if dim.Unnest && dim.LookupTable != "" {
-			return "", false, nil, fmt.Errorf("dimension %q is unnested and also has a lookup. This is not supported", name)
-		}
-
 		var lm *lookupMeta
 		if dim.LookupTable != "" {
 			var keyExpr string
 			if dim.Column != "" {
 				keyExpr = b.ast.Dialect.EscapeIdentifier(dim.Column)
-			} else if dim.Expression != "" {
-				keyExpr = dim.Expression
 			} else {
-				return "", false, nil, fmt.Errorf("dimension %q has a lookup table but no column or expression defined", name)
+				keyExpr = dim.Expression
 			}
 			lm = &lookupMeta{
 				table:    dim.LookupTable,
@@ -752,13 +738,6 @@ func convertLikeExpressionToRegexExpression(like *Expression) (*Expression, erro
 	pattern := strings.ReplaceAll(val, "%", ".*")
 	pattern = fmt.Sprintf("^(?i)%s$", pattern)
 	return &Expression{Value: pattern}, nil
-}
-
-type lookupMeta struct {
-	table    string
-	keyExpr  string
-	keyCol   string
-	valueCol string
 }
 
 // skipMetricsViewSecurity implements the MetricsViewSecurity interface in a way that allows all access.

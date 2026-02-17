@@ -8,6 +8,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var ErrRemoteAhead = fmt.Errorf("remote ahead of local state, please pull first")
@@ -41,18 +42,32 @@ type RepoStore interface {
 	// The function does not return until the context is cancelled or an error occurs.
 	Watch(ctx context.Context, cb WatchCallback) error
 
+	// ListCommits returns a list of commits in reverse chronological order.
+	// fromCommit is the commit SHA to start from (empty for HEAD). Returns commits and next page token.
+	ListCommits(ctx context.Context, fromCommit string, limit int) (commits []Commit, nextPageToken string, err error)
 	// Status returns the current status of the repository.
 	Status(ctx context.Context) (*RepoStatus, error)
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
 	Pull(ctx context.Context, opts *PullOptions) error
+	// Commit commits local changes to the git repository (equivalent to git commit -am <message>).
+	Commit(ctx context.Context, message string) (string, error)
 	// CommitAndPush commits local changes to the remote repository and pushes them.
 	CommitAndPush(ctx context.Context, message string, force bool) error
+	// RestoreCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+	RestoreCommit(ctx context.Context, commitSHA string) (string, error)
 	// CommitHash returns a unique ID for the state of the remote files currently served (does not change on uncommitted local changes).
 	CommitHash(ctx context.Context) (string, error)
 	// CommitTimestamp returns the update timestamp for the current remote files (does not change on uncommitted local changes).
 	CommitTimestamp(ctx context.Context) (time.Time, error)
+	// ListBranches returns a list of branch names and the current branch name.
+	ListBranches(ctx context.Context) ([]string, string, error)
+	// SwitchBranch switches to the specified branch. If createIfNotExists is true, creates the branch if it doesn't exist.
+	SwitchBranch(ctx context.Context, branch string, createIfNotExists, ignoreLocalChanges bool) error
+	// MergeToBranch merges the current branch to the specified branch.
+	// In case of merge conflicts, prefer current changes if force is true else return an error without merging.
+	MergeToBranch(ctx context.Context, branch string, force bool) error
 }
 
 // FileInfo contains metadata about a file.
@@ -126,10 +141,20 @@ type PullOptions struct {
 	DiscardChanges bool
 }
 
+// Commit represents a git commit.
+type Commit struct {
+	CommitSha     string
+	AuthorName    string
+	AuthorEmail   string
+	CommitMessage string
+	CommittedOn   *timestamppb.Timestamp
+}
+
 // ignoredPaths is a list of paths that are always ignored by the parser.
 var ignoredPaths = []string{
 	"/tmp",
 	"/.git",
+	"/.github",
 	"/node_modules",
 	"/.DS_Store",
 	"/.vscode",

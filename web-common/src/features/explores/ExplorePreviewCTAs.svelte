@@ -16,8 +16,6 @@
     useRillYamlPolicyCheck,
   } from "../dashboards/granular-access-policies/useSecurityPolicyCheck";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
-  import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
-  import { ResourceKind } from "../entity-management/resource-selectors";
   import { featureFlags } from "../feature-flags";
   import { BookmarkIcon, BellPlusIcon } from "lucide-svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
@@ -82,11 +80,13 @@
   {#if $explorePolicyCheck.data || $metricsPolicyCheck.data || $rillYamlPolicyCheck.data}
     <ViewAsButton />
   {/if}
-  <StateManagersProvider {metricsViewName} {exploreName}>
+  <StateManagersProvider {metricsViewName} {exploreName} let:ready>
     {#if $dashboardChat}
       <ChatToggle />
     {/if}
-    <GlobalDimensionSearch />
+    {#if ready}
+      <GlobalDimensionSearch />
+    {/if}
   </StateManagersProvider>
   {#if inPreviewMode}
     <Tooltip distance={8}>
@@ -136,17 +136,11 @@
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="end">
         <DropdownMenu.Item href={`/files${exploreFilePath}`}>
-          <ExploreIcon
-            color={resourceColorMapping[ResourceKind.Explore]}
-            size="16px"
-          />
+          <ExploreIcon size="16px" />
           Explore dashboard
         </DropdownMenu.Item>
         <DropdownMenu.Item href={`/files${metricsViewFilePath}`}>
-          <MetricsViewIcon
-            color={resourceColorMapping[ResourceKind.MetricsView]}
-            size="16px"
-          />
+          <MetricsViewIcon size="16px" />
           Metrics View
         </DropdownMenu.Item>
       </DropdownMenu.Content>

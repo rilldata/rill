@@ -432,7 +432,12 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		runtime.UseAI,
 	}
 	if permissions.ManageProject {
-		instancePermissions = append(instancePermissions, runtime.EditTrigger, runtime.ReadResolvers)
+		instancePermissions = append(
+			instancePermissions,
+			runtime.ReadInstance,
+			runtime.ReadResolvers,
+			runtime.EditTrigger,
+		)
 	}
 
 	var systemPermissions []runtime.Permission

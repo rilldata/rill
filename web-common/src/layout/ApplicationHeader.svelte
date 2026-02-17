@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import type {
+    PathOption,
+    PathOptions,
+  } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
@@ -15,18 +18,21 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import ModeToggle from "./ModeToggle.svelte";
 
-  const { darkMode, deploy, developerChat } = featureFlags;
+  const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
-  export let mode: string;
   export let logoHref: string = "/";
   export let breadcrumbResourceHref: ((resourceName: string, resourceKind: string) => string) | undefined = undefined;
+
+  $: previewMode = $previewModeStore;
 
   $: ({ instanceId } = $runtime);
 
@@ -57,24 +63,26 @@
   $: dashboardOptions = (() => {
     const options = getBreadcrumbOptions(explores, canvases);
 
-    // Customize hrefs if custom href function is provided
     if (breadcrumbResourceHref) {
       const customOptions = new Map<string, PathOption>();
       options.forEach((option, key) => {
         const customOption = { ...option };
-
-        // Determine resource kind based on option
         const isExplore = option.section === "explore";
         const isCanvas = option.section === "canvas";
         const resourceKind = isExplore ? "explore" : isCanvas ? "canvas" : "resource";
-
         customOption.href = breadcrumbResourceHref(key, resourceKind);
         customOptions.set(key, customOption);
       });
-      return customOptions;
+      return {
+        options: customOptions,
+        carryOverSearchParams: $stickyDashboardState,
+      } satisfies PathOptions;
     }
 
-    return options;
+    return {
+      options,
+      carryOverSearchParams: $stickyDashboardState,
+    } satisfies PathOptions;
   })();
 
   $: projectPath = <PathOption>{
@@ -85,7 +93,7 @@
   };
 
   $: pathParts = [
-    new Map([[projectTitle.toLowerCase(), projectPath]]),
+    { options: new Map([[projectTitle.toLowerCase(), projectPath]]) },
     dashboardOptions,
   ];
 
@@ -112,21 +120,19 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage}>
+<header class:border-b={!onDeployPage} class="bg-surface-base">
   {#if !onDeployPage}
     <a href={logoHref}>
       <Rill />
     </a>
 
-    <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
-      {mode}
-    </span>
+    <ModeToggle />
 
-    {#if mode === "Preview"}
+    {#if previewMode}
       {#if $exploresQuery?.data}
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
-    {:else if mode === "Developer"}
+    {:else}
       {#if $exploresQuery?.data}
         <Breadcrumbs {pathParts} {currentPath} />
       {:else}
@@ -145,22 +151,22 @@
 
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
     {#if route.id?.includes("explore")}
-      <ExplorePreviewCTAs exploreName={dashboardName} inPreviewMode={mode === "Preview"} />
+      <ExplorePreviewCTAs exploreName={dashboardName} inPreviewMode={previewMode} />
     {:else if route.id?.includes("canvas")}
-      <CanvasPreviewCTAs canvasName={dashboardName} inPreviewMode={mode === "Preview"} />
+      <CanvasPreviewCTAs canvasName={dashboardName} inPreviewMode={previewMode} />
     {:else if showDeveloperChat}
-      <ChatToggle />
+      <ChatToggle beta />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
-    <LocalAvatarButton darkMode={$darkMode} />
+    <LocalAvatarButton />
   </div>
 </header>
 
 <style lang="postcss">
   header {
-    @apply w-full bg-surface box-border;
+    @apply w-full box-border;
     @apply flex gap-x-2 items-center px-4 flex-none;
     @apply h-11;
   }

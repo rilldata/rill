@@ -17,9 +17,9 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type {
-    V1ExploreTimeRange,
+  import {
     V1TimeGrain,
+    type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
@@ -36,6 +36,7 @@
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
+  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
@@ -76,7 +77,7 @@
       filters: { clearAllFilters, setTemporaryFilterName },
     },
     selectors: {
-      dimensions: { allDimensions },
+      dimensions: { allDimensions, timeDimensions },
       dimensionFilters: {
         dimensionHasFilter,
         getDimensionFilterItems,
@@ -158,7 +159,9 @@
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
-  $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
+  $: ({ whereFilter, selectedTimeDimension } = $dashboardStore);
+
+  $: isComplexFilter = isExpressionUnsupported(whereFilter);
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
@@ -184,6 +187,15 @@
       end: selectedTimeRange.end,
     };
 
+  $: primaryTimeDimension = metricsViewSpec.timeDimension;
+
+  $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
+    return {
+      value: timeDim.name!,
+      label: timeDim.name!,
+    };
+  });
+
   $: maybeMinDate = allTimeRange?.start
     ? DateTime.fromJSDate(allTimeRange.start)
     : undefined;
@@ -204,6 +216,39 @@
       removeMeasureFilter(oldDimension, measureName);
     }
     setMeasureFilter(dimension, filter);
+  }
+
+  async function onTimeDimensionSelect(column: string) {
+    // Capture time range name before any state changes
+    const timeRangeName = selectedTimeRange?.name;
+
+    await queryClient.cancelQueries({
+      predicate: (query) =>
+        isMetricsViewQuery(query.queryHash, metricsViewName),
+    });
+
+    metricsExplorerStore.setTimeDimension($exploreName, column);
+
+    // Re-resolve the time range with the new time dimension
+    if (!timeRangeName) return;
+
+    const { interval, grain } = await deriveInterval(
+      timeRangeName,
+      metricsViewName,
+      activeTimeZone,
+      column,
+    );
+
+    if (interval.isValid) {
+      const validInterval = interval as Interval<true>;
+      const baseTimeRange: TimeRange = {
+        name: timeRangeName,
+        start: validInterval.start.toJSDate(),
+        end: validInterval.end.toJSDate(),
+      };
+
+      selectRange(baseTimeRange, grain);
+    }
   }
 
   function onPan(direction: "left" | "right") {
@@ -231,7 +276,7 @@
     );
   }
 
-  async function onSelectRange(alias: string) {
+  async function onSelectRange(alias: string, tz = activeTimeZone) {
     // If we don't have a valid time range, early return
     if (!allTimeRange?.end) return;
 
@@ -251,10 +296,22 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-
       metricsViewName,
-      activeTimeZone,
+      tz,
+      selectedTimeDimension,
     );
+
+    const allowedGrains = allowedGrainsForInterval(
+      interval,
+      minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE,
+    );
+
+    const finalGrain =
+      activeTimeGrain && allowedGrains.includes(activeTimeGrain)
+        ? activeTimeGrain
+        : grain && allowedGrains.includes(grain)
+          ? grain
+          : allowedGrains[0];
 
     if (interval.isValid) {
       const validInterval = interval as Interval<true>;
@@ -264,7 +321,7 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange, grain);
+      selectRange(baseTimeRange, finalGrain);
     }
   }
 
@@ -300,6 +357,8 @@
           | TimeComparisonOption
           | undefined,
         allTimeRange,
+
+        activeTimeZone,
       );
 
     makeTimeSeriesTimeRangeAndUpdateAppState(range, timeGrain, {
@@ -307,7 +366,7 @@
     } as DashboardTimeControls);
   }
 
-  function onSelectTimeZone(timeZone: string) {
+  async function onSelectTimeZone(timeZone: string) {
     if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
@@ -320,8 +379,10 @@
           ?.setZone(timeZone, { keepLocalTime: true })
           .toJSDate(),
       });
+    } else if (selectedRangeAlias) {
+      // Trigger range selection so that MetricsViewTimeRanges is called with the new time zone
+      await onSelectRange(selectedRangeAlias, timeZone);
     }
-
     metricsExplorerStore.setTimeZone($exploreName, timeZone);
   }
 
@@ -362,7 +423,7 @@
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
       <Tooltip.Root openDelay={0}>
-        <Tooltip.Trigger class="cursor-default">
+        <Tooltip.Trigger class="cursor-default text-fg-secondary">
           <Calendar size="16px" />
         </Tooltip.Trigger>
         <Tooltip.Content side="bottom" sideOffset={10}>
@@ -394,9 +455,13 @@
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
+          {primaryTimeDimension}
+          {selectedTimeDimension}
           {showDefaultItem}
+          timeDimensions={timeDimensionOptions}
           watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
+          {onTimeDimensionSelect}
           {onSelectRange}
           {onTimeGrainSelect}
           {onSelectTimeZone}
@@ -414,7 +479,7 @@
       {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
-            <span class="text-gray-600 italic">
+            <span class="text-fg-secondary italic">
               as of <Timestamp
                 id="filter-bar-as-of"
                 italic
@@ -439,15 +504,15 @@
 
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
     {#if !readOnly}
-      <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
+      <Filter size="16px" className="text-fg-secondary flex-none mt-[5px]" />
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
       {#if isComplexFilter}
-        <AdvancedFilter advancedFilter={$dashboardStore.whereFilter} />
+        <AdvancedFilter advancedFilter={whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
-          class="ui-copy-disabled grid ml-1 items-center"
+          class="text-fg-muted grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
           No filters selected
@@ -463,6 +528,7 @@
               {readOnly}
               {timeStart}
               {timeEnd}
+              timeDimension={selectedTimeDimension}
               {timeControlsReady}
               removeDimensionFilter={async (name) =>
                 removeDimensionFilter(name)}

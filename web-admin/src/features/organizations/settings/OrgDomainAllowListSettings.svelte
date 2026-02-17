@@ -54,7 +54,7 @@
   <div slot="body" class="mt-1">
     <div class="flex flex-row items-center gap-x-2">
       {#if !$isPublicDomain.data}
-        <Label for="allow-domain" class="font-normal text-gray-700 text-sm">
+        <Label for="allow-domain" class="font-normal text-fg-secondary text-sm">
           Allow existing and new Rill users with a <b>@{$userDomain.data}</b>
           email address to join this org as a <b>Viewer</b>.
           <a
@@ -91,11 +91,11 @@
       {#if $allowedDomains.data?.domains?.length}
         <div class="flex flex-col ml-2 mt-1 gap-y-1">
           {#each $allowedDomains.data.domains as { domain } (domain)}
-            <div class="text-gray-500 font-normal">@{domain}</div>
+            <div class="text-fg-secondary font-normal">@{domain}</div>
           {/each}
         </div>
       {:else}
-        <div class="text-gray-500">none</div>
+        <div class="text-fg-secondary">none</div>
       {/if}
     </div>
   </div>

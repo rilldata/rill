@@ -5090,6 +5090,9 @@ definitions:
       usesArchive:
         type: boolean
         description: Whether the deployment is git based or archive based.
+      duckdbConnectorConfig:
+        type: object
+        title: Duckdb connector config for the deployment
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
@@ -6643,6 +6646,8 @@ definitions:
         type: string
       quotas:
         $ref: '#/definitions/v1UserQuotas'
+      pylonEmailHash:
+        type: string
       createdOn:
         type: string
         format: date-time

@@ -35,7 +35,7 @@
   import type {
     MetricsViewSpecMeasure,
     V1TimeGrain,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { extent } from "d3-array";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
@@ -89,8 +89,7 @@
   const measureSelectionEnabledStore = measureSelection.getEnabledStore();
   $: measureSelectionEnabled = $measureSelectionEnabledStore;
 
-  export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
-    v.toString();
+  export let mouseoverTimeFormat: (d: Date) => string = (v) => v.toString();
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: axisFormat = createMeasureValueFormatter<null | undefined>(
@@ -191,6 +190,9 @@
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
 
+  $: measureSelection.setZone(zone);
+  $: measureSelection.setTimeGrain(timeGrain);
+
   function inBounds(min, max, value) {
     return value >= min && value <= max;
   }
@@ -289,7 +291,11 @@
   }
 </script>
 
-<div class={`${cursorClass} select-none`}>
+<div
+  role="presentation"
+  class="{cursorClass} select-none"
+  aria-label="Measure Chart for {measure.name}"
+>
   <SimpleDataGraphic
     bind:hovered
     let:mouseOverThisChart
@@ -358,7 +364,8 @@
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
             <g transition:fly={{ duration: 100, x: -4 }}>
               <text
-                class="fill-gray-700 stroke-surface"
+                aria-label="{measure.name} primary time label"
+                class="fill-fg-secondary stroke-surface-background"
                 style:paint-order="stroke"
                 stroke-width="3px"
                 x={config.plotLeft + config.bodyBuffer + 6}
@@ -368,9 +375,10 @@
               </text>
               {#if showComparison && point[`comparison.${labelAccessor}`]}
                 <text
+                  aria-label="{measure.name} comparison time label"
                   style:paint-order="stroke"
                   stroke-width="3px"
-                  class="fill-gray-500 stroke-surface"
+                  class="fill-fg-secondary stroke-surface-background"
                   x={config.plotLeft + config.bodyBuffer + 6}
                   y={config.plotTop + 24 + config.bodyBuffer}
                 >
@@ -399,7 +407,7 @@
                   {showComparison}
                   {mouseoverFormat}
                   {numberKind}
-                  colorClass="stroke-slate-300"
+                  colorClass="stroke-fg-muted"
                 />
               {/if}
             </g>
