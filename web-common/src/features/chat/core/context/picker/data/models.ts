@@ -12,8 +12,8 @@ import {
   getClientFilteredResourcesQueryOptions,
   ResourceKind,
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { derived, type Readable } from "svelte/store";
+import { getQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import { derived, get, type Readable } from "svelte/store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
@@ -28,9 +28,10 @@ import type { PickerItem } from "@rilldata/web-common/features/chat/core/context
 export function getModelsPickerOptions(
   uiState: ContextPickerUIState,
 ): Readable<PickerItem[]> {
+  const modelResourcesOptions = getClientFilteredResourcesQueryOptions(ResourceKind.Model);
   const modelResourcesQuery = createQuery(
-    getClientFilteredResourcesQueryOptions(ResourceKind.Model),
-    queryClient,
+    () => get(modelResourcesOptions),
+    getQueryClient,
   );
   const activeResourceStore = getActiveResourceStore();
 
@@ -73,7 +74,7 @@ export function getModelsPickerOptions(
       });
 
       const allPickerOptionsStore = derived(
-        modelQueryOptions.map((o) => createQuery(o, queryClient)),
+        modelQueryOptions.map((o) => createQuery(() => get(o), getQueryClient)),
         (modelQueryResults) => {
           return modelQueryResults.flatMap((res, index) => [
             {

@@ -12,7 +12,7 @@ import {
   getExploreValidSpecQueryOptions,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors.ts";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { getQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceListResources,
   getQueryServiceMetricsViewSchemaQueryOptions,
@@ -32,7 +32,7 @@ import {
   type CreateQueryResult,
   type QueryClient,
 } from "@tanstack/svelte-query";
-import { derived, type Readable } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
 import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
 import type { ErrorType } from "../../runtime-client/http-client";
 
@@ -166,15 +166,16 @@ export function useMetricsViewTimeRange(
     },
   );
 
-  return createQuery(fullTimeRangeQueryOptionsStore, queryClient);
+  return createQuery(() => get(fullTimeRangeQueryOptionsStore), getQueryClient);
 }
 
 export function getMetricsViewTimeRangeFromExploreQueryOptions(
   exploreNameStore: Readable<string>,
 ) {
+  const exploreValidSpecOptions = getExploreValidSpecQueryOptions(exploreNameStore);
   const validSpecQuery = createQuery(
-    getExploreValidSpecQueryOptions(exploreNameStore),
-    queryClient,
+    () => get(exploreValidSpecOptions),
+    getQueryClient,
   );
 
   return derived(
@@ -222,8 +223,8 @@ export function hasValidMetricsViewTimeRange(
     },
   );
   const fullTimeRangeQuery = createQuery(
-    fullTimeRangeQueryOptionsStore,
-    queryClient,
+    () => get(fullTimeRangeQueryOptionsStore),
+    getQueryClient,
   );
 
   return derived(
@@ -235,8 +236,9 @@ export function hasValidMetricsViewTimeRange(
 export function getMetricsViewSchemaOptions(
   exploreNameStore: Readable<string>,
 ) {
+  const schemaExploreValidSpecOptions = getExploreValidSpecQueryOptions(exploreNameStore);
   const validSpecQuery = createQuery(
-    getExploreValidSpecQueryOptions(exploreNameStore),
+    () => get(schemaExploreValidSpecOptions),
   );
 
   return derived(

@@ -2,7 +2,7 @@
   import DOMPurify from "dompurify";
   import { marked } from "marked";
   import { createQuery } from "@tanstack/svelte-query";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { getQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { MarkdownCanvasComponent } from "./";
   import {
     getPositionClasses,
@@ -26,7 +26,7 @@
     : {};
 
   const queryOptionsStore = getResolveTemplatedStringQueryOptions(component);
-  $: resolveQuery = createQuery(queryOptionsStore, queryClient);
+  $: resolveQuery = createQuery(queryOptionsStore, getQueryClient);
 
   // Store the last successfully resolved content to prevent flashing during refetches
   let lastResolvedContent: string | null = null;

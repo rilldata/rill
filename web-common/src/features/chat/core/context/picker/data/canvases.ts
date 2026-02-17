@@ -4,7 +4,7 @@ import {
   getClientFilteredResourcesQueryOptions,
   ResourceKind,
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import { getQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { getCanvasNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
@@ -21,11 +21,12 @@ import { MessageType } from "@rilldata/web-common/features/chat/core/types.ts";
 export function getCanvasesPickerOptions(
   uiState: ContextPickerUIState,
 ): Readable<PickerItem[]> {
+  const canvasResourcesOptions = getClientFilteredResourcesQueryOptions(ResourceKind.Canvas, (res) =>
+    Boolean(res.canvas?.state?.validSpec),
+  );
   const canvasResourcesQuery = createQuery(
-    getClientFilteredResourcesQueryOptions(ResourceKind.Canvas, (res) =>
-      Boolean(res.canvas?.state?.validSpec),
-    ),
-    queryClient,
+    () => get(canvasResourcesOptions),
+    getQueryClient,
   );
   const lastUsedCanvasNameStore = getLastUsedCanvasNameStore();
   const activeCanvasNameStore = getCanvasNameStore();
@@ -67,7 +68,7 @@ export function getCanvasesPickerOptions(
       });
 
       const allPickerOptionsStore = derived(
-        canvasQueryOptions.map((o) => createQuery(o, queryClient)),
+        canvasQueryOptions.map((o) => createQuery(() => get(o), getQueryClient)),
         (canvasQueryResults) => {
           return canvasQueryResults.flatMap((res, index) => [
             {
@@ -134,9 +135,10 @@ function getCanvasComponentsQueryOptions(
  * Looks at the last conversation and returns the canvas used in the last message or tool call.
  */
 function getLastUsedCanvasNameStore() {
+  const latestConvoOptions = getLatestConversationQueryOptions();
   const lastConversationQuery = createQuery(
-    getLatestConversationQueryOptions(),
-    queryClient,
+    () => get(latestConvoOptions),
+    getQueryClient,
   );
 
   return derived(lastConversationQuery, (latestConversation) => {

@@ -4,7 +4,10 @@
  * Common functions used across ConversationManager and Conversation classes to avoid duplication
  * and maintain consistency in ID generation and message content extraction.
  */
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import {
+  getQueryClient,
+  queryClient,
+} from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import {
   getRuntimeServiceGetConversationQueryOptions,
   getRuntimeServiceListConversationsQueryKey,
@@ -13,7 +16,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { MessageContentType, ToolName } from "./types";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
-import { derived } from "svelte/store";
+import { derived, get } from "svelte/store";
 import { createQuery } from "@tanstack/svelte-query";
 
 // =============================================================================
@@ -88,7 +91,7 @@ export function getLatestConversationQueryOptions() {
     }),
   );
   const lastConversationId = derived(
-    createQuery(listConversationsQueryOptions, queryClient),
+    createQuery(() => get(listConversationsQueryOptions), getQueryClient),
     (conversationsResp) => {
       return conversationsResp?.data?.conversations?.[0]?.id;
     },
