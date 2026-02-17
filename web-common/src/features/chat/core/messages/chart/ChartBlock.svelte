@@ -46,10 +46,21 @@
         timeZone: "UTC",
       };
 
+  $: comparisonTimeRange = chartSpec.comparison_time_range
+    ? {
+        start: chartSpec.comparison_time_range.start,
+        end: chartSpec.comparison_time_range.end,
+        timeZone:
+          chartSpec.comparison_time_range.time_zone || timeRange.timeZone,
+      }
+    : undefined;
+
+  $: hasComparison = !!comparisonTimeRange?.start && !!comparisonTimeRange?.end;
+
   $: timeAndFilterStore = readable({
     timeRange: timeRange,
-    comparisonTimeRange: undefined,
-    showTimeComparison: false,
+    comparisonTimeRange: comparisonTimeRange,
+    showTimeComparison: hasComparison,
     where: mapResolverExpressionToV1Expression(chartSpec.where) || {
       cond: {
         op: "OPERATION_AND",
