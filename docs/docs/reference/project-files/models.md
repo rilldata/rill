@@ -57,7 +57,7 @@ _[string]_ - Raw SQL query to run against source _(required)_
 
 ### `pre_exec`
 
-_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
+_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
@@ -65,7 +65,7 @@ pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=po
 
 ### `post_exec`
 
-_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
 
 ```yaml
 post_exec: DETACH DATABASE IF EXISTS postgres_db
@@ -96,10 +96,6 @@ _[object]_ - Refers to the retry configuration for the model. (optional)
   - **`exponential_backoff`** - _[boolean]_ - Whether to use exponential backoff. 
 
   - **`if_error_matches`** - _[array of string]_ - The error messages to match. 
-
-The default `if_error_matches` values are:
-`".*OvercommitTracker.*"`, `".*Bad Gateway.*"`, `".*Timeout.*"`, and `".*Connection refused.*"`.
-Setting `retry.if_error_matches` overrides this default list (it does not merge with it).
 
 ```yaml
 retry:
@@ -451,11 +447,11 @@ _[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ### `pre_exec`
 
-_[string]_ - refers to SQL queries to run before the main query, available for DuckDB-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable. 
+_[string]_ - refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable. 
 
 ### `post_exec`
 
-_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
+_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
