@@ -131,7 +131,7 @@
           autofocus={false}
           showBorderOnFocus={false}
         />
-        <OrgUsersFilters bind:filterSelection showMembers={false} />
+        <OrgUsersFilters bind:filterSelection showMembers={false} showRoleFilter={false} />
         <Button
           type="primary"
           large
