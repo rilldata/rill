@@ -5,7 +5,6 @@
   import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import * as Popover from "@rilldata/web-common/components/popover";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
@@ -21,7 +20,7 @@
   import { BookmarkIcon, BellPlusIcon } from "lucide-svelte";
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
-  import Rocket from "svelte-radix/Rocket.svelte";
+  import PreviewFeaturePopover from "./PreviewFeaturePopover.svelte";
 
   export let exploreName: string;
   export let inPreviewMode = false;
@@ -74,120 +73,43 @@
   </StateManagersProvider>
   {#if inPreviewMode}
     <!-- Home View -->
-    <Popover.Root>
-      <Popover.Trigger asChild let:builder>
-        <Button type="secondary" compact gray builders={[builder]} label="Home">
-          <HomeBookmark size="16px" />
-        </Button>
-      </Popover.Trigger>
-      <Popover.Content align="end" class="w-64">
-        <div class="flex flex-col gap-y-3">
-          <div>
-            <p class="text-sm font-semibold" style="color: var(--fg-primary)">
-              Default Home View
-            </p>
-            <p class="text-xs mt-1" style="color: var(--fg-muted)">
-              Set a default dashboard view for all users. They'll see the exact
-              filters and settings you've configured.
-            </p>
-          </div>
-          <Button type="primary" href="/deploy" compact>
-            <Rocket size="14px" />
-            Deploy to unlock
-          </Button>
-        </div>
-      </Popover.Content>
-    </Popover.Root>
+    <PreviewFeaturePopover
+      title="Default Home View"
+      description="Set a default dashboard view for all users. They'll see the exact filters and settings you've configured."
+      buttonLabel="Home"
+    >
+      <HomeBookmark slot="icon" size="16px" />
+    </PreviewFeaturePopover>
 
     <!-- Bookmarks -->
-    <Popover.Root>
-      <Popover.Trigger asChild let:builder>
-        <Button
-          type="secondary"
-          compact
-          gray
-          builders={[builder]}
-          label="Bookmarks"
-        >
-          <BookmarkIcon class="inline-flex" size="16px" />
-        </Button>
-      </Popover.Trigger>
-      <Popover.Content align="end" class="w-64">
-        <div class="flex flex-col gap-y-3">
-          <div>
-            <p class="text-sm font-semibold" style="color: var(--fg-primary)">
-              Bookmarks
-            </p>
-            <p class="text-xs mt-1" style="color: var(--fg-muted)">
-              Save and share specific dashboard views with your team. Keep track
-              of important metric combinations and filter states.
-            </p>
-          </div>
-          <Button type="primary" href="/deploy" compact>
-            <Rocket size="14px" />
-            Deploy to unlock
-          </Button>
-        </div>
-      </Popover.Content>
-    </Popover.Root>
+    <PreviewFeaturePopover
+      title="Bookmarks"
+      description="Save and share specific dashboard views with your team. Keep track of important metric combinations and filter states."
+      buttonLabel="Bookmarks"
+    >
+      <BookmarkIcon slot="icon" class="inline-flex" size="16px" />
+    </PreviewFeaturePopover>
 
     <!-- Alerts -->
     {#if $alertsFlag}
-      <Popover.Root>
-        <Popover.Trigger asChild let:builder>
-          <Button
-            type="secondary"
-            compact
-            gray
-            builders={[builder]}
-            label="Create alert"
-          >
-            <BellPlusIcon class="inline-flex" size="16px" />
-          </Button>
-        </Popover.Trigger>
-        <Popover.Content align="end" class="w-64">
-          <div class="flex flex-col gap-y-3">
-            <div>
-              <p class="text-sm font-semibold" style="color: var(--fg-primary)">
-                Alerts
-              </p>
-              <p class="text-xs mt-1" style="color: var(--fg-muted)">
-                Get notified when metrics change beyond thresholds you define.
-                Receive alerts via email, Slack, or webhooks.
-              </p>
-            </div>
-            <Button type="primary" href="/deploy" compact>
-              <Rocket size="14px" />
-              Deploy to unlock
-            </Button>
-          </div>
-        </Popover.Content>
-      </Popover.Root>
+      <PreviewFeaturePopover
+        title="Alerts"
+        description="Get notified when metrics change beyond thresholds you define. Receive alerts via email, Slack, or webhooks."
+        buttonLabel="Create alert"
+      >
+        <BellPlusIcon slot="icon" class="inline-flex" size="16px" />
+      </PreviewFeaturePopover>
     {/if}
 
     <!-- Share -->
-    <Popover.Root>
-      <Popover.Trigger asChild let:builder>
-        <Button type="secondary" gray builders={[builder]}>Share</Button>
-      </Popover.Trigger>
-      <Popover.Content align="end" class="w-64">
-        <div class="flex flex-col gap-y-3">
-          <div>
-            <p class="text-sm font-semibold" style="color: var(--fg-primary)">
-              Share Dashboards
-            </p>
-            <p class="text-xs mt-1" style="color: var(--fg-muted)">
-              Share dashboards with your team using public URLs, embed them in
-              other tools, or set up role-based access controls.
-            </p>
-          </div>
-          <Button type="primary" href="/deploy" compact>
-            <Rocket size="14px" />
-            Deploy to unlock
-          </Button>
-        </div>
-      </Popover.Content>
-    </Popover.Root>
+    <PreviewFeaturePopover
+      title="Share Dashboards"
+      description="Share dashboards with your team using public URLs, embed them in other tools, or set up role-based access controls."
+      buttonLabel="Share"
+      compact={false}
+    >
+      <svelte:fragment slot="trigger-label">Share</svelte:fragment>
+    </PreviewFeaturePopover>
   {/if}
   {#if !$readOnly && !inPreviewMode}
     <DropdownMenu.Root>

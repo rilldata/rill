@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  filterResources,
-  getResourceStatus,
-} from "./resource-filter-utils";
+import { filterResources, getResourceStatus } from "./resource-filter-utils";
 import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -73,16 +70,11 @@ describe("filterResources", () => {
   });
 
   it("filters by type", () => {
-    const result = filterResources(
-      resources,
-      [ResourceKind.Source],
-      "",
-      [],
-    );
+    const result = filterResources(resources, [ResourceKind.Source], "", []);
     expect(result).toHaveLength(3);
-    expect(result.every((r) => r.meta?.name?.kind === ResourceKind.Source)).toBe(
-      true,
-    );
+    expect(
+      result.every((r) => r.meta?.name?.kind === ResourceKind.Source),
+    ).toBe(true);
   });
 
   it("filters by multiple types", () => {
@@ -115,23 +107,17 @@ describe("filterResources", () => {
   });
 
   it("combines type + search + status filters", () => {
-    const result = filterResources(
-      resources,
-      [ResourceKind.Source],
-      "broken",
-      ["error"],
-    );
+    const result = filterResources(resources, [ResourceKind.Source], "broken", [
+      "error",
+    ]);
     expect(result).toHaveLength(1);
     expect(result[0].meta?.name?.name).toBe("broken_source");
   });
 
   it("returns empty when no resources match combined filters", () => {
-    const result = filterResources(
-      resources,
-      [ResourceKind.Explore],
-      "",
-      ["error"],
-    );
+    const result = filterResources(resources, [ResourceKind.Explore], "", [
+      "error",
+    ]);
     expect(result).toHaveLength(0);
   });
 });
