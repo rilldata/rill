@@ -1,0 +1,109 @@
+<script lang="ts">
+  import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
+  import {
+    adminServiceListProjectsForOrganization,
+    adminServiceListProjectMemberUsergroups,
+    type V1Project,
+  } from "@rilldata/web-admin/client";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+
+  export let organization: string;
+  export let groupName: string;
+
+  let isDropdownOpen = false;
+  let isPending = false;
+  let accessibleProjects: V1Project[] = [];
+  let error: string | null = null;
+  let hasLoaded = false;
+
+  async function loadProjectsForGroup() {
+    if (hasLoaded || isPending) return;
+
+    isPending = true;
+    error = null;
+
+    try {
+      const projectsResponse =
+        await adminServiceListProjectsForOrganization(organization);
+      const allProjects = projectsResponse.projects ?? [];
+
+      const projectsWithAccess: V1Project[] = [];
+
+      await Promise.all(
+        allProjects.map(async (project) => {
+          try {
+            const usergroupsResponse =
+              await adminServiceListProjectMemberUsergroups(
+                organization,
+                project.name ?? "",
+              );
+            const members = usergroupsResponse.members ?? [];
+            const hasAccess = members.some((m) => m.groupName === groupName);
+            if (hasAccess) {
+              projectsWithAccess.push(project);
+            }
+          } catch {
+            // If we can't check this project, skip it
+          }
+        }),
+      );
+
+      accessibleProjects = projectsWithAccess;
+      hasLoaded = true;
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Failed to load projects";
+    } finally {
+      isPending = false;
+    }
+  }
+
+  $: if (isDropdownOpen && !hasLoaded) {
+    void loadProjectsForGroup();
+  }
+
+  $: projectCount = accessibleProjects.length;
+  $: hasProjects = projectCount > 0;
+
+  function getProjectShareUrl(projectName: string | undefined) {
+    return `/${organization}/${projectName}/-/dashboards?share=true`;
+  }
+</script>
+
+<Dropdown.Root bind:open={isDropdownOpen}>
+  <Dropdown.Trigger
+    class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
+      ? 'bg-gray-200'
+      : 'hover:bg-surface-hover'} px-2 py-1"
+  >
+    <span class="capitalize">
+      {#if isPending}
+        Loading...
+      {:else if hasLoaded}
+        {projectCount} Project{projectCount !== 1 ? "s" : ""}
+      {:else}
+        Projects
+      {/if}
+    </span>
+    {#if isDropdownOpen}
+      <CaretUpIcon size="12px" />
+    {:else}
+      <CaretDownIcon size="12px" />
+    {/if}
+  </Dropdown.Trigger>
+  <Dropdown.Content align="start">
+    {#if isPending}
+      <div class="px-2 py-1 text-fg-secondary text-sm">Loading...</div>
+    {:else if error}
+      <div class="px-2 py-1 text-red-500 text-sm">{error}</div>
+    {:else if !hasProjects}
+      <div class="px-2 py-1 text-fg-secondary text-sm">No projects</div>
+    {:else}
+      {#each accessibleProjects as project (project.id)}
+        <Dropdown.Item href={getProjectShareUrl(project.name)}>
+          {project.name}
+        </Dropdown.Item>
+      {/each}
+    {/if}
+  </Dropdown.Content>
+</Dropdown.Root>
