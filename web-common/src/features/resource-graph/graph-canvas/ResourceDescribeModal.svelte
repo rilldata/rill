@@ -24,11 +24,8 @@
     AlertCircle,
     ChevronDown,
     ChevronRight,
-    RotateCcw,
     HardDrive,
     ArrowRightLeft,
-    Timer,
-    RefreshCw,
   } from "lucide-svelte";
   import type { ResourceNodeData } from "../shared/types";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
@@ -185,6 +182,45 @@
 
   $: executionDuration = formatDuration(metadata?.executionDurationMs);
 
+  // Build refresh schedule YAML
+  $: refreshYaml = (() => {
+    const m = metadata;
+    if (!m) return "";
+    const lines: string[] = [];
+    if (m.hasSchedule && m.scheduleDescription) {
+      lines.push(`cron: "${m.scheduleDescription}"`);
+    }
+    if (m.refUpdate) {
+      lines.push(`ref_update: true`);
+    }
+    if (m.timeoutSeconds) {
+      lines.push(`timeout_seconds: ${m.timeoutSeconds}`);
+    }
+    return lines.join("\n");
+  })();
+
+  // Build retry YAML
+  $: retryYaml = (() => {
+    const m = metadata;
+    if (!m?.retryAttempts) return "";
+    const lines: string[] = [];
+    lines.push(`retry:`);
+    lines.push(`  attempts: ${m.retryAttempts}`);
+    if (m.retryDelaySeconds) {
+      lines.push(`  delay_seconds: ${m.retryDelaySeconds}`);
+    }
+    if (m.retryExponentialBackoff) {
+      lines.push(`  exponential_backoff: true`);
+    }
+    if (m.retryIfErrorMatches?.length) {
+      lines.push(`  if_error_matches:`);
+      for (const pattern of m.retryIfErrorMatches) {
+        lines.push(`    - "${pattern}"`);
+      }
+    }
+    return lines.join("\n");
+  })();
+
   // Rebuild security rules as YAML-like text (matches Rill YAML format)
   $: securityYaml = (() => {
     if (!securityRules.length) return "";
@@ -307,24 +343,6 @@
               >{metadata?.isSqlModel ? "SQL" : "YAML"}</span
             >
           </div>
-          {#if metadata?.inputConnector}
-            <div class="describe-row">
-              <span class="describe-row-icon"><Database size={14} /></span>
-              <span>Input: {metadata.inputConnector}</span>
-            </div>
-          {/if}
-          {#if metadata?.outputConnector}
-            <div class="describe-row">
-              <span class="describe-row-icon"><HardDrive size={14} /></span>
-              <span>Output: {metadata.outputConnector}{metadata.stageConnector ? ` (stage: ${metadata.stageConnector})` : ""}</span>
-            </div>
-          {/if}
-          {#if metadata?.resultTable}
-            <div class="describe-row">
-              <span class="describe-row-icon"><Table2 size={14} /></span>
-              <span>Table: {metadata.resultTable}</span>
-            </div>
-          {/if}
           {#if metadata?.materialize}
             <div class="describe-row">
               <span class="describe-row-icon"><HardDrive size={14} /></span>
@@ -363,53 +381,28 @@
         </div>
 
         <!-- Refresh -->
-        <div class="describe-section">
-          <h4 class="describe-section-title">Refresh</h4>
-          {#if metadata?.lastRefreshedOn}
-            <div class="describe-row">
-              <span class="describe-row-icon"><Clock size={14} /></span>
-              <span>Last: {new Date(metadata.lastRefreshedOn).toLocaleString()}</span>
-            </div>
-          {/if}
-          {#if executionDuration}
-            <div class="describe-row">
-              <span class="describe-row-icon"><Timer size={14} /></span>
-              <span>Duration: {executionDuration}</span>
-            </div>
-          {/if}
-          {#if metadata?.hasSchedule && metadata?.scheduleDescription}
-            <div class="describe-row">
-              <span class="describe-row-icon"><RefreshCw size={14} /></span>
-              <span>Cron: {metadata.scheduleDescription}</span>
-            </div>
-          {/if}
-          {#if metadata?.refUpdate}
-            <div class="describe-row">
-              <span class="describe-row-icon"><RefreshCw size={14} /></span>
-              <span>Refresh on upstream change</span>
-            </div>
-          {/if}
-          {#if metadata?.timeoutSeconds}
-            <div class="describe-row">
-              <span class="describe-row-icon"><Timer size={14} /></span>
-              <span>Timeout: {metadata.timeoutSeconds}s</span>
-            </div>
-          {/if}
-          {#if metadata?.retryAttempts}
-            <div class="describe-row">
-              <span class="describe-row-icon"><RotateCcw size={14} /></span>
-              <span>
-                Retry: {metadata.retryAttempts}x{metadata.retryDelaySeconds ? `, ${metadata.retryDelaySeconds}s delay` : ""}{metadata.retryExponentialBackoff ? ", exponential backoff" : ""}
-              </span>
-            </div>
-          {/if}
-          {#if !metadata?.lastRefreshedOn && !metadata?.hasSchedule && !metadata?.refUpdate && !metadata?.retryAttempts}
-            <div class="describe-row">
-              <span class="describe-row-icon"><Clock size={14} /></span>
-              <span class="text-fg-muted">No refresh data</span>
-            </div>
-          {/if}
-        </div>
+        {#if metadata?.lastRefreshedOn || refreshYaml}
+          <div class="describe-section">
+            <h4 class="describe-section-title">Refresh</h4>
+            {#if refreshYaml}
+              <pre class="describe-yaml">{refreshYaml}</pre>
+            {/if}
+            {#if metadata?.lastRefreshedOn}
+              <div class="describe-row">
+                <span class="describe-row-icon"><Clock size={14} /></span>
+                <span>Last Refreshed: {new Date(metadata.lastRefreshedOn).toLocaleString()}{executionDuration ? ` (${executionDuration})` : ""}</span>
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- Retry -->
+        {#if retryYaml}
+          <div class="describe-section">
+            <h4 class="describe-section-title">Retry</h4>
+            <pre class="describe-yaml">{retryYaml}</pre>
+          </div>
+        {/if}
       {/if}
 
       <!-- MetricsView Info -->
@@ -420,12 +413,6 @@
             <div class="describe-row">
               <span class="describe-row-icon"><LayoutGrid size={14} /></span>
               <span>Model: {metadata.metricsModel}</span>
-            </div>
-          {/if}
-          {#if metadata?.metricsTable}
-            <div class="describe-row">
-              <span class="describe-row-icon"><Table2 size={14} /></span>
-              <span>Table: {metadata.metricsTable}</span>
             </div>
           {/if}
           {#if metadata?.timeDimension}

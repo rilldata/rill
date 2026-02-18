@@ -231,6 +231,7 @@ function extractResourceMetadata(
     if (spec.retryAttempts) metadata.retryAttempts = spec.retryAttempts;
     if (spec.retryDelaySeconds) metadata.retryDelaySeconds = spec.retryDelaySeconds;
     if (spec.retryExponentialBackoff) metadata.retryExponentialBackoff = true;
+    if (spec.retryIfErrorMatches?.length) metadata.retryIfErrorMatches = spec.retryIfErrorMatches;
 
     // Tests
     metadata.testCount = spec.tests?.length ?? 0;

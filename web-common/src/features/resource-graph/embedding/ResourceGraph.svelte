@@ -76,6 +76,7 @@
   export let activeKindLabel: string = "All types";
   export let statusFilterOptions: { label: string; value: ResourceStatusFilterValue }[] = [];
   export let onStatusToggle: ((value: ResourceStatusFilterValue) => void) | null = null;
+  export let onClearFilters: (() => void) | null = null;
 
   type SummaryMemo = {
     sources: number;
@@ -225,6 +226,17 @@
       ? filteredResourceGroups.slice(0, maxGroups)
       : filteredResourceGroups;
   $: hasGraphs = visibleResourceGroups.length > 0;
+
+  // Whether any filters are active (kind, status, or tree search)
+  $: hasActiveFilters =
+    activeKindLabel !== "All types" ||
+    statusFilter.length > 0 ||
+    treeSearchQuery.trim().length > 0;
+
+  function handleClearFilters() {
+    treeSearchQuery = "";
+    onClearFilters?.();
+  }
 
   // --- Sidebar selection state ---
   let treeSearchQuery = "";
@@ -675,6 +687,11 @@
       </div>
 
       <div class="toolbar-right">
+        {#if hasActiveFilters}
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
+          <span class="clear-link" on:click={handleClearFilters}>Clear Filter</span>
+        {/if}
         {#if statusFilterOptions.length > 0}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild let:builder>
@@ -699,9 +716,9 @@
           </DropdownMenu.Root>
         {/if}
         {#if onRefreshAll}
-          <Button type="tertiary" onClick={onRefreshAll}>
+          <Button type="secondary" onClick={onRefreshAll}>
             <RefreshCw size="14" />
-            <span>Refresh all</span>
+            <span>Refresh all sources and models</span>
           </Button>
         {/if}
       </div>
@@ -724,9 +741,9 @@
           flowId={selectedGroup.id}
           resources={selectedGroup.resources}
           title={null}
-          titleLabel={showCardTitles ? parts.labelWithCount : null}
-          titleErrorCount={showCardTitles ? parts.errorCount : null}
-          anchorError={showCardTitles ? parts.anchorError : false}
+          titleLabel={null}
+          titleErrorCount={null}
+          anchorError={false}
           rootNodeIds={groupRootNodeIds(selectedGroup)}
           {showControls}
           {showNodeActions}
@@ -920,6 +937,14 @@
 
   .toolbar-right {
     @apply flex items-center gap-x-2;
+  }
+
+  .clear-link {
+    @apply text-xs text-primary-500 cursor-pointer;
+  }
+
+  .clear-link:hover {
+    @apply text-primary-600;
   }
 
   .tree-search-wrapper {

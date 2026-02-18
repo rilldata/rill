@@ -16,6 +16,7 @@
   export let activeKindLabel: string = "All types";
   export let statusFilterOptions: { label: string; value: ResourceStatusFilterValue }[] = [];
   export let onStatusToggle: ((value: ResourceStatusFilterValue) => void) | null = null;
+  export let onClearFilters: (() => void) | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -50,4 +51,5 @@
   {activeKindLabel}
   {statusFilterOptions}
   {onStatusToggle}
+  {onClearFilters}
 />

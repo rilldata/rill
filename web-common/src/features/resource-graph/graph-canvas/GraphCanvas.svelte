@@ -288,6 +288,7 @@
     <div
       class="graph-container"
       class:h-full={fillParent}
+      class:no-border={fillParent}
       bind:this={containerEl}
       style:height={containerInlineHeight}
     >
@@ -361,6 +362,10 @@
 
   .graph-container {
     @apply relative w-full overflow-hidden rounded-lg border;
+  }
+
+  .graph-container.no-border {
+    @apply border-0 rounded-none;
   }
 
   .state {

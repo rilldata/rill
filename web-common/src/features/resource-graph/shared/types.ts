@@ -51,6 +51,7 @@ export interface ResourceMetadata {
   retryAttempts?: number; // number of retry attempts on failure
   retryDelaySeconds?: number; // delay between retries
   retryExponentialBackoff?: boolean; // whether retries use exponential backoff
+  retryIfErrorMatches?: string[]; // error patterns that trigger retry
   executionDurationMs?: string; // latest execution duration in ms
   testCount?: number; // number of tests defined
   testErrors?: string[]; // test failure messages (empty = all pass)

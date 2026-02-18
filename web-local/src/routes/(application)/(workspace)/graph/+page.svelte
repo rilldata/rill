@@ -80,6 +80,12 @@
     }
   }
 
+  // Clear all filters
+  function handleClearFilters() {
+    selectedStatuses = [];
+    handleKindChange(null);
+  }
+
   // Refresh all
   let isConfirmDialogOpen = false;
 
@@ -125,6 +131,7 @@
     {activeKindLabel}
     statusFilterOptions={statusOptions}
     onStatusToggle={toggleStatus}
+    onClearFilters={handleClearFilters}
   />
 </div>
 
