@@ -229,9 +229,11 @@ function extractResourceMetadata(
 
     // Retry configuration
     if (spec.retryAttempts) metadata.retryAttempts = spec.retryAttempts;
-    if (spec.retryDelaySeconds) metadata.retryDelaySeconds = spec.retryDelaySeconds;
+    if (spec.retryDelaySeconds)
+      metadata.retryDelaySeconds = spec.retryDelaySeconds;
     if (spec.retryExponentialBackoff) metadata.retryExponentialBackoff = true;
-    if (spec.retryIfErrorMatches?.length) metadata.retryIfErrorMatches = spec.retryIfErrorMatches;
+    if (spec.retryIfErrorMatches?.length)
+      metadata.retryIfErrorMatches = spec.retryIfErrorMatches;
 
     // Tests
     metadata.testCount = spec.tests?.length ?? 0;
@@ -329,10 +331,8 @@ function extractResourceMetadata(
       metadata.theme = explore.spec.theme;
     }
     metadata.metricsViewName = explore.spec.metricsView;
-    metadata.hasSecurityRules =
-      (explore.spec.securityRules?.length ?? 0) > 0;
-    metadata.exploreMeasuresAll =
-      explore.spec.measuresSelector?.all === true;
+    metadata.hasSecurityRules = (explore.spec.securityRules?.length ?? 0) > 0;
+    metadata.exploreMeasuresAll = explore.spec.measuresSelector?.all === true;
     metadata.exploreDimensionsAll =
       explore.spec.dimensionsSelector?.all === true;
     metadata.exploreMeasuresCount = explore.spec.measures?.length ?? 0;
@@ -353,8 +353,7 @@ function extractResourceMetadata(
     if (componentCount > 0) {
       metadata.componentCount = componentCount;
     }
-    metadata.hasSecurityRules =
-      (canvas.spec.securityRules?.length ?? 0) > 0;
+    metadata.hasSecurityRules = (canvas.spec.securityRules?.length ?? 0) > 0;
   }
 
   // Look up alert/API counts from pre-built reverse-reference map (O(1))

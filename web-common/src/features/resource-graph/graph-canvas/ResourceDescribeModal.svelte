@@ -242,18 +242,12 @@
         if (rule.fieldAccess.allFields) {
           lines.push(`    all: true`);
         } else if (rule.fieldAccess.fields?.length) {
-          lines.push(
-            `    fields: [${rule.fieldAccess.fields.join(", ")}]`,
-          );
+          lines.push(`    fields: [${rule.fieldAccess.fields.join(", ")}]`);
         }
-        lines.push(
-          `    allow: ${rule.fieldAccess.allow ? "true" : "false"}`,
-        );
+        lines.push(`    allow: ${rule.fieldAccess.allow ? "true" : "false"}`);
       }
       if (rule.rowFilter) {
-        const val = rule.rowFilter.sql
-          ? `"${rule.rowFilter.sql}"`
-          : "true";
+        const val = rule.rowFilter.sql ? `"${rule.rowFilter.sql}"` : "true";
         lines.push(`  row_filter: ${val}`);
         if (rule.rowFilter.conditionExpression) {
           lines.push(`    if: "${rule.rowFilter.conditionExpression}"`);
@@ -350,7 +344,10 @@
             </div>
           {/if}
           {#if metadata?.partitioned}
-            <button class="describe-row describe-row-link" on:click={openPartitions}>
+            <button
+              class="describe-row describe-row-link"
+              on:click={openPartitions}
+            >
               <span class="describe-row-icon"><Layers size={14} /></span>
               <span>Partitioned</span>
               <ChevronRight size={12} />
@@ -364,13 +361,20 @@
           {/if}
           {#if metadata?.changeMode}
             <div class="describe-row">
-              <span class="describe-row-icon"><ArrowRightLeft size={14} /></span>
-              <span>Change mode: {metadata.changeMode.replace("MODEL_CHANGE_MODE_", "").toLowerCase()}</span>
+              <span class="describe-row-icon"><ArrowRightLeft size={14} /></span
+              >
+              <span
+                >Change mode: {metadata.changeMode
+                  .replace("MODEL_CHANGE_MODE_", "")
+                  .toLowerCase()}</span
+              >
             </div>
           {/if}
           {#if metadata?.testCount}
             <div class="describe-row">
-              <span class="describe-row-icon"><CheckCircle size="14px" color="currentColor" /></span>
+              <span class="describe-row-icon"
+                ><CheckCircle size="14px" color="currentColor" /></span
+              >
               <span
                 >{metadata.testCount} test{metadata.testCount > 1
                   ? "s"
@@ -390,7 +394,13 @@
             {#if metadata?.lastRefreshedOn}
               <div class="describe-row">
                 <span class="describe-row-icon"><Clock size={14} /></span>
-                <span>Last Refreshed: {new Date(metadata.lastRefreshedOn).toLocaleString()}{executionDuration ? ` (${executionDuration})` : ""}</span>
+                <span
+                  >Last Refreshed: {new Date(
+                    metadata.lastRefreshedOn,
+                  ).toLocaleString()}{executionDuration
+                    ? ` (${executionDuration})`
+                    : ""}</span
+                >
               </div>
             {/if}
           </div>

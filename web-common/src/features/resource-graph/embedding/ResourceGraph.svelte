@@ -24,7 +24,10 @@
   import ResourceKindSelector from "../summary/ResourceKindSelector.svelte";
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
-  import type { ResourceStatusFilter, ResourceStatusFilterValue } from "../shared/types";
+  import type {
+    ResourceStatusFilter,
+    ResourceStatusFilterValue,
+  } from "../shared/types";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -74,8 +77,13 @@
   export let onKindChange: ((kind: string | null) => void) | null = null;
   export let onRefreshAll: (() => void) | null = null;
   export let activeKindLabel: string = "All types";
-  export let statusFilterOptions: { label: string; value: ResourceStatusFilterValue }[] = [];
-  export let onStatusToggle: ((value: ResourceStatusFilterValue) => void) | null = null;
+  export let statusFilterOptions: {
+    label: string;
+    value: ResourceStatusFilterValue;
+  }[] = [];
+  export let onStatusToggle:
+    | ((value: ResourceStatusFilterValue) => void)
+    | null = null;
   export let onClearFilters: (() => void) | null = null;
 
   type SummaryMemo = {
@@ -242,7 +250,9 @@
   let treeSearchQuery = "";
   $: treeFilteredGroups = treeSearchQuery.trim()
     ? filteredResourceGroups.filter((g) =>
-        (g.label ?? g.id).toLowerCase().includes(treeSearchQuery.toLowerCase().trim()),
+        (g.label ?? g.id)
+          .toLowerCase()
+          .includes(treeSearchQuery.toLowerCase().trim()),
       )
     : filteredResourceGroups;
 
@@ -320,9 +330,9 @@
 
   $: selectedGroup =
     layout === "sidebar"
-      ? filteredResourceGroups.find(
+      ? (filteredResourceGroups.find(
           (g) => g.id === effectiveSelectedGroupId,
-        ) ?? null
+        ) ?? null)
       : null;
   $: selectedGroupIndex =
     layout === "sidebar"
@@ -642,7 +652,10 @@
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
-        <CaretDownIcon size="12px" className="text-fg-muted -rotate-90 flex-none" />
+        <CaretDownIcon
+          size="12px"
+          className="text-fg-muted -rotate-90 flex-none"
+        />
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild let:builder>
             <button
@@ -651,7 +664,9 @@
               {...builder}
             >
               <span class="gap-x-1.5 items-center font-medium flex">
-                <span class="truncate">{selectedGroup?.label ?? "Select tree"}</span>
+                <span class="truncate"
+                  >{selectedGroup?.label ?? "Select tree"}</span
+                >
                 <CaretDownIcon size="10px" />
               </span>
             </button>
@@ -670,16 +685,25 @@
               {#each treeFilteredGroups as group (group.id)}
                 {@const status = getGroupStatus(group)}
                 <DropdownMenu.Item
-                  class="flex items-center gap-2 cursor-pointer {effectiveSelectedGroupId === group.id ? 'font-semibold' : ''}"
+                  class="flex items-center gap-2 cursor-pointer {effectiveSelectedGroupId ===
+                  group.id
+                    ? 'font-semibold'
+                    : ''}"
                   on:click={() => handleSidebarSelect(group.id)}
                 >
                   <span class="status-dot {status}"></span>
-                  <span class="flex-1 truncate text-xs">{group.label ?? group.id}</span>
-                  <span class="text-xs text-fg-muted">{group.resources.length}</span>
+                  <span class="flex-1 truncate text-xs"
+                    >{group.label ?? group.id}</span
+                  >
+                  <span class="text-xs text-fg-muted"
+                    >{group.resources.length}</span
+                  >
                 </DropdownMenu.Item>
               {/each}
               {#if treeFilteredGroups.length === 0}
-                <div class="px-3 py-2 text-xs text-fg-muted">No trees match.</div>
+                <div class="px-3 py-2 text-xs text-fg-muted">
+                  No trees match.
+                </div>
               {/if}
             </div>
           </DropdownMenu.Content>
@@ -690,7 +714,9 @@
         {#if hasActiveFilters}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
           <!-- svelte-ignore a11y-no-static-element-interactions -->
-          <span class="clear-link" on:click={handleClearFilters}>Clear Filter</span>
+          <span class="clear-link" on:click={handleClearFilters}
+            >Clear Filter</span
+          >
         {/if}
         {#if statusFilterOptions.length > 0}
           <DropdownMenu.Root>
@@ -699,7 +725,9 @@
                 {#if statusFilter.length === 0}
                   All statuses
                 {:else}
-                  {statusFilter.length} status{statusFilter.length > 1 ? "es" : ""}
+                  {statusFilter.length} status{statusFilter.length > 1
+                    ? "es"
+                    : ""}
                 {/if}
               </Button>
             </DropdownMenu.Trigger>
@@ -732,7 +760,9 @@
         <div class="state">
           <div class="loading-state">
             <DelayedSpinner isLoading={true} size="1.5rem" />
-            <p>{isLoading ? "Loading project graph..." : "Updating graphs..."}</p>
+            <p>
+              {isLoading ? "Loading project graph..." : "Updating graphs..."}
+            </p>
           </div>
         </div>
       {:else if selectedGroup}
@@ -1008,5 +1038,4 @@
   .graph-toolbar {
     @apply flex items-end justify-between;
   }
-
 </style>

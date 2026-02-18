@@ -16,6 +16,7 @@
   import { Unlock, AlertTriangle } from "lucide-svelte";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
+  import type { ComponentType, SvelteComponent } from "svelte";
 
   export let id: string;
   export let type: string;
@@ -104,10 +105,12 @@
   $: componentCount = metadata?.componentCount ?? 0;
   $: hasSecurityRules = metadata?.hasSecurityRules === true;
   $: connector = metadata?.connector ?? null;
-  $: connectorIcon =
-    connector && connectorIconMapping[connector as keyof typeof connectorIconMapping]
+  $: connectorIcon = (
+    connector &&
+    connectorIconMapping[connector as keyof typeof connectorIconMapping]
       ? connectorIconMapping[connector as keyof typeof connectorIconMapping]
-      : null;
+      : null
+  ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
 </script>
 
 <ConditionalTooltip
@@ -368,16 +371,8 @@
     @apply justify-between;
   }
 
-  .meta-row-end {
-    @apply justify-end;
-  }
-
   .meta-kind {
     @apply capitalize inline-flex items-center gap-x-1;
-  }
-
-  .meta-sep {
-    @apply text-fg-muted;
   }
 
   .meta-detail {
