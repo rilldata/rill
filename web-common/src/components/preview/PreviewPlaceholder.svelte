@@ -4,7 +4,7 @@
 
   export let title: string;
   export let description: string;
-  export let ctaLabel = "Deploy to Rill Cloud";
+  export let ctaLabel = "Deploy to unlock";
   export let ctaHref = "/deploy";
 </script>
 

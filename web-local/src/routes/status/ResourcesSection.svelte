@@ -20,7 +20,6 @@
     createRuntimeServiceListResources,
     getRuntimeServiceListResourcesQueryKey,
     V1ReconcileStatus,
-    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";

@@ -43,7 +43,7 @@
 
   // Runtime version
   $: versionQuery = createLocalServiceGetVersion();
-  $: version = $versionQuery.data?.version ?? "";
+  $: version = $versionQuery.data?.current ?? "";
 
   // Resources query for overview sections
   $: resourcesQuery = createRuntimeServiceListResources(instanceId, {});
@@ -164,12 +164,12 @@
             <h3 class="section-title">Logs</h3>
           </div>
           <p class="text-sm text-fg-muted">
-            Real-time logs are available after deploying to Rill Cloud.
+            Real-time logs are available after deploying.
           </p>
           <div class="mt-4">
             <Button type="primary" href="/deploy" compact>
               <Rocket size="14px" />
-              Deploy to Rill Cloud
+              Deploy to unlock
             </Button>
           </div>
         </div>
