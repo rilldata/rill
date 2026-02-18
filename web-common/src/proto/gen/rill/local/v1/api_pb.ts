@@ -176,11 +176,6 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
   adminUrl = "";
 
   /**
-   * @generated from field: bool preview_mode = 14;
-   */
-  previewMode = false;
-
-  /**
    * @generated from field: bool preview_locked_mode = 15;
    */
   previewLockedMode = false;
@@ -206,7 +201,6 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
     { no: 11, name: "grpc_port", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "login_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "admin_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 14, name: "preview_mode", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "preview_locked_mode", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

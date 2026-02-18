@@ -85,7 +85,7 @@ message GetMetadataResponse {
   int32 grpc_port = 11;
   string login_url = 12;
   string admin_url = 13;
-  bool preview_mode = 14;
+  reserved 14; // was preview_mode
   bool preview_locked_mode = 15;
 }
 

@@ -21,7 +21,6 @@ export async function load({ url, depends, untrack }) {
 
   // Fetch metadata to check preview mode
   const metadata = await localServiceGetMetadata();
-  const previewMode = metadata.previewMode ?? false;
   const previewLockedMode = metadata.previewLockedMode ?? false;
 
   // In previewer mode, only allow preview-related routes; redirect everything else to /home
@@ -54,8 +53,8 @@ export async function load({ url, depends, untrack }) {
   const redirectPath = untrack(() => {
     if (!url.searchParams.get("redirect")) return false;
 
-    // In preview/previewer mode, redirect to /home instead of /files
-    if (previewMode || previewLockedMode) {
+    // In locked preview mode, redirect to /home instead of /files
+    if (previewLockedMode) {
       return url.pathname !== "/home" && "/home";
     }
 
@@ -73,5 +72,5 @@ export async function load({ url, depends, untrack }) {
     }
   }
 
-  return { initialized, previewMode, previewLockedMode };
+  return { initialized, previewLockedMode };
 }

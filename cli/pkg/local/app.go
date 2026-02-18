@@ -52,7 +52,6 @@ type App struct {
 	BaseLogger            *zap.Logger
 	Verbose               bool
 	Debug                 bool
-	Preview               bool
 	ProjectPath           string
 	ch                    *cmdutil.Helper
 	observabilityShutdown observability.ShutdownFunc
@@ -76,7 +75,6 @@ type AppOptions struct {
 	LocalURL       string
 	AllowedOrigins []string
 	ServeUI        bool
-	Preview        bool
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -338,7 +336,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		BaseLogger:            logger,
 		Verbose:               opts.Verbose,
 		Debug:                 opts.Debug,
-		Preview:               opts.Preview,
 		ProjectPath:           projectPath,
 		ch:                    opts.Ch,
 		observabilityShutdown: shutdown,
@@ -384,7 +381,6 @@ type ServeOptions struct {
 	EnableUI      bool
 	OpenBrowser   bool
 	Readonly      bool
-	Preview       bool
 	PreviewLocked bool
 	UserID        string
 	TLSCertPath   string
@@ -411,7 +407,6 @@ func (a *App) Serve(opts ServeOptions) error {
 		IsDev:             a.ch.Version.IsDev(),
 		AnalyticsEnabled:  enabled,
 		Readonly:          opts.Readonly,
-		PreviewMode:       opts.Preview,
 		PreviewLockedMode: opts.PreviewLocked,
 	}
 

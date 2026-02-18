@@ -51,13 +51,11 @@
   let removeJavascriptListeners: () => void;
 
   // Sync preview mode:
-  // - If --preview or --preview-locked flag is set, always lock to preview mode
+  // - If --preview-locked flag is set, always lock to preview mode
   // - Otherwise, infer from the current URL so refresh on preview pages stays in preview mode
   //   and shared routes (/explore, /canvas) preserve the current mode
   $: {
-    const serverLocked =
-      (data.previewMode ?? false) || (data.previewLockedMode ?? false);
-    if (serverLocked) {
+    if (data.previewLockedMode) {
       previewModeStore.set(true);
     } else if (isPreviewRoute($page.url.pathname)) {
       previewModeStore.set(true);
