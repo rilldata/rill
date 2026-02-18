@@ -103,11 +103,6 @@
           {#if hasGroups}
             {#each groups as group, groupIndex (group.name)}
               <DropdownMenu.Group class="px-1">
-                {#if groups.length > 1}
-                  <DropdownMenu.Label>
-                    {group.label}
-                  </DropdownMenu.Label>
-                {/if}
                 {#each group.items as { id, option } (id)}
                   {@const isSelected = id === current.toLowerCase()}
                   {@const icon = option.resourceKind
