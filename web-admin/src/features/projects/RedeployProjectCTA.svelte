@@ -35,11 +35,6 @@
         queryKey: getAdminServiceGetProjectQueryKey(organization, project),
         exact: true,
       });
-
-      eventBus.emit("notification", {
-        type: "success",
-        message: "Project is now waking up",
-      });
     } catch (err) {
       eventBus.emit("notification", {
         type: "error",
