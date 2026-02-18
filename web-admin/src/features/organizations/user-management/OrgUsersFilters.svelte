@@ -2,42 +2,24 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
 
   export let filterSelection: "all" | "members" | "guests" | "pending" = "all";
   export let showMembers = true;
-  export let roleFilter: Set<string> = new Set([
-    OrgUserRoles.Admin,
-    OrgUserRoles.Editor,
-    OrgUserRoles.Viewer,
-  ]);
+  export let roleFilter: "all" | "admin" | "editor" | "viewer" = "all";
   export let showRoleFilter = true;
 
   let isDropdownOpen = false;
   let isRoleDropdownOpen = false;
 
   const roleOptions = [
-    { value: OrgUserRoles.Admin, label: "Admins" },
-    { value: OrgUserRoles.Editor, label: "Editors" },
-    { value: OrgUserRoles.Viewer, label: "Viewers" },
+    { value: "all" as const, label: "All Roles" },
+    { value: "admin" as const, label: "Admins" },
+    { value: "editor" as const, label: "Editors" },
+    { value: "viewer" as const, label: "Viewers" },
   ];
 
-  function toggleRole(role: string) {
-    const newSet = new Set(roleFilter);
-    if (newSet.has(role)) {
-      newSet.delete(role);
-    } else {
-      newSet.add(role);
-    }
-    roleFilter = newSet;
-  }
-
   $: roleFilterLabel =
-    roleFilter.size === roleOptions.length
-      ? "All Roles"
-      : roleFilter.size === 0
-        ? "No Roles"
-        : `${roleFilter.size} Role${roleFilter.size > 1 ? "s" : ""}`;
+    roleOptions.find((opt) => opt.value === roleFilter)?.label ?? "All Roles";
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -102,8 +84,10 @@
       {#each roleOptions as option}
         <DropdownMenu.CheckboxItem
           class="font-normal flex items-center"
-          checked={roleFilter.has(option.value)}
-          on:click={() => toggleRole(option.value)}
+          checked={roleFilter === option.value}
+          on:click={() => {
+            roleFilter = option.value;
+          }}
         >
           <span>{option.label}</span>
         </DropdownMenu.CheckboxItem>

@@ -37,11 +37,7 @@
 
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
-  let roleFilter: Set<string> = new Set([
-    OrgUserRoles.Admin,
-    OrgUserRoles.Editor,
-    OrgUserRoles.Viewer,
-  ]);
+  let roleFilter: "all" | "admin" | "editor" | "viewer" = "all";
 
   let scrollToTopTrigger: unknown = null;
   $: {
@@ -108,10 +104,12 @@
         matchesUserType = "invitedBy" in user;
       }
 
-      // Filter by selected roles
-      const matchesRoleFilter = user.roleName
-        ? roleFilter.has(user.roleName)
-        : false;
+      // Filter by selected role
+      const matchesRoleFilter =
+        roleFilter === "all" ||
+        (roleFilter === "admin" && user.roleName === OrgUserRoles.Admin) ||
+        (roleFilter === "editor" && user.roleName === OrgUserRoles.Editor) ||
+        (roleFilter === "viewer" && user.roleName === OrgUserRoles.Viewer);
 
       return matchesSearch && matchesUserType && matchesRoleFilter;
     })
