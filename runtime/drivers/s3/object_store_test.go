@@ -24,9 +24,9 @@ func TestObjectStore(t *testing.T) {
 	objectStore, ok := conn.AsObjectStore()
 	require.True(t, ok)
 	bucket := "integration-test.rilldata.com"
-	t.Run("testListObjectsForGlobPagination/pageSize=1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
-	t.Run("testListObjectsForGlobPagination/pageSize=2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
-	t.Run("testListObjectsForGlobPagination/pageSize=3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListObjectsForGlobPagination_pageSize1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListObjectsForGlobPagination_pageSize2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListObjectsForGlobPagination_pageSize3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
 
 	// Directory matching tests - using existing glob_test data
 	t.Run("match_directories_from_glob_test", func(t *testing.T) {
@@ -42,10 +42,10 @@ func TestObjectStore(t *testing.T) {
 	})
 
 	// Directory pagination tests using glob_test structure
-	t.Run("testListDirectoriesForGlobPagination/pageSize=1", func(t *testing.T) {
+	t.Run("testListDirectoriesForGlobPagination_pageSize1", func(t *testing.T) {
 		testListDirectoriesForGlobPagination(t, objectStore, bucket, 1)
 	})
-	t.Run("testListDirectoriesForGlobPagination/pageSize=2", func(t *testing.T) {
+	t.Run("testListDirectoriesForGlobPagination_pageSize2", func(t *testing.T) {
 		testListDirectoriesForGlobPagination(t, objectStore, bucket, 2)
 	})
 
@@ -135,6 +135,7 @@ func testMatchDirectoriesFromGlobTest(t *testing.T, objectStore drivers.ObjectSt
 
 	// Should match directories like: glob_test/y=2023, glob_test/y=2024
 	expected := []string{
+		"glob_test/y=2010",
 		"glob_test/y=2023",
 		"glob_test/y=2024",
 	}
@@ -161,6 +162,7 @@ func testMatchFilesWithLeafWildcardGlobTest(t *testing.T, objectStore drivers.Ob
 
 	// Based on original test: glob_test/y=2023/aab.csv, glob_test/y=2024/aaa.csv, glob_test/y=2024/bbb.csv
 	expected := []string{
+		"glob_test/y=2010/aac.csv",
 		"glob_test/y=2023/aab.csv",
 		"glob_test/y=2024/aaa.csv",
 		"glob_test/y=2024/bbb.csv",
@@ -179,7 +181,7 @@ func testMatchFilesWithLeafWildcardGlobTest(t *testing.T, objectStore drivers.Ob
 
 func testMatchFilesWithDoubleStarGlobTest(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
-	path := "glob_test/**"
+	path := "glob_test/**/*"
 
 	objects, _, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
 	require.NoError(t, err)
@@ -199,6 +201,7 @@ func testListDirectoriesForGlobPagination(t *testing.T, objectStore drivers.Obje
 
 	// Expected directories based on existing test data
 	expected := []string{
+		"glob_test/y=2010",
 		"glob_test/y=2023",
 		"glob_test/y=2024",
 	}

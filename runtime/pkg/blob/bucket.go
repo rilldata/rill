@@ -57,6 +57,7 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 	}
 
 	// If it's not a glob, we're pulling a single file.
+	// TODO: Should we add support for listing out directories without ** at the end?
 	if !fileutil.IsGlob(glob) {
 		attrs, err := b.bucket.Attributes(ctx, glob)
 		if err != nil {
@@ -72,35 +73,41 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 	}
 
 	// Extract the prefix (if any) that we can push down to the storage provider.
-	prefix, _ := doublestar.SplitPattern(glob)
-	if prefix == "." {
-		prefix = ""
+	prefix := glob
+	firstMeta := strings.IndexAny(glob, "*?[{")
+	if firstMeta >= 0 {
+		prefix = glob[:firstMeta]
 	}
 
-	// Determine the target depth from the glob pattern.
-	// If a file matches at this depth, we return the directory; otherwise return the file.
-	globDepth := strings.Count(glob, "/") + 1
+	globDepth := strings.Count(glob, "/")
+
+	// Check if the glob contains ** (recursive match)
+	hasDoubleStar := strings.Contains(glob, "/**/")
 
 	var entries []drivers.ObjectStoreEntry
-	seen := make(map[string]bool)
+	seenDirs := make(map[string]*drivers.ObjectStoreEntry)
 
+	// Fetch pages until we have enough matching results (accounting for glob filtering)
 	for len(entries) < validPageSize && driverPageToken != nil {
 		retval, nextDriverPageToken, err := b.bucket.ListPage(ctx, driverPageToken, validPageSize, &blob.ListOptions{
 			Prefix: prefix,
 			BeforeList: func(as func(interface{}) bool) error {
 				var q *storage.Query
+				// Handle GCS
 				if as(&q) {
 					_ = q.SetAttrSelection([]string{"Name", "Size", "Created", "Updated"})
 					if startAfter != "" {
 						q.StartOffset = startAfter
 					}
 				}
+				// Handle S3
 				var s3Input *s3.ListObjectsV2Input
 				if as(&s3Input) {
 					if startAfter != "" {
 						s3Input.StartAfter = aws.String(startAfter)
 					}
 				}
+				// Handle Azure Blob Storage
 				var azOpts *container.ListBlobsHierarchyOptions
 				if as(&azOpts) {
 					if startAfter != "" {
@@ -114,24 +121,23 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 			return nil, "", err
 		}
 
+		// Filter by glob pattern and skip startAfter entries
 		lastProcessedIdx := -1
 		for i, obj := range retval {
+			// Skip entries until we're past startAfter
 			if startAfter != "" && obj.Key <= startAfter {
 				continue
 			}
 			lastProcessedIdx = i
 
-			fileDepth := strings.Count(obj.Key, "/") + 1
+			fileDepth := strings.Count(obj.Key, "/")
 
 			// File is deeper than glob pattern - try matching the parent directory
-			if fileDepth > globDepth {
+			if !hasDoubleStar && fileDepth > globDepth {
 				parts := strings.Split(obj.Key, "/")
-				dirPath := strings.Join(parts[:globDepth], "/")
+				dirPath := strings.Join(parts[:globDepth+1], "/")
 
-				if seen[dirPath] {
-					continue
-				}
-
+				// Match against glob pattern
 				ok, err := doublestar.Match(glob, dirPath)
 				if err != nil {
 					return nil, "", err
@@ -140,11 +146,22 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 					continue
 				}
 
-				seen[dirPath] = true
-				entries = append(entries, drivers.ObjectStoreEntry{
-					Path:  dirPath,
-					IsDir: true,
-				})
+				// Track or update the directory entry with the latest timestamp
+				if existing, exists := seenDirs[dirPath]; exists {
+					// Update timestamp to the latest
+					if obj.ModTime.After(existing.UpdatedOn) {
+						existing.UpdatedOn = obj.ModTime
+					}
+				} else {
+					r := &drivers.ObjectStoreEntry{
+						Path:      dirPath,
+						IsDir:     true,
+						Size:      0,
+						UpdatedOn: obj.ModTime,
+					}
+					seenDirs[dirPath] = r
+					entries = append(entries, *r)
+				}
 			} else {
 				// File is at or shallower than the glob depth - try matching directly
 				ok, err := doublestar.Match(glob, obj.Key)
@@ -166,7 +183,6 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 					UpdatedOn: obj.ModTime,
 				})
 			}
-
 			if len(entries) == validPageSize {
 				break
 			}
@@ -193,6 +209,7 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 
 	return entries, nextToken, nil
 }
+
 func (b *Bucket) ListObjects(ctx context.Context, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
 	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSizeForObjects)
 	driverPageToken := blob.FirstPageToken
