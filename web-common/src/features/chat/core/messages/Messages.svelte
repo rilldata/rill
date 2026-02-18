@@ -30,7 +30,7 @@
     getRuntimeServiceListToolsQueryOptions($runtime.instanceId),
   );
   const listToolsQuery = createQuery(listToolsQueryOptionsStore);
-  $: tools = $listToolsQuery.data?.tools;
+  $: tools = listToolsQuery.data?.tools;
 
   let messagesContainer: HTMLDivElement;
 
@@ -50,7 +50,7 @@
 
   // Check if conversation is empty (for empty state display)
   $: isConversationEmpty =
-    ($getConversationQuery.data?.messages?.length ?? 0) === 0;
+    (getConversationQuery.data?.messages?.length ?? 0) === 0;
 
   // Track previous block count to detect new content and previous block type to detect block changing.
   // This is used to determine whether to scroll to bottom of messages container or not.
@@ -108,9 +108,9 @@
   class:fullpage={layout === "fullpage"}
   bind:this={messagesContainer}
 >
-  {#if $getConversationQuery.isLoading}
+  {#if getConversationQuery.isLoading}
     <div class="chat-loading">
-      <DelayedSpinner isLoading={$getConversationQuery.isLoading} size="24px" />
+      <DelayedSpinner isLoading={getConversationQuery.isLoading} size="24px" />
     </div>
   {:else if hasConversationLoadError}
     <Error

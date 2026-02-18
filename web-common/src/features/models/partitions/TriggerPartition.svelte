@@ -16,7 +16,7 @@
   export let partitionKey: string;
 
   function trigger() {
-    $triggerMutation.mutate({
+    triggerMutation.mutate({
       instanceId,
       data: {
         models: [
@@ -36,7 +36,7 @@
   $: ({ params } = $page);
   $: fileArtifact = fileArtifacts.getFileArtifact(addLeadingSlash(params.file));
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: resource = $resourceQuery.data;
+  $: resource = resourceQuery.data;
 </script>
 
 <Button

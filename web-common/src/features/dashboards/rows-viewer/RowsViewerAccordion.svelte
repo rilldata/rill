@@ -110,9 +110,9 @@
   );
 
   $: {
-    if ($filteredTotalsQuery.data && $totalsQuery.data) {
-      const numerator = $filteredTotalsQuery.data?.data?.[0]["count"] as number;
-      const denominator = $totalsQuery.data.data?.[0]["count"] as number;
+    if (filteredTotalsQuery.data && totalsQuery.data) {
+      const numerator = filteredTotalsQuery.data?.data?.[0]["count"] as number;
+      const denominator = totalsQuery.data.data?.[0]["count"] as number;
       rowCountlabel = `${formatCompactInteger(numerator)} of ${formatCompactInteger(denominator)} rows`;
     }
   }

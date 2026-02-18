@@ -23,7 +23,7 @@
     instanceId,
     resource?.meta?.name?.name ?? "",
   );
-  $: dashboards = $dashboardsQuery.data ?? [];
+  $: dashboards = dashboardsQuery.data ?? [];
 </script>
 
 {#if dashboards?.length === 0}

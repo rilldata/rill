@@ -133,9 +133,9 @@
     { query: { refetchOnMount: true, refetchOnWindowFocus: true } },
   );
   $: parseErrors =
-    $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
+    projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
 
-  $: hasReconcilingResources = $resources.data?.resources?.some(
+  $: hasReconcilingResources = resources.data?.resources?.some(
     isResourceReconciling,
   );
 
@@ -143,7 +143,7 @@
 
   // Filter resources by type, search text, and status
   $: filteredResources = filterResources(
-    $resources.data?.resources,
+    resources.data?.resources,
     selectedTypes,
     searchText,
     selectedStatuses,
@@ -205,7 +205,7 @@
   }
 
   function refreshAllSourcesAndModels() {
-    void $createTrigger
+    void createTrigger
       .mutateAsync({
         instanceId,
         data: { all: true },
@@ -327,13 +327,13 @@
     </Button>
   </div>
 
-  {#if $resources.isLoading}
+  {#if resources.isLoading}
     <DelayedSpinner isLoading={true} size="16px" />
-  {:else if $resources.isError}
+  {:else if resources.isError}
     <div class="text-red-500">
-      Error loading resources: {$resources.error?.message}
+      Error loading resources: {resources.error?.message}
     </div>
-  {:else if $resources.data}
+  {:else if resources.data}
     <ProjectResourcesTable data={filteredResources} />
   {/if}
 

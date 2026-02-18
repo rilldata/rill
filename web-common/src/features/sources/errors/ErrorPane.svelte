@@ -13,7 +13,7 @@
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
 
   // Try to extract the connector type
-  $: connectorType = $sourceFromYaml.data?.type;
+  $: connectorType = sourceFromYaml.data?.type;
 
   // Try to create an actionable error message
   $: prettyMessage = humanReadableErrorMessage(connectorType, 3, errorMessage);

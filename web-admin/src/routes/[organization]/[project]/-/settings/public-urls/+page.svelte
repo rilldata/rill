@@ -36,14 +36,14 @@
     );
 
   $: allRows =
-    $magicAuthTokensInfiniteQuery.data?.pages.flatMap(
+    magicAuthTokensInfiniteQuery.data?.pages.flatMap(
       (page) => page.tokens ?? [],
     ) ?? [];
 
   $: dashboards = useDashboards(instanceId);
 
   $: allRowsWithDashboardTitle = allRows.map((token) => {
-    const dashboard = $dashboards.data?.find(
+    const dashboard = dashboards.data?.find(
       (d) => d.meta?.name?.name === token.resourceName,
     );
     return {
@@ -66,7 +66,7 @@
 
   async function handleDelete(deletedTokenId: string) {
     try {
-      await $revokeMagicAuthToken.mutateAsync({ tokenId: deletedTokenId });
+      await revokeMagicAuthToken.mutateAsync({ tokenId: deletedTokenId });
 
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListMagicAuthTokensQueryKey(
@@ -86,14 +86,14 @@
 </script>
 
 <div class="flex flex-col items-center gap-y-4 w-full">
-  {#if $magicAuthTokensInfiniteQuery.isLoading}
+  {#if magicAuthTokensInfiniteQuery.isLoading}
     <div class="m-auto mt-20">
       <DelayedSpinner
-        isLoading={$magicAuthTokensInfiniteQuery.isLoading}
+        isLoading={magicAuthTokensInfiniteQuery.isLoading}
         size="24px"
       />
     </div>
-  {:else if $magicAuthTokensInfiniteQuery.isError}
+  {:else if magicAuthTokensInfiniteQuery.isError}
     <p class="text-red-500">Error loading public URLs</p>
   {:else}
     <PublicURLsResourceTable

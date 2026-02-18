@@ -18,3 +18,9 @@ export function createQueryClient() {
 }
 
 export const queryClient = createQueryClient();
+
+/**
+ * Getter function for the query client.
+ * Required by @tanstack/svelte-query v6 when passing queryClient as a parameter.
+ */
+export const getQueryClient = () => queryClient;

@@ -23,9 +23,9 @@
   $: ({ instanceId } = $runtime);
 
   $: modelQuery = useModel(instanceId, modelName);
-  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
+  $: connector = modelQuery.data?.model?.spec?.outputConnector;
   $: modelIsIdle =
-    $modelQuery.data?.meta?.reconcileStatus ===
+    modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   $: createMetricsViewFromModel = useCreateMetricsViewFromTableUIAction(

@@ -29,7 +29,7 @@
   <div class="w-[500px]">
     <ProjectSelector
       bind:selectedProject
-      projects={$matchingProjects.data?.projects}
+      projects={matchingProjects.data?.projects}
     />
   </div>
 </div>

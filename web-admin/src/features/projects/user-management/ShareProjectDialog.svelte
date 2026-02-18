@@ -11,7 +11,7 @@
 
   $: projectQuery = createAdminServiceGetProject(organization, project);
   $: manageProjectAdmins =
-    !!$projectQuery.data?.projectPermissions?.manageProjectAdmins;
+    !!projectQuery.data?.projectPermissions?.manageProjectAdmins;
 </script>
 
 <Dialog.Root bind:open>

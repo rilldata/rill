@@ -45,18 +45,18 @@
 
   // Get dashboard
   $: exploreName = useAlertDashboardName(instanceId, alert);
-  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
-  $: exploreSpec = $validSpecResp.data?.explore;
+  $: validSpecResp = useExploreValidSpec(instanceId, exploreName.data);
+  $: exploreSpec = validSpecResp.data?.explore;
   $: metricsViewName = exploreSpec?.metricsView;
-  $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
-  $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
+  $: dashboardTitle = exploreSpec?.displayName || exploreName.data;
+  $: dashboardDoesNotExist = validSpecResp.error?.response?.status === 404;
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
     instanceId,
-    $exploreName.data,
+    exploreName.data,
   );
 
-  $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
+  $: alertSpec = alertQuery.data?.resource?.alert?.spec;
 
   // Get human-readable frequency
   $: humanReadableFrequency = alertSpec?.refreshSchedule?.cron
@@ -83,7 +83,7 @@
 
   $: exploreUrl = getMappedExploreUrl(
     {
-      exploreName: $exploreName.data,
+      exploreName: exploreName.data,
       queryName,
       queryArgsJson,
     },
@@ -102,10 +102,10 @@
   const deleteAlert = createAdminServiceDeleteAlert();
 
   async function handleDeleteAlert() {
-    await $deleteAlert.mutateAsync({
+    await deleteAlert.mutateAsync({
       org: organization,
       project,
-      name: $alertQuery.data.resource.meta.name.name,
+      name: alertQuery.data.resource.meta.name.name,
     });
     await queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
@@ -123,7 +123,7 @@
         <!-- Author -->
         <ProjectAccessControls {organization} {project}>
           <svelte:fragment slot="manage-project">
-            {#if $alertQuery.data}
+            {#if alertQuery.data}
               <AlertOwnerBlock
                 {organization}
                 {project}
@@ -138,8 +138,8 @@
           {alertSpec.displayName}
         </h1>
         <div class="grow" />
-        {#if !$isAlertCreatedByCode.data}
-          <EditAlert {alertSpec} disabled={!$exploreIsValid} />
+        {#if !isAlertCreatedByCode.data}
+          <EditAlert {alertSpec} disabled={!exploreIsValid} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton ariaLabel="Alert context menu">
@@ -174,7 +174,7 @@
                 </Tooltip>
               </div>
             {:else}
-              <a href={$exploreUrl}>
+              <a href={exploreUrl}>
                 {dashboardTitle}
               </a>
             {/if}
@@ -182,7 +182,7 @@
         {:else}
           <MetadataLabel>Name</MetadataLabel>
           <MetadataValue>
-            {$alertQuery.data?.resource?.meta?.name?.name}
+            {alertQuery.data?.resource?.meta?.name?.name}
           </MetadataValue>
         {/if}
       </div>
@@ -212,7 +212,7 @@
     <AlertFilters
       {metricsViewName}
       filters={metricsViewAggregationRequest?.where}
-      dimensionsWithInlistFilter={$dashboardState.data
+      dimensionsWithInlistFilter={dashboardState.data
         ?.dimensionsWithInlistFilter ?? []}
       timeRange={metricsViewAggregationRequest?.timeRange}
       comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}

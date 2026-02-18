@@ -19,13 +19,13 @@
 
   $: currentConversation = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversation?.getConversationQuery();
-  $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
+  $: currentConversationDto = getConversationQuery?.data?.conversation ?? null;
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
 
-  $: conversations = $listConversationsQuery.data?.conversations ?? [];
-  $: isLoading = $listConversationsQuery.isLoading;
-  $: isError = $listConversationsQuery.isError;
+  $: conversations = listConversationsQuery.data?.conversations ?? [];
+  $: isLoading = listConversationsQuery.isLoading;
+  $: isError = listConversationsQuery.isError;
 
   // Handle conversation item clicks (for focus, navigation handled by href)
   function handleConversationItemClick() {

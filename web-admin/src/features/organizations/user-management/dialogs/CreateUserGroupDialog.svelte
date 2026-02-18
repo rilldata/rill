@@ -74,24 +74,24 @@
       },
     );
 
-  $: organizationUsers = $organizationUsersInfiniteQuery.data?.pages
-    ? $organizationUsersInfiniteQuery.data.pages.flatMap((p) => p.members ?? [])
+  $: organizationUsers = organizationUsersInfiniteQuery.data?.pages
+    ? organizationUsersInfiniteQuery.data.pages.flatMap((p) => p.members ?? [])
     : [];
 
   $: hasMoreUsers =
     // Prefer built-in flag if available
-    ($organizationUsersInfiniteQuery?.hasNextPage ??
-      (($organizationUsersInfiniteQuery?.data?.pages?.length ?? 0) > 0 &&
-        ($organizationUsersInfiniteQuery?.data?.pages?.[
-          ($organizationUsersInfiniteQuery?.data?.pages?.length ?? 1) - 1
+    (organizationUsersInfiniteQuery?.hasNextPage ??
+      ((organizationUsersInfiniteQuery?.data?.pages?.length ?? 0) > 0 &&
+        (organizationUsersInfiniteQuery?.data?.pages?.[
+          (organizationUsersInfiniteQuery?.data?.pages?.length ?? 1) - 1
         ]?.nextPageToken ?? "") !== "")) ||
     false;
 
   $: isLoadingMoreUsers =
-    $organizationUsersInfiniteQuery?.isFetchingNextPage ?? false;
+    organizationUsersInfiniteQuery?.isFetchingNextPage ?? false;
 
   function loadMoreUsers() {
-    const fetchNext = $organizationUsersInfiniteQuery?.fetchNextPage;
+    const fetchNext = organizationUsersInfiniteQuery?.fetchNextPage;
     if (typeof fetchNext === "function") {
       fetchNext();
     }
@@ -103,7 +103,7 @@
 
   async function handleCreate(newName: string) {
     try {
-      await $createUserGroup.mutateAsync({
+      await createUserGroup.mutateAsync({
         org: organization,
         data: {
           name: newName,
@@ -141,7 +141,7 @@
     try {
       // Add pending users to the group
       for (const email of pendingAdditions) {
-        await $addUsergroupMemberUser.mutateAsync({
+        await addUsergroupMemberUser.mutateAsync({
           org: organization,
           usergroup: usergroup,
           email: email,

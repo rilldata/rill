@@ -26,7 +26,7 @@
         flexRender(ReportHistoryTableCompositeCell, {
           reportTime: info.row.original.reportTime,
           timeZone:
-            $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
+            reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
           adhoc: info.row.original.adhoc,
           errorMessage: info.row.original.errorMessage,
         }),
@@ -39,19 +39,19 @@
     <h1 class="text-fg-secondary text-lg font-bold">Recent history</h1>
     <p class="text-fg-secondary text-sm">Showing up to 10 most recent runs</p>
   </div>
-  {#if $reportQuery.error}
+  {#if reportQuery.error}
     <div class="text-red-500">
-      {$reportQuery.error.message}
+      {reportQuery.error.message}
     </div>
-  {:else if $reportQuery.isLoading}
+  {:else if reportQuery.isLoading}
     <div class="text-fg-secondary">Loading...</div>
-  {:else if !$reportQuery.data?.resource.report.state.executionHistory.length}
+  {:else if !reportQuery.data?.resource.report.state.executionHistory.length}
     <NoRunsYet />
   {:else}
     <ResourceList
       kind="report"
       {columns}
-      data={$reportQuery.data?.resource.report.state.executionHistory}
+      data={reportQuery.data?.resource.report.state.executionHistory}
       toolbar={false}
       fixedRowHeight={false}
     />

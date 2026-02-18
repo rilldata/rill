@@ -1,6 +1,6 @@
 import { RangeSetBuilder } from "@codemirror/state";
 import { gutter, GutterMarker } from "@codemirror/view";
-import type { SvelteComponent } from "svelte";
+import { mount, unmount } from "svelte";
 import { lineStatusesStateField, updateLineStatuses } from "./state";
 import StatusGutterMarkerComponent from "./StatusGutterMarker.svelte";
 
@@ -8,7 +8,7 @@ export const LINE_STATUS_GUTTER_CLASS = "cm-line-status-gutter";
 
 class StatusGutterMarker extends GutterMarker {
   element: HTMLElement;
-  component: SvelteComponent;
+  component: ReturnType<typeof mount>;
   line: number;
   active: boolean;
 
@@ -18,7 +18,7 @@ class StatusGutterMarker extends GutterMarker {
     this.line = line;
     this.element = document.createElement("div");
     this.active = active;
-    this.component = new StatusGutterMarkerComponent({
+    this.component = mount(StatusGutterMarkerComponent, {
       target: this.element,
       props: { level, message, active },
     });
@@ -30,7 +30,7 @@ class StatusGutterMarker extends GutterMarker {
     return this.element;
   }
   destroy() {
-    this.component.$destroy();
+    unmount(this.component);
   }
 }
 

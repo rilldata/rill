@@ -22,7 +22,6 @@
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { onMount } from "svelte";
-  import { derived, get } from "svelte/store";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -35,38 +34,24 @@
 
   $: ({ legacyArchiveDeploy } = featureFlags);
 
-  $: deploymentState = derived(
-    [gitStatusQuery, gitRepoStatusQuery, projectQuery, deployMutation],
-    ([$git, $gitRepo, $project, $deploy]) => {
-      const hasGitUrl = !!$git.data?.githubUrl && !$git.data?.managedGit;
-      // Without these variables queries are never fired.
-      const gitIsPending = $git.isPending;
-      const gitRepoIsPending = $gitRepo.isPending;
-      const projectIsPending = $project.isPending;
-      const deployIsPending = $deploy.isPending;
-
-      return {
-        loading:
-          gitIsPending ||
-          (hasGitUrl ? gitRepoIsPending : false) ||
-          projectIsPending ||
-          deployIsPending,
-        // TODO: use all git errors except "no repo"
-        error: ((hasGitUrl ? $gitRepo.error : undefined) ||
-          $project.error ||
-          $deploy.error) as ConnectError | undefined,
-        githubAccessUrl: $gitRepo.data?.grantAccessUrl ?? "",
-      };
-    },
-  );
-  $: ({ loading, error, githubAccessUrl } = $deploymentState);
+  // Compute deployment state reactively
+  $: hasGitUrl = !!gitStatusQuery.data?.githubUrl && !gitStatusQuery.data?.managedGit;
+  $: loading =
+    gitStatusQuery.isPending ||
+    (hasGitUrl ? gitRepoStatusQuery.isPending : false) ||
+    projectQuery.isPending ||
+    deployMutation.isPending;
+  $: error = ((hasGitUrl ? gitRepoStatusQuery.error : undefined) ||
+    projectQuery.error ||
+    deployMutation.error) as ConnectError | undefined;
+  $: githubAccessUrl = gitRepoStatusQuery.data?.grantAccessUrl ?? "";
 
   $: planUpgradeUrl = getPlanUpgradeUrl(orgParam);
   $: isOrgOnTrial = getIsOrgOnTrial(orgParam);
 
   async function newProject() {
-    const projectResp = get(projectQuery).data;
-    const gitRepoStatus = get(gitRepoStatusQuery).data;
+    const projectResp = projectQuery.data;
+    const gitRepoStatus = gitRepoStatusQuery.data;
     if (!projectResp) return;
 
     if (useGit && !gitRepoStatus?.hasAccess) {
@@ -77,7 +62,7 @@
       return;
     }
 
-    const resp = await $deployMutation.mutateAsync({
+    const resp = await deployMutation.mutateAsync({
       org: orgParam,
       projectName: projectResp.localProjectName,
       // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.

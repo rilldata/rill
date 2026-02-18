@@ -1,6 +1,9 @@
 import { getToolConfig } from "@rilldata/web-common/features/chat/core/messages/tools/tool-registry.ts";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import {
+  getQueryClient,
+  queryClient,
+} from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
@@ -111,7 +114,7 @@ export class Conversation {
         ),
     );
 
-    this.conversationQuery = createQuery(queryOptionsStore, queryClient);
+    this.conversationQuery = createQuery(() => get(queryOptionsStore), getQueryClient);
   }
 
   /**

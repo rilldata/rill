@@ -17,7 +17,7 @@
 
   // Pull the time zone options from the dashboard's spec
   $: exploreSpec = useExploreValidSpec(instanceId, exploreName);
-  $: availableTimeZones = $exploreSpec.data?.explore?.timeZones;
+  $: availableTimeZones = exploreSpec.data?.explore?.timeZones;
   $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
 </script>
 

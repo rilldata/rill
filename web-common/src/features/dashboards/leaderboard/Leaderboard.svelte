@@ -199,8 +199,8 @@
     },
   );
 
-  $: ({ data: sortedData, isFetching, isLoading, isPending } = $sortedQuery);
-  $: ({ data: totalsData } = $totalsQuery);
+  $: ({ data: sortedData, isFetching, isLoading, isPending } = sortedQuery);
+  $: ({ data: totalsData } = totalsQuery);
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
@@ -259,7 +259,7 @@
     },
   );
 
-  $: ({ data } = $belowTheFoldDataQuery);
+  $: ({ data } = belowTheFoldDataQuery);
 
   $: belowTheFoldData = data?.data?.length
     ? data?.data

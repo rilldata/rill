@@ -19,9 +19,9 @@
   // Query the instance to get the project display name
   $: instanceQuery = createRuntimeServiceGetInstance(instanceId);
   $: projectDisplayName =
-    $instanceQuery.data?.instance?.projectDisplayName || project;
-  $: isLoadingDisplayName = $instanceQuery.isLoading;
-  $: isErrorDisplayName = $instanceQuery.isError;
+    instanceQuery.data?.instance?.projectDisplayName || project;
+  $: isLoadingDisplayName = instanceQuery.isLoading;
+  $: isErrorDisplayName = instanceQuery.isError;
 </script>
 
 <svelte:head>

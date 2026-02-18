@@ -19,16 +19,16 @@
   );
 
   // New API returns schema as { [columnName]: "type" }
-  $: columns = $newTableQuery?.data?.schema
-    ? Object.entries($newTableQuery.data.schema).map(([name, type]) => ({
+  $: columns = newTableQuery?.data?.schema
+    ? Object.entries(newTableQuery.data.schema).map(([name, type]) => ({
         name,
         type: type as string,
       }))
     : [];
 
-  $: error = $newTableQuery?.error;
-  $: isError = !!$newTableQuery?.error;
-  $: isLoading = $newTableQuery?.isLoading;
+  $: error = newTableQuery?.error;
+  $: isError = !!newTableQuery?.error;
+  $: isLoading = newTableQuery?.isLoading;
 
   function prettyPrintType(type: string) {
     // Remove CODE_ prefix and normalize unsupported types to just "UNKNOWN"

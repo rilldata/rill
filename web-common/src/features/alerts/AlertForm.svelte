@@ -83,8 +83,8 @@
       : getAlertDashboardName(props.alertSpec);
 
   $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
-  $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
-  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: metricsViewSpec = validExploreSpec.data?.metricsView ?? {};
+  $: exploreSpec = validExploreSpec.data?.explore ?? {};
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
@@ -110,7 +110,7 @@
           metricsViewName,
           exploreName,
           $exploreState!,
-          $user.data?.user,
+          user.data?.user,
         )
       : getExistingAlertInitialFormValues(props.alertSpec, metricsViewName);
 
@@ -133,7 +133,7 @@
                 | undefined) ||
               "{}",
           ),
-          $allTimeRangeResp.data?.timeRangeSummary,
+          allTimeRangeResp.data?.timeRangeSummary,
         ));
   $: ({ selectedComparisonTimeRange } = timeControls);
 
@@ -178,7 +178,7 @@
       values.dayOfMonth,
     );
 
-    await $mutation.mutateAsync({
+    await mutation.mutateAsync({
       org: organization,
       project,
       name: alertName,

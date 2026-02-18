@@ -49,19 +49,19 @@
 
   $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
   let source: V1Source | undefined;
-  $: source = $sourceQuery.data?.source;
-  $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
+  $: source = sourceQuery.data?.source;
+  $: sinkConnector = sourceQuery.data?.source?.spec?.sinkConnector;
   $: sourceHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: sourceIsIdle =
-    $sourceQuery.data?.meta?.reconcileStatus ===
+    sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  $: disableCreateDashboard = $sourceHasError || !sourceIsIdle;
+  $: disableCreateDashboard = sourceHasError || !sourceIsIdle;
   $: connector = source?.state?.connector as string;
   const database = ""; // Sources are ingested into the default database
   const databaseSchema = ""; // Sources are ingested into the default database schema
   $: tableName = source?.state?.table as string;
 
-  $: sourceResource = $sourceQuery.data;
+  $: sourceResource = sourceQuery.data;
 
   function viewGraph() {
     if (!sourceResource) {
@@ -134,7 +134,7 @@
 
   const onRefreshSource = async () => {
     const connector: string | undefined =
-      source?.state?.connector ?? $sourceFromYaml.data?.type;
+      source?.state?.connector ?? sourceFromYaml.data?.type;
     if (!connector) {
       // if parse failed or there is no catalog entry, we cannot refresh source
       // TODO: show the import source modal with fixed tableName
@@ -144,7 +144,7 @@
       await refreshSource(
         connector,
         filePath,
-        $sourceQuery.data?.meta?.name?.name ?? "",
+        sourceQuery.data?.meta?.name?.name ?? "",
         instanceId,
       );
     } catch {
@@ -153,7 +153,7 @@
   };
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
-  $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
+  $: isLocalFileConnector = isLocalFileConnectorQuery.data;
 
   async function onReplaceSource() {
     await replaceSourceWithUploadedFile(instanceId, filePath);
@@ -184,7 +184,7 @@
     {/if}
   </div>
   <svelte:fragment slot="description">
-    {#if $sourceHasError}
+    {#if sourceHasError}
       Source has errors
     {:else if !sourceIsIdle}
       Source is being ingested
@@ -206,7 +206,7 @@
       {/if}
     </div>
     <svelte:fragment slot="description">
-      {#if $sourceHasError}
+      {#if sourceHasError}
         Source has errors
       {:else if !sourceIsIdle}
         Source is being ingested
@@ -228,7 +228,7 @@
     {/if}
   </div>
   <svelte:fragment slot="description">
-    {#if $sourceHasError}
+    {#if sourceHasError}
       Source has errors
     {:else if !sourceIsIdle}
       Source is being ingested

@@ -69,7 +69,7 @@
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
 
-  $: loggedIn = !!$user.data?.user;
+  $: loggedIn = !!user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
   $: logoUrl = organizationLogoUrl;
 
@@ -77,7 +77,7 @@
     { pageSize: 100 },
     {
       query: {
-        enabled: !!$user.data?.user,
+        enabled: !!user.data?.user,
         retry: 2,
         refetchOnMount: true,
       },
@@ -103,11 +103,11 @@
   $: alertsQuery = useAlerts(instanceId, onAlertPage);
   $: reportsQuery = useReports(instanceId, onReportPage);
 
-  $: organizations = $organizationQuery.data?.organizations ?? [];
-  $: projects = $projectsQuery.data?.projects ?? [];
-  $: visualizations = $visualizationsQuery.data ?? [];
-  $: alerts = $alertsQuery.data?.resources ?? [];
-  $: reports = $reportsQuery.data?.resources ?? [];
+  $: organizations = organizationQuery.data?.organizations ?? [];
+  $: projects = projectsQuery.data?.projects ?? [];
+  $: visualizations = visualizationsQuery.data ?? [];
+  $: alerts = alertsQuery.data?.resources ?? [];
+  $: reports = reportsQuery.data?.resources ?? [];
 
   $: organizationPaths = {
     options: createOrgPaths(organizations, organization, planDisplayName),
@@ -192,12 +192,12 @@
   $: exploreQuery = useExplore(instanceId, dashboard, {
     enabled: !!instanceId && !!dashboard && !!onMetricsExplorerPage,
   });
-  $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
+  $: exploreSpec = exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
-  $: hasUserAccess = $user.isSuccess && $user.data.user && !onPublicURLPage;
+  $: hasUserAccess = user.isSuccess && user.data.user && !onPublicURLPage;
 
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+    exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
     dashboard;
 
   $: currentPath = [organization, project, dashboard, report || alert];
@@ -279,8 +279,8 @@
       <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}
-    {#if $user.isSuccess}
-      {#if $user.data && $user.data.user}
+    {#if user.isSuccess}
+      {#if user.data && user.data.user}
         <AvatarButton />
       {:else}
         <SignIn />

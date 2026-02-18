@@ -7,5 +7,5 @@
   const timeRangeSummaryQuery = createTimeRangeSummary(ctx);
 </script>
 
-{!!$validSpecQuery.data}
-{!!$timeRangeSummaryQuery.data}
+{!!validSpecQuery.data}
+{!!timeRangeSummaryQuery.data}

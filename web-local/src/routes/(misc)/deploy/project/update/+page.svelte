@@ -15,7 +15,6 @@
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
   import type { PageData } from "./$types";
   import { getDeployingPageUrl } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
 
@@ -32,18 +31,18 @@
   $: planUpgradeUrl = getPlanUpgradeUrl(orgName ?? "");
   $: isOrgOnTrial = getIsOrgOnTrial(orgName ?? "");
 
-  $: error = ($redeployMutation.error as Error | null) || $projectQuery.error;
-  $: loading = $redeployMutation.isPending || $projectQuery.isPending;
+  $: error = (redeployMutation.error as Error | null) || projectQuery.error;
+  $: loading = redeployMutation.isPending || projectQuery.isPending;
 
   async function updateProject() {
-    const project = get(projectQuery).data?.project;
+    const project = projectQuery.data?.project;
     if (!project) return;
     // We always use Redeploy instead of GitPush.
     // GitPush is a simple wrapper around the `git push` command.
     // 1. It won't switch org/project for the case where we deploy to a project in another org with the same name.
     // 2. It won't switch org/project and create a new managed repo when overwriting a different project.
     // 3. Push any changes to .env since it is in .gitignore. Redeploy has explicit handling for this.
-    const resp = await $redeployMutation.mutateAsync({
+    const resp = await redeployMutation.mutateAsync({
       projectId: project.id,
       // If `legacyArchiveDeploy` is enabled, then use the archive route. Else use upload route.
       // This is mainly set to true in E2E tests.
@@ -65,7 +64,7 @@
   }
 
   async function maybeUpdateProject() {
-    await waitUntil(() => !get(projectQuery).isPending);
+    await waitUntil(() => !projectQuery.isPending);
     void updateProject();
   }
 

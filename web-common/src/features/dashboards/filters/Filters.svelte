@@ -105,7 +105,7 @@
 
   $: timeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName);
 
-  $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
+  $: timeRangeSummary = timeRangeQuery.data?.timeRangeSummary;
 
   $: watermark = timeRangeSummary?.watermark;
 

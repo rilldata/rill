@@ -15,17 +15,18 @@
   export let estimatedSmallestTimeGrain: V1TimeGrain;
   export let rollupTimeGrain: V1TimeGrain;
 
-  enum NicerTimeGrain {
-    TIME_GRAIN_MILLISECOND = "milliseconds",
-    TIME_GRAIN_SECOND = "seconds",
-    TIME_GRAIN_MINUTE = "minutes",
-    TIME_GRAIN_HOUR = "hourly",
-    TIME_GRAIN_DAY = "daily",
-    TIME_GRAIN_WEEK = "weekly",
-    TIME_GRAIN_MONTH = "monthly",
-    TIME_GRAIN_QUARTER = "quarterly",
-    TIME_GRAIN_YEAR = "yearly",
-  }
+  // Use const object instead of enum for Svelte 5 compatibility
+  const NicerTimeGrain: Record<string, string> = {
+    TIME_GRAIN_MILLISECOND: "milliseconds",
+    TIME_GRAIN_SECOND: "seconds",
+    TIME_GRAIN_MINUTE: "minutes",
+    TIME_GRAIN_HOUR: "hourly",
+    TIME_GRAIN_DAY: "daily",
+    TIME_GRAIN_WEEK: "weekly",
+    TIME_GRAIN_MONTH: "monthly",
+    TIME_GRAIN_QUARTER: "quarterly",
+    TIME_GRAIN_YEAR: "yearly",
+  };
 
   let displayEstimatedSmallestTimegrain: V1TimeGrain;
   $: displayEstimatedSmallestTimegrain =

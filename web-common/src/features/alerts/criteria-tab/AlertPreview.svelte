@@ -25,17 +25,17 @@
   $: isCriteriaEmpty =
     formValues.criteria.map(mapMeasureFilterToExpr).length === 0;
 
-  $: queryResult = $alertPreviewQuery;
+  $: queryResult = alertPreviewQuery;
 
   $: rows = (queryResult.data?.rows as DimensionTableRow[] | undefined) ?? [];
   $: columns = queryResult.data?.schema ?? [];
 </script>
 
-{#if $alertPreviewQuery.isFetching}
+{#if alertPreviewQuery.isFetching}
   <div class="p-2 flex flex-col justify-center">
     <Spinner status={EntityStatus.Running} />
   </div>
-{:else if isCriteriaEmpty || !$alertPreviewQuery.data}
+{:else if isCriteriaEmpty || !alertPreviewQuery.data}
   <PreviewEmpty
     topLine="No criteria selected"
     bottomLine="Select criteria to see a preview"

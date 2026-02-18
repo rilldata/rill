@@ -55,11 +55,11 @@
   $: orgInvitesInfiniteQuery = getOrgUserInvites(organization);
 
   $: allOrgMemberUsersRows =
-    $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
+    orgMemberUsersInfiniteQuery.data?.pages.flatMap(
       (page) => page.members ?? [],
     ) ?? [];
   $: allOrgInvitesRows =
-    $orgInvitesInfiniteQuery.data?.pages.flatMap(
+    orgInvitesInfiniteQuery.data?.pages.flatMap(
       (page) => page.invites ?? [],
     ) ?? [];
 
@@ -110,18 +110,18 @@
 </script>
 
 <div class="flex flex-col w-full">
-  {#if $orgMemberUsersInfiniteQuery.isLoading || $orgInvitesInfiniteQuery.isLoading}
+  {#if orgMemberUsersInfiniteQuery.isLoading || orgInvitesInfiniteQuery.isLoading}
     <DelayedSpinner
-      isLoading={$orgMemberUsersInfiniteQuery.isLoading ||
-        $orgInvitesInfiniteQuery.isLoading}
+      isLoading={orgMemberUsersInfiniteQuery.isLoading ||
+        orgInvitesInfiniteQuery.isLoading}
       size="1rem"
     />
-  {:else if $orgMemberUsersInfiniteQuery.isError || $orgInvitesInfiniteQuery.isError}
+  {:else if orgMemberUsersInfiniteQuery.isError || orgInvitesInfiniteQuery.isError}
     <div class="text-red-500">
-      Error loading organization members: {$orgMemberUsersInfiniteQuery.error ??
-        $orgInvitesInfiniteQuery.error}
+      Error loading organization members: {orgMemberUsersInfiniteQuery.error ??
+        orgInvitesInfiniteQuery.error}
     </div>
-  {:else if $orgMemberUsersInfiniteQuery.isSuccess && $orgInvitesInfiniteQuery.isSuccess}
+  {:else if orgMemberUsersInfiniteQuery.isSuccess && orgInvitesInfiniteQuery.isSuccess}
     <div class="flex flex-col">
       <div class="flex flex-row gap-x-4 h-9">
         <Search
@@ -145,11 +145,11 @@
         <OrgUsersTable
           {organization}
           data={filteredUsers}
-          usersQuery={$orgMemberUsersInfiniteQuery}
-          invitesQuery={$orgInvitesInfiniteQuery}
-          currentUserEmail={$currentUser.data?.user.email}
+          usersQuery={orgMemberUsersInfiniteQuery}
+          invitesQuery={orgInvitesInfiniteQuery}
+          currentUserEmail={currentUser.data?.user.email}
           {organizationPermissions}
-          billingContact={$billingContactUser?.email}
+          billingContact={billingContactUser?.email}
           {scrollToTopTrigger}
           guestOnly
           onAttemptRemoveBillingContactUser={() => {}}
@@ -181,7 +181,7 @@
   <EditUserGroupDialog
     bind:open={isEditUserGroupDialogOpen}
     groupName={editingUserGroupName}
-    currentUserEmail={$currentUser.data?.user.email}
+    currentUserEmail={currentUser.data?.user.email}
   />
 {/if}
 

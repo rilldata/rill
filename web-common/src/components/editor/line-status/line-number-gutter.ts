@@ -1,13 +1,13 @@
 import { GutterMarker, gutter } from "@codemirror/view";
 import LineNumberGutterMarkerComponent from "./LineNumberGutterMarker.svelte";
 import { lineStatusesStateField, updateLineStatuses } from "./state";
-import type { SvelteComponent } from "svelte";
+import { mount, unmount } from "svelte";
 
 export const LINE_NUMBER_GUTTER_CLASS = "cm-line-number-gutter";
 
 class NumberMarker extends GutterMarker {
   element: HTMLElement;
-  component: SvelteComponent;
+  component: ReturnType<typeof mount>;
   line: number;
   level: "error" | "warning" | "info" | "success" | undefined;
   active: boolean;
@@ -22,7 +22,7 @@ class NumberMarker extends GutterMarker {
     this.level = level;
     this.active = active;
     this.element = document.createElement("div");
-    this.component = new LineNumberGutterMarkerComponent({
+    this.component = mount(LineNumberGutterMarkerComponent, {
       target: this.element,
       props: { line, level, active },
     });
@@ -38,7 +38,7 @@ class NumberMarker extends GutterMarker {
     return this.element;
   }
   destroy() {
-    this.component.$destroy();
+    unmount(this.component);
   }
 }
 
@@ -48,10 +48,18 @@ export const createLineNumberGutter = () =>
     initialSpacer: (view) =>
       new NumberMarker(view.state.doc.lines, undefined, false),
     updateSpacer: (spacer: NumberMarker, update) => {
-      spacer.component.$set({
-        line: update.state.doc.lines,
-        level: undefined,
-        active: false,
+      // In Svelte 5, we need to unmount and remount to update props
+      unmount(spacer.component);
+      spacer.line = update.state.doc.lines;
+      spacer.level = undefined;
+      spacer.active = false;
+      spacer.component = mount(LineNumberGutterMarkerComponent, {
+        target: spacer.element,
+        props: {
+          line: update.state.doc.lines,
+          level: undefined,
+          active: false,
+        },
       });
       return spacer;
     },

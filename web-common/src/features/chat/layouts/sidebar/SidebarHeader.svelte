@@ -22,10 +22,10 @@
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversationStore?.getConversationQuery();
-  $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
+  $: currentConversationDto = getConversationQuery?.data?.conversation ?? null;
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
-  $: conversations = $listConversationsQuery.data?.conversations ?? [];
+  $: conversations = listConversationsQuery.data?.conversations ?? [];
 
   function handleNewConversation() {
     conversationManager.enterNewConversationMode();

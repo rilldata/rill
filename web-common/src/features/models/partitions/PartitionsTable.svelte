@@ -54,7 +54,7 @@
       },
     },
   );
-  $: ({ error } = $query);
+  $: ({ error } = query);
 
   // ==========================
   // Table Options
@@ -154,8 +154,8 @@
   let allRows: V1ModelPartition[] = [];
   $: {
     allRows =
-      ($query.data &&
-        $query.data.pages.flatMap(
+      (query.data &&
+        query.data.pages.flatMap(
           (page) => page.partitions as V1ModelPartition[],
         )) ||
       [];
@@ -192,16 +192,16 @@
   // Logic for infinite scroll
   $: {
     setOptions({
-      count: $query.hasNextPage ? allRows.length + 1 : allRows.length,
+      count: query.hasNextPage ? allRows.length + 1 : allRows.length,
     });
     const [lastItem] = [...virtualRows].reverse();
     if (
       lastItem &&
       lastItem.index > allRows.length - 1 &&
-      $query.hasNextPage &&
-      !$query.isFetchingNextPage
+      query.hasNextPage &&
+      !query.isFetchingNextPage
     ) {
-      void $query.fetchNextPage();
+      void query.fetchNextPage();
     }
   }
 

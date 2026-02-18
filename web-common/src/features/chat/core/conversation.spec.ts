@@ -33,6 +33,28 @@ vi.mock("@rilldata/web-common/runtime-client/runtime-store", () => ({
   },
 }));
 
+// Mock createQuery to avoid Svelte 5's $effect requirement in tests
+// The query result is managed through the queryClient cache directly
+vi.mock("@tanstack/svelte-query", async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import("@tanstack/svelte-query")>();
+  return {
+    ...original,
+    createQuery: vi.fn(() => {
+      const { writable, derived } = require("svelte/store");
+      const store = writable({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        isPending: false,
+        error: null,
+      });
+      // Return a store-like object that tests can use
+      return store;
+    }),
+  };
+});
+
 import { runtimeServiceForkConversation } from "@rilldata/web-common/runtime-client";
 
 // =============================================================================

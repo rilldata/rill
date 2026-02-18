@@ -21,10 +21,10 @@
   $: ({ instanceId } = $runtime);
 
   $: exploreQuery = useExplore(instanceId, exploreName);
-  $: exploreFilePath = $exploreQuery.data?.explore?.meta?.filePaths?.[0] ?? "";
+  $: exploreFilePath = exploreQuery.data?.explore?.meta?.filePaths?.[0] ?? "";
   $: metricsViewFilePath =
-    $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "";
-  $: metricsViewName = $exploreQuery.data?.metricsView?.meta?.name?.name ?? "";
+    exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "";
+  $: metricsViewName = exploreQuery.data?.metricsView?.meta?.name?.name ?? "";
 
   $: explorePolicyCheck = useDashboardPolicyCheck(instanceId, exploreFilePath);
   $: metricsPolicyCheck = useDashboardPolicyCheck(
@@ -37,7 +37,7 @@
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">
-  {#if $explorePolicyCheck.data || $metricsPolicyCheck.data || $rillYamlPolicyCheck.data}
+  {#if explorePolicyCheck.data || metricsPolicyCheck.data || rillYamlPolicyCheck.data}
     <ViewAsButton />
   {/if}
   <StateManagersProvider {metricsViewName} {exploreName} let:ready>
