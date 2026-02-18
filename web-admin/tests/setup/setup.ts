@@ -357,7 +357,9 @@ setup.describe("global setup", () => {
 
     // Wait for the project to be ready by checking the status page
     await adminPage.goto(`/${RILL_ORG_NAME}/incremental-test/-/status`);
-    await expect(adminPage.getByText("Resources")).toBeVisible({
+    await expect(
+      adminPage.getByRole("heading", { name: "Resources" }),
+    ).toBeVisible({
       timeout: 60_000,
     });
 
