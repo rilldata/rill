@@ -6,7 +6,6 @@
     createRuntimeServiceCreateTrigger,
     createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
-    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -24,7 +23,7 @@
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
-  import { getResourceStatus, filterResources } from "./utils";
+  import { filterResources } from "./utils";
   import { onMount } from "svelte";
 
   const queryClient = useQueryClient();
@@ -148,8 +147,6 @@
     searchText,
     selectedStatuses,
   );
-
-  // getResourceStatus and filterResources imported from ./utils
 
   function toggleType(type: string) {
     if (selectedTypes.includes(type)) {
