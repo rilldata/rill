@@ -106,7 +106,7 @@
           previewerMode={data.previewerMode ?? false}
         />
         {#if $previewModeStore && !$page.url.pathname.startsWith("/files") && !$page.url.pathname.startsWith("/explore") && !$page.url.pathname.startsWith("/canvas") && !onDeployPage}
-          <DevModeNav />
+          <DevModeNav previewerMode={data.previewerMode ?? false} />
         {/if}
         {#if $deploy}
           <RemoteProjectManager />

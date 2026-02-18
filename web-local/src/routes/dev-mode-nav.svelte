@@ -2,6 +2,8 @@
   import { page } from "$app/stores";
   import LocalProjectStatusIndicator from "./LocalProjectStatusIndicator.svelte";
 
+  export let previewerMode = false;
+
   $: currentPath = $page.url.pathname;
 
   $: activeTab = currentPath.includes("/ai")
@@ -18,7 +20,7 @@
               ? "settings"
               : "preview";
 
-  const tabs: {
+  const allTabs: {
     id: string;
     label: string;
     path: string;
@@ -31,6 +33,12 @@
     { id: "status", label: "Status", path: "/status" },
     { id: "settings", label: "Settings", path: "/settings" },
   ];
+
+  // In previewer mode, only show Home and Dashboards
+  const previewerTabs = new Set(["home", "preview"]);
+  $: tabs = previewerMode
+    ? allTabs.filter((t) => previewerTabs.has(t.id))
+    : allTabs;
 
   $: selectedIndex = tabs.findIndex((t) => t.id === activeTab);
 

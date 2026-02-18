@@ -78,8 +78,7 @@
       (r) => r.kind === ResourceKind.MetricsView,
     );
     dashboardResources = allResources.filter(
-      (r) =>
-        r.kind === ResourceKind.Canvas || r.kind === ResourceKind.Explore,
+      (r) => r.kind === ResourceKind.Canvas || r.kind === ResourceKind.Explore,
     );
   }
 

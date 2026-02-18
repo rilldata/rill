@@ -15,7 +15,7 @@
   ];
 </script>
 
-<ContentContainer title="Project Status" maxWidth={1100}>
+<ContentContainer title="Status" maxWidth={1100}>
   <div class="flex pt-6 gap-6 max-w-full overflow-hidden">
     <TabNav items={navItems} bind:selected={selectedPage} />
 

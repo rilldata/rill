@@ -23,6 +23,23 @@ export async function load({ url, depends, untrack }) {
   const previewMode = metadata.previewMode ?? false;
   const previewerMode = metadata.previewerMode ?? false;
 
+  // In previewer mode, only allow preview-related routes; redirect everything else to /home
+  if (previewerMode) {
+    const allowedPrefixes = [
+      "/home",
+      "/preview",
+      "/explore/",
+      "/canvas/",
+      "/deploy",
+    ];
+    const isAllowed =
+      url.pathname === "/" ||
+      allowedPrefixes.some((prefix) => url.pathname.startsWith(prefix));
+    if (!isAllowed) {
+      throw redirect(303, "/home");
+    }
+  }
+
   const instanceId = get(runtime).instanceId;
 
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({

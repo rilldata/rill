@@ -4,7 +4,7 @@
   import { SettingsIcon } from "lucide-svelte";
 </script>
 
-<ContentContainer title="Project settings">
+<ContentContainer title="Settings">
   <PreviewPlaceholder
     title="Settings are available on Rill Cloud"
     description="Deploy your project to manage environment variables, public URLs, and more"
