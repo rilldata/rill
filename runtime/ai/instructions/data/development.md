@@ -244,7 +244,7 @@ The following tools are typically available for project development:
 - `project_status` for checking resource names and their current status (idle, running, error)
 - `query_sql` for running SQL against a connector; use `SELECT` statements with `LIMIT` clauses and low timeouts, and be mindful of performance or making too many queries
 - `query_metrics_view` for querying a metrics view; useful for answering data questions and validating dashboard behavior
-- `list_tables` and `get_table` for accessing the information schema of a database connector
+- `list_tables` and `show_table` for accessing the information schema of a database connector
 - `list_buckets` and `list_bucket_files` for exploring files in object stores like S3 or GCS; to preview file contents, load one file into a table using a model and query it with `query_sql`
 
 {% if .external %}
