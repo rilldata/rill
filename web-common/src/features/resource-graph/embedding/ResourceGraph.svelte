@@ -134,6 +134,10 @@
     return null;
   })();
 
+  // If seeds were provided (e.g., kind filter like "models"), use seed-based partitioning.
+  // When the kind has no resources, normalizedSeeds will be empty — return [] instead of
+  // falling back to partitionResourcesByMetrics, which would show unrelated metric views.
+  $: hasExplicitSeeds = seeds && seeds.length > 0;
   $: resourceGroups =
     normalizedSeeds && normalizedSeeds.length
       ? partitionResourcesBySeeds(
@@ -141,7 +145,9 @@
           normalizedSeeds,
           filterKind,
         )
-      : partitionResourcesByMetrics(normalizedResources);
+      : hasExplicitSeeds
+        ? []
+        : partitionResourcesByMetrics(normalizedResources);
   // Filter groups by search query and status
   $: filteredResourceGroups = (() => {
     let groups = resourceGroups;
@@ -168,6 +174,13 @@
             return true;
           }
           if (statusFilter.includes("errored") && !!r.meta?.reconcileError) {
+            return true;
+          }
+          if (
+            statusFilter.includes("ok") &&
+            r.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE" &&
+            !r.meta?.reconcileError
+          ) {
             return true;
           }
           return false;

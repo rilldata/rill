@@ -83,5 +83,5 @@ export interface ResourceNodeData extends Record<string, unknown> {
  * - "pending": Resources with non-idle reconcile status
  * - "errored": Resources with reconcile errors
  */
-export type ResourceStatusFilterValue = "pending" | "errored";
+export type ResourceStatusFilterValue = "ok" | "pending" | "errored";
 export type ResourceStatusFilter = ResourceStatusFilterValue[];

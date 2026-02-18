@@ -59,6 +59,7 @@
 
   type StatusOption = { label: string; value: ResourceStatusFilterValue };
   const statusOptions: StatusOption[] = [
+    { label: "OK", value: "ok" },
     { label: "Pending", value: "pending" },
     { label: "Errored", value: "errored" },
   ];
