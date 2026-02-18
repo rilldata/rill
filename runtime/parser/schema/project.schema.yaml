@@ -2442,7 +2442,7 @@ definitions:
             examples:
               - card_css:
                   border-radius: 10px
-                  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),var(--tw-ring-shadow, 0 0 #0000),var(--tw-shadow)
+                  outline-color: red
         required:
           - type
           - display_name
