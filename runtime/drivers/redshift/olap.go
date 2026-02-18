@@ -114,6 +114,11 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	return nil // Not implemented
+}
+
 // Lookup implements drivers.OLAPInformationSchema.
 func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	meta, err := c.GetTable(ctx, db, schema, name)

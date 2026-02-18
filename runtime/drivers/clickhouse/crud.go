@@ -20,12 +20,17 @@ type tableWriteMetrics struct {
 	duration time.Duration
 }
 
-func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) (*tableWriteMetrics, error) {
-	ctx = contextWithQueryID(ctx)
-
+func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, outputProps *ModelOutputProperties, beforeCreate, afterCreate string) (*tableWriteMetrics, error) {
 	var onClusterClause string
 	if c.config.Cluster != "" {
 		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+
+	// Execute beforeCreate query
+	if beforeCreate != "" {
+		if err := c.Exec(ctx, &drivers.Statement{Query: beforeCreate, Priority: 100}); err != nil {
+			return nil, fmt.Errorf("failed to execute pre_exec: %w", err)
+		}
 	}
 
 	t := time.Now()
@@ -37,11 +42,21 @@ func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
+		if afterCreate != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: afterCreate, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
+		}
 		return &tableWriteMetrics{duration: time.Since(t)}, nil
 	} else if outputProps.Typ == "DICTIONARY" {
 		err := c.createDictionary(ctx, name, sql, outputProps)
 		if err != nil {
 			return nil, err
+		}
+		if afterCreate != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: afterCreate, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
 		}
 		return &tableWriteMetrics{duration: time.Since(t)}, nil
 	}
@@ -58,15 +73,30 @@ func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, 
 	if err != nil {
 		return nil, err
 	}
+
+	// Execute afterCreate query
+	if afterCreate != "" {
+		if err := c.Exec(ctx, &drivers.Statement{Query: afterCreate, Priority: 100}); err != nil {
+			return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+		}
+	}
 	return &tableWriteMetrics{duration: time.Since(t)}, nil
 }
 
 type InsertTableOptions struct {
-	Strategy drivers.IncrementalStrategy
+	Strategy     drivers.IncrementalStrategy
+	BeforeInsert string
+	AfterInsert  string
 }
 
 func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions, outputProps *ModelOutputProperties) (*tableWriteMetrics, error) {
-	ctx = contextWithQueryID(ctx)
+	// Execute BeforeInsert query
+	if opts.BeforeInsert != "" {
+		if err := c.Exec(ctx, &drivers.Statement{Query: opts.BeforeInsert, Priority: 100}); err != nil {
+			return nil, fmt.Errorf("failed to execute pre_exec: %w", err)
+		}
+	}
+
 	start := time.Now()
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
@@ -76,6 +106,11 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		})
 		if err != nil {
 			return nil, err
+		}
+		if opts.AfterInsert != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: opts.AfterInsert, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
 		}
 		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
@@ -166,6 +201,11 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 				return nil, err
 			}
 		}
+		if opts.AfterInsert != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: opts.AfterInsert, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
+		}
 		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
 
@@ -197,6 +237,11 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
+		if opts.AfterInsert != "" {
+			if err := c.Exec(ctx, &drivers.Statement{Query: opts.AfterInsert, Priority: 100}); err != nil {
+				return nil, fmt.Errorf("failed to execute post_exec: %w", err)
+			}
+		}
 		return &tableWriteMetrics{duration: time.Since(start)}, nil
 	}
 
@@ -204,7 +249,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 func (c *Connection) dropTable(ctx context.Context, name string) error {
-	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := c.entityType(ctx, c.config.Database, name)
 	if err != nil {
 		return err
@@ -254,7 +298,6 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 }
 
 func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) error {
-	ctx = contextWithQueryID(ctx)
 	typ, onCluster, err := c.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err
@@ -382,7 +425,7 @@ func (c *Connection) renameView(ctx context.Context, oldName, newName, onCluster
 
 func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluster string) error {
 	var exists bool
-	err := c.writeDB.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
+	err := c.writeDB.QueryRowContext(contextWithQueryID(ctx), fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
 	if err != nil {
 		return err
 	}

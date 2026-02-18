@@ -246,9 +246,10 @@
           <StateManagersProvider
             metricsViewName={exploreSpec.metricsView}
             exploreName={dashboard}
+            let:ready
           >
             <LastRefreshedDate {dashboard} />
-            {#if $dimensionSearch}
+            {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
             {#if $dashboardChat && !onPublicURLPage}
@@ -272,6 +273,9 @@
     {/if}
 
     {#if onCanvasDashboardPage && hasUserAccess}
+      {#if $dashboardChat && !onPublicURLPage}
+        <ChatToggle />
+      {/if}
       <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}

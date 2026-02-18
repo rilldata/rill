@@ -407,6 +407,27 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return err
 }
 
+func (c *Connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	schema := table.DatabaseSchema
+	if schema == "" {
+		schema = c.config.Database // In Clickhouse, this is actually like a schema
+	}
+
+	var ddl string
+	err = conn.QueryRowxContext(ctx, fmt.Sprintf("SHOW CREATE TABLE %s.%s", safeSQLName(schema), safeSQLName(table.Name))).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
+}
+
 func scanTables(rows *sqlx.Rows) ([]*drivers.OlapTable, error) {
 	var res []*drivers.OlapTable
 

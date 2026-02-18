@@ -39,8 +39,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 
 With the **Multiple Measure Leaderboard** feature, you can easily select and compare several measures for any dimension. Simply open the dropdown in the dimension leaderboard, enable `multi-select`, and choose any combination of visible measures to display them together.
 
-<img src = '/img/explore/dashboard101/multi-measure-select.png' class='rounded-gif' />
-<br />
+![Multi Measure Select](/img/explore/dashboard101/multi-measure-select.png)
 
 ### Why Compare Multiple Measures?
 

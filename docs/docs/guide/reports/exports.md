@@ -82,8 +82,7 @@ Follow these simple steps to schedule an email report:
 4. **Complete and Enjoy:** Click "Done." User-created reports will be delivered directly to your inbox 🎉.
 
 
-<img src = '/img/explore/exports/scheduled.png' class='centered' />
-<br />
+![Scheduled](/img/explore/exports/scheduled.png)
 
 ## Managing Scheduled Reports
 

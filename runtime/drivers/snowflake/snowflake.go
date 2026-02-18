@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -24,19 +25,22 @@ import (
 func init() {
 	drivers.Register("snowflake", driver{})
 	drivers.RegisterAsConnector("snowflake", driver{})
+
+	// Naughty Snowflake does logging inside the library using a global.
+	gosnowflake.GetLogger().SetOutput(io.Discard)
 }
 
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/snowflake",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Snowflake Connection String",
 			Required:    false,
-			DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/snowflake",
+			DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
 			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,

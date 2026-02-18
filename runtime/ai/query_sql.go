@@ -2,15 +2,11 @@ package ai
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
 const QuerySQLName = "query_sql"
@@ -23,12 +19,14 @@ var _ Tool[*QuerySQLArgs, *QuerySQLResult] = (*QuerySQL)(nil)
 
 type QuerySQLArgs struct {
 	Connector      string `json:"connector,omitempty" jsonschema:"Optional OLAP connector name. Defaults to the instance's default OLAP connector."`
-	SQL            string `json:"sql" jsonschema:"The SQL query to execute."`
+	SQL            string `json:"sql" jsonschema:"The SQL query to execute. You are strongly encouraged to use LIMIT in your query and to keep it as low as possible for your task (ideally below 100 rows). The server will truncate large results regardless of the limit (and return a warning if it does)."`
 	TimeoutSeconds int    `json:"timeout_seconds,omitempty" jsonschema:"Query timeout in seconds. Defaults to 30."`
 }
 
 type QuerySQLResult struct {
-	Data []map[string]any `json:"data"`
+	Schema            []SchemaField `json:"schema"`
+	Data              [][]any       `json:"data"`
+	TruncationWarning string        `json:"truncation_warning,omitempty"`
 }
 
 func (t *QuerySQL) Spec() *mcp.Tool {
@@ -60,14 +58,25 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 		timeoutSeconds = 30
 	}
 
+	// Apply a hard limit to prevent large results that bloat the context
+	instance, err := t.Runtime.Instance(ctx, s.InstanceID())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance: %w", err)
+	}
+	cfg, err := instance.Config()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance config: %w", err)
+	}
+	hardLimit := cfg.AIMaxQueryLimit
+
 	// Apply timeout
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	// Build resolver properties with hard-coded limit
+	// Build resolver properties with system limit
 	props := map[string]any{
 		"sql":   args.SQL,
-		"limit": int64(1000),
+		"limit": hardLimit,
 	}
 	if args.Connector != "" {
 		props["connector"] = args.Connector
@@ -85,30 +94,18 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 	}
 	defer res.Close()
 
-	// Collect results
-	var data []map[string]any
-	schema := &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, StructType: res.Schema()}
-	for {
-		row, err := res.Next()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
-
-		// Convert types for JSON serialization
-		v, err := jsonval.ToValue(row, schema)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert row: %w", err)
-		}
-		row, ok := v.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("expected row to be map[string]any, got %T", v)
-		}
-
-		data = append(data, row)
+	// Collect results in tabular format
+	schema, data, err := resolverResultToTabular(res)
+	if err != nil {
+		return nil, err
 	}
 
-	return &QuerySQLResult{Data: data}, nil
+	result := &QuerySQLResult{
+		Schema: schema,
+		Data:   data,
+	}
+	if int64(len(data)) >= hardLimit { // Add a warning if we hit the system limit
+		result.TruncationWarning = fmt.Sprintf("The system truncated the result to %d rows", hardLimit)
+	}
+	return result, nil
 }

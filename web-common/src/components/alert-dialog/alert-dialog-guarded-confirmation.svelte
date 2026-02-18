@@ -24,7 +24,7 @@
   export let confirmButtonType: ButtonType = "primary";
 
   export let loading: boolean;
-  export let error: string;
+  export let error: string | undefined = undefined;
   export let onConfirm: () => Promise<void>;
   export let onCancel: () => void = () => {};
 

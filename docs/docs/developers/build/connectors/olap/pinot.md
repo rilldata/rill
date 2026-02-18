@@ -14,17 +14,17 @@ Rill supports connecting to an existing Pinot cluster via a "live connector" and
 
 When using Rill for local development, there are a few options to configure Rill to enable Pinot as an OLAP engine:
 
-1. Connect to an OLAP engine via Add Data. This will automatically create the `pinot.yaml` file in your `connectors` directory and populate the `.env` file with `connector.pinot.password` or `connector.pinot.dsn` depending on which you select in the UI.
+1. Connect to an OLAP engine via Add Data. This will automatically create the `pinot.yaml` file in your `connectors` directory and populate the `.env` file with `PINOT_PASSWORD` or `PINOT_DSN` depending on which you select in the UI.
 
     For more information on supported parameters, see our [Pinot connector YAML reference docs](/reference/project-files/connectors#pinot).
     ```yaml
     type: connector
     driver: pinot
 
-    dsn: "{{ .env.connector.pinot.dsn }}"
+    dsn: "{{ .env.PINOT_DSN }}"
     ```
 
-1. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
+1. You can set `PINOT_DSN` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -34,14 +34,12 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 ## Connection String (DSN)
 
-Rill connects to Pinot using the [Pinot Golang Client](https://docs.pinot.apache.org/users/clients/golang) and requires a connection string of the following format: `http://<user>:<password>@<broker_host>:<port>?controller=<controller_host>:<port>`. If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`). This should be set in the `connector.pinot.dsn` property in Rill.
-
-<img src='/img/build/connectors/olap-engines/pinot/pinot-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+Rill connects to Pinot using the [Pinot Golang Client](https://docs.pinot.apache.org/users/clients/golang) and requires a connection string of the following format: `http://<user>:<password>@<broker_host>:<port>?controller=<controller_host>:<port>`. If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`). This should be set in the `PINOT_DSN` property in Rill.
 
 As an example, this typically looks like:
 
 ```bash
-connector.pinot.dsn="http(s)://username:password@localhost:8000?controller=localhost:9000"
+PINOT_DSN="http(s)://username:password@localhost:8000?controller=localhost:9000"
 ```
 
 :::info Need help connecting to Pinot?
@@ -68,7 +66,7 @@ Please see our [Using Multiple OLAP Engines](/developers/build/connectors/olap/m
 
 When deploying a Pinot-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
 1. If you have followed the UI to create your Pinot connector, the password or DSN should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
-2. If `connector.pinot.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
+2. If `PINOT_DSN` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
 
 ## Support for Multi-Valued Dimensions
 
