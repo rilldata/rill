@@ -12,7 +12,13 @@
 
 <Popover.Root>
   <Popover.Trigger asChild let:builder>
-    <Button type="secondary" {compact} {gray} builders={[builder]} label={buttonLabel}>
+    <Button
+      type="secondary"
+      {compact}
+      {gray}
+      builders={[builder]}
+      label={buttonLabel}
+    >
       <slot name="icon" />
       <slot name="trigger-label" />
     </Button>
