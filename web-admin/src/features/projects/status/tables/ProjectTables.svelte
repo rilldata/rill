@@ -27,10 +27,7 @@
   import ModelPartitionsDialog from "./ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "./RefreshErroredPartitionsDialog.svelte";
   import RefreshResourceConfirmDialog from "../resource-table/RefreshResourceConfirmDialog.svelte";
-  import {
-    createUrlFilterSync,
-    parseStringParam,
-  } from "../url-filter-sync";
+  import { createUrlFilterSync, parseStringParam } from "../url-filter-sync";
   import { onMount } from "svelte";
 
   $: ({ instanceId } = $runtime);
