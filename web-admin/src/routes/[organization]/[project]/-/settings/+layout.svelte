@@ -10,7 +10,11 @@
   $: basePage = `/${organization}/${project}/-/settings`;
 
   const navItems = [
-    { label: "General", route: "", hasPermission: true },
+    {
+      label: "General",
+      route: "",
+      hasPermission: true,
+    },
     {
       label: "Environment Variables",
       route: "/environment-variables",
@@ -20,6 +24,16 @@
       label: "Public URLs",
       route: "/public-urls",
       hasPermission: true,
+    },
+    {
+      label: "Token Management",
+      route: "/token-management",
+      hasPermission: false,
+    },
+    {
+      label: "Console",
+      route: "/console",
+      hasPermission: false,
     },
   ];
 </script>
