@@ -89,24 +89,46 @@ describe("getOptimalColumns", () => {
     });
   });
 
-  describe("prime numbers - minimizes whitespace", () => {
-    it("handles 5 items (prime) by minimizing empty cells", () => {
-      // Container width 800px, minWidth 192px = max 4 columns
-      // 5 is prime, no perfect factors
-      // With 4 columns: 2 rows, 3 empty cells
-      // With 3 columns: 2 rows, 1 empty cell (better)
-      // With 2 columns: 3 rows, 1 empty cell
-      // With 5 columns: 1 row, 0 empty cells (best if fits)
-      const result = getOptimalColumns(5, 800, 192);
-      // Should pick columns that minimize empty cells
-      expect(result).toBeGreaterThanOrEqual(1);
-      expect(result).toBeLessThanOrEqual(4);
+  describe("prime numbers - minimizes whitespace while using multiple columns", () => {
+    it("handles 5 items (prime) with 2 columns (3+2 layout)", () => {
+      // Container width 500px, minWidth 192px = max 2 columns
+      // 5 is prime, only factors are 1 and 5
+      // Should use 2 columns (3+2 layout with 1 empty cell) instead of 1 column
+      expect(getOptimalColumns(5, 500, 192)).toBe(2);
     });
 
-    it("handles 7 items (prime)", () => {
-      const result = getOptimalColumns(7, 800, 192);
-      expect(result).toBeGreaterThanOrEqual(1);
-      expect(result).toBeLessThanOrEqual(4);
+    it("handles 5 items (prime) with 3 columns available", () => {
+      // Container width 600px, minWidth 192px = max 3 columns
+      // 5 is prime, no perfect factors >= 2
+      // With 3 columns: 2 rows, 1 empty cell
+      // With 2 columns: 3 rows, 1 empty cell
+      // Should pick 3 columns (first to minimize empty cells)
+      expect(getOptimalColumns(5, 600, 192)).toBe(3);
+    });
+
+    it("handles 5 items (prime) with 4 columns available", () => {
+      // Container width 800px, minWidth 192px = max 4 columns
+      // With 4 columns: 2 rows, 3 empty cells
+      // With 3 columns: 2 rows, 1 empty cell (best)
+      // With 2 columns: 3 rows, 1 empty cell
+      expect(getOptimalColumns(5, 800, 192)).toBe(3);
+    });
+
+    it("handles 7 items (prime) with 4 columns available", () => {
+      // 7 is prime, only factors are 1 and 7
+      // With 4 columns: 2 rows, 1 empty cell
+      // With 3 columns: 3 rows, 2 empty cells
+      // With 2 columns: 4 rows, 1 empty cell
+      // Should pick 4 columns (minimizes empty cells with fewest rows)
+      expect(getOptimalColumns(7, 800, 192)).toBe(4);
+    });
+
+    it("handles 11 items (prime)", () => {
+      // Container width 800px, minWidth 192px = max 4 columns
+      // With 4 columns: 3 rows, 1 empty cell
+      // With 3 columns: 4 rows, 1 empty cell
+      // Should pick 4 columns
+      expect(getOptimalColumns(11, 800, 192)).toBe(4);
     });
   });
 

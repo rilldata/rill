@@ -53,30 +53,36 @@ export function getOptimalColumns(
   }
 
   // Find the optimal number of columns that minimizes whitespace
-  // by finding the largest factor of itemCount that fits
-  let bestColumns = 1;
+  // by finding the largest factor of itemCount >= 2 that fits
+  let bestColumns = -1;
 
-  for (let cols = Math.min(maxColumns, itemCount); cols >= 1; cols--) {
+  for (let cols = Math.min(maxColumns, itemCount); cols >= 2; cols--) {
     if (itemCount % cols === 0) {
-      // Perfect fit - no empty cells
+      // Perfect fit with multiple columns - no empty cells
       bestColumns = cols;
       break;
     }
   }
 
-  // If no perfect factor found (prime numbers), find the column count
-  // that minimizes empty cells in the last row
-  if (itemCount % bestColumns !== 0) {
-    let minEmptyCells = itemCount;
-    for (let cols = Math.min(maxColumns, itemCount); cols >= 1; cols--) {
-      const rows = Math.ceil(itemCount / cols);
-      const totalCells = rows * cols;
-      const emptyCells = totalCells - itemCount;
+  // If a perfect factor >= 2 was found, use it
+  if (bestColumns !== -1) {
+    return bestColumns;
+  }
 
-      if (emptyCells < minEmptyCells) {
-        minEmptyCells = emptyCells;
-        bestColumns = cols;
-      }
+  // No perfect factor >= 2 found (prime numbers or only factor is 1)
+  // Find the column count that minimizes empty cells while preferring more columns
+  // Use maxColumns as starting point since having more columns is generally better
+  bestColumns = maxColumns;
+  let minEmptyCells = Infinity;
+
+  for (let cols = Math.min(maxColumns, itemCount); cols >= 2; cols--) {
+    const rows = Math.ceil(itemCount / cols);
+    const totalCells = rows * cols;
+    const emptyCells = totalCells - itemCount;
+
+    if (emptyCells < minEmptyCells) {
+      minEmptyCells = emptyCells;
+      bestColumns = cols;
     }
   }
 
