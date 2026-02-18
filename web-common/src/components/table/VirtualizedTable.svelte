@@ -104,7 +104,9 @@
   $: rowScrollOffset = $virtualizer?.scrollOffset || 0;
 
   $: dynamicContainerHeight =
-    rows.length <= 10 ? rowHeight * rows.length : containerHeight;
+    rows.length === 0
+      ? 120
+      : Math.min(rows.length * rowHeight, containerHeight);
 </script>
 
 <div

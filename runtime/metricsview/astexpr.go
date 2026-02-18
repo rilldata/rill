@@ -405,9 +405,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 			}
 		}
 
-		if b.ast.Dialect.RequiresCastForLike() {
-			b.writeString("::TEXT")
-		}
+		b.writeString(b.ast.Dialect.GetCastExprForLike())
 
 		if not {
 			b.writeString(" NOT ILIKE ")
@@ -420,9 +418,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 			return err
 		}
 
-		if b.ast.Dialect.RequiresCastForLike() {
-			b.writeString("::TEXT")
-		}
+		b.writeString(b.ast.Dialect.GetCastExprForLike())
 	} else if b.ast.Dialect.SupportsRegexMatch() {
 		if not {
 			b.writeString(" NOT ")
@@ -475,9 +471,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 				return err
 			}
 		}
-		if b.ast.Dialect.RequiresCastForLike() {
-			b.writeString("::TEXT")
-		}
+		b.writeString(b.ast.Dialect.GetCastExprForLike())
 		b.writeByte(')')
 
 		if not {
@@ -491,9 +485,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if err != nil {
 			return err
 		}
-		if b.ast.Dialect.RequiresCastForLike() {
-			b.writeString("::TEXT")
-		}
+		b.writeString(b.ast.Dialect.GetCastExprForLike())
 		b.writeByte(')')
 	}
 
