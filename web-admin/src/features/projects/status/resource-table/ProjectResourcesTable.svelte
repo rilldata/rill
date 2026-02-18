@@ -16,7 +16,7 @@
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
   import RefreshCell from "@rilldata/web-common/features/projects/status/RefreshCell.svelte";
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
-  import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
+  import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
   import ResourceSpecDialog from "./ResourceSpecDialog.svelte";
 
   export let data: V1Resource[];

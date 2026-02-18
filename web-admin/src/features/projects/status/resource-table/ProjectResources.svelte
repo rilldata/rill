@@ -6,8 +6,6 @@
     createRuntimeServiceCreateTrigger,
     createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReconcileStatus,
-    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -21,6 +19,11 @@
     ResourceKind,
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    filterableTypes,
+    filterResources,
+    statusFilters,
+  } from "@rilldata/web-common/features/resources/resource-filter-utils";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "@rilldata/web-common/features/resources/RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
@@ -98,27 +101,6 @@
     });
   }
 
-  type StatusFilter = { label: string; value: string };
-  const statusFilters: StatusFilter[] = [
-    { label: "Error", value: "error" },
-    { label: "Warn", value: "warn" },
-    { label: "OK", value: "ok" },
-  ];
-
-  // Resource types available for filtering (excluding internal types)
-  const filterableTypes = [
-    ResourceKind.Source,
-    ResourceKind.Model,
-    ResourceKind.MetricsView,
-    ResourceKind.Explore,
-    ResourceKind.Canvas,
-    ResourceKind.Theme,
-    ResourceKind.Report,
-    ResourceKind.Alert,
-    ResourceKind.API,
-    ResourceKind.Connector,
-  ];
-
   $: ({ instanceId } = $runtime);
 
   $: resources = useResources(instanceId);
@@ -148,39 +130,6 @@
     searchText,
     selectedStatuses,
   );
-
-  function getResourceStatus(r: V1Resource): string {
-    if (r.meta?.reconcileError) return "error";
-    const status = r.meta?.reconcileStatus;
-    if (
-      status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-      status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING
-    )
-      return "warn";
-    return "ok";
-  }
-
-  function filterResources(
-    resources: V1Resource[] | undefined,
-    types: string[],
-    search: string,
-    statuses: string[],
-  ): V1Resource[] {
-    if (!resources) return [];
-
-    return resources.filter((r) => {
-      const kind = r.meta?.name?.kind;
-      const name = r.meta?.name?.name ?? "";
-
-      const matchesType = types.length === 0 || types.includes(kind ?? "");
-      const matchesSearch =
-        !search || name.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus =
-        statuses.length === 0 || statuses.includes(getResourceStatus(r));
-
-      return matchesType && matchesSearch && matchesStatus;
-    });
-  }
 
   function toggleType(type: string) {
     if (selectedTypes.includes(type)) {

@@ -1,17 +1,17 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
   import TabNav from "@rilldata/web-common/components/nav/TabNav.svelte";
   import {
     ResourceKind,
     SingletonProjectParserName,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { formatConnectorName } from "@rilldata/web-common/features/resources/display-utils";
+  import ErrorsOverviewSection from "@rilldata/web-common/features/resources/overview/ErrorsOverviewSection.svelte";
+  import ResourcesOverviewSection from "@rilldata/web-common/features/resources/overview/ResourcesOverviewSection.svelte";
   import {
     countByKind,
     groupErrorsByKind,
-    pluralizeKind,
   } from "@rilldata/web-common/features/resources/overview-utils";
   import {
     createRuntimeServiceGetInstance,
@@ -24,19 +24,6 @@
   import Rocket from "svelte-radix/Rocket.svelte";
   import ResourcesSection from "../status/ResourcesSection.svelte";
   import ParseErrorsSection from "../status/ParseErrorsSection.svelte";
-
-  function formatConnectorName(name: string | undefined): string {
-    if (!name) return "—";
-    const lower = name.toLowerCase();
-    if (lower === "duckdb") return "DuckDB";
-    if (lower === "clickhouse") return "ClickHouse";
-    if (lower === "mysql") return "MySQL";
-    if (lower === "bigquery") return "BigQuery";
-    if (lower === "openai") return "OpenAI";
-    if (lower === "claude") return "Claude";
-    if (lower === "gemini") return "Gemini";
-    return name.charAt(0).toUpperCase() + name.slice(1);
-  }
 
   let selectedPage = "overview";
 
@@ -94,7 +81,10 @@
     lastSelectedPage = selectedPage;
   }
 
-  function goToResources(statusFilter: string[] = [], typeFilter: string[] = []) {
+  function goToResources(
+    statusFilter: string[] = [],
+    typeFilter: string[] = [],
+  ) {
     resourceStatusFilter = statusFilter;
     resourceTypeFilter = typeFilter;
     selectedPage = "resources";
@@ -140,7 +130,7 @@
             <div class="info-row">
               <span class="info-label">AI Connector</span>
               <span class="info-value">
-                {instance?.aiConnector
+                {instance?.aiConnector && instance.aiConnector !== "admin"
                   ? formatConnectorName(instance.aiConnector)
                   : "Rill Managed"}
               </span>
@@ -148,85 +138,20 @@
           </div>
         </div>
 
-        <!-- Resources Section -->
-        {#if resourceCounts.length > 0}
-          <div class="section">
-            <div class="section-header">
-              <h3 class="section-title">Resources</h3>
-              <button class="view-all" on:click={() => goToResources()}>View all</button
-              >
-            </div>
-            <div class="resource-chips">
-              {#each resourceCounts as { kind, label, count } (kind)}
-                <button class="resource-chip" on:click={() => goToResources([], [kind])}>
-                  {#if resourceIconMapping[kind]}
-                    <svelte:component
-                      this={resourceIconMapping[kind]}
-                      size="12px"
-                    />
-                  {/if}
-                  <span class="font-medium">{count}</span>
-                  <span class="text-fg-secondary"
-                    >{pluralizeKind(label, count)}</span
-                  >
-                </button>
-              {/each}
-            </div>
-          </div>
-        {/if}
+        <ResourcesOverviewSection
+          {resourceCounts}
+          onViewAll={() => goToResources()}
+          onChipClick={(kind) => goToResources([], [kind])}
+        />
 
-        <!-- Errors Section -->
-        {#if totalErrors > 0}
-          <button
-            class="section section-error section-clickable"
-            on:click={() => goToResources(["error"])}
-          >
-            <div class="section-header">
-              <h3 class="section-title flex items-center gap-2">
-                Errors
-                <span class="error-badge">{totalErrors}</span>
-              </h3>
-            </div>
-            <div class="error-chips">
-              {#if parseErrors.length > 0}
-                <span class="error-chip">
-                  <AlertCircleOutline size="12px" />
-                  <span class="font-medium">{parseErrors.length}</span>
-                  <span
-                    >Parse error{parseErrors.length !== 1 ? "s" : ""}</span
-                  >
-                </span>
-              {/if}
-              {#each errorsByKind as { kind, label, count } (kind)}
-                <span class="error-chip">
-                  {#if resourceIconMapping[kind]}
-                    <svelte:component
-                      this={resourceIconMapping[kind]}
-                      size="12px"
-                    />
-                  {/if}
-                  <span class="font-medium">{count}</span>
-                  <span>{pluralizeKind(label, count)}</span>
-                </span>
-              {/each}
-            </div>
-          </button>
-        {:else}
-          <div class="section">
-            <div class="section-header">
-              <h3 class="section-title flex items-center gap-2">Errors</h3>
-            </div>
-            {#if $projectParserQuery.isError || $resourcesQuery.isError}
-              <p class="text-sm text-fg-secondary">
-                Unable to check for errors.
-              </p>
-            {:else if $projectParserQuery.isLoading || $resourcesQuery.isLoading}
-              <p class="text-sm text-fg-secondary">Checking for errors...</p>
-            {:else}
-              <p class="text-sm text-fg-secondary">No errors detected.</p>
-            {/if}
-          </div>
-        {/if}
+        <ErrorsOverviewSection
+          parseErrorCount={parseErrors.length}
+          {errorsByKind}
+          {totalErrors}
+          isLoading={$projectParserQuery.isLoading || $resourcesQuery.isLoading}
+          isError={$projectParserQuery.isError || $resourcesQuery.isError}
+          onSectionClick={() => goToResources(["error"])}
+        />
       {:else if selectedPage === "resources"}
         <ResourcesSection
           initialStatusFilter={resourceStatusFilter}
@@ -277,39 +202,5 @@
   }
   .status-dot {
     @apply w-2 h-2 rounded-full inline-block;
-  }
-  .view-all {
-    @apply text-xs text-primary-500 bg-transparent border-none cursor-pointer p-0;
-  }
-  .view-all:hover {
-    @apply text-primary-600;
-  }
-  .resource-chips {
-    @apply flex flex-wrap gap-2;
-  }
-  .resource-chip {
-    @apply flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border border-border bg-surface-subtle cursor-pointer;
-  }
-  .resource-chip:hover {
-    @apply border-primary-500 text-primary-600;
-  }
-  .section-clickable {
-    @apply cursor-pointer;
-  }
-  .section-error {
-    @apply border-red-500;
-  }
-  .section-clickable:hover {
-    @apply border-red-600;
-  }
-  .error-badge {
-    @apply text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 min-w-[20px] text-center;
-  }
-  .error-chips {
-    @apply flex flex-wrap gap-2;
-  }
-  .error-chip {
-    @apply flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md;
-    @apply border border-red-300 bg-red-50 text-red-700;
   }
 </style>

@@ -13,7 +13,9 @@ export function useDashboards(
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
-        return (data.resources ?? []).filter((res) => res.canvas || res.explore);
+        return (data.resources ?? []).filter(
+          (res) => res.canvas || res.explore,
+        );
       },
       enabled: !!instanceId,
       ...queryOptions,

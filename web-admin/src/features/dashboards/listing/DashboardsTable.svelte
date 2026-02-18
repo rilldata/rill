@@ -14,12 +14,7 @@
   } = $page);
 
   $: dashboards = useDashboards(instanceId);
-  $: ({
-    data: dashboardsData,
-    isLoading,
-    isError,
-    error,
-  } = $dashboards);
+  $: ({ data: dashboardsData, isLoading, isError, error } = $dashboards);
 
   function getHref(name: string, isMetricsExplorer: boolean): string {
     const slug = isMetricsExplorer ? "explore" : "canvas";

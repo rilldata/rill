@@ -11,12 +11,7 @@
   export let seeAllHref = "/preview";
 
   $: dashboardsQuery = useDashboards($runtime.instanceId);
-  $: ({
-    data: dashboardsData,
-    isLoading,
-    isError,
-    error,
-  } = $dashboardsQuery);
+  $: ({ data: dashboardsData, isLoading, isError, error } = $dashboardsQuery);
 
   function getHref(name: string, isMetricsExplorer: boolean): string {
     const slug = isMetricsExplorer ? "explore" : "canvas";
@@ -41,10 +36,7 @@
       message="You don't have any dashboards yet"
     >
       <span slot="action">
-        <a
-          href="/deploy"
-          class="text-primary-600 hover:text-primary-700"
-        >
+        <a href="/deploy" class="text-primary-600 hover:text-primary-700">
           Deploy your project
         </a>
         to share dashboards with your team

@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import { countByKind, groupErrorsByKind } from "@rilldata/web-common/features/resources/overview-utils";
+import {
+  countByKind,
+  groupErrorsByKind,
+} from "@rilldata/web-common/features/resources/overview-utils";
 
 function makeResource(kind: string): V1Resource {
   return { meta: { name: { kind, name: `test-${kind}` } } };

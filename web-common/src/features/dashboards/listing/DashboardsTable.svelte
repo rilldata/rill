@@ -31,8 +31,7 @@
   $: displayData = isPreview
     ? (data?.slice(0, previewLimit) ?? [])
     : (data ?? []);
-  $: hasMoreDashboards =
-    isPreview && data && data.length > previewLimit;
+  $: hasMoreDashboards = isPreview && data && data.length > previewLimit;
 
   /**
    * Table column definitions.

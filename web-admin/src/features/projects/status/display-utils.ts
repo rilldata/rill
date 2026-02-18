@@ -1,26 +1,14 @@
 import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 
-/**
- * Formats an environment string for display with proper capitalization.
- * Handles common environment names (prod, dev, stage) and their variations.
- * @param env - The environment name to format (e.g., "prod", "production")
- * @returns Formatted environment name (e.g., "Production")
- */
-export function formatEnvironmentName(env: string | undefined): string {
-  if (!env) return "Production";
-  const lower = env.toLowerCase();
-  if (lower === "prod" || lower === "production") return "Production";
-  if (lower === "dev" || lower === "development") return "Development";
-  if (lower === "stage" || lower === "staging") return "Staging";
-  // Capitalize first letter for other environments
-  return env.charAt(0).toUpperCase() + env.slice(1);
-}
+// Re-export shared utilities from web-common
+export {
+  formatConnectorName,
+  formatEnvironmentName,
+} from "@rilldata/web-common/features/resources/display-utils";
 
 /**
  * Returns the Tailwind CSS class for a deployment status indicator dot.
  * Green for running, yellow for in-progress states, red for errors, gray for not deployed.
- * @param status - The deployment status
- * @returns Tailwind CSS class for the status dot background color
  */
 export function getStatusDotClass(status: V1DeploymentStatus): string {
   switch (status) {
@@ -40,8 +28,6 @@ export function getStatusDotClass(status: V1DeploymentStatus): string {
 
 /**
  * Returns a human-readable label for a deployment status.
- * @param status - The deployment status
- * @returns Human-readable status label (e.g., "Ready", "Pending", "Error")
  */
 export function getStatusLabel(status: V1DeploymentStatus): string {
   switch (status) {
@@ -67,30 +53,7 @@ export function getStatusLabel(status: V1DeploymentStatus): string {
 }
 
 /**
- * Formats a connector name for display with proper capitalization.
- * Handles known connectors (duckdb, clickhouse, etc.) with correct casing.
- * @param connector - The connector name to format
- * @returns Formatted connector name (e.g., "DuckDB", "ClickHouse") or em dash if undefined
- */
-export function formatConnectorName(connector: string | undefined): string {
-  if (!connector) return "—";
-  const lower = connector.toLowerCase();
-  if (lower === "duckdb") return "DuckDB";
-  if (lower === "clickhouse") return "ClickHouse";
-  if (lower === "mysql") return "MySQL";
-  if (lower === "bigquery") return "BigQuery";
-  if (lower === "openai") return "OpenAI";
-  if (lower === "druid") return "Druid";
-  if (lower === "pinot") return "Pinot";
-  if (lower === "claude") return "Claude";
-  if (lower === "gemini") return "Gemini";
-  return connector.charAt(0).toUpperCase() + connector.slice(1);
-}
-
-/**
  * Returns a color name for a resource kind tag.
- * @param kind - The fully qualified resource kind (e.g., "rill.runtime.v1.Model")
- * @returns Color name for the tag (e.g., "blue", "green", "gray")
  */
 export function getResourceKindTagColor(kind: string) {
   switch (kind) {
