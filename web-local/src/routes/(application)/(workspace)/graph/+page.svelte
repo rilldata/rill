@@ -239,12 +239,12 @@
     <AlertDialog.Header>
       <AlertDialog.Title>Refresh all sources and models?</AlertDialog.Title>
       <AlertDialog.Description>
-        <div class="mt-1">
-          This will refresh all project sources and models.
-          <br />
-          <br />
-          <span class="font-medium">Note:</span> To refresh a single resource, click
-          the '...' button on a node and select the refresh option.
+        <div class="flex flex-col gap-y-2 mt-1">
+          <p>This will refresh all project sources and models.</p>
+          <p>
+            <span class="font-medium">Note:</span> To refresh a single resource, click
+            the '...' button on a node and select the refresh option.
+          </p>
         </div>
       </AlertDialog.Description>
     </AlertDialog.Header>

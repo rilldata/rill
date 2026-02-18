@@ -259,58 +259,20 @@ func (p *Parser) parseCanvas(node *Node) error {
 		}
 	}
 
-	// Collect metrics view refs from components for direct Canvas -> MetricsView links in the DAG
-	// This must be done BEFORE calling insertResource so the refs are included
-	metricsViewRefs := make(map[ResourceName]bool)
-	// Pre-compute set of inline component names for O(1) lookup
-	inlineComponentNames := make(map[string]bool, len(inlineComponentDefs))
-	for _, def := range inlineComponentDefs {
-		inlineComponentNames[def.name] = true
-		// Also extract metrics view refs from inline components
-		for _, ref := range def.refs {
-			if ref.Kind == ResourceKindMetricsView {
-				metricsViewRefs[ref] = true
-			}
-		}
-	}
-	// Extract from external components.
-	// NOTE: This lookup depends on external components having been parsed before the canvas.
-	// The parser processes files in deterministic order and components are parsed before canvases
-	// because they appear as separate YAML files that are processed first. If the ordering changes,
-	// some MetricsView refs may be silently missed here.
-	for _, row := range tmp.Rows {
-		for _, item := range row.Items {
-			if item.Component != "" {
-				// Check if this is an external component (not inline) - O(1) lookup
-				if !inlineComponentNames[item.Component] {
-					// Look up the external component
-					componentName := ResourceName{Kind: ResourceKindComponent, Name: item.Component}
-					if component, ok := p.Resources[componentName.Normalized()]; ok {
-						// Extract metrics view refs from the component
-						// Check Refs first (processed refs), fall back to rawRefs if Refs is empty
-						refsToCheck := component.Refs
-						if len(refsToCheck) == 0 {
-							refsToCheck = component.rawRefs
-						}
-						for _, ref := range refsToCheck {
-							if ref.Kind == ResourceKindMetricsView {
-								metricsViewRefs[ref] = true
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	// Add metrics view refs directly to canvas node refs BEFORE insertResource
-	// Check for duplicates to avoid adding refs that already exist
-	existingRefs := make(map[ResourceName]bool)
+	// Collect MetricsView refs from inline components for direct Canvas -> MetricsView links in the DAG.
+	// This enables the graph to show Canvas -> MetricsView edges and ensures MetricsView changes
+	// trigger canvas reconciliation. Only inline components are checked here; external component
+	// MetricsView dependencies cascade through the Component layer (Canvas -> Component -> MetricsView).
+	existingRefs := make(map[ResourceName]bool, len(node.Refs))
 	for _, ref := range node.Refs {
 		existingRefs[ref] = true
 	}
-	for ref := range metricsViewRefs {
-		if !existingRefs[ref] {
-			node.Refs = append(node.Refs, ref)
+	for _, def := range inlineComponentDefs {
+		for _, ref := range def.refs {
+			if ref.Kind == ResourceKindMetricsView && !existingRefs[ref] {
+				node.Refs = append(node.Refs, ref)
+				existingRefs[ref] = true
+			}
 		}
 	}
 

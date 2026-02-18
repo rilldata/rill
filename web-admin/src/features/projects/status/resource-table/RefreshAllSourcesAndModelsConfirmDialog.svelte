@@ -27,13 +27,13 @@
     <AlertDialogHeader>
       <AlertDialogTitle>Refresh all sources and models?</AlertDialogTitle>
       <AlertDialogDescription>
-        <div class="mt-1">
-          This will refresh all project sources and models.
-          <br />
-          <br />
-          <span class="font-medium">Note:</span> To refresh a single resource, scroll
-          to the source or model, click the '...' button, and select the refresh
-          option.
+        <div class="flex flex-col gap-y-2 mt-1">
+          <p>This will refresh all project sources and models.</p>
+          <p>
+            <span class="font-medium">Note:</span> To refresh a single resource, scroll
+            to the source or model, click the '...' button, and select the refresh
+            option.
+          </p>
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>

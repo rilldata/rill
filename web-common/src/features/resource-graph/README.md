@@ -128,16 +128,13 @@ Graph navigation is already integrated in:
 
 ## Architecture & Maintainability
 
-### New Modular Structure
+### Modular Structure
 
-The resource graph has been refactored for better maintainability:
-
-- **graph-config.ts**: Centralized configuration for all layout constants
-- **cache-manager.ts**: Unified cache management with debugging utilities
-- **resource-id.ts**: Type-safe ResourceId class replacing string manipulation
-- **use-graph-url-sync.ts**: Reusable composable for URL state management
-- **graph-error-handling.ts**: Comprehensive error handling utilities
-- **GraphErrorBoundary.svelte**: User-friendly error boundary component
+- **config.ts**: Centralized configuration for all layout constants
+- **position-cache.ts**: Cache management for node positions
+- **graph-builder.ts**: Main graph construction logic (SvelteFlow + Dagre)
+- **graph-traversal.ts**: BFS-based graph traversal utilities
+- **seed-parser.ts**: URL parameter parsing for deep-linking
 
 ### Cache Management
 
@@ -149,7 +146,7 @@ The graph uses localStorage to persist:
 
 #### Cache Versioning
 
-Cache version is stored in `graph-config.ts`:
+Cache version is stored in `config.ts`:
 
 ```typescript
 export const CACHE_VERSION = 2; // Increment to invalidate old caches
@@ -268,99 +265,6 @@ Cache persists across:
 
 **Private browsing mode**: Cache writes are disabled if localStorage throws SecurityError. Graphs will work but positions won't persist.
 
-### ResourceId Type Safety
-
-The new `ResourceId` class provides type-safe identifier handling:
-
-```typescript
-// Old (error-prone string manipulation)
-const id = `${resource.meta?.name?.kind}:${resource.meta?.name?.name}`;
-const parsed = id.split(":");
-
-// New (type-safe and validated)
-const id = ResourceId.fromMeta(resource.meta);
-if (id) {
-  console.log(id.kind, id.name);
-  console.log(id.toString());
-}
-```
-
-**Benefits:**
-
-- Input validation and sanitization
-- Protection against injection attacks
-- Consistent formatting
-- Better error messages
-- Prevents colons in kind breaking parsers
-
-**Migration:**
-
-```typescript
-// Backward compatible wrappers exist:
-createResourceId(meta); // Returns string | undefined
-parseResourceId(id); // Returns V1ResourceName | null
-resourceNameToId(name); // Returns string | undefined
-
-// Migrate to new API gradually:
-ResourceId.fromMeta(meta)?.toString();
-ResourceId.parse(id).toResourceName();
-ResourceId.fromResourceName(name)?.toString();
-```
-
-### Error Handling
-
-The new error handling system provides:
-
-**Typed Error Classes:**
-
-```typescript
-- ResourceGraphError: Base class
-- ResourceDataError: Invalid/missing data
-- GraphLayoutError: Layout computation failed
-- CacheError: Cache operations failed
-- NavigationError: Navigation failed
-```
-
-**Error Boundary Component:**
-
-```svelte
-<GraphErrorBoundary>
-  <ResourceGraph {resources} {seeds} />
-</GraphErrorBoundary>
-```
-
-**Manual Error Handling:**
-
-```typescript
-import { withErrorHandling, reportError } from "./graph-error-handling";
-
-const result = withErrorHandling(() => computeExpensiveLayout(), {
-  component: "MyComponent",
-  operation: "layout",
-});
-```
-
-### URL State Management
-
-Use the `useGraphUrlSync` composable for URL synchronization:
-
-```typescript
-const urlSync = useGraphUrlSync({
-  syncExpanded: true,
-  onSeedsChange: (seeds) => console.log(seeds),
-  onExpandedChange: (id) => console.log(id),
-});
-
-// Reactive state
-$: currentSeeds = $urlSync.seeds;
-$: expandedId = $urlSync.expandedId;
-
-// Update URL
-urlSync.setExpanded("model:orders");
-urlSync.addSeed("source:raw_data");
-urlSync.removeSeed("model:users");
-```
-
 ## Troubleshooting
 
 **Empty graph?**
@@ -368,9 +272,8 @@ Only Sources, Models, MetricsView, Explore, and Canvas are shown. Hidden resourc
 
 **Layout issues?**
 
-1. Clear cache: `localStorage.removeItem('rill.resourceGraph.v2')`
-2. Or use cache manager: `window.__RESOURCE_GRAPH_CACHE.clearAll()`
-3. Refresh page
+1. Clear cache: `window.__RESOURCE_GRAPH_CACHE.clearAll()`
+2. Refresh page
 
 **Seeds not working?**
 Verify resource exists and use correct kind alias. Check console for warnings.
@@ -384,99 +287,6 @@ window.__DEBUG_RESOURCE_GRAPH = true;
 
 **Cache not persisting?**
 Check browser storage quota and privacy settings. Incognito mode may disable localStorage.
-
-**TypeScript errors with ResourceId?**
-Make sure to handle null returns:
-
-```typescript
-const id = ResourceId.tryParse(idString);
-if (id) {
-  // Use id safely
-}
-```
-
-## Migration Guide
-
-### Migrating from v1 to v2
-
-**Step 1: Update cache references**
-
-Old:
-
-```typescript
-localStorage.removeItem("rill.resourceGraph.v1");
-```
-
-New:
-
-```typescript
-window.__RESOURCE_GRAPH_CACHE.clearAll();
-// Or: localStorage.removeItem('rill.resourceGraph.v2');
-```
-
-**Step 2: Initialize cache manager**
-
-Add to your app initialization:
-
-```typescript
-import { graphCache } from "./cache-manager";
-
-// Call on client-side mount
-graphCache.initialize();
-```
-
-**Step 3: Update string ID usage**
-
-Old:
-
-```typescript
-const id = createResourceId(meta);
-const parsed = parseResourceId(id!);
-```
-
-New (preferred):
-
-```typescript
-const id = ResourceId.fromMeta(meta);
-const parsed = id?.toResourceName();
-```
-
-Or (backward compatible):
-
-```typescript
-const id = createResourceId(meta); // Still works
-const parsed = parseResourceId(id!); // Still works
-```
-
-**Step 4: Add error boundaries**
-
-Wrap graph components:
-
-```svelte
-<GraphErrorBoundary>
-  <ResourceGraph {resources} />
-</GraphErrorBoundary>
-```
-
-**Step 5: Use new configuration**
-
-Old constants are deprecated. Import from `graph-config.ts`:
-
-```typescript
-import { NODE_CONFIG, DAGRE_CONFIG, FIT_VIEW_CONFIG } from "./graph-config";
-```
-
-### Breaking Changes
-
-None! All changes are backward compatible. The old string-based API still works via compatibility wrappers.
-
-### Deprecation Warnings
-
-The following will show deprecation warnings in dev mode:
-
-- Direct localStorage access for cache
-- String manipulation for resource IDs (use ResourceId class)
-- Hardcoded layout constants (use graph-config.ts)
 
 ## Performance
 
@@ -548,7 +358,7 @@ Enables:
 
 ### Adding New Features
 
-1. Update `graph-config.ts` for new constants
+1. Update `config.ts` for new constants
 2. Add types to appropriate files
 3. Write tests for new functionality
 4. Update this README with examples

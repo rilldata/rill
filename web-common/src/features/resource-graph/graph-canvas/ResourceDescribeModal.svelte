@@ -362,7 +362,7 @@
   }
 
   .describe-section {
-    @apply py-3 border-b border-gray-200;
+    @apply py-3 border-b border;
   }
 
   .describe-section:last-child {
@@ -382,7 +382,7 @@
   }
 
   .describe-badge {
-    @apply text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-600;
+    @apply text-xs font-medium px-2 py-0.5 rounded bg-surface-subtle text-fg-secondary;
   }
 
   .describe-row {
@@ -411,7 +411,7 @@
 
   .describe-sql {
     @apply text-xs font-mono bg-surface-subtle p-3 rounded overflow-auto whitespace-pre-wrap;
-    @apply border border-gray-200;
+    @apply border;
     max-height: 200px;
   }
 </style>
