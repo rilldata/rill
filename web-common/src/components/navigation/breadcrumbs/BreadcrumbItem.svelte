@@ -136,9 +136,6 @@
                     </span>
                   </DropdownMenu.CheckboxItem>
                 {/each}
-                {#if groupIndex !== groups.length - 1}
-                  <DropdownMenu.Separator />
-                {/if}
               </DropdownMenu.Group>
             {/each}
           {:else}
