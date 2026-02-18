@@ -106,7 +106,7 @@
               <span class="text-fg-muted text-xs">...</span>
             {:else if role}
               <span class="text-fg-muted text-xs">
-                ({formatProjectRole(role)})
+                {formatProjectRole(role)}
               </span>
             {/if}
           </Dropdown.Item>
