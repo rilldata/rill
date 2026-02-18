@@ -133,11 +133,11 @@ func testMatchDirectoriesFromGlobTest(t *testing.T, objectStore drivers.ObjectSt
 	require.NoError(t, err)
 	require.Empty(t, nextToken)
 
-	// Should match directories like: glob_test/y=2023, glob_test/y=2024
+	// Should match directories like: glob_test/y=2023/, glob_test/y=2024/
 	expected := []string{
-		"glob_test/y=2010",
-		"glob_test/y=2023",
-		"glob_test/y=2024",
+		"glob_test/y=2010/",
+		"glob_test/y=2023/",
+		"glob_test/y=2024/",
 	}
 
 	var collected []string
@@ -201,9 +201,9 @@ func testListDirectoriesForGlobPagination(t *testing.T, objectStore drivers.Obje
 
 	// Expected directories based on existing test data
 	expected := []string{
-		"glob_test/y=2010",
-		"glob_test/y=2023",
-		"glob_test/y=2024",
+		"glob_test/y=2010/",
+		"glob_test/y=2023/",
+		"glob_test/y=2024/",
 	}
 
 	var pageToken string
