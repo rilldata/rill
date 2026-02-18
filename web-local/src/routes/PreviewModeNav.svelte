@@ -4,17 +4,17 @@
 
   $: currentPath = $page.url.pathname;
 
-  $: activeTab = currentPath.includes("/ai")
+  $: activeTab = currentPath.startsWith("/ai")
     ? "ai"
-    : currentPath.includes("/home")
+    : currentPath.startsWith("/home")
       ? "home"
-      : currentPath.includes("/reports")
+      : currentPath.startsWith("/reports")
         ? "reports"
-        : currentPath.includes("/alerts")
+        : currentPath.startsWith("/alerts")
           ? "alerts"
-          : currentPath.includes("/status")
+          : currentPath.startsWith("/status")
             ? "status"
-            : currentPath.includes("/settings")
+            : currentPath.startsWith("/settings")
               ? "settings"
               : "preview";
 

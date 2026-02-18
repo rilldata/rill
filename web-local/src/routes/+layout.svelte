@@ -22,7 +22,6 @@
     errorEventHandler,
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
-  import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
@@ -71,7 +70,7 @@
       goto("/home");
     }
 
-    const config = await localServiceGetMetadata();
+    const config = data.metadata;
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;

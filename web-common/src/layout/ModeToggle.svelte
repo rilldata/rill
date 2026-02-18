@@ -11,7 +11,7 @@
     if (newPreviewMode) {
       goto("/home");
     } else {
-      goto("/files");
+      goto("/");
     }
   }
 </script>

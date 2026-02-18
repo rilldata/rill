@@ -72,5 +72,5 @@ export async function load({ url, depends, untrack }) {
     }
   }
 
-  return { initialized, previewLockedMode };
+  return { initialized, previewLockedMode, metadata };
 }

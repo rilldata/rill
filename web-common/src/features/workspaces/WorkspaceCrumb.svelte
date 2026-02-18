@@ -71,7 +71,7 @@
     name: string | undefined,
     filePaths: string[] | undefined,
   ): string {
-    if ($previewModeStore) return `/edit?resource=${name}`;
+    if ($previewModeStore) return `/edit${filePaths?.[0] ?? filePath}`;
     return `/files${filePaths?.[0] ?? filePath}`;
   }
 
