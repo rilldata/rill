@@ -13,6 +13,7 @@ import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte"
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
+import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -27,6 +28,7 @@ export const connectorIconMapping = {
   postgres: PostgresIcon,
   redshift: RedshiftIcon,
   s3: AmazonS3Icon,
+  azure: MicrosoftAzureBlobStorageIcon,
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
   starrocks: StarRocksIcon,
@@ -35,4 +37,7 @@ export const connectorIconMapping = {
 export const connectorLabelMapping = {
   duckdb: "DuckDB",
   clickhouse: "ClickHouse",
+  motherduck: "MotherDuck",
+  s3: "S3",
+  snowflake: "Snowflake",
 };
