@@ -44,7 +44,7 @@
   {:else}
     <!-- Fallback if no workspace found -->
     <div class="flex items-center justify-center h-full">
-      <p class="text-gray-500">Unable to load editor</p>
+      <p class="text-fg-muted">Unable to load editor</p>
     </div>
   {/if}
 </div>

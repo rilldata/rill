@@ -173,15 +173,15 @@
   }
 
   .conversation-item.active {
-    @apply bg-gray-100;
+    background: var(--surface-active);
   }
 
   .conversation-title {
-    @apply text-xs text-gray-700 truncate;
+    @apply text-xs text-fg-secondary truncate;
   }
 
   .no-conversations {
-    @apply py-6 px-4 text-center text-gray-500 text-xs;
+    @apply py-6 px-4 text-center text-fg-muted text-xs;
   }
 
   @media (max-width: 768px) {
