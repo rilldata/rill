@@ -16,8 +16,8 @@
   export let onSelect: undefined | ((id: string) => void) = undefined;
   export let isEmbedded: boolean = false;
 
-  $: ({ options, groups, carryOverSearchParams } = pathOptions);
-  $: hasGroups = groups && groups.length > 0;
+  $: ({ options, carryOverSearchParams } = pathOptions);
+  $: groups = pathOptions.groups ?? [];
   $: selected = options.get(current.toLowerCase());
 
   function linkMaker(
@@ -100,8 +100,8 @@
           align="start"
           class="min-w-44 max-h-96 overflow-y-auto"
         >
-          {#if hasGroups}
-            {#each groups as group, groupIndex (group.name)}
+          {#if groups.length > 0}
+            {#each groups as group (group.name)}
               <DropdownMenu.Group class="px-1">
                 {#each group.items as { id, option } (id)}
                   {@const isSelected = id === current.toLowerCase()}
