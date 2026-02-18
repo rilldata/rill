@@ -10,7 +10,6 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
-  import CLICommandDisplay from "@rilldata/web-common/components/commands/CLICommandDisplay.svelte";
   import LoadingCircleOutline from "@rilldata/web-common/components/icons/LoadingCircleOutline.svelte";
   import MoonCircleOutline from "@rilldata/web-common/components/icons/MoonCircleOutline.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -73,7 +72,9 @@
           </div>
         </div>
         <CtaHeader variant="bold">
-          {isWaking ? "Waking up your project..." : "Your project is hibernating"}
+          {isWaking
+            ? "Waking up your project..."
+            : "Your project is hibernating"}
         </CtaHeader>
         <Button
           type="primary"
@@ -85,18 +86,6 @@
         >
           Wake project
         </Button>
-        <div
-          class="flex flex-col items-center gap-y-6 transition-opacity duration-200"
-          class:opacity-40={isWaking}
-          class:pointer-events-none={isWaking}
-        >
-          <CtaMessage>
-            You can also run the following command in the Rill CLI:
-          </CtaMessage>
-          <CLICommandDisplay
-            command="rill project hibernate {project} --redeploy"
-          />
-        </div>
         <CtaNeedHelp />
       </svelte:fragment>
       <svelte:fragment slot="read-project">
