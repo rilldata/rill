@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
   replaceOlapConnectorInYAML,
@@ -12,7 +12,30 @@ import {
   isSensitiveHeaderKey,
   headerKeyToEnvSegment,
   splitAuthSchemePrefix,
+  updateDotEnvWithSecrets,
 } from "./code-utils";
+
+// Mock runtime store and API
+vi.mock("../../runtime-client/runtime-store", () => ({
+  runtime: { subscribe: vi.fn() },
+}));
+
+// Track fetchQuery calls so tests can inspect them
+let mockEnvBlob = "";
+const mockQueryClient = {
+  invalidateQueries: vi.fn().mockResolvedValue(undefined),
+  fetchQuery: vi
+    .fn()
+    .mockImplementation(() => Promise.resolve({ blob: mockEnvBlob })),
+};
+
+vi.mock("svelte/store", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("svelte/store")>();
+  return {
+    ...actual,
+    get: () => ({ instanceId: "test-instance" }),
+  };
+});
 
 // Import the template for testing
 const YAML_MODEL_TEMPLATE = `type: model
@@ -868,5 +891,259 @@ describe("compileConnectorYAML", () => {
     expect(result).toContain("type: connector");
     expect(result).toContain("driver: clickhouse");
     expect(result).not.toContain("host:");
+  });
+});
+
+describe("updateDotEnvWithSecrets", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockEnvBlob = "";
+    mockQueryClient.fetchQuery.mockImplementation(() =>
+      Promise.resolve({ blob: mockEnvBlob }),
+    );
+  });
+
+  it("should add secret keys to empty .env", async () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const formValues: Record<string, unknown> = {
+      password: "my_secret",
+      sql: "SELECT 1",
+    };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: ["password"] },
+    );
+    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=my_secret");
+  });
+
+  it("should add multiple secret keys", async () => {
+    const connector: V1ConnectorDriver = { name: "s3" };
+    const formValues: Record<string, unknown> = {
+      aws_access_key_id: "AKID123",
+      aws_secret_access_key: "SECRET456",
+    };
+    const schema = {
+      properties: {
+        aws_access_key_id: { "x-env-var-name": "AWS_ACCESS_KEY_ID" },
+        aws_secret_access_key: {
+          "x-env-var-name": "AWS_SECRET_ACCESS_KEY",
+        },
+      },
+    };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: ["aws_access_key_id", "aws_secret_access_key"], schema },
+    );
+    expect(newBlob).toContain("AWS_ACCESS_KEY_ID=AKID123");
+    expect(newBlob).toContain("AWS_SECRET_ACCESS_KEY=SECRET456");
+  });
+
+  it("should append to existing .env without overwriting", async () => {
+    mockEnvBlob = "EXISTING_VAR=existing_value";
+    mockQueryClient.fetchQuery.mockResolvedValue({ blob: mockEnvBlob });
+
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const formValues: Record<string, unknown> = { password: "new_pw" };
+    const { newBlob, originalBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: ["password"] },
+    );
+    expect(originalBlob).toBe("EXISTING_VAR=existing_value");
+    expect(newBlob).toContain("EXISTING_VAR=existing_value");
+    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=new_pw");
+  });
+
+  it("should handle env var conflicts with _1 suffix", async () => {
+    mockEnvBlob = "CLICKHOUSE_PASSWORD=old_value";
+    mockQueryClient.fetchQuery.mockResolvedValue({ blob: mockEnvBlob });
+
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const formValues: Record<string, unknown> = { password: "new_value" };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: ["password"] },
+    );
+    // Should use _1 suffix since base name already exists
+    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=old_value");
+    expect(newBlob).toContain("CLICKHOUSE_PASSWORD_1=new_value");
+  });
+
+  it("should skip empty or missing secret values", async () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const formValues: Record<string, unknown> = {
+      password: "",
+      dsn: undefined,
+    };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: ["password", "dsn"] },
+    );
+    expect(newBlob).toBe("");
+  });
+
+  it("should persist sensitive header values as env entries", async () => {
+    const connector: V1ConnectorDriver = { name: "https" };
+    const formValues: Record<string, unknown> = {
+      headers: [
+        { key: "Authorization", value: "Bearer my_token" },
+        { key: "Content-Type", value: "application/json" },
+      ],
+    };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: [] },
+    );
+    // Authorization is sensitive — secret part stored (without Bearer prefix)
+    expect(newBlob).toContain("my_token");
+    // Content-Type is not sensitive — should NOT be in .env
+    expect(newBlob).not.toContain("application/json");
+  });
+
+  it("should extract secret from Bearer scheme for sensitive headers", async () => {
+    const connector: V1ConnectorDriver = { name: "https" };
+    const formValues: Record<string, unknown> = {
+      headers: [{ key: "Authorization", value: "Bearer abc123" }],
+    };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: [] },
+    );
+    // Only the secret portion (after "Bearer ") is stored
+    expect(newBlob).toContain("=abc123");
+    expect(newBlob).not.toContain("Bearer");
+  });
+
+  it("should store full value when no auth scheme prefix", async () => {
+    const connector: V1ConnectorDriver = { name: "https" };
+    const formValues: Record<string, unknown> = {
+      headers: [{ key: "X-API-Key", value: "raw_api_key_value" }],
+    };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: [] },
+    );
+    expect(newBlob).toContain("=raw_api_key_value");
+  });
+
+  it("should handle both secrets and sensitive headers together", async () => {
+    const connector: V1ConnectorDriver = { name: "https" };
+    const formValues: Record<string, unknown> = {
+      password: "http_pass",
+      headers: [{ key: "Authorization", value: "Token secret_tok" }],
+    };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: ["password"] },
+    );
+    expect(newBlob).toContain("HTTPS_PASSWORD=http_pass");
+    expect(newBlob).toContain("secret_tok");
+  });
+
+  it("should skip headers with empty keys or values", async () => {
+    const connector: V1ConnectorDriver = { name: "https" };
+    const formValues: Record<string, unknown> = {
+      headers: [
+        { key: "", value: "some_value" },
+        { key: "Authorization", value: "" },
+        { key: "  ", value: "Bearer token" },
+      ],
+    };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: [] },
+    );
+    expect(newBlob).toBe("");
+  });
+
+  it("should invalidate cache before reading .env", async () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      { password: "pw" },
+      { secretKeys: ["password"] },
+    );
+    expect(mockQueryClient.invalidateQueries).toHaveBeenCalledTimes(1);
+    // invalidateQueries should be called before fetchQuery
+    const invalidateOrder =
+      mockQueryClient.invalidateQueries.mock.invocationCallOrder[0];
+    const fetchOrder = mockQueryClient.fetchQuery.mock.invocationCallOrder[0];
+    expect(invalidateOrder).toBeLessThan(fetchOrder);
+  });
+
+  it("should handle missing .env file gracefully", async () => {
+    mockQueryClient.fetchQuery.mockRejectedValue({
+      response: { data: { message: "no such file" } },
+    });
+
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const { newBlob, originalBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      { password: "pw" },
+      { secretKeys: ["password"] },
+    );
+    expect(originalBlob).toBe("");
+    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=pw");
+  });
+
+  it("should rethrow non-file-not-found errors", async () => {
+    mockQueryClient.fetchQuery.mockRejectedValue({
+      response: { data: { message: "permission denied" } },
+    });
+
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    await expect(
+      updateDotEnvWithSecrets(
+        mockQueryClient as any,
+        connector,
+        { password: "pw" },
+        { secretKeys: ["password"] },
+      ),
+    ).rejects.toEqual({
+      response: { data: { message: "permission denied" } },
+    });
+  });
+
+  it("should use originalBlob for conflict detection across all secrets", async () => {
+    // When adding multiple secrets, conflict detection should use the original blob,
+    // not the progressively updated one
+    mockEnvBlob = "";
+    mockQueryClient.fetchQuery.mockResolvedValue({ blob: mockEnvBlob });
+
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const formValues: Record<string, unknown> = {
+      password: "pw1",
+      dsn: "clickhouse://...",
+    };
+    const { newBlob } = await updateDotEnvWithSecrets(
+      mockQueryClient as any,
+      connector,
+      formValues,
+      { secretKeys: ["password", "dsn"] },
+    );
+    // Both should use base name since originalBlob is empty
+    expect(newBlob).toContain("CLICKHOUSE_PASSWORD=pw1");
+    expect(newBlob).toContain("CLICKHOUSE_DSN=clickhouse://...");
   });
 });

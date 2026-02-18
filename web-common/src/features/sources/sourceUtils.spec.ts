@@ -6,6 +6,7 @@ import {
   buildDuckDbQuery,
   maybeRewriteToDuckDb,
   compileSourceYAML,
+  prepareSourceFormData,
 } from "./sourceUtils";
 
 const gcsTests = [
@@ -482,5 +483,129 @@ describe("compileSourceYAML", () => {
       },
     );
     expect(result).toContain("CLICKHOUSE_PASSWORD_1");
+  });
+});
+
+describe("prepareSourceFormData", () => {
+  it("should strip auth_method from form values", () => {
+    const connector: V1ConnectorDriver = { name: "s3" };
+    const formValues: Record<string, unknown> = {
+      auth_method: "access_keys",
+      path: "s3://bucket/data.parquet",
+    };
+    const [, values] = prepareSourceFormData(connector, formValues);
+    expect(values.auth_method).toBeUndefined();
+  });
+
+  it("should strip connector-step fields for s3", () => {
+    const connector: V1ConnectorDriver = { name: "s3" };
+    const formValues: Record<string, unknown> = {
+      aws_access_key_id: "AKID",
+      aws_secret_access_key: "secret",
+      region: "us-east-1",
+      endpoint: "https://s3.example.com",
+      path: "s3://bucket/data.csv",
+    };
+    const [, values] = prepareSourceFormData(connector, formValues);
+    // Connector-level fields should be removed
+    expect(values.aws_access_key_id).toBeUndefined();
+    expect(values.aws_secret_access_key).toBeUndefined();
+    expect(values.region).toBeUndefined();
+    expect(values.endpoint).toBeUndefined();
+  });
+
+  it("should apply DuckDB rewrite for s3", () => {
+    const connector: V1ConnectorDriver = { name: "s3" };
+    const formValues: Record<string, unknown> = {
+      path: "s3://bucket/data.parquet",
+    };
+    const [result, values] = prepareSourceFormData(connector, formValues, {
+      connectorInstanceName: "my_s3",
+    });
+    expect(result.name).toBe("duckdb");
+    expect(values.sql).toContain("read_parquet");
+    expect(values.path).toBeUndefined();
+  });
+
+  it("should not mutate original formValues", () => {
+    const connector: V1ConnectorDriver = { name: "s3" };
+    const formValues: Record<string, unknown> = {
+      auth_method: "access_keys",
+      aws_access_key_id: "AKID",
+      path: "s3://bucket/data.csv",
+    };
+    prepareSourceFormData(connector, formValues);
+    // Original should be preserved
+    expect(formValues.auth_method).toBe("access_keys");
+    expect(formValues.aws_access_key_id).toBe("AKID");
+    expect(formValues.path).toBe("s3://bucket/data.csv");
+  });
+
+  it("should not mutate original connector", () => {
+    const connector: V1ConnectorDriver = { name: "s3" };
+    prepareSourceFormData(connector, { path: "s3://bucket/data.csv" });
+    expect(connector.name).toBe("s3");
+  });
+
+  it("should pass through non-rewritten connectors", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const formValues: Record<string, unknown> = {
+      sql: "SELECT * FROM events",
+    };
+    const [result, values] = prepareSourceFormData(connector, formValues);
+    expect(result.name).toBe("clickhouse");
+    expect(values.sql).toBe("SELECT * FROM events");
+  });
+
+  it("should strip connector-step fields for clickhouse", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const formValues: Record<string, unknown> = {
+      host: "ch.example.com",
+      port: 8443,
+      username: "default",
+      password: "secret",
+      sql: "SELECT * FROM events",
+    };
+    const [, values] = prepareSourceFormData(connector, formValues);
+    // All connector-step fields removed
+    expect(values.host).toBeUndefined();
+    expect(values.port).toBeUndefined();
+    expect(values.username).toBeUndefined();
+    expect(values.password).toBeUndefined();
+    // Source-step fields preserved
+    expect(values.sql).toBe("SELECT * FROM events");
+  });
+
+  it("should handle https with DuckDB rewrite and defaultToJson", () => {
+    const connector: V1ConnectorDriver = { name: "https" };
+    const formValues: Record<string, unknown> = {
+      path: "https://api.example.com/data",
+    };
+    const [result, values] = prepareSourceFormData(connector, formValues);
+    expect(result.name).toBe("duckdb");
+    expect(values.sql).toContain("read_json");
+  });
+
+  it("should handle connector with no schema gracefully", () => {
+    const connector: V1ConnectorDriver = { name: "unknown_connector" };
+    const formValues: Record<string, unknown> = {
+      sql: "SELECT 1",
+      some_field: "value",
+    };
+    const [result, values] = prepareSourceFormData(connector, formValues);
+    // No schema, so no stripping/placeholder logic applies
+    expect(result.name).toBe("unknown_connector");
+    expect(values.sql).toBe("SELECT 1");
+    expect(values.some_field).toBe("value");
+  });
+
+  it("should strip auth_method even when no schema exists", () => {
+    const connector: V1ConnectorDriver = { name: "unknown_connector" };
+    const formValues: Record<string, unknown> = {
+      auth_method: "oauth",
+      sql: "SELECT 1",
+    };
+    const [, values] = prepareSourceFormData(connector, formValues);
+    expect(values.auth_method).toBeUndefined();
   });
 });
