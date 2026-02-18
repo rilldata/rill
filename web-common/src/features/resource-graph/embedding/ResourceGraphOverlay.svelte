@@ -123,15 +123,18 @@
 
 <style lang="postcss">
   :global(.graph-dialog) {
+    display: flex !important;
+    flex-direction: column !important;
     width: min(1100px, 90vw) !important;
     max-width: min(1100px, 90vw) !important;
-    height: min(80vh, 760px);
-    @apply flex flex-col overflow-hidden;
+    height: min(80vh, 760px) !important;
     padding: 0 !important;
+    gap: 0 !important;
+    overflow: hidden !important;
   }
 
   .graph-dialog__header {
-    @apply flex items-start justify-between gap-x-4 px-5 py-4 border-b flex-none;
+    @apply flex items-start justify-between gap-x-4 px-5 py-4 pr-12 border-b flex-none;
   }
 
   .graph-dialog__title {

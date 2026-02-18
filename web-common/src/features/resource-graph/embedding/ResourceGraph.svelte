@@ -779,33 +779,8 @@
     </slot>
   {:else}
     {@const hasExpandedItem = currentExpandedId !== null}
-    <!-- Combined toolbar: tabs on left, kind dropdown on right -->
     <div class="graph-toolbar">
-      {#if visibleResourceGroups.length > 1}
-        <div class="group-tabs">
-          <button
-            class="group-tab"
-            class:active={currentExpandedId === null}
-            on:click={() => handleExpandChange(null)}
-          >
-            All ({visibleResourceGroups.length})
-          </button>
-          {#each visibleResourceGroups as group, index (group.id)}
-            {@const parts = groupTitleParts(group, index)}
-            <button
-              class="group-tab"
-              class:active={currentExpandedId === group.id}
-              class:errored={parts.errorCount > 0}
-              on:click={() => handleExpandChange(group.id)}
-            >
-              <span>{group.label ?? `Graph ${index + 1}`}</span>
-              <span class="tab-count">{group.resources.length}</span>
-            </button>
-          {/each}
-        </div>
-      {:else}
-        <div></div>
-      {/if}
+      <div></div>
       {#if showSummary}
         <slot
           name="summary"
@@ -1034,49 +1009,4 @@
     @apply flex items-end justify-between;
   }
 
-  .group-tabs {
-    @apply flex items-end flex-wrap;
-  }
-
-  .group-tab {
-    @apply relative inline-flex items-center gap-1.5 px-4 py-2;
-    @apply text-xs font-medium text-fg-secondary whitespace-nowrap;
-    @apply bg-transparent border border-transparent;
-    @apply cursor-pointer transition-colors;
-    border-bottom: none;
-    border-radius: 6px 6px 0 0;
-    margin-bottom: -1px;
-  }
-
-  .group-tab:hover:not(.active) {
-    @apply text-fg-primary;
-    background-color: color-mix(
-      in srgb,
-      var(--surface-subtle, #f8f8f8) 60%,
-      transparent
-    );
-  }
-
-  .group-tab.active {
-    @apply text-fg-primary font-semibold;
-    background-color: var(--surface-background, #ffffff);
-    border-color: var(--border, #e5e7eb);
-    border-bottom-color: var(--surface-background, #ffffff);
-  }
-
-  .tab-count {
-    @apply text-fg-muted text-[10px];
-  }
-
-  .group-tab.active .tab-count {
-    @apply text-fg-secondary;
-  }
-
-  .group-tab.errored {
-    @apply text-red-600 font-bold;
-  }
-
-  .group-tab.errored.active {
-    @apply text-red-600 font-bold;
-  }
 </style>
