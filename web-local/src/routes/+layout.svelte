@@ -45,14 +45,48 @@
 
   let removeJavascriptListeners: () => void;
 
-  onMount(async () => {
-    // Sync preview mode from server metadata.
-    // If server says preview or previewer mode, lock into preview.
-    // If server says no preview, reset to false to avoid stale localStorage state.
-    const serverPreviewMode = data.previewMode ?? false;
-    const serverPreviewerMode = data.previewerMode ?? false;
-    previewModeStore.set(serverPreviewMode || serverPreviewerMode);
+  // Routes that are exclusively preview mode
+  const previewPrefixes = [
+    "/home",
+    "/ai",
+    "/preview",
+    "/reports",
+    "/alerts",
+    "/status",
+    "/settings",
+  ];
+  // Routes that are exclusively developer mode
+  const developerPrefixes = ["/files"];
 
+  function isPreviewRoute(pathname: string): boolean {
+    return previewPrefixes.some((prefix) => pathname.startsWith(prefix));
+  }
+
+  function isDeveloperRoute(pathname: string): boolean {
+    return (
+      pathname === "/" ||
+      developerPrefixes.some((prefix) => pathname.startsWith(prefix))
+    );
+  }
+
+  // Sync preview mode:
+  // - If --preview or --previewer flag is set, always lock to preview mode
+  // - Otherwise, infer from the current URL so refresh on preview pages stays in preview mode
+  //   and shared routes (/explore, /canvas) preserve the current mode
+  $: {
+    const serverLocked =
+      (data.previewMode ?? false) || (data.previewerMode ?? false);
+    if (serverLocked) {
+      previewModeStore.set(true);
+    } else if (isPreviewRoute($page.url.pathname)) {
+      previewModeStore.set(true);
+    } else if (isDeveloperRoute($page.url.pathname)) {
+      previewModeStore.set(false);
+    }
+    // For shared routes (/explore, /canvas, /deploy), keep current store value
+  }
+
+  onMount(async () => {
     // If in preview mode and on root, redirect to /home
     if ($previewModeStore && window.location.pathname === "/") {
       goto("/home");
@@ -89,6 +123,8 @@
   $: ({ host, instanceId } = $runtime);
 
   $: onDeployPage = isDeployPage($page);
+
+  $: isPreviewMode = $previewModeStore;
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -98,14 +134,14 @@
         <BannerCenter />
         <RepresentingUserBanner />
         <ApplicationHeader
-          logoHref={$previewModeStore ? "/home" : "/"}
-          breadcrumbResourceHref={$previewModeStore
+          logoHref={isPreviewMode ? "/home" : "/"}
+          breadcrumbResourceHref={isPreviewMode
             ? (name, kind) => `/${kind}/${name}`
             : undefined}
-          noBorder={$previewModeStore}
+          noBorder={isPreviewMode}
           previewerMode={data.previewerMode ?? false}
         />
-        {#if $previewModeStore && !$page.url.pathname.startsWith("/files") && !$page.url.pathname.startsWith("/explore") && !$page.url.pathname.startsWith("/canvas") && !onDeployPage}
+        {#if isPreviewMode && !$page.url.pathname.startsWith("/files") && !$page.url.pathname.startsWith("/explore") && !$page.url.pathname.startsWith("/canvas") && !onDeployPage}
           <DevModeNav previewerMode={data.previewerMode ?? false} />
         {/if}
         {#if $deploy}

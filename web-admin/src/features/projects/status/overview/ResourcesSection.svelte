@@ -3,7 +3,7 @@
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useResources } from "../selectors";
-  import { countByKind, pluralizeKind } from "./overview-utils";
+  import { countByKind, pluralizeKind } from "@rilldata/web-common/features/resources/overview-utils";
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;

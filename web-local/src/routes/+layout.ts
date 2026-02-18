@@ -27,10 +27,15 @@ export async function load({ url, depends, untrack }) {
   if (previewerMode) {
     const allowedPrefixes = [
       "/home",
+      "/ai",
       "/preview",
       "/explore/",
       "/canvas/",
       "/deploy",
+      "/status",
+      "/settings",
+      "/alerts",
+      "/reports",
     ];
     const isAllowed =
       url.pathname === "/" ||

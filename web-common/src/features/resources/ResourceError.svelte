@@ -1,6 +1,6 @@
 <script lang="ts">
   export let kind: string;
-  export let error: Error;
+  export let error: unknown;
 
   $: console.error(`error loading ${kind}s:`, error);
 </script>

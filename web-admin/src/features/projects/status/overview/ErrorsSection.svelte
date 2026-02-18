@@ -13,7 +13,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useResources } from "../selectors";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
-  import { groupErrorsByKind, pluralizeKind } from "./overview-utils";
+  import { groupErrorsByKind, pluralizeKind } from "@rilldata/web-common/features/resources/overview-utils";
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -13,17 +12,9 @@
   export let description: string;
   export let error: string;
   export let isMetricsExplorer: boolean;
-  export let isEmbedded: boolean;
-
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
+  export let href: string;
 
   $: lastRefreshedDate = lastRefreshed ? new Date(lastRefreshed) : null;
-
-  $: dashboardSlug = isMetricsExplorer ? "explore" : "canvas";
-  $: href = isEmbedded
-    ? `/-/embed/${dashboardSlug}/${name}`
-    : `/${organization}/${project}/${dashboardSlug}/${name}`;
 
   $: resourceKind = isMetricsExplorer
     ? ResourceKind.Explore
