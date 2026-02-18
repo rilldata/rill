@@ -80,6 +80,7 @@ rill-binary-sa.json
 gha-creds*
 .release-env
 binaries/
+
 # runtime test resources
 !runtime/testdata/**
 sysroot/
@@ -89,12 +90,16 @@ latest.txt
 /postgres/
 /clickhouse/
 
+# Claude Code — personal / ephemeral (do not commit)
+.claude/CLAUDE.local.md
+.claude/settings.local.json
+.claude/**/*.local.md
+.claude/notes/
+.claude/plans/
+.claude/worktrees/
+
 # Vite temp files
 vite.config.ts.timestamp-*
 
 # TypeScript incremental build cache
 *.tsbuildinfo
-
-# Claude resources
-/CLAUDE.md
-.claude/
