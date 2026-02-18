@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { Button } from "@rilldata/web-common/components/button";
-  import { Wand2, Search, Plus } from "lucide-svelte";
+  import { Wand2, Search } from "lucide-svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
     createRuntimeServiceAnalyzeConnectors,
@@ -17,7 +17,6 @@
   import { connectorIconMapping } from "../connector-icon-mapping";
   import { getConnectorIconKey } from "../connectors-utils";
   import { FORM_HEIGHT_DEFAULT } from "../../sources/modal/connector-schemas";
-  import { addSourceModal } from "../../sources/modal/add-source-visibility";
 
   const { ai } = featureFlags;
   $: ({ instanceId } = $runtime);
@@ -157,13 +156,6 @@
     initialConnector?.driver?.displayName ??
     initialConnector?.driver?.name ??
     "OLAP";
-
-  function handleAddNewConnector() {
-    if (!initialConnector?.driver) return;
-    const driver = initialConnector.driver;
-    handleClose();
-    addSourceModal.openForConnector(driver.name ?? "", driver);
-  }
 </script>
 
 <Dialog.Root
@@ -220,14 +212,6 @@
               <div class="text-sm text-fg-secondary">No connectors found</div>
             {/if}
           </div>
-
-          <button
-            class="w-full text-left px-3 py-1.5 rounded text-sm font-medium text-primary-500 hover:bg-surface-hover flex items-center gap-1.5 mt-3"
-            on:click={handleAddNewConnector}
-          >
-            <Plus size="14" />
-            New connector
-          </button>
         </div>
       </div>
 
