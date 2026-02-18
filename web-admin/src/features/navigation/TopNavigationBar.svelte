@@ -6,7 +6,11 @@
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import type {
+    PathOption,
+    PathOptionGroup,
+  } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -147,20 +151,52 @@
     ),
   };
 
-  $: visualizationPaths = {
-    options: visualizations.reduce((map, resource) => {
+  $: visualizationPaths = (() => {
+    const map = new Map<string, PathOption>();
+    const canvasItems: PathOptionGroup["items"] = [];
+    const exploreItems: PathOptionGroup["items"] = [];
+
+    visualizations.forEach((resource) => {
       const name = resource.meta.name.name;
+      const key = name.toLowerCase();
       const isMetricsExplorer = !!resource?.explore;
-      return map.set(name.toLowerCase(), {
+      const option: PathOption = {
         label:
           (isMetricsExplorer
             ? resource?.explore?.spec?.displayName
             : resource?.canvas?.spec?.displayName) || name,
         section: isMetricsExplorer ? "explore" : "canvas",
-      });
-    }, new Map<string, PathOption>()),
-    carryOverSearchParams: $stickyDashboardState,
-  };
+        resourceKind: isMetricsExplorer
+          ? ResourceKind.Explore
+          : ResourceKind.Canvas,
+      };
+      map.set(key, option);
+
+      const entry = { id: key, option };
+      if (isMetricsExplorer) {
+        exploreItems.push(entry);
+      } else {
+        canvasItems.push(entry);
+      }
+    });
+
+    canvasItems.sort((a, b) => a.option.label.localeCompare(b.option.label));
+    exploreItems.sort((a, b) => a.option.label.localeCompare(b.option.label));
+
+    const groups: PathOptionGroup[] = [];
+    if (canvasItems.length > 0) {
+      groups.push({ name: "canvas", label: "Canvas", items: canvasItems });
+    }
+    if (exploreItems.length > 0) {
+      groups.push({ name: "explore", label: "Explore", items: exploreItems });
+    }
+
+    return {
+      options: map,
+      groups,
+      carryOverSearchParams: $stickyDashboardState,
+    };
+  })();
 
   $: alertPaths = {
     options: alerts.reduce((map, alert) => {

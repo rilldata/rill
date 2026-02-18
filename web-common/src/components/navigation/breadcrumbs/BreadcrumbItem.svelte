@@ -6,6 +6,7 @@
   import type { PathOption, PathOptions } from "./types";
   import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
 
   export let pathOptions: PathOptions;
   export let current: string;
@@ -15,7 +16,8 @@
   export let onSelect: undefined | ((id: string) => void) = undefined;
   export let isEmbedded: boolean = false;
 
-  $: ({ options, carryOverSearchParams } = pathOptions);
+  $: ({ options, groups, carryOverSearchParams } = pathOptions);
+  $: hasGroups = groups && groups.length > 0;
   $: selected = options.get(current.toLowerCase());
 
   function linkMaker(
@@ -98,31 +100,87 @@
           align="start"
           class="min-w-44 max-h-96 overflow-y-auto"
         >
-          {#each options as [id, option] (id)}
-            {@const selected = id === current.toLowerCase()}
-            <DropdownMenu.CheckboxItem
-              class="cursor-pointer"
-              checked={selected}
-              checkSize={"h-3 w-3"}
-              href={linkMaker(
-                currentPath,
-                depth,
-                id,
-                option,
-                $page.route.id ?? "",
-              )}
-              preloadData={option.preloadData}
-              on:click={() => {
-                if (onSelect) {
-                  onSelect(id);
-                }
-              }}
-            >
-              <span class="text-xs text-fg-secondary flex-grow">
-                {option.label}
-              </span>
-            </DropdownMenu.CheckboxItem>
-          {/each}
+          {#if hasGroups}
+            {#each groups as group, groupIndex (group.name)}
+              <DropdownMenu.Group class="px-1">
+                {#if groups.length > 1}
+                  <DropdownMenu.Label>
+                    {group.label}
+                  </DropdownMenu.Label>
+                {/if}
+                {#each group.items as { id, option } (id)}
+                  {@const isSelected = id === current.toLowerCase()}
+                  {@const icon = option.resourceKind
+                    ? resourceIconMapping[option.resourceKind]
+                    : undefined}
+                  <DropdownMenu.CheckboxItem
+                    class="cursor-pointer"
+                    checked={isSelected}
+                    checkSize={"h-3 w-3"}
+                    href={linkMaker(
+                      currentPath,
+                      depth,
+                      id,
+                      option,
+                      $page.route.id ?? "",
+                    )}
+                    preloadData={option.preloadData}
+                    on:click={() => {
+                      if (onSelect) {
+                        onSelect(id);
+                      }
+                    }}
+                  >
+                    <span
+                      class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
+                    >
+                      {#if icon}
+                        <svelte:component this={icon} size="12px" />
+                      {/if}
+                      {option.label}
+                    </span>
+                  </DropdownMenu.CheckboxItem>
+                {/each}
+                {#if groupIndex !== groups.length - 1}
+                  <DropdownMenu.Separator />
+                {/if}
+              </DropdownMenu.Group>
+            {/each}
+          {:else}
+            {#each options as [id, option] (id)}
+              {@const isSelected = id === current.toLowerCase()}
+              {@const icon = option.resourceKind
+                ? resourceIconMapping[option.resourceKind]
+                : undefined}
+              <DropdownMenu.CheckboxItem
+                class="cursor-pointer"
+                checked={isSelected}
+                checkSize={"h-3 w-3"}
+                href={linkMaker(
+                  currentPath,
+                  depth,
+                  id,
+                  option,
+                  $page.route.id ?? "",
+                )}
+                preloadData={option.preloadData}
+                on:click={() => {
+                  if (onSelect) {
+                    onSelect(id);
+                  }
+                }}
+              >
+                <span
+                  class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
+                >
+                  {#if icon}
+                    <svelte:component this={icon} size="12px" />
+                  {/if}
+                  {option.label}
+                </span>
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          {/if}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     {/if}
