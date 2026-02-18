@@ -469,11 +469,6 @@ describe("compileSourceYAML", () => {
 
   it("should handle env var conflict resolution with existingEnvBlob", () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
-    const schema = {
-      properties: {
-        password: { "x-env-var-name": "CLICKHOUSE_PASSWORD" },
-      },
-    };
     const result = compileSourceYAML(
       connector,
       { password: "secret", sql: "SELECT 1" },
