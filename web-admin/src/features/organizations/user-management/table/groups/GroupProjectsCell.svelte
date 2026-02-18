@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import {
     adminServiceListProjectsForOrganization,
@@ -12,13 +13,13 @@
   export let groupName: string;
 
   let isDropdownOpen = false;
-  let isPending = false;
+  let isPending = true;
   let accessibleProjects: V1Project[] = [];
   let error: string | null = null;
   let hasLoaded = false;
 
   async function loadProjectsForGroup() {
-    if (hasLoaded || isPending) return;
+    if (hasLoaded) return;
 
     isPending = true;
     error = null;
@@ -58,9 +59,9 @@
     }
   }
 
-  $: if (isDropdownOpen && !hasLoaded) {
+  onMount(() => {
     void loadProjectsForGroup();
-  }
+  });
 
   $: projectCount = accessibleProjects.length;
   $: hasProjects = projectCount > 0;
@@ -70,40 +71,32 @@
   }
 </script>
 
-<Dropdown.Root bind:open={isDropdownOpen}>
-  <Dropdown.Trigger
-    class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
-      ? 'bg-gray-200'
-      : 'hover:bg-surface-hover'} px-2 py-1"
-  >
-    <span class="capitalize">
-      {#if isPending}
-        Loading...
-      {:else if hasLoaded}
+{#if hasLoaded && hasProjects}
+  <Dropdown.Root bind:open={isDropdownOpen}>
+    <Dropdown.Trigger
+      class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
+        ? 'bg-gray-200'
+        : 'hover:bg-surface-hover'} px-2 py-1"
+    >
+      <span class="capitalize">
         {projectCount} Project{projectCount !== 1 ? "s" : ""}
+      </span>
+      {#if isDropdownOpen}
+        <CaretUpIcon size="12px" />
       {:else}
-        Projects
+        <CaretDownIcon size="12px" />
       {/if}
-    </span>
-    {#if isDropdownOpen}
-      <CaretUpIcon size="12px" />
-    {:else}
-      <CaretDownIcon size="12px" />
-    {/if}
-  </Dropdown.Trigger>
-  <Dropdown.Content align="start">
-    {#if isPending}
-      <div class="px-2 py-1 text-fg-secondary text-sm">Loading...</div>
-    {:else if error}
-      <div class="px-2 py-1 text-red-500 text-sm">{error}</div>
-    {:else if !hasProjects}
-      <div class="px-2 py-1 text-fg-secondary text-sm">No projects</div>
-    {:else}
+    </Dropdown.Trigger>
+    <Dropdown.Content align="start">
       {#each accessibleProjects as project (project.id)}
         <Dropdown.Item href={getProjectShareUrl(project.name)}>
           {project.name}
         </Dropdown.Item>
       {/each}
-    {/if}
-  </Dropdown.Content>
-</Dropdown.Root>
+    </Dropdown.Content>
+  </Dropdown.Root>
+{:else if isPending}
+  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">Loading...</div>
+{:else}
+  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">No projects</div>
+{/if}
