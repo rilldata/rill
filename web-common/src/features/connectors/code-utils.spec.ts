@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import {
   replaceOlapConnectorInYAML,
   replaceOrAddEnvVariable,
@@ -6,6 +7,11 @@ import {
   envVarExists,
   findAvailableEnvVarName,
   makeEnvVarKey,
+  compileConnectorYAML,
+  formatHeadersAsYamlMap,
+  isSensitiveHeaderKey,
+  headerKeyToEnvSegment,
+  splitAuthSchemePrefix,
 } from "./code-utils";
 
 // Import the template for testing
@@ -493,5 +499,374 @@ DATABASE_URL=something`;
       );
       expect(result2).toBe("AWS_SECRET_ACCESS_KEY_1");
     });
+  });
+});
+
+describe("splitAuthSchemePrefix", () => {
+  it("should split Bearer prefix", () => {
+    const result = splitAuthSchemePrefix("Bearer my_token_123");
+    expect(result).toEqual({ scheme: "Bearer ", secret: "my_token_123" });
+  });
+
+  it("should split Basic prefix (case-insensitive)", () => {
+    const result = splitAuthSchemePrefix("basic dXNlcjpwYXNz");
+    expect(result).toEqual({ scheme: "basic ", secret: "dXNlcjpwYXNz" });
+  });
+
+  it("should split Token prefix", () => {
+    const result = splitAuthSchemePrefix("Token abc123");
+    expect(result).toEqual({ scheme: "Token ", secret: "abc123" });
+  });
+
+  it("should split Bot prefix", () => {
+    const result = splitAuthSchemePrefix("Bot xoxb-token");
+    expect(result).toEqual({ scheme: "Bot ", secret: "xoxb-token" });
+  });
+
+  it("should return null for no known prefix", () => {
+    expect(splitAuthSchemePrefix("just_a_token")).toBeNull();
+  });
+
+  it("should return null when value is just the prefix with no secret", () => {
+    expect(splitAuthSchemePrefix("Bearer")).toBeNull();
+  });
+});
+
+describe("isSensitiveHeaderKey", () => {
+  it("should match authorization", () => {
+    expect(isSensitiveHeaderKey("Authorization")).toBe(true);
+    expect(isSensitiveHeaderKey("authorization")).toBe(true);
+  });
+
+  it("should match x-api-key and api-key", () => {
+    expect(isSensitiveHeaderKey("X-API-Key")).toBe(true);
+    expect(isSensitiveHeaderKey("api-key")).toBe(true);
+  });
+
+  it("should match token and x-token", () => {
+    expect(isSensitiveHeaderKey("token")).toBe(true);
+    expect(isSensitiveHeaderKey("X-Token")).toBe(true);
+  });
+
+  it("should not match non-sensitive headers", () => {
+    expect(isSensitiveHeaderKey("Content-Type")).toBe(false);
+    expect(isSensitiveHeaderKey("Accept")).toBe(false);
+    expect(isSensitiveHeaderKey("X-Custom-Header")).toBe(false);
+  });
+});
+
+describe("headerKeyToEnvSegment", () => {
+  it("should lowercase and replace non-alphanumeric with underscores", () => {
+    expect(headerKeyToEnvSegment("X-API-Key")).toBe("x_api_key");
+    expect(headerKeyToEnvSegment("Authorization")).toBe("authorization");
+    expect(headerKeyToEnvSegment("X-Custom-Header")).toBe("x_custom_header");
+  });
+
+  it("should strip leading and trailing underscores", () => {
+    expect(headerKeyToEnvSegment("-header-")).toBe("header");
+  });
+});
+
+describe("formatHeadersAsYamlMap", () => {
+  describe("array input", () => {
+    it("should format non-sensitive headers as plain text", () => {
+      const result = formatHeadersAsYamlMap([
+        { key: "Content-Type", value: "application/json" },
+        { key: "Accept", value: "text/html" },
+      ]);
+      expect(result).toBe(
+        `headers:\n    "Content-Type": "application/json"\n    "Accept": "text/html"`,
+      );
+    });
+
+    it("should replace sensitive header with env ref when driverName provided", () => {
+      const result = formatHeadersAsYamlMap(
+        [{ key: "Authorization", value: "my_secret_token" }],
+        "https",
+      );
+      expect(result).toContain(
+        '"Authorization": "{{ .env.connector.https.authorization }}"',
+      );
+    });
+
+    it("should preserve Bearer scheme prefix", () => {
+      const result = formatHeadersAsYamlMap(
+        [{ key: "Authorization", value: "Bearer my_token" }],
+        "https",
+      );
+      expect(result).toContain(
+        '"Authorization": "Bearer {{ .env.connector.https.authorization }}"',
+      );
+    });
+
+    it("should preserve Basic scheme prefix", () => {
+      const result = formatHeadersAsYamlMap(
+        [{ key: "Authorization", value: "Basic dXNlcjpwYXNz" }],
+        "https",
+      );
+      expect(result).toContain(
+        '"Authorization": "Basic {{ .env.connector.https.authorization }}"',
+      );
+    });
+
+    it("should handle mixed sensitive and non-sensitive headers", () => {
+      const result = formatHeadersAsYamlMap(
+        [
+          { key: "Content-Type", value: "application/json" },
+          { key: "Authorization", value: "Bearer token123" },
+        ],
+        "https",
+      );
+      expect(result).toContain('"Content-Type": "application/json"');
+      expect(result).toContain(
+        '"Authorization": "Bearer {{ .env.connector.https.authorization }}"',
+      );
+    });
+
+    it("should filter entries with empty keys", () => {
+      const result = formatHeadersAsYamlMap([
+        { key: "", value: "ignored" },
+        { key: "Accept", value: "text/html" },
+      ]);
+      expect(result).toBe(`headers:\n    "Accept": "text/html"`);
+    });
+
+    it("should return empty string for empty array", () => {
+      expect(formatHeadersAsYamlMap([])).toBe("");
+    });
+
+    it("should use connectorInstanceName for env refs when provided", () => {
+      const result = formatHeadersAsYamlMap(
+        [{ key: "X-API-Key", value: "secret" }],
+        "https",
+        "my_api",
+      );
+      expect(result).toContain("{{ .env.connector.my_api.x_api_key }}");
+    });
+
+    it("should not create env refs when no driverName", () => {
+      const result = formatHeadersAsYamlMap([
+        { key: "Authorization", value: "Bearer token" },
+      ]);
+      expect(result).toContain('"Authorization": "Bearer token"');
+      expect(result).not.toContain(".env.");
+    });
+  });
+
+  describe("string input (legacy)", () => {
+    it("should parse Key: Value lines", () => {
+      const result = formatHeadersAsYamlMap(
+        "Content-Type: application/json\nAccept: text/html",
+      );
+      expect(result).toBe(
+        `headers:\n    "Content-Type": "application/json"\n    "Accept": "text/html"`,
+      );
+    });
+
+    it("should replace sensitive headers with env refs", () => {
+      const result = formatHeadersAsYamlMap(
+        "Authorization: Bearer my_token",
+        "https",
+      );
+      expect(result).toContain(
+        "Bearer {{ .env.connector.https.authorization }}",
+      );
+    });
+
+    it("should return empty string for empty input", () => {
+      expect(formatHeadersAsYamlMap("")).toBe("");
+    });
+  });
+});
+
+describe("compileConnectorYAML", () => {
+  it("should produce basic connector YAML", () => {
+    const connector: V1ConnectorDriver = {
+      name: "clickhouse",
+      docsUrl:
+        "https://docs.rilldata.com/developers/build/connectors/data-source/clickhouse",
+    };
+    const result = compileConnectorYAML(
+      connector,
+      { host: "ch.example.com" },
+      {
+        orderedProperties: [{ key: "host" }],
+      },
+    );
+    expect(result).toContain("# Connector YAML");
+    expect(result).toContain("type: connector");
+    expect(result).toContain("driver: clickhouse");
+    expect(result).toContain("host: ch.example.com");
+  });
+
+  it("should preserve property ordering from orderedProperties", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const result = compileConnectorYAML(
+      connector,
+      { host: "ch.example.com", port: 9000, database: "default" },
+      {
+        orderedProperties: [
+          { key: "database" },
+          { key: "host" },
+          { key: "port" },
+        ],
+      },
+    );
+    const dbIdx = result.indexOf("database:");
+    const hostIdx = result.indexOf("host:");
+    const portIdx = result.indexOf("port:");
+    expect(dbIdx).toBeLessThan(hostIdx);
+    expect(hostIdx).toBeLessThan(portIdx);
+  });
+
+  it("should replace secret properties with env var placeholders", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const schema = {
+      properties: {
+        password: { "x-env-var-name": "CLICKHOUSE_PASSWORD" },
+      },
+    };
+    const result = compileConnectorYAML(
+      connector,
+      { password: "super_secret" },
+      {
+        orderedProperties: [{ key: "password", secret: true }],
+        secretKeys: ["password"],
+        schema,
+      },
+    );
+    expect(result).toContain("{{ .env.CLICKHOUSE_PASSWORD }}");
+    expect(result).not.toContain("super_secret");
+  });
+
+  it("should quote string properties", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const result = compileConnectorYAML(
+      connector,
+      { host: "ch.example.com" },
+      {
+        orderedProperties: [{ key: "host" }],
+        stringKeys: ["host"],
+      },
+    );
+    expect(result).toContain('host: "ch.example.com"');
+  });
+
+  it("should not quote non-string properties", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const result = compileConnectorYAML(
+      connector,
+      { port: 9000 },
+      { orderedProperties: [{ key: "port" }] },
+    );
+    expect(result).toContain("port: 9000");
+    expect(result).not.toContain('"9000"');
+  });
+
+  it("should filter out empty string values", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const result = compileConnectorYAML(
+      connector,
+      { host: "ch.example.com", database: "" },
+      { orderedProperties: [{ key: "host" }, { key: "database" }] },
+    );
+    expect(result).toContain("host:");
+    expect(result).not.toContain("database:");
+  });
+
+  it("should filter out undefined values", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const result = compileConnectorYAML(
+      connector,
+      { host: "ch.example.com", database: undefined },
+      { orderedProperties: [{ key: "host" }, { key: "database" }] },
+    );
+    expect(result).not.toContain("database:");
+  });
+
+  it("should filter out empty arrays", () => {
+    const connector: V1ConnectorDriver = { name: "https" };
+    const result = compileConnectorYAML(
+      connector,
+      { url: "https://example.com", headers: [] },
+      { orderedProperties: [{ key: "url" }, { key: "headers" }] },
+    );
+    expect(result).not.toContain("headers:");
+  });
+
+  it("should exclude clickhouse managed: false", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const result = compileConnectorYAML(
+      connector,
+      { host: "ch.example.com", managed: false },
+      { orderedProperties: [{ key: "host" }, { key: "managed" }] },
+    );
+    expect(result).not.toContain("managed");
+  });
+
+  it("should include clickhouse managed: true", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const result = compileConnectorYAML(
+      connector,
+      { host: "ch.example.com", managed: true },
+      { orderedProperties: [{ key: "host" }, { key: "managed" }] },
+    );
+    expect(result).toContain("managed: true");
+  });
+
+  it("should output driver as duckdb for motherduck", () => {
+    const connector: V1ConnectorDriver = { name: "motherduck" };
+    const result = compileConnectorYAML(
+      connector,
+      { path: "md:my_db" },
+      { orderedProperties: [{ key: "path" }] },
+    );
+    expect(result).toContain("driver: duckdb");
+    expect(result).not.toContain("driver: motherduck");
+  });
+
+  it("should apply fieldFilter to exclude internal properties", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const result = compileConnectorYAML(
+      connector,
+      { host: "ch.example.com", managed: true },
+      {
+        orderedProperties: [
+          { key: "host" },
+          { key: "managed", internal: true },
+        ],
+        fieldFilter: (p) => !("internal" in p && p.internal),
+      },
+    );
+    expect(result).toContain("host:");
+    expect(result).not.toContain("managed:");
+  });
+
+  it("should handle env var conflict resolution with existingEnvBlob", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const schema = {
+      properties: {
+        password: { "x-env-var-name": "CLICKHOUSE_PASSWORD" },
+      },
+    };
+    const result = compileConnectorYAML(
+      connector,
+      { password: "secret" },
+      {
+        orderedProperties: [{ key: "password", secret: true }],
+        secretKeys: ["password"],
+        schema,
+        existingEnvBlob: "CLICKHOUSE_PASSWORD=old_value",
+      },
+    );
+    expect(result).toContain("CLICKHOUSE_PASSWORD_1");
+  });
+
+  it("should produce no property lines when orderedProperties is empty", () => {
+    const connector: V1ConnectorDriver = { name: "clickhouse" };
+    const result = compileConnectorYAML(connector, { host: "ch.example.com" });
+    expect(result).toContain("type: connector");
+    expect(result).toContain("driver: clickhouse");
+    expect(result).not.toContain("host:");
   });
 });

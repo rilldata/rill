@@ -116,7 +116,7 @@ export function compileLocalFileSourceYAML(path: string) {
   return `${sourceModelFileTop("local_file")}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
-function buildDuckDbQuery(
+export function buildDuckDbQuery(
   path: string | undefined,
   options?: { defaultToJson?: boolean },
 ): string {
@@ -140,7 +140,7 @@ function buildDuckDbQuery(
 /**
  * Checks if a file extension '.v1.parquet.gz' contains parts like '.parquet'
  */
-function extensionContainsParts(
+export function extensionContainsParts(
   fileExtension: string,
   extensionParts: Array<string>,
 ) {
