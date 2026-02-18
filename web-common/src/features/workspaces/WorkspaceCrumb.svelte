@@ -49,6 +49,29 @@
 
   $: componentsOnly = !withoutComponents.length && resources.length;
 
+  // Whether this crumb is disabled in preview mode (models and upstream non-dashboard resources)
+  $: isDisabledInPreview =
+    $previewModeStore &&
+    (resourceKind === ResourceKind.Model ||
+      (upstream &&
+        resourceKind !== ResourceKind.MetricsView &&
+        resourceKind !== ResourceKind.Explore));
+
+  function isItemDisabledInPreview(kind: string | undefined): boolean {
+    return (
+      $previewModeStore &&
+      (kind === ResourceKind.Model ||
+        (upstream &&
+          kind !== ResourceKind.MetricsView &&
+          kind !== ResourceKind.Explore))
+    );
+  }
+
+  function getPreviewHref(name: string | undefined, filePaths: string[] | undefined): string {
+    if ($previewModeStore) return `/edit?resource=${name}`;
+    return `/files${filePaths?.[0] ?? filePath}`;
+  }
+
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();
 
   $: upstreamResources = downstream
@@ -119,31 +142,15 @@
             class:open
             class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
             class:selected={current}
-            class:disabled={($previewModeStore &&
-              resourceKind === ResourceKind.Model) ||
-              (upstream &&
-                $previewModeStore &&
-                resourceKind !== ResourceKind.MetricsView &&
-                resourceKind !== ResourceKind.Explore)}
+            class:disabled={isDisabledInPreview}
             href={dropdown
               ? undefined
               : exampleResource
-                ? ($previewModeStore && resourceKind === ResourceKind.Model) ||
-                  (upstream &&
-                    $previewModeStore &&
-                    resourceKind !== ResourceKind.MetricsView &&
-                    resourceKind !== ResourceKind.Explore)
+                ? isDisabledInPreview
                   ? "#"
-                  : $previewModeStore
-                    ? `/edit?resource=${resourceName}`
-                    : `/files${exampleResource?.meta?.filePaths?.[0] ?? filePath}`
+                  : getPreviewHref(resourceName, exampleResource?.meta?.filePaths)
                 : "#"}
-            on:click={($previewModeStore &&
-              resourceKind === ResourceKind.Model) ||
-            (upstream &&
-              $previewModeStore &&
-              resourceKind !== ResourceKind.MetricsView &&
-              resourceKind !== ResourceKind.Explore)
+            on:click={isDisabledInPreview
               ? (e) => e.preventDefault()
               : undefined}
             {...dropdown ? builder : {}}
@@ -163,21 +170,12 @@
           <DropdownMenu.Content align="start">
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
+              {@const itemDisabled = isItemDisabledInPreview(kind)}
               <DropdownMenu.Item
-                disabled={($previewModeStore && kind === ResourceKind.Model) ||
-                  (upstream &&
-                    $previewModeStore &&
-                    kind !== ResourceKind.MetricsView &&
-                    kind !== ResourceKind.Explore)}
-                href={($previewModeStore && kind === ResourceKind.Model) ||
-                (upstream &&
-                  $previewModeStore &&
-                  kind !== ResourceKind.MetricsView &&
-                  kind !== ResourceKind.Explore)
+                disabled={itemDisabled}
+                href={itemDisabled
                   ? "#"
-                  : $previewModeStore
-                    ? `/edit?resource=${resource?.meta?.name?.name}`
-                    : `/files${resource?.meta?.filePaths?.[0] ?? filePath}`}
+                  : getPreviewHref(resource?.meta?.name?.name, resource?.meta?.filePaths)}
               >
                 {#if kind}
                   <svelte:component

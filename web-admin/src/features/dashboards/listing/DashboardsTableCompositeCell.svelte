@@ -5,7 +5,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { timeAgo } from "./utils";
+  import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
 
   export let name: string;
   export let title: string;

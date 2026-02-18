@@ -377,7 +377,7 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, preview bool, userID, tlsCertPath, tlsKeyPath string) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, preview, previewer bool, userID, tlsCertPath, tlsKeyPath string) error {
 	// Get analytics info
 	installID, enabled, err := a.ch.DotRill.AnalyticsInfo()
 	if err != nil {
@@ -398,6 +398,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, pre
 		AnalyticsEnabled: enabled,
 		Readonly:         readonly,
 		PreviewMode:      preview,
+		PreviewerMode:    previewer,
 	}
 
 	// Create the local server handler

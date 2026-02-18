@@ -1,50 +1,23 @@
 <script lang="ts">
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onMount } from "svelte";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client/gen/runtime-service/runtime-service";
   import ResourcesTable from "./ResourcesTable.svelte";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
-  let resources: V1Resource[] = [];
-  let isLoading = false;
-  let isError = false;
-  let error: Error | null = null;
+  $: resourcesQuery = createRuntimeServiceListResources(
+    $runtime.instanceId,
+    {},
+    {
+      query: {
+        refetchInterval: 5000,
+      },
+    },
+  );
 
-  async function loadResources() {
-    try {
-      isError = false;
-      error = null;
-      isLoading = true;
-
-      if (!$runtime?.instanceId || $runtime?.host === undefined) {
-        throw new Error("Runtime not initialized");
-      }
-
-      const response = await fetch(
-        `${$runtime.host}/v1/instances/${$runtime.instanceId}/resources`,
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch resources: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      resources = data?.resources || [];
-    } catch (err) {
-      isError = true;
-      error = err instanceof Error ? err : new Error("Unknown error");
-      console.error("Error loading resources:", err);
-    } finally {
-      isLoading = false;
-    }
-  }
-
-  onMount(() => {
-    loadResources();
-    // Refresh every 5 seconds
-    const interval = setInterval(loadResources, 5000);
-    return () => clearInterval(interval);
-  });
+  $: resources = $resourcesQuery.data?.resources ?? [];
+  $: isLoading = $resourcesQuery.isLoading;
+  $: isError = $resourcesQuery.isError;
+  $: error = $resourcesQuery.error;
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
@@ -59,6 +32,9 @@
       Error loading resources: {error?.message}
     </div>
   {:else}
-    <ResourcesTable data={resources} onRefresh={loadResources} />
+    <ResourcesTable
+      data={resources}
+      onRefresh={() => $resourcesQuery.refetch()}
+    />
   {/if}
 </section>

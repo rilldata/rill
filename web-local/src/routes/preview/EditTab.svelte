@@ -10,9 +10,12 @@
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client/gen/runtime-service/runtime-service";
   import { onMount } from "svelte";
   import { resourceSectionState } from "./resource-section-store";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 
   interface Resource {
     name: string;
@@ -35,101 +38,63 @@
   let allResources: Resource[] = [];
   let metricsResources: Resource[] = [];
   let dashboardResources: Resource[] = [];
-  let loading = false;
-  let error: string | null = null;
   let hoveredResource: string | null = null;
 
   let selectedResource: Resource | null = null;
-  let fileArtifact: any = null;
+  let fileArtifact: FileArtifact | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let workspace: any = null;
 
-  async function loadResources() {
-    try {
-      loading = true;
-      error = null;
-
-      if (!$runtime?.instanceId || $runtime?.host === undefined) {
-        error = "Waiting for runtime to initialize...";
-        loading = false;
-        return;
-      }
-
-      // Fetch the list of resources from the runtime
-      const response = await fetch(
-        `${$runtime.host}/v1/instances/${$runtime.instanceId}/resources`,
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch resources: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      // Collect and organize all resources
-      allResources = [];
-
-      if (data?.resources) {
-        for (const resource of Object.values(data.resources || {}) as any[]) {
-          const resourceName = resource.meta?.name?.name || "Unknown";
-          const filePath = resource.meta?.filePaths?.[0] || "";
-
-          // Detect resource type from which property exists
-          let kind = "Unknown";
-          if (resource.metricsView) kind = ResourceKind.MetricsView;
-          else if (resource.model) kind = ResourceKind.Model;
-          else if (resource.explore) kind = ResourceKind.Explore;
-          else if (resource.canvas) kind = ResourceKind.Canvas;
-          else if (resource.source) kind = ResourceKind.Source;
-          else if (resource.component) kind = ResourceKind.Component;
-          else if (resource.connector) kind = ResourceKind.Connector;
-
-          allResources.push({
-            name: resourceName,
-            kind: kind,
-            state: resource.meta?.reconcileStatus || "UNKNOWN",
-            error: resource.meta?.reconcileError,
-            path: filePath,
-          });
-        }
-      }
-
-      // Sort alphabetically
-      allResources.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-
-      // Group by type
-      metricsResources = allResources.filter(
-        (r) => r.kind === ResourceKind.MetricsView,
-      );
-      dashboardResources = allResources.filter(
-        (r) =>
-          r.kind === ResourceKind.Canvas || r.kind === ResourceKind.Explore,
-      );
-    } catch (err) {
-      error = err instanceof Error ? err.message : "Failed to load resources";
-      console.error("Error loading resources:", err);
-    } finally {
-      loading = false;
-    }
+  function getResourceKind(resource: V1Resource): ResourceKind | string {
+    if (resource.metricsView) return ResourceKind.MetricsView;
+    if (resource.model) return ResourceKind.Model;
+    if (resource.explore) return ResourceKind.Explore;
+    if (resource.canvas) return ResourceKind.Canvas;
+    if (resource.source) return ResourceKind.Source;
+    if (resource.component) return ResourceKind.Component;
+    if (resource.connector) return ResourceKind.Connector;
+    return "Unknown";
   }
 
-  onMount(async () => {
-    await loadResources();
+  $: resourcesQuery = createRuntimeServiceListResources(
+    $runtime.instanceId,
+    {},
+  );
 
-    // Restore selected resource from URL query parameter
+  $: {
+    const rawResources = $resourcesQuery.data?.resources ?? [];
+
+    allResources = rawResources
+      .map((resource) => ({
+        name: resource.meta?.name?.name || "Unknown",
+        kind: getResourceKind(resource),
+        state: resource.meta?.reconcileStatus || "UNKNOWN",
+        error: resource.meta?.reconcileError,
+        path: resource.meta?.filePaths?.[0] || "",
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    metricsResources = allResources.filter(
+      (r) => r.kind === ResourceKind.MetricsView,
+    );
+    dashboardResources = allResources.filter(
+      (r) =>
+        r.kind === ResourceKind.Canvas || r.kind === ResourceKind.Explore,
+    );
+  }
+
+  $: loading = $resourcesQuery.isLoading;
+  $: error = $resourcesQuery.isError
+    ? ($resourcesQuery.error?.message ?? "Failed to load resources")
+    : null;
+
+  // Restore selected resource from URL query parameter
+  onMount(() => {
     const resourceName = $page.url.searchParams.get("resource");
-    if (resourceName) {
+    if (resourceName && allResources.length) {
       const resource = allResources.find((r) => r.name === resourceName);
       if (resource) {
         selectedResource = resource;
-
-        // Clean URL if there are other parameters
-        if (
-          $page.url.search !== `?resource=${encodeURIComponent(resourceName)}`
-        ) {
-          const url = new URL($page.url);
-          url.search = `?resource=${encodeURIComponent(resourceName)}`;
-          goto(url, { replaceState: true });
-        }
       }
     }
   });
@@ -143,11 +108,6 @@
         selectedResource = resource;
       }
     }
-  }
-
-  // Retry when runtime becomes available
-  $: if ($runtime?.instanceId && $runtime?.host && error?.includes("Waiting")) {
-    loadResources();
   }
 
   async function navigateToEditor(resource: Resource) {
@@ -448,7 +408,7 @@
           </span>
         {/if}
         <button
-          on:click={loadResources}
+          on:click={() => $resourcesQuery.refetch()}
           disabled={loading}
           class="flex-shrink-0 px-3 py-2 text-sm rounded transition-colors disabled:opacity-50 refresh-btn"
           style="color: var(--fg-secondary)"

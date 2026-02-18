@@ -6,7 +6,6 @@
     cleanupLocalConversationManager,
   } from "../ai/local-conversation-manager";
   import ChatInput from "@rilldata/web-common/features/chat/core/input/ChatInput.svelte";
-  import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
   import { projectChat } from "@rilldata/web-common/features/project/chat-context";
 
   export let noMargin = false;
@@ -14,8 +13,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: localManager = getLocalConversationManager(instanceId);
-  $: conversationManager = localManager as unknown as ConversationManager;
+  $: conversationManager = getLocalConversationManager(instanceId);
 
   beforeNavigate(({ to }) => {
     const isStillOnHomePage = to?.route?.id === "/home";

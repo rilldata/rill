@@ -5,9 +5,9 @@
   import DelayedContent from "@rilldata/web-common/features/entity-management/DelayedContent.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { LocalConversationManager } from "./local-conversation-manager";
+  import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
 
-  export let conversationManager: LocalConversationManager;
+  export let conversationManager: ConversationManager;
   export let collapsed = false;
   export let onToggle: () => void = () => {};
   export let onConversationClick: () => void = () => {};

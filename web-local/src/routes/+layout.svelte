@@ -46,13 +46,12 @@
   let removeJavascriptListeners: () => void;
 
   onMount(async () => {
+    // Sync preview mode from server metadata.
     // If server says preview or previewer mode, lock into preview.
-    // Otherwise, respect the localStorage-persisted preference.
+    // If server says no preview, reset to false to avoid stale localStorage state.
     const serverPreviewMode = data.previewMode ?? false;
     const serverPreviewerMode = data.previewerMode ?? false;
-    if (serverPreviewMode || serverPreviewerMode) {
-      previewModeStore.set(true);
-    }
+    previewModeStore.set(serverPreviewMode || serverPreviewerMode);
 
     // If in preview mode and on root, redirect to /home
     if ($previewModeStore && window.location.pathname === "/") {

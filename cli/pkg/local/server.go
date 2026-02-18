@@ -111,6 +111,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		LoginUrl:         s.app.localURL + "/auth",
 		AdminUrl:         s.app.ch.AdminURL(),
 		PreviewMode:      s.metadata.PreviewMode,
+		PreviewerMode:    s.metadata.PreviewerMode,
 	}), nil
 }
 
@@ -951,6 +952,7 @@ type localMetadata struct {
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 	Readonly         bool   `json:"readonly"`
 	PreviewMode      bool   `json:"preview_mode"`
+	PreviewerMode    bool   `json:"previewer_mode"`
 	GRPCPort         int    `json:"grpc_port"`
 }
 
