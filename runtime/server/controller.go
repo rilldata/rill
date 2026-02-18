@@ -323,13 +323,14 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	defer release()
 
 	defaultPageSize := 100
+	pageLimit := pagination.ValidPageSize(req.PageSize, defaultPageSize)
 	opts := &drivers.FindModelPartitionsOptions{
 		ModelID:          partitionsModelID,
 		WherePending:     req.Pending,
 		WhereErrored:     req.Errored,
 		BeforeExecutedOn: beforeExecutedOn,
 		AfterKey:         afterKey,
-		Limit:            pagination.ValidPageSize(req.PageSize, defaultPageSize),
+		Limit:            pageLimit,
 	}
 
 	partitions, err := catalog.FindModelPartitions(ctx, opts)
@@ -338,15 +339,23 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 	}
 
 	var nextPageToken string
-	if len(partitions) == pagination.ValidPageSize(req.PageSize, defaultPageSize) {
+	if len(partitions) == pageLimit && len(partitions) > 0 {
 		last := partitions[len(partitions)-1]
-		nextPageToken = pagination.MarshalPageToken(last.Index, last.Key)
+		nextPageToken = modelPartitionPageToken(last)
 	}
 
 	return &runtimev1.GetModelPartitionsResponse{
 		Partitions:    modelPartitionsToPB(partitions),
 		NextPageToken: nextPageToken,
 	}, nil
+}
+
+func modelPartitionPageToken(partition drivers.ModelPartition) string {
+	var executedOn time.Time
+	if partition.ExecutedOn != nil {
+		executedOn = *partition.ExecutedOn
+	}
+	return pagination.MarshalPageToken(executedOn, partition.Key)
 }
 
 // CreateTrigger implements runtimev1.RuntimeServiceServer
