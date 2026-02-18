@@ -129,6 +129,31 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 		}
 	}
 
+	// Optional: Validate comparison_time_range if present
+	if comparisonTimeRange, hasComparisonTimeRange := spec["comparison_time_range"]; hasComparisonTimeRange {
+		comparisonMap, ok := comparisonTimeRange.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("'comparison_time_range' must be an object with 'start' and 'end' properties")
+		}
+		if _, hasStart := comparisonMap["start"]; !hasStart {
+			return nil, fmt.Errorf("'comparison_time_range' must contain a 'start' property")
+		}
+		if _, hasEnd := comparisonMap["end"]; !hasEnd {
+			return nil, fmt.Errorf("'comparison_time_range' must contain an 'end' property")
+		}
+
+		// Only allow comparison_time_range for cartesian chart types
+		validComparisonChartTypes := map[string]bool{
+			"bar_chart":              true,
+			"line_chart":             true,
+			"stacked_bar":            true,
+			"stacked_bar_normalized": true,
+		}
+		if !validComparisonChartTypes[chartType] {
+			return nil, fmt.Errorf("'comparison_time_range' is only supported for: bar_chart, line_chart, stacked_bar, stacked_bar_normalized")
+		}
+	}
+
 	// Validate that the metrics view exists
 	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
 	if err != nil {
@@ -340,6 +365,11 @@ All chart specifications must include:
 
 - ` + "`time_grain`" + `: Time granularity for temporal aggregations (e.g., "TIME_GRAIN_DAY", "TIME_GRAIN_MONTH", "TIME_GRAIN_YEAR"). Defaults to "TIME_GRAIN_DAY" if not specified.
 - ` + "`where`" + `: Filter expression to apply to the underlying data. Use the same structure as in query_metrics_view.
+- ` + "`comparison_time_range`" + `: Optional time range for period-over-period comparison. Only supported for cartesian chart types: bar_chart, line_chart, stacked_bar, stacked_bar_normalized.
+  - ` + "`start`" + `: ISO 8601 timestamp (inclusive) for the comparison period start
+  - ` + "`end`" + `: ISO 8601 timestamp (exclusive) for the comparison period end
+  - The comparison period should ideally match the duration of the primary time_range for meaningful comparisons
+  - Example: To compare H2 2024 vs H1 2024, set time_range to Jul-Dec 2024 and comparison_time_range to Jan-Jun 2024
 
 ### Where Expression Structure
 The where clause follows this structure:
@@ -457,6 +487,42 @@ total_bids: measure
 }
 ` + "```" + `
 
+Example with time comparison: Bar chart comparing current period to previous period
+
+Field details:
+bids_metrics: metrics_view
+advertiser_name: dimension
+total_bids: measure
+
+` + "```json" + `
+{
+  "chart_type": "bar_chart",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-07-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "comparison_time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-06-30T23:59:59Z"
+    },
+    "color": "primary",
+    "x": {
+      "field": "advertiser_name",
+      "limit": 20,
+      "type": "nominal",
+      "sort": "-y"
+    },
+    "y": {
+      "field": "total_bids",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
 ### 2. Line Chart (` + "`line_chart`" + `)
 **Use for:** Showing trends over time
 
@@ -529,6 +595,41 @@ total_bids: measure
       "field": "device_os",
       "type": "nominal"
     },
+    "x": {
+      "field": "__time",
+      "type": "temporal"
+    },
+    "y": {
+      "field": "total_bids",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
+Example with time comparison: Line chart comparing current month trend to previous month
+
+Field details:
+bids_metrics: metrics_view
+__time: timestamp dimension
+total_bids: measure
+
+` + "```json" + `
+{
+  "chart_type": "line_chart",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-06-01T00:00:00Z",
+      "end": "2024-06-30T23:59:59Z"
+    },
+    "comparison_time_range": {
+      "start": "2024-05-01T00:00:00Z",
+      "end": "2024-05-31T23:59:59Z"
+    },
+    "time_grain": "TIME_GRAIN_DAY",
+    "color": "primary",
     "x": {
       "field": "__time",
       "type": "temporal"
@@ -976,8 +1077,11 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **Field names**: Must exactly match field names in the metrics view (case-sensitive)
 - **Metrics view name**: Must exactly match available view names
 
+### Time Comparison
+- **Supported chart types**: ` + "`bar_chart`" + `, ` + "`line_chart`" + `, ` + "`stacked_bar`" + `, ` + "`stacked_bar_normalized`" + ` support period-over-period comparison via the ` + "`comparison_time_range`" + ` parameter
+- **How it works**: When ` + "`comparison_time_range`" + ` is provided, the chart renders the current period alongside the comparison period with visual differentiation (e.g., side-by-side bars, dimmed comparison lines)
+- **Best practice**: Match the duration of the comparison period to the primary time range for meaningful comparisons
+
 ### Limitations
-- **No comparison support**: The following are NOT supported:
-  - 'comparison_time_range' parameter is not allowed
-  - Comparison measures like 'measure_name__delta_abs' or 'measure_name__delta_rel' are not allowed. Do not use such measures in the spec anywhere
-  - Period-over-period comparisons can be handled by calling two tool calls with the same spec but different time ranges`
+- **Comparison measures**: Direct comparison measures like 'measure_name__delta_abs' or 'measure_name__delta_rel' are not allowed in the spec. Do not use such measures in the spec anywhere.
+- **Comparison chart types**: ` + "`comparison_time_range`" + ` is only supported for cartesian chart types (bar_chart, line_chart, stacked_bar, stacked_bar_normalized). It is NOT supported for donut_chart, pie_chart, funnel_chart, heatmap, combo_chart, or area_chart.`

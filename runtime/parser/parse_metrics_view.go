@@ -735,6 +735,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 	node.Refs = append(node.Refs, securityRefs...)
 
+	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindConnector, Name: node.Connector})
+
 	var cacheTTLDuration time.Duration
 	if tmp.Cache.KeyTTL != "" {
 		cacheTTLDuration, err = time.ParseDuration(tmp.Cache.KeyTTL)

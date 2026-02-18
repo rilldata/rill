@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "../setup/base";
+import { updateCodeEditor } from "../utils/commonHelpers";
 
 test.describe("MotherDuck welcome flow", () => {
   // Start from an empty workspace to exercise the onboarding path
@@ -42,23 +43,47 @@ test.describe("MotherDuck welcome flow", () => {
     // Navigate to the created connector file
     await page.waitForURL(/.*\/files\/connectors\/motherduck.*\.yaml/);
 
-    // Verify connector file references env-based secrets
+    // Verify connector file references env-based secrets with new ALL_CAPS naming
     const connectorEditor = page
       .getByLabel("codemirror editor")
       .getByRole("textbox");
     await expect(connectorEditor).toContainText("type: connector");
     await expect(connectorEditor).toContainText("driver: duckdb");
+    // Confirm the new {{ .env.VAR }} format exists
     await expect(connectorEditor).toContainText(
-      'token: "{{ .env.connector.motherduck.token }}"',
+      'token: "{{ .env.MOTHERDUCK_TOKEN }}"',
     );
     await expect(connectorEditor).toContainText(`path: "${path}"`);
 
-    // .env should hold MotherDuck secrets
+    // Now update the connector file to use mixed-case env var name to test case-insensitivity
+    const currentContent = await connectorEditor.textContent();
+    const updatedContent = currentContent!.replace(
+      `"{{ .env.MOTHERDUCK_TOKEN }}"`,
+      `"{{ .env.motherduck_TOKEN }}"`,
+    );
+    await updateCodeEditor(page, updatedContent);
+    await page.getByRole("button", { name: "Save" }).click();
+    await page.waitForTimeout(1000);
+
+    // Verify the updated syntax is now in the file
+    await expect(connectorEditor).toContainText(
+      `token: "{{ .env.motherduck_TOKEN }}"`,
+    );
+
+    // Verify no errors appear (case-insensitive env function should resolve correctly)
+    const errorPane = page.locator(".editor-pane .error");
+    const errorCount = await errorPane.count();
+    if (errorCount > 0) {
+      const errorText = await errorPane.textContent();
+      // Should not have error about missing env variable
+      expect(errorText).not.toContain("motherduck_TOKEN");
+      expect(errorText).not.toContain("environment variable");
+    }
+
+    // .env should hold MotherDuck secrets with new ALL_CAPS naming
     await page.getByRole("link", { name: ".env" }).click();
     const envEditor = page.getByLabel("codemirror editor").getByRole("textbox");
-    await expect(envEditor).toContainText(
-      `connector.motherduck.token=${token}`,
-    );
+    await expect(envEditor).toContainText(`MOTHERDUCK_TOKEN=${token}`);
 
     // rill.yaml should promote MotherDuck as the OLAP connector
     await page.getByRole("link", { name: "rill.yaml" }).click();

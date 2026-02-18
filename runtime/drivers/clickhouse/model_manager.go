@@ -12,7 +12,9 @@ import (
 const _defaultConcurrentInserts = 1
 
 type ModelInputProperties struct {
-	SQL string `mapstructure:"sql"`
+	SQL      string `mapstructure:"sql"`
+	PreExec  string `mapstructure:"pre_exec"`
+	PostExec string `mapstructure:"post_exec"`
 }
 
 type ModelOutputProperties struct {
