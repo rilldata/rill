@@ -109,6 +109,21 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     onCall: handleNavigateToolCall,
   },
 
+  [ToolName.APPLY_TO_EXPLORE]: {
+    renderMode: "block",
+    createBlock: createSimpleTooCall,
+    onCall: (callMessage) => {
+      console.log("Apply to explore...");
+      if (!callMessage.contentData) return;
+      try {
+        const content = JSON.parse(callMessage.contentData);
+        console.log(content);
+      } catch (err) {
+        console.error(err);
+      }
+    },
+  },
+
   // All other tools default to "inline" (shown in thinking blocks)
 };
 

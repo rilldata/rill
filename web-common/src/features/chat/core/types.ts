@@ -58,6 +58,7 @@ export const ToolName = {
 
   // Common tools
   NAVIGATE: "navigate",
+  APPLY_TO_EXPLORE: "apply_to_explore",
 } as const;
 
 // =============================================================================
