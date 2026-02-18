@@ -25,7 +25,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pullEnv bool
 	var noUI bool
 	var noOpen bool
-	var preview = false
+	var preview bool
 	var logFormat string
 	var envVars, envVarsOld []string
 	var environment string

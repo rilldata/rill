@@ -13,11 +13,15 @@
     conversationSidebarCollapsed,
     toggleConversationSidebar,
   } from "@rilldata/web-common/features/chat/layouts/fullpage/fullpage-store";
+  import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager";
   import { projectChat } from "@rilldata/web-common/features/project/chat-context";
 
   $: ({ instanceId } = $runtime);
 
-  $: conversationManager = getLocalConversationManager(instanceId);
+  $: localManager = getLocalConversationManager(instanceId);
+  // Cast needed: LocalConversationManager is structurally identical to ConversationManager
+  // but TypeScript's nominal typing for private fields prevents direct assignment
+  $: conversationManager = localManager as unknown as ConversationManager;
 
   let chatInputComponent: ChatInput;
 
