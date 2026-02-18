@@ -14,6 +14,7 @@
   export let components: Map<string, BaseCanvasComponent>;
   export let heightUnit: string = "px";
   export let navigationEnabled: boolean = true;
+  export let cardCss: Record<string, string> | undefined = undefined;
 
   $: ({ height, items: _itemIds, widths: itemWidths } = row);
 
@@ -36,7 +37,7 @@
     {@const component = components.get(id)}
     <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
       {#if component}
-        <CanvasComponent {component} {navigationEnabled} />
+        <CanvasComponent {component} {navigationEnabled} {cardCss} />
       {:else}
         <ComponentError error="No valid component {id} in project" />
       {/if}

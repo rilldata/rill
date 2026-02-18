@@ -40,6 +40,7 @@ type CanvasYAML struct {
 		Filters             map[string]string `yaml:"filters"`
 	} `yaml:"defaults"`
 	Variables []*ComponentVariableYAML `yaml:"variables"`
+	CardCSS   map[string]string        `yaml:"card_css"`
 	Rows      []*struct {
 		Height *string `yaml:"height"`
 		Items  []*struct {
@@ -288,6 +289,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Rows = rows
 	r.CanvasSpec.SecurityRules = rules
 	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
+	r.CanvasSpec.CardCss = tmp.CardCSS
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {

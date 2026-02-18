@@ -94,7 +94,7 @@
 
   $: activelyEditing.set(!!$activeDivider || activelyDragging);
 
-  $: ({ rows = [], filtersEnabled, maxWidth: canvasMaxWidth } = spec);
+  $: ({ rows = [], filtersEnabled, maxWidth: canvasMaxWidth, cardCss } = spec);
 
   $: maxWidth = canvasMaxWidth || DEFAULT_DASHBOARD_WIDTH;
 
@@ -450,6 +450,7 @@
       {dragComponent}
       {selectedComponent}
       zIndex={layoutRows.length - rowIndex}
+      {cardCss}
       {onDrop}
       {addItems}
       {spreadEvenly}
@@ -556,6 +557,7 @@
       allowPointerEvents={false}
       ghost
       selected
+      {cardCss}
     />
   </div>
 {/if}

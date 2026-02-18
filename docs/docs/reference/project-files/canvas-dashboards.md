@@ -228,6 +228,18 @@ _[array of object]_ - Variables that can be used in the canvas
 
   - **`value`** - _[string, number, boolean, object, array]_ - Default value for the variable. Can be any valid JSON value type 
 
+### `card_css`
+
+_[object]_ - CSS properties to style component cards on the canvas. These styles take precedence over any styles set on the component itself.
+CSS property names should be in kebab-case (e.g., `border-radius`, `box-shadow`).
+ 
+
+```yaml
+card_css:
+    border-radius: 10px
+    outline-color: red
+```
+
 ## Common Properties
 
 ### `name`
