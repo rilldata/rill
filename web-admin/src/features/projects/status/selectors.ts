@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-admin/client";
 import {
   createRuntimeServiceListResources,
+  createRuntimeServicePing,
   type V1ListResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -34,8 +35,11 @@ export function useResources(instanceId: string) {
         select: (data: V1ListResourcesResponse) => {
           const filtered = data?.resources?.filter(
             (resource) =>
+              !resource?.meta?.hidden &&
               resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
-              resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger,
+              resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger &&
+              resource?.meta?.name?.kind !== ResourceKind.Component &&
+              resource?.meta?.name?.kind !== ResourceKind.Migration,
           );
           return {
             ...data,
@@ -46,4 +50,12 @@ export function useResources(instanceId: string) {
       },
     },
   );
+}
+
+export function useRuntimeVersion() {
+  return createRuntimeServicePing({
+    query: {
+      staleTime: 60000, // Cache for 1 minute
+    },
+  });
 }

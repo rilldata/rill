@@ -14,6 +14,15 @@
   export let onRefresh: () => void;
   export let refreshType: "full" | "incremental" = "full";
 
+  const MAX_NAME_LENGTH = 37;
+
+  function truncateName(str: string): string {
+    if (str.length > MAX_NAME_LENGTH) {
+      return str.substring(0, MAX_NAME_LENGTH) + "...";
+    }
+    return str;
+  }
+
   function handleRefresh() {
     try {
       onRefresh();
@@ -29,7 +38,7 @@
     <AlertDialogHeader>
       <AlertDialogTitle>
         {refreshType === "full" ? "Full Refresh" : "Incremental Refresh"}
-        {name}?
+        <span class="font-semibold" title={name}>{truncateName(name)}</span>?
       </AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
