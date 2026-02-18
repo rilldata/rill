@@ -54,7 +54,7 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-github/v71 v71.0.0
-	github.com/google/jsonschema-go v0.3.0
+	github.com/google/jsonschema-go v0.4.2
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
@@ -76,7 +76,7 @@ require (
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/modelcontextprotocol/go-sdk v1.0.0
+	github.com/modelcontextprotocol/go-sdk v1.3.0
 	github.com/openai/openai-go/v3 v3.17.0
 	github.com/orbcorp/orb-go v0.74.0
 	github.com/paulmach/orb v0.12.0
