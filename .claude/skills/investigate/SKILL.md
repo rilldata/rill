@@ -1,11 +1,11 @@
-# Debug Skill
+# Investigate Skill
 
 Investigate bugs by spawning parallel task agents to explore multiple hypotheses simultaneously.
 
 ## Usage
 
 ```
-/debug <problem-description>
+/investigate <problem-description>
 ```
 
 The problem description can be:
