@@ -1,8 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { workspaces as workspaceStore } from "@rilldata/web-common/layout/workspace/workspace-stores";
@@ -13,9 +11,10 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client/gen/runtime-service/runtime-service";
-  import { onMount } from "svelte";
   import { resourceSectionState } from "./resource-section-store";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import type { ComponentType } from "svelte";
+  import ResourceListSection from "./ResourceListSection.svelte";
 
   interface Resource {
     name: string;
@@ -25,7 +24,10 @@
     path?: string;
   }
 
-  const workspaceComponents = new Map([
+  const workspaceComponents = new Map<
+    ResourceKind | null | undefined,
+    ComponentType | null
+  >([
     [ResourceKind.Source, ModelWorkspace],
     [ResourceKind.Model, ModelWorkspace],
     [ResourceKind.MetricsView, MetricsWorkspace],
@@ -42,8 +44,7 @@
 
   let selectedResource: Resource | null = null;
   let fileArtifact: FileArtifact | null = null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let workspace: any = null;
+  let workspace: ComponentType | null = null;
 
   function getResourceKind(resource: V1Resource): ResourceKind | string {
     if (resource.metricsView) return ResourceKind.MetricsView;
@@ -87,17 +88,6 @@
     ? ($resourcesQuery.error?.message ?? "Failed to load resources")
     : null;
 
-  // Restore selected resource from URL query parameter
-  onMount(() => {
-    const resourceName = $page.url.searchParams.get("resource");
-    if (resourceName && allResources.length) {
-      const resource = allResources.find((r) => r.name === resourceName);
-      if (resource) {
-        selectedResource = resource;
-      }
-    }
-  });
-
   // Watch for query parameter changes and update selected resource
   $: {
     const resourceName = $page.url.searchParams.get("resource");
@@ -133,15 +123,7 @@
 
   $: if (fileArtifact) {
     const kind = selectedResource?.kind as ResourceKind | undefined;
-    workspace = workspaceComponents.get(kind);
-  }
-
-  function getStatusText(resource: Resource): string {
-    const state = (resource.state || "").toUpperCase();
-    if (resource.error) return "Error";
-    if (state === "RECONCILING" || state === "COMPILING") return "Compiling";
-    if (state === "OK") return "Ready";
-    return state.charAt(0) + state.slice(1).toLowerCase();
+    workspace = workspaceComponents.get(kind) ?? null;
   }
 </script>
 
@@ -175,220 +157,28 @@
           </p>
         </div>
       {:else if metricsResources.length > 0 || dashboardResources.length > 0}
-        <!-- Metrics Section -->
         {#if metricsResources.length > 0}
-          <div class="py-2">
-            <button
-              on:click={() => resourceSectionState.toggle("metrics")}
-              class="w-full flex items-center gap-1 px-3 py-1.5 transition-colors section-toggle"
-            >
-              <div
-                class="flex-shrink-0 w-4 h-4 flex items-center justify-center"
-              >
-                <CaretDownIcon
-                  size="12px"
-                  className={`transition-transform ${!$resourceSectionState.metrics ? "-rotate-90" : ""}`}
-                />
-              </div>
-              <h3
-                class="text-xs font-semibold uppercase tracking-wide"
-                style="color: var(--fg-muted)"
-              >
-                Metric Views ({metricsResources.length})
-              </h3>
-            </button>
-
-            {#if $resourceSectionState.metrics}
-              <ul class="list-none p-0 m-0 w-full">
-                {#each metricsResources as resource, idx (resource.name)}
-                  <li
-                    class={`block w-full border transition-colors resource-row relative ${
-                      idx === 0 ? "rounded-t-lg" : "border-t-0"
-                    } ${
-                      idx === metricsResources.length - 1 ? "rounded-b-lg" : ""
-                    } ${resource.error ? "border-l-4 border-l-red-600" : ""}`}
-                    style="border-color: var(--border)"
-                    on:mouseenter={() => (hoveredResource = resource.name)}
-                    on:mouseleave={() => (hoveredResource = null)}
-                  >
-                    <button
-                      on:click={() => navigateToEditor(resource)}
-                      class="flex items-center gap-x-3 group px-4 py-3 w-full"
-                    >
-                      <!-- Icon Container -->
-                      <div
-                        class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center"
-                        style="background: var(--surface-subtle)"
-                      >
-                        <svelte:component
-                          this={resourceIconMapping[resource.kind]}
-                          size="20px"
-                          color="var(--fg-secondary)"
-                        />
-                      </div>
-
-                      <!-- Content -->
-                      <div class="flex-1 min-w-0">
-                        <div
-                          class={`text-sm font-semibold truncate ${
-                            resource.error
-                              ? "text-red-600 dark:text-red-400"
-                              : "resource-name"
-                          }`}
-                          style:color={!resource.error
-                            ? "var(--fg-secondary)"
-                            : undefined}
-                        >
-                          {resource.name}
-                        </div>
-                        <div
-                          class="text-xs truncate"
-                          style="color: var(--fg-muted)"
-                        >
-                          {resource.path || "No path"}
-                        </div>
-                      </div>
-
-                      <!-- Status Circle -->
-                      <div class="flex-shrink-0 flex items-center gap-x-2">
-                        <div
-                          class="h-2.5 w-2.5 rounded-full"
-                          style={`background-color: ${
-                            resource.error
-                              ? "#DC2626"
-                              : resource.state?.toUpperCase() ===
-                                    "RECONCILING" ||
-                                  resource.state?.toUpperCase() === "COMPILING"
-                                ? "#F59E0B"
-                                : "#10B981"
-                          }`}
-                          title={getStatusText(resource)}
-                        />
-                      </div>
-                    </button>
-
-                    <!-- Error Tooltip -->
-                    {#if hoveredResource === resource.name && resource.error}
-                      <div
-                        class="absolute left-0 top-full mt-1 z-50 bg-red-600 dark:bg-red-700 text-white text-xs rounded px-2 py-1 max-w-xs break-words"
-                      >
-                        {resource.error}
-                      </div>
-                    {/if}
-                  </li>
-                {/each}
-              </ul>
-            {/if}
-          </div>
+          <ResourceListSection
+            title="Metric Views"
+            resources={metricsResources}
+            expanded={$resourceSectionState.metrics}
+            onToggle={() => resourceSectionState.toggle("metrics")}
+            onSelect={navigateToEditor}
+            {hoveredResource}
+            onHover={(name) => (hoveredResource = name)}
+          />
         {/if}
 
-        <!-- Dashboards Section -->
         {#if dashboardResources.length > 0}
-          <div class="py-2">
-            <button
-              on:click={() => resourceSectionState.toggle("dashboards")}
-              class="w-full flex items-center gap-1 px-3 py-1.5 transition-colors section-toggle"
-            >
-              <div
-                class="flex-shrink-0 w-4 h-4 flex items-center justify-center"
-              >
-                <CaretDownIcon
-                  size="12px"
-                  className={`transition-transform ${!$resourceSectionState.dashboards ? "-rotate-90" : ""}`}
-                />
-              </div>
-              <h3
-                class="text-xs font-semibold uppercase tracking-wide"
-                style="color: var(--fg-muted)"
-              >
-                Dashboards ({dashboardResources.length})
-              </h3>
-            </button>
-
-            {#if $resourceSectionState.dashboards}
-              <ul class="list-none p-0 m-0 w-full">
-                {#each dashboardResources as resource, idx (resource.name)}
-                  <li
-                    class={`block w-full border transition-colors resource-row relative ${
-                      idx === 0 ? "rounded-t-lg" : "border-t-0"
-                    } ${
-                      idx === dashboardResources.length - 1
-                        ? "rounded-b-lg"
-                        : ""
-                    } ${resource.error ? "border-l-4 border-l-red-600" : ""}`}
-                    style="border-color: var(--border)"
-                    on:mouseenter={() => (hoveredResource = resource.name)}
-                    on:mouseleave={() => (hoveredResource = null)}
-                  >
-                    <button
-                      on:click={() => navigateToEditor(resource)}
-                      class="flex items-center gap-x-3 group px-4 py-3 w-full"
-                    >
-                      <!-- Icon Container -->
-                      <div
-                        class="flex-shrink-0 h-10 w-10 rounded-md flex items-center justify-center"
-                        style="background: var(--surface-subtle)"
-                      >
-                        <svelte:component
-                          this={resourceIconMapping[resource.kind]}
-                          size="20px"
-                          color="var(--fg-secondary)"
-                        />
-                      </div>
-
-                      <!-- Content -->
-                      <div class="flex-1 min-w-0">
-                        <div
-                          class={`text-sm font-semibold truncate ${
-                            resource.error
-                              ? "text-red-600 dark:text-red-400"
-                              : "resource-name"
-                          }`}
-                          style:color={!resource.error
-                            ? "var(--fg-secondary)"
-                            : undefined}
-                        >
-                          {resource.name}
-                        </div>
-                        <div
-                          class="text-xs truncate"
-                          style="color: var(--fg-muted)"
-                        >
-                          {resource.path || "No path"}
-                        </div>
-                      </div>
-
-                      <!-- Status Circle -->
-                      <div class="flex-shrink-0 flex items-center gap-x-2">
-                        <div
-                          class="h-2.5 w-2.5 rounded-full"
-                          style={`background-color: ${
-                            resource.error
-                              ? "#DC2626"
-                              : resource.state?.toUpperCase() ===
-                                    "RECONCILING" ||
-                                  resource.state?.toUpperCase() === "COMPILING"
-                                ? "#F59E0B"
-                                : "#10B981"
-                          }`}
-                          title={getStatusText(resource)}
-                        />
-                      </div>
-                    </button>
-
-                    <!-- Error Tooltip -->
-                    {#if hoveredResource === resource.name && resource.error}
-                      <div
-                        class="absolute left-0 top-full mt-1 z-50 bg-red-600 dark:bg-red-700 text-white text-xs rounded px-2 py-1 max-w-xs break-words"
-                      >
-                        {resource.error}
-                      </div>
-                    {/if}
-                  </li>
-                {/each}
-              </ul>
-            {/if}
-          </div>
+          <ResourceListSection
+            title="Dashboards"
+            resources={dashboardResources}
+            expanded={$resourceSectionState.dashboards}
+            onToggle={() => resourceSectionState.toggle("dashboards")}
+            onSelect={navigateToEditor}
+            {hoveredResource}
+            onHover={(name) => (hoveredResource = name)}
+          />
         {/if}
       {:else}
         <!-- Empty State -->
@@ -441,22 +231,6 @@
 </div>
 
 <style lang="postcss">
-  .section-toggle:hover {
-    background: var(--surface-subtle);
-  }
-
-  .resource-row:hover {
-    background: var(--surface-subtle);
-  }
-
-  .resource-name {
-    color: var(--fg-secondary);
-  }
-
-  :global(.group):hover .resource-name {
-    color: var(--fg-primary);
-  }
-
   .refresh-btn:hover {
     background: var(--surface-subtle);
   }

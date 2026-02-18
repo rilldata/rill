@@ -30,7 +30,12 @@
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
-  import DevModeNav from "./dev-mode-nav.svelte";
+  import PreviewModeNav from "./PreviewModeNav.svelte";
+  import {
+    isPreviewRoute,
+    isDeveloperRoute,
+    showPreviewNav,
+  } from "./route-constants";
   import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
@@ -44,30 +49,6 @@
   initPylonWidget();
 
   let removeJavascriptListeners: () => void;
-
-  // Routes that are exclusively preview mode
-  const previewPrefixes = [
-    "/home",
-    "/ai",
-    "/preview",
-    "/reports",
-    "/alerts",
-    "/status",
-    "/settings",
-  ];
-  // Routes that are exclusively developer mode
-  const developerPrefixes = ["/files"];
-
-  function isPreviewRoute(pathname: string): boolean {
-    return previewPrefixes.some((prefix) => pathname.startsWith(prefix));
-  }
-
-  function isDeveloperRoute(pathname: string): boolean {
-    return (
-      pathname === "/" ||
-      developerPrefixes.some((prefix) => pathname.startsWith(prefix))
-    );
-  }
 
   // Sync preview mode:
   // - If --preview or --previewer flag is set, always lock to preview mode
@@ -125,6 +106,9 @@
   $: onDeployPage = isDeployPage($page);
 
   $: isPreviewMode = $previewModeStore;
+
+  $: shouldShowPreviewNav =
+    isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -141,8 +125,8 @@
           noBorder={isPreviewMode}
           previewerMode={data.previewerMode ?? false}
         />
-        {#if isPreviewMode && !$page.url.pathname.startsWith("/files") && !$page.url.pathname.startsWith("/explore") && !$page.url.pathname.startsWith("/canvas") && !onDeployPage}
-          <DevModeNav />
+        {#if shouldShowPreviewNav}
+          <PreviewModeNav />
         {/if}
         {#if $deploy}
           <RemoteProjectManager />

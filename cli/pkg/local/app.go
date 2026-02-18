@@ -377,7 +377,21 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, preview, previewer bool, userID, tlsCertPath, tlsKeyPath string) error {
+// ServeOptions contains all configuration for serving the local app.
+type ServeOptions struct {
+	HTTPPort      int
+	GRPCPort      int
+	EnableUI      bool
+	OpenBrowser   bool
+	Readonly      bool
+	Preview       bool
+	PreviewLocked bool
+	UserID        string
+	TLSCertPath   string
+	TLSKeyPath    string
+}
+
+func (a *App) Serve(opts ServeOptions) error {
 	// Get analytics info
 	installID, enabled, err := a.ch.DotRill.AnalyticsInfo()
 	if err != nil {
@@ -387,18 +401,18 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, pre
 	// Build local metadata
 	metadata := &localMetadata{
 		InstanceID:       a.Instance.ID,
-		GRPCPort:         grpcPort,
+		GRPCPort:         opts.GRPCPort,
 		InstallID:        installID,
 		ProjectPath:      a.ProjectPath,
-		UserID:           userID,
+		UserID:           opts.UserID,
 		Version:          a.ch.Version.Number,
 		BuildCommit:      a.ch.Version.Commit,
 		BuildTime:        a.ch.Version.Timestamp,
 		IsDev:            a.ch.Version.IsDev(),
 		AnalyticsEnabled: enabled,
-		Readonly:         readonly,
-		PreviewMode:      preview,
-		PreviewerMode:    previewer,
+		Readonly:         opts.Readonly,
+		PreviewMode:      opts.Preview,
+		PreviewerMode:    opts.PreviewLocked,
 	}
 
 	// Create the local server handler
@@ -420,28 +434,28 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, pre
 	}
 
 	// Create a runtime server
-	opts := &runtimeserver.Options{
-		HTTPPort:        httpPort,
-		GRPCPort:        grpcPort,
-		TLSCertPath:     tlsCertPath,
-		TLSKeyPath:      tlsKeyPath,
+	runtimeOpts := &runtimeserver.Options{
+		HTTPPort:        opts.HTTPPort,
+		GRPCPort:        opts.GRPCPort,
+		TLSCertPath:     opts.TLSCertPath,
+		TLSKeyPath:      opts.TLSKeyPath,
 		AllowedOrigins:  a.allowedOrigins,
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx), newLocalAdminService(a.ch, a.ProjectPath))
+	runtimeServer, err := runtimeserver.NewServer(ctx, runtimeOpts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx), newLocalAdminService(a.ch, a.ProjectPath))
 	if err != nil {
 		return err
 	}
 
 	// if keypath and certpath are provided
-	secure := tlsCertPath != "" && tlsKeyPath != ""
+	secure := opts.TLSCertPath != "" && opts.TLSKeyPath != ""
 
 	// Start the local HTTP server
 	group.Go(func() error {
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
 			// Inject local-only endpoints on the runtime server
-			localServer.RegisterHandlers(mux, httpPort, secure, enableUI)
-		}, enableUI)
+			localServer.RegisterHandlers(mux, opts.HTTPPort, secure, opts.EnableUI)
+		}, opts.EnableUI)
 	})
 
 	// Start debug server on port 6060
@@ -450,7 +464,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, pre
 	}
 
 	// Open the browser when health check succeeds
-	go a.PollServer(ctx, httpPort, enableUI && openBrowser, secure)
+	go a.PollServer(ctx, opts.HTTPPort, opts.EnableUI && opts.OpenBrowser, secure)
 
 	// Run the server
 	err = group.Wait()

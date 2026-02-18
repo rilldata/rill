@@ -26,7 +26,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var preview bool
-	var previewer bool
+	var previewLocked bool
 	var logFormat string
 	var envVars, envVarsOld []string
 	var environment string
@@ -168,7 +168,18 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			userID, _ := ch.CurrentUserID(cmd.Context())
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, preview, previewer, userID, tlsCertPath, tlsKeyPath)
+			err = app.Serve(local.ServeOptions{
+				HTTPPort:      httpPort,
+				GRPCPort:      grpcPort,
+				EnableUI:      !noUI,
+				OpenBrowser:   !noOpen,
+				Readonly:      readonly,
+				Preview:       preview,
+				PreviewLocked: previewLocked,
+				UserID:        userID,
+				TLSCertPath:   tlsCertPath,
+				TLSKeyPath:    tlsKeyPath,
+			})
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
@@ -186,7 +197,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().BoolVar(&preview, "preview", false, "Run in preview mode")
-	startCmd.Flags().BoolVar(&previewer, "previewer", false, "Run in previewer mode (preview without mode toggle)")
+	startCmd.Flags().BoolVar(&previewLocked, "preview-locked", false, "Run in locked preview mode (no mode toggle)")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")

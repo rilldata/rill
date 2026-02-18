@@ -4,7 +4,10 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceCreateTrigger,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import { RefreshCcwIcon } from "lucide-svelte";
 
   export let resourceKind: string;
@@ -15,7 +18,9 @@
   export let onDropdownOpenChange: (isOpen: boolean) => void;
   export let resource: V1Resource | undefined = undefined;
 
-  let isLoading = false;
+  const triggerMutation = createRuntimeServiceCreateTrigger();
+
+  $: isLoading = $triggerMutation.isPending;
 
   $: supportsIncremental =
     resourceKind === ResourceKind.Model &&
@@ -23,14 +28,13 @@
 
   async function handleRefresh(refreshType: "full" | "incremental") {
     if (isLoading) return;
-    isLoading = true;
 
     try {
-      if (!$runtime?.instanceId || !$runtime?.host) {
+      if (!$runtime?.instanceId) {
         throw new Error("Runtime not initialized");
       }
 
-      const triggerBody =
+      const data =
         resourceKind === ResourceKind.Model
           ? {
               models: [
@@ -49,27 +53,15 @@
               ],
             };
 
-      const response = await fetch(
-        `${$runtime.host}/v1/instances/${$runtime.instanceId}/trigger`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(triggerBody),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to refresh resource: ${response.statusText}`);
-      }
+      await $triggerMutation.mutateAsync({
+        instanceId: $runtime.instanceId,
+        data,
+      });
 
       onRefresh();
       onDropdownOpenChange(false);
     } catch (error) {
       console.error("Failed to refresh resource:", error);
-    } finally {
-      isLoading = false;
     }
   }
 </script>

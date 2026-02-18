@@ -11,6 +11,7 @@ import {
 } from "@rilldata/web-common/runtime-client/index.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
 import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
+import { PREVIEWER_ALLOWED_PREFIXES } from "./route-constants";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
@@ -25,21 +26,11 @@ export async function load({ url, depends, untrack }) {
 
   // In previewer mode, only allow preview-related routes; redirect everything else to /home
   if (previewerMode) {
-    const allowedPrefixes = [
-      "/home",
-      "/ai",
-      "/preview",
-      "/explore/",
-      "/canvas/",
-      "/deploy",
-      "/status",
-      "/settings",
-      "/alerts",
-      "/reports",
-    ];
     const isAllowed =
       url.pathname === "/" ||
-      allowedPrefixes.some((prefix) => url.pathname.startsWith(prefix));
+      PREVIEWER_ALLOWED_PREFIXES.some((prefix) =>
+        url.pathname.startsWith(prefix),
+      );
     if (!isAllowed) {
       throw redirect(303, "/home");
     }
