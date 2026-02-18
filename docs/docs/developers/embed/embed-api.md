@@ -1,5 +1,5 @@
 ---
-id: embed-iframe-api
+id: iframe-api
 title: Embed Iframe API
 description: Communicate with your embedded dashboards.
 sidebar_label: Embed Iframe API

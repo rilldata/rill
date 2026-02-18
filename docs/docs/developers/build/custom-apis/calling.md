@@ -71,7 +71,7 @@ curl -X POST http://localhost:9009/v1/instances/default/api/my-api \
 ```
 
 :::note
-User attributes (`{{ .user.* }}`) are not available during local testing since no authentication token is provided. To test APIs that depend on user attributes, deploy to Rill Cloud and use a service token with [custom attributes](/developers/build/custom-apis/security#custom-attributes-on-service-tokens).
+User attributes (`{{ .user.* }}`) are not available during local testing since no authentication token is provided. To test with user attributes locally, you can pass them as query parameters or in the POST body. To test in a production-like setup, deploy to Rill Cloud and use a service token with [custom attributes](/developers/build/custom-apis/security#custom-attributes-on-service-tokens).
 :::
 
 ## Authentication

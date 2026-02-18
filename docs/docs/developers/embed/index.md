@@ -8,8 +8,8 @@ Extend Rill's capabilities by embedding dashboards and data into your existing a
 
 ### Embed Rill into your Application
 
-- **[Embed Dashboards](/developers/embed/embedding)** - Embed Rill dashboards directly into your applications using iframes
-- **[Control your Embedded Dashboards](/developers/embed/embed-iframe-api)** - Programmatically control embedded dashboards from your application
+- **[Embed Dashboards](/developers/embed/dashboards)** - Embed Rill dashboards directly into your applications using iframes
+- **[Control your Embedded Dashboards](/developers/embed/iframe-api)** - Programmatically control embedded dashboards from your application
 - **[See it Live](https://rill-embedding-example.netlify.app/)** - View a live example of embedded Rill dashboards
 
 ### Dashboard URL Parameters

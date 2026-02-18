@@ -95,7 +95,7 @@ A compilation of projects that deep dives into Rill's features using ClickHouse'
 <TileIcon
   header="Embed a Dashboard"
   content="Embed Rill dashboards into your applications and workflows."
-  link="/developers/embed/embedding"
+  link="/developers/embed/dashboards"
   icon={<img src="/img/get-started/embed.svg" alt="Embed" style={{ width: 24, height: 24 }} />}
 />
 

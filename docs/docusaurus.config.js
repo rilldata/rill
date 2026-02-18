@@ -299,7 +299,7 @@ const config = {
           },
           {
             from: '/integration/embedding',
-            to: '/developers/embed/embedding',
+            to: '/developers/embed/dashboards',
           },
           {
             from: '/develop/import-data',
@@ -1271,19 +1271,27 @@ const config = {
           },
           {
             from: '/integrate/embed-api',
-            to: '/developers/embed/embed-iframe-api',
+            to: '/developers/embed/iframe-api',
           },
           {
             from: '/developers/integrate/embed-iframe-api',
-            to: '/developers/embed/embed-iframe-api',
+            to: '/developers/embed/iframe-api',
+          },
+          {
+            from: '/developers/embed/embed-iframe-api',
+            to: '/developers/embed/iframe-api',
           },
           {
             from: '/integrate/embedding',
-            to: '/developers/embed/embedding',
+            to: '/developers/embed/dashboards',
           },
           {
             from: '/developers/integrate/embedding',
-            to: '/developers/embed/embedding',
+            to: '/developers/embed/dashboards',
+          },
+          {
+            from: '/developers/embed/embedding',
+            to: '/developers/embed/dashboards',
           },
           {
             from: '/integrate/url-parameters',

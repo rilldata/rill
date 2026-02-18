@@ -1,4 +1,5 @@
 ---
+id: dashboards
 title: "Embed Dashboards"
 description: Embed Dashboards in your own applications
 sidebar_label: "Embed Dashboards"
