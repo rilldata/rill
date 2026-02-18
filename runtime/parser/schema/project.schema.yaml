@@ -2431,6 +2431,18 @@ definitions:
             description: Variables that can be used in the canvas
             items:
               $ref: '#/definitions/component_variable_properties'
+          card_css:
+            type: object
+            description: |
+              CSS properties to style component cards on the canvas. These styles take precedence over any styles set on the component itself.
+              CSS property names should be in kebab-case (e.g., `border-radius`, `box-shadow`).
+            additionalProperties:
+              type: string
+              description: CSS property value
+            examples:
+              - card_css:
+                  border-radius: 10px
+                  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),var(--tw-ring-shadow, 0 0 #0000),var(--tw-shadow)
         required:
           - type
           - display_name
