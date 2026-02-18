@@ -166,7 +166,7 @@ export function compileConnectorYAML(
     ) => boolean;
     orderedProperties?: Array<
       | ConnectorDriverProperty
-      | { key?: string; type?: string; secret?: boolean }
+      | { key?: string; type?: string; secret?: boolean; internal?: boolean }
     >;
     connectorInstanceName?: string;
     secretKeys?: string[];
