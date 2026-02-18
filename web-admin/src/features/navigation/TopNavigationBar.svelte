@@ -21,6 +21,7 @@
   } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
+  import { effectiveProjectPermissionsStore } from "../../features/view-as-user/effectivePermissionsStore";
   import CreateAlert from "../alerts/CreateAlert.svelte";
   import { useAlerts } from "../alerts/selectors";
   import AvatarButton from "../authentication/AvatarButton.svelte";
@@ -68,6 +69,15 @@
   $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
+
+  // Use effective permissions when "View As" is active (from server)
+  // Otherwise fall back to the props passed from the root layout
+  $: effectiveManageProjectMembers =
+    $effectiveProjectPermissionsStore?.manageProjectMembers ??
+    manageProjectMembers;
+  $: effectiveCreateMagicAuthTokens =
+    $effectiveProjectPermissionsStore?.createMagicAuthTokens ??
+    createMagicAuthTokens;
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -231,7 +241,7 @@
     {/if}
     <!-- NOTE: only project admin and editor can manage project members -->
     <!-- https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions -->
-    {#if onProjectPage && manageProjectMembers}
+    {#if onProjectPage && effectiveManageProjectMembers}
       <ShareProjectPopover
         {organization}
         {project}
@@ -264,7 +274,9 @@
               {#if $alertsFlag}
                 <CreateAlert />
               {/if}
-              <ShareDashboardPopover {createMagicAuthTokens} />
+              <ShareDashboardPopover
+                createMagicAuthTokens={effectiveCreateMagicAuthTokens}
+              />
             {/if}
           </StateManagersProvider>
         {/key}
