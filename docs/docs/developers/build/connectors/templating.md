@@ -21,6 +21,22 @@ Unless explicitly defined, Rill Developer will use a `dev` environment. If you w
 
 You can set up environmental variables in several locations in Rill. Please review our [configure local credentials documentation](/developers/build/connectors/credentials#setting-credentials-for-rill-developer) for more information.
 
+## Referencing Environment Variables
+
+Reference environment variables in your YAML files using the `{{ .env.VARIABLE_NAME }}` syntax:
+
+```yaml
+password: "{{ .env.POSTGRES_PASSWORD }}"
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
+```
+
+:::tip Case-Insensitive Lookups
+The `'{{ env "VAR_NAME" }}'` function provides case-insensitive variable lookups, so `'{{ env "my_var" }}'` will match `MY_VAR` in your `.env` file.
+
+**Note:** If your `.env` file contains multiple variables that differ only by case (e.g., both `my_var` and `MY_VAR`), the behavior is undefined. Avoid defining variables with the same name in different cases.
+:::
+
 ## Environment-Specific Connectors
 
 The most common use case for connector templating is defining separate databases for your development and production operations. This approach gives you the freedom to experiment, test, and iterate on your models without the risk of accidentally modifying or corrupting your production data.
@@ -38,13 +54,13 @@ dev:
 
 # Production environment configuration
 prod:
-  host: "{{ .env.connector.clickhouse.host }}"
-  port: "{{ .env.connector.clickhouse.port }}"
-  database: "{{ .env.connector.clickhouse.database }}"
-  username: "{{ .env.connector.clickhouse.username }}"
-  password: "{{ .env.connector.clickhouse.password }}"
+  host: "{{ .env.CLICKHOUSE_HOST }}"
+  port: "{{ .env.CLICKHOUSE_PORT }}"
+  database: "{{ .env.CLICKHOUSE_DATABASE }}"
+  username: "{{ .env.CLICKHOUSE_USERNAME }}"
+  password: "{{ .env.CLICKHOUSE_PASSWORD }}"
   ssl: true
-  cluster: "{{ .env.connector.clickhouse.cluster }}"
+  cluster: "{{ .env.CLICKHOUSE_CLUSTER }}"
 ```
 
 In this example:
@@ -55,10 +71,10 @@ In this example:
 
 Some connectors will reference two unique databases and require two unique credentials for development and production. In this case, you can either define a unique environmental variable for both and reference them separately in the connector.
 
-IE:
-```
-"{{ .env.connector.dev_clickhouse.username }}"
-"{{ .env.connector.prod_clickhouse.username }}"
+For example:
+```yaml
+"{{ .env.DEV_CLICKHOUSE_USERNAME }}"
+"{{ .env.PROD_CLICKHOUSE_USERNAME }}"
 ```
 
 Or, by creating a separate connector altogether.
@@ -81,7 +97,7 @@ dev:
   project_id: rilldata_dev
 project_id: rilldata
 
-google_application_credentials: '{{ .env.connector.bigquery.google_application_credentials}}'
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
 ```
 
 ```yaml

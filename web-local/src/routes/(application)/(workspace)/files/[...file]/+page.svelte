@@ -8,7 +8,6 @@
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
-  import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
@@ -44,9 +43,8 @@
     resourceName,
     inferredResourceKind,
     path,
-    remoteContent,
     getResource,
-    getAllErrors,
+    getParseError,
   } = fileArtifact);
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
@@ -62,12 +60,9 @@
       ? [customYAMLwithJSONandSQL]
       : getExtensionsForFile(path);
 
-  $: allErrorsQuery = getAllErrors(queryClient, instanceId);
-  $: allErrors = $allErrorsQuery;
-
-  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
-
-  $: mainError = errors?.at(0);
+  // Parse error for the editor banner
+  $: parseErrorQuery = getParseError(queryClient, instanceId);
+  $: parseError = $parseErrorQuery;
 
   onMount(() => {
     expandDirectory(path);
@@ -104,7 +99,7 @@
           filePath={path}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
-        <WorkspaceEditorContainer slot="body" error={mainError}>
+        <WorkspaceEditorContainer slot="body" error={parseError?.message}>
           <Editor
             {fileArtifact}
             {extensions}

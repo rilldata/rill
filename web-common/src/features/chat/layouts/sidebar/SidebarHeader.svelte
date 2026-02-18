@@ -3,6 +3,7 @@
   import IconButton from "../../../../components/button/IconButton.svelte";
   import Close from "../../../../components/icons/Close.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { type V1Conversation } from "../../../../runtime-client";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import type { ConversationManager } from "../../core/conversation-manager";
@@ -12,6 +13,8 @@
   export let conversationManager: ConversationManager;
   export let onNewConversation: () => void;
   export let onClose: () => void;
+
+  const { adminServer } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: organization = $page.params.organization;
@@ -48,13 +51,15 @@
       <svelte:fragment slot="tooltip-content">New conversation</svelte:fragment>
     </IconButton>
 
-    <ShareChatPopover
-      conversationId={currentConversationDto?.id}
-      {instanceId}
-      {organization}
-      {project}
-      disabled={!currentConversationDto?.id}
-    />
+    {#if $adminServer}
+      <ShareChatPopover
+        conversationId={currentConversationDto?.id}
+        {instanceId}
+        {organization}
+        {project}
+        disabled={!currentConversationDto?.id}
+      />
+    {/if}
 
     <ConversationHistoryMenu
       {conversations}

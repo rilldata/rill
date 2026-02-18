@@ -73,9 +73,9 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		}
 
 		cloneOptions := &git.CloneOptions{
-			URL:          r.remoteURL,
-			SingleBranch: r.primaryBranch == r.defaultBranch,
-			NoCheckout:   true,
+			URL:           r.remoteURL,
+			SingleBranch:  r.primaryBranch == r.defaultBranch,
+			ReferenceName: plumbing.ReferenceName("refs/heads/" + r.primaryBranch), // primary branch must exist, default branch may not exist yet in editable mode.
 		}
 
 		repo, err = git.PlainCloneContext(ctx, r.repoDir, false, cloneOptions)
@@ -95,16 +95,22 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 			return fmt.Errorf("failed to set remote URL: %w", err)
 		}
 
-		// Fetch the remote changes
-		refSpecs := []config.RefSpec{
-			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.defaultBranch, r.defaultBranch)),
+		// Fetch the remote changes.
+		// We fetch each branch individually because a NoMatchingRefSpecError for one branch (e.g., an edit branch
+		// that doesn't exist on the remote yet) would cause a combined fetch to skip all branches.
+		branches := []string{r.defaultBranch}
+		if r.primaryBranch != r.defaultBranch {
+			branches = append(branches, r.primaryBranch)
 		}
-		err = remote.Fetch(&git.FetchOptions{
-			RefSpecs: refSpecs,
-			Force:    true,
-		})
-		if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-			return fmt.Errorf("failed to fetch from remote: %w", err)
+		for _, branch := range branches {
+			refSpec := config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", branch, branch))
+			err = remote.Fetch(&git.FetchOptions{
+				RefSpecs: []config.RefSpec{refSpec},
+				Force:    true,
+			})
+			if err != nil && !(errors.Is(err, git.NoErrAlreadyUpToDate) || git.NoMatchingRefSpecError{}.Is(err)) {
+				return fmt.Errorf("failed to fetch from remote: %w", err)
+			}
 		}
 	}
 
@@ -118,28 +124,39 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		Force:  true,
 	})
 	if err != nil {
-		if errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable() {
-			// // In editable mode, the default branch may not exist yet on remote.
-			// the branch does not exist yet, checkout primary branch and create the default branch from there
-			err = worktree.Checkout(&git.CheckoutOptions{
-				Branch: plumbing.ReferenceName("refs/heads/" + r.primaryBranch),
-				Force:  true,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to checkout primary branch %q: %w", r.primaryBranch, err)
-			}
-			// create the default branch
-			err = worktree.Checkout(&git.CheckoutOptions{
-				Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-				Create: true,
-				Force:  true,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to create and checkout default branch %q: %w", r.defaultBranch, err)
-			}
-			return nil
+		if !errors.Is(err, plumbing.ErrReferenceNotFound) {
+			return fmt.Errorf("failed to checkout branch %q: %w", r.defaultBranch, err)
 		}
-		return fmt.Errorf("failed to checkout branch %q: %w", r.defaultBranch, err)
+
+		// The default branch does not exist locally, try to find it on remote. It can happen in cases:
+		// a. when branch is created remotely after the last pull
+		// b. primary branch was edited
+		// c. in editable mode when the default branch may not exist at all.
+		remoteHash, err := repo.Reference(plumbing.ReferenceName("refs/remotes/origin/"+r.defaultBranch), true)
+		if err != nil {
+			if errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable() {
+				// In editable mode, the default branch may not exist yet on remote. We will create it based on the primary branch.
+				r.h.logger.Info("Default branch does not exist on remote, will create it based on primary branch", zap.String("defaultBranch", r.defaultBranch), zap.String("primaryBranch", r.primaryBranch))
+				remoteHash, err = repo.Reference(plumbing.ReferenceName("refs/remotes/origin/"+r.primaryBranch), true)
+				if err != nil {
+					return fmt.Errorf("failed to get reference for primary branch %q: %w", r.primaryBranch, err)
+				}
+			} else {
+				// In non-editable mode, the default branch must exist on remote, if not found, return error.
+				return fmt.Errorf("failed to get remote tracking branch %q: %w", r.defaultBranch, err)
+			}
+		}
+
+		// create the default branch
+		err = worktree.Checkout(&git.CheckoutOptions{
+			Hash:   remoteHash.Hash(),
+			Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
+			Create: true,
+			Force:  true,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create and checkout default branch %q: %w", r.defaultBranch, err)
+		}
 	}
 
 	// Hard reset to remote branch
@@ -158,10 +175,11 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 	// To reduce the chance of conflicts, we should also try to merge the primary branch into the default branch (but only force merge if `force` is true).
 
 	// merge primary branch into edit branch
+	mergeBranch := "origin/" + r.primaryBranch
 	if force {
-		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.primaryBranch)
+		err = gitutil.MergeWithTheirsStrategy(r.repoDir, mergeBranch)
 	} else {
-		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.primaryBranch)
+		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, mergeBranch)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to merge primary branch %q into default branch %q: %w", r.primaryBranch, r.defaultBranch, err)

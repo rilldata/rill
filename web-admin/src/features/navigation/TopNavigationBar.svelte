@@ -246,9 +246,10 @@
           <StateManagersProvider
             metricsViewName={exploreSpec.metricsView}
             exploreName={dashboard}
+            let:ready
           >
             <LastRefreshedDate {dashboard} />
-            {#if $dimensionSearch}
+            {#if $dimensionSearch && ready}
               <GlobalDimensionSearch />
             {/if}
             {#if $dashboardChat && !onPublicURLPage}

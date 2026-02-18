@@ -449,10 +449,6 @@ export interface V1EditReportResponse {
   [key: string]: unknown;
 }
 
-export interface V1EditUsergroupResponse {
-  [key: string]: unknown;
-}
-
 export type V1ExportFormat =
   (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
 
@@ -1210,10 +1206,6 @@ export interface V1RemoveWhitelistedDomainResponse {
   [key: string]: unknown;
 }
 
-export interface V1RenameUsergroupResponse {
-  [key: string]: unknown;
-}
-
 export interface V1RenewBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
@@ -1569,6 +1561,10 @@ export interface V1UpdateUserPreferencesResponse {
   preferences?: V1UserPreferences;
 }
 
+export interface V1UpdateUsergroupResponse {
+  usergroup?: V1Usergroup;
+}
+
 export interface V1User {
   id?: string;
   email?: string;
@@ -1668,10 +1664,6 @@ export type AdminServiceSetProjectMemberUserRoleBodyBody = {
 
 export type AdminServiceCreateReportBodyBody = {
   options?: V1ReportOptions;
-};
-
-export type AdminServiceCreateUsergroupBodyBody = {
-  name?: string;
 };
 
 export type AdminServiceGetDeploymentBodyAttributes = {
@@ -1800,19 +1792,6 @@ export type AdminServiceUpdateOrganizationMemberUserAttributesBodyAttributes = {
 
 export type AdminServiceUpdateOrganizationMemberUserAttributesBody = {
   attributes?: AdminServiceUpdateOrganizationMemberUserAttributesBodyAttributes;
-};
-
-export type AdminServiceListProjectMemberUsergroupsParams = {
-  /**
-   * Optionally filter by role
-   */
-  role?: string;
-  /**
-   * Optionally include counts
-   */
-  includeCounts?: boolean;
-  pageSize?: number;
-  pageToken?: string;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
@@ -2016,6 +1995,19 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   resources?: V1ResourceName[];
 };
 
+export type AdminServiceListProjectMemberUsergroupsParams = {
+  /**
+   * Optionally filter by role
+   */
+  role?: string;
+  /**
+   * Optionally include counts
+   */
+  includeCounts?: boolean;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceSearchProjectUsersParams = {
   emailQuery?: string;
   pageSize?: number;
@@ -2088,6 +2080,10 @@ export type AdminServiceListOrganizationMemberUsergroupsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceCreateUsergroupBody = {
+  name?: string;
+};
+
 export type AdminServiceListUsergroupsForOrganizationAndUserParams = {
   userId?: string;
   pageSize?: number;
@@ -2099,7 +2095,8 @@ export type AdminServiceGetUsergroupParams = {
   pageToken?: string;
 };
 
-export type AdminServiceEditUsergroupBody = {
+export type AdminServiceUpdateUsergroupBody = {
+  newName?: string;
   description?: string;
 };
 
