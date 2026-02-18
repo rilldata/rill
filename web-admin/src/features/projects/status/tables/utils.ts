@@ -21,6 +21,9 @@ export function filterTemporaryTables(
 /**
  * Determines whether a table is likely a view based on its metadata.
  * Uses the view flag from OLAPGetTable, falling back to size heuristics.
+ *
+ * Note: returns true when metadata hasn't loaded yet (both params undefined),
+ * so callers should account for the loading state separately if needed.
  */
 export function isLikelyView(
   viewFlag: boolean | undefined,

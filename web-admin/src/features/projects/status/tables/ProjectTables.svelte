@@ -27,7 +27,11 @@
   import ModelPartitionsDialog from "./ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "./RefreshErroredPartitionsDialog.svelte";
   import RefreshResourceConfirmDialog from "../resource-table/RefreshResourceConfirmDialog.svelte";
-  import { createUrlFilterSync, parseStringParam } from "../url-filter-sync";
+  import {
+    createUrlFilterSync,
+    parseEnumParam,
+    parseStringParam,
+  } from "../url-filter-sync";
   import { onMount } from "svelte";
 
   $: ({ instanceId } = $runtime);
@@ -60,11 +64,13 @@
   ]);
   filterSync.init($page.url);
 
+  const typeValues = ["all", "table", "view"] as const;
   let searchText = parseStringParam($page.url.searchParams.get("q"));
-  let typeFilter: "all" | "table" | "view" = (() => {
-    const t = $page.url.searchParams.get("type");
-    return t === "table" || t === "view" ? t : "all";
-  })();
+  let typeFilter: (typeof typeValues)[number] = parseEnumParam(
+    $page.url.searchParams.get("type"),
+    typeValues,
+    "all",
+  );
   let typeDropdownOpen = false;
   let mounted = false;
 
@@ -72,8 +78,11 @@
   $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
     filterSync.markSynced($page.url);
     searchText = parseStringParam($page.url.searchParams.get("q"));
-    const t = $page.url.searchParams.get("type");
-    typeFilter = t === "table" || t === "view" ? t : "all";
+    typeFilter = parseEnumParam(
+      $page.url.searchParams.get("type"),
+      typeValues,
+      "all",
+    );
   }
 
   // Sync filter state → URL

@@ -22,6 +22,20 @@ export function parseStringParam(raw: string | null): string {
 }
 
 /**
+ * Parses a URL param as one of a set of allowed enum values, returning
+ * the default when the param is missing or not a valid member.
+ */
+export function parseEnumParam<T extends string>(
+  raw: string | null,
+  allowed: readonly T[],
+  defaultValue: T,
+): T {
+  return raw !== null && (allowed as readonly string[]).includes(raw)
+    ? (raw as T)
+    : defaultValue;
+}
+
+/**
  * Creates a URL filter sync utility for two-way URL <-> state synchronization.
  * Handles the common pattern of:
  * - Tracking lastSyncedSearch to distinguish external (back/forward) from programmatic navigation
