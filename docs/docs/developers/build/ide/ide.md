@@ -33,4 +33,3 @@ rill init --template claude
 rill init --template cursor
 ```
 
-See the **[AI Agents (Claude & Cursor)](/developers/build/ai-agents)** guide for full setup instructions and example prompts.
