@@ -83,7 +83,12 @@
           </Dialog.Title>
         </div>
       </div>
-      <a class="graph-dialog__link" href={graphHref} rel="noreferrer">
+      <a
+        class="graph-dialog__link"
+        href={graphHref}
+        rel="noreferrer"
+        on:click={handleOpenChange.bind(null, false)}
+      >
         Project Graphs
       </a>
     </div>
