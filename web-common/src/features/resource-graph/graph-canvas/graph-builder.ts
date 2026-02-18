@@ -16,7 +16,10 @@ import type {
 import type { ResourceNodeData, ResourceMetadata } from "../shared/types";
 import { graphCache } from "../shared/cache/position-cache";
 import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "../shared/config";
-import { detectConnectorFromContent } from "@rilldata/web-common/features/connectors/connector-type-detector";
+import {
+  detectConnectorFromContent,
+  detectConnectorFromPath,
+} from "@rilldata/web-common/features/connectors/connector-type-detector";
 
 // Use centralized configuration
 const MIN_NODE_WIDTH = NODE_CONFIG.MIN_WIDTH;
@@ -134,19 +137,46 @@ function extractResourceMetadata(
 
   if (model?.spec) {
     const spec = model.spec;
-    let connector = spec.inputConnector;
-
-    // For DuckDB connector, infer the actual source type from the path
     const inputProps = spec.inputProperties as
       | { path?: string; sql?: string }
       | undefined;
-    if (connector?.toLowerCase() === "duckdb") {
-      const content = inputProps?.path || inputProps?.sql;
-      connector = detectConnectorFromContent(content);
+
+    // Derive connector using same priority as describe modal:
+    // 1. Check partitionsResolverProperties for cloud storage paths
+    // 2. Check source path via URL prefix detection
+    // 3. Check SQL content for embedded URLs
+    // 4. Fall back to inputConnector
+    let connector: string | undefined | null = undefined;
+
+    const partitionsProps = spec.partitionsResolverProperties as
+      | Record<string, unknown>
+      | undefined;
+    if (partitionsProps) {
+      for (const value of Object.values(partitionsProps)) {
+        if (typeof value === "string") {
+          const detected = detectConnectorFromPath(value);
+          if (detected) {
+            connector = detected;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!connector && inputProps?.path) {
+      connector = detectConnectorFromPath(inputProps.path);
+    }
+
+    if (!connector && (inputProps?.path || inputProps?.sql)) {
+      connector = detectConnectorFromContent(inputProps.path || inputProps.sql);
+    }
+
+    if (!connector) {
+      connector = spec.inputConnector;
     }
 
     // Connector info
-    metadata.connector = connector;
+    metadata.connector = connector ?? undefined;
 
     // Source path for file-based sources
     if (inputProps?.path) {
@@ -170,9 +200,14 @@ function extractResourceMetadata(
       metadata.lastRefreshedOn = model.state.refreshedOn;
     }
 
+    // Materialization: stageConnector is only set when a model materializes
+    // (stages locally then writes to an external output connector)
+    metadata.isMaterialized = Boolean(spec.stageConnector);
+
     // Tests
-    if (spec.tests && spec.tests.length > 0) {
-      metadata.testCount = spec.tests.length;
+    metadata.testCount = spec.tests?.length ?? 0;
+    if (model.state?.testErrors) {
+      metadata.testErrors = model.state.testErrors;
     }
 
     // Extract SQL query
@@ -187,18 +222,26 @@ function extractResourceMetadata(
 
   if (source?.spec) {
     const spec = source.spec;
-    let connector = spec.sourceConnector;
+    const props = spec.properties as
+      | { path?: string; sql?: string }
+      | undefined;
 
-    // For DuckDB connector, infer the actual source type from the path
-    if (connector?.toLowerCase() === "duckdb") {
-      const props = spec.properties as
-        | { path?: string; sql?: string }
-        | undefined;
-      const content = props?.path || props?.sql;
-      connector = detectConnectorFromContent(content);
+    // Derive connector: path prefix detection → content detection → fallback
+    let connector: string | undefined | null = undefined;
+
+    if (props?.path) {
+      connector = detectConnectorFromPath(props.path);
     }
 
-    metadata.connector = connector;
+    if (!connector && (props?.path || props?.sql)) {
+      connector = detectConnectorFromContent(props.path || props.sql);
+    }
+
+    if (!connector) {
+      connector = spec.sourceConnector;
+    }
+
+    metadata.connector = connector ?? undefined;
     metadata.hasSchedule = Boolean(
       spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
     );
@@ -210,6 +253,9 @@ function extractResourceMetadata(
     if (source.state?.refreshedOn) {
       metadata.lastRefreshedOn = source.state.refreshedOn;
     }
+
+    // Mark as YAML-based (sources are always YAML)
+    metadata.isSqlModel = false;
   }
 
   // MetricsView metadata
@@ -219,6 +265,7 @@ function extractResourceMetadata(
     metadata.metricsTable = mvSpec.table;
     metadata.metricsModel = mvSpec.model;
     metadata.timeDimension = mvSpec.timeDimension;
+    metadata.hasSecurityRules = (mvSpec.securityRules?.length ?? 0) > 0;
 
     // Extract dimensions
     if (mvSpec.dimensions && mvSpec.dimensions.length > 0) {
@@ -253,6 +300,14 @@ function extractResourceMetadata(
       metadata.theme = explore.spec.theme;
     }
     metadata.metricsViewName = explore.spec.metricsView;
+    metadata.hasSecurityRules =
+      (explore.spec.securityRules?.length ?? 0) > 0;
+    metadata.exploreMeasuresAll =
+      explore.spec.measuresSelector?.all === true;
+    metadata.exploreDimensionsAll =
+      explore.spec.dimensionsSelector?.all === true;
+    metadata.exploreMeasuresCount = explore.spec.measures?.length ?? 0;
+    metadata.exploreDimensionsCount = explore.spec.dimensions?.length ?? 0;
   }
 
   if (canvas?.spec) {
@@ -269,6 +324,8 @@ function extractResourceMetadata(
     if (componentCount > 0) {
       metadata.componentCount = componentCount;
     }
+    metadata.hasSecurityRules =
+      (canvas.spec.securityRules?.length ?? 0) > 0;
   }
 
   // Look up alert/API counts from pre-built reverse-reference map (O(1))

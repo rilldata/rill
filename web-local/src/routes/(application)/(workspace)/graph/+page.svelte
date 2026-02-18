@@ -29,8 +29,35 @@
 
   // Parse URL parameters using new API (kind/resource instead of seed)
   $: urlParams = parseGraphUrlParams($page.url);
-  $: seeds = urlParamsToSeeds(urlParams);
   $: activeKind = urlParams.kind;
+
+  // Seeds only come from the kind filter — NOT from the ?resource= param.
+  // The ?resource= param is only used for sidebar selection so it doesn't
+  // change the partitioning strategy (which would reorder the sidebar list).
+  $: seeds = activeKind ? [activeKind] : undefined;
+
+  // Sidebar selection from URL ?resource= param
+  $: selectedResource =
+    urlParams.resources.length > 0 ? urlParams.resources[0] : null;
+
+  function handleSelectedGroupChange(groupId: string | null) {
+    if (!groupId) return;
+    // Extract the resource name from the group id (format: "rill.runtime.v1.Kind:name")
+    const name = groupId.includes(":") ? groupId.split(":").pop() : groupId;
+    const params = new URLSearchParams();
+    if (activeKind) params.set("kind", activeKind);
+    if (name) params.set("resource", name);
+    goto(`/graph${params.toString() ? "?" + params.toString() : ""}`, {
+      replaceState: true,
+      noScroll: true,
+    });
+  }
+
+  // Convert URL resource name to a group ID for matching.
+  // Group IDs are fully qualified (e.g., "rill.runtime.v1.MetricsView:orders")
+  // but the URL param is just the short name (e.g., "orders").
+  // We pass the short name and let ResourceGraph match by suffix.
+  $: selectedGroupId = selectedResource;
 
   // Node type filter config
   type NodeTypeOption = { label: string; token: KindToken };
@@ -230,6 +257,9 @@
       {searchQuery}
       statusFilter={selectedStatuses}
       showSummary={false}
+      layout="sidebar"
+      {selectedGroupId}
+      onSelectedGroupChange={handleSelectedGroupChange}
     />
   </div>
 </WorkspaceContainer>
@@ -242,8 +272,8 @@
         <div class="flex flex-col gap-y-2 mt-1">
           <p>This will refresh all project sources and models.</p>
           <p>
-            <span class="font-medium">Note:</span> To refresh a single resource, click
-            the '...' button on a node and select the refresh option.
+            <span class="font-medium">Note:</span> To refresh a single resource,
+            click the '...' button on a node and select the refresh option.
           </p>
         </div>
       </AlertDialog.Description>

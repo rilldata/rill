@@ -25,6 +25,19 @@
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
   import type { ResourceStatusFilter } from "../shared/types";
+  type GroupStatus = "ok" | "pending" | "errored";
+  function getGroupStatus(group: ResourceGraphGrouping): GroupStatus {
+    if (group.resources.some((r) => !!r.meta?.reconcileError)) return "errored";
+    if (
+      group.resources.some(
+        (r) =>
+          r.meta?.reconcileStatus &&
+          r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE",
+      )
+    )
+      return "pending";
+    return "ok";
+  }
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -47,6 +60,11 @@
   export let gridColumns: number = UI_CONFIG.DEFAULT_GRID_COLUMNS;
   export let expandedHeightMobile: string = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
   export let expandedHeightDesktop: string = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
+
+  // Sidebar layout mode
+  export let layout: "grid" | "sidebar" = "grid";
+  export let selectedGroupId: string | null = null;
+  export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
 
   type SummaryMemo = {
     sources: number;
@@ -196,6 +214,100 @@
       ? filteredResourceGroups.slice(0, maxGroups)
       : filteredResourceGroups;
   $: hasGraphs = visibleResourceGroups.length > 0;
+
+  // --- Sidebar selection state ---
+  let internalSelectedGroupId: string | null = null;
+  $: isSidebarControlled =
+    selectedGroupId !== null || onSelectedGroupChange !== null;
+
+  // Resolve selectedGroupId (which may be a short name like "orders") to a
+  // fully qualified group ID (like "rill.runtime.v1.MetricsView:orders")
+  function resolveGroupId(
+    id: string | null,
+    groups: ResourceGraphGrouping[],
+  ): string | null {
+    if (!id) return null;
+    // Exact match
+    if (groups.some((g) => g.id === id)) return id;
+    // Match by name suffix (group.id = "rill.runtime.v1.Kind:name")
+    const match = groups.find((g) => g.id.endsWith(`:${id}`));
+    if (match) return match.id;
+    // Match by label
+    const labelMatch = groups.find((g) => g.label === id);
+    return labelMatch?.id ?? null;
+  }
+
+  // Resolve controlled prop separately to avoid cyclical dependency
+  $: resolvedControlledId = resolveGroupId(
+    selectedGroupId,
+    filteredResourceGroups,
+  );
+
+  // Auto-select first group when none selected (controlled path)
+  $: if (
+    layout === "sidebar" &&
+    isSidebarControlled &&
+    !resolvedControlledId &&
+    filteredResourceGroups.length > 0
+  ) {
+    onSelectedGroupChange?.(filteredResourceGroups[0].id);
+  }
+
+  // Auto-select first group when none selected (uncontrolled path)
+  $: if (
+    layout === "sidebar" &&
+    !isSidebarControlled &&
+    !internalSelectedGroupId &&
+    filteredResourceGroups.length > 0
+  ) {
+    internalSelectedGroupId = filteredResourceGroups[0].id;
+  }
+
+  // Fallback when selected group is removed by filters (controlled path)
+  $: if (
+    layout === "sidebar" &&
+    isSidebarControlled &&
+    resolvedControlledId &&
+    !filteredResourceGroups.some((g) => g.id === resolvedControlledId)
+  ) {
+    onSelectedGroupChange?.(filteredResourceGroups[0]?.id ?? null);
+  }
+
+  // Fallback when selected group is removed by filters (uncontrolled path)
+  $: if (
+    layout === "sidebar" &&
+    !isSidebarControlled &&
+    internalSelectedGroupId &&
+    !filteredResourceGroups.some((g) => g.id === internalSelectedGroupId)
+  ) {
+    internalSelectedGroupId = filteredResourceGroups[0]?.id ?? null;
+  }
+
+  // Effective selected ID for rendering — purely derived, no writes
+  $: effectiveSelectedGroupId = isSidebarControlled
+    ? resolvedControlledId
+    : internalSelectedGroupId;
+
+  $: selectedGroup =
+    layout === "sidebar"
+      ? filteredResourceGroups.find(
+          (g) => g.id === effectiveSelectedGroupId,
+        ) ?? null
+      : null;
+  $: selectedGroupIndex =
+    layout === "sidebar"
+      ? filteredResourceGroups.findIndex(
+          (g) => g.id === effectiveSelectedGroupId,
+        )
+      : -1;
+
+  function handleSidebarSelect(id: string) {
+    if (isSidebarControlled) {
+      onSelectedGroupChange?.(id);
+    } else {
+      internalSelectedGroupId = id;
+    }
+  }
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
   let seedTransitionLoading = false;
@@ -481,6 +593,48 @@
         <p>No resources found.</p>
       </div>
     </slot>
+  {:else if layout === "sidebar"}
+    <div class="sidebar-tabs">
+      {#each filteredResourceGroups as group, index (group.id)}
+        {@const status = getGroupStatus(group)}
+        <button
+          class="group-tab"
+          class:active={effectiveSelectedGroupId === group.id}
+          class:errored={status === "errored"}
+          on:click={() => handleSidebarSelect(group.id)}
+        >
+          <span class="status-dot {status}"></span>
+          <span>{group.label ?? `Graph ${index + 1}`}</span>
+          <span class="tab-count">{group.resources.length}</span>
+        </button>
+      {/each}
+    </div>
+    <div class="sidebar-main">
+      {#if selectedGroup}
+        {@const parts = groupTitleParts(selectedGroup, selectedGroupIndex)}
+        <GraphCanvas
+          flowId={selectedGroup.id}
+          resources={selectedGroup.resources}
+          title={null}
+          titleLabel={showCardTitles ? parts.labelWithCount : null}
+          titleErrorCount={showCardTitles ? parts.errorCount : null}
+          anchorError={showCardTitles ? parts.anchorError : false}
+          rootNodeIds={groupRootNodeIds(selectedGroup)}
+          {showControls}
+          {showNodeActions}
+          showLock={false}
+          fillParent={true}
+          enableExpand={false}
+          {fitViewPadding}
+          {fitViewMinZoom}
+          {fitViewMaxZoom}
+        />
+      {:else}
+        <div class="state">
+          <p>No DAGs match filters.</p>
+        </div>
+      {/if}
+    </div>
   {:else}
     {@const hasExpandedItem = currentExpandedId !== null}
     <!-- Combined toolbar: tabs on left, kind dropdown on right -->
@@ -615,6 +769,33 @@
 <style lang="postcss">
   .graph-root {
     @apply relative h-full w-full overflow-auto flex flex-col min-h-0 gap-y-3;
+  }
+
+  .sidebar-tabs {
+    @apply flex items-end overflow-x-auto flex-nowrap border-b;
+    scrollbar-width: thin;
+  }
+
+  .sidebar-main {
+    @apply flex-1 min-w-0 h-full;
+  }
+
+  .status-dot {
+    @apply flex-shrink-0 rounded-full;
+    width: 6px;
+    height: 6px;
+  }
+
+  .status-dot.ok {
+    @apply bg-green-500;
+  }
+
+  .status-dot.pending {
+    @apply bg-yellow-500;
+  }
+
+  .status-dot.errored {
+    @apply bg-red-500;
   }
 
   .resource-graph-grid {

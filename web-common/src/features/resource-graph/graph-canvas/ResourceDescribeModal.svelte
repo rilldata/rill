@@ -9,7 +9,6 @@
     resourceShorthandMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import {
-    RefreshCw,
     Database,
     Clock,
     FileText,
@@ -23,6 +22,8 @@
     Layers,
     Component,
     AlertCircle,
+    ChevronDown,
+    ChevronRight,
   } from "lucide-svelte";
   import type { ResourceNodeData } from "../shared/types";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
@@ -30,6 +31,8 @@
     detectConnectorFromPath,
     detectConnectorFromContent,
   } from "@rilldata/web-common/features/connectors/connector-type-detector";
+  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
+  import { goto } from "$app/navigation";
   import type { ComponentType, SvelteComponent } from "svelte";
 
   export let open = false;
@@ -89,6 +92,123 @@
           ?.toLowerCase()
           ?.replaceAll("_", " ")
       : undefined;
+
+  // Collapsible state for measures/dimensions
+  let showMeasures = false;
+  let showDimensions = false;
+
+  // Navigate to model file to view partitions
+  $: filePath = resource?.meta?.filePaths?.[0] ?? null;
+  function openPartitions() {
+    if (!filePath) return;
+    open = false;
+    goto(`/files${filePath}?partitions=open`);
+  }
+
+  // Security rules from resource spec
+  $: securityRules = (() => {
+    if (kind === ResourceKind.MetricsView)
+      return resource?.metricsView?.spec?.securityRules ?? [];
+    if (kind === ResourceKind.Explore)
+      return resource?.explore?.spec?.securityRules ?? [];
+    if (kind === ResourceKind.Canvas)
+      return resource?.canvas?.spec?.securityRules ?? [];
+    return [];
+  })();
+
+  // Explore measures/dimensions from spec
+  $: exploreSpec = resource?.explore?.spec;
+  $: exploreMeasures = exploreSpec?.measures ?? [];
+  $: exploreDimensions = exploreSpec?.dimensions ?? [];
+  $: exploreMeasuresAll = exploreSpec?.measuresSelector?.all === true;
+  $: exploreDimensionsAll = exploreSpec?.dimensionsSelector?.all === true;
+
+  // Description from type-specific specs
+  $: description = (() => {
+    if (kind === ResourceKind.MetricsView)
+      return resource?.metricsView?.spec?.description;
+    if (kind === ResourceKind.Explore)
+      return resource?.explore?.spec?.description;
+    if (kind === ResourceKind.Canvas)
+      return resource?.canvas?.spec?.displayName;
+    return undefined;
+  })();
+
+  // MetricsView-specific fields
+  $: mvSpec = resource?.metricsView?.spec;
+  $: firstDayOfWeek = mvSpec?.firstDayOfWeek;
+  $: firstMonthOfYear = mvSpec?.firstMonthOfYear;
+  $: aiInstructions = mvSpec?.aiInstructions;
+
+  // Day names for firstDayOfWeek
+  const dayNames = [
+    "",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+  // Month names for firstMonthOfYear
+  const monthNames = [
+    "",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  // Rebuild security rules as YAML-like text (matches Rill YAML format)
+  $: securityYaml = (() => {
+    if (!securityRules.length) return "";
+    const lines: string[] = ["security:"];
+    for (const rule of securityRules) {
+      if (rule.access) {
+        const val = rule.access.conditionExpression
+          ? `"${rule.access.conditionExpression}"`
+          : rule.access.allow
+            ? "true"
+            : "false";
+        lines.push(`  access: ${val}`);
+      }
+      if (rule.fieldAccess) {
+        lines.push(`  field_access:`);
+        if (rule.fieldAccess.conditionExpression) {
+          lines.push(`    if: "${rule.fieldAccess.conditionExpression}"`);
+        }
+        if (rule.fieldAccess.allFields) {
+          lines.push(`    all: true`);
+        } else if (rule.fieldAccess.fields?.length) {
+          lines.push(
+            `    fields: [${rule.fieldAccess.fields.join(", ")}]`,
+          );
+        }
+        lines.push(
+          `    allow: ${rule.fieldAccess.allow ? "true" : "false"}`,
+        );
+      }
+      if (rule.rowFilter) {
+        const val = rule.rowFilter.sql
+          ? `"${rule.rowFilter.sql}"`
+          : "true";
+        lines.push(`  row_filter: ${val}`);
+        if (rule.rowFilter.conditionExpression) {
+          lines.push(`    if: "${rule.rowFilter.conditionExpression}"`);
+        }
+      }
+    }
+    return lines.join("\n");
+  })();
 </script>
 
 <Dialog.Root bind:open>
@@ -110,6 +230,13 @@
     </Dialog.Header>
 
     <div class="describe-body">
+      <!-- Description -->
+      {#if description}
+        <div class="describe-section">
+          <p class="describe-description">{description}</p>
+        </div>
+      {/if}
+
       <!-- Status -->
       {#if hasError || statusLabel}
         <div class="describe-section">
@@ -163,37 +290,22 @@
               >{metadata?.isSqlModel ? "SQL" : "YAML"}</span
             >
           </div>
-          {#if metadata?.incremental}
-            <div class="describe-row">
-              <span class="describe-row-icon"><RefreshCw size={14} /></span>
-              <span>Incremental</span>
-            </div>
-          {/if}
           {#if metadata?.partitioned}
-            <div class="describe-row">
+            <button class="describe-row describe-row-link" on:click={openPartitions}>
               <span class="describe-row-icon"><Layers size={14} /></span>
               <span>Partitioned</span>
-            </div>
+              <ChevronRight size={12} />
+            </button>
           {/if}
-          {#if metadata?.lastRefreshedOn}
+          {#if metadata?.incremental}
             <div class="describe-row">
-              <span class="describe-row-icon"><Clock size={14} /></span>
-              <span
-                >Last refresh: {new Date(
-                  metadata.lastRefreshedOn,
-                ).toLocaleString()}</span
-              >
-            </div>
-          {/if}
-          {#if metadata?.hasSchedule && metadata?.scheduleDescription}
-            <div class="describe-row">
-              <span class="describe-row-icon"><Clock size={14} /></span>
-              <span>Schedule: {metadata.scheduleDescription}</span>
+              <span class="describe-row-icon"><Zap size={14} /></span>
+              <span>Incremental</span>
             </div>
           {/if}
           {#if metadata?.testCount}
             <div class="describe-row">
-              <span class="describe-row-icon"><Zap size={14} /></span>
+              <span class="describe-row-icon"><CheckCircle size="14px" color="currentColor" /></span>
               <span
                 >{metadata.testCount} test{metadata.testCount > 1
                   ? "s"
@@ -202,6 +314,25 @@
             </div>
           {/if}
         </div>
+
+        <!-- Last Refreshed -->
+        {#if metadata?.lastRefreshedOn}
+          <div class="describe-section">
+            <h4 class="describe-section-title">Last Refreshed</h4>
+            <div class="describe-row">
+              <span class="describe-row-icon"><Clock size={14} /></span>
+              <span>{new Date(metadata.lastRefreshedOn).toLocaleString()}</span>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Refresh Schedule -->
+        {#if metadata?.hasSchedule && metadata?.scheduleDescription}
+          <div class="describe-section">
+            <h4 class="describe-section-title">Refresh Schedule</h4>
+            <pre class="describe-yaml">cron: "{metadata.scheduleDescription}"</pre>
+          </div>
+        {/if}
       {/if}
 
       <!-- MetricsView Info -->
@@ -226,28 +357,110 @@
               <span>Time: {metadata.timeDimension}</span>
             </div>
           {/if}
-          {#if metadata?.dimensions?.length}
+          {#if firstDayOfWeek && firstDayOfWeek !== 1}
             <div class="describe-row">
-              <span class="describe-row-icon"><BarChart3 size={14} /></span>
+              <span class="describe-row-icon"><Clock size={14} /></span>
               <span
-                >{metadata.dimensions.length} dimension{metadata.dimensions
-                  .length > 1
-                  ? "s"
-                  : ""}</span
+                >First day of week: {dayNames[firstDayOfWeek] ??
+                  firstDayOfWeek}</span
               >
             </div>
           {/if}
-          {#if metadata?.measures?.length}
+          {#if firstMonthOfYear && firstMonthOfYear !== 1}
             <div class="describe-row">
-              <span class="describe-row-icon"><BarChart3 size={14} /></span>
+              <span class="describe-row-icon"><Clock size={14} /></span>
               <span
-                >{metadata.measures.length} measure{metadata.measures.length > 1
-                  ? "s"
-                  : ""}</span
+                >First month of year: {monthNames[firstMonthOfYear] ??
+                  firstMonthOfYear}</span
               >
             </div>
+          {/if}
+          {#if aiInstructions}
+            <div class="describe-row">
+              <span class="describe-row-icon"><Zap size={14} /></span>
+              <span>AI Instructions</span>
+            </div>
+            <pre class="describe-ai-instructions">{aiInstructions}</pre>
           {/if}
         </div>
+
+        <!-- Measures dropdown -->
+        {#if metadata?.measures?.length}
+          <div class="describe-section">
+            <button
+              class="describe-collapse-toggle"
+              on:click={() => (showMeasures = !showMeasures)}
+            >
+              {#if showMeasures}
+                <ChevronDown size={14} />
+              {:else}
+                <ChevronRight size={14} />
+              {/if}
+              <span class="describe-section-title" style="margin-bottom:0"
+                >Measures ({metadata.measures.length})</span
+              >
+            </button>
+            {#if showMeasures}
+              <div class="describe-list">
+                {#each metadata.measures as measure}
+                  <div class="describe-list-item">
+                    <span class="describe-list-name"
+                      >{measure.displayName || measure.name}</span
+                    >
+                    {#if measure.expression}
+                      <span class="describe-list-detail"
+                        >{measure.expression}</span
+                      >
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- Dimensions dropdown -->
+        {#if metadata?.dimensions?.length}
+          <div class="describe-section">
+            <button
+              class="describe-collapse-toggle"
+              on:click={() => (showDimensions = !showDimensions)}
+            >
+              {#if showDimensions}
+                <ChevronDown size={14} />
+              {:else}
+                <ChevronRight size={14} />
+              {/if}
+              <span class="describe-section-title" style="margin-bottom:0"
+                >Dimensions ({metadata.dimensions.length})</span
+              >
+            </button>
+            {#if showDimensions}
+              <div class="describe-list">
+                {#each metadata.dimensions as dim}
+                  <div class="describe-list-item">
+                    <span class="describe-list-name"
+                      >{dim.displayName || dim.name}</span
+                    >
+                    {#if dim.column && dim.column !== dim.name}
+                      <span class="describe-list-detail">{dim.column}</span>
+                    {:else if dim.expression}
+                      <span class="describe-list-detail">{dim.expression}</span>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- MetricsView Security -->
+        {#if securityYaml}
+          <div class="describe-section">
+            <h4 class="describe-section-title">Security Policy</h4>
+            <pre class="describe-yaml">{securityYaml}</pre>
+          </div>
+        {/if}
       {/if}
 
       <!-- Explore Info -->
@@ -257,16 +470,50 @@
           {#if metadata?.metricsViewName}
             <div class="describe-row">
               <span class="describe-row-icon"><BarChart3 size={14} /></span>
-              <span>{metadata.metricsViewName}</span>
+              <span>MetricsView: {metadata.metricsViewName}</span>
             </div>
           {/if}
           {#if metadata?.theme}
             <div class="describe-row">
               <span class="describe-row-icon"><Palette size={14} /></span>
-              <span>{metadata.theme}</span>
+              <span>Theme: {metadata.theme}</span>
             </div>
           {/if}
+          <div class="describe-row">
+            <span class="describe-row-icon"><BarChart3 size={14} /></span>
+            <span>
+              Measures:
+              {#if exploreMeasuresAll}
+                all
+              {:else if exploreMeasures.length}
+                {exploreMeasures.join(", ")}
+              {:else}
+                {metadata?.exploreMeasuresCount ?? 0}
+              {/if}
+            </span>
+          </div>
+          <div class="describe-row">
+            <span class="describe-row-icon"><BarChart3 size={14} /></span>
+            <span>
+              Dimensions:
+              {#if exploreDimensionsAll}
+                all
+              {:else if exploreDimensions.length}
+                {exploreDimensions.join(", ")}
+              {:else}
+                {metadata?.exploreDimensionsCount ?? 0}
+              {/if}
+            </span>
+          </div>
         </div>
+
+        <!-- Explore Security -->
+        {#if securityYaml}
+          <div class="describe-section">
+            <h4 class="describe-section-title">Security Policy</h4>
+            <pre class="describe-yaml">{securityYaml}</pre>
+          </div>
+        {/if}
       {/if}
 
       <!-- Canvas Info -->
@@ -362,7 +609,7 @@
   }
 
   .describe-section {
-    @apply py-3 border-b border;
+    @apply py-3 border-b;
   }
 
   .describe-section:last-child {
@@ -389,6 +636,14 @@
     @apply flex items-center gap-2 py-1 text-sm text-fg-primary;
   }
 
+  button.describe-row-link {
+    @apply cursor-pointer rounded px-1 -mx-1 bg-transparent border-none;
+  }
+
+  button.describe-row-link:hover {
+    @apply bg-surface-hover text-primary-500;
+  }
+
   .describe-row-icon {
     @apply flex items-center justify-center w-5 h-5 text-fg-muted;
   }
@@ -412,6 +667,46 @@
   .describe-sql {
     @apply text-xs font-mono bg-surface-subtle p-3 rounded overflow-auto whitespace-pre-wrap;
     @apply border;
+    max-height: 200px;
+  }
+
+  .describe-collapse-toggle {
+    @apply flex items-center gap-1.5 w-full text-left py-0.5 cursor-pointer text-fg-secondary;
+    background: none;
+    border: none;
+  }
+
+  .describe-collapse-toggle:hover {
+    @apply text-fg-primary;
+  }
+
+  .describe-list {
+    @apply flex flex-col mt-1.5 ml-5 max-h-48 overflow-y-auto;
+  }
+
+  .describe-list-item {
+    @apply flex items-baseline justify-between gap-2 py-0.5 text-sm;
+  }
+
+  .describe-list-name {
+    @apply text-fg-primary truncate;
+  }
+
+  .describe-list-detail {
+    @apply text-xs text-fg-muted font-mono truncate max-w-[200px] text-right;
+  }
+
+  .describe-description {
+    @apply text-sm text-fg-secondary leading-relaxed;
+  }
+
+  .describe-ai-instructions {
+    @apply text-xs font-mono bg-surface-subtle p-2 rounded overflow-auto whitespace-pre-wrap mt-1;
+    max-height: 120px;
+  }
+
+  .describe-yaml {
+    @apply text-xs font-mono bg-surface-subtle p-3 rounded overflow-auto whitespace-pre-wrap;
     max-height: 200px;
   }
 </style>

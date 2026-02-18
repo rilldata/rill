@@ -39,7 +39,9 @@ export interface ResourceMetadata {
   lastRefreshedOn?: string; // ISO timestamp of last execution
   isSqlModel?: boolean; // true if model defined via SQL file
   sqlQuery?: string; // SQL query for models
+  isMaterialized?: boolean; // has outputConnector (writes to external store)
   testCount?: number; // number of tests defined
+  testErrors?: string[]; // test failure messages (empty = all pass)
 
   // Dashboard metadata
   theme?: string; // theme name (not embedded)
@@ -53,10 +55,17 @@ export interface ResourceMetadata {
 
   // Explore metadata
   metricsViewName?: string;
+  exploreMeasuresCount?: number; // explicit measures selected
+  exploreDimensionsCount?: number; // explicit dimensions selected
+  exploreMeasuresAll?: boolean; // uses selector with all: true
+  exploreDimensionsAll?: boolean; // uses selector with all: true
 
   // Canvas metadata
   componentCount?: number;
   rowCount?: number;
+
+  // Security
+  hasSecurityRules?: boolean;
 
   // Consumer counts (for any resource)
   alertCount?: number;

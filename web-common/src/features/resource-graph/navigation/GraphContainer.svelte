@@ -8,6 +8,9 @@
   export let searchQuery = "";
   export let statusFilter: ResourceStatusFilter = [];
   export let showSummary = true;
+  export let layout: "grid" | "sidebar" = "grid";
+  export let selectedGroupId: string | null = null;
+  export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -34,4 +37,7 @@
   {searchQuery}
   {statusFilter}
   {showSummary}
+  {layout}
+  {selectedGroupId}
+  {onSelectedGroupChange}
 />

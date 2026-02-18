@@ -116,17 +116,15 @@
       {/if}
       {#if canRefresh}
         <DropdownMenu.Separator />
-        {#if kind === ResourceKind.Model}
-          <DropdownMenu.Item
-            class="font-normal flex items-center"
-            on:click={handleIncrementalRefresh}
-          >
-            <div class="flex items-center gap-x-2">
-              <RefreshCw size="12px" />
-              <span>Incremental Refresh</span>
-            </div>
-          </DropdownMenu.Item>
-        {/if}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={handleIncrementalRefresh}
+        >
+          <div class="flex items-center gap-x-2">
+            <RefreshCw size="12px" />
+            <span>Incremental Refresh</span>
+          </div>
+        </DropdownMenu.Item>
         <DropdownMenu.Item
           class="font-normal flex items-center"
           on:click={handleFullRefreshClick}

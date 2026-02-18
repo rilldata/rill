@@ -11,6 +11,11 @@
   import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ResourceNodeActions from "./ResourceNodeActions.svelte";
+  import { getRelativeTime } from "@rilldata/web-common/lib/time/relative-time";
+  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
+  import { Unlock, AlertTriangle } from "lucide-svelte";
+  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
+  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
 
   export let id: string;
   export let type: string;
@@ -56,6 +61,7 @@
   const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
 
   $: kind = data?.kind;
+  $: metadata = data?.metadata;
   $: icon =
     kind && resourceIconMapping[kind]
       ? resourceIconMapping[kind]
@@ -65,17 +71,43 @@
       ? `var(--${resourceShorthandMapping[kind]})`
       : DEFAULT_COLOR;
   $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
-  $: hasError = !!data?.resource?.meta?.reconcileError;
+  $: reconcileError = data?.resource?.meta?.reconcileError ?? "";
+  // Test failures propagate as "tests failed:..." on the model itself and
+  // "Error in dependency <name>: tests failed:..." on downstream resources.
+  // Treat both as warnings (shown via check indicator), not node errors.
+  $: isTestOnlyError =
+    !!reconcileError && reconcileError.includes("tests failed:");
+  $: hasError = !!reconcileError && !isTestOnlyError;
   $: isIdle = reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  $: statusLabel =
-    reconcileStatus && !isIdle
-      ? reconcileStatus
-          ?.replace("RECONCILE_STATUS_", "")
-          ?.toLowerCase()
-          ?.replaceAll("_", " ")
-      : undefined;
-  $: effectiveStatusLabel = hasError ? "error" : statusLabel;
+  $: isPending =
+    reconcileStatus &&
+    reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: routeHighlighted = (data as any)?.routeHighlighted === true;
+
+  // Derived metadata for display
+  $: lastRefreshed = metadata?.lastRefreshedOn
+    ? getRelativeTime(metadata.lastRefreshedOn)
+    : null;
+
+  $: isSourceOrModel =
+    kind === ResourceKind.Source || kind === ResourceKind.Model;
+  $: isMetricsView = kind === ResourceKind.MetricsView;
+  $: isExplore = kind === ResourceKind.Explore;
+  $: isCanvas = kind === ResourceKind.Canvas;
+
+  $: measuresCount = metadata?.measures?.length ?? 0;
+  $: dimensionsCount = metadata?.dimensions?.length ?? 0;
+  $: testCount = metadata?.testCount ?? 0;
+  $: schedule = metadata?.scheduleDescription ?? null;
+  $: isIncremental = metadata?.incremental === true;
+  $: testHasErrors = (metadata?.testErrors?.length ?? 0) > 0;
+  $: componentCount = metadata?.componentCount ?? 0;
+  $: hasSecurityRules = metadata?.hasSecurityRules === true;
+  $: connector = metadata?.connector ?? null;
+  $: connectorIcon =
+    connector && connectorIconMapping[connector as keyof typeof connectorIconMapping]
+      ? connectorIconMapping[connector as keyof typeof connectorIconMapping]
+      : null;
 </script>
 
 <ConditionalTooltip
@@ -91,6 +123,8 @@
     class:selected
     class:route-highlighted={routeHighlighted}
     class:error={hasError}
+    class:warned={isTestOnlyError}
+    class:pending={isPending}
     class:root={data?.isRoot}
     style:--node-accent={color}
     style:width={width ? `${width}px` : undefined}
@@ -112,27 +146,131 @@
       isConnectable={isConnectable ?? true}
     />
 
-    <div class="icon-wrapper" style={`background:${color}20`}>
-      <svelte:component this={icon} size="16px" {color} />
-    </div>
-    <div class="details">
+    <!-- Title row: icon + name + actions -->
+    <div class="title-row">
+      <span class="inline-icon" style={`color:${color}`}>
+        <svelte:component this={icon} size="12px" color="currentColor" />
+      </span>
       <p class="title" title={data?.label}>{data?.label}</p>
-      <p class="meta">
-        {#if kind}
-          {displayResourceKind(kind)}
-        {:else}
-          Unknown
-        {/if}
-      </p>
-      {#if effectiveStatusLabel}
-        <p class="status" class:error={hasError}>{effectiveStatusLabel}</p>
+      {#if showActions}
+        <div class="actions-trigger">
+          <ResourceNodeActions {data} />
+        </div>
       {/if}
     </div>
-    {#if showActions}
-      <div class="actions-trigger">
-        <ResourceNodeActions {data} />
-      </div>
-    {/if}
+
+    <!-- Content rows -->
+    <div class="content">
+      {#if isSourceOrModel}
+        <!-- Source/Model Row 1: Kind (left) · Last refreshed (right) -->
+        <div class="meta-row meta-row-spread">
+          <span class="meta-kind">
+            {#if kind}{displayResourceKind(kind)}{:else}Unknown{/if}
+          </span>
+          {#if lastRefreshed}
+            <span class="meta-detail">{lastRefreshed}</span>
+          {/if}
+        </div>
+        <!-- Source/Model Row 2: Connector + Badges (left) · Check (right) -->
+        <div class="meta-row meta-row-spread">
+          <span class="badge-group">
+            {#if connectorIcon}
+              <svelte:component this={connectorIcon} size="10px" />
+            {/if}
+            {#if metadata?.isMaterialized}
+              <span class="badge">Materialized</span>
+            {/if}
+            <span class="badge">{metadata?.isSqlModel ? "SQL" : "YAML"}</span>
+          </span>
+          <span
+            class="check-indicator"
+            class:checks-none={testCount === 0}
+            class:checks-pass={testCount > 0 && !testHasErrors}
+            class:checks-fail={testCount > 0 && testHasErrors}
+          >
+            {#if testHasErrors}
+              <AlertTriangle size="10px" />
+            {:else}
+              <CheckCircle size="10px" color="currentColor" />
+            {/if}
+            {testCount}
+          </span>
+        </div>
+      {:else if isMetricsView}
+        <!-- MetricsView Row 1: Kind (left) · Time (right) -->
+        <div class="meta-row meta-row-spread">
+          <span class="meta-kind">{displayResourceKind(kind)}</span>
+          {#if lastRefreshed}
+            <span class="meta-detail">{lastRefreshed}</span>
+          {/if}
+        </div>
+        <!-- MetricsView Row 2: Measures/Dims (left) · Lock (right) -->
+        <div class="meta-row meta-row-spread">
+          <span class="meta-detail">
+            {measuresCount} meas, {dimensionsCount} dims
+          </span>
+          <span class="lock-indicator" class:secured={hasSecurityRules}>
+            {#if hasSecurityRules}
+              <Lock size="10px" color="currentColor" />
+            {:else}
+              <Unlock size="10px" />
+            {/if}
+          </span>
+        </div>
+      {:else if isExplore}
+        <!-- Explore Row 1: Kind (left) · Time (right) -->
+        <div class="meta-row meta-row-spread">
+          <span class="meta-kind">{displayResourceKind(kind)}</span>
+          {#if lastRefreshed}
+            <span class="meta-detail">{lastRefreshed}</span>
+          {/if}
+        </div>
+        <!-- Explore Row 2: Measures/Dims (left) · Lock (right) -->
+        <div class="meta-row meta-row-spread">
+          <span class="meta-detail">
+            {metadata?.exploreMeasuresAll
+              ? "all"
+              : (metadata?.exploreMeasuresCount ?? 0)} meas,
+            {metadata?.exploreDimensionsAll
+              ? "all"
+              : (metadata?.exploreDimensionsCount ?? 0)} dims
+          </span>
+          <span class="lock-indicator" class:secured={hasSecurityRules}>
+            {#if hasSecurityRules}
+              <Lock size="10px" color="currentColor" />
+            {:else}
+              <Unlock size="10px" />
+            {/if}
+          </span>
+        </div>
+      {:else if isCanvas}
+        <!-- Canvas Row 1: Kind (left) · Time (right) -->
+        <div class="meta-row meta-row-spread">
+          <span class="meta-kind">{displayResourceKind(kind)}</span>
+          {#if lastRefreshed}
+            <span class="meta-detail">{lastRefreshed}</span>
+          {/if}
+        </div>
+        <!-- Canvas Row 2: Components (left) · Lock (right) -->
+        <div class="meta-row meta-row-spread">
+          <span class="meta-detail">
+            {componentCount} component{componentCount !== 1 ? "s" : ""}
+          </span>
+          <span class="lock-indicator" class:secured={hasSecurityRules}>
+            {#if hasSecurityRules}
+              <Lock size="10px" color="currentColor" />
+            {:else}
+              <Unlock size="10px" />
+            {/if}
+          </span>
+        </div>
+      {:else}
+        <!-- Fallback -->
+        <div class="meta-row">
+          <span class="meta-kind">Unknown</span>
+        </div>
+      {/if}
+    </div>
   </div>
   <TooltipContent slot="tooltip-content" maxWidth="420px" variant="light">
     <div class="error-tooltip-content">
@@ -145,7 +283,7 @@
 
 <style lang="postcss">
   .node {
-    @apply relative border flex items-center gap-x-2 rounded-lg border bg-surface-subtle px-2.5 py-1.5 cursor-pointer shadow-sm;
+    @apply relative border flex flex-col rounded-lg bg-surface-subtle px-2.5 py-2 cursor-pointer shadow-sm;
     border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
     transition:
       box-shadow 120ms ease,
@@ -172,35 +310,113 @@
   }
 
   .node.error {
-    @apply border-red-300;
+    @apply border-red-400;
+    box-shadow:
+      0 0 0 2px rgba(239, 68, 68, 0.25),
+      0 4px 12px rgba(239, 68, 68, 0.15);
+    background-color: color-mix(
+      in srgb,
+      #ef4444 5%,
+      var(--surface-background, #ffffff)
+    );
   }
 
-  .icon-wrapper {
-    @apply flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md;
+  .node.warned {
+    @apply border-amber-400;
+    box-shadow:
+      0 0 0 2px rgba(245, 158, 11, 0.2),
+      0 4px 12px rgba(245, 158, 11, 0.1);
+    background-color: color-mix(
+      in srgb,
+      #f59e0b 5%,
+      var(--surface-background, #ffffff)
+    );
   }
 
-  .details {
-    @apply flex flex-col gap-y-0.5 min-w-0;
+  .node.pending {
+    border-color: color-mix(in srgb, #eab308 60%, transparent);
+    border-style: dashed;
+  }
+
+  /* Title row */
+  .title-row {
+    @apply flex items-center gap-x-1.5 min-w-0;
+  }
+
+  .inline-icon {
+    @apply flex-shrink-0 flex items-center;
   }
 
   .title {
-    @apply font-medium text-sm leading-snug truncate;
-  }
-
-  .meta {
-    @apply text-xs text-fg-secondary capitalize;
-  }
-
-  .status {
-    @apply text-xs text-fg-secondary italic;
-  }
-
-  .status.error {
-    @apply not-italic text-red-600;
+    @apply font-normal text-xs leading-snug truncate flex-1 min-w-0;
   }
 
   .actions-trigger {
-    @apply absolute right-1 top-1;
+    @apply flex-shrink-0 ml-auto;
+  }
+
+  /* Content section below title */
+  .content {
+    @apply flex flex-col gap-y-0.5 mt-1;
+  }
+
+  .meta-row {
+    @apply flex items-center gap-x-1.5 text-[11px] text-fg-secondary leading-tight;
+  }
+
+  .meta-row-spread {
+    @apply justify-between;
+  }
+
+  .meta-row-end {
+    @apply justify-end;
+  }
+
+  .meta-kind {
+    @apply capitalize inline-flex items-center gap-x-1;
+  }
+
+  .meta-sep {
+    @apply text-fg-muted;
+  }
+
+  .meta-detail {
+    @apply text-fg-muted truncate;
+  }
+
+  .badge-group {
+    @apply inline-flex items-center gap-x-1.5;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-1 py-px rounded text-[10px] font-medium bg-surface-subtle text-fg-secondary;
+    border: 1px solid color-mix(in srgb, var(--node-accent) 25%, transparent);
+  }
+
+  /* Check indicator with icon */
+  .check-indicator {
+    @apply inline-flex items-center gap-x-0.5 text-[10px] font-medium;
+  }
+
+  .check-indicator.checks-none {
+    @apply text-fg-muted opacity-40;
+  }
+
+  .check-indicator.checks-pass {
+    @apply text-green-600;
+  }
+
+  .check-indicator.checks-fail {
+    @apply text-amber-600;
+  }
+
+  /* Lock/unlock indicator */
+  .lock-indicator {
+    @apply flex items-center text-fg-muted opacity-40;
+  }
+
+  .lock-indicator.secured {
+    @apply text-amber-600 opacity-100;
   }
 
   /* Error tooltip styling */
