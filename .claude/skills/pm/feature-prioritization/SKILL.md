@@ -21,12 +21,14 @@ Ask the user (via `AskUserQuestion`) which framework to use, or recommend based 
 ### 2. Define Scoring Criteria
 
 For RICE:
+
 - **Reach**: How many users will this affect per quarter? (estimated number)
 - **Impact**: How much will this move the needle per user? (3 = massive, 2 = significant, 1 = low, 0.5 = minimal, 0.25 = trivial)
 - **Confidence**: How confident are you in these estimates? (100% = high, 80% = medium, 50% = low)
 - **Effort**: Total person-months to build, test, and ship.
 
 For ICE:
+
 - **Impact**: 1–10 scale. How much will this move the key metric?
 - **Confidence**: 1–10 scale. How sure are you it will work?
 - **Ease**: 1–10 scale. How easy/fast is this to ship?
@@ -36,6 +38,7 @@ For Weighted Scoring, define 4–6 criteria and assign weights that sum to 100%.
 ### 3. Score Each Item
 
 Create a scoring table for each feature:
+
 - Document the score for each dimension
 - Provide a 1-sentence rationale for the score
 - Calculate the final score
@@ -43,6 +46,7 @@ Create a scoring table for each feature:
 ### 4. Output a Ranked List
 
 Present:
+
 1. A **ranked table** (highest score first) with all scores visible
 2. A **recommended top 3** to ship next, with brief justification
 3. **Items to defer or cut**, with the reason why
@@ -50,6 +54,7 @@ Present:
 ### 5. Flag Risks and Dependencies
 
 For top-ranked items, note:
+
 - Dependencies on other teams or systems
 - Technical or business risks that could invalidate the score
 - Any items that scored low but have strategic override reasons (e.g., compliance, exec mandate)

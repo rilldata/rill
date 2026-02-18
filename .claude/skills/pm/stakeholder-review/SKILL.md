@@ -13,6 +13,7 @@ Input: $ARGUMENTS
 ### 1. Read and Understand the Input
 
 Read the provided document thoroughly. If it's a file path, use the `Read` tool. Identify:
+
 - What type of document is this? (PRD, proposal, strategy doc, roadmap, design brief, etc.)
 - What decision or approval is being sought?
 - What is the timeline for feedback?

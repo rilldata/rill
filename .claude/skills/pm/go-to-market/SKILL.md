@@ -13,6 +13,7 @@ Input: $ARGUMENTS
 ### 1. Gather Launch Context
 
 If not provided, use `AskUserQuestion` to ask:
+
 - What are we launching? (new product, feature, pricing change, expansion)
 - Who is the primary target audience?
 - What is the launch date or target window?
@@ -26,6 +27,7 @@ Write a positioning statement using the Geoffrey Moore format:
 > For [target customer] who [has this need or problem], [product/feature name] is a [category] that [key benefit]. Unlike [primary alternative], our solution [key differentiator].
 
 Test the positioning against these questions:
+
 - Is the "unlike" contrast meaningful to the customer (not just internally)?
 - Does the key benefit tie directly to a measurable outcome?
 - Is the category framing right — too narrow (limits growth) or too broad (loses clarity)?
@@ -33,6 +35,7 @@ Test the positioning against these questions:
 ### 3. Audience Segmentation
 
 Define:
+
 - **Primary audience**: Who this launch is designed for first. Be specific.
 - **Secondary audience**: Who else benefits, and how messaging differs for them.
 - **Influencers and champions**: Who drives adoption within a company or community?
@@ -40,6 +43,7 @@ Define:
 ### 4. Messaging Framework
 
 Create a messaging hierarchy:
+
 - **One-liner** (10 words max): Used in headlines, subject lines, social
 - **Elevator pitch** (2–3 sentences): Used in sales, demos, outbound
 - **Full value proposition** (1 paragraph): Used in landing pages, press materials
@@ -51,6 +55,7 @@ For each audience segment, note any messaging adjustments.
 For each channel, specify: goal, tactic, owner, and expected impact.
 
 Evaluate which channels to use based on where the audience lives:
+
 - **Owned**: Blog, in-app notifications, email newsletter, changelog
 - **Earned**: Press, analyst briefings, community word-of-mouth, influencer reviews
 - **Paid**: Ads, sponsored content, events
@@ -59,6 +64,7 @@ Evaluate which channels to use based on where the audience lives:
 ### 6. Launch Timeline
 
 Create a phased timeline:
+
 - **T-4 weeks**: Internal alignment, sales enablement, beta/preview customers
 - **T-2 weeks**: Soft launch to waitlist or early adopters, collect feedback
 - **T-0 (Launch day)**: Public announcement, coordinated across all channels
@@ -67,6 +73,7 @@ Create a phased timeline:
 ### 7. Success Metrics
 
 Define:
+
 - **Primary metric**: The one number that signals launch success
 - **Leading indicators**: What to watch in the first 48–72 hours
 - **Lagging indicators**: What to evaluate at 30/60/90 days

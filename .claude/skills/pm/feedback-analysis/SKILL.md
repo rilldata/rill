@@ -13,11 +13,13 @@ Input: $ARGUMENTS
 ### 1. Ingest the Feedback
 
 Accept feedback in any of these forms:
+
 - A file path (use `Read` tool)
 - Pasted text in the conversation
 - A description of feedback themes (if raw data isn't available)
 
 If the feedback is unstructured, ask via `AskUserQuestion`:
+
 - What is the source? (NPS, support, reviews, interviews, sales calls)
 - What time period does this cover?
 - What product area or feature set does this relate to?
@@ -25,6 +27,7 @@ If the feedback is unstructured, ask via `AskUserQuestion`:
 ### 2. Categorize Each Item
 
 For each piece of feedback, identify:
+
 - **Theme**: The underlying need or pain point (not the surface request)
 - **Sentiment**: Positive / Negative / Neutral
 - **Urgency signal**: Does the user describe churn risk, workaround behavior, or blocking frustration?
@@ -33,6 +36,7 @@ For each piece of feedback, identify:
 ### 3. Extract Patterns
 
 Group feedback items by theme and count frequency. Look for:
+
 - **High-frequency pain points**: Themes that appear in 10%+ of items
 - **High-severity items**: Individual feedback pieces that signal churn, safety, or legal risk — even if rare
 - **Unmet jobs**: Things users are trying to do that the product doesn't support well
@@ -42,10 +46,12 @@ Group feedback items by theme and count frequency. Look for:
 ### 4. Prioritize Opportunities
 
 Rank the top themes using a simple 2×2:
+
 - **X-axis**: Frequency (how many users mentioned this)
 - **Y-axis**: Severity (how much does this hurt the user or the business)
 
 Quadrant labels:
+
 - High frequency + High severity → **Urgent: Fix or build now**
 - Low frequency + High severity → **Risk: Monitor and triage**
 - High frequency + Low severity → **Polish: Quick wins**
@@ -54,6 +60,7 @@ Quadrant labels:
 ### 5. Surface Insights
 
 Write a synthesis covering:
+
 - **Top 3 opportunities** with supporting evidence (quote 2–3 representative pieces of feedback for each)
 - **One thing to stop doing** (if the data suggests a feature or behavior is causing net harm)
 - **One underserved segment** that shows up in the data with distinct needs

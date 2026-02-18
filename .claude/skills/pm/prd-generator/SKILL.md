@@ -13,6 +13,7 @@ Input: $ARGUMENTS
 ### 1. Clarify Scope (if input is vague)
 
 If the input lacks sufficient detail, use `AskUserQuestion` to ask:
+
 - Who is the primary user/customer affected?
 - What outcome are we trying to achieve (not the solution)?
 - What constraints exist (timeline, platform, team size)?
@@ -24,6 +25,7 @@ Frame the problem using the Jobs-to-be-Done format:
 > **When** [situation], **I want to** [motivation/job], **so I can** [expected outcome].
 
 Identify:
+
 - **Functional job**: The practical task the user is trying to accomplish
 - **Emotional job**: How they want to feel
 - **Social job**: How they want to be perceived
@@ -44,16 +46,19 @@ Goal: [Desired outcome]
 Write the full PRD with the following sections:
 
 **Overview**
+
 - Problem statement (1–2 sentences)
 - Why now (business context, urgency)
 - Success metrics (primary KPI + 1–2 supporting metrics)
 
 **Users & Segments**
+
 - Primary user persona
 - Secondary users (if any)
 - Out of scope users
 
 **Requirements**
+
 - P0 (must have for launch)
 - P1 (strongly preferred)
 - P2 (nice to have, post-launch)
@@ -61,9 +66,11 @@ Write the full PRD with the following sections:
 For each requirement, state: what the system must do, not how.
 
 **Non-Requirements**
+
 - Explicitly call out what this PRD does NOT cover to prevent scope creep.
 
 **Open Questions**
+
 - List any unresolved decisions that need stakeholder input before engineering starts.
 
 ### 5. Sprint-Ready User Stories
@@ -73,6 +80,7 @@ Convert P0 requirements into user stories using the format:
 > **As a** [user type], **I want to** [action], **so that** [benefit].
 
 For each story, include:
+
 - **Acceptance criteria** (3–5 bullet points using Given/When/Then)
 - **Story points estimate** (1, 2, 3, 5, or 8 — Fibonacci scale)
 - **Dependencies** (other stories or systems this relies on)

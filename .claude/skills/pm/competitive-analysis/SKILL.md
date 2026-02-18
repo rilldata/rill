@@ -13,6 +13,7 @@ Input: $ARGUMENTS
 ### 1. Define the Competitive Landscape
 
 If competitors aren't specified, ask via `AskUserQuestion`:
+
 - What product or space are we analyzing?
 - Who are the top 3–5 competitors (direct and adjacent)?
 - What is the primary job-to-be-done we're competing on?
@@ -20,6 +21,7 @@ If competitors aren't specified, ask via `AskUserQuestion`:
 ### 2. Research Competitors in Parallel
 
 Use the `Task` tool to spawn parallel `Explore` agents — one per competitor — each tasked with finding:
+
 - Product positioning and key messaging
 - Pricing model and tiers
 - Key features and differentiators
@@ -45,6 +47,7 @@ Create a table comparing all competitors across key dimensions relevant to the s
 ### 5. Pricing Comparison
 
 Document each competitor's pricing structure:
+
 - Free tier (if any)
 - Core paid plan
 - Enterprise pricing signals
