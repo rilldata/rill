@@ -1,0 +1,10 @@
+{
+  "reportOnly": true,
+  "strictDynamic": true,
+  "unsafeEval": false,
+  "path": "/*",
+  "excludedPath": ["*.css", "*.js", "*.svg", "/.netlify/images"],
+  "unsafeInline": true,
+  "self": true,
+  "reportUri": "/__csp-violations"
+}

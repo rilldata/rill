@@ -21,7 +21,7 @@ on:
       env:
         description: "Environment"
         required: true
-        default: "stage"
+        default: "test"
         type: choice
         options:
         - stage
@@ -112,6 +112,7 @@ jobs:
           enable-commit-comment: true
           overwrites-pull-request-comment: true
           netlify-config-path: ./netlify.toml
+          functions-dir: ./.netlify/
         timeout-minutes: 1
 
       - name: Notify Slack
