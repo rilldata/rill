@@ -24,6 +24,11 @@
     AlertCircle,
     ChevronDown,
     ChevronRight,
+    RotateCcw,
+    HardDrive,
+    ArrowRightLeft,
+    Timer,
+    RefreshCw,
   } from "lucide-svelte";
   import type { ResourceNodeData } from "../shared/types";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
@@ -168,6 +173,18 @@
     "December",
   ];
 
+  // Format execution duration
+  function formatDuration(ms: string | undefined): string | null {
+    if (!ms) return null;
+    const num = parseInt(ms, 10);
+    if (isNaN(num)) return null;
+    if (num < 1000) return `${num}ms`;
+    if (num < 60_000) return `${(num / 1000).toFixed(1)}s`;
+    return `${Math.floor(num / 60_000)}m ${Math.round((num % 60_000) / 1000)}s`;
+  }
+
+  $: executionDuration = formatDuration(metadata?.executionDurationMs);
+
   // Rebuild security rules as YAML-like text (matches Rill YAML format)
   $: securityYaml = (() => {
     if (!securityRules.length) return "";
@@ -290,6 +307,30 @@
               >{metadata?.isSqlModel ? "SQL" : "YAML"}</span
             >
           </div>
+          {#if metadata?.inputConnector}
+            <div class="describe-row">
+              <span class="describe-row-icon"><Database size={14} /></span>
+              <span>Input: {metadata.inputConnector}</span>
+            </div>
+          {/if}
+          {#if metadata?.outputConnector}
+            <div class="describe-row">
+              <span class="describe-row-icon"><HardDrive size={14} /></span>
+              <span>Output: {metadata.outputConnector}{metadata.stageConnector ? ` (stage: ${metadata.stageConnector})` : ""}</span>
+            </div>
+          {/if}
+          {#if metadata?.resultTable}
+            <div class="describe-row">
+              <span class="describe-row-icon"><Table2 size={14} /></span>
+              <span>Table: {metadata.resultTable}</span>
+            </div>
+          {/if}
+          {#if metadata?.materialize}
+            <div class="describe-row">
+              <span class="describe-row-icon"><HardDrive size={14} /></span>
+              <span>Materialized</span>
+            </div>
+          {/if}
           {#if metadata?.partitioned}
             <button class="describe-row describe-row-link" on:click={openPartitions}>
               <span class="describe-row-icon"><Layers size={14} /></span>
@@ -301,6 +342,12 @@
             <div class="describe-row">
               <span class="describe-row-icon"><Zap size={14} /></span>
               <span>Incremental</span>
+            </div>
+          {/if}
+          {#if metadata?.changeMode}
+            <div class="describe-row">
+              <span class="describe-row-icon"><ArrowRightLeft size={14} /></span>
+              <span>Change mode: {metadata.changeMode.replace("MODEL_CHANGE_MODE_", "").toLowerCase()}</span>
             </div>
           {/if}
           {#if metadata?.testCount}
@@ -315,24 +362,54 @@
           {/if}
         </div>
 
-        <!-- Last Refreshed -->
-        {#if metadata?.lastRefreshedOn}
-          <div class="describe-section">
-            <h4 class="describe-section-title">Last Refreshed</h4>
+        <!-- Refresh -->
+        <div class="describe-section">
+          <h4 class="describe-section-title">Refresh</h4>
+          {#if metadata?.lastRefreshedOn}
             <div class="describe-row">
               <span class="describe-row-icon"><Clock size={14} /></span>
-              <span>{new Date(metadata.lastRefreshedOn).toLocaleString()}</span>
+              <span>Last: {new Date(metadata.lastRefreshedOn).toLocaleString()}</span>
             </div>
-          </div>
-        {/if}
-
-        <!-- Refresh Schedule -->
-        {#if metadata?.hasSchedule && metadata?.scheduleDescription}
-          <div class="describe-section">
-            <h4 class="describe-section-title">Refresh Schedule</h4>
-            <pre class="describe-yaml">cron: "{metadata.scheduleDescription}"</pre>
-          </div>
-        {/if}
+          {/if}
+          {#if executionDuration}
+            <div class="describe-row">
+              <span class="describe-row-icon"><Timer size={14} /></span>
+              <span>Duration: {executionDuration}</span>
+            </div>
+          {/if}
+          {#if metadata?.hasSchedule && metadata?.scheduleDescription}
+            <div class="describe-row">
+              <span class="describe-row-icon"><RefreshCw size={14} /></span>
+              <span>Cron: {metadata.scheduleDescription}</span>
+            </div>
+          {/if}
+          {#if metadata?.refUpdate}
+            <div class="describe-row">
+              <span class="describe-row-icon"><RefreshCw size={14} /></span>
+              <span>Refresh on upstream change</span>
+            </div>
+          {/if}
+          {#if metadata?.timeoutSeconds}
+            <div class="describe-row">
+              <span class="describe-row-icon"><Timer size={14} /></span>
+              <span>Timeout: {metadata.timeoutSeconds}s</span>
+            </div>
+          {/if}
+          {#if metadata?.retryAttempts}
+            <div class="describe-row">
+              <span class="describe-row-icon"><RotateCcw size={14} /></span>
+              <span>
+                Retry: {metadata.retryAttempts}x{metadata.retryDelaySeconds ? `, ${metadata.retryDelaySeconds}s delay` : ""}{metadata.retryExponentialBackoff ? ", exponential backoff" : ""}
+              </span>
+            </div>
+          {/if}
+          {#if !metadata?.lastRefreshedOn && !metadata?.hasSchedule && !metadata?.refUpdate && !metadata?.retryAttempts}
+            <div class="describe-row">
+              <span class="describe-row-icon"><Clock size={14} /></span>
+              <span class="text-fg-muted">No refresh data</span>
+            </div>
+          {/if}
+        </div>
       {/if}
 
       <!-- MetricsView Info -->

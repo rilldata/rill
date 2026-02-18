@@ -2,7 +2,7 @@
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ResourceGraph from "../embedding/ResourceGraph.svelte";
-  import type { ResourceStatusFilter } from "../shared/types";
+  import type { ResourceStatusFilter, ResourceStatusFilterValue } from "../shared/types";
 
   export let seeds: string[] | undefined;
   export let searchQuery = "";
@@ -11,6 +11,11 @@
   export let layout: "grid" | "sidebar" = "grid";
   export let selectedGroupId: string | null = null;
   export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
+  export let onKindChange: ((kind: string | null) => void) | null = null;
+  export let onRefreshAll: (() => void) | null = null;
+  export let activeKindLabel: string = "All types";
+  export let statusFilterOptions: { label: string; value: ResourceStatusFilterValue }[] = [];
+  export let onStatusToggle: ((value: ResourceStatusFilterValue) => void) | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -40,4 +45,9 @@
   {layout}
   {selectedGroupId}
   {onSelectedGroupChange}
+  {onKindChange}
+  {onRefreshAll}
+  {activeKindLabel}
+  {statusFilterOptions}
+  {onStatusToggle}
 />

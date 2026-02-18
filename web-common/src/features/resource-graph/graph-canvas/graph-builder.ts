@@ -177,6 +177,7 @@ function extractResourceMetadata(
 
     // Connector info
     metadata.connector = connector ?? undefined;
+    if (spec.inputConnector) metadata.inputConnector = spec.inputConnector;
 
     // Source path for file-based sources
     if (inputProps?.path) {
@@ -194,15 +195,42 @@ function extractResourceMetadata(
     metadata.scheduleDescription = formatScheduleDescription(
       spec.refreshSchedule,
     );
+    metadata.refUpdate = spec.refreshSchedule?.refUpdate ?? false;
+
+    // Timeout
+    if (spec.timeoutSeconds) metadata.timeoutSeconds = spec.timeoutSeconds;
 
     // Last refreshed
     if (model.state?.refreshedOn) {
       metadata.lastRefreshedOn = model.state.refreshedOn;
     }
 
-    // Materialization: stageConnector is only set when a model materializes
-    // (stages locally then writes to an external output connector)
+    // Execution duration
+    if (model.state?.latestExecutionDurationMs) {
+      metadata.executionDurationMs = model.state.latestExecutionDurationMs;
+    }
+
+    // Result table
+    if (model.state?.resultTable) {
+      metadata.resultTable = model.state.resultTable;
+    }
+
+    // Materialization
+    const outputProps = spec.outputProperties as
+      | { materialize?: boolean }
+      | undefined;
+    metadata.materialize = outputProps?.materialize ?? false;
     metadata.isMaterialized = Boolean(spec.stageConnector);
+    if (spec.outputConnector) metadata.outputConnector = spec.outputConnector;
+    if (spec.stageConnector) metadata.stageConnector = spec.stageConnector;
+
+    // Change mode
+    if (spec.changeMode) metadata.changeMode = spec.changeMode;
+
+    // Retry configuration
+    if (spec.retryAttempts) metadata.retryAttempts = spec.retryAttempts;
+    if (spec.retryDelaySeconds) metadata.retryDelaySeconds = spec.retryDelaySeconds;
+    if (spec.retryExponentialBackoff) metadata.retryExponentialBackoff = true;
 
     // Tests
     metadata.testCount = spec.tests?.length ?? 0;

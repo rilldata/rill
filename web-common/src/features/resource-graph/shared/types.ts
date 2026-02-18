@@ -40,6 +40,18 @@ export interface ResourceMetadata {
   isSqlModel?: boolean; // true if model defined via SQL file
   sqlQuery?: string; // SQL query for models
   isMaterialized?: boolean; // has outputConnector (writes to external store)
+  outputConnector?: string; // output connector name
+  stageConnector?: string; // stage connector name
+  changeMode?: string; // model change mode (e.g. "CHANGE_MODE_FULL", "CHANGE_MODE_APPEND")
+  inputConnector?: string; // input connector name (e.g., "duckdb", "s3")
+  resultTable?: string; // materialized result table name
+  materialize?: boolean; // whether model materializes output
+  refUpdate?: boolean; // refresh on upstream ref update
+  timeoutSeconds?: number; // execution timeout
+  retryAttempts?: number; // number of retry attempts on failure
+  retryDelaySeconds?: number; // delay between retries
+  retryExponentialBackoff?: boolean; // whether retries use exponential backoff
+  executionDurationMs?: string; // latest execution duration in ms
   testCount?: number; // number of tests defined
   testErrors?: string[]; // test failure messages (empty = all pass)
 

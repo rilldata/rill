@@ -24,7 +24,11 @@
   import ResourceKindSelector from "../summary/ResourceKindSelector.svelte";
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
-  import type { ResourceStatusFilter } from "../shared/types";
+  import type { ResourceStatusFilter, ResourceStatusFilterValue } from "../shared/types";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { RefreshCw } from "lucide-svelte";
   type GroupStatus = "ok" | "pending" | "errored";
   function getGroupStatus(group: ResourceGraphGrouping): GroupStatus {
     if (group.resources.some((r) => !!r.meta?.reconcileError)) return "errored";
@@ -65,6 +69,13 @@
   export let layout: "grid" | "sidebar" = "grid";
   export let selectedGroupId: string | null = null;
   export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
+
+  // Toolbar callbacks (sidebar layout)
+  export let onKindChange: ((kind: string | null) => void) | null = null;
+  export let onRefreshAll: (() => void) | null = null;
+  export let activeKindLabel: string = "All types";
+  export let statusFilterOptions: { label: string; value: ResourceStatusFilterValue }[] = [];
+  export let onStatusToggle: ((value: ResourceStatusFilterValue) => void) | null = null;
 
   type SummaryMemo = {
     sources: number;
@@ -216,6 +227,13 @@
   $: hasGraphs = visibleResourceGroups.length > 0;
 
   // --- Sidebar selection state ---
+  let treeSearchQuery = "";
+  $: treeFilteredGroups = treeSearchQuery.trim()
+    ? filteredResourceGroups.filter((g) =>
+        (g.label ?? g.id).toLowerCase().includes(treeSearchQuery.toLowerCase().trim()),
+      )
+    : filteredResourceGroups;
+
   let internalSelectedGroupId: string | null = null;
   $: isSidebarControlled =
     selectedGroupId !== null || onSelectedGroupChange !== null;
@@ -576,41 +594,131 @@
   class="graph-root"
   style={`--graph-expanded-height-mobile:${expandedHeightMobile};--graph-expanded-height-desktop:${expandedHeightDesktop};`}
 >
-  {#if error}
-    <div class="state error">
-      <p>{error}</p>
-    </div>
-  {:else if isLoading || seedTransitionLoading}
-    <div class="state">
-      <div class="loading-state">
-        <DelayedSpinner isLoading={true} size="1.5rem" />
-        <p>{isLoading ? "Loading project graph..." : "Updating graphs..."}</p>
+  {#if layout === "sidebar"}
+    <!-- Sidebar layout: toolbar always visible, content varies -->
+    <div class="graph-toolbar-bar">
+      <div class="breadcrumb">
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild let:builder>
+            <button
+              class="text-fg-muted px-[5px] py-1"
+              use:builder.action
+              {...builder}
+            >
+              <span class="gap-x-1.5 items-center font-medium flex">
+                <span>{activeKindLabel}</span>
+                <CaretDownIcon size="10px" />
+              </span>
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="start" class="w-48">
+            <DropdownMenu.Item on:click={() => onKindChange?.(null)}>
+              All types
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item on:click={() => onKindChange?.("sources")}>
+              Source Models
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => onKindChange?.("models")}>
+              Models
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => onKindChange?.("metrics")}>
+              Metric Views
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => onKindChange?.("dashboards")}>
+              Dashboards
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+        <CaretDownIcon size="12px" className="text-fg-muted -rotate-90 flex-none" />
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild let:builder>
+            <button
+              class="text-fg-muted px-[5px] py-1 max-w-fit"
+              use:builder.action
+              {...builder}
+            >
+              <span class="gap-x-1.5 items-center font-medium flex">
+                <span class="truncate">{selectedGroup?.label ?? "Select tree"}</span>
+                <CaretDownIcon size="10px" />
+              </span>
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="start" class="w-64">
+            <div class="tree-search-wrapper">
+              <input
+                class="tree-search-input"
+                type="text"
+                placeholder="Filter trees..."
+                bind:value={treeSearchQuery}
+                on:keydown|stopPropagation
+              />
+            </div>
+            <div class="tree-dropdown-list">
+              {#each treeFilteredGroups as group (group.id)}
+                {@const status = getGroupStatus(group)}
+                <DropdownMenu.Item
+                  class="flex items-center gap-2 cursor-pointer {effectiveSelectedGroupId === group.id ? 'font-semibold' : ''}"
+                  on:click={() => handleSidebarSelect(group.id)}
+                >
+                  <span class="status-dot {status}"></span>
+                  <span class="flex-1 truncate text-xs">{group.label ?? group.id}</span>
+                  <span class="text-xs text-fg-muted">{group.resources.length}</span>
+                </DropdownMenu.Item>
+              {/each}
+              {#if treeFilteredGroups.length === 0}
+                <div class="px-3 py-2 text-xs text-fg-muted">No trees match.</div>
+              {/if}
+            </div>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       </div>
-    </div>
-  {:else if !hasGraphs}
-    <slot name="empty-state">
-      <div class="state">
-        <p>No resources found.</p>
+
+      <div class="toolbar-right">
+        {#if statusFilterOptions.length > 0}
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild let:builder>
+              <Button builders={[builder]} type="tertiary">
+                {#if statusFilter.length === 0}
+                  All statuses
+                {:else}
+                  {statusFilter.length} status{statusFilter.length > 1 ? "es" : ""}
+                {/if}
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end" class="w-40">
+              {#each statusFilterOptions as opt}
+                <DropdownMenu.CheckboxItem
+                  checked={statusFilter.includes(opt.value)}
+                  onCheckedChange={() => onStatusToggle?.(opt.value)}
+                >
+                  {opt.label}
+                </DropdownMenu.CheckboxItem>
+              {/each}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        {/if}
+        {#if onRefreshAll}
+          <Button type="tertiary" onClick={onRefreshAll}>
+            <RefreshCw size="14" />
+            <span>Refresh all</span>
+          </Button>
+        {/if}
       </div>
-    </slot>
-  {:else if layout === "sidebar"}
-    <div class="sidebar-tabs">
-      {#each filteredResourceGroups as group, index (group.id)}
-        {@const status = getGroupStatus(group)}
-        <button
-          class="group-tab"
-          class:active={effectiveSelectedGroupId === group.id}
-          class:errored={status === "errored"}
-          on:click={() => handleSidebarSelect(group.id)}
-        >
-          <span class="status-dot {status}"></span>
-          <span>{group.label ?? `Graph ${index + 1}`}</span>
-          <span class="tab-count">{group.resources.length}</span>
-        </button>
-      {/each}
     </div>
     <div class="sidebar-main">
-      {#if selectedGroup}
+      {#if error}
+        <div class="state error">
+          <p>{error}</p>
+        </div>
+      {:else if isLoading || seedTransitionLoading}
+        <div class="state">
+          <div class="loading-state">
+            <DelayedSpinner isLoading={true} size="1.5rem" />
+            <p>{isLoading ? "Loading project graph..." : "Updating graphs..."}</p>
+          </div>
+        </div>
+      {:else if selectedGroup}
         {@const parts = groupTitleParts(selectedGroup, selectedGroupIndex)}
         <GraphCanvas
           flowId={selectedGroup.id}
@@ -635,6 +743,23 @@
         </div>
       {/if}
     </div>
+  {:else if error}
+    <div class="state error">
+      <p>{error}</p>
+    </div>
+  {:else if isLoading || seedTransitionLoading}
+    <div class="state">
+      <div class="loading-state">
+        <DelayedSpinner isLoading={true} size="1.5rem" />
+        <p>{isLoading ? "Loading project graph..." : "Updating graphs..."}</p>
+      </div>
+    </div>
+  {:else if !hasGraphs}
+    <slot name="empty-state">
+      <div class="state">
+        <p>No resources found.</p>
+      </div>
+    </slot>
   {:else}
     {@const hasExpandedItem = currentExpandedId !== null}
     <!-- Combined toolbar: tabs on left, kind dropdown on right -->
@@ -771,9 +896,51 @@
     @apply relative h-full w-full overflow-auto flex flex-col min-h-0 gap-y-3;
   }
 
-  .sidebar-tabs {
-    @apply flex items-end overflow-x-auto flex-nowrap border-b;
-    scrollbar-width: thin;
+  .graph-toolbar-bar {
+    @apply flex items-center justify-between px-4 h-11 flex-none gap-x-2;
+  }
+
+  .breadcrumb {
+    @apply flex items-center gap-x-1.5 min-w-0;
+  }
+
+  .breadcrumb :global(button),
+  .breadcrumb :global(a) {
+    @apply bg-transparent border-none cursor-pointer transition-colors;
+  }
+
+  .breadcrumb :global(button:hover),
+  .breadcrumb :global(a:hover) {
+    @apply text-fg-primary;
+  }
+
+  .breadcrumb :global(button[data-state="open"]) {
+    @apply bg-gray-100 rounded-[2px] text-fg-primary;
+  }
+
+  .toolbar-right {
+    @apply flex items-center gap-x-2;
+  }
+
+  .tree-search-wrapper {
+    @apply px-2 pb-1.5 pt-0.5 border-b;
+  }
+
+  .tree-search-input {
+    @apply w-full text-xs px-2 py-1.5 rounded border bg-transparent text-fg-primary;
+    @apply outline-none;
+  }
+
+  .tree-search-input::placeholder {
+    @apply text-fg-muted;
+  }
+
+  .tree-search-input:focus {
+    @apply border-primary-300 ring-1 ring-primary-300;
+  }
+
+  .tree-dropdown-list {
+    @apply max-h-72 overflow-y-auto;
   }
 
   .sidebar-main {

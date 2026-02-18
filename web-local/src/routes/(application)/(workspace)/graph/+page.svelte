@@ -4,16 +4,10 @@
   import GraphContainer from "@rilldata/web-common/features/resource-graph/navigation/GraphContainer.svelte";
   import {
     parseGraphUrlParams,
-    urlParamsToSeeds,
     type KindToken,
   } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
   import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
-  import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import {
     createRuntimeServiceCreateTrigger,
@@ -27,22 +21,18 @@
 
   $: ({ instanceId } = $runtime);
 
-  // Parse URL parameters using new API (kind/resource instead of seed)
+  // Parse URL parameters
   $: urlParams = parseGraphUrlParams($page.url);
   $: activeKind = urlParams.kind;
-
-  // Seeds only come from the kind filter — NOT from the ?resource= param.
-  // The ?resource= param is only used for sidebar selection so it doesn't
-  // change the partitioning strategy (which would reorder the sidebar list).
   $: seeds = activeKind ? [activeKind] : undefined;
 
   // Sidebar selection from URL ?resource= param
   $: selectedResource =
     urlParams.resources.length > 0 ? urlParams.resources[0] : null;
+  $: selectedGroupId = selectedResource;
 
   function handleSelectedGroupChange(groupId: string | null) {
     if (!groupId) return;
-    // Extract the resource name from the group id (format: "rill.runtime.v1.Kind:name")
     const name = groupId.includes(":") ? groupId.split(":").pop() : groupId;
     const params = new URLSearchParams();
     if (activeKind) params.set("kind", activeKind);
@@ -53,13 +43,7 @@
     });
   }
 
-  // Convert URL resource name to a group ID for matching.
-  // Group IDs are fully qualified (e.g., "rill.runtime.v1.MetricsView:orders")
-  // but the URL param is just the short name (e.g., "orders").
-  // We pass the short name and let ResourceGraph match by suffix.
-  $: selectedGroupId = selectedResource;
-
-  // Node type filter config
+  // Kind filter config
   type NodeTypeOption = { label: string; token: KindToken };
   const nodeTypeOptions: NodeTypeOption[] = [
     { label: "Source Models", token: "sources" },
@@ -68,24 +52,21 @@
     { label: "Dashboards", token: "dashboards" },
   ];
 
-  let nodeTypeDropdownOpen = false;
+  $: activeKindLabel =
+    nodeTypeOptions.find((o) => o.token === activeKind)?.label ?? "All types";
 
-  function selectNodeType(token: KindToken | null) {
-    nodeTypeDropdownOpen = false;
-    if (token) {
-      goto(`/graph?kind=${token}`);
+  function handleKindChange(kind: string | null) {
+    if (kind) {
+      goto(`/graph?kind=${kind}`);
     } else {
       goto("/graph");
     }
   }
 
-  // Search and filter state
-  let searchQuery = "";
+  // Status filter state
   let selectedStatuses: ResourceStatusFilterValue[] = [];
-  let statusDropdownOpen = false;
 
-  type StatusOption = { label: string; value: ResourceStatusFilterValue };
-  const statusOptions: StatusOption[] = [
+  const statusOptions: { label: string; value: ResourceStatusFilterValue }[] = [
     { label: "OK", value: "ok" },
     { label: "Pending", value: "pending" },
     { label: "Errored", value: "errored" },
@@ -99,18 +80,12 @@
     }
   }
 
-  function clearFilters() {
-    searchQuery = "";
-    selectedStatuses = [];
-    if (activeKind) {
-      goto("/graph");
-    }
-  }
-
-  $: hasActiveFilters =
-    searchQuery || selectedStatuses.length > 0 || !!activeKind;
-
+  // Refresh all
   let isConfirmDialogOpen = false;
+
+  function handleRefreshAll() {
+    isConfirmDialogOpen = true;
+  }
 
   function refreshAllSourcesAndModels() {
     isConfirmDialogOpen = false;
@@ -137,132 +112,21 @@
   <title>Rill Developer | Project graph</title>
 </svelte:head>
 
-<WorkspaceContainer inspector={false}>
-  <div slot="header" class="header">
-    <div class="header-row">
-      <div class="header-left">
-        <h1>Project graph</h1>
-      </div>
-    </div>
-    <p>Visualize dependencies between sources, models, dashboards, and more.</p>
-
-    <!-- Filter bar matching cloud status resource format -->
-    <div class="filter-bar">
-      <!-- Node type filter -->
-      <DropdownMenu.Root bind:open={nodeTypeDropdownOpen}>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button builders={[builder]} type="tertiary">
-            <span class="flex items-center gap-x-1.5">
-              {#if activeKind}
-                {nodeTypeOptions.find((o) => o.token === activeKind)?.label ??
-                  activeKind}
-              {:else}
-                All types
-              {/if}
-              {#if nodeTypeDropdownOpen}
-                <CaretUpIcon size="12px" />
-              {:else}
-                <CaretDownIcon size="12px" />
-              {/if}
-            </span>
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start" class="w-48">
-          <DropdownMenu.Item on:click={() => selectNodeType(null)}>
-            All types
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-          {#each nodeTypeOptions as option}
-            <DropdownMenu.Item
-              on:click={() => selectNodeType(option.token)}
-              class={activeKind === option.token ? "font-semibold" : ""}
-            >
-              {option.label}
-            </DropdownMenu.Item>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
-      <!-- Status filter -->
-      <DropdownMenu.Root bind:open={statusDropdownOpen}>
-        <DropdownMenu.Trigger asChild let:builder>
-          <Button builders={[builder]} type="tertiary">
-            <span class="flex items-center gap-x-1.5">
-              {#if selectedStatuses.length === 0}
-                All statuses
-              {:else if selectedStatuses.length === 1}
-                {statusOptions.find((s) => s.value === selectedStatuses[0])
-                  ?.label ?? selectedStatuses[0]}
-              {:else}
-                {statusOptions.find((s) => s.value === selectedStatuses[0])
-                  ?.label}, +{selectedStatuses.length - 1} other{selectedStatuses.length >
-                2
-                  ? "s"
-                  : ""}
-              {/if}
-              {#if statusDropdownOpen}
-                <CaretUpIcon size="12px" />
-              {:else}
-                <CaretDownIcon size="12px" />
-              {/if}
-            </span>
-          </Button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start" class="w-48">
-          {#each statusOptions as status}
-            <DropdownMenu.CheckboxItem
-              checked={selectedStatuses.includes(status.value)}
-              onCheckedChange={() => toggleStatus(status.value)}
-            >
-              {status.label}
-            </DropdownMenu.CheckboxItem>
-          {/each}
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-
-      {#if hasActiveFilters}
-        <button
-          class="text-sm text-primary-500 hover:text-primary-600"
-          on:click={clearFilters}
-        >
-          Clear filters
-        </button>
-      {/if}
-
-      <!-- Spacer -->
-      <div class="flex-1" />
-
-      <div class="w-64">
-        <Search
-          bind:value={searchQuery}
-          placeholder="Search by node..."
-          autofocus={false}
-        />
-      </div>
-
-      <Button
-        type="secondary"
-        onClick={() => {
-          isConfirmDialogOpen = true;
-        }}
-      >
-        Refresh all sources and models
-      </Button>
-    </div>
-  </div>
-
-  <div slot="body" class="graph-wrapper">
-    <GraphContainer
-      {seeds}
-      {searchQuery}
-      statusFilter={selectedStatuses}
-      showSummary={false}
-      layout="sidebar"
-      {selectedGroupId}
-      onSelectedGroupChange={handleSelectedGroupChange}
-    />
-  </div>
-</WorkspaceContainer>
+<div class="graph-wrapper">
+  <GraphContainer
+    {seeds}
+    statusFilter={selectedStatuses}
+    showSummary={false}
+    layout="sidebar"
+    {selectedGroupId}
+    onSelectedGroupChange={handleSelectedGroupChange}
+    onKindChange={handleKindChange}
+    onRefreshAll={handleRefreshAll}
+    {activeKindLabel}
+    statusFilterOptions={statusOptions}
+    onStatusToggle={toggleStatus}
+  />
+</div>
 
 <AlertDialog.Root bind:open={isConfirmDialogOpen}>
   <AlertDialog.Content>
@@ -293,27 +157,7 @@
 </AlertDialog.Root>
 
 <style lang="postcss">
-  .header {
-    @apply px-4 pt-3 pb-2;
-  }
-
-  .header h1 {
-    @apply text-lg font-semibold text-fg-primary;
-  }
-
-  .header-row {
-    @apply flex items-center justify-between;
-  }
-
-  .header p {
-    @apply text-sm text-fg-secondary mt-1;
-  }
-
-  .filter-bar {
-    @apply flex items-center gap-x-3 mt-3;
-  }
-
   .graph-wrapper {
-    @apply h-full w-full;
+    @apply flex flex-col size-full overflow-hidden;
   }
 </style>
