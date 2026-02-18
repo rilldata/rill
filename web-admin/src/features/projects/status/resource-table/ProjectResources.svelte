@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
@@ -24,78 +23,51 @@
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
   import { filterResources } from "./utils";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "../url-filter-sync";
   import { onMount } from "svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  // Reactively track URL search params (updates on back/forward navigation)
-  $: kindParam = $page.url.searchParams.get("kind");
-  $: statusParam = $page.url.searchParams.get("status");
-  $: qParam = $page.url.searchParams.get("q");
+  const filterSync = createUrlFilterSync([
+    { key: "kind", type: "array" },
+    { key: "status", type: "array" },
+    { key: "q", type: "string" },
+  ]);
+  filterSync.init($page.url);
 
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
-  let searchText = $page.url.searchParams.get("q") ?? "";
-  let selectedTypes: string[] = (() => {
-    const k = $page.url.searchParams.get("kind");
-    return k ? k.split(",").filter(Boolean) : [];
-  })();
-  let selectedStatuses: string[] = (() => {
-    const s = $page.url.searchParams.get("status");
-    return s ? s.split(",").filter(Boolean) : [];
-  })();
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+  let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+  let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
   let mounted = false;
-  let lastSyncedSearch = $page.url.search;
 
   // Sync URL → local state on external navigation (back/forward)
-  $: if (mounted && $page.url.search !== lastSyncedSearch) {
-    lastSyncedSearch = $page.url.search;
-    selectedTypes = kindParam ? kindParam.split(",").filter(Boolean) : [];
-    selectedStatuses = statusParam
-      ? statusParam.split(",").filter(Boolean)
-      : [];
-    searchText = qParam ?? "";
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+    searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
-  // Sync filter state to URL params
+  // Sync filter state → URL
   $: if (mounted) {
-    syncFiltersToUrl(selectedTypes, selectedStatuses, searchText);
+    filterSync.syncToUrl($page.url, {
+      kind: selectedTypes,
+      status: selectedStatuses,
+      q: searchText,
+    });
   }
 
   onMount(() => {
     mounted = true;
   });
-
-  function syncFiltersToUrl(
-    types: string[],
-    statuses: string[],
-    search: string,
-  ) {
-    const url = new URL($page.url);
-    if (types.length > 0) {
-      url.searchParams.set("kind", types.join(","));
-    } else {
-      url.searchParams.delete("kind");
-    }
-    if (statuses.length > 0) {
-      url.searchParams.set("status", statuses.join(","));
-    } else {
-      url.searchParams.delete("status");
-    }
-    if (search) {
-      url.searchParams.set("q", search);
-    } else {
-      url.searchParams.delete("q");
-    }
-    lastSyncedSearch = url.search;
-    void goto(url.pathname + url.search, {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
-    });
-  }
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [

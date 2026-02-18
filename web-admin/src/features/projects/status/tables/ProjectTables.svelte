@@ -27,6 +27,10 @@
   import ModelPartitionsDialog from "./ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "./RefreshErroredPartitionsDialog.svelte";
   import RefreshResourceConfirmDialog from "../resource-table/RefreshResourceConfirmDialog.svelte";
+  import {
+    createUrlFilterSync,
+    parseStringParam,
+  } from "../url-filter-sync";
   import { onMount } from "svelte";
 
   $: ({ instanceId } = $runtime);
@@ -53,54 +57,36 @@
   $: modelResources = $modelResourcesQuery.data ?? new Map();
 
   // Filters — initialized from URL params
-  $: qParam = $page.url.searchParams.get("q");
-  $: typeParam = $page.url.searchParams.get("type");
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "type", type: "enum", defaultValue: "all" },
+  ]);
+  filterSync.init($page.url);
 
-  let searchText = $page.url.searchParams.get("q") ?? "";
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
   let typeFilter: "all" | "table" | "view" = (() => {
     const t = $page.url.searchParams.get("type");
     return t === "table" || t === "view" ? t : "all";
   })();
   let typeDropdownOpen = false;
   let mounted = false;
-  let lastSyncedSearch = $page.url.search;
 
   // Sync URL → local state on external navigation (back/forward)
-  $: if (mounted && $page.url.search !== lastSyncedSearch) {
-    lastSyncedSearch = $page.url.search;
-    searchText = qParam ?? "";
-    const t = typeParam;
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    searchText = parseStringParam($page.url.searchParams.get("q"));
+    const t = $page.url.searchParams.get("type");
     typeFilter = t === "table" || t === "view" ? t : "all";
   }
 
   // Sync filter state → URL
   $: if (mounted) {
-    syncFiltersToUrl(searchText, typeFilter);
+    filterSync.syncToUrl($page.url, { q: searchText, type: typeFilter });
   }
 
   onMount(() => {
     mounted = true;
   });
-
-  function syncFiltersToUrl(search: string, type: string) {
-    const url = new URL($page.url);
-    if (search) {
-      url.searchParams.set("q", search);
-    } else {
-      url.searchParams.delete("q");
-    }
-    if (type !== "all") {
-      url.searchParams.set("type", type);
-    } else {
-      url.searchParams.delete("type");
-    }
-    lastSyncedSearch = url.search;
-    void goto(url.pathname + url.search, {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
-    });
-  }
 
   type TypeOption = { label: string; value: "all" | "table" | "view" };
   const typeOptions: TypeOption[] = [

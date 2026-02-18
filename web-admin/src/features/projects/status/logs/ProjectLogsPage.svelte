@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { onMount, onDestroy } from "svelte";
   import {
@@ -13,6 +12,11 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "../url-filter-sync";
 
   const MAX_LOGS = 500;
   const REPLAY_LIMIT = 100;
@@ -30,48 +34,26 @@
   let logsContainer: HTMLDivElement;
   let connectionError: string | null = null;
   let filterDropdownOpen = false;
-  let searchText = $page.url.searchParams.get("q") ?? "";
-  let selectedLevels: string[] = (() => {
-    const l = $page.url.searchParams.get("level");
-    return l ? l.split(",").filter(Boolean) : [];
-  })();
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+  let selectedLevels = parseArrayParam($page.url.searchParams.get("level"));
   let mounted = false;
-  let lastSyncedSearch = $page.url.search;
 
-  // Reactive URL param tracking
-  $: qParam = $page.url.searchParams.get("q");
-  $: levelParam = $page.url.searchParams.get("level");
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "level", type: "array" },
+  ]);
+  filterSync.init($page.url);
 
   // Sync URL → local state on external navigation (back/forward)
-  $: if (mounted && $page.url.search !== lastSyncedSearch) {
-    lastSyncedSearch = $page.url.search;
-    searchText = qParam ?? "";
-    selectedLevels = levelParam ? levelParam.split(",").filter(Boolean) : [];
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    searchText = parseStringParam($page.url.searchParams.get("q"));
+    selectedLevels = parseArrayParam($page.url.searchParams.get("level"));
   }
 
   // Sync filter state → URL
   $: if (mounted) {
-    syncFiltersToUrl(searchText, selectedLevels);
-  }
-
-  function syncFiltersToUrl(search: string, levels: string[]) {
-    const url = new URL($page.url);
-    if (search) {
-      url.searchParams.set("q", search);
-    } else {
-      url.searchParams.delete("q");
-    }
-    if (levels.length > 0) {
-      url.searchParams.set("level", levels.join(","));
-    } else {
-      url.searchParams.delete("level");
-    }
-    lastSyncedSearch = url.search;
-    void goto(url.pathname + url.search, {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
-    });
+    filterSync.syncToUrl($page.url, { q: searchText, level: selectedLevels });
   }
 
   const logsConnection = new SSEConnectionManager({
