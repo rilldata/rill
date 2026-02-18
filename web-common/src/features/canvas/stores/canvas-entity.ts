@@ -24,7 +24,7 @@ import {
   type Readable,
   type Unsubscriber,
 } from "svelte/store";
-import { parseDocument, YAMLMap, isMap, Pair } from "yaml";
+import { parseDocument, YAMLMap, isMap, type Pair } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
