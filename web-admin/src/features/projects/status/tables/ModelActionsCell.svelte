@@ -10,11 +10,7 @@
     ScrollTextIcon,
   } from "lucide-svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import {
-    isModelPartitioned,
-    isModelIncremental,
-    hasModelErroredPartitions,
-  } from "./utils";
+  import { getAvailableModelActions } from "./model-actions";
 
   export let resource: V1Resource | undefined;
   export let isDropdownOpen: boolean;
@@ -26,9 +22,10 @@
   export let onFullRefreshClick: (resource: V1Resource) => void;
   export let onViewLogsClick: (name: string) => void;
 
-  $: isPartitioned = isModelPartitioned(resource);
-  $: isIncremental = isModelIncremental(resource);
-  $: hasErroredPartitions = hasModelErroredPartitions(resource);
+  $: actions = getAvailableModelActions(resource);
+  $: isPartitioned = actions.includes("viewPartitions");
+  $: isIncremental = actions.includes("incrementalRefresh");
+  $: hasErroredPartitions = actions.includes("refreshErrored");
 </script>
 
 {#if resource}

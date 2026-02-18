@@ -40,26 +40,34 @@ export function useProjectDeployment(orgName: string, projName: string) {
   );
 }
 
+/**
+ * Filters resources for display, removing hidden and internal resource kinds.
+ */
+export function filterResourcesForDisplay(
+  resources: V1Resource[] | undefined,
+): V1Resource[] {
+  return (
+    resources?.filter(
+      (resource) =>
+        !resource?.meta?.hidden &&
+        resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
+        resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger &&
+        resource?.meta?.name?.kind !== ResourceKind.Component &&
+        resource?.meta?.name?.kind !== ResourceKind.Migration,
+    ) ?? []
+  );
+}
+
 export function useResources(instanceId: string) {
   return createRuntimeServiceListResources(
     instanceId,
     {},
     {
       query: {
-        select: (data: V1ListResourcesResponse) => {
-          const filtered = data?.resources?.filter(
-            (resource) =>
-              !resource?.meta?.hidden &&
-              resource?.meta?.name?.kind !== ResourceKind.ProjectParser &&
-              resource?.meta?.name?.kind !== ResourceKind.RefreshTrigger &&
-              resource?.meta?.name?.kind !== ResourceKind.Component &&
-              resource?.meta?.name?.kind !== ResourceKind.Migration,
-          );
-          return {
-            ...data,
-            resources: filtered,
-          };
-        },
+        select: (data: V1ListResourcesResponse) => ({
+          ...data,
+          resources: filterResourcesForDisplay(data?.resources),
+        }),
         refetchInterval: smartRefetchIntervalFunc,
       },
     },
@@ -181,8 +189,30 @@ export function useTableMetadata(
 }
 
 /**
- * Fetches model resources and maps them by their result table name.
+ * Builds a Map of model resources indexed by result table name and model name (case-insensitive).
  * This allows looking up model resource data by the OLAP table name.
+ */
+export function buildModelResourcesMap(
+  resources: V1Resource[] | undefined,
+): Map<string, V1Resource> {
+  const map = new Map<string, V1Resource>();
+  resources?.forEach((resource) => {
+    // Index by resultTable (the actual output table name)
+    const tableName = resource.model?.state?.resultTable;
+    if (tableName) {
+      map.set(tableName.toLowerCase(), resource);
+    }
+    // Also index by model name as fallback
+    const modelName = resource.meta?.name?.name;
+    if (modelName) {
+      map.set(modelName.toLowerCase(), resource);
+    }
+  });
+  return map;
+}
+
+/**
+ * Fetches model resources and maps them by their result table name.
  */
 export function useModelResources(instanceId: string) {
   return createRuntimeServiceListResources(
@@ -190,22 +220,8 @@ export function useModelResources(instanceId: string) {
     { kind: ResourceKind.Model },
     {
       query: {
-        select: (data: V1ListResourcesResponse) => {
-          const map = new Map<string, V1Resource>();
-          data.resources?.forEach((resource) => {
-            // Index by resultTable (the actual output table name)
-            const tableName = resource.model?.state?.resultTable;
-            if (tableName) {
-              map.set(tableName.toLowerCase(), resource);
-            }
-            // Also index by model name as fallback
-            const modelName = resource.meta?.name?.name;
-            if (modelName) {
-              map.set(modelName.toLowerCase(), resource);
-            }
-          });
-          return map;
-        },
+        select: (data: V1ListResourcesResponse) =>
+          buildModelResourcesMap(data.resources),
         enabled: !!instanceId,
       },
     },

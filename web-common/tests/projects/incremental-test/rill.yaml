@@ -1,7 +1,0 @@
-# Rill project file
-# Reference documentation: https://docs.rilldata.com/reference/project-files/rill-yaml
-
-title: Incremental Test Project
-description: Test project for incremental model refresh functionality
-
-olap_connector: duckdb
