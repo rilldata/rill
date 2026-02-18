@@ -24,6 +24,7 @@
       _maxWidth,
       filtersEnabledStore,
       themeName,
+      specStore,
     },
   } = getCanvasStore(canvasName, instanceId));
 
@@ -32,6 +33,7 @@
   $: filtersEnabled = $filtersEnabledStore;
   $: maxWidth = $_maxWidth;
   $: rows = $_rows;
+  $: cardCss = $specStore.data?.canvas?.cardCss;
 
   const embedThemeStore = getEmbedThemeStoreInstance();
   const embedThemeName = derived([embedThemeStore], () => resolveEmbedTheme());
@@ -54,6 +56,7 @@
         {components}
         {maxWidth}
         {navigationEnabled}
+        {cardCss}
       />
     {:else}
       <div class="size-full flex items-center justify-center">

@@ -29,6 +29,7 @@
   export let components: Map<string, BaseCanvasComponent>;
   export let dragComponent: BaseCanvasComponent | null;
   export let selectedComponent: Writable<string | null>;
+  export let cardCss: Record<string, string> | undefined = undefined;
   export let addItems: (
     position: { row: number; column: number },
     items: CanvasComponentType[],
@@ -230,6 +231,7 @@
           ghost={dragComponent === component}
           selected={$selectedComponent === id}
           allowPointerEvents={!$activeDivider && !activelyDragging}
+          {cardCss}
           onMouseDown={(event) => {
             onComponentMouseDown({
               event,

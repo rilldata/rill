@@ -440,6 +440,12 @@ export interface V1CanvasRow {
   items?: V1CanvasItem[];
 }
 
+/**
+ * CSS properties to style component cards on the canvas.
+These styles take precedence over any styles set on the component itself.
+ */
+export type V1CanvasSpecCardCss = { [key: string]: string };
+
 export interface V1CanvasSpec {
   /** Display name for the canvas. */
   displayName?: string;
@@ -472,6 +478,9 @@ The values should be valid IANA location identifiers. */
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
   pinnedFilters?: string[];
+  /** CSS properties to style component cards on the canvas.
+These styles take precedence over any styles set on the component itself. */
+  cardCss?: V1CanvasSpecCardCss;
 }
 
 export interface V1CanvasState {

@@ -31,6 +31,7 @@
   export let allowPointerEvents = true;
   export let editable = false;
   export let navigationEnabled: boolean = true;
+  export let cardCss: Record<string, string> | undefined = undefined;
   export let onMouseDown: (e: MouseEvent) => void = () => {};
   export let onDuplicate: () => void = () => {};
   export let onDelete: () => void = () => {};
@@ -41,6 +42,22 @@
   $: ({ id: componentName, type: renderer } = component);
 
   $: allowBorder = !hideBorder.has(renderer);
+
+  // Convert cardCss object to CSS string with !important for highest specificity
+  $: cardCssString = cardCss
+    ? Object.entries(cardCss)
+        .map(([key, value]) => {
+          const cssKey = key.includes("-")
+            ? key
+            : key.replace(/([A-Z])/g, "-$1").toLowerCase();
+          // Add !important to ensure these styles take precedence over all other styles
+          const importantValue = value.trim().endsWith("!important")
+            ? value
+            : `${value} !important`;
+          return `${cssKey}: ${importantValue}`;
+        })
+        .join("; ")
+    : "";
 </script>
 
 <article
@@ -51,6 +68,7 @@
   class:editable
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
+  style={cardCssString}
   class:outline={allowBorder || open}
   class:shadow-sm={allowBorder || open}
   class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-border bg-surface-card overflow-hidden rounded-sm"

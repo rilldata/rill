@@ -10335,6 +10335,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for CardCss
+
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)
 	}
