@@ -97,20 +97,20 @@ func (s *Server) Ping(ctx context.Context, r *connect.Request[localv1.PingReques
 // GetMetadata implements localv1connect.LocalServiceHandler.
 func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.GetMetadataRequest]) (*connect.Response[localv1.GetMetadataResponse], error) {
 	return connect.NewResponse(&localv1.GetMetadataResponse{
-		InstanceId:       s.metadata.InstanceID,
-		ProjectPath:      s.metadata.ProjectPath,
-		InstallId:        s.metadata.InstallID,
-		UserId:           s.metadata.UserID,
-		Version:          s.metadata.Version,
-		BuildCommit:      s.metadata.BuildCommit,
-		BuildTime:        s.metadata.BuildTime,
-		IsDev:            s.metadata.IsDev,
-		AnalyticsEnabled: s.metadata.AnalyticsEnabled,
-		Readonly:         s.metadata.Readonly,
-		GrpcPort:         int32(s.metadata.GRPCPort),
-		LoginUrl:         s.app.localURL + "/auth",
-		AdminUrl:         s.app.ch.AdminURL(),
-		PreviewMode:      s.metadata.PreviewMode,
+		InstanceId:        s.metadata.InstanceID,
+		ProjectPath:       s.metadata.ProjectPath,
+		InstallId:         s.metadata.InstallID,
+		UserId:            s.metadata.UserID,
+		Version:           s.metadata.Version,
+		BuildCommit:       s.metadata.BuildCommit,
+		BuildTime:         s.metadata.BuildTime,
+		IsDev:             s.metadata.IsDev,
+		AnalyticsEnabled:  s.metadata.AnalyticsEnabled,
+		Readonly:          s.metadata.Readonly,
+		GrpcPort:          int32(s.metadata.GRPCPort),
+		LoginUrl:          s.app.localURL + "/auth",
+		AdminUrl:          s.app.ch.AdminURL(),
+		PreviewMode:       s.metadata.PreviewMode,
 		PreviewLockedMode: s.metadata.PreviewLockedMode,
 	}), nil
 }
@@ -941,19 +941,19 @@ func (s *Server) trackingHandler() http.Handler {
 
 // localMetadata contains metadata about the current project and Rill configuration.
 type localMetadata struct {
-	InstanceID       string `json:"instance_id"`
-	ProjectPath      string `json:"project_path"`
-	InstallID        string `json:"install_id"`
-	UserID           string `json:"user_id"`
-	Version          string `json:"version"`
-	BuildCommit      string `json:"build_commit"`
-	BuildTime        string `json:"build_time"`
-	IsDev            bool   `json:"is_dev"`
-	AnalyticsEnabled bool   `json:"analytics_enabled"`
-	Readonly         bool   `json:"readonly"`
-	PreviewMode      bool   `json:"preview_mode"`
-	PreviewLockedMode bool  `json:"preview_locked_mode"`
-	GRPCPort         int    `json:"grpc_port"`
+	InstanceID        string `json:"instance_id"`
+	ProjectPath       string `json:"project_path"`
+	InstallID         string `json:"install_id"`
+	UserID            string `json:"user_id"`
+	Version           string `json:"version"`
+	BuildCommit       string `json:"build_commit"`
+	BuildTime         string `json:"build_time"`
+	IsDev             bool   `json:"is_dev"`
+	AnalyticsEnabled  bool   `json:"analytics_enabled"`
+	Readonly          bool   `json:"readonly"`
+	PreviewMode       bool   `json:"preview_mode"`
+	PreviewLockedMode bool   `json:"preview_locked_mode"`
+	GRPCPort          int    `json:"grpc_port"`
 }
 
 // metadataHandler serves the metadata of the local Rill instance.

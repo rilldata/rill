@@ -400,18 +400,18 @@ func (a *App) Serve(opts ServeOptions) error {
 
 	// Build local metadata
 	metadata := &localMetadata{
-		InstanceID:       a.Instance.ID,
-		GRPCPort:         opts.GRPCPort,
-		InstallID:        installID,
-		ProjectPath:      a.ProjectPath,
-		UserID:           opts.UserID,
-		Version:          a.ch.Version.Number,
-		BuildCommit:      a.ch.Version.Commit,
-		BuildTime:        a.ch.Version.Timestamp,
-		IsDev:            a.ch.Version.IsDev(),
-		AnalyticsEnabled: enabled,
-		Readonly:         opts.Readonly,
-		PreviewMode:      opts.Preview,
+		InstanceID:        a.Instance.ID,
+		GRPCPort:          opts.GRPCPort,
+		InstallID:         installID,
+		ProjectPath:       a.ProjectPath,
+		UserID:            opts.UserID,
+		Version:           a.ch.Version.Number,
+		BuildCommit:       a.ch.Version.Commit,
+		BuildTime:         a.ch.Version.Timestamp,
+		IsDev:             a.ch.Version.IsDev(),
+		AnalyticsEnabled:  enabled,
+		Readonly:          opts.Readonly,
+		PreviewMode:       opts.Preview,
 		PreviewLockedMode: opts.PreviewLocked,
 	}
 
