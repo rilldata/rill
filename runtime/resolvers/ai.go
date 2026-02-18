@@ -185,7 +185,7 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		InstanceID:        r.instanceID,
 		CreateIfNotExists: true,
 		Claims:            r.claims,
-		UserAgent:         "rill/report", // TODO change it to system/report or similar so that its not shown in AI sessions list, keeping it rill prefixed for now so that access checks pass
+		UserAgent:         "rill/report", //  rill/report agent will be filtered in the UI conversation listing
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AI session: %w", err)

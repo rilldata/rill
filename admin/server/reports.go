@@ -874,10 +874,10 @@ type reportYAML struct {
 	} `yaml:"intervals"`
 	Data  map[string]any `yaml:"data,omitempty"` // Generic data resolver block (e.g., data.ai, data.sql)
 	Query struct {       // Legacy query-based report (deprecated - use data instead)
-		Name     string         `yaml:"name"`
+		Name     string         `yaml:"name,omitempty"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
-	} `yaml:"query"`
+	} `yaml:"query,omitempty"`
 	Export struct {
 		Format        string `yaml:"format"`
 		IncludeHeader bool   `yaml:"include_header"`

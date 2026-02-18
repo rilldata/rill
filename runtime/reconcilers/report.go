@@ -106,6 +106,25 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{}
 	}
 
+	// get web open mode from annotations
+	mode := rep.Spec.Annotations["web_open_mode"]
+	if mode == "" {
+		mode = "creator" // default
+	}
+
+	nonEmailNotifiers := false
+	for _, notifier := range rep.Spec.Notifiers {
+		if notifier.Connector != "email" {
+			nonEmailNotifiers = true
+			break
+		}
+	}
+
+	// AI resolver only supports non email notifications in creator mode as we can't reliably fetch user attributes for slack webhooks/channels for enforcing access control in other modes
+	if rep.Spec.Resolver == "ai" && mode != "creator" && nonEmailNotifiers {
+		return runtime.ReconcileResult{Err: fmt.Errorf("reports with 'ai' resolver only support non-email notifications in 'creator' web open mode")}
+	} // TODO add support for slack users who are also rill users in recipient mode
+
 	// Determine whether to trigger
 	adhocTrigger := rep.Spec.Trigger
 	scheduleTrigger := rep.State.NextRunOn != nil && !rep.State.NextRunOn.AsTime().After(time.Now())
@@ -540,13 +559,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	switch rep.Spec.Resolver {
 	case "ai": // generate ai sessions
 		aiReports := make(map[string]*aiReport)
-		// For AI reports, we require the metadata to contain user attributes for all recipients, since we'll need them to trigger the report and generate personalized content.
+		// For AI reports, in recipient mode, we require the metadata to contain user attributes for reach recipient, since we'll need them to trigger the report and generate personalized content.
+		// In creator mode, we create a shared session for all recipients and create the session with creator's attributes.
 		for recipient, delivery := range meta.ReportDelivery {
 			if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
 				r.C.Logger.Warn("Skipping recipient - no user attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+				continue
 			}
-			// Run report for each unique user - In creator mode, all recipients share the same session (so all recipients will have same userID which is the ownerID).
-			// For recipient mode, each user gets their own session.
+			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the ownerID which is same for all recipients so report will be triggered once.
 			report, exists := aiReports[delivery.UserID]
 			if !exists {
 				var err error

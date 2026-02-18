@@ -3,8 +3,7 @@
 Your report for *{{ .ReportTimeString }}* is ready to view.
 
 {{ if .Summary }}
-*Summary*
-{{ .Summary }}
+*Summary* {{ .Summary }}
 {{ end }}
 <{{ .OpenLink }}|Open in browser> to see the full details.
 

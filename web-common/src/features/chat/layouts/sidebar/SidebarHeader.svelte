@@ -22,7 +22,9 @@
   $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
-  $: conversations = $listConversationsQuery.data?.conversations ?? [];
+  $: conversations = ($listConversationsQuery.data?.conversations ?? []).filter(
+    (c) => c.userAgent !== "rill/report",
+  );
 
   function handleNewConversation() {
     conversationManager.enterNewConversationMode();

@@ -203,16 +203,6 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	// get web open mode from annotations
-	mode := tmp.Annotations["web_open_mode"]
-	if mode == "" {
-		mode = "creator" // default
-	}
-	// AI resolver only supports non email notifications in creator mode as we can't reliably fetch user attributes for slack webhooks/channels for enforcing access control in other modes
-	if resolver == "ai" && mode != "creator" && (len(tmp.Notify.Slack.Users) > 0 || len(tmp.Notify.Slack.Channels) > 0 || len(tmp.Notify.Slack.Webhooks) > 0) {
-		return errors.New(`ai reports only support non-email notifications in "creator" web open mode`)
-	}
-
 	// Track report
 	r, err := p.insertResource(ResourceKindReport, node.Name, node.Paths, node.Refs...)
 	if err != nil {

@@ -354,7 +354,7 @@ If you run into such issues, explicitly mention to the user that this may be due
 **Phase 2: analysis (loop)**
 In an iterative OODA loop, you should repeatedly use the "query_metrics_view" tool to query for insights.
 Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.
-Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20par queries.
+Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.
 
 {{ if and .is_report (not .is_prompt) }}
 {{ if (and .comparison_start .comparison_end) }}
