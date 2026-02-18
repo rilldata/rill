@@ -412,7 +412,7 @@ func (a *App) Serve(opts ServeOptions) error {
 		AnalyticsEnabled: enabled,
 		Readonly:         opts.Readonly,
 		PreviewMode:      opts.Preview,
-		PreviewerMode:    opts.PreviewLocked,
+		PreviewLockedMode: opts.PreviewLocked,
 	}
 
 	// Create the local server handler

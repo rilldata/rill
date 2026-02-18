@@ -90,7 +90,7 @@
       {:else if isError}
         <div class="error-conversations">Error loading conversations</div>
       {:else if conversations.length}
-        {#each conversations as conversation}
+        {#each conversations as conversation (conversation.id)}
           <a
             href={`${basePath}/${conversation.id}`}
             class="conversation-item"

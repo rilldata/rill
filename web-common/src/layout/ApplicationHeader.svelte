@@ -34,7 +34,7 @@
     | ((resourceName: string, resourceKind: string) => string)
     | undefined = undefined;
   export let noBorder = false;
-  export let previewerMode = false;
+  export let previewLockedMode = false;
 
   $: previewMode = $previewModeStore;
 
@@ -134,7 +134,7 @@
       <Rill />
     </a>
 
-    {#if !previewerMode}
+    {#if !previewLockedMode}
       <ModeToggle />
     {/if}
 

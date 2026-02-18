@@ -51,12 +51,12 @@
   let removeJavascriptListeners: () => void;
 
   // Sync preview mode:
-  // - If --preview or --previewer flag is set, always lock to preview mode
+  // - If --preview or --preview-locked flag is set, always lock to preview mode
   // - Otherwise, infer from the current URL so refresh on preview pages stays in preview mode
   //   and shared routes (/explore, /canvas) preserve the current mode
   $: {
     const serverLocked =
-      (data.previewMode ?? false) || (data.previewerMode ?? false);
+      (data.previewMode ?? false) || (data.previewLockedMode ?? false);
     if (serverLocked) {
       previewModeStore.set(true);
     } else if (isPreviewRoute($page.url.pathname)) {
@@ -123,7 +123,7 @@
             ? (name, kind) => `/${kind}/${name}`
             : undefined}
           noBorder={isPreviewMode}
-          previewerMode={data.previewerMode ?? false}
+          previewLockedMode={data.previewLockedMode ?? false}
         />
         {#if shouldShowPreviewNav}
           <PreviewModeNav />

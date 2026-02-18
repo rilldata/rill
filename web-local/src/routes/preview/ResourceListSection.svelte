@@ -1,14 +1,7 @@
 <script lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-
-  interface Resource {
-    name: string;
-    kind: string;
-    state?: string;
-    error?: string;
-    path?: string;
-  }
+  import type { Resource } from "./types";
 
   export let title: string;
   export let resources: Resource[];
@@ -18,13 +11,13 @@
   export let hoveredResource: string | null;
   export let onHover: (name: string | null) => void;
 
-  function getStatusColor(resource: Resource): string {
-    if (resource.error) return "var(--status-error, #DC2626)";
+  function getStatusClass(resource: Resource): string {
+    if (resource.error) return "bg-red-600";
     const state = resource.state?.toUpperCase();
     if (state === "RECONCILING" || state === "COMPILING") {
-      return "var(--status-warning, #F59E0B)";
+      return "bg-yellow-500";
     }
-    return "var(--status-success, #10B981)";
+    return "bg-green-500";
   }
 
   function getStatusText(resource: Resource): string {
@@ -106,8 +99,7 @@
             <!-- Status Circle -->
             <div class="flex-shrink-0 flex items-center gap-x-2">
               <div
-                class="h-2.5 w-2.5 rounded-full"
-                style:background-color={getStatusColor(resource)}
+                class="h-2.5 w-2.5 rounded-full {getStatusClass(resource)}"
                 title={getStatusText(resource)}
               />
             </div>

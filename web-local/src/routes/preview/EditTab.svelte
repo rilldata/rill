@@ -15,14 +15,7 @@
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import type { ComponentType } from "svelte";
   import ResourceListSection from "./ResourceListSection.svelte";
-
-  interface Resource {
-    name: string;
-    kind: ResourceKind | string;
-    state?: string;
-    error?: string;
-    path?: string;
-  }
+  import type { Resource } from "./types";
 
   const workspaceComponents = new Map<
     ResourceKind | null | undefined,

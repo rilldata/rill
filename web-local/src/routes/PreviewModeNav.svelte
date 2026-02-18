@@ -107,7 +107,7 @@
   }
 
   .tab:hover {
-    @apply bg-gray-100;
+    background: var(--surface-hover);
   }
 
   .tab p {

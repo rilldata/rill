@@ -53,7 +53,7 @@
 <div class="flex gap-2 flex-shrink-0 ml-auto">
   {#if lastRefreshedDate}
     <Tooltip distance={8}>
-      <div class="text-[11px] text-gray-600 flex items-center">
+      <div class="text-[11px] flex items-center" style="color: var(--fg-muted)">
         Last refreshed {timeAgo(lastRefreshedDate)}
       </div>
       <TooltipContent slot="tooltip-content">

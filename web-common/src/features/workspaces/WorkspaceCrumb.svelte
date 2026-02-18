@@ -234,11 +234,11 @@
   }
 
   .disabled {
-    @apply text-gray-400;
+    @apply text-fg-disabled;
   }
 
   .disabled:hover {
-    @apply text-gray-400;
+    @apply text-fg-disabled;
   }
 
   .selected {
