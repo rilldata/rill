@@ -200,7 +200,7 @@
               {@const isSelected = selectedConnector?.name === conn.name}
               <button
                 class="w-full text-left px-3 py-2 rounded-md text-sm flex items-center gap-2 {isSelected
-                  ? 'border border-primary-300 bg-primary-50 dark:border-primary-700 dark:bg-primary-950'
+                  ? 'border border-accent-primary bg-surface-active'
                   : 'border border-transparent hover:bg-surface-hover'}"
                 on:click={() => handleSelectConnector(conn)}
               >
