@@ -17,6 +17,7 @@
   import ActionsCell from "./ActionsCell.svelte";
   import NameCell from "./NameCell.svelte";
   import RefreshCell from "./RefreshCell.svelte";
+  import RefreshErroredPartitionsDialog from "../tables/RefreshErroredPartitionsDialog.svelte";
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
   import ResourceSpecDialog from "./ResourceSpecDialog.svelte";
@@ -32,6 +33,9 @@
   let specResourceName = "";
   let specResourceKind = "";
   let specResource: V1Resource | undefined = undefined;
+
+  let isErroredPartitionsDialogOpen = false;
+  let erroredPartitionsModelName = "";
 
   let openDropdownResourceKey = "";
 
@@ -70,6 +74,29 @@
 
   const isDropdownOpen = (resourceKey: string) => {
     return openDropdownResourceKey === resourceKey;
+  };
+
+  const openRefreshErroredPartitionsDialog = (resourceName: string) => {
+    erroredPartitionsModelName = resourceName;
+    isErroredPartitionsDialogOpen = true;
+  };
+
+  const handleRefreshErroredPartitions = async () => {
+    await $createTrigger.mutateAsync({
+      instanceId: $runtime.instanceId,
+      data: {
+        models: [
+          { model: erroredPartitionsModelName, allErroredPartitions: true },
+        ],
+      },
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(
+        $runtime.instanceId,
+        undefined,
+      ),
+    });
   };
 
   const handleViewLogsClick = (name: string) => {
@@ -196,6 +223,7 @@
             (row.original.meta.name.kind === ResourceKind.Model ||
               row.original.meta.name.kind === ResourceKind.Source),
           onClickRefreshDialog: openRefreshDialog,
+          onClickRefreshErroredPartitions: openRefreshErroredPartitionsDialog,
           onClickViewSpec: openSpecDialog,
           onViewLogsClick: handleViewLogsClick,
           isDropdownOpen: isDropdownOpen(resourceKey),
@@ -226,6 +254,12 @@
   name={dialogResourceName}
   refreshType={dialogRefreshType}
   onRefresh={handleRefresh}
+/>
+
+<RefreshErroredPartitionsDialog
+  bind:open={isErroredPartitionsDialogOpen}
+  modelName={erroredPartitionsModelName}
+  onRefresh={handleRefreshErroredPartitions}
 />
 
 <ResourceSpecDialog
