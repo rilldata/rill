@@ -8,10 +8,10 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
   test.beforeEach(async ({ adminPage }) => {
     // Navigate to the project status resources page
     await adminPage.goto("/e2e/openrtb/-/status/resources");
-    // Wait for the resources heading to load
+    // Wait for the resources heading to load (SSR is disabled, so client-render can be slow in CI)
     await expect(
       adminPage.getByRole("heading", { name: "Resources" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
     // Wait for a specific model name to appear (indicates data is loaded)
     // Note: VirtualizedTable uses div.row elements, not role="row"
     await expect(adminPage.getByText("auction_data_model")).toBeVisible({
