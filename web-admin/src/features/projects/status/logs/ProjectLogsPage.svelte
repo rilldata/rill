@@ -53,7 +53,7 @@
 
   // Sync filter state → URL
   $: if (mounted) {
-    filterSync.syncToUrl($page.url, { q: searchText, level: selectedLevels });
+    filterSync.syncToUrl({ q: searchText, level: selectedLevels });
   }
 
   const logsConnection = new SSEConnectionManager({

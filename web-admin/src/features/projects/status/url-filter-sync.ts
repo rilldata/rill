@@ -1,4 +1,6 @@
 import { goto } from "$app/navigation";
+import { page } from "$app/stores";
+import { get } from "svelte/store";
 
 /**
  * Param type definitions for URL filter sync.
@@ -45,9 +47,13 @@ export function createUrlFilterSync(paramDefs: FilterParamDef[]) {
       lastSyncedSearch = url.search;
     },
 
-    /** Write filter values to URL params and navigate */
-    syncToUrl(url: URL, values: Record<string, string | string[]>) {
-      const newUrl = new URL(url);
+    /**
+     * Write filter values to URL params and navigate.
+     * Reads current URL via get(page) to avoid making $page a reactive
+     * dependency in calling $: blocks (which would cause an infinite goto loop).
+     */
+    syncToUrl(values: Record<string, string | string[]>) {
+      const newUrl = new URL(get(page).url);
 
       for (const def of paramDefs) {
         const value = values[def.key];

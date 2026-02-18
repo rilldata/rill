@@ -78,7 +78,7 @@
 
   // Sync filter state → URL
   $: if (mounted) {
-    filterSync.syncToUrl($page.url, { q: searchText, type: typeFilter });
+    filterSync.syncToUrl({ q: searchText, type: typeFilter });
   }
 
   onMount(() => {

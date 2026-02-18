@@ -58,7 +58,7 @@
 
   // Sync filter state → URL
   $: if (mounted) {
-    filterSync.syncToUrl($page.url, {
+    filterSync.syncToUrl({
       kind: selectedTypes,
       status: selectedStatuses,
       q: searchText,
