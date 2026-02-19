@@ -83,7 +83,7 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 	globDepth := strings.Count(glob, delimiter)
 	// ignore delimiter at the end
 	if strings.HasSuffix(glob, delimiter) {
-		globDepth -= 1
+		globDepth--
 	}
 
 	// Check if the glob contains ** (recursive match)
@@ -188,7 +188,6 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 				if obj.ModTime.After(currentDir.UpdatedOn) {
 					currentDir.UpdatedOn = obj.ModTime
 				}
-
 			} else {
 				finalizeCurrentDir()
 				if len(entries) >= validPageSize {

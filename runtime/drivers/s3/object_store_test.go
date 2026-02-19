@@ -27,37 +27,12 @@ func TestObjectStore(t *testing.T) {
 	t.Run("testListObjectsForGlobPagination_pageSize1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
 	t.Run("testListObjectsForGlobPagination_pageSize2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
 	t.Run("testListObjectsForGlobPagination_pageSize3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
-
-	// Directory matching tests - using existing glob_test data
-	t.Run("match_directories_from_glob_test", func(t *testing.T) {
-		testMatchDirectoriesFromGlobTest(t, objectStore, bucket)
-	})
-
-	t.Run("match_files_with_leaf_wildcard_glob_test", func(t *testing.T) {
-		testMatchFilesWithLeafWildcardGlobTest(t, objectStore, bucket)
-	})
-
-	t.Run("match_files_with_double_star_glob_test", func(t *testing.T) {
-		testMatchFilesWithDoubleStarGlobTest(t, objectStore, bucket)
-	})
-
-	// Directory pagination tests using glob_test structure
-	t.Run("testListDirectoriesForGlobPagination_pageSize1", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 1)
-	})
-	t.Run("testListDirectoriesForGlobPagination_pageSize2", func(t *testing.T) {
-		testListDirectoriesForGlobPagination(t, objectStore, bucket, 2)
-	})
-
-	// Edge case tests
-	t.Run("no_duplicate_directories", func(t *testing.T) {
-		testNoDuplicateDirectories(t, objectStore, bucket)
-	})
-
-	t.Run("trailing_slash_normalized", func(t *testing.T) {
-		testTrailingSlashNormalized(t, objectStore, bucket)
-	})
-
+	t.Run("testMatchDirectoriesFromGlobTest", func(t *testing.T) { testMatchDirectoriesFromGlobTest(t, objectStore, bucket) })
+	t.Run("testMatchFilesWithLeafWildcardGlobTest", func(t *testing.T) { testMatchFilesWithLeafWildcardGlobTest(t, objectStore, bucket) })
+	t.Run("testMatchFilesWithDoubleStarGlobTest", func(t *testing.T) { testMatchFilesWithDoubleStarGlobTest(t, objectStore, bucket) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize1", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListDirectoriesForGlobPagination_pageSize2", func(t *testing.T) { testListDirectoriesForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testTrailingSlashNormalized", func(t *testing.T) { testTrailingSlashNormalized(t, objectStore, bucket) })
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
@@ -153,14 +128,12 @@ func testMatchDirectoriesFromGlobTest(t *testing.T, objectStore drivers.ObjectSt
 
 func testMatchFilesWithLeafWildcardGlobTest(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
-	// Match files under glob_test/y=*/*
 	path := "glob_test/y=*/*"
 
 	objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
 	require.NoError(t, err)
 	require.Empty(t, nextToken)
 
-	// Based on original test: glob_test/y=2023/aab.csv, glob_test/y=2024/aaa.csv, glob_test/y=2024/bbb.csv
 	expected := []string{
 		"glob_test/y=2010/aac.csv",
 		"glob_test/y=2023/aab.csv",
@@ -174,8 +147,6 @@ func testMatchFilesWithLeafWildcardGlobTest(t *testing.T, objectStore drivers.Ob
 		collected = append(collected, obj.Path)
 	}
 
-	sort.Strings(collected)
-	sort.Strings(expected)
 	require.Equal(t, expected, collected)
 }
 
@@ -186,12 +157,10 @@ func testMatchFilesWithDoubleStarGlobTest(t *testing.T, objectStore drivers.Obje
 	objects, _, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
 	require.NoError(t, err)
 
-	// Should return all files, not directories
 	for _, obj := range objects {
 		require.False(t, obj.IsDir, "Double star should match files, not directories: %s", obj.Path)
 	}
 
-	// Should have at least the 3 files we know exist
 	require.GreaterOrEqual(t, len(objects), 3)
 }
 
@@ -241,21 +210,6 @@ func testListDirectoriesForGlobPagination(t *testing.T, objectStore drivers.Obje
 	require.Equal(t, expectedPages, pageCount+1, "Number of pages should match expected")
 }
 
-func testNoDuplicateDirectories(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
-	path := "glob_test/y=*"
-
-	objects, _, err := objectStore.ListObjectsForGlob(ctx, bucket, path, 100, "")
-	require.NoError(t, err)
-
-	// Check for duplicates
-	seen := make(map[string]bool)
-	for _, obj := range objects {
-		require.False(t, seen[obj.Path], "Duplicate directory found: %s", obj.Path)
-		seen[obj.Path] = true
-	}
-}
-
 func testTrailingSlashNormalized(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
 	pathWithSlash := "glob_test/y=*/"
@@ -280,9 +234,6 @@ func testTrailingSlashNormalized(t *testing.T, objectStore drivers.ObjectStore, 
 	for i, obj := range objsWithoutSlash {
 		pathsWithoutSlash[i] = obj.Path
 	}
-
-	sort.Strings(pathsWithSlash)
-	sort.Strings(pathsWithoutSlash)
 	require.Equal(t, pathsWithSlash, pathsWithoutSlash)
 }
 
