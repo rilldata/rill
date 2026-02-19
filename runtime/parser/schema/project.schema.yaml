@@ -28,6 +28,7 @@ oneOf:
   - $ref: '#/definitions/canvas-dashboards'
   - $ref: '#/definitions/explore-dashboards'
   - $ref: '#/definitions/alerts'
+  - $ref: '#/definitions/reports'
   - $ref: '#/definitions/apis'
   - $ref: '#/definitions/themes'
   - $ref: '#/definitions/components'
@@ -2726,6 +2727,152 @@ definitions:
           - notify
       - $ref: '#/definitions/common_properties'
 
+  # Reports
+  reports:
+    title: Report YAML
+    id: reports
+    type: object
+    description: |
+      Reports allow you to schedule and deliver data exports or AI-powered insights to recipients via email or Slack.
+    examples:
+      - # Example: query-based report with CSV export
+        type: report
+        display_name: Weekly Sales Report
+        refresh:
+          cron: "0 9 * * 1"
+        data:
+          metrics:
+            metrics_view: sales_metrics
+            dimensions:
+              - name: region
+            measures:
+              - name: total_sales
+            time_range:
+              expression: "7D as of latest/D"
+        export:
+          format: csv
+          limit: 1000
+        notify:
+          email:
+            recipients:
+              - sales@example.com
+        annotations:
+          admin_owner_user_id: user-123
+          web_open_mode: recipient # report will use recipient's permission to run the query
+      - # Example: AI-powered insight report
+        type: report
+        display_name: Daily AI Insights
+        refresh:
+          cron: "0 8 * * *"
+        data:
+          ai:
+            prompt: "Analyze key metrics and identify significant changes"
+            time_range:
+              expression: "1D as of latest/D"
+            comparison_time_range:
+              expression: "1D as of latest/D offset -1D"
+            context:
+              explore: my_explore
+        notify:
+          email:
+            recipients:
+              - team@example.com
+        annotations:
+          admin_owner_user_id: user-123 # report will be run with this user permission
+    allOf:
+      - title: Properties
+        type: object
+        properties:
+          type:
+            type: string
+            const: report
+            description: Refers to the resource type and must be `report`
+          display_name:
+            type: string
+            description: Display name for the report shown in notifications and UI
+          title:
+            type: string
+            description: "Deprecated: use display_name instead"
+          refresh:
+            $ref: '#/definitions/schedule_properties'
+            description: |
+              Refresh schedule for the report
+              ```yaml
+              refresh:
+                cron: "0 9 * * *"
+              ```
+          watermark:
+            type: string
+            enum:
+              - trigger_time
+              - inherit
+            description: Specifies how the watermark is determined for incremental processing. Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark.
+          intervals:
+            type: object
+            description: Define the interval of the report to check
+            properties:
+              duration:
+                type: string
+                description: A valid ISO8601 duration to define the interval duration
+              limit:
+                type: integer
+                description: Maximum number of intervals to check for on invocation
+                minimum: 0
+              check_unclosed:
+                type: boolean
+                description: Whether unclosed intervals should be checked
+          timeout:
+            type: string
+            description: Define the timeout for the report execution (e.g., '5m', '1h')
+          data:
+            $ref: '#/definitions/data_properties'
+            description: |
+              Data source for the report using the generic resolver pattern.
+              Supports ai resolvers only as of now.
+          query:
+            type: object
+            description: "Legacy query-based report configuration"
+            properties:
+              name:
+                type: string
+                description: Name of the query to execute (e.g., MetricsViewAggregation)
+              args:
+                type: object
+                description: Arguments to pass to the query
+                additionalProperties: true
+              args_json:
+                type: string
+                description: Query arguments as a JSON string (alternative to args)
+          export:
+            type: object
+            description: Export configuration for query-based reports
+            properties:
+              format:
+                type: string
+                enum:
+                  - csv
+                  - xlsx
+                  - parquet
+                description: Export file format
+              include_header:
+                type: boolean
+                description: Include column headers in the export
+              limit:
+                type: integer
+                description: Maximum number of rows to export
+                minimum: 0
+          notify:
+            $ref: '#/definitions/notify_properties'
+            description: Notification configuration for email and Slack delivery
+          annotations:
+            type: object
+            description: Key-value pairs for report metadata (e.g., admin_owner_user_id for AI reports)
+            additionalProperties:
+              type: string
+        required:
+          - type
+      - $ref: '#/definitions/common_properties'
+
   # APIs
   apis:
     title: API YAML
@@ -3348,11 +3495,89 @@ definitions:
             additionalProperties: true
         required:
           - resource_status
-        examples: 
+        examples:
           -
             resource_status:
               where_error: true
-          
+      - title: AI Resolver
+        type: object
+        description: Uses AI to generate insights and analysis from metrics data. Only available for reports.
+        properties:
+          ai:
+            type: object
+            description: AI resolver configuration for generating automated insights
+            properties:
+              prompt:
+                type: string
+                description: Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
+              time_range:
+                type: object
+                description: Time range for the analysis period
+                properties:
+                  iso_duration:
+                    type: string
+                    description: ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month)
+                  iso_offset:
+                    type: string
+                    description: ISO 8601 offset from current time (e.g., P1D to start from yesterday)
+                  start:
+                    type: string
+                    description: Start timestamp in ISO 8601 format
+                  end:
+                    type: string
+                    description: End timestamp in ISO 8601 format
+                  expression:
+                    type: string
+                    description: Rill time expression (e.g., 'last 7 days', 'this month')
+              comparison_time_range:
+                type: object
+                description: Optional comparison time range for period-over-period analysis
+                properties:
+                  iso_duration:
+                    type: string
+                    description: ISO 8601 duration for comparison period
+                  iso_offset:
+                    type: string
+                    description: ISO 8601 offset for comparison period (e.g., P7D to compare with previous week)
+                  start:
+                    type: string
+                    description: Start timestamp in ISO 8601 format
+                  end:
+                    type: string
+                    description: End timestamp in ISO 8601 format
+                  expression:
+                    type: string
+                    description: Rill time expression for comparison period
+              context:
+                type: object
+                description: Context to constrain the AI analysis
+                properties:
+                  explore:
+                    type: string
+                    description: Name of the explore dashboard to analyze
+                  dimensions:
+                    type: array
+                    items:
+                      type: string
+                    description: List of dimensions to include in analysis
+                  measures:
+                    type: array
+                    items:
+                      type: string
+                    description: List of measures to include in analysis
+        required:
+          - ai
+        examples:
+          - ai:
+              prompt: "Analyze revenue trends and identify top performing regions"
+              time_range:
+                iso_duration: P7D
+              comparison_time_range:
+                iso_duration: P7D
+                iso_offset: P7D
+              context:
+                explore: sales_explore
+
   explore_time_range_properties:
     oneOf:
       - type: string
