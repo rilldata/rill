@@ -46,6 +46,11 @@
       hasPermission: $alerts,
     },
     {
+      route: `/${organization}/${project}/-/edit`,
+      label: "Edit",
+      hasPermission: projectPermissions.manageDev,
+    },
+    {
       route: `/${organization}/${project}/-/status`,
       label: "Status",
       hasPermission: projectPermissions.manageProject,
