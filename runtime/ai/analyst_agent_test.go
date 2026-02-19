@@ -1,6 +1,8 @@
 package ai_test
 
 import (
+	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
@@ -65,12 +67,15 @@ measures:
 	require.Equal(t, "United States", res.Response)
 }
 
+var citationUrlExtractRegex = regexp.MustCompile(`\(\[[^]]+]\(([^)]+)\)\)`)
+
 func TestAnalystOpenRTB(t *testing.T) {
 	// Setup runtime instance with the OpenRTB dataset
 	n, files := testruntime.ProjectOpenRTB(t)
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		AIConnector: "openai",
 		Files:       files,
+		FrontendURL: "https://ui.rilldata.com/-/dashboards/bids_metrics",
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
 
@@ -156,6 +161,16 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Len(t, qry.Where.Condition.Expressions, 2)
 		require.Equal(t, "device_os", qry.Where.Condition.Expressions[0].Name)
 		require.Equal(t, "Android", qry.Where.Condition.Expressions[1].Value)
+
+		rawRes, err := s.UnmarshalMessageContent(res.Result)
+		require.NoError(t, err)
+		var agentRes ai.AnalystAgentResult
+		err = mapstructureutil.WeakDecode(rawRes, &agentRes)
+		require.NoError(t, err)
+		citationUrlMatches := citationUrlExtractRegex.FindStringSubmatch(agentRes.Response)
+		require.Len(t, citationUrlMatches, 2)
+		expectedCitationUrl := fmt.Sprintf(`https://ui.rilldata.com/-/dashboards/bids_metrics/-/ai/%s/call/%s`, s.ID(), calls[2].ID)
+		require.Equal(t, expectedCitationUrl, citationUrlMatches[1])
 	})
 
 	t.Run("CanvasContext", func(t *testing.T) {

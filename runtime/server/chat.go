@@ -540,19 +540,27 @@ func (s *Server) GetAIToolCall(ctx context.Context, req *runtimev1.GetAIToolCall
 		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.CallId)
 	}
 
+	// Suggest adding after the FilterByID lookup:
+	if callMsg.Tool != ai.QueryMetricsViewName {
+		return nil, status.Errorf(codes.InvalidArgument, "call %q is not a query_metrics_view call", req.CallId)
+	}
+	if callMsg.Type != ai.MessageTypeCall {
+		return nil, status.Errorf(codes.InvalidArgument, "message %q is not a tool call", req.CallId)
+	}
+
 	rawReq, err := session.UnmarshalMessageContent(callMsg)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal message content: %v", err)
 	}
 	var queryRes ai.QueryMetricsViewArgs
 	err = mapstructureutil.WeakDecode(rawReq, &queryRes)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to decode message content: %v", err)
 	}
 
 	queryPb, err := pbutil.ToStruct(queryRes, nil)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to convert query metrics view args to protobuf: %v", err)
 	}
 
 	return &runtimev1.GetAIToolCallResponse{
