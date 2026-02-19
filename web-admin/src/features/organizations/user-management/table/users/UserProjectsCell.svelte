@@ -44,7 +44,7 @@
     if (rolesLoading) return;
     rolesLoading = true;
     const newRoles = new Map<string, string>();
-    
+
     await Promise.all(
       projects.map(async (project) => {
         if (!project.name) return;
@@ -62,7 +62,7 @@
         }
       }),
     );
-    
+
     projectRoles = newRoles;
     rolesLoading = false;
   }
