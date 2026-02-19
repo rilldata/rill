@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.rilldata.com/">Docs</a> · <a href="#quickstart">Quickstart</a> · <a href="https://github.com/rilldata/rill-examples">Examples</a> · <a href="#capabilities">Capabilities</a> · <a href="https://docs.rilldata.com/home/contribute">Contributing</a> · <a href="https://datatalks.rilldata.com/">Data Talks</a>
+  <a href="https://docs.rilldata.com/">Docs</a> · <a href="#quickstart">Quickstart</a> · <a href="https://github.com/rilldata/rill-examples">Examples</a> · <a href="#capabilities">Capabilities</a> · <a href="https://datatalks.rilldata.com/">Data Talks</a>
 </p>
 
 ---
@@ -24,15 +24,10 @@
 - [**AI-ready**](https://docs.rilldata.com/explore/ai-chat) — Built-in chat + MCP server for Claude, ChatGPT, and custom agents
 - [**Git-native**](https://docs.rilldata.com/deploy/deploy-dashboard/) — Version control your dashboards, CI/CD your analytics
 
-<!-- TODO: Replace static screenshot with a ~15s GIF showing interactive exploration
-     (filter click → instant chart update → AI chat question → answer).
-     Redash-style animated demos are the strongest visual asset across top OSS READMEs. -->
 <p align="center">
   <img src="https://docs.rilldata.com/img/explore/dashboard101/multi-measure-select.png" alt="Rill dashboard" width="80%">
 </p>
 
-<!-- TODO: Add architecture diagram showing Data Sources → Rill (Models + Metrics + Dashboards) → Users/AI Agents.
-     Both Cube and Evidence use "how it works" diagrams to instantly communicate the value prop. -->
 
 ## Why Rill?
 
@@ -127,9 +122,6 @@ measures:
 | **Programmatic Ads** | Bidstream data for pricing strategies and campaign performance | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) · [Walkthrough](https://docs.rilldata.com/guides/openrtb-analytics) · [Demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads) |
 | **Cost Monitoring** | Cloud infrastructure merged with customer data for efficiency analysis | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) · [Walkthrough](https://docs.rilldata.com/guides/cost-monitoring-analytics) · [Demo](https://ui.rilldata.com/demo/rill-cost-monitoring) |
 | **GitHub Analytics** | Codebase activity, contributor productivity, and commit patterns | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics) · [Walkthrough](https://docs.rilldata.com/guides/github-analytics) · [Demo](https://ui.rilldata.com/demo/rill-github-analytics) |
-
-<!-- TODO: Add "Trusted by" section with 4-6 customer logos (with permission).
-     None of the top 5 competitor READMEs do this — unclaimed advantage. -->
 
 ## Community
 
