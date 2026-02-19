@@ -32,12 +32,14 @@
   $: isLoading = $tablesList.isLoading || $tableMetadata?.isLoading;
 </script>
 
-{#if !isLoading && filteredTables.length > 0}
-  <section class="section">
-    <div class="section-header">
-      <h3 class="section-title">Tables</h3>
-      <a href="{basePage}/tables" class="view-all">View all</a>
-    </div>
+<section class="section">
+  <div class="section-header">
+    <h3 class="section-title">Tables</h3>
+    <a href="{basePage}/tables" class="view-all">View all</a>
+  </div>
+  {#if isLoading}
+    <p class="text-sm text-fg-secondary">Loading tables...</p>
+  {:else if filteredTables.length > 0}
     <div class="table-chips">
       <a href="{basePage}/tables?type=table" class="table-chip">
         <span class="font-medium">{tableCount}</span>
@@ -52,8 +54,10 @@
         >
       </a>
     </div>
-  </section>
-{/if}
+  {:else}
+    <p class="text-sm text-fg-secondary">No tables found.</p>
+  {/if}
+</section>
 
 <style lang="postcss">
   .section {

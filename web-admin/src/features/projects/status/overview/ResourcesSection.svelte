@@ -13,12 +13,14 @@
   $: resourceCounts = countByKind(allResources);
 </script>
 
-{#if resourceCounts.length > 0}
-  <section class="section">
-    <div class="section-header">
-      <h3 class="section-title">Resources</h3>
-      <a href="{basePage}/resources" class="view-all">View all</a>
-    </div>
+<section class="section">
+  <div class="section-header">
+    <h3 class="section-title">Resources</h3>
+    <a href="{basePage}/resources" class="view-all">View all</a>
+  </div>
+  {#if $resources.isLoading}
+    <p class="text-sm text-fg-secondary">Loading resources...</p>
+  {:else if resourceCounts.length > 0}
     <div class="resource-chips">
       {#each resourceCounts as { kind, label, count } (kind)}
         <a href="{basePage}/resources?kind={kind}" class="resource-chip">
@@ -30,8 +32,10 @@
         </a>
       {/each}
     </div>
-  </section>
-{/if}
+  {:else}
+    <p class="text-sm text-fg-secondary">No resources found.</p>
+  {/if}
+</section>
 
 <style lang="postcss">
   .section {

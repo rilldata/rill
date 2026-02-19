@@ -332,62 +332,14 @@ describe("tables utils", () => {
       ["orders", false],
       ["analytics_view", true],
     ]);
-    const modelResources = new Map<string, V1Resource>([
-      ["users", { meta: { name: { name: "users_model" } } }],
-    ]);
 
-    it("returns all tables when no filters are active", () => {
-      const result = applyTableFilters(
-        tables,
-        "",
-        "all",
-        viewMap,
-        modelResources,
-      );
+    it("returns all tables when type is 'all'", () => {
+      const result = applyTableFilters(tables, "all", viewMap);
       expect(result).toEqual(tables);
     });
 
-    it("filters by OLAP table name", () => {
-      const result = applyTableFilters(
-        tables,
-        "orders",
-        "all",
-        viewMap,
-        modelResources,
-      );
-      expect(result).toEqual([{ name: "orders", physicalSizeBytes: "2048" }]);
-    });
-
-    it("filters by model name", () => {
-      const result = applyTableFilters(
-        tables,
-        "users_model",
-        "all",
-        viewMap,
-        modelResources,
-      );
-      expect(result).toEqual([{ name: "users", physicalSizeBytes: "1024" }]);
-    });
-
-    it("search is case-insensitive", () => {
-      const result = applyTableFilters(
-        tables,
-        "USERS",
-        "all",
-        viewMap,
-        modelResources,
-      );
-      expect(result).toEqual([{ name: "users", physicalSizeBytes: "1024" }]);
-    });
-
     it("filters by type: table", () => {
-      const result = applyTableFilters(
-        tables,
-        "",
-        "table",
-        viewMap,
-        modelResources,
-      );
+      const result = applyTableFilters(tables, "table", viewMap);
       expect(result).toEqual([
         { name: "users", physicalSizeBytes: "1024" },
         { name: "orders", physicalSizeBytes: "2048" },
@@ -395,38 +347,29 @@ describe("tables utils", () => {
     });
 
     it("filters by type: view", () => {
-      const result = applyTableFilters(
-        tables,
-        "",
-        "view",
-        viewMap,
-        modelResources,
-      );
+      const result = applyTableFilters(tables, "view", viewMap);
       expect(result).toEqual([
         { name: "analytics_view", physicalSizeBytes: "0" },
       ]);
     });
 
-    it("combines search and type filter", () => {
-      const result = applyTableFilters(
-        tables,
-        "users",
-        "table",
-        viewMap,
-        modelResources,
-      );
-      expect(result).toEqual([{ name: "users", physicalSizeBytes: "1024" }]);
+    it("returns empty array when no tables match type", () => {
+      const allViews: V1OlapTableInfo[] = [
+        { name: "view_a", physicalSizeBytes: "0" },
+      ];
+      const allViewMap = new Map<string, boolean>([["view_a", true]]);
+      const result = applyTableFilters(allViews, "table", allViewMap);
+      expect(result).toEqual([]);
     });
 
-    it("returns empty array when nothing matches", () => {
-      const result = applyTableFilters(
-        tables,
-        "nonexistent",
-        "all",
-        viewMap,
-        modelResources,
-      );
-      expect(result).toEqual([]);
+    it("handles empty viewMap gracefully (falls back to size heuristic)", () => {
+      const result = applyTableFilters(tables, "table", new Map());
+      // With empty viewMap, isLikelyView falls back to physicalSizeBytes heuristic
+      // analytics_view has physicalSizeBytes "0", so isLikelyView returns true → filtered out
+      expect(result).toEqual([
+        { name: "users", physicalSizeBytes: "1024" },
+        { name: "orders", physicalSizeBytes: "2048" },
+      ]);
     });
   });
 });

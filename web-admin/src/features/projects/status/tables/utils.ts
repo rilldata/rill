@@ -164,29 +164,18 @@ export function splitTablesByModel(
 }
 
 /**
- * Filters OLAP tables by search text and type filter.
- * For model-backed tables, the search also matches the model name.
+ * Filters OLAP tables by type (table vs view).
+ * Search is handled server-side via the API's searchPattern parameter.
  */
 export function applyTableFilters(
   tables: V1OlapTableInfo[],
-  search: string,
   type: "all" | "table" | "view",
   viewMap: Map<string, boolean>,
-  modelResources: Map<string, V1Resource>,
 ): V1OlapTableInfo[] {
+  if (type === "all") return tables;
   return tables.filter((t) => {
     const name = t.name ?? "";
-    const resource = modelResources.get(name.toLowerCase());
-    const modelName = resource?.meta?.name?.name ?? "";
-    const lowerSearch = search.toLowerCase();
-    const matchesSearch =
-      !search ||
-      name.toLowerCase().includes(lowerSearch) ||
-      modelName.toLowerCase().includes(lowerSearch);
-    if (type === "all") return matchesSearch;
     const likelyView = isLikelyView(viewMap.get(name), t.physicalSizeBytes);
-    const matchesType =
-      (type === "view" && likelyView) || (type === "table" && !likelyView);
-    return matchesSearch && matchesType;
+    return (type === "view" && likelyView) || (type === "table" && !likelyView);
   });
 }

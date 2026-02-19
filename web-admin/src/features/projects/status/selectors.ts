@@ -11,6 +11,8 @@ import {
   type V1OlapTableInfo,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import { connectorServiceOLAPListTables } from "@rilldata/web-common/runtime-client/gen/connector-service/connector-service";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { readable, type Readable } from "svelte/store";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
@@ -89,6 +91,40 @@ export function useTablesList(instanceId: string, connector: string = "") {
 }
 
 /**
+ * Paginated tables list using cursor pagination.
+ * Accumulates pages into a flat array via `select`.
+ * Supports server-side search via ILIKE `searchPattern`.
+ */
+export function useInfiniteTablesList(
+  instanceId: string,
+  connector: string,
+  searchPattern?: string,
+) {
+  return createInfiniteQuery({
+    queryKey: ["/v1/olap/tables", { instanceId, connector, searchPattern }],
+    enabled: !!instanceId && !!connector,
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage: { nextPageToken?: string }) =>
+      lastPage?.nextPageToken || undefined,
+    queryFn: ({ pageParam, signal }) =>
+      connectorServiceOLAPListTables(
+        {
+          instanceId,
+          connector,
+          searchPattern,
+          pageToken: pageParam,
+        },
+        signal,
+      ),
+    select: (data: any) => ({
+      tables: data.pages.flatMap(
+        (p: { tables?: V1OlapTableInfo[] }) => p.tables ?? [],
+      ),
+    }),
+  });
+}
+
+/**
  * Fetches metadata (view status) for each table.
  *
  * Note: This creates a separate query per table (N+1 pattern). This is acceptable here because:
@@ -157,6 +193,8 @@ export function useTableMetadata(
           {
             query: {
               enabled: !!instanceId && !!tableName,
+              retry: false,
+              refetchOnWindowFocus: false,
             },
           },
         );

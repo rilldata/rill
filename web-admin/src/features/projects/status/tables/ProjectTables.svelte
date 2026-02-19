@@ -18,10 +18,11 @@
   import ModelsTable from "./ModelsTable.svelte";
   import ExternalTablesTable from "./ExternalTablesTable.svelte";
   import {
-    useTablesList,
+    useInfiniteTablesList,
     useTableMetadata,
     useModelResources,
   } from "../selectors";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     filterTemporaryTables,
     applyTableFilters,
@@ -47,7 +48,29 @@
   $: instance = $instanceQuery.data?.instance;
   $: connectorName = instance?.olapConnector ?? "";
 
-  $: tablesList = useTablesList(instanceId, connectorName);
+  // Filters — initialized from URL params
+  const filterSync = createUrlFilterSync([
+    { key: "q", type: "string" },
+    { key: "type", type: "enum", defaultValue: "all" },
+  ]);
+  filterSync.init($page.url);
+
+  const typeValues = ["all", "table", "view"] as const;
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+
+  // Debounce search for server-side filtering
+  let debouncedSearch = searchText;
+  const updateDebouncedSearch = debounce((text: string) => {
+    debouncedSearch = text;
+  }, 300);
+  $: updateDebouncedSearch(searchText);
+
+  $: searchPattern = debouncedSearch ? `%${debouncedSearch}%` : undefined;
+  $: tablesList = useInfiniteTablesList(
+    instanceId,
+    connectorName,
+    searchPattern,
+  );
 
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
@@ -60,16 +83,6 @@
   $: isViewMap = new Map($tableMetadata?.data?.isView ?? []);
   $: modelResourcesQuery = useModelResources(instanceId);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
-
-  // Filters — initialized from URL params
-  const filterSync = createUrlFilterSync([
-    { key: "q", type: "string" },
-    { key: "type", type: "enum", defaultValue: "all" },
-  ]);
-  filterSync.init($page.url);
-
-  const typeValues = ["all", "table", "view"] as const;
-  let searchText = parseStringParam($page.url.searchParams.get("q"));
   let typeFilter: (typeof typeValues)[number] = parseEnumParam(
     $page.url.searchParams.get("type"),
     typeValues,
@@ -105,13 +118,7 @@
     { label: "View", value: "view" },
   ];
 
-  $: displayedTables = applyTableFilters(
-    filteredTables,
-    searchText,
-    typeFilter,
-    isViewMap,
-    modelResources,
-  );
+  $: displayedTables = applyTableFilters(filteredTables, typeFilter, isViewMap);
 
   $: ({ modelTables, externalTables } = splitTablesByModel(
     displayedTables,
@@ -258,24 +265,26 @@
     </div>
   </div>
 
-  {#if $tablesList.isLoading}
-    <div
-      class="flex-1 flex flex-col items-center justify-center gap-y-2 text-fg-secondary"
-    >
-      <DelayedSpinner isLoading={true} size="20px" />
-      <span class="text-sm">Loading tables</span>
-    </div>
-  {:else if $tablesList.isError}
+  {#if $tablesList.isError}
     <div class="text-red-500">
       Error loading tables: {$tablesList.error?.message}
     </div>
   {:else}
+    {@const isLoading = $instanceQuery.isLoading || !connectorName || $tablesList.isLoading}
+
     <!-- Models section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        Models ({modelTables.length})
+        Models{isLoading ? "" : ` (${modelTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
-      {#if modelTables.length > 0}
+      {#if isLoading}
+        <div
+          class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-2 text-fg-secondary"
+        >
+          <DelayedSpinner isLoading={true} size="20px" />
+          <span class="text-sm">Loading models</span>
+        </div>
+      {:else if modelTables.length > 0}
         <ModelsTable
           tables={modelTables}
           isView={isViewMap}
@@ -318,9 +327,16 @@
     <!-- External Tables section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        External Tables ({externalTables.length})
+        External Tables{isLoading ? "" : ` (${externalTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
-      {#if externalTables.length > 0}
+      {#if isLoading}
+        <div
+          class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-2 text-fg-secondary"
+        >
+          <DelayedSpinner isLoading={true} size="20px" />
+          <span class="text-sm">Loading tables</span>
+        </div>
+      {:else if externalTables.length > 0}
         <ExternalTablesTable tables={externalTables} isView={isViewMap} />
       {:else}
         <div
@@ -349,9 +365,17 @@
       {/if}
     </section>
 
-    {#if $tableMetadata?.isLoading}
-      <div class="mt-2 text-xs text-fg-secondary">
-        Loading table metadata...
+    {#if $tablesList.hasNextPage}
+      <div class="flex justify-center">
+        <Button
+          type="tertiary"
+          onClick={() => $tablesList.fetchNextPage()}
+          disabled={$tablesList.isFetchingNextPage}
+          loading={$tablesList.isFetchingNextPage}
+          loadingCopy="Loading..."
+        >
+          Load more tables
+        </Button>
       </div>
     {/if}
   {/if}
