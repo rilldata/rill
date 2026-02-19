@@ -14,7 +14,7 @@ import (
 func TestAnalystBasic(t *testing.T) {
 	// Setup a basic metrics view with an "event_time" time dimension, "country" dimension, and "count" and "revenue" measures.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 		Files: map[string]string{
 			"models/orders.yaml": `
 type: model
@@ -69,8 +69,8 @@ func TestAnalystOpenRTB(t *testing.T) {
 	// Setup runtime instance with the OpenRTB dataset
 	n, files := testruntime.ProjectOpenRTB(t)
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
-		Files:     files,
+		AIConnector: "openai",
+		Files:       files,
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
 
@@ -158,6 +158,62 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Equal(t, "Android", qry.Where.Condition.Expressions[1].Value)
 	})
 
+	t.Run("CanvasContext", func(t *testing.T) {
+		s := newEval(t, rt, instanceID)
+
+		// It should make three sub-calls: query_metrics_view_summary, get_metrics_view, query_metrics_view
+		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
+			Prompt:          "Tell me which advertiser_name has the highest overall_spend",
+			Canvas:          "bids_canvas",
+			CanvasComponent: "bids_canvas--component-2-0",
+			TimeStart:       parseTestTime(t, "2023-09-11T00:00:00Z"),
+			TimeEnd:         parseTestTime(t, "2023-09-14T00:00:00Z"),
+			WherePerMetricsView: map[string]*metricsview.Expression{
+				"bids_metrics": {
+					Condition: &metricsview.Condition{
+						Operator: metricsview.OperatorEq,
+						Expressions: []*metricsview.Expression{
+							{Name: "auction_type"},
+							{Value: "First Price"},
+						},
+					},
+				},
+			},
+		})
+		require.NoError(t, err)
+		calls := s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
+		require.Len(t, calls, 4)
+		require.Equal(t, ai.GetCanvasName, calls[0].Tool)
+		require.Equal(t, ai.QueryMetricsViewSummaryName, calls[1].Tool)
+		require.Equal(t, ai.GetMetricsViewName, calls[2].Tool)
+		require.Equal(t, ai.QueryMetricsViewName, calls[3].Tool)
+
+		// Map the request sent and assert that context was honored.
+		rawQry, err := s.UnmarshalMessageContent(calls[3])
+		require.NoError(t, err)
+		var qry metricsview.Query
+		err = mapstructureutil.WeakDecode(rawQry, &qry)
+		require.NoError(t, err)
+		// Assert that the time range is sent using the context
+		require.Equal(t, parseTestTime(t, "2023-09-11T00:00:00Z"), qry.TimeRange.Start)
+		require.Equal(t, parseTestTime(t, "2023-09-14T00:00:00Z"), qry.TimeRange.End)
+		// Assert that the filter is sent using the context
+		require.NotNil(t, qry.Where)
+		require.NotNil(t, qry.Where.Condition)
+		require.Len(t, qry.Where.Condition.Expressions, 2)
+
+		auctionTypeCond := qry.Where.Condition.Expressions[0]
+		appOrSiteCond := qry.Where.Condition.Expressions[1]
+		if auctionTypeCond.Condition.Expressions[0].Name != "auction_type" {
+			auctionTypeCond = qry.Where.Condition.Expressions[1]
+			appOrSiteCond = qry.Where.Condition.Expressions[0]
+		}
+
+		require.Equal(t, "auction_type", auctionTypeCond.Condition.Expressions[0].Name)
+		require.Equal(t, "First Price", auctionTypeCond.Condition.Expressions[1].Value)
+		require.Equal(t, "app_or_site", appOrSiteCond.Condition.Expressions[0].Name)
+		require.Equal(t, "App", appOrSiteCond.Condition.Expressions[1].Value)
+	})
 }
 
 func parseTestTime(tst *testing.T, t string) time.Time {

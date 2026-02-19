@@ -45,15 +45,23 @@
   export let expandedHeightDesktop: string = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
 
   type SummaryMemo = {
+    connectors: number;
     sources: number;
     metrics: number;
     models: number;
     dashboards: number;
     resources: V1Resource[];
-    activeToken: "metrics" | "sources" | "models" | "dashboards" | null;
+    activeToken:
+      | "connectors"
+      | "metrics"
+      | "sources"
+      | "models"
+      | "dashboards"
+      | null;
   };
   function summaryEquals(a: SummaryMemo, b: SummaryMemo) {
     return (
+      a.connectors === b.connectors &&
       a.sources === b.sources &&
       a.metrics === b.metrics &&
       a.models === b.models &&
@@ -91,6 +99,7 @@
 
   // Determine which overview node should be highlighted based on current seeds
   $: overviewActiveToken = (function ():
+    | "connectors"
     | "metrics"
     | "sources"
     | "models"
@@ -143,34 +152,43 @@
   // Compute resource counts for the summary graph header.
   // We compute directly in a single pass rather than using filter().length for performance.
   // This is more efficient (O(n) instead of O(4n)) and clearer in intent.
-  $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } =
-    (function computeCounts() {
-      let sources = 0,
-        models = 0,
-        metrics = 0,
-        dashboards = 0;
-      for (const r of normalizedResources) {
-        if (r?.meta?.hidden) continue;
-        const k = coerceResourceKind(r);
-        if (!k) continue;
-        if (k === ResourceKind.Source) sources++;
-        else if (k === ResourceKind.Model) models++;
-        else if (k === ResourceKind.MetricsView) metrics++;
-        else if (k === ResourceKind.Explore) dashboards++;
-      }
-      return {
-        sourcesCount: sources,
-        modelsCount: models,
-        metricsCount: metrics,
-        dashboardsCount: dashboards,
-      };
-    })());
+  $: ({
+    connectorsCount,
+    sourcesCount,
+    modelsCount,
+    metricsCount,
+    dashboardsCount,
+  } = (function computeCounts() {
+    let connectors = 0,
+      sources = 0,
+      models = 0,
+      metrics = 0,
+      dashboards = 0;
+    for (const r of normalizedResources) {
+      if (r?.meta?.hidden) continue;
+      const k = coerceResourceKind(r);
+      if (!k) continue;
+      if (k === ResourceKind.Connector) connectors++;
+      else if (k === ResourceKind.Source) sources++;
+      else if (k === ResourceKind.Model) models++;
+      else if (k === ResourceKind.MetricsView) metrics++;
+      else if (k === ResourceKind.Explore) dashboards++;
+    }
+    return {
+      connectorsCount: connectors,
+      sourcesCount: sources,
+      modelsCount: models,
+      metricsCount: metrics,
+      dashboardsCount: dashboards,
+    };
+  })());
 
   // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
   // Without this, the SummaryGraph component would re-render on every resource array change
   // even if counts haven't actually changed. The summaryEquals function does shallow comparison
   // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
+    connectors: 0,
     sources: 0,
     models: 0,
     metrics: 0,
@@ -180,6 +198,7 @@
   };
   $: {
     const nextSummary: SummaryMemo = {
+      connectors: connectorsCount,
       sources: sourcesCount,
       metrics: metricsCount,
       models: modelsCount,
@@ -397,6 +416,7 @@
   {#if showSummary && currentExpandedId === null}
     <slot
       name="summary"
+      connectors={connectorsCount}
       sources={sourcesCount}
       {metricsCount}
       {modelsCount}
@@ -404,6 +424,7 @@
     >
       <div class="top-summary">
         <SummaryGraph
+          connectors={summaryMemo.connectors}
           sources={summaryMemo.sources}
           metrics={summaryMemo.metrics}
           models={summaryMemo.models}
@@ -552,7 +573,7 @@
   }
 
   .state {
-    @apply flex h-full w-full items-center justify-center text-sm text-gray-500;
+    @apply flex h-full w-full items-center justify-center text-sm text-fg-secondary;
   }
 
   .state.error {
@@ -567,6 +588,6 @@
     @apply mb-2;
   }
   .graph-section-title {
-    @apply text-sm font-semibold text-foreground mt-4 mb-2;
+    @apply text-sm font-semibold text-fg-primary mt-4 mb-2;
   }
 </style>

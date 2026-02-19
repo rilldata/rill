@@ -33,6 +33,19 @@ const config = {
     locales: ["en"],
   },
 
+  // HubSpot tracking script
+  scripts: [
+    {
+      src: '//js-na2.hs-scripts.com/242088677.js',
+      async: true,
+      defer: true,
+      id: 'hs-script-loader',
+    },
+  ],
+
+  // Client modules for SPA route tracking
+  clientModules: [require.resolve('./src/clientModules/hubspot.js')],
+
   presets: [
     [
       "classic",
@@ -142,18 +155,31 @@ const config = {
             activeBaseRegex: "^/guide.*", // Keep Docs active for all doc pages
           },
           {
-            to: "/reference/project-files",
+            type: "dropdown",
             label: "Reference",
             position: "left",
-            className: "navbar-reference-link",
-            activeBasePath: "/reference/project-files",
-          },
-          {
-            to: "/api/admin/",
-            label: "API",
-            position: "left",
-            className: "navbar-api-link",
-            activeBasePath: "/api/admin/",
+            to: "/reference/project-files",
+            className: 'my-custom-dropdown',
+            activeBaseRegex: "^(/reference|/api/admin)",
+            items: [
+              {
+                to: "/reference/project-files",
+                label: "Project Files",
+              },
+              {
+                to: "/reference/cli",
+                label: "CLI",
+              },
+              {
+                to: "/reference/time-syntax/rill-iso-extensions",
+                label: "Rill ISO 8601",
+              },
+              {
+                to: "/api/admin/",
+                label: "REST API",
+              },
+
+            ],
           },
 
           // {
@@ -172,8 +198,7 @@ const config = {
             to: "/contact",
             label: "Contact Us",
             position: "left",
-            className: "navbar-contact-link",
-            activeBasePath: "/contact",
+            activeBaseRegex: "^/contact",
           },
 
 
@@ -182,18 +207,19 @@ const config = {
           {
             type: "html",
             position: "right",
-            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
           },
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link github-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer"><img src="/icons/Github.svg" alt="" width="20" height="20" class="github-icon" /><span class="github-link-text">GitHub</span></a>',
           },
-
           {
             type: "search",
             position: "right"
           },
+
+
         ],
       },
       footer: {
@@ -669,7 +695,7 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/openai',
-            to: '/developers/build/connectors/data-source/openai',
+            to: '/developers/build/connectors/services/openai',
           },
           {
             from: '/build/connectors/data-source/postgres',
@@ -689,7 +715,7 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/slack',
-            to: '/developers/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/services/slack',
           },
           {
             from: '/build/connectors/data-source/snowflake',
@@ -863,7 +889,7 @@ const config = {
           },
           {
             from: '/build/connect/data-source/slack',
-            to: '/developers/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/services/slack',
           },
           {
             from: '/build/connect/data-source/local-file',
@@ -879,7 +905,7 @@ const config = {
           },
           {
             from: '/build/connect/data-source/openai',
-            to: '/developers/build/connectors/data-source/openai',
+            to: '/developers/build/connectors/services/openai',
           },
           // ============================================
           // /connect/* → /developers/build/connectors/*
@@ -982,7 +1008,7 @@ const config = {
           },
           {
             from: '/connect/data-source/slack',
-            to: '/developers/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/services/slack',
           },
           {
             from: '/connect/data-source/local-file',
@@ -998,7 +1024,7 @@ const config = {
           },
           {
             from: '/connect/data-source/openai',
-            to: '/developers/build/connectors/data-source/openai',
+            to: '/developers/build/connectors/services/openai',
           },
           // ============================================
           // /deploy/* → /developers/deploy/*
@@ -1041,7 +1067,7 @@ const config = {
           },
           {
             from: '/deploy/performance',
-            to: '/developers/guides/performance',
+            to: '/developers/tutorials/performance',
           },
           {
             from: '/deploy/templating',
@@ -1119,107 +1145,107 @@ const config = {
             to: '/developers/get-started/why-rill',
           },
           // ============================================
-          // /guides/* → /developers/guides/*
+          // /guides/* → /developers/tutorials/*
           // ============================================
           {
             from: '/guides',
-            to: '/developers/guides',
+            to: '/developers/tutorials/',
           },
           {
             from: '/guides/index',
-            to: '/developers/guides',
+            to: '/developers/tutorials/',
           },
           {
             from: '/guides/clone-a-project',
-            to: '/developers/guides/clone-a-project',
+            to: '/developers/tutorials/clone-a-project',
           },
           {
             from: '/guides/cost-monitoring-analytics',
-            to: '/developers/guides/cost-monitoring-analytics',
+            to: '/developers/tutorials/cost-monitoring-analytics',
           },
           {
             from: '/guides/github-analytics',
-            to: '/developers/guides/github-analytics',
+            to: '/developers/tutorials/github-analytics',
           },
           {
             from: '/guides/integrating-with-rill',
-            to: '/developers/guides/integrating-with-rill',
+            to: '/developers/tutorials/integrating-with-rill',
           },
           {
             from: '/guides/openrtb-analytics',
-            to: '/developers/guides/openrtb-analytics',
+            to: '/developers/tutorials/openrtb-analytics',
           },
           {
             from: '/guides/performance',
-            to: '/developers/guides/performance',
+            to: '/developers/tutorials/performance',
           },
           {
             from: '/guides/setting-up-mcp',
-            to: '/developers/guides/setting-up-mcp',
+            to: '/developers/tutorials/setting-up-mcp',
           },
           {
             from: '/guides/rill-basics',
-            to: '/developers/guides/rill-basics/launch',
+            to: '/developers/tutorials/rill-basics/launch',
           },
           {
             from: '/guides/rill-basics/1-launch',
-            to: '/developers/guides/rill-basics/launch',
+            to: '/developers/tutorials/rill-basics/launch',
           },
           {
             from: '/guides/rill-basics/2-import',
-            to: '/developers/guides/rill-basics/import',
+            to: '/developers/tutorials/rill-basics/import',
           },
           {
             from: '/guides/rill-basics/3-model',
-            to: '/developers/guides/rill-basics/model',
+            to: '/developers/tutorials/rill-basics/model',
           },
           {
             from: '/guides/rill-basics/4-metrics-view',
-            to: '/developers/guides/rill-basics/metrics-view',
+            to: '/developers/tutorials/rill-basics/metrics-view',
           },
           {
             from: '/guides/rill-basics/5-dashboard',
-            to: '/developers/guides/rill-basics/dashboard',
+            to: '/developers/tutorials/rill-basics/dashboard',
           },
           {
             from: '/guides/rill-basics/6-deploy',
-            to: '/developers/guides/rill-basics/deploy',
+            to: '/developers/tutorials/rill-basics/deploy',
           },
           {
             from: '/guides/rill-basics/success',
-            to: '/developers/guides/rill-basics/success',
+            to: '/developers/tutorials/rill-basics/success',
           },
           {
             from: '/guides/rill-clickhouse',
-            to: '/developers/guides/rill-clickhouse',
+            to: '/developers/tutorials/rill-clickhouse',
           },
           {
             from: '/guides/rill-clickhouse/index',
-            to: '/developers/guides/rill-clickhouse',
+            to: '/developers/tutorials/rill-clickhouse',
           },
           {
             from: '/guides/rill-clickhouse/1-r_ch_launch',
-            to: '/developers/guides/rill-clickhouse/r_ch_launch',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_launch',
           },
           {
             from: '/guides/rill-clickhouse/2-r_ch_connect',
-            to: '/developers/guides/rill-clickhouse/r_ch_connect',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_connect',
           },
           {
             from: '/guides/rill-clickhouse/3-r_ch_metrics-view',
-            to: '/developers/guides/rill-clickhouse/r_ch_metrics-view',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_metrics-view',
           },
           {
             from: '/guides/rill-clickhouse/4-r_ch_dashboard',
-            to: '/developers/guides/rill-clickhouse/r_ch_dashboard',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_dashboard',
           },
           {
             from: '/guides/rill-clickhouse/5-r_ch_deploy',
-            to: '/developers/guides/rill-clickhouse/r_ch_deploy',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_deploy',
           },
           {
             from: '/guides/rill-clickhouse/r_ch_ingest',
-            to: '/developers/guides/rill-clickhouse/r_ch_ingest',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_ingest',
           },
           // ============================================
           // /integrate/* → /developers/integrate/*
@@ -1270,10 +1296,6 @@ const config = {
           {
             from: '/other/plans',
             to: '/developers/other/plans',
-          },
-          {
-            from: '/other/v50-dashboard-changes',
-            to: '/developers/other/v50-dashboard-changes',
           },
           {
             from: '/other/granting',
@@ -1458,7 +1480,7 @@ const config = {
           },
           {
             from: '/reference/rill-iso-extensions',
-            to: '/developers/build/metrics-view/time-series/time-syntax',
+            to: '/reference/time-syntax/rill-iso-extensions',
           },
           {
             from: '/reference/olap-engines/',
@@ -1538,7 +1560,7 @@ const config = {
           },
           {
             from: '/reference/connectors/slack',
-            to: '/developers/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/services/slack',
           },
           {
             from: '/reference/connectors/local-file',

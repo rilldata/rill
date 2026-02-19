@@ -2,8 +2,8 @@
   import { Handle, Position, NodeToolbar } from "@xyflow/svelte";
   import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
-    resourceColorMapping,
     resourceIconMapping,
+    resourceShorthandMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { ResourceNodeData } from "../shared/types";
@@ -59,8 +59,8 @@
       ? resourceIconMapping[kind]
       : DEFAULT_ICON;
   $: color =
-    kind && resourceColorMapping[kind]
-      ? resourceColorMapping[kind]
+    kind && resourceShorthandMapping[kind]
+      ? `var(--${resourceShorthandMapping[kind]})`
       : DEFAULT_COLOR;
   $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
   $: hasError = !!data?.resource?.meta?.reconcileError;
@@ -114,7 +114,7 @@
   class:route-highlighted={routeHighlighted}
   class:error={hasError}
   class:root={data?.isRoot}
-  style={`--node-accent:${color}`}
+  style:--node-accent={color}
   style:width={width ? `${width}px` : undefined}
   data-kind={kind}
   on:click={handleClick}
@@ -211,7 +211,7 @@
 
 <style lang="postcss">
   .node {
-    @apply relative flex items-center gap-x-3 rounded-lg border border-accent bg-surface px-3 py-2 cursor-pointer shadow-sm;
+    @apply relative border flex items-center gap-x-3 rounded-lg border bg-surface-subtle px-3 py-2 cursor-pointer shadow-sm;
     border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
     transition:
       box-shadow 120ms ease,
@@ -228,20 +228,13 @@
     background-color: color-mix(
       in srgb,
       var(--node-accent) 8%,
-      var(--surface, #ffffff)
+      var(--surface-background, #ffffff)
     );
   }
 
   .node.selected {
     @apply shadow border-2;
     border-color: var(--node-accent);
-    transform: translateY(-1px);
-  }
-
-  .node.route-highlighted {
-    @apply shadow border-2;
-    border-color: var(--node-accent);
-    transform: translateY(-1px);
   }
 
   .node.error {
@@ -261,7 +254,7 @@
   }
 
   .error-close {
-    @apply h-6 w-6 rounded border border-red-300 bg-white text-xs text-red-600;
+    @apply h-6 w-6 rounded border border-red-300 bg-surface-background text-xs text-red-600;
     line-height: 1rem;
   }
 
@@ -298,11 +291,11 @@
   }
 
   .meta {
-    @apply text-xs text-gray-500 capitalize;
+    @apply text-xs text-fg-secondary capitalize;
   }
 
   .status {
-    @apply text-xs text-gray-400 italic;
+    @apply text-xs text-fg-secondary italic;
   }
 
   .status.error {

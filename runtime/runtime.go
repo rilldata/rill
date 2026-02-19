@@ -97,6 +97,10 @@ func (r *Runtime) Version() version.Version {
 	return r.opts.Version
 }
 
+func (r *Runtime) Activity() *activity.Client {
+	return r.activity
+}
+
 func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
@@ -193,11 +197,13 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.PublicPaths = rillYAML.PublicPaths
 	inst.AIInstructions = rillYAML.AIInstructions
 	inst.ProjectAIConnector = rillYAML.AIConnector
+	inst.Theme = rillYAML.Theme
+
 	return r.EditInstance(ctx, inst, restartController)
 }
 
 // UpdateInstanceConnector upserts or removes a connector from an instance
-// If connector is nil, the connector is removed; otherwise, it is upserted
+// If connector is nil, the connector is removed and the handle is closed; otherwise, it is upserted
 func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name string, connector *runtimev1.ConnectorSpec) error {
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
@@ -229,7 +235,19 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	inst = &tmp
 	inst.ProjectConnectors = projConns
 
-	return r.EditInstance(ctx, inst, false)
+	err = r.EditInstance(ctx, inst, false)
+	if err != nil {
+		return err
+	}
+
+	// close the connection
+	if connector == nil {
+		r.connCache.EvictWhere(func(cfg any) bool {
+			x := cfg.(cachedConnectionConfig)
+			return x.instanceID == instanceID && x.name == name
+		})
+	}
+	return nil
 }
 
 func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) error {

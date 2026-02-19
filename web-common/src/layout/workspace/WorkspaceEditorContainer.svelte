@@ -1,15 +1,14 @@
 <script lang="ts">
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { slide } from "svelte/transition";
 
-  export let error: LineStatus | undefined = undefined;
+  export let error: string | undefined = undefined;
   export let showError = true;
 </script>
 
 <div
-  class="flex flex-col size-full gap-y-1 bg-surface rounded-[2px] border overflow-hidden"
+  class="flex flex-col size-full gap-y-1 bg-surface-subtle rounded-[2px] border overflow-hidden"
 >
   <div
     class="size-full relative overflow-hidden flex flex-col items-center justify-center"
@@ -22,10 +21,10 @@
     <div
       role="status"
       transition:slide={{ duration: LIST_SLIDE_DURATION }}
-      class="editor-error ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5 max-h-72 overflow-auto"
+      class="border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-72 overflow-auto"
     >
       <div class="flex gap-x-2 items-center">
-        <CancelCircle />{error.message}
+        <CancelCircle className="text-destructive" />{error}
       </div>
     </div>
   {/if}

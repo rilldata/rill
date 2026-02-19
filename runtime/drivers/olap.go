@@ -176,6 +176,9 @@ type OLAPInformationSchema interface {
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
 	// It should be called after All or Lookup and not on manually created tables.
 	LoadPhysicalSize(ctx context.Context, tables []*OlapTable) error
+	// LoadDDL populates the DDL field of a single table's metadata.
+	// Drivers that don't support DDL retrieval should return nil (leaving DDL empty).
+	LoadDDL(ctx context.Context, table *OlapTable) error
 }
 
 // OlapTable represents a table in an information schema.
@@ -190,6 +193,7 @@ type OlapTable struct {
 	Schema            *runtimev1.StructType
 	UnsupportedCols   map[string]string
 	PhysicalSizeBytes int64
+	DDL               string
 }
 
 // Dialect enumerates OLAP query languages.
@@ -304,9 +308,12 @@ func (d Dialect) SupportsILike() bool {
 	return d != DialectDruid && d != DialectPinot && d != DialectStarRocks
 }
 
-// RequiresCastForLike returns true if the dialect requires an expression used in a LIKE or ILIKE condition to explicitly be cast to type TEXT.
-func (d Dialect) RequiresCastForLike() bool {
-	return d == DialectClickHouse
+// GetCastExprForLike returns the cast expression for use in a LIKE or ILIKE condition, or an empty string if no cast is necessary.
+func (d Dialect) GetCastExprForLike() string {
+	if d == DialectClickHouse {
+		return "::Nullable(TEXT)"
+	}
+	return ""
 }
 
 func (d Dialect) SupportsRegexMatch() bool {
@@ -796,11 +803,19 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			}
 
 			if d == DialectDuckDB {
-				prefix += "?"
-				args = append(args, v)
+				argExpr, argVal, err := d.GetArgExpr(v, result.Schema.Fields[i].Type.Code)
+				if err != nil {
+					return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
+				}
+				prefix += argExpr
+				args = append(args, argVal)
 			} else if d == DialectClickHouse {
-				suffix += "?"
-				args = append(args, v)
+				argExpr, argVal, err := d.GetArgExpr(v, result.Schema.Fields[i].Type.Code)
+				if err != nil {
+					return "", nil, nil, fmt.Errorf("select inline: failed to get argument expression: %w", err)
+				}
+				suffix += argExpr
+				args = append(args, argVal)
 			} else if d == DialectDruid || d == DialectPinot {
 				ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
 				if err != nil {
@@ -841,6 +856,21 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 	return prefix + suffix, args, dimVals, nil
 }
 
+func (d Dialect) GetArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
+	// handle date types especially otherwise they get sent as time.Time args which will be treated as datetime/timestamp types in olap
+	if typ == runtimev1.Type_CODE_DATE {
+		t, ok := val.(time.Time)
+		if !ok {
+			return "", nil, fmt.Errorf("could not cast value %v to time.Time for date type", val)
+		}
+		if d == DialectClickHouse {
+			return "toDate(?)", t.Format(time.DateOnly), nil
+		}
+		return "CAST(? AS DATE)", t.Format(time.DateOnly), nil
+	}
+	return "?", val, nil
+}
+
 func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, error) {
 	if val == nil {
 		ok, expr := d.GetNullExpr(typ)
@@ -860,18 +890,25 @@ func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, err
 		if f, ok := val.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
 			return true, "NULL", nil
 		}
-
 		return true, fmt.Sprintf("%v", val), nil
 	case runtimev1.Type_CODE_BOOL:
 		return true, fmt.Sprintf("%v", val), nil
-	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_TIMESTAMP:
 		if t, ok := val.(time.Time); ok {
-			if ok, expr := d.GetTimeExpr(t); ok {
+			if ok, expr := d.GetDateTimeExpr(t); ok {
 				return true, expr, nil
 			}
 			return false, "", fmt.Errorf("cannot get time expr for dialect %q", d)
 		}
 		return false, "", fmt.Errorf("unsupported time type %q", typ)
+	case runtimev1.Type_CODE_DATE:
+		if t, ok := val.(time.Time); ok {
+			if ok, expr := d.GetDateExpr(t); ok {
+				return true, expr, nil
+			}
+			return false, "", fmt.Errorf("cannot get date expr for dialect %q", d)
+		}
+		return false, "", fmt.Errorf("unsupported date type %q", typ)
 	default:
 		return false, "", fmt.Errorf("unsupported type %q", typ)
 	}
@@ -897,7 +934,7 @@ func (d Dialect) GetNullExpr(typ runtimev1.Type_Code) (bool, string) {
 	return true, "NULL"
 }
 
-func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
+func (d Dialect) GetDateTimeExpr(t time.Time) (bool, string) {
 	switch d {
 	case DialectClickHouse:
 		return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
@@ -907,6 +944,19 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
 	case DialectStarRocks:
 		return true, fmt.Sprintf("CAST('%s' AS DATETIME)", t.Format(time.DateTime))
+	default:
+		return false, ""
+	}
+}
+
+func (d Dialect) GetDateExpr(t time.Time) (bool, string) {
+	switch d {
+	case DialectClickHouse:
+		return true, fmt.Sprintf("toDate('%s')", t.Format(time.DateOnly))
+	case DialectDuckDB, DialectDruid, DialectStarRocks:
+		return true, fmt.Sprintf("CAST('%s' AS DATE)", t.Format(time.DateOnly))
+	case DialectPinot:
+		return true, fmt.Sprintf("CAST(%d AS DATE)", t.UnixMilli())
 	default:
 		return false, ""
 	}

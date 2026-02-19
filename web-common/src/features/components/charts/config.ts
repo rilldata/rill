@@ -4,6 +4,7 @@ import Funnel from "@rilldata/web-common/components/icons/Funnel.svelte";
 import Heatmap from "@rilldata/web-common/components/icons/Heatmap.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
 import MultiChart from "@rilldata/web-common/components/icons/MultiChart.svelte";
+import ScatterChart from "@rilldata/web-common/components/icons/ScatterChart.svelte";
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
@@ -28,6 +29,8 @@ import { FunnelChartProvider } from "./funnel/FunnelChartProvider";
 import { generateVLFunnelChartSpec } from "./funnel/spec";
 import { HeatmapChartProvider } from "./heatmap/HeatmapChartProvider";
 import { generateVLHeatmapSpec } from "./heatmap/spec";
+import { ScatterPlotChartProvider } from "./scatter/ScatterPlotChartProvider";
+import { generateVLScatterPlotSpec } from "./scatter/spec";
 import type {
   ChartDataResult,
   ChartProvider,
@@ -142,6 +145,12 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     icon: MultiChart,
     provider: ComboChartProvider,
     generateSpec: generateVLComboChartSpec,
+  },
+  scatter_plot: {
+    title: "Scatter",
+    icon: ScatterChart,
+    provider: ScatterPlotChartProvider,
+    generateSpec: generateVLScatterPlotSpec,
   },
 };
 

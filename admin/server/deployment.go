@@ -955,7 +955,7 @@ func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, use
 // The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
 // NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
 func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, bool, []database.ResourceName, error) {
-	attr, userID, err := s.getAttributesForUser(ctx, orgID, projID, userID, userEmail)
+	attr, userID, _, err := s.getAttributesForUser(ctx, orgID, projID, userID, userEmail)
 	if err != nil {
 		return nil, false, nil, err
 	}
@@ -973,17 +973,21 @@ func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context
 	return attr, restrictResources, resources, nil
 }
 
-// getAttributesForUser returns a map of attributes for a given user and project and the userID.
+// getAttributesForUser returns
+//  1. map of attributes for a given user and project and
+//  2. userID
+//  3. whether the user has read access to prod deployment
+//
 // The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
 // NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
-func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, string, error) {
+func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, string, bool, error) {
 	if userID == "" && userEmail == "" {
-		return nil, "", errors.New("must provide either userID or userEmail")
+		return nil, "", false, errors.New("must provide either userID or userEmail")
 	}
 
 	if userEmail != "" {
 		if userID != "" {
-			return nil, "", errors.New("must provide either userID or userEmail, not both")
+			return nil, "", false, errors.New("must provide either userID or userEmail, not both")
 		}
 
 		user, err := s.admin.DB.FindUserByEmail(ctx, userEmail)
@@ -996,9 +1000,9 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 					"email":  userEmail,
 					"domain": userEmail[strings.LastIndex(userEmail, "@")+1:],
 					"admin":  false,
-				}, "", nil
+				}, "", false, nil
 			}
-			return nil, "", err
+			return nil, "", false, err
 		}
 
 		userID = user.ID
@@ -1006,18 +1010,18 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 
 	forOrgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, userID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", false, err
 	}
 
 	forProjPerms, err := s.admin.ProjectPermissionsForUser(ctx, projID, userID, forOrgPerms)
 	if err != nil {
-		return nil, "", err
+		return nil, "", false, err
 	}
 
 	attr, err := s.jwtAttributesForUser(ctx, userID, orgID, forProjPerms)
 	if err != nil {
-		return nil, "", err
+		return nil, "", false, err
 	}
 
-	return attr, userID, nil
+	return attr, userID, forProjPerms.ReadProd, nil
 }

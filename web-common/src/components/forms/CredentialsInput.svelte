@@ -23,10 +23,18 @@
   $: uploading = {};
   $: uploadErrors = {};
 
-  // File validation function
   function validateFile(file: File): string | null {
-    if (!file.name.toLowerCase().endsWith(".json")) {
-      return "File must be a JSON file";
+    if (!accept) return null;
+
+    const fileName = file.name.toLowerCase();
+    const acceptedExtensions = accept
+      .split(",")
+      .map((ext) => ext.trim().toLowerCase());
+
+    const isValid = acceptedExtensions.some((ext) => fileName.endsWith(ext));
+    if (!isValid) {
+      const extList = acceptedExtensions.join(", ");
+      return `File must be one of: ${extList}`;
     }
     return null;
   }
@@ -192,7 +200,7 @@
   }
 
   .file-input-wrapper {
-    @apply w-full relative;
+    @apply w-full relative bg-input border rounded-sm;
   }
 
   .file-input-button {
@@ -202,9 +210,7 @@
     justify-content: flex-start;
     gap: 6px;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
     border-radius: 0.125rem;
-    background-color: white;
     text-align: left;
     cursor: pointer;
     transition: border-color 0.2s;
@@ -222,11 +228,11 @@
   }
 
   .choose-file-text {
-    @apply font-medium text-gray-900 text-sm;
+    @apply font-medium text-fg-primary text-sm;
   }
 
   .file-status-text {
-    @apply text-gray-600 text-sm;
+    @apply text-fg-secondary text-sm;
   }
 
   .trash-icon-button {

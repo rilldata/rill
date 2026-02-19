@@ -37,8 +37,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis if an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
 
 
-<img src = '/img/explore/alerts/alerts.gif' class='rounded-gif' />
-<br />
+![Alerts](/img/explore/alerts/alerts.gif)
 
 
 ## Setting and managing alerts
@@ -46,8 +45,7 @@ Alerting is a key element for any BI or analytics workflow. Because Rill's dashb
 To set an alert, click on the alarm bell icon in the upper-right nav bar of Rill Cloud (next to your profile and bookmarks). This will trigger the Alert modal to open up and walk you through the alert creation process.
 
 
-<img src = '/img/explore/alerts/alerts_icon.png' class='centered' />
-<br />
+![Alerts Icon](/img/explore/alerts/alerts_icon.png)
 
 ### Data Selection
 
@@ -97,16 +95,14 @@ If there is a potential alerting destination that you'd like to use with Rill bu
 
 Email is the default notification target for alerts and is automatically enabled. When creating an alert, simply specify the email addresses to include for a particular alert and an email will be sent with a link to the alert when the alert is triggered.
 
-<img src = '/img/explore/alerts/email-notifications.png' class='centered' />
-<br />
+![Email Notifications](/img/explore/alerts/email-notifications.png)
 
 ### Configuring Slack targets
 
-Slack is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](/developers/build/connectors/data-source/slack) documentation.
+Slack is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](/developers/build/connectors/services/slack) documentation.
 
 
-<img src = '/img/explore/alerts/slack-notifications.png' class='centered' />
-<br />
+![Slack Notifications](/img/explore/alerts/slack-notifications.png)
 
 :::warning Adding your Slack app to the correct channels
 
@@ -118,8 +114,7 @@ After having the Slack admin create the app / bot with appropriate permissions, 
 
 To view or make changes to existing alerts, navigate to the project home page and select the `Alerts` tab. Selecting an alert will give details on the configured alert criteria, including frequency and filters. You will also have the option to edit the alert settings.
 
-<img src = '/img/explore/alerts/project_home_alerts.png' class='rounded-gif' />
-<br />
+![Project Home Alerts](/img/explore/alerts/project_home_alerts.png)
 
 ## Common use cases
 

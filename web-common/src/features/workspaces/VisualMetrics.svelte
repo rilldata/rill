@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -20,7 +20,6 @@
     createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
   } from "@rilldata/web-common/runtime-client";
-
   import {
     V1TimeGrain,
     type MetricsViewSpecDimension,
@@ -74,7 +73,7 @@
   );
 
   export let fileArtifact: FileArtifact;
-  export let errors: LineStatus[];
+  export let parseError: V1ParseError | undefined = undefined;
   export let switchView: () => void;
   export let unsavedChanges = false;
 
@@ -230,9 +229,6 @@
       label: label.charAt(0).toUpperCase() + label.slice(1),
     };
   });
-
-  /** display the main error (the first in this array) at the bottom */
-  $: mainError = errors?.at(0);
 
   $: itemGroups = {
     measures:
@@ -574,9 +570,9 @@
                "
               >
                 {#if !hasValidOLAPTableSelected}
-                  <span class="text-gray-400 truncate">Select table</span>
+                  <span class="text-fg-muted truncate">Select table</span>
                 {:else}
-                  <span class="text-gray-700 truncate">
+                  <span class="text-fg-secondary truncate">
                     {modelOrSourceOrTableName}
                   </span>
                 {/if}
@@ -682,13 +678,13 @@
             searchValue = value;
           }}
         >
-          <Search slot="icon" size="16px" color="#374151" />
+          <Search slot="icon" size="16px" className="text-fg-muted" />
         </Input>
       </div>
 
       {#if totalSelected}
         <div
-          class="bg-surface rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
+          class="bg-surface-subtle rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
             {totalSelected}
@@ -698,7 +694,7 @@
             on:click={() => {
               triggerDelete();
             }}
-            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
           >
             <Trash size="16px" />
             Delete
@@ -711,7 +707,7 @@
                 dimensions: new Set(),
               };
             }}
-            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
           >
             <Close size="14px" />
           </button>
@@ -729,7 +725,6 @@
             <Button
               type="ghost"
               square
-              gray
               noStroke
               onClick={() => {
                 collapsed[type] = !collapsed[type];
@@ -750,7 +745,6 @@
             <Button
               type="ghost"
               square
-              gray
               noStroke
               label="Add new {type.slice(0, -1)}"
               onClick={() => {
@@ -798,14 +792,14 @@
       {/each}
     </div>
 
-    {#if mainError}
+    {#if parseError}
       <div
         role="status"
         transition:slide={{ duration: LIST_SLIDE_DURATION }}
-        class=" flex items-center gap-x-2 ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5 max-h-40 overflow-auto"
+        class="flex items-center gap-x-2 border border-destructive bg-destructive/15 dark:bg-destructive/30 text-fg-primary border-l-4 px-2 py-5 max-h-40 overflow-auto"
       >
-        <CancelCircle />
-        {mainError.message}
+        <CancelCircle className="text-destructive" />
+        {parseError.message}
       </div>
     {/if}
   </div>
@@ -904,7 +898,7 @@
   }
 
   .main-area {
-    @apply flex flex-col gap-y-4 size-full p-4 bg-surface border;
+    @apply flex flex-col gap-y-4 size-full p-4 bg-surface-background border;
     @apply flex-shrink overflow-hidden rounded-[2px] relative;
   }
 

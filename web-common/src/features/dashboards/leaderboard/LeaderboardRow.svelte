@@ -2,20 +2,20 @@
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
+  import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
-  import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
-  import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
     COMPARISON_COLUMN_WIDTH,
     DEFAULT_COLUMN_WIDTH,
-    valueColumn,
     deltaColumn,
     MEASURES_PADDING,
+    valueColumn,
   } from "./leaderboard-widths";
-  import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
+  import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
+  import LongBarZigZag from "./LongBarZigZag.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
@@ -93,7 +93,7 @@
   $: deltaColumn.update(deltaElementWidth);
 
   $: barColor = excluded
-    ? "var(--color-gray-100)"
+    ? "var(--surface-active)"
     : selected || hovered
       ? "var(--color-theme-200)"
       : "var(--color-theme-100)";
@@ -160,7 +160,7 @@
 
   $: dimensionCellClass = `relative size-full flex flex-none justify-between items-center leaderboard-label ${
     atLeastOneActive ? "cursor-pointer" : ""
-  } ${excluded ? "ui-copy-disabled" : ""} ${!excluded && selected ? "ui-copy-strong" : ""}`;
+  } ${excluded ? "text-fg-disabled" : ""} ${!excluded && selected ? "text-fg-primary font-semibold" : ""}`;
 
   function onDimensionCellClick(e: MouseEvent) {
     // Check if user has selected text
@@ -185,9 +185,6 @@
   class:border-b={borderBottom}
   class:border-t={borderTop}
   class="relative"
-  style:background={leaderboardMeasureNames.length === 1
-    ? dimensionGradients
-    : undefined}
   on:pointerover={() => (hovered = true)}
   on:pointerout={() => (hovered = false)}
   on:click={(e) => {
@@ -238,7 +235,7 @@
     {/if}
   </LeaderboardCell>
 
-  {#each Object.keys(values) as measureName}
+  {#each leaderboardMeasureNames as measureName, i (i)}
     <LeaderboardCell
       value={values[measureName]?.toString() || ""}
       dataType="INTEGER"
@@ -269,7 +266,7 @@
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
-          color="text-gray-500"
+          color="text-fg-secondary"
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />
@@ -284,7 +281,7 @@
         cellType="comparison"
       >
         <FormattedDataType
-          color="text-gray-500"
+          color="text-fg-secondary"
           type="INTEGER"
           value={deltaAbsMap[measureName]
             ? formatters[measureName]?.(deltaAbsMap[measureName])
@@ -308,7 +305,7 @@
           value={deltaRels[measureName]
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
-          color="text-gray-500"
+          color="text-fg-secondary"
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />
@@ -320,12 +317,24 @@
 
 <style lang="postcss">
   td {
-    @apply bg-surface h-[22px] p-0 px-1 truncate text-right;
+    @apply h-[22px] p-0 px-1 truncate text-right;
   }
 
   tr {
     @apply cursor-pointer;
     max-height: 22px;
+  }
+
+  tr:hover {
+    @apply bg-popover-accent;
+  }
+
+  td[data-comparison-cell] {
+    @apply bg-transparent px-1 truncate;
+  }
+
+  tr:hover td[data-comparison-cell] {
+    @apply bg-popover-accent;
   }
 
   .external-link-wrapper a {

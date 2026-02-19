@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const gcsSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "Google Cloud Storage",
+  "x-category": "objectStore",
   properties: {
     auth_method: {
       type: "string",
@@ -17,6 +19,7 @@ export const gcsSchema: MultiStepFormSchema = {
         "Use HMAC access key and secret for S3-compatible authentication.",
         "Access publicly readable buckets without credentials.",
       ],
+      "x-ui-only": true,
       "x-grouped-fields": {
         credentials: ["google_application_credentials"],
         hmac: ["key_id", "secret"],
@@ -31,7 +34,10 @@ export const gcsSchema: MultiStepFormSchema = {
         "Upload a JSON key file for a service account with GCS access.",
       format: "file",
       "x-display": "file",
-      "x-accept": ".json",
+      "x-file-accept": ".json",
+      "x-file-encoding": "json",
+      "x-secret": true,
+      "x-env-var-name": "GOOGLE_APPLICATION_CREDENTIALS",
       "x-step": "connector",
       "x-visible-if": { auth_method: "credentials" },
     },
@@ -41,6 +47,7 @@ export const gcsSchema: MultiStepFormSchema = {
       description: "HMAC access key ID for S3-compatible authentication",
       "x-placeholder": "Enter your HMAC access key ID",
       "x-secret": true,
+      "x-env-var-name": "GCP_ACCESS_KEY_ID",
       "x-step": "connector",
       "x-visible-if": { auth_method: "hmac" },
     },
@@ -50,6 +57,7 @@ export const gcsSchema: MultiStepFormSchema = {
       description: "HMAC secret access key for S3-compatible authentication",
       "x-placeholder": "Enter your HMAC secret access key",
       "x-secret": true,
+      "x-env-var-name": "GCP_SECRET_ACCESS_KEY",
       "x-step": "connector",
       "x-visible-if": { auth_method: "hmac" },
     },
