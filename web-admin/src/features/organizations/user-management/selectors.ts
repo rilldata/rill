@@ -109,7 +109,6 @@ export function getOrgAdminMembers(organization: string) {
     {
       pageSize: INFINITE_PAGE_SIZE,
       role: OrgUserRoles.Admin,
-      includeCounts: true,
     },
     {
       query: {

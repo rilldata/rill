@@ -31,13 +31,14 @@ export function getOrganizationBillingContactUser(
         return;
       }
 
-      let adminUser: V1OrganizationMemberUser | null = null;
-      orgAdminsResp.data.pages.forEach((p) => {
-        const user = p.members.find(
-          (m) => m.userEmail === orgResp.data?.organization?.billingEmail,
-        );
-        if (user) adminUser = user;
-      });
+      const billingEmail = orgResp.data?.organization?.billingEmail;
+
+      const adminUser: V1OrganizationMemberUser | undefined = billingEmail
+        ? orgAdminsResp.data?.pages
+            ?.flatMap((p) => p.members ?? [])
+            ?.find((m) => m.userEmail === billingEmail)
+        : undefined;
+
       if (!adminUser) {
         set(undefined);
         return;
@@ -47,6 +48,7 @@ export function getOrganizationBillingContactUser(
         id: adminUser.userId,
         email: adminUser.userEmail,
         displayName: adminUser.userName,
+        photoUrl: adminUser.userPhotoUrl,
       } satisfies V1User);
     },
   );
