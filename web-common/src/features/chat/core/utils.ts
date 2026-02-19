@@ -90,7 +90,10 @@ export function getLatestConversationQueryOptions() {
   const lastConversationId = derived(
     createQuery(listConversationsQueryOptions, queryClient),
     (conversationsResp) => {
-      return conversationsResp?.data?.conversations?.[0]?.id;
+      const conversations = conversationsResp?.data?.conversations?.filter(
+        (c) => c.userAgent !== "rill/report",
+      );
+      return conversations?.[0]?.id;
     },
   );
 

@@ -2842,13 +2842,15 @@ message GetReportMetaRequest {
 }
 
 message GetReportMetaResponse {
-  message URLs {
+  message DeliveryMeta {
     string open_url = 1;
     string export_url = 2;
     string edit_url = 3;
     string unsubscribe_url = 4;
+    string user_id = 5;
+    google.protobuf.Struct user_attrs = 6; // user attributes of intended recipient, will be empty for creator mode and for non Rill users
   }
-  map<string, URLs> recipient_urls = 2;
+  map<string, DeliveryMeta> delivery_meta = 2;
   reserved 1;
 }
 
@@ -3441,8 +3443,10 @@ message ReportOptions {
   string refresh_cron = 2;
   string refresh_time_zone = 9;
   string interval_duration = 13;
-  string query_name = 3;
-  string query_args_json = 4;
+  string resolver = 21;
+  google.protobuf.Struct resolver_properties = 22;
+  string query_name = 3 [deprecated = true]; // use resolver/resolver_properties instead
+  string query_args_json = 4 [deprecated = true]; // use resolver/resolver_properties instead
   uint64 export_limit = 5;
   rill.runtime.v1.ExportFormat export_format = 6;
   bool export_include_header = 20;
@@ -3455,13 +3459,12 @@ message ReportOptions {
   string explore = 16; // either canvas or explore should be set
   string canvas = 17;
   /* web_open_mode is used to determine how to create or disable open link for the report
-    - send "recipient" for older reports (old behaviour)
-    - send "creator" for reports that should be opened with creators permissions
+    - send "recipient" for reports that should be opened with recipient's permissions - requires login
+    - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
     - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-    - send "filtered" for reports that should be opened with creators permissions but with locked filters
    */
   string web_open_mode = 18;
-  rill.runtime.v1.Expression filter = 19; // use with OPEN_MODE_FILTERED
+  reserved 19;
 }
 
 message AlertOptions {

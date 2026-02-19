@@ -20,7 +20,9 @@
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
 
-  $: conversations = $listConversationsQuery.data?.conversations ?? [];
+  $: conversations = ($listConversationsQuery.data?.conversations ?? []).filter(
+    (c) => c.userAgent !== "rill/report",
+  );
   $: isLoading = $listConversationsQuery.isLoading;
   $: isError = $listConversationsQuery.isError;
 
