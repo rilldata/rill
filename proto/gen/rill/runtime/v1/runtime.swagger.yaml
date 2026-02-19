@@ -7247,8 +7247,14 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
+      resolver:
+        type: string
+        title: Generic resolver configuration (preferred for new reports)
+      resolverProperties:
+        type: object
       queryName:
         type: string
+        title: Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
       queryArgsJson:
         type: string
       exportLimit:

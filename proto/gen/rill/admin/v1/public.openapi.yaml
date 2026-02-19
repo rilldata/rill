@@ -1,5 +1,30 @@
 components:
     schemas:
+        GetAlertMetaResponseURLs:
+            properties:
+                editUrl:
+                    type: string
+                openUrl:
+                    type: string
+                unsubscribeUrl:
+                    type: string
+            type: object
+        GetReportMetaResponseDeliveryMeta:
+            properties:
+                editUrl:
+                    type: string
+                exportUrl:
+                    type: string
+                openUrl:
+                    type: string
+                unsubscribeUrl:
+                    type: string
+                userAttrs:
+                    title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
+                    type: object
+                userId:
+                    type: string
+            type: object
         ListGithubUserReposResponseRepo:
             properties:
                 defaultBranch:
@@ -576,17 +601,8 @@ components:
                     type: object
                 recipientUrls:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1GetAlertMetaResponseURLs'
+                        $ref: '#/components/schemas/GetAlertMetaResponseURLs'
                     type: object
-            type: object
-        v1GetAlertMetaResponseURLs:
-            properties:
-                editUrl:
-                    type: string
-                openUrl:
-                    type: string
-                unsubscribeUrl:
-                    type: string
             type: object
         v1GetAlertYAMLResponse:
             properties:
@@ -857,21 +873,10 @@ components:
             type: object
         v1GetReportMetaResponse:
             properties:
-                recipientUrls:
+                deliveryMeta:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1GetReportMetaResponseURLs'
+                        $ref: '#/components/schemas/GetReportMetaResponseDeliveryMeta'
                     type: object
-            type: object
-        v1GetReportMetaResponseURLs:
-            properties:
-                editUrl:
-                    type: string
-                exportUrl:
-                    type: string
-                openUrl:
-                    type: string
-                unsubscribeUrl:
-                    type: string
             type: object
         v1GetServiceResponse:
             properties:
@@ -1734,18 +1739,22 @@ components:
                 exportLimit:
                     format: uint64
                     type: string
-                filter:
-                    $ref: '#/components/schemas/v1Expression'
                 intervalDuration:
                     type: string
                 queryArgsJson:
+                    title: use resolver/resolver_properties instead
                     type: string
                 queryName:
+                    title: use resolver/resolver_properties instead
                     type: string
                 refreshCron:
                     type: string
                 refreshTimeZone:
                     type: string
+                resolver:
+                    type: string
+                resolverProperties:
+                    type: object
                 slackChannels:
                     items:
                         type: string
@@ -1761,10 +1770,9 @@ components:
                 webOpenMode:
                     title: |-
                         web_open_mode is used to determine how to create or disable open link for the report
-                        - send "recipient" for older reports (old behaviour)
-                        - send "creator" for reports that should be opened with creators permissions
+                        - send "recipient" for reports that should be opened with recipient's permissions - requires login
+                        - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
                         - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-                        - send "filtered" for reports that should be opened with creators permissions but with locked filters
                     type: string
                 webOpenPath:
                     description: Annotation for the subpath of <UI host>/org/project to open for the report.
@@ -2308,7 +2316,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.81.3
+    version: v0.81.1
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
