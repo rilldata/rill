@@ -167,13 +167,18 @@ const config = {
                 label: "Project Files",
               },
               {
-                to: "/reference/cli",
-                label: "CLI",
-              },
-              {
                 to: "/reference/time-syntax/rill-iso-extensions",
                 label: "Rill ISO 8601",
               },
+              {
+                to: "/reference/url-syntax/url-parameters",
+                label: "URL Parameters",
+              },
+              {
+                to: "/reference/cli",
+                label: "CLI",
+              },
+
               {
                 to: "/api/admin/",
                 label: "REST API",
@@ -1295,11 +1300,15 @@ const config = {
           },
           {
             from: '/integrate/url-parameters',
-            to: '/developers/embed/url-parameters',
+            to: '/reference/url-syntax/url-parameters',
           },
           {
             from: '/developers/integrate/url-parameters',
-            to: '/developers/embed/url-parameters',
+            to: '/reference/url-syntax/url-parameters',
+          },
+          {
+            from: '/developers/embed/url-parameters',
+            to: '/reference/url-syntax/url-parameters',
           },
           {
             from: '/integrate/custom-apis',
