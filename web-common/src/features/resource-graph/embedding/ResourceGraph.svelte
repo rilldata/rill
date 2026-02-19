@@ -764,7 +764,6 @@
           </div>
         </div>
       {:else if selectedGroup}
-        {@const parts = groupTitleParts(selectedGroup, selectedGroupIndex)}
         <GraphCanvas
           flowId={selectedGroup.id}
           resources={selectedGroup.resources}

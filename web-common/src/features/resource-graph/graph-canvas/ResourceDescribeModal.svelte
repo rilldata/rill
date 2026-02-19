@@ -12,7 +12,6 @@
     Database,
     Clock,
     FileText,
-    Table2,
     LayoutGrid,
     BarChart3,
     Palette,

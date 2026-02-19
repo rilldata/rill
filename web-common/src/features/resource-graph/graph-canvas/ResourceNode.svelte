@@ -83,7 +83,6 @@
   $: isTestOnlyError =
     !!reconcileError && reconcileError.includes(TEST_FAILURE_MARKER);
   $: hasError = !!reconcileError && !isTestOnlyError;
-  $: isIdle = reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: isPending =
     reconcileStatus &&
     reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -103,8 +102,6 @@
   $: measuresCount = metadata?.measures?.length ?? 0;
   $: dimensionsCount = metadata?.dimensions?.length ?? 0;
   $: testCount = metadata?.testCount ?? 0;
-  $: schedule = metadata?.scheduleDescription ?? null;
-  $: isIncremental = metadata?.incremental === true;
   $: testHasErrors = (metadata?.testErrors?.length ?? 0) > 0;
   $: componentCount = metadata?.componentCount ?? 0;
   $: hasSecurityRules = metadata?.hasSecurityRules === true;
