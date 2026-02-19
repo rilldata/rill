@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { filterResources, getResourceStatus } from "./resource-filter-utils";
+import {
+  filterResources,
+  getResourceStatus,
+  getStatusPriority,
+} from "./resource-filter-utils";
 import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -43,6 +47,34 @@ describe("getResourceStatus", () => {
   it("returns 'ok' when status is IDLE with no error", () => {
     const r = makeResource("src1", ResourceKind.Source);
     expect(getResourceStatus(r)).toBe("ok");
+  });
+});
+
+describe("getStatusPriority", () => {
+  it("assigns highest priority to RUNNING", () => {
+    expect(getStatusPriority(V1ReconcileStatus.RECONCILE_STATUS_RUNNING)).toBe(
+      4,
+    );
+  });
+
+  it("assigns second priority to PENDING", () => {
+    expect(getStatusPriority(V1ReconcileStatus.RECONCILE_STATUS_PENDING)).toBe(
+      3,
+    );
+  });
+
+  it("assigns third priority to IDLE", () => {
+    expect(getStatusPriority(V1ReconcileStatus.RECONCILE_STATUS_IDLE)).toBe(2);
+  });
+
+  it("assigns lowest priority to UNSPECIFIED", () => {
+    expect(
+      getStatusPriority(V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED),
+    ).toBe(1);
+  });
+
+  it("assigns lowest priority to undefined", () => {
+    expect(getStatusPriority(undefined)).toBe(1);
   });
 });
 

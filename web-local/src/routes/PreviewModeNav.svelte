@@ -4,20 +4,6 @@
 
   $: currentPath = $page.url.pathname;
 
-  $: activeTab = currentPath.startsWith("/ai")
-    ? "ai"
-    : currentPath.startsWith("/home")
-      ? "home"
-      : currentPath.startsWith("/reports")
-        ? "reports"
-        : currentPath.startsWith("/alerts")
-          ? "alerts"
-          : currentPath.startsWith("/status")
-            ? "status"
-            : currentPath.startsWith("/settings")
-              ? "settings"
-              : "preview";
-
   const allTabs: {
     id: string;
     label: string;
@@ -32,9 +18,10 @@
     { id: "settings", label: "Settings", path: "/settings" },
   ];
 
-  $: tabs = allTabs;
+  $: activeTab =
+    allTabs.find((t) => currentPath.startsWith(t.path))?.id ?? "preview";
 
-  $: selectedIndex = tabs.findIndex((t) => t.id === activeTab);
+  $: selectedIndex = allTabs.findIndex((t) => t.id === activeTab);
 
   // Track tab element positions for the animated underline
   let tabElements: HTMLAnchorElement[] = [];
@@ -58,7 +45,7 @@
 
 <div class="nav-bar">
   <nav>
-    {#each tabs as tab, i (tab.id)}
+    {#each allTabs as tab, i (tab.id)}
       <a
         href={tab.path}
         class="tab"

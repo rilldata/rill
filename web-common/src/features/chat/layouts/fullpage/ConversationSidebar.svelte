@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import Button from "../../../../components/button/Button.svelte";
   import HideSidebar from "../../../../components/icons/HideSidebar.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
@@ -9,13 +8,11 @@
   import type { ConversationManager } from "../../core/conversation-manager";
 
   export let conversationManager: ConversationManager;
+  export let basePath: string;
   export let collapsed = false;
   export let onToggle: () => void = () => {};
   export let onConversationClick: () => void = () => {};
   export let onNewConversationClick: () => void = () => {};
-
-  // Get URL parameters for href construction
-  $: ({ organization, project } = $page.params);
 
   $: currentConversation = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversation?.getConversationQuery();
@@ -52,7 +49,7 @@
         <Button
           type="secondary"
           square
-          href={`/${organization}/${project}/-/ai?new=true`}
+          href={`${basePath}?new=true`}
           onClick={handleNewConversationButtonClick}
         >
           <PlusIcon size="14px" />
@@ -70,7 +67,7 @@
         </span>
         <Button
           type="secondary"
-          href={`/${organization}/${project}/-/ai?new=true`}
+          href={`${basePath}?new=true`}
           class="new-conversation-btn"
           onClick={handleNewConversationButtonClick}
         >
@@ -95,7 +92,7 @@
       {:else if conversations.length}
         {#each conversations as conversation}
           <a
-            href={`/${organization}/${project}/-/ai/${conversation.id}`}
+            href={`${basePath}/${conversation.id}`}
             class="conversation-item"
             class:active={conversation.id === currentConversationDto?.id}
             data-testid="conversation-item"

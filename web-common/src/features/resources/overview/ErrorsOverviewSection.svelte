@@ -15,17 +15,9 @@
 </script>
 
 {#if totalErrors > 0}
-  <div
+  <button
     class="section section-error section-clickable"
-    role="button"
-    tabindex="0"
     on:click={onSectionClick}
-    on:keydown={(e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        onSectionClick();
-      }
-    }}
   >
     <div class="section-header">
       <h3 class="section-title flex items-center gap-2">
@@ -75,7 +67,7 @@
         {/if}
       {/each}
     </div>
-  </div>
+  </button>
 {:else}
   <div class="section">
     <div class="section-header">

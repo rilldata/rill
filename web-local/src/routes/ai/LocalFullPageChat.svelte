@@ -8,7 +8,7 @@
   } from "./local-conversation-manager";
   import ChatInput from "@rilldata/web-common/features/chat/core/input/ChatInput.svelte";
   import Messages from "@rilldata/web-common/features/chat/core/messages/Messages.svelte";
-  import LocalConversationSidebar from "./LocalConversationSidebar.svelte";
+  import ConversationSidebar from "@rilldata/web-common/features/chat/layouts/fullpage/ConversationSidebar.svelte";
   import {
     conversationSidebarCollapsed,
     toggleConversationSidebar,
@@ -43,8 +43,9 @@
 
 <div class="chat-fullpage">
   <!-- Conversation List Sidebar -->
-  <LocalConversationSidebar
+  <ConversationSidebar
     {conversationManager}
+    basePath="/ai"
     collapsed={$conversationSidebarCollapsed}
     onToggle={toggleConversationSidebar}
     onConversationClick={() => {

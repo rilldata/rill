@@ -9,6 +9,8 @@ export {
 /**
  * Returns the Tailwind CSS class for a deployment status indicator dot.
  * Green for running, yellow for in-progress states, red for errors, gray for not deployed.
+ * @param status - The deployment status
+ * @returns Tailwind CSS class for the status dot background color
  */
 export function getStatusDotClass(status: V1DeploymentStatus): string {
   switch (status) {
@@ -28,6 +30,8 @@ export function getStatusDotClass(status: V1DeploymentStatus): string {
 
 /**
  * Returns a human-readable label for a deployment status.
+ * @param status - The deployment status
+ * @returns Human-readable status label (e.g., "Ready", "Pending", "Error")
  */
 export function getStatusLabel(status: V1DeploymentStatus): string {
   switch (status) {
@@ -54,6 +58,8 @@ export function getStatusLabel(status: V1DeploymentStatus): string {
 
 /**
  * Returns a color name for a resource kind tag.
+ * @param kind - The fully qualified resource kind (e.g., "rill.runtime.v1.Model")
+ * @returns Color name for the tag (e.g., "blue", "green", "gray")
  */
 export function getResourceKindTagColor(kind: string) {
   switch (kind) {

@@ -36,6 +36,26 @@ export function getResourceStatus(r: V1Resource): string {
   return "ok";
 }
 
+/**
+ * Returns a numeric priority for a reconcile status, used for table sorting.
+ * Higher values sort first: Running (4) > Pending (3) > Idle (2) > Unknown (1)
+ */
+export function getStatusPriority(
+  status: V1ReconcileStatus | undefined,
+): number {
+  switch (status) {
+    case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
+      return 4;
+    case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
+      return 3;
+    case V1ReconcileStatus.RECONCILE_STATUS_IDLE:
+      return 2;
+    case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
+    default:
+      return 1;
+  }
+}
+
 export function filterResources(
   resources: V1Resource[] | undefined,
   types: string[],
