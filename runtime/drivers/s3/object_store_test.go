@@ -2,7 +2,6 @@ package s3_test
 
 import (
 	"context"
-	"sort"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -121,8 +120,6 @@ func testMatchDirectoriesFromGlobTest(t *testing.T, objectStore drivers.ObjectSt
 		collected = append(collected, obj.Path)
 	}
 
-	sort.Strings(collected)
-	sort.Strings(expected)
 	require.Equal(t, expected, collected)
 }
 
@@ -201,9 +198,6 @@ func testListDirectoriesForGlobPagination(t *testing.T, objectStore drivers.Obje
 		pageCount++
 		pageToken = nextToken
 	}
-
-	sort.Strings(collected)
-	sort.Strings(expected)
 	require.Equal(t, expected, collected, "Collected directories should match expected")
 
 	expectedPages := (len(expected) + int(pageSize) - 1) / int(pageSize)
