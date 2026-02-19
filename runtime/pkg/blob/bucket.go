@@ -81,6 +81,10 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 
 	delimiter := "/"
 	globDepth := strings.Count(glob, delimiter)
+	// ignore delimiter at the end
+	if strings.HasSuffix(glob, delimiter) {
+		globDepth -= 1
+	}
 
 	// Check if the glob contains ** (recursive match)
 	hasDoubleStar := strings.Contains(glob, "**")
@@ -142,7 +146,7 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 			fileDepth := strings.Count(obj.Key, delimiter)
 
 			// Match directoru if glob does not contains doublestar and file depth is greater then glob or glob has delimiter at end
-			if !hasDoubleStar && (fileDepth > globDepth || strings.HasSuffix(glob, delimiter)) {
+			if !hasDoubleStar && fileDepth > globDepth {
 				parts := strings.Split(obj.Key, delimiter)
 				dirPath := strings.Join(parts[:globDepth+1], delimiter) + delimiter
 
@@ -229,9 +233,8 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 	if driverPageToken == nil {
 		finalizeCurrentDir()
 		return entries, "", nil
-	} else {
-		return entries, pagination.MarshalPageToken(driverPageToken, startAfter, currentDir), nil
 	}
+	return entries, pagination.MarshalPageToken(driverPageToken, startAfter), nil
 }
 
 func (b *Bucket) ListObjects(ctx context.Context, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
