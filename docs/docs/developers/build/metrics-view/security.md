@@ -188,7 +188,7 @@ If you want to test what your users are seeing in Rill Cloud after deploying, yo
 
 When [requesting an embedded dashboard from Rill](/developers/embed/dashboards) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
 
-For more information, see [our embedding docs](/developers/embed/dashboards#backend-build-an-iframe-url).
+For more information, see [our embedding docs](/developers/embed/dashboards#2-build-the-iframe-url-backend).
 
 
 ## Examples
