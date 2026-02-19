@@ -252,7 +252,10 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		InstanceID:         session.InstanceID(),
 		Resolver:           "metrics",
 		ResolverProperties: map[string]any(args),
-		Claims:             session.Claims(),
+		Args: map[string]any{
+			"ensure_bounded_time_range": true, // Enforce bounded time range for better performance and to prevent runaway queries; the resolver will return an error if the query does not have a bounded time range
+		},
+		Claims: session.Claims(),
 	})
 	if err != nil {
 		return nil, err
