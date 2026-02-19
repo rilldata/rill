@@ -33,9 +33,13 @@ type AnalystAgentArgs struct {
 	CanvasComponent     string                             `json:"canvas_component,omitempty" yaml:"canvas_component" jsonschema:"Optional canvas component name. If provided, the exploration will be limited to this canvas component."`
 	WherePerMetricsView map[string]*metricsview.Expression `json:"where_per_metrics_view,omitempty" yaml:"where_per_metrics_view" jsonschema:"Optional filter for queries per metrics view. If provided, this filter will be applied to queries for each metrics view."`
 
-	Where     *metricsview.Expression `json:"where,omitempty" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
-	TimeStart time.Time               `json:"time_start,omitempty" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
-	TimeEnd   time.Time               `json:"time_end,omitempty" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
+	Where               *metricsview.Expression `json:"where,omitempty" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	TimeStart           time.Time               `json:"time_start,omitempty" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
+	TimeEnd             time.Time               `json:"time_end,omitempty" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
+	ComparisonTimeStart time.Time               `json:"comparison_time_start" yaml:"comparison_time_start" jsonschema:"Optional comparison period start time."`
+	ComparisonTimeEnd   time.Time               `json:"comparison_time_end" yaml:"comparison_time_end" jsonschema:"Optional comparison period end time."`
+	DisableCharts       bool                    `json:"disable_charts" yaml:"disable_charts" jsonschema:"Flag indicating whether to disable chart creation in the analysis."`
+	IsReport            bool                    `json:"is_report" yaml:"is_report" jsonschema:"Flag indicating this is an automated report."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -160,7 +164,10 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if args.Explore == "" {
 		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
 	}
-	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, CreateChartName, ApplyToExploreName)
+	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, ApplyToExploreName)
+	if !args.DisableCharts {
+		tools = append(tools, CreateChartName)
+	}
 
 	// Build completion messages
 	systemPrompt, err := t.systemPrompt(ctx, metricsViewNames, args)
@@ -216,6 +223,10 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
 	}
 
+	if args.DisableCharts {
+		ff["chat_charts"] = false
+	}
+
 	metricsViewsQuoted := make([]string, len(metricsViewNames))
 	for i, mv := range metricsViewNames {
 		metricsViewsQuoted[i] = fmt.Sprintf("`%s`", mv)
@@ -233,6 +244,7 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 
 	data := map[string]any{
 		"ai_instructions":  session.ProjectInstructions(),
+		"is_prompt":        args.Prompt != "",
 		"metrics_views":    strings.Join(metricsViewsQuoted, ", "),
 		"explore":          args.Explore,
 		"canvas":           args.Canvas,
@@ -240,6 +252,8 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		"dimensions":       strings.Join(dimensionsQuoted, ", "),
 		"measures":         strings.Join(measuresQuoted, ", "),
 		"feature_flags":    ff,
+		"forked":           session.Forked(),
+		"is_report":        args.IsReport,
 		"now":              time.Now(),
 		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
 	}
@@ -247,6 +261,11 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
 		data["time_start"] = args.TimeStart.Format(time.RFC3339)
 		data["time_end"] = args.TimeEnd.Format(time.RFC3339)
+	}
+
+	if !args.ComparisonTimeStart.IsZero() && !args.ComparisonTimeEnd.IsZero() {
+		data["comparison_start"] = args.ComparisonTimeStart.Format(time.RFC3339)
+		data["comparison_end"] = args.ComparisonTimeEnd.Format(time.RFC3339)
 	}
 
 	if args.Where != nil {
@@ -267,13 +286,15 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []stri
 		data["where_per_metrics_view"] = wherePerMetricsView
 	}
 
-	data["forked"] = session.Forked()
-
 	// Generate the system prompt
 	return executeTemplate(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights.
-You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.{{ if .explore }}
-Finally apply settings to "{{ .explore }}" and pass the settings to preview that best match the analysis.{{ end }}
+You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
+{{ if .is_report }}
+You are operating in an automated scheduled insight report mode where you will come up with insights on your own without additional user input.
+{{ if .is_prompt }}The user has provided a custom prompt for this scheduled insight report. Tailor your analysis to address this prompt specifically. {{ end }}
+{{#if .explore}}Finally apply settings to "{{ .explore }}" and pass the settings to preview that best match the analysis.{{ end }}
+{{ end }}
 
 Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
 </role>
@@ -288,11 +309,12 @@ Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "200
 **Phase 1: discovery (setup)**
 {{ if .explore }}
 Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view(s) {{ .metrics_views }}.
-The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
+{{ if not .is_report }}The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc. {{ end }}
 The metrics view's definition and time range of available data has been provided in your tool calls.
 
-Here is an overview of the settings the user has currently applied to the dashboard:
+Here is an overview of the settings applied to the dashboard:
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
+{{ if (and .comparison_start .comparison_end) }}Use comparison time range: start={{.comparison_start}}, end={{.comparison_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
 {{ if .measures }}Use measures: {{ .measures }}{{ end }}
 {{ if .dimensions }}Use dimensions: {{ .dimensions }}{{ end }}
@@ -335,25 +357,59 @@ In an iterative OODA loop, you should repeatedly use the "query_metrics_view" to
 Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.
 Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.
 
+{{ if and .is_report (not .is_prompt) }}
+{{ if (and .comparison_start .comparison_end) }}
+<comparison_analysis>
+You are doing comparative analysis between two time periods in scheduled insight report mode, your analysis should:
+1. Compare current period to the comparison period for all key measures
+2. Identify which measures changed significantly (>10%)
+3. For each significant change, identify the dimensional drivers
+4. Highlight any ranking changes in top dimensions
+5. Generate 3-5 key insights with supporting charts
+
+Focus areas:
+- **Overall changes**: Which measures changed the most between periods?
+- **Drivers of change**: Which dimensions contributed most to increases/decreases?
+- **Ranking shifts**: Did any top dimensions change rank significantly?
+- **Anomalies**: Any unusual patterns unique to one period?
+</comparison_analysis>
+{{ else }}
+<single_period_analysis>
+You are doing single period analysis in scheduled insight report mode, your analysis should:
+1. Show totals for the most impactful measures in the period
+2. Identify interesting trends within the time range (use time series)
+3. Find anomalies - unusual spikes, drops, or outliers
+4. Highlight top performers and notable dimension values
+5. Generate 3-5 key insights with supporting charts
+
+Focus areas:
+- **Totals**: What are the key numbers for this period?
+- **Trends**: How did metrics change over the period? Any acceleration/deceleration?
+- **Anomalies**: Are there any unusual data points that stand out?
+- **Distribution**: Which dimensions dominate? Any concentration issues?
+</single_period_analysis>
+{{ end }}
+{{ else }}
 In each iteration, you should:
 - **Observe**: What data patterns emerge? What insights are surfacing? What gaps remain?
 - **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?
 - **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore
 - **Act**: Execute the query and evaluate results in <thinking> tags
-{{ if .feature_flags.chat_charts }}
+{{ end}}
 
+{{ if .feature_flags.chat_charts }}
 **Phase 3: visualization**
 Create a chart: After running "query_metrics_view" create a chart using "create_chart" unless:
 - The user explicitly requests a table-only response
 - The query returns only a single scalar value
 
 Choose the appropriate chart type based on your data:
-- Time series data: line_chart or area_chart (better for cummalative trends)
+- Time series data: line_chart or area_chart (better for cumulative trends)
 - Category comparisons: bar_chart or stacked_bar
 - Part-to-whole relationships: donut_chart
 - Multiple dimensions: Use color encoding with bar_chart, stacked_bar or line_chart
 - Two measures from the same metrics view: Use combo_chart
-- Multiple measures from the same metrics view (more that 2): Use stacked bar chart with multiple measure fields
+- Multiple measures from the same metrics view (more than 2): Use stacked bar chart with multiple measure fields
 - Distribution across two dimensions: heatmap
 {{ if .explore }}
 **Phase 4: Apply settings to dashboard**
@@ -409,7 +465,11 @@ After each query in Phase 2, think through:
 
 <output_format>
 **Format your analysis using markdown as follows**:
-
+{{ if .is_report }}
+<summary>
+[One line summary. Do not include citation links.]
+</summary>
+{{ end }}
 Based on the data analysis, here are the key insights:
 
 1. ## [Headline with specific impact/number]
@@ -421,7 +481,7 @@ Based on the data analysis, here are the key insights:
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-[Optional: Offer specific follow-up analysis options]
+{{ if not .is_report }} [Optional: Offer specific follow-up analysis options] {{ end }}
 
 **Citation Requirements**:
 - Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user
