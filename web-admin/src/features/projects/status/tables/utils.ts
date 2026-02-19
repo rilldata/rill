@@ -134,3 +134,59 @@ export function shouldFilterByErrored(filter: PartitionFilterType): boolean {
 export function shouldFilterByPending(filter: PartitionFilterType): boolean {
   return filter === "pending";
 }
+
+// ============================================
+// Table Splitting and Filtering Utils
+// ============================================
+
+/**
+ * Splits OLAP tables into model-backed and external (unmanaged) tables.
+ * A table is model-backed if the modelResources map contains an entry
+ * for its lowercase name.
+ */
+export function splitTablesByModel(
+  tables: V1OlapTableInfo[],
+  modelResources: Map<string, V1Resource>,
+): { modelTables: V1OlapTableInfo[]; externalTables: V1OlapTableInfo[] } {
+  const modelTables: V1OlapTableInfo[] = [];
+  const externalTables: V1OlapTableInfo[] = [];
+
+  for (const table of tables) {
+    const key = (table.name ?? "").toLowerCase();
+    if (modelResources.has(key)) {
+      modelTables.push(table);
+    } else {
+      externalTables.push(table);
+    }
+  }
+
+  return { modelTables, externalTables };
+}
+
+/**
+ * Filters OLAP tables by search text and type filter.
+ * For model-backed tables, the search also matches the model name.
+ */
+export function applyTableFilters(
+  tables: V1OlapTableInfo[],
+  search: string,
+  type: "all" | "table" | "view",
+  viewMap: Map<string, boolean>,
+  modelResources: Map<string, V1Resource>,
+): V1OlapTableInfo[] {
+  return tables.filter((t) => {
+    const name = t.name ?? "";
+    const resource = modelResources.get(name.toLowerCase());
+    const modelName = resource?.meta?.name?.name ?? "";
+    const lowerSearch = search.toLowerCase();
+    const matchesSearch =
+      !search ||
+      name.toLowerCase().includes(lowerSearch) ||
+      modelName.toLowerCase().includes(lowerSearch);
+    if (type === "all") return matchesSearch;
+    const likelyView = isLikelyView(viewMap.get(name), t.physicalSizeBytes);
+    const matchesType =
+      (type === "view" && likelyView) || (type === "table" && !likelyView);
+    return matchesSearch && matchesType;
+  });
+}

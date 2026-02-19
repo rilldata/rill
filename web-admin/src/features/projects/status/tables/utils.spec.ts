@@ -10,6 +10,8 @@ import {
   hasModelErroredPartitions,
   shouldFilterByErrored,
   shouldFilterByPending,
+  splitTablesByModel,
+  applyTableFilters,
 } from "./utils";
 import type {
   V1OlapTableInfo,
@@ -264,6 +266,167 @@ describe("tables utils", () => {
     it("returns false for other filters", () => {
       expect(shouldFilterByPending("all")).toBe(false);
       expect(shouldFilterByPending("errors")).toBe(false);
+    });
+  });
+
+  describe("splitTablesByModel", () => {
+    it("returns empty arrays for empty inputs", () => {
+      const result = splitTablesByModel([], new Map());
+      expect(result.modelTables).toEqual([]);
+      expect(result.externalTables).toEqual([]);
+    });
+
+    it("splits tables into model-backed and external", () => {
+      const tables: V1OlapTableInfo[] = [
+        { name: "users" },
+        { name: "orders" },
+        { name: "external_data" },
+      ];
+      const modelResources = new Map<string, V1Resource>([
+        ["users", { meta: { name: { name: "users_model" } } }],
+        ["orders", { meta: { name: { name: "orders_model" } } }],
+      ]);
+
+      const result = splitTablesByModel(tables, modelResources);
+
+      expect(result.modelTables).toEqual([
+        { name: "users" },
+        { name: "orders" },
+      ]);
+      expect(result.externalTables).toEqual([{ name: "external_data" }]);
+    });
+
+    it("matches case-insensitively", () => {
+      const tables: V1OlapTableInfo[] = [{ name: "Users" }];
+      const modelResources = new Map<string, V1Resource>([
+        ["users", { meta: { name: { name: "users_model" } } }],
+      ]);
+
+      const result = splitTablesByModel(tables, modelResources);
+
+      expect(result.modelTables).toEqual([{ name: "Users" }]);
+      expect(result.externalTables).toEqual([]);
+    });
+
+    it("treats all tables as external when no model resources exist", () => {
+      const tables: V1OlapTableInfo[] = [
+        { name: "table_a" },
+        { name: "table_b" },
+      ];
+
+      const result = splitTablesByModel(tables, new Map());
+
+      expect(result.modelTables).toEqual([]);
+      expect(result.externalTables).toEqual(tables);
+    });
+  });
+
+  describe("applyTableFilters", () => {
+    const tables: V1OlapTableInfo[] = [
+      { name: "users", physicalSizeBytes: "1024" },
+      { name: "orders", physicalSizeBytes: "2048" },
+      { name: "analytics_view", physicalSizeBytes: "0" },
+    ];
+    const viewMap = new Map<string, boolean>([
+      ["users", false],
+      ["orders", false],
+      ["analytics_view", true],
+    ]);
+    const modelResources = new Map<string, V1Resource>([
+      ["users", { meta: { name: { name: "users_model" } } }],
+    ]);
+
+    it("returns all tables when no filters are active", () => {
+      const result = applyTableFilters(
+        tables,
+        "",
+        "all",
+        viewMap,
+        modelResources,
+      );
+      expect(result).toEqual(tables);
+    });
+
+    it("filters by OLAP table name", () => {
+      const result = applyTableFilters(
+        tables,
+        "orders",
+        "all",
+        viewMap,
+        modelResources,
+      );
+      expect(result).toEqual([{ name: "orders", physicalSizeBytes: "2048" }]);
+    });
+
+    it("filters by model name", () => {
+      const result = applyTableFilters(
+        tables,
+        "users_model",
+        "all",
+        viewMap,
+        modelResources,
+      );
+      expect(result).toEqual([{ name: "users", physicalSizeBytes: "1024" }]);
+    });
+
+    it("search is case-insensitive", () => {
+      const result = applyTableFilters(
+        tables,
+        "USERS",
+        "all",
+        viewMap,
+        modelResources,
+      );
+      expect(result).toEqual([{ name: "users", physicalSizeBytes: "1024" }]);
+    });
+
+    it("filters by type: table", () => {
+      const result = applyTableFilters(
+        tables,
+        "",
+        "table",
+        viewMap,
+        modelResources,
+      );
+      expect(result).toEqual([
+        { name: "users", physicalSizeBytes: "1024" },
+        { name: "orders", physicalSizeBytes: "2048" },
+      ]);
+    });
+
+    it("filters by type: view", () => {
+      const result = applyTableFilters(
+        tables,
+        "",
+        "view",
+        viewMap,
+        modelResources,
+      );
+      expect(result).toEqual([
+        { name: "analytics_view", physicalSizeBytes: "0" },
+      ]);
+    });
+
+    it("combines search and type filter", () => {
+      const result = applyTableFilters(
+        tables,
+        "users",
+        "table",
+        viewMap,
+        modelResources,
+      );
+      expect(result).toEqual([{ name: "users", physicalSizeBytes: "1024" }]);
+    });
+
+    it("returns empty array when nothing matches", () => {
+      const result = applyTableFilters(
+        tables,
+        "nonexistent",
+        "all",
+        viewMap,
+        modelResources,
+      );
+      expect(result).toEqual([]);
     });
   });
 });

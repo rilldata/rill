@@ -13,16 +13,20 @@
     createRuntimeServiceGetInstance,
     getRuntimeServiceListResourcesQueryKey,
     type V1Resource,
-    type V1OlapTableInfo,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import ProjectTablesTable from "./ProjectTablesTable.svelte";
+  import ModelsTable from "./ModelsTable.svelte";
+  import ExternalTablesTable from "./ExternalTablesTable.svelte";
   import {
     useTablesList,
     useTableMetadata,
     useModelResources,
   } from "../selectors";
-  import { filterTemporaryTables, isLikelyView } from "./utils";
+  import {
+    filterTemporaryTables,
+    applyTableFilters,
+    splitTablesByModel,
+  } from "./utils";
   import ResourceSpecDialog from "../resource-table/ResourceSpecDialog.svelte";
   import ModelPartitionsDialog from "./ModelPartitionsDialog.svelte";
   import RefreshErroredPartitionsDialog from "./RefreshErroredPartitionsDialog.svelte";
@@ -101,30 +105,24 @@
     { label: "View", value: "view" },
   ];
 
-  $: displayedTables = applyFilters(
+  $: displayedTables = applyTableFilters(
     filteredTables,
     searchText,
     typeFilter,
     isViewMap,
+    modelResources,
   );
 
-  function applyFilters(
-    tables: V1OlapTableInfo[],
-    search: string,
-    type: "all" | "table" | "view",
-    viewMap: Map<string, boolean>,
-  ): V1OlapTableInfo[] {
-    return tables.filter((t) => {
-      const name = t.name ?? "";
-      const matchesSearch =
-        !search || name.toLowerCase().includes(search.toLowerCase());
-      if (type === "all") return matchesSearch;
-      const likelyView = isLikelyView(viewMap.get(name), t.physicalSizeBytes);
-      const matchesType =
-        (type === "view" && likelyView) || (type === "table" && !likelyView);
-      return matchesSearch && matchesType;
-    });
-  }
+  $: ({ modelTables, externalTables } = splitTablesByModel(
+    displayedTables,
+    modelResources,
+  ));
+
+  // Unfiltered split to distinguish "none exist" from "all filtered out"
+  $: ({
+    modelTables: allModelTables,
+    externalTables: allExternalTables,
+  } = splitTablesByModel(filteredTables, modelResources));
 
   // Dialog states
   let specDialogOpen = false;
@@ -271,31 +269,91 @@
     <div class="text-red-500">
       Error loading tables: {$tablesList.error?.message}
     </div>
-  {:else if displayedTables.length > 0}
-    <ProjectTablesTable
-      tables={displayedTables}
-      isView={isViewMap}
-      {modelResources}
-      onModelInfoClick={handleModelInfoClick}
-      onViewPartitionsClick={handleViewPartitionsClick}
-      onRefreshErroredClick={handleRefreshErroredClick}
-      onIncrementalRefreshClick={handleIncrementalRefreshClick}
-      onFullRefreshClick={handleFullRefreshClick}
-      onViewLogsClick={handleViewLogsClick}
-    />
+  {:else}
+    <!-- Models section -->
+    <section class="flex flex-col gap-y-2">
+      <h3 class="text-sm font-semibold text-fg-primary">
+        Models ({modelTables.length})
+      </h3>
+      {#if modelTables.length > 0}
+        <ModelsTable
+          tables={modelTables}
+          isView={isViewMap}
+          {modelResources}
+          onModelInfoClick={handleModelInfoClick}
+          onViewPartitionsClick={handleViewPartitionsClick}
+          onRefreshErroredClick={handleRefreshErroredClick}
+          onIncrementalRefreshClick={handleIncrementalRefreshClick}
+          onFullRefreshClick={handleFullRefreshClick}
+          onViewLogsClick={handleViewLogsClick}
+        />
+      {:else}
+        <div
+          class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-1"
+        >
+          {#if allModelTables.length > 0}
+            <span class="text-fg-secondary font-semibold text-sm">
+              No models match the current filters
+            </span>
+          {:else}
+            <span class="text-fg-secondary font-semibold text-sm">
+              No models
+            </span>
+            <span class="text-fg-muted text-sm">
+              Models are created in Rill Developer.
+              <a
+                href="https://docs.rilldata.com/build/models/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary-500 hover:text-primary-600"
+              >
+                Learn more
+              </a>
+            </span>
+          {/if}
+        </div>
+      {/if}
+    </section>
+
+    <!-- External Tables section -->
+    <section class="flex flex-col gap-y-2">
+      <h3 class="text-sm font-semibold text-fg-primary">
+        External Tables ({externalTables.length})
+      </h3>
+      {#if externalTables.length > 0}
+        <ExternalTablesTable tables={externalTables} isView={isViewMap} />
+      {:else}
+        <div
+          class="border border-border rounded-sm py-10 flex flex-col items-center gap-y-1"
+        >
+          {#if allExternalTables.length > 0}
+            <span class="text-fg-secondary font-semibold text-sm">
+              No external tables match the current filters
+            </span>
+          {:else}
+            <span class="text-fg-secondary font-semibold text-sm">
+              No external tables
+            </span>
+            <span class="text-fg-muted text-sm">
+              <a
+                href="https://docs.rilldata.com/deploy/existing-project/connect-olap"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary-500 hover:text-primary-600"
+              >
+                Learn about connecting external OLAP engines
+              </a>
+            </span>
+          {/if}
+        </div>
+      {/if}
+    </section>
+
     {#if $tableMetadata?.isLoading}
       <div class="mt-2 text-xs text-fg-secondary">
         Loading table metadata...
       </div>
     {/if}
-  {:else}
-    <div class="text-fg-secondary text-sm">
-      {#if searchText || typeFilter !== "all"}
-        No tables match the current filters
-      {:else}
-        No tables found
-      {/if}
-    </div>
   {/if}
 </section>
 

@@ -39,8 +39,23 @@
         }),
     },
     {
+      id: "modelName",
+      accessorFn: (row) => {
+        const resource = modelResources.get(
+          (row.name ?? "").toLowerCase(),
+        );
+        return resource?.meta?.name?.name ?? row.name ?? "";
+      },
+      header: "Model Name",
+      cell: ({ getValue }) =>
+        flexRender(NameCell, {
+          name: getValue() as string,
+        }),
+    },
+    {
+      id: "tableName",
       accessorFn: (row) => row.name,
-      header: "Name",
+      header: "Table Name",
       cell: ({ getValue }) =>
         flexRender(NameCell, {
           name: getValue() as string,
@@ -104,13 +119,11 @@
       },
     },
   ] as ColumnDef<V1OlapTableInfo, unknown>[];
-
-  $: tableData = tables;
 </script>
 
 <VirtualizedTable
-  tableId="project-tables-table"
-  data={tableData}
+  tableId="models-table"
+  data={tables}
   {columns}
-  columnLayout="minmax(95px, 0.5fr) minmax(150px, 2fr) 64px minmax(100px, 1fr) 56px"
+  columnLayout="minmax(80px, 0.4fr) minmax(120px, 1.5fr) minmax(120px, 1.5fr) 64px minmax(90px, 0.8fr) 56px"
 />
