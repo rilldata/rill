@@ -1,3 +1,4 @@
+import type { V1ConnectorDriver } from "../../../runtime-client";
 import type {
   ConnectorCategory,
   MultiStepFormSchema,
@@ -5,9 +6,12 @@ import type {
 import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
+import { claudeSchema } from "../../templates/schemas/claude";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
 import { gcsSchema } from "../../templates/schemas/gcs";
+import { geminiSchema } from "../../templates/schemas/gemini";
 import { mysqlSchema } from "../../templates/schemas/mysql";
+import { openaiSchema } from "../../templates/schemas/openai";
 import { postgresSchema } from "../../templates/schemas/postgres";
 import { redshiftSchema } from "../../templates/schemas/redshift";
 import { salesforceSchema } from "../../templates/schemas/salesforce";
@@ -21,7 +25,7 @@ import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
 import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
-import { SOURCES, OLAP_ENGINES } from "./constants";
+import { SOURCES, OLAP_ENGINES, AI_CONNECTORS } from "./constants";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
@@ -43,6 +47,9 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   s3: s3Schema,
   gcs: gcsSchema,
   azure: azureSchema,
+  claude: claudeSchema,
+  openai: openaiSchema,
+  gemini: geminiSchema,
 };
 
 /**
@@ -57,7 +64,11 @@ export interface ConnectorInfo {
 /**
  * All connectors enumerated from JSON schemas, sorted by display order.
  */
-export const connectors: ConnectorInfo[] = [...SOURCES, ...OLAP_ENGINES]
+export const connectors: ConnectorInfo[] = [
+  ...SOURCES,
+  ...OLAP_ENGINES,
+  ...AI_CONNECTORS,
+]
   .filter((name) => multiStepFormSchemas[name]?.["x-category"])
   .map((name) => {
     const schema = multiStepFormSchemas[name];
@@ -109,6 +120,44 @@ export function isMultiStepConnector(
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
   const category = schema?.["x-category"];
   return category === "sqlStore" || category === "warehouse";
+}
+
+/**
+ * Determine if a connector is an AI connector (Claude, OpenAI, Gemini).
+ * AI connectors save directly without testing the connection.
+ */
+export function isAiConnector(schema: MultiStepFormSchema | null): boolean {
+  return schema?.["x-category"] === "ai";
+}
+
+/**
+ * Build a V1ConnectorDriver-compatible object from a schema name.
+ * Shared by AddDataModal.toConnectorDriver and addSourceModal.openForConnector.
+ */
+export function toConnectorDriver(
+  schemaName: string,
+): V1ConnectorDriver | null {
+  const schema = getConnectorSchema(schemaName);
+  if (!schema) return null;
+  const category = schema["x-category"];
+  const backendName = getBackendConnectorName(schemaName);
+  const docsCategory =
+    category === "ai"
+      ? "services"
+      : category === "olap"
+        ? "olap"
+        : "data-source";
+  return {
+    name: backendName,
+    displayName: schema.title ?? schemaName,
+    docsUrl: `https://docs.rilldata.com/developers/build/connectors/${docsCategory}/${backendName}`,
+    implementsObjectStore: category === "objectStore",
+    implementsOlap: category === "olap",
+    implementsSqlStore: category === "sqlStore",
+    implementsWarehouse: category === "warehouse",
+    implementsFileStore: category === "fileStore",
+    implementsAi: category === "ai",
+  };
 }
 
 /**
