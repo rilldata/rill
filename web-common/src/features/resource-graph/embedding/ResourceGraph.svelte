@@ -237,7 +237,7 @@
 
   // Whether any filters are active (kind, status, or tree search)
   $: hasActiveFilters =
-    activeKindLabel !== "All types" ||
+    hasExplicitSeeds ||
     statusFilter.length > 0 ||
     treeSearchQuery.trim().length > 0;
 
@@ -712,10 +712,8 @@
 
       <div class="toolbar-right">
         {#if hasActiveFilters}
-          <!-- svelte-ignore a11y-click-events-have-key-events -->
-          <!-- svelte-ignore a11y-no-static-element-interactions -->
-          <span class="clear-link" on:click={handleClearFilters}
-            >Clear Filter</span
+          <button class="clear-link" on:click={handleClearFilters}
+            >Clear Filter</button
           >
         {/if}
         {#if statusFilterOptions.length > 0}

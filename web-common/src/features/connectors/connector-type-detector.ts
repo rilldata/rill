@@ -169,3 +169,43 @@ export function detectConnector(
 ): CloudConnectorType | undefined {
   return detectConnectorFromPath(path) ?? detectConnectorFromContent(content);
 }
+
+/**
+ * Derive the connector type for a resource using a standard priority chain:
+ * 1. Partition resolver properties (cloud storage paths in partitioned models)
+ * 2. Source path via URL prefix detection
+ * 3. SQL content for embedded URLs / DuckDB read functions
+ * 4. Fallback to the provided inputConnector string
+ *
+ * Used by both graph-builder (for node badges) and ResourceDescribeModal
+ * (for the connector detail section). Keep this as the single source of truth
+ * so the two callers stay in sync.
+ */
+export function deriveConnectorType(opts: {
+  partitionsResolverProperties?: Record<string, unknown> | null;
+  sourcePath?: string | null;
+  sqlContent?: string | null;
+  inputConnector?: string | null;
+}): string | undefined {
+  // 1. Check partition resolver properties for cloud storage paths
+  if (opts.partitionsResolverProperties) {
+    for (const value of Object.values(opts.partitionsResolverProperties)) {
+      if (typeof value === "string") {
+        const detected = detectConnectorFromPath(value);
+        if (detected) return detected;
+      }
+    }
+  }
+
+  // 2. Check source path via URL prefix
+  const fromPath = detectConnectorFromPath(opts.sourcePath);
+  if (fromPath) return fromPath;
+
+  // 3. Check SQL content or source path for embedded URLs
+  const contentToCheck = opts.sqlContent || opts.sourcePath;
+  const fromContent = detectConnectorFromContent(contentToCheck);
+  if (fromContent) return fromContent;
+
+  // 4. Fallback to inputConnector
+  return opts.inputConnector ?? undefined;
+}

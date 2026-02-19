@@ -29,10 +29,7 @@
   } from "lucide-svelte";
   import type { ResourceNodeData } from "../shared/types";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
-  import {
-    detectConnectorFromPath,
-    detectConnectorFromContent,
-  } from "@rilldata/web-common/features/connectors/connector-type-detector";
+  import { deriveConnectorType } from "@rilldata/web-common/features/connectors/connector-type-detector";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import { goto } from "$app/navigation";
   import type { ComponentType, SvelteComponent } from "svelte";
@@ -44,25 +41,15 @@
   $: kind = data?.kind;
   $: metadata = data?.metadata;
 
-  // Derive connector info
-  $: derivedConnector = (() => {
-    const partitionsProps = resource?.model?.spec
-      ?.partitionsResolverProperties as Record<string, unknown> | undefined;
-    if (partitionsProps) {
-      for (const value of Object.values(partitionsProps)) {
-        if (typeof value === "string") {
-          const detected = detectConnectorFromPath(value);
-          if (detected) return detected;
-        }
-      }
-    }
-    const fromSourcePath = detectConnectorFromPath(metadata?.sourcePath);
-    if (fromSourcePath) return fromSourcePath;
-    const fromSqlQuery = detectConnectorFromContent(metadata?.sqlQuery);
-    if (fromSqlQuery) return fromSqlQuery;
-    if (metadata?.connector) return metadata.connector;
-    return null;
-  })();
+  // Derive connector info using the shared detection utility
+  $: derivedConnector =
+    deriveConnectorType({
+      partitionsResolverProperties: resource?.model?.spec
+        ?.partitionsResolverProperties as Record<string, unknown> | undefined,
+      sourcePath: metadata?.sourcePath,
+      sqlContent: metadata?.sqlQuery,
+      inputConnector: metadata?.connector,
+    }) ?? null;
 
   $: connectorIcon = (
     derivedConnector &&
@@ -476,7 +463,7 @@
             </button>
             {#if showMeasures}
               <div class="describe-list">
-                {#each metadata.measures as measure}
+                {#each metadata.measures as measure (measure.name)}
                   <div class="describe-list-item">
                     <span class="describe-list-name"
                       >{measure.displayName || measure.name}</span
@@ -511,7 +498,7 @@
             </button>
             {#if showDimensions}
               <div class="describe-list">
-                {#each metadata.dimensions as dim}
+                {#each metadata.dimensions as dim (dim.name)}
                   <div class="describe-list-item">
                     <span class="describe-list-name"
                       >{dim.displayName || dim.name}</span

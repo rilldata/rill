@@ -61,13 +61,18 @@ rows:
 	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
 	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
 	require.Len(t, c1.Meta.Refs, 3) // 2 components + 1 MetricsView (mv1)
+	var foundMvRef bool
 	for _, ref := range c1.Meta.Refs {
-		if ref.Kind != runtime.ResourceKindComponent {
+		if ref.Kind == runtime.ResourceKindMetricsView {
+			require.Equal(t, "mv1", ref.Name)
+			foundMvRef = true
 			continue
 		}
+		require.Equal(t, runtime.ResourceKindComponent, ref.Kind)
 		r := testruntime.GetResource(t, rt, id, runtime.ResourceKindComponent, ref.Name)
 		require.NotNil(t, r.GetComponent().State.ValidSpec)
 	}
+	require.True(t, foundMvRef, "expected a MetricsView ref for mv1")
 
 	// Fix everything
 	testruntime.PutFiles(t, rt, id, map[string]string{"m1.sql": `SELECT 'foo' as foo, 1 as x`})
@@ -97,10 +102,13 @@ rows:
 	require.NotEmpty(t, c1.Meta.ReconcileError)
 	require.Len(t, c1.Meta.Refs, 4) // 2 components + 2 MetricsView (doesnt_exist + mv1)
 	var valid, invalid int
+	mvRefNames := make(map[string]bool)
 	for _, ref := range c1.Meta.Refs {
-		if ref.Kind != runtime.ResourceKindComponent {
+		if ref.Kind == runtime.ResourceKindMetricsView {
+			mvRefNames[ref.Name] = true
 			continue
 		}
+		require.Equal(t, runtime.ResourceKindComponent, ref.Kind)
 		r := testruntime.GetResource(t, rt, id, runtime.ResourceKindComponent, ref.Name)
 		if r.GetComponent().State.ValidSpec == nil {
 			invalid++
@@ -110,6 +118,8 @@ rows:
 	}
 	require.Equal(t, 1, valid)
 	require.Equal(t, 1, invalid)
+	require.True(t, mvRefNames["mv1"], "expected MetricsView ref for mv1")
+	require.True(t, mvRefNames["doesnt_exist"], "expected MetricsView ref for doesnt_exist")
 }
 
 func TestCanvasValidateMetricsViewTimeConsistency(t *testing.T) {

@@ -16,10 +16,7 @@ import type {
 import type { ResourceNodeData, ResourceMetadata } from "../shared/types";
 import { graphCache } from "../shared/cache/position-cache";
 import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "../shared/config";
-import {
-  detectConnectorFromContent,
-  detectConnectorFromPath,
-} from "@rilldata/web-common/features/connectors/connector-type-detector";
+import { deriveConnectorType } from "@rilldata/web-common/features/connectors/connector-type-detector";
 
 // Use centralized configuration
 const MIN_NODE_WIDTH = NODE_CONFIG.MIN_WIDTH;
@@ -141,42 +138,15 @@ function extractResourceMetadata(
       | { path?: string; sql?: string }
       | undefined;
 
-    // Derive connector using same priority as describe modal:
-    // 1. Check partitionsResolverProperties for cloud storage paths
-    // 2. Check source path via URL prefix detection
-    // 3. Check SQL content for embedded URLs
-    // 4. Fall back to inputConnector
-    let connector: string | undefined | null = undefined;
-
-    const partitionsProps = spec.partitionsResolverProperties as
-      | Record<string, unknown>
-      | undefined;
-    if (partitionsProps) {
-      for (const value of Object.values(partitionsProps)) {
-        if (typeof value === "string") {
-          const detected = detectConnectorFromPath(value);
-          if (detected) {
-            connector = detected;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!connector && inputProps?.path) {
-      connector = detectConnectorFromPath(inputProps.path);
-    }
-
-    if (!connector && (inputProps?.path || inputProps?.sql)) {
-      connector = detectConnectorFromContent(inputProps.path || inputProps.sql);
-    }
-
-    if (!connector) {
-      connector = spec.inputConnector;
-    }
-
     // Connector info
-    metadata.connector = connector ?? undefined;
+    metadata.connector = deriveConnectorType({
+      partitionsResolverProperties: spec.partitionsResolverProperties as
+        | Record<string, unknown>
+        | undefined,
+      sourcePath: inputProps?.path,
+      sqlContent: inputProps?.sql,
+      inputConnector: spec.inputConnector,
+    });
     if (spec.inputConnector) metadata.inputConnector = spec.inputConnector;
 
     // Source path for file-based sources
@@ -257,22 +227,11 @@ function extractResourceMetadata(
       | { path?: string; sql?: string }
       | undefined;
 
-    // Derive connector: path prefix detection → content detection → fallback
-    let connector: string | undefined | null = undefined;
-
-    if (props?.path) {
-      connector = detectConnectorFromPath(props.path);
-    }
-
-    if (!connector && (props?.path || props?.sql)) {
-      connector = detectConnectorFromContent(props.path || props.sql);
-    }
-
-    if (!connector) {
-      connector = spec.sourceConnector;
-    }
-
-    metadata.connector = connector ?? undefined;
+    metadata.connector = deriveConnectorType({
+      sourcePath: props?.path,
+      sqlContent: props?.sql,
+      inputConnector: spec.sourceConnector,
+    });
     metadata.hasSchedule = Boolean(
       spec.refreshSchedule?.cron || spec.refreshSchedule?.tickerSeconds,
     );

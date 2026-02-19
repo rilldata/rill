@@ -110,7 +110,7 @@
             syncExpandedParam={false}
             showSummary={false}
             showCardTitles={false}
-            maxGroups={null}
+            maxGroups={5}
             showControls={false}
             showNodeActions={false}
             enableExpansion={false}

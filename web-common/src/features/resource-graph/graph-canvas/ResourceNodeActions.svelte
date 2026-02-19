@@ -11,6 +11,7 @@
   import { goto } from "$app/navigation";
   import type { ResourceNodeData } from "../shared/types";
   import ResourceDescribeModal from "./ResourceDescribeModal.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let data: ResourceNodeData;
 
@@ -43,6 +44,10 @@
       {
         onError: (err) => {
           console.error(`Failed to refresh ${resourceName}:`, err);
+          eventBus.emit("notification", {
+            message: `Failed to refresh ${resourceName}`,
+            type: "error",
+          });
         },
       },
     );

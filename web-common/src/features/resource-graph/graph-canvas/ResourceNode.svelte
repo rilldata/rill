@@ -76,8 +76,12 @@
   // Test failures propagate as "tests failed:..." on the model itself and
   // "Error in dependency <name>: tests failed:..." on downstream resources.
   // Treat both as warnings (shown via check indicator), not node errors.
+  // String matching is necessary because downstream nodes only receive the
+  // propagated error string; the structured `testErrors` field is only on the
+  // originating model. If the backend message format changes, update this constant.
+  const TEST_FAILURE_MARKER = "tests failed:";
   $: isTestOnlyError =
-    !!reconcileError && reconcileError.includes("tests failed:");
+    !!reconcileError && reconcileError.includes(TEST_FAILURE_MARKER);
   $: hasError = !!reconcileError && !isTestOnlyError;
   $: isIdle = reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: isPending =
