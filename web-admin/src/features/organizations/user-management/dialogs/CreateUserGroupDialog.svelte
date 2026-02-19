@@ -414,14 +414,11 @@
               <Dropdown.Content align="start" class="w-full max-h-60 overflow-y-auto">
                 {#each projects as p (p.id)}
                   <Dropdown.CheckboxItem
-                    class="font-normal flex items-center overflow-hidden justify-between"
+                    class="font-normal flex items-center overflow-hidden"
                     checked={selectedProjects.includes(p.name)}
                     onCheckedChange={() => toggleProjectSelection(p.name)}
                   >
-                    <span class="truncate" title={p.name}>{p.name}</span>
-                    {#if selectedProjects.includes(p.name)}
-                      <span class="text-fg-secondary text-xs ml-2 shrink-0">{selectedRoleLabel}</span>
-                    {/if}
+                    <span class="truncate w-full" title={p.name}>{p.name}</span>
                   </Dropdown.CheckboxItem>
                 {/each}
               </Dropdown.Content>

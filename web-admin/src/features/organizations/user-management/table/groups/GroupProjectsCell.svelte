@@ -4,7 +4,6 @@
   import {
     adminServiceListProjectsForOrganization,
     adminServiceListProjectMemberUsergroups,
-    type V1Project,
   } from "@rilldata/web-admin/client";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -12,9 +11,15 @@
   export let organization: string;
   export let groupName: string;
 
+  interface ProjectWithRole {
+    id: string;
+    name: string;
+    roleName: string;
+  }
+
   let isDropdownOpen = false;
   let isPending = true;
-  let accessibleProjects: V1Project[] = [];
+  let accessibleProjects: ProjectWithRole[] = [];
   let error: string | null = null;
   let hasLoaded = false;
 
@@ -38,17 +43,27 @@
                 project.name ?? "",
               );
             const members = usergroupsResponse.members ?? [];
-            const hasAccess = members.some((m) => m.groupName === groupName);
-            return { project, hasAccess };
+            const groupMember = members.find((m) => m.groupName === groupName);
+            if (groupMember) {
+              return {
+                project: {
+                  id: project.id ?? "",
+                  name: project.name ?? "",
+                  roleName: groupMember.roleName ?? "",
+                },
+                hasAccess: true,
+              };
+            }
+            return { project: null, hasAccess: false };
           } catch {
-            return { project, hasAccess: false };
+            return { project: null, hasAccess: false };
           }
         }),
       );
 
       accessibleProjects = projectAccessResults
-        .filter((r) => r.hasAccess)
-        .map((r) => r.project);
+        .filter((r) => r.hasAccess && r.project)
+        .map((r) => r.project as ProjectWithRole);
       hasLoaded = true;
     } catch (e) {
       error = e instanceof Error ? e.message : "Failed to load projects";
@@ -64,8 +79,12 @@
   $: projectCount = accessibleProjects.length;
   $: hasProjects = projectCount > 0;
 
-  function getProjectShareUrl(projectName: string | undefined) {
-    return `/${organization}/${projectName}/-/dashboards?share=true`;
+  function getProjectUrl(projectName: string) {
+    return `/${organization}/${projectName}/-/share`;
+  }
+
+  function formatRoleName(roleName: string): string {
+    return roleName.charAt(0).toUpperCase() + roleName.slice(1).toLowerCase();
   }
 </script>
 
@@ -87,8 +106,12 @@
     </Dropdown.Trigger>
     <Dropdown.Content align="start">
       {#each accessibleProjects as project (project.id)}
-        <Dropdown.Item href={getProjectShareUrl(project.name)}>
-          {project.name}
+        <Dropdown.Item
+          href={getProjectUrl(project.name)}
+          class="flex items-center justify-between gap-4"
+        >
+          <span class="truncate">{project.name}</span>
+          <span class="text-fg-secondary text-xs shrink-0">{formatRoleName(project.roleName)}</span>
         </Dropdown.Item>
       {/each}
     </Dropdown.Content>
