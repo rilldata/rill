@@ -18,11 +18,7 @@
   import { writable } from "svelte/store";
   import ModelsTable from "./ModelsTable.svelte";
   import ExternalTablesTable from "./ExternalTablesTable.svelte";
-  import {
-    useInfiniteTablesList,
-    useTableMetadata,
-    useModelResources,
-  } from "../selectors";
+  import { useInfiniteTablesList, useModelResources } from "../selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import {
     filterTemporaryTables,
@@ -85,16 +81,6 @@
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
 
-  // TODO: useTableMetadata disabled to isolate white-page bug.
-  // It creates N queries inside a readable store's start callback,
-  // which crashes during Svelte's reactive cycle.
-  // $: tableMetadata = useTableMetadata(
-  //   instanceId,
-  //   connectorName,
-  //   filteredTables,
-  //   queryClient,
-  // );
-  // $: isViewMap = new Map($tableMetadata?.data?.isView ?? []);
   $: isViewMap = new Map<string, boolean>();
   $: modelResourcesQuery = useModelResources(instanceId);
   $: modelResources = $modelResourcesQuery.data ?? new Map();

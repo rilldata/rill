@@ -2,12 +2,9 @@
   import { page } from "$app/stores";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { useInfiniteTablesList, useTableMetadata } from "../selectors";
-  import { filterTemporaryTables } from "../tables/utils";
+  import { useInfiniteTablesList } from "../selectors";
+  import { filterTemporaryTables, isLikelyView } from "../tables/utils";
   import { writable } from "svelte/store";
-
-  const queryClient = useQueryClient();
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -25,24 +22,29 @@
     connector: "",
     searchPattern: undefined as string | undefined,
   });
-  $: tablesParams.set({ instanceId, connector: connectorName });
+  $: tablesParams.set({
+    instanceId,
+    connector: connectorName,
+    searchPattern: undefined,
+  });
   const tablesList = useInfiniteTablesList(tablesParams);
 
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
   $: hasMore = $tablesList.hasNextPage;
-  $: tableMetadata = useTableMetadata(
-    instanceId,
-    connectorName,
-    filteredTables,
-    queryClient,
-  );
 
-  // Count tables vs views
-  $: viewCount = Array.from(
-    $tableMetadata?.data?.isView?.values() ?? [],
-  ).filter(Boolean).length;
-  $: tableCount = filteredTables.length - viewCount;
-  $: isLoading = $tablesList.isLoading || $tableMetadata?.isLoading;
+  // Count tables vs views using size heuristic (same logic as tables page)
+  $: tableCount = filteredTables.filter(
+    (t) => !isLikelyView(undefined, t.physicalSizeBytes),
+  ).length;
+  $: viewCount = filteredTables.length - tableCount;
+
+  // Show loading when prerequisites aren't ready OR doing an initial fetch (no cache).
+  // `isLoading && isFetching` is TanStack Query's "hard loading" pattern:
+  // it's false when cached data exists (even if refetching in background).
+  $: isLoading =
+    $instanceQuery.isLoading ||
+    !connectorName ||
+    ($tablesList.isLoading && $tablesList.isFetching);
 </script>
 
 <section class="section">
@@ -55,13 +57,17 @@
   {:else if filteredTables.length > 0}
     <div class="table-chips">
       <a href="{basePage}/tables?type=table" class="table-chip">
-        <span class="font-medium">{tableCount}{hasMore ? "+" : ""}</span>
+        <span class="font-medium"
+          >{tableCount}{hasMore && tableCount > 0 ? "+" : ""}</span
+        >
         <span class="text-fg-secondary"
           >{tableCount === 1 ? "Table" : "Tables"}</span
         >
       </a>
       <a href="{basePage}/tables?type=view" class="table-chip">
-        <span class="font-medium">{viewCount}{hasMore ? "+" : ""}</span>
+        <span class="font-medium"
+          >{viewCount}{hasMore && viewCount > 0 ? "+" : ""}</span
+        >
         <span class="text-fg-secondary"
           >{viewCount === 1 ? "View" : "Views"}</span
         >

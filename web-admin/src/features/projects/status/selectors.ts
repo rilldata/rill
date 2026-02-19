@@ -5,25 +5,15 @@ import {
 import {
   createRuntimeServiceListResources,
   createRuntimeServicePing,
-  createConnectorServiceOLAPGetTable,
   type V1ListResourcesResponse,
   type V1OlapTableInfo,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { connectorServiceOLAPListTables } from "@rilldata/web-common/runtime-client/gen/connector-service/connector-service";
-import { createInfiniteQuery, type QueryClient } from "@tanstack/svelte-query";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { derived, readable, type Readable } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
-
-/** Type for the table metadata store result */
-export type TableMetadataResult = {
-  data: {
-    isView: Map<string, boolean>;
-  };
-  isLoading: boolean;
-  isError: boolean;
-};
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -124,115 +114,6 @@ export function useInfiniteTablesList(
   }));
 
   return createInfiniteQuery(optionsStore);
-}
-
-/**
- * Fetches metadata (view status) for each table.
- *
- * Note: This creates a separate query per table (N+1 pattern). This is acceptable here because:
- * 1. The OLAPGetTable API doesn't support batch requests
- * 2. Tables are typically few in number on the status page
- * 3. Queries are cached and run in parallel via svelte-query
- *
- * If performance becomes an issue with many tables, consider adding a batch API endpoint.
- *
- * `queryClient` must be passed explicitly because this function creates
- * queries inside a `readable` store's start callback, which runs during
- * store resubscription — a context where Svelte's `getContext()` may not
- * resolve the QueryClient.
- */
-export function useTableMetadata(
-  instanceId: string,
-  connector: string = "",
-  tables: V1OlapTableInfo[] | undefined,
-  queryClient: QueryClient,
-): Readable<TableMetadataResult> {
-  // If no tables, return empty store immediately
-  if (!tables || tables.length === 0) {
-    return readable(
-      {
-        data: {
-          isView: new Map<string, boolean>(),
-        },
-        isLoading: false,
-        isError: false,
-      },
-      () => {},
-    );
-  }
-
-  return readable<TableMetadataResult>(
-    {
-      data: {
-        isView: new Map<string, boolean>(),
-      },
-      isLoading: true,
-      isError: false,
-    },
-    (set) => {
-      const isView = new Map<string, boolean>();
-      const tableNames = (tables ?? [])
-        .map((t) => t.name)
-        .filter((n) => !!n) as string[];
-      const subscriptions: Array<() => void> = [];
-
-      const completedTables = new Set<string>();
-      const erroredTables = new Set<string>();
-      const totalOperations = tableNames.length;
-
-      // Helper to update and notify
-      const updateAndNotify = () => {
-        const isLoading = completedTables.size < totalOperations;
-        set({
-          data: { isView },
-          isLoading,
-          isError: erroredTables.size > 0,
-        });
-      };
-
-      // Fetch view status for each table in parallel
-      for (const tableName of tableNames) {
-        const tableQuery = createConnectorServiceOLAPGetTable(
-          {
-            instanceId,
-            connector,
-            table: tableName,
-          },
-          {
-            query: {
-              enabled: !!instanceId && !!tableName,
-              retry: false,
-              refetchOnWindowFocus: false,
-            },
-          },
-          queryClient,
-        );
-
-        const unsubscribe = tableQuery.subscribe((result) => {
-          // Capture the view field from the response
-          if (result.data?.view !== undefined) {
-            isView.set(tableName, result.data.view);
-          }
-          // Track errors
-          if (result.isError) {
-            erroredTables.add(tableName);
-          }
-          // Only mark complete when the query has finished loading
-          if (!result.isLoading) {
-            completedTables.add(tableName);
-          }
-          updateAndNotify();
-        });
-
-        subscriptions.push(unsubscribe);
-      }
-
-      // Return cleanup function
-      return () => {
-        subscriptions.forEach((unsub) => unsub());
-      };
-    },
-  );
 }
 
 /**
