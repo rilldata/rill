@@ -15,6 +15,7 @@
     getStatusLabel,
   } from "../display-utils";
   import ProjectClone from "./ProjectClone.svelte";
+  import OverviewCard from "./OverviewCard.svelte";
 
   export let organization: string;
   export let project: string;
@@ -57,16 +58,14 @@
   );
 </script>
 
-<section class="section">
-  <div class="section-header">
-    <h3 class="section-title">Deployment</h3>
-    <ProjectClone
-      {organization}
-      {project}
-      gitRemote={projectData?.gitRemote}
-      managedGitId={projectData?.managedGitId}
-    />
-  </div>
+<OverviewCard title="Deployment">
+  <ProjectClone
+    slot="header-right"
+    {organization}
+    {project}
+    gitRemote={projectData?.gitRemote}
+    managedGitId={projectData?.managedGitId}
+  />
 
   <div class="info-grid">
     <div class="info-row">
@@ -138,18 +137,9 @@
       </span>
     </div>
   </div>
-</section>
+</OverviewCard>
 
 <style lang="postcss">
-  .section {
-    @apply border border-border rounded-lg p-5;
-  }
-  .section-header {
-    @apply flex items-center justify-between mb-4;
-  }
-  .section-title {
-    @apply text-sm font-semibold text-fg-primary uppercase tracking-wide;
-  }
   .info-grid {
     @apply flex flex-col;
   }

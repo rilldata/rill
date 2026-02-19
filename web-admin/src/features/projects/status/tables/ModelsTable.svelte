@@ -79,6 +79,7 @@
         });
       },
     },
+    // TODO: add row count and column count columns when the API supports them
     {
       id: "size",
       accessorFn: (row) => row.physicalSizeBytes,

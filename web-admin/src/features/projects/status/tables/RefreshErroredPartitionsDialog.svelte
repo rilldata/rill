@@ -43,7 +43,7 @@
     </AlertDialogHeader>
     <AlertDialogFooter>
       <Button
-        type="secondary"
+        type="tertiary"
         disabled={isRefreshing}
         onClick={() => {
           open = false;

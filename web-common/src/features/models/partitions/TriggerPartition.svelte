@@ -60,13 +60,17 @@
 
     await invalidate();
 
-    // Poll every 2 seconds for up to 30 seconds to catch the update
+    // Poll every 2 seconds for up to 30 seconds; stop early if model is no longer running
     let pollCount = 0;
     const maxPolls = 15;
     pollInterval = setInterval(async () => {
       pollCount++;
       await invalidate();
-      if (pollCount >= maxPolls && pollInterval) {
+      const doneOrMaxed =
+        pollCount >= maxPolls ||
+        resolvedResource?.meta?.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+      if (doneOrMaxed && pollInterval) {
         clearInterval(pollInterval);
         pollInterval = null;
       }

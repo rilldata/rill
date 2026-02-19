@@ -5,6 +5,7 @@
   import { useInfiniteTablesList } from "../selectors";
   import { filterTemporaryTables, isLikelyView } from "../tables/utils";
   import { writable } from "svelte/store";
+  import OverviewCard from "./OverviewCard.svelte";
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -47,16 +48,12 @@
     ($tablesList.isLoading && $tablesList.isFetching);
 </script>
 
-<section class="section">
-  <div class="section-header">
-    <h3 class="section-title">Tables</h3>
-    <a href="{basePage}/tables" class="view-all">View all</a>
-  </div>
+<OverviewCard title="Tables" viewAllHref="{basePage}/tables">
   {#if isLoading}
     <p class="text-sm text-fg-secondary">Loading tables...</p>
   {:else if filteredTables.length > 0}
-    <div class="table-chips">
-      <a href="{basePage}/tables?type=table" class="table-chip">
+    <div class="chips">
+      <a href="{basePage}/tables?type=table" class="chip">
         <span class="font-medium"
           >{tableCount}{hasMore && tableCount > 0 ? "+" : ""}</span
         >
@@ -64,7 +61,7 @@
           >{tableCount === 1 ? "Table" : "Tables"}</span
         >
       </a>
-      <a href="{basePage}/tables?type=view" class="table-chip">
+      <a href="{basePage}/tables?type=view" class="chip">
         <span class="font-medium"
           >{viewCount}{hasMore && viewCount > 0 ? "+" : ""}</span
         >
@@ -76,31 +73,16 @@
   {:else}
     <p class="text-sm text-fg-secondary">No tables found.</p>
   {/if}
-</section>
+</OverviewCard>
 
 <style lang="postcss">
-  .section {
-    @apply border border-border rounded-lg p-5;
-  }
-  .section-header {
-    @apply flex items-center justify-between mb-4;
-  }
-  .section-title {
-    @apply text-sm font-semibold text-fg-primary uppercase tracking-wide;
-  }
-  .view-all {
-    @apply text-xs text-primary-500 no-underline;
-  }
-  .view-all:hover {
-    @apply text-primary-600;
-  }
-  .table-chips {
+  .chips {
     @apply flex flex-wrap gap-2;
   }
-  .table-chip {
+  .chip {
     @apply flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border border-border bg-surface-subtle no-underline text-inherit;
   }
-  .table-chip:hover {
+  .chip:hover {
     @apply border-primary-500 text-primary-600;
   }
 </style>

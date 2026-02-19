@@ -81,7 +81,9 @@
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
 
-  $: isViewMap = new Map<string, boolean>();
+  // TODO: populate from OLAPGetTable responses when per-table metadata is available
+  let isViewMap = new Map<string, boolean>();
+  // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
   $: modelResourcesQuery = useModelResources(instanceId);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
   let typeFilter: (typeof typeValues)[number] = parseEnumParam(
@@ -119,16 +121,15 @@
     { label: "View", value: "view" },
   ];
 
-  $: displayedTables = applyTableFilters(filteredTables, typeFilter, isViewMap);
-
-  $: ({ modelTables, externalTables } = splitTablesByModel(
-    displayedTables,
-    modelResources,
-  ));
-
-  // Unfiltered split to distinguish "none exist" from "all filtered out"
+  // Split once on unfiltered tables, then apply type filter per section
   $: ({ modelTables: allModelTables, externalTables: allExternalTables } =
     splitTablesByModel(filteredTables, modelResources));
+  $: modelTables = applyTableFilters(allModelTables, typeFilter, isViewMap);
+  $: externalTables = applyTableFilters(
+    allExternalTables,
+    typeFilter,
+    isViewMap,
+  );
 
   // Dialog states
   let specDialogOpen = false;
