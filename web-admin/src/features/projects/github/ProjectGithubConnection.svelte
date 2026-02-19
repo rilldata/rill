@@ -69,13 +69,15 @@
       <span class="my-1 text-fg-tertiary">
         Unlock the power of BI-as-code with GitHub-backed collaboration, version
         control, and approval workflows.
-        <a
-          href="https://docs.rilldata.com/developers/deploy/deploy-dashboard/github-101"
-          target="_blank"
-          class="text-primary-600"
-        >
-          Learn more ->
-        </a>
+        <span class="whitespace-nowrap">
+          <a
+            href="https://docs.rilldata.com/developers/deploy/deploy-dashboard/github-101"
+            target="_blank"
+            class="text-primary-600"
+          >
+            Learn more ->
+          </a>
+        </span>
       </span>
     {/if}
   </div>
