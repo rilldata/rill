@@ -519,6 +519,11 @@ export class Instance extends Message$1<Instance> {
    */
   frontendUrl = "";
 
+  /**
+   * @generated from field: string theme = 26;
+   */
+  theme = "";
+
   constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
@@ -544,6 +549,7 @@ export class Instance extends Message$1<Instance> {
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 23, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 24, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 26, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -4501,6 +4507,20 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   explore = "";
 
   /**
+   * Optional canvas dashboard.
+   *
+   * @generated from field: string canvas = 10;
+   */
+  canvas = "";
+
+  /**
+   * Optional canvas component within a dashboard.
+   *
+   * @generated from field: string canvas_component = 11;
+   */
+  canvasComponent = "";
+
+  /**
    * Optional dimensions.
    *
    * @generated from field: repeated string dimensions = 5;
@@ -4520,6 +4540,15 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
    * @generated from field: rill.runtime.v1.Expression where = 7;
    */
   where?: Expression;
+
+  /**
+   * Filter expressions as key-value pairs for the canvas.
+   * Key: Metrics view name
+   * Value: Expression object
+   *
+   * @generated from field: map<string, rill.runtime.v1.Expression> where_per_metrics_view = 12;
+   */
+  wherePerMetricsView: { [key: string]: Expression } = {};
 
   /**
    * Optional start of a time range.
@@ -4544,9 +4573,12 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   static readonly typeName = "rill.runtime.v1.AnalystAgentContext";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "canvas_component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 12, name: "where_per_metrics_view", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 8, name: "time_start", kind: "message", T: Timestamp },
     { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);
@@ -4616,6 +4648,72 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
 
   static equals(a: DeveloperAgentContext | PlainMessage<DeveloperAgentContext> | undefined, b: DeveloperAgentContext | PlainMessage<DeveloperAgentContext> | undefined): boolean {
     return proto3.util.equals(DeveloperAgentContext, a, b);
+  }
+}
+
+/**
+ * Context for prompts handled by the feedback_agent.
+ * When provided, the agent records feedback and, for negative sentiment, runs attribution.
+ *
+ * @generated from message rill.runtime.v1.FeedbackAgentContext
+ */
+export class FeedbackAgentContext extends Message$1<FeedbackAgentContext> {
+  /**
+   * The ID of the message being rated.
+   *
+   * @generated from field: string target_message_id = 1;
+   */
+  targetMessageId = "";
+
+  /**
+   * Sentiment: "positive" or "negative".
+   *
+   * @generated from field: string sentiment = 2;
+   */
+  sentiment = "";
+
+  /**
+   * Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other".
+   *
+   * @generated from field: repeated string categories = 3;
+   */
+  categories: string[] = [];
+
+  /**
+   * Optional free-text comment.
+   *
+   * @generated from field: string comment = 4;
+   */
+  comment = "";
+
+  constructor(data?: PartialMessage<FeedbackAgentContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.FeedbackAgentContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "target_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "sentiment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "categories", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "comment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FeedbackAgentContext {
+    return new FeedbackAgentContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FeedbackAgentContext {
+    return new FeedbackAgentContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FeedbackAgentContext {
+    return new FeedbackAgentContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: FeedbackAgentContext | PlainMessage<FeedbackAgentContext> | undefined, b: FeedbackAgentContext | PlainMessage<FeedbackAgentContext> | undefined): boolean {
+    return proto3.util.equals(FeedbackAgentContext, a, b);
   }
 }
 
@@ -5106,6 +5204,14 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   developerAgentContext?: DeveloperAgentContext;
 
+  /**
+   * Optional context for prompts handled by the feedback_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.FeedbackAgentContext feedback_agent_context = 13;
+   */
+  feedbackAgentContext?: FeedbackAgentContext;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5120,6 +5226,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
+    { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -5235,6 +5342,14 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
    */
   developerAgentContext?: DeveloperAgentContext;
 
+  /**
+   * Optional context for prompts handled by the feedback_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.FeedbackAgentContext feedback_agent_context = 13;
+   */
+  feedbackAgentContext?: FeedbackAgentContext;
+
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5249,6 +5364,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
+    { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {

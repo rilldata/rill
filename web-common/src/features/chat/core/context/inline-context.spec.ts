@@ -3,6 +3,7 @@ import {
   type InlineContext,
   convertPromptValueToContext,
   convertContextToInlinePrompt,
+  normalizeInlineContext,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { describe, it, expect } from "vitest";
 
@@ -18,6 +19,8 @@ describe("should convert to and from inline prompt", () => {
         type: InlineContextType.MetricsView,
         metricsView: "adbids",
         value: "adbids",
+        column: null as any, // This can be null when passed from tiptap. Adding this here as a sanity check.
+        columnType: undefined,
       },
       expectedPrompt: `<chat-reference>type="metricsView" metricsView="adbids"</chat-reference>`,
     },
@@ -85,7 +88,7 @@ describe("should convert to and from inline prompt", () => {
           .replace("<chat-reference>", "")
           .replace("</chat-reference>", ""),
       );
-      expect(convertedCtx).toEqual(ctx);
+      expect(convertedCtx).toEqual(normalizeInlineContext(ctx));
     });
   }
 });

@@ -5,7 +5,15 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { ChartContainer } from "@rilldata/web-common/features/components/charts";
+  import {
+    ResourceKind,
+    useResource,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { mapResolverExpressionToV1Expression } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard";
+  import { Theme } from "@rilldata/web-common/features/themes/theme";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { readable } from "svelte/store";
   import type { V1Tool } from "../../../../../runtime-client";
   import ToolCall from "../tools/ToolCall.svelte";
@@ -17,6 +25,8 @@
   // Page params for chart
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+
+  $: instanceId = $runtime.instanceId;
 
   // Cast chartSpec to any for property access (type comes from parsed JSON)
   $: chartSpec = block.chartSpec as any;
@@ -36,10 +46,21 @@
         timeZone: "UTC",
       };
 
+  $: comparisonTimeRange = chartSpec.comparison_time_range
+    ? {
+        start: chartSpec.comparison_time_range.start,
+        end: chartSpec.comparison_time_range.end,
+        timeZone:
+          chartSpec.comparison_time_range.time_zone || timeRange.timeZone,
+      }
+    : undefined;
+
+  $: hasComparison = !!comparisonTimeRange?.start && !!comparisonTimeRange?.end;
+
   $: timeAndFilterStore = readable({
     timeRange: timeRange,
-    comparisonTimeRange: undefined,
-    showTimeComparison: false,
+    comparisonTimeRange: comparisonTimeRange,
+    showTimeComparison: hasComparison,
     where: mapResolverExpressionToV1Expression(chartSpec.where) || {
       cond: {
         op: "OPERATION_AND",
@@ -51,6 +72,36 @@
     comparisonTimeRangeState: undefined,
     hasTimeSeries: true,
   });
+
+  $: defaultThemeQuery = createRuntimeServiceGetInstance(
+    instanceId,
+    undefined,
+    {
+      query: {
+        select: (data) => data?.instance?.theme,
+      },
+    },
+    queryClient,
+  );
+
+  $: themeName = $defaultThemeQuery?.data;
+
+  $: themeQuery = useResource(
+    instanceId,
+    themeName!,
+    ResourceKind.Theme,
+    {
+      enabled: !!themeName,
+      select: (data) => {
+        if (data.resource?.theme?.spec) {
+          return new Theme(data.resource?.theme?.spec);
+        } else {
+          return undefined;
+        }
+      },
+    },
+    queryClient,
+  );
 </script>
 
 <div class="chart-block">
@@ -67,6 +118,7 @@
       {spec}
       {timeAndFilterStore}
       {project}
+      theme={$themeQuery?.data}
       showExploreLink
       {organization}
       themeMode="light"
@@ -82,6 +134,6 @@
   .chart-container {
     @apply border rounded-md border-gray-200 px-1 py-2;
     @apply w-full h-[400px];
-    background: var(--surface);
+    background: var(--surface-subtle);
   }
 </style>

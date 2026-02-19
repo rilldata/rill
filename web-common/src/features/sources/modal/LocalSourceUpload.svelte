@@ -64,12 +64,13 @@
   }
 </script>
 
-<div class="grid place-items-center h-44">
+<div class="grid place-items-center h-44 flex-1">
   <Button onClick={handleOpenFileDialog} type="primary"
     >Upload a CSV, JSON or Parquet file
   </Button>
 </div>
-<div class="flex p-6">
-  <div class="grow" />
+<div
+  class="w-full bg-surface-subtle border-t border-gray-200 p-6 flex justify-between gap-2"
+>
   <Button onClick={onBack} type="secondary">Back</Button>
 </div>

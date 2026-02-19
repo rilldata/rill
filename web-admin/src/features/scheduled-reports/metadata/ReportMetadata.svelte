@@ -63,11 +63,20 @@
   $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");
 
+  $: queryName =
+    (reportSpec?.resolverProperties?.query_name as string | undefined) ??
+    reportSpec?.queryName ??
+    "";
+  $: queryArgsJson =
+    (reportSpec?.resolverProperties?.query_args_json as string | undefined) ??
+    reportSpec?.queryArgsJson ??
+    "";
+
   $: exploreUrl = getMappedExploreUrl(
     {
       exploreName: $exploreName.data,
-      queryName: reportSpec?.queryName,
-      queryArgsJson: reportSpec?.queryArgsJson,
+      queryName,
+      queryArgsJson,
     },
     {
       exploreProtoState: reportSpec?.annotations?.web_open_state,
@@ -106,7 +115,7 @@
   <div class="flex flex-col gap-y-9 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
       <!-- Header row 1 -->
-      <div class="uppercase text-xs text-gray-500 font-semibold">
+      <div class="uppercase text-xs text-fg-secondary font-semibold">
         <!-- Author -->
         <ProjectAccessControls {organization} {project}>
           <svelte:fragment slot="manage-project">
@@ -129,7 +138,7 @@
         </span>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-gray-700 text-lg font-bold" aria-label="Report name">
+        <h1 class="text-fg-primary text-lg font-bold" aria-label="Report name">
           {reportSpec.displayName}
         </h1>
         <div class="grow" />

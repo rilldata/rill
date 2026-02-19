@@ -9,7 +9,6 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai/instructions"
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 const DevelopFileName = "develop_file"
@@ -137,7 +136,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 
 func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (string, error) {
 	// Get default OLAP info
-	olapConnector, olapDriver, olapModeReadwrite, err := defaultOLAPInfo(ctx, t.Runtime, GetSession(ctx).InstanceID())
+	olapInfo, err := defaultOLAPInfo(ctx, t.Runtime, GetSession(ctx).InstanceID())
 	if err != nil {
 		return "", err
 	}
@@ -145,28 +144,12 @@ func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (st
 	// Prepare template data.
 	session := GetSession(ctx)
 	data := map[string]any{
-		"path":                   args.Path,
-		"type":                   args.Type,
-		"prompt":                 args.Prompt,
-		"ai_instructions":        session.ProjectInstructions(),
-		"default_olap_connector": olapConnector,
-		"default_olap_driver":    olapDriver,
-		"default_olap_readwrite": olapModeReadwrite,
+		"path":              args.Path,
+		"type":              args.Type,
+		"prompt":            args.Prompt,
+		"ai_instructions":   session.ProjectInstructions(),
+		"default_olap_info": olapInfo,
 	}
-
-	// Add OLAP dialect
-	olap, release, err := t.Runtime.OLAP(ctx, session.InstanceID(), "")
-	if err != nil {
-		return "", err
-	}
-	defer release()
-	dialect := olap.Dialect()
-	if dialect == drivers.DialectUnspecified {
-		dialect = drivers.DialectDuckDB
-	}
-	data["dialect"] = dialect.String()
-
-	// - Additional prompt: Don’t do much discovery, stay aligned on your specific task. Failure is okay, your parent will re-evaluate.
 
 	// Generate the user prompt
 	return executeTemplate(`
@@ -180,8 +163,7 @@ Here is some important context:
 - When you call 'write_file', if it returns a parse or reconcile error, do your best to fix the issue and try again. If you think the error is unrelated to the current path, let the parent agent know to handle it.
 
 Here is some additional context that may or may not be relevant to your task:
-- The project's default OLAP connector is named {{ .default_olap_connector }} (driver: {{ .default_olap_driver }}).
-{{ if .ai_instructions }}- The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}
-{{ end }}
+- Info about the project's default OLAP connector: {{ .default_olap_info }}.
+{{ if .ai_instructions }}- The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}{{ end }}
 `, data)
 }

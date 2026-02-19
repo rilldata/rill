@@ -38,8 +38,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 
 ## Navigating the Dashboard
 
-<img src = '/img/explore/canvas/canvas-dashboard.png' class='rounded-gif' />
-<br />
+![Canvas Dashboard](/img/explore/canvas/canvas-dashboard.png)
 
 
 Similar to our [Explore dashboards](/guide/dashboards/explore), Canvas Dashboards also include a similar navigation bar to control the dashboard components.
@@ -58,8 +57,7 @@ Similar to our [Explore dashboards](/guide/dashboards/explore), Canvas Dashboard
 <!-- - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/guide/dashboards/bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/guide/administration/users-and-access/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/guide/dashboards/public-urls.md)) . -->
 
 ## Component Navigation
-<img src = '/img/explore/canvas/canvas-navigaton.png' class='rounded-gif' />
-<br />
+![Canvas Navigaton](/img/explore/canvas/canvas-navigaton.png)
 
 
 If you want to further drill into a component's data, select the top right button to take you to the equivalent Explore dashboard.

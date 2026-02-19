@@ -113,7 +113,7 @@ func TestGenerateMetricsViewWithAI(t *testing.T) {
 	testmode.Expensive(t)
 
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 		Files: map[string]string{
 			"ad_bids.sql": `SELECT now() AS time, 'DA' AS country, 3.141 as price`,
 		},

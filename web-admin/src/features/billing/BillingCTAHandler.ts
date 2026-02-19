@@ -8,6 +8,7 @@ import {
 } from "@rilldata/web-common/components/banner/constants";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { writable } from "svelte/store";
+import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
 
 export class BillingCTAHandler {
   public showStartTeamPlanDialog = writable(false);
@@ -65,26 +66,44 @@ export class BillingCTAHandler {
             iconType: "loading",
           },
         });
-        await wakeAllProjects(this.organization);
-        this.wakingProjects.set(false);
-        eventBus.emit("add-banner", {
-          id: BillingBannerID,
-          priority: BillingBannerPriority,
-          message: {
-            type: "success",
-            message: "Your projects are awake and ready.",
-            iconType: "check",
-            cta: {
-              type: "link",
-              text: "View projects ->",
-              url: `/${this.organization}`,
+        try {
+          await wakeAllProjects(this.organization);
+
+          eventBus.emit("add-banner", {
+            id: BillingBannerID,
+            priority: BillingBannerPriority,
+            message: {
+              type: "success",
+              message: "Your projects are awake and ready.",
+              iconType: "check",
+              cta: {
+                type: "link",
+                text: "View projects ->",
+                url: `/${this.organization}`,
+              },
             },
-          },
-        });
-        eventBus.emit("notification", {
-          type: "success",
-          message: "Projects are now ready and accessible",
-        });
+          });
+          eventBus.emit("notification", {
+            type: "success",
+            message: "Projects are now ready and accessible",
+          });
+        } catch (err) {
+          eventBus.emit("add-banner", {
+            id: BillingBannerID,
+            priority: BillingBannerPriority,
+            message: {
+              type: "error",
+              message: "Failed to wake up projects",
+              iconType: "alert",
+            },
+          });
+          eventBus.emit("notification", {
+            type: "error",
+            message: `Failed to wake up projects: ${getRpcErrorMessage(err)}`,
+          });
+        }
+
+        this.wakingProjects.set(false);
         break;
     }
   }

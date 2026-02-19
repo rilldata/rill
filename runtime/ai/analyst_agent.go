@@ -24,13 +24,22 @@ type AnalystAgent struct {
 var _ Tool[*AnalystAgentArgs, *AnalystAgentResult] = (*AnalystAgent)(nil)
 
 type AnalystAgentArgs struct {
-	Prompt     string                  `json:"prompt"`
-	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
-	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
-	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Where      *metricsview.Expression `json:"where" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
-	TimeStart  time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
-	TimeEnd    time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
+	Prompt     string   `json:"prompt"`
+	Explore    string   `json:"explore,omitempty" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Dimensions []string `json:"dimensions,omitempty" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
+	Measures   []string `json:"measures,omitempty" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
+
+	Canvas              string                             `json:"canvas,omitempty" yaml:"canvas" jsonschema:"Optional canvas name. If provided, the exploration will be limited to this canvas."`
+	CanvasComponent     string                             `json:"canvas_component,omitempty" yaml:"canvas_component" jsonschema:"Optional canvas component name. If provided, the exploration will be limited to this canvas component."`
+	WherePerMetricsView map[string]*metricsview.Expression `json:"where_per_metrics_view,omitempty" yaml:"where_per_metrics_view" jsonschema:"Optional filter for queries per metrics view. If provided, this filter will be applied to queries for each metrics view."`
+
+	Where               *metricsview.Expression `json:"where,omitempty" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	TimeStart           time.Time               `json:"time_start,omitempty" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
+	TimeEnd             time.Time               `json:"time_end,omitempty" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
+	ComparisonTimeStart time.Time               `json:"comparison_time_start" yaml:"comparison_time_start" jsonschema:"Optional comparison period start time."`
+	ComparisonTimeEnd   time.Time               `json:"comparison_time_end" yaml:"comparison_time_end" jsonschema:"Optional comparison period end time."`
+	DisableCharts       bool                    `json:"disable_charts" yaml:"disable_charts" jsonschema:"Flag indicating whether to disable chart creation in the analysis."`
+	IsReport            bool                    `json:"is_report" yaml:"is_report" jsonschema:"Flag indicating this is an automated report."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -97,31 +106,53 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
 	// TODO: This uses `first`, but that may not be safe if the user has navigated to another dashboard. We probably need some more sophisticated de-duplication here.
-	var metricsViewName string
-	if first && args.Explore != "" {
-		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
-		if err != nil {
-			return nil, err
-		}
-		metricsViewName = metricsView.Meta.Name.Name
+	var metricsViewNames []string
+	if first {
+		if args.Explore != "" {
+			_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
+			if err != nil {
+				return nil, err
+			}
+			metricsViewNames = append(metricsViewNames, metricsView.Meta.Name.Name)
+		} else if args.Canvas != "" {
+			// Pre-invoke the get_canvas tool to get the canvas definition.
+			_, err := s.CallTool(ctx, RoleAssistant, GetCanvasName, nil, &GetCanvasArgs{
+				Canvas: args.Canvas,
+			})
+			if err != nil {
+				return nil, err
+			}
 
-		_, err = s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
-			MetricsView: metricsViewName,
-		})
-		if err != nil {
-			return nil, err
+			_, metricsViews, err := t.getValidCanvasAndMetricsViews(ctx, args.Canvas)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, res := range metricsViews {
+				metricsViewNames = append(metricsViewNames, res.Meta.Name.Name)
+			}
 		}
 
-		_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
-			MetricsView: metricsViewName,
-		})
-		if err != nil {
-			return nil, err
+		// Pre-invoke the query_metrics_view tool for each metrics view tied to the explore/canvas.
+		for _, mvName := range metricsViewNames {
+			_, err := s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
+				MetricsView: mvName,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
+				MetricsView: mvName,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	if first && args.Explore == "" {
+	if first && len(metricsViewNames) == 0 {
 		_, err := s.CallTool(ctx, RoleAssistant, ListMetricsViewsName, nil, &ListMetricsViewsArgs{})
 		if err != nil {
 			return nil, err
@@ -131,12 +162,15 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Determine tools that can be used
 	tools := []string{}
 	if args.Explore == "" {
-		tools = append(tools, ListMetricsViewsName, GetMetricsViewName)
+		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
 	}
-	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, CreateChartName)
+	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName)
+	if !args.DisableCharts {
+		tools = append(tools, CreateChartName)
+	}
 
 	// Build completion messages
-	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args)
+	systemPrompt, err := t.systemPrompt(ctx, metricsViewNames, args)
 	if err != nil {
 		return nil, err
 	}
@@ -170,27 +204,68 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	return &AnalystAgentResult{Response: response}, nil
 }
 
-func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string, args *AnalystAgentArgs) (string, error) {
+func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewNames []string, args *AnalystAgentArgs) (string, error) {
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
+
+	instance, err := t.Runtime.Instance(ctx, session.InstanceID())
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance: %w", err)
+	}
+	instanceCfg, err := instance.Config()
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance config: %w", err)
+	}
+
 	ff, err := t.Runtime.FeatureFlags(ctx, session.InstanceID(), session.Claims())
 	if err != nil {
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
 	}
+
+	if args.DisableCharts {
+		ff["chat_charts"] = false
+	}
+
+	metricsViewsQuoted := make([]string, len(metricsViewNames))
+	for i, mv := range metricsViewNames {
+		metricsViewsQuoted[i] = fmt.Sprintf("`%s`", mv)
+	}
+
+	dimensionsQuoted := make([]string, len(args.Dimensions))
+	for i, dim := range args.Dimensions {
+		dimensionsQuoted[i] = fmt.Sprintf("`%s`", dim)
+	}
+
+	measuresQuoted := make([]string, len(args.Measures))
+	for i, measure := range args.Measures {
+		measuresQuoted[i] = fmt.Sprintf("`%s`", measure)
+	}
+
 	data := map[string]any{
-		"ai_instructions": session.ProjectInstructions(),
-		"metrics_view":    metricsViewName,
-		"explore":         args.Explore,
-		"dimensions":      strings.Join(args.Dimensions, ", "),
-		"measures":        strings.Join(args.Measures, ", "),
-		"feature_flags":   ff,
-		"now":             time.Now(),
+		"ai_instructions":  session.ProjectInstructions(),
+		"is_prompt":        args.Prompt != "",
+		"metrics_views":    strings.Join(metricsViewsQuoted, ", "),
+		"explore":          args.Explore,
+		"canvas":           args.Canvas,
+		"canvas_component": args.CanvasComponent,
+		"dimensions":       strings.Join(dimensionsQuoted, ", "),
+		"measures":         strings.Join(measuresQuoted, ", "),
+		"feature_flags":    ff,
+		"forked":           session.Forked(),
+		"is_report":        args.IsReport,
+		"now":              time.Now(),
+		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
 		data["time_start"] = args.TimeStart.Format(time.RFC3339)
 		data["time_end"] = args.TimeEnd.Format(time.RFC3339)
+	}
+
+	if !args.ComparisonTimeStart.IsZero() && !args.ComparisonTimeEnd.IsZero() {
+		data["comparison_start"] = args.ComparisonTimeStart.Format(time.RFC3339)
+		data["comparison_end"] = args.ComparisonTimeEnd.Format(time.RFC3339)
 	}
 
 	if args.Where != nil {
@@ -199,12 +274,26 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 			return "", err
 		}
 	}
-	data["forked"] = session.Forked()
+
+	if args.WherePerMetricsView != nil {
+		wherePerMetricsView := map[string]string{}
+		for metricsViewName, whereExpr := range args.WherePerMetricsView {
+			wherePerMetricsView[metricsViewName], err = metricsview.ExpressionToSQL(whereExpr)
+			if err != nil {
+				return "", err
+			}
+		}
+		data["where_per_metrics_view"] = wherePerMetricsView
+	}
 
 	// Generate the system prompt
 	return executeTemplate(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights.
 You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
+{{ if .is_report }}
+You are operating in an automated scheduled insight report mode where you will come up with insights on your own without additional user input.
+{{ if .is_prompt }}The user has provided a custom prompt for this scheduled insight report. Tailor your analysis to address this prompt specifically. {{ end }}
+{{ end }}
 
 Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
 </role>
@@ -218,19 +307,36 @@ Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "200
 <process>
 **Phase 1: discovery (setup)**
 {{ if .explore }}
-Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_view }}".
-The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
+Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view(s) {{ .metrics_views }}.
+{{ if not .is_report }}The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc. {{ end }}
 The metrics view's definition and time range of available data has been provided in your tool calls.
 
-Here is an overview of the settings the user has currently applied to the dashboard:
+Here is an overview of the settings applied to the dashboard:
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
+{{ if (and .comparison_start .comparison_end) }}Use comparison time range: start={{.comparison_start}}, end={{.comparison_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
-{{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
-{{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}
+{{ if .measures }}Use measures: {{ .measures }}{{ end }}
+{{ if .dimensions }}Use dimensions: {{ .dimensions }}{{ end }}
 
 You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.
+{{ else if .canvas }}
+Your goal is to analyze the contents of the canvas "{{ .canvas }}", which is powered by the metrics view(s) {{ .metrics_views }}.
+The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
+The metrics views and canvas definitions have been provided in your tool calls.
+
+Here is an overview of the settings the user has currently applied to the dashboard (Merge component's dimension_filters with "and"):
+{{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
+{{ if .where_per_metrics_view }}{{range $mv, $filter := .where_per_metrics_view}}Use where filters for metrics view "{{ $mv }}": "{{ $filter }}"
+{{end}}{{ end }}
+
+You should:
+1. Carefully study the canvas and metrics view definition to understand the measures and dimensions available for analysis.
+2. Remember the time range of available data and use it to inform and filter your queries.
+{{ if .canvas_component }}
+The user is looking at "{{ .canvas_component }}".
+{{ end }}
 {{ else }}
 Follow these steps in order:
 1. **Discover**: Use "list_metrics_views" to identify available datasets
@@ -250,25 +356,59 @@ In an iterative OODA loop, you should repeatedly use the "query_metrics_view" to
 Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.
 Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.
 
+{{ if and .is_report (not .is_prompt) }}
+{{ if (and .comparison_start .comparison_end) }}
+<comparison_analysis>
+You are doing comparative analysis between two time periods in scheduled insight report mode, your analysis should:
+1. Compare current period to the comparison period for all key measures
+2. Identify which measures changed significantly (>10%)
+3. For each significant change, identify the dimensional drivers
+4. Highlight any ranking changes in top dimensions
+5. Generate 3-5 key insights with supporting charts
+
+Focus areas:
+- **Overall changes**: Which measures changed the most between periods?
+- **Drivers of change**: Which dimensions contributed most to increases/decreases?
+- **Ranking shifts**: Did any top dimensions change rank significantly?
+- **Anomalies**: Any unusual patterns unique to one period?
+</comparison_analysis>
+{{ else }}
+<single_period_analysis>
+You are doing single period analysis in scheduled insight report mode, your analysis should:
+1. Show totals for the most impactful measures in the period
+2. Identify interesting trends within the time range (use time series)
+3. Find anomalies - unusual spikes, drops, or outliers
+4. Highlight top performers and notable dimension values
+5. Generate 3-5 key insights with supporting charts
+
+Focus areas:
+- **Totals**: What are the key numbers for this period?
+- **Trends**: How did metrics change over the period? Any acceleration/deceleration?
+- **Anomalies**: Are there any unusual data points that stand out?
+- **Distribution**: Which dimensions dominate? Any concentration issues?
+</single_period_analysis>
+{{ end }}
+{{ else }}
 In each iteration, you should:
 - **Observe**: What data patterns emerge? What insights are surfacing? What gaps remain?
 - **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?
 - **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore
 - **Act**: Execute the query and evaluate results in <thinking> tags
-{{ if .feature_flags.chat_charts }}
+{{ end}}
 
+{{ if .feature_flags.chat_charts }}
 **Phase 3: visualization**
 Create a chart: After running "query_metrics_view" create a chart using "create_chart" unless:
 - The user explicitly requests a table-only response
 - The query returns only a single scalar value
 
 Choose the appropriate chart type based on your data:
-- Time series data: line_chart or area_chart (better for cummalative trends)
+- Time series data: line_chart or area_chart (better for cumulative trends)
 - Category comparisons: bar_chart or stacked_bar
 - Part-to-whole relationships: donut_chart
 - Multiple dimensions: Use color encoding with bar_chart, stacked_bar or line_chart
 - Two measures from the same metrics view: Use combo_chart
-- Multiple measures from the same metrics view (more that 2): Use stacked bar chart with multiple measure fields
+- Multiple measures from the same metrics view (more than 2): Use stacked bar chart with multiple measure fields
 - Distribution across two dimensions: heatmap
 {{ end }}
 </process>
@@ -285,6 +425,8 @@ Choose the appropriate chart type based on your data:
 - Focus on insights that are surprising, actionable, and quantified
 - Never repeat identical queries - each should explore new analytical angles
 - Use <thinking> tags between queries to evaluate results and plan next steps
+- Aim to make queries with high information density; keep row limits as low as possible and avoid pagination
+- The combined data you load across all queries should be below 10000 rows, ideally much less
 
 **Quality Standards**:
 - Prioritize findings that contradict expectations or reveal hidden patterns
@@ -314,21 +456,24 @@ After each query in Phase 2, think through:
 </thinking>
 
 <output_format>
-**Format your analysis as follows**:
-{{ backticks }}markdown
+**Format your analysis using markdown as follows**:
+{{ if .is_report }}
+<summary>
+[One line summary. Do not include citation links.]
+</summary>
+{{ end }}
 Based on the data analysis, here are the key insights:
 
 1. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-2. ## [Headline with specific impact/number]  
+2. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-[Optional: Offer specific follow-up analysis options]
-{{ backticks }}
+{{ if not .is_report }} [Optional: Offer specific follow-up analysis options] {{ end }}
 
 **Citation Requirements**:
 - Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user
@@ -337,11 +482,14 @@ Based on the data analysis, here are the key insights:
 - When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph
 </output_format>
 
+<additional_context>
+The system allows a max row limit of {{ .max_query_limit }} per query.
+
 {{ if .ai_instructions }}
-<additional_user_provided_instructions>
+The administrator has provided the following project-wide instructions, which may or may not be relevant to this task:
 {{ .ai_instructions }}
-</additional_user_provided_instructions>
 {{ end }}
+</additional_context>
 `, data)
 }
 
@@ -390,4 +538,28 @@ func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, explor
 	}
 
 	return explore, metricsView, nil
+}
+
+func (t *AnalystAgent) getValidCanvasAndMetricsViews(ctx context.Context, canvasName string) (*runtimev1.Resource, map[string]*runtimev1.Resource, error) {
+	session := GetSession(ctx)
+
+	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), canvasName, session.Claims())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if resolvedCanvas == nil || resolvedCanvas.Canvas == nil {
+		return nil, nil, fmt.Errorf("canvas %q not found", canvasName)
+	}
+
+	metricsViews := map[string]*runtimev1.Resource{}
+	for mv, res := range resolvedCanvas.ReferencedMetricsViews {
+		metricsView := res.GetMetricsView()
+		if metricsView == nil || metricsView.State.ValidSpec == nil {
+			continue
+		}
+		metricsViews[mv] = res
+	}
+
+	return resolvedCanvas.Canvas, metricsViews, nil
 }

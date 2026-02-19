@@ -5,6 +5,25 @@
  * Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
  * OpenAPI spec version: version not set
  */
+export interface GetAlertMetaResponseURLs {
+  openUrl?: string;
+  editUrl?: string;
+  unsubscribeUrl?: string;
+}
+
+export type GetReportMetaResponseDeliveryMetaUserAttrs = {
+  [key: string]: unknown;
+};
+
+export interface GetReportMetaResponseDeliveryMeta {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
+  unsubscribeUrl?: string;
+  userId?: string;
+  userAttrs?: GetReportMetaResponseDeliveryMetaUserAttrs;
+}
+
 export interface ListGithubUserReposResponseRepo {
   name?: string;
   owner?: string;
@@ -430,10 +449,6 @@ export interface V1EditReportResponse {
   [key: string]: unknown;
 }
 
-export interface V1EditUsergroupResponse {
-  [key: string]: unknown;
-}
-
 export type V1ExportFormat =
   (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
 
@@ -461,7 +476,7 @@ export interface V1GenerateReportYAMLResponse {
 }
 
 export type V1GetAlertMetaResponseRecipientUrls = {
-  [key: string]: V1GetAlertMetaResponseURLs;
+  [key: string]: GetAlertMetaResponseURLs;
 };
 
 export type V1GetAlertMetaResponseQueryForAttributes = {
@@ -471,12 +486,6 @@ export type V1GetAlertMetaResponseQueryForAttributes = {
 export interface V1GetAlertMetaResponse {
   recipientUrls?: V1GetAlertMetaResponseRecipientUrls;
   queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
-}
-
-export interface V1GetAlertMetaResponseURLs {
-  openUrl?: string;
-  editUrl?: string;
-  unsubscribeUrl?: string;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -666,19 +675,12 @@ The URL uses HTTPS with embedded username/password. */
   archiveCreatedOn?: string;
 }
 
-export type V1GetReportMetaResponseRecipientUrls = {
-  [key: string]: V1GetReportMetaResponseURLs;
+export type V1GetReportMetaResponseDeliveryMeta = {
+  [key: string]: GetReportMetaResponseDeliveryMeta;
 };
 
 export interface V1GetReportMetaResponse {
-  recipientUrls?: V1GetReportMetaResponseRecipientUrls;
-}
-
-export interface V1GetReportMetaResponseURLs {
-  openUrl?: string;
-  exportUrl?: string;
-  editUrl?: string;
-  unsubscribeUrl?: string;
+  deliveryMeta?: V1GetReportMetaResponseDeliveryMeta;
 }
 
 export interface V1GetServiceResponse {
@@ -1204,20 +1206,20 @@ export interface V1RemoveWhitelistedDomainResponse {
   [key: string]: unknown;
 }
 
-export interface V1RenameUsergroupResponse {
-  [key: string]: unknown;
-}
-
 export interface V1RenewBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
 }
+
+export type V1ReportOptionsResolverProperties = { [key: string]: unknown };
 
 export interface V1ReportOptions {
   displayName?: string;
   refreshCron?: string;
   refreshTimeZone?: string;
   intervalDuration?: string;
+  resolver?: string;
+  resolverProperties?: V1ReportOptionsResolverProperties;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
@@ -1234,7 +1236,6 @@ export interface V1ReportOptions {
   explore?: string;
   canvas?: string;
   webOpenMode?: string;
-  filter?: V1Expression;
 }
 
 export interface V1RequestProjectAccessResponse {
@@ -1560,12 +1561,17 @@ export interface V1UpdateUserPreferencesResponse {
   preferences?: V1UserPreferences;
 }
 
+export interface V1UpdateUsergroupResponse {
+  usergroup?: V1Usergroup;
+}
+
 export interface V1User {
   id?: string;
   email?: string;
   displayName?: string;
   photoUrl?: string;
   quotas?: V1UserQuotas;
+  pylonEmailHash?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1658,10 +1664,6 @@ export type AdminServiceSetProjectMemberUserRoleBodyBody = {
 
 export type AdminServiceCreateReportBodyBody = {
   options?: V1ReportOptions;
-};
-
-export type AdminServiceCreateUsergroupBodyBody = {
-  name?: string;
 };
 
 export type AdminServiceGetDeploymentBodyAttributes = {
@@ -1790,19 +1792,6 @@ export type AdminServiceUpdateOrganizationMemberUserAttributesBodyAttributes = {
 
 export type AdminServiceUpdateOrganizationMemberUserAttributesBody = {
   attributes?: AdminServiceUpdateOrganizationMemberUserAttributesBodyAttributes;
-};
-
-export type AdminServiceListProjectMemberUsergroupsParams = {
-  /**
-   * Optionally filter by role
-   */
-  role?: string;
-  /**
-   * Optionally include counts
-   */
-  includeCounts?: boolean;
-  pageSize?: number;
-  pageToken?: string;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
@@ -2006,6 +1995,19 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   resources?: V1ResourceName[];
 };
 
+export type AdminServiceListProjectMemberUsergroupsParams = {
+  /**
+   * Optionally filter by role
+   */
+  role?: string;
+  /**
+   * Optionally include counts
+   */
+  includeCounts?: boolean;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceSearchProjectUsersParams = {
   emailQuery?: string;
   pageSize?: number;
@@ -2078,6 +2080,10 @@ export type AdminServiceListOrganizationMemberUsergroupsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceCreateUsergroupBody = {
+  name?: string;
+};
+
 export type AdminServiceListUsergroupsForOrganizationAndUserParams = {
   userId?: string;
   pageSize?: number;
@@ -2089,7 +2095,8 @@ export type AdminServiceGetUsergroupParams = {
   pageToken?: string;
 };
 
-export type AdminServiceEditUsergroupBody = {
+export type AdminServiceUpdateUsergroupBody = {
+  newName?: string;
   description?: string;
 };
 

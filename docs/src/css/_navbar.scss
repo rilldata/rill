@@ -1,269 +1,481 @@
+/* =========================
+   Navbar Styles
+
+   Class hooks added by Navbar/index.js:
+   - .dropdown--custom: Dropdown with custom chevron (has .my-custom-dropdown link)
+   - .navbar__item--has-icon-link: Navbar item containing .navbar-icon-link
+   - .navbar__dropdown--has-active: Dropdown with active menu item
+   - .navbar__item--has-active-link: Non-dropdown item with active link
+   - .menu__list-item--has-icon-link: Mobile menu item with icon link
+   - .navbar-sidebar__item--has-icon-link: Sidebar item with icon link
+   ========================= */
 
 /* =========================
-   Search Bar Custom Styles
+   Base Navbar Link Styles
    ========================= */
-.navbar {
-  height: 60px;
-  padding: 0 16px;
-}   
-// all of the navbar items
-.navbar__link {
-  height: 70%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0px 12px;
-  position: relative;
-  transition: color 0.2s ease; /* Smooth text color transition */
-}
-
-// on hover of navbar items
-.navbar__link:hover {
-  background: var(--palette_slate_50);
-  border-radius: 8px;
-  padding: 12px 12px;
-}
-
-// Dark mode hover adjustment
-[data-theme='dark'] .navbar__link:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-// Remove hover background for active items
-.navbar__link--active:hover {
-  background: transparent;
-}
-
-// Keep default color on hover (don't change text color)
-.navbar__link.navbar-docs-link:hover,
-.navbar__link.navbar-user-guide-link:hover,
-.navbar__link.navbar-reference-link:hover,
-.navbar__link.navbar-contact-link:hover,
-.navbar__link.navbar-api-link:hover {
-  color: var(--ifm-navbar-link-color);
-}
-
-// But if it's active, keep the primary color even when hovering
-.navbar__link--active.navbar-docs-link:hover,
-.navbar__link--active.navbar-user-guide-link:hover,
-.navbar__link--active.navbar-reference-link:hover,
-.navbar__link--active.navbar-contact-link:hover,
-.navbar__link--active.navbar-api-link:hover {
-  color: var(--ifm-color-primary);
-}
-
-.navbar button[class*="toggleButton"] {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-.navbar button[class*="toggleButton"]:hover {
-  background: transparent;
-  box-shadow: none;
-}
-
-/* Active state styling for navbar links */
-.navbar__link--active.navbar-docs-link,
-.navbar__link--active.navbar-user-guide-link,
-.navbar__link--active.navbar-reference-link,
-.navbar__link--active.navbar-contact-link,
-.navbar__link--active.navbar-api-link,
-.navbar__link--active.navbar-icon-link {
-  color: var(--ifm-color-primary);
-}
-
-/* Underline that only spans text width */
-.navbar__link--active.navbar-docs-link::after,
-.navbar__link--active.navbar-user-guide-link::after,
-.navbar__link--active.navbar-reference-link::after,
-.navbar__link--active.navbar-contact-link::after,
-.navbar__link--active.navbar-api-link::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 2px;
-  background: var(--ifm-color-primary);
-  border-radius: 1px 1px 0 0;
-  width: calc(100% - 24px);
-}
-
-
-// NavBar Icon Link (GitHub and Blog) Change to Icons later
-// NavBar Icon Link (GitHub and Blog) Change to Icons later
-.navbar-icon-link {
-  width: 24px;
-  height: 24px;
-  margin-right: 6px;
-  margin-left: 6px;
+.navbar .navbar__link {
+  color: var(--ifm-color-black);
   text-decoration: none;
-  color: var(--ifm-menu-color);
-  font-size: 0.875rem;
   font-weight: 500;
-  transition: color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+
+  &.navbar__link--active:hover {
+    background-color: transparent;
+  }
 }
 
-.navbar-icon-link:hover {
-  background: transparent;
-  box-shadow: none;
-  text-decoration: none;
-  color: var(--ifm-menu-color);
+/* Active navbar link styling */
+.navbar .navbar__link--active,
+.navbar__item .navbar__link--active {
+  color: var(--ifm-color-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 14px;
+  text-decoration-color: var(--ifm-color-primary);
+  text-decoration-style: solid;
+  text-decoration-skip-ink: none;
+  text-decoration-skip: none;
 }
 
-// NavBar Search Bar
-.navbar .navbar__items--right .DocSearch-Button {
-  background: transparent;
-  border: 0.5px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px 12px;
-  width: 250px; /* Adjust this value to change width */
-  min-width: 150px; /* Minimum width */
-  height: 100%;
+/* =========================
+   Hide Default Caret for Custom Dropdowns
+   The caret is added via ::after pseudo-element by Infima CSS on .dropdown > .navbar__link
+   ========================= */
+.navbar .dropdown > .navbar__link.my-custom-dropdown::after {
+  content: none !important;
+}
+
+/* =========================
+   Dropdown Container Styles
+   ========================= */
+.navbar .navbar__item.dropdown {
+  padding: 0;
+  margin: 0;
   position: relative;
-  
-  &::after {
-    content: "⌘K";
+
+  /* Consolidate padding on the link element */
+  > .navbar__link {
+    position: relative;
+    padding: 0.5rem 0.75rem;
+    padding-right: 2rem; /* Space for chevron */
+    margin: 0;
+  }
+
+  /* Ensure caret buttons have no extra spacing */
+  > .menu__caret,
+  > button.menu__caret {
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Hover bridge - extends hover area to dropdown menu */
+  &::before {
+    content: '';
     position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.75rem;
-    color: var(--docsearch-muted-color);
-    font-family: monospace;
+    bottom: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: transparent;
+    pointer-events: auto;
+    z-index: 1000;
+  }
+
+  /* Active dropdown styling */
+  &.navbar__dropdown--has-active > .navbar__link {
+    color: var(--ifm-color-primary);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 14px;
+    text-decoration-color: var(--ifm-color-primary);
+    text-decoration-style: solid;
+    text-decoration-skip-ink: none;
+    text-decoration-skip: none;
+  }
+}
+
+/* =========================
+   Custom Dropdown Styles (dropdown--custom)
+   ========================= */
+.navbar .navbar__item.dropdown.dropdown--custom {
+  /* Custom chevron positioning and animation */
+  .navbar__link.my-custom-dropdown {
+    position: relative;
+
+    .custom-chevron {
+      position: absolute;
+      right: 0.75rem;
+      top: 30%;
+      transform: translateY(0%);
+      transition: transform 0.2s ease;
+      opacity: 0.7;
+      width: 14px;
+      height: 14px;
+      display: block;
+      pointer-events: none;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        display: block;
+      }
+    }
+  }
+
+  /* Rotate chevron on hover/open */
+  &:hover .navbar__link.my-custom-dropdown .custom-chevron,
+  &.dropdown--show .navbar__link.my-custom-dropdown .custom-chevron {
+    transform: translateY(0%) rotate(180deg);
+  }
+
+  .navbar__link.my-custom-dropdown[aria-expanded="true"] .custom-chevron {
+    transform: translateY(0%) rotate(180deg);
+  }
+}
+
+/* =========================
+   Dropdown Menu Styles
+   ========================= */
+.navbar .dropdown__menu {
+  margin-top: 8px;
+  margin-left: 0;
+}
+
+.navbar .dropdown__link {
+  color: var(--ifm-color-black);
+  text-decoration: none;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  display: block;
+
+  &:hover,
+  &:focus {
+    color: var(--ifm-color-black);
+    text-decoration: none;
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  &.dropdown__link--active {
+    color: var(--ifm-color-primary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+}
+
+/* =========================
+   Dropdown Closing State
+   Used by DropdownNavbarItem.js on route change
+   ========================= */
+.navbar.navbar--closing-dropdown .navbar__item.dropdown {
+  &::before {
+    pointer-events: none;
+  }
+
+  .dropdown__menu {
+    display: none;
+    opacity: 0;
+    visibility: hidden;
     pointer-events: none;
   }
 }
 
-// Dark mode specific fixes for Search Bar
-[data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button {
-    background: transparent;
-    border: 0.5px solid var(--docsearch-muted-color);
-    border-radius: 8px;
-    padding: 12px 12px;
+/* =========================
+   Icon Link Styles (navbar__item--has-icon-link)
+   Replaces :has(.navbar-icon-link) selectors
+   ========================= */
+.navbar .navbar__item.navbar__item--has-icon-link {
+  padding: 0;
 }
 
-[data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button:hover {
-    box-shadow: none;
-    color: var(--docsearch-muted-color);
-    border: 0.5px solid var(--ifm-color-primary);
-} 
+.navbar .navbar-icon-link {
+  color: var(--ifm-color-black);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.15s ease;
 
-// On hover of Search Bar
-.navbar .navbar__items--right .DocSearch-Button:hover {
-  box-shadow: none;
-  color: var(--docsearch-muted-color);
-  border: 0.5px solid var(--ifm-color-primary);
-}
-
-// Search Bar Search Icon
-.navbar .navbar__items--right .DocSearch-Search-Icon {
-  height: 16px;
-  width: 16px;
-}
-
-// Search Bar Search Placeholder
-.navbar .navbar__items--right .DocSearch-Button-Placeholder {
-  font-size: 0.875rem;
-}
-
-.navbar .navbar__items--right .DocSearch-Button-Keys {  
-    display: none;
-}
-
-.DocSearch--active .DocSearch-Footer {
-    display: none;
-}
-
-
-
-@media (max-width: 996px) {
-  /* Make custom HTML navbar items look like menu__link in mobile menu */
-  .navbar .menu__list .menu__link,
-  .navbar .menu__list .navbar-icon-link {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    gap: 6px;
-    padding: 2.5px 9px;
-    color: var(--ifm-menu-color);
-    font-size: var(--default-font);
+  &:hover,
+  &:focus {
+    color: var(--ifm-color-black);
     text-decoration: none;
-    border-radius: 4px;
-    margin: 0;
-    background: none;
-    box-shadow: none;
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+}
+
+/* GitHub icon link - desktop: icon only, mobile: icon + text */
+.navbar .github-icon-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem;
+  border-radius: 0.375rem;
+
+  .github-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
   }
 
-  .navbar .navbar__items--left .navbar-icon-link {
-    width: 100%;
-    display: flex;
-    align-items: center;
+  .github-link-text {
+    display: none;
+  }
+}
+
+/* Mobile hamburger: hide icon, show text */
+@media (max-width: 996px) {
+  .navbar .github-icon-link .github-icon {
+    display: none;
+  }
+
+  .navbar .github-icon-link .github-link-text {
+    display: inline;
+  }
+}
+
+/* =========================
+   DocSearch Button Styles
+   ========================= */
+.navbar .DocSearch-Button {
+  font-size: 0.875rem;
+  min-width: 16rem;
+  border: 0.5px solid var(--ifm-color-gray-300, #e5e7eb);
+
+  .DocSearch-Button-Placeholder {
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 996px) {
+    min-width: 12rem;
+    font-size: 0.8125rem;
+
+    .DocSearch-Button-Placeholder {
+      font-size: 0.8125rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    min-width: 10rem;
+    font-size: 0.75rem;
+
+    .DocSearch-Button-Placeholder {
+      font-size: 0.75rem;
+    }
+  }
+}
+
+/* =========================
+   Mobile/Tablet Breakpoint Styles
+   ========================= */
+@media (max-width: 996px) {
+  .navbar .navbar__item.navbar__item--has-icon-link {
+    padding: 0;
   }
 
   .navbar .navbar-icon-link {
-    display: none !important;
-  }
+    padding: 0.5rem 0.75rem;
 
-} 
-
-@media (max-width: 768px) {
-  .navbar .navbar__item {
-    display: none 
+    &:hover,
+    &:focus {
+      color: var(--ifm-color-black);
+      background-color: rgba(0, 0, 0, 0.03);
+    }
   }
 }
 
-@media (max-width: 600px) {
-  .navbar .navbar__items--right .DocSearch-Button {
-    width: 100%;
-    min-width: 0;
+/* =========================
+   Dark Mode Styles
+   ========================= */
+[data-theme='dark'] .navbar {
+  .navbar__link {
+    color: var(--ifm-color-white);
+
+    &:hover,
+    &:focus {
+      color: var(--ifm-color-white);
+      background-color: rgba(255, 255, 255, 0.06);
+    }
+
+    &.navbar__link--active:hover {
+      background-color: transparent;
+    }
+  }
+
+  .navbar__item--has-active-link .navbar__link,
+  .navbar__item .navbar__link--active,
+  .navbar__link--active {
+    color: var(--ifm-color-primary);
+  }
+
+  .navbar__item.dropdown.navbar__dropdown--has-active > .navbar__link {
+    color: var(--ifm-color-primary);
+  }
+
+  .dropdown__menu {
+    margin-top: 8px;
     margin-left: 0;
-    height: 36px;
-    box-sizing: border-box;
   }
-  .navbar .navbar__items--right .DocSearch-Button::after {
-    display: none !important;
+
+  .dropdown__link {
+    color: var(--ifm-color-white);
+
+    &:hover,
+    &:focus {
+      color: var(--ifm-color-white);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    &.dropdown__link--active {
+      color: var(--ifm-color-primary);
+      font-weight: 600;
+    }
+  }
+
+  .navbar-icon-link {
+    color: var(--ifm-color-white);
+
+    &:hover,
+    &:focus {
+      color: var(--ifm-color-white);
+      background-color: rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  .github-icon-link .github-icon {
+    filter: invert(1);
+  }
+
+  .DocSearch-Button {
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+  }
+
+  @media (max-width: 996px) {
+    .navbar-icon-link {
+      &:hover,
+      &:focus {
+        background-color: transparent;
+      }
+    }
+
+    .navbar__item .DocSearch-Button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
   }
 }
 
+/* =========================
+   Mobile Sidebar Panel Styles
+   ========================= */
+.navbar-sidebar {
+  .navbar-sidebar__item {
+    margin: 0;
+    padding: 0;
+  }
 
+  .navbar-sidebar__item.dropdown {
+    .dropdown__menu {
+      padding: 0.5rem 0;
+      margin: 0;
+    }
 
-/* Hide text on very small screens for right-side items */
-@media (max-width: 480px) {
-  .navbar .navbar__items--right .navbar-icon-link {
+    .dropdown__link {
+      padding: 0.625rem 1.5rem 0.625rem 1.75rem;
+      margin: 0.125rem 0;
+      border-radius: 0.375rem;
+    }
+  }
+
+  /* DocSearch button in sidebar */
+  .navbar-sidebar__item .DocSearch-Button {
+    padding: 0.5rem 0.75rem;
+    margin: 0.25rem 0;
+    border-radius: 0.375rem;
+    width: 100%;
+    max-width: 100%;
+    justify-content: flex-start;
+    font-size: 0.8125rem;
+    min-width: auto;
+
+    .DocSearch-Button-Placeholder {
+      font-size: 0.8125rem;
+    }
+
+    @media (max-width: 576px) {
+      padding: 0.375rem 0.5rem;
+      font-size: 0.75rem;
+
+      .DocSearch-Button-Placeholder {
+        font-size: 0.75rem;
+      }
+    }
+  }
+
+  /* Icon links in sidebar - using class hooks */
+  .navbar-sidebar__item--has-icon-link,
+  .menu__list-item--has-icon-link {
+    background: none;
+
+    &:hover {
+      background: none;
+    }
+
+    .menu__link {
+      background: none;
+
+      &:hover {
+        background: none;
+      }
+    }
+  }
+
+  .navbar-sidebar__item .navbar-icon-link {
+    display: block;
+    padding: 0.25rem 0.5rem 0.25rem 0;
+    color: var(--ifm-color-black);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: var(--default-font);
+
+    &:hover,
+    &:focus {
+      color: var(--ifm-color-primary);
+      font-weight: 600;
+      background: none;
+    }
+  }
+
+  .navbar-sidebar__item .github-icon-link .github-icon {
     display: none;
   }
-} 
 
-//Mobile Hamburger Menu Header
+  .navbar-sidebar__item .github-icon-link .github-link-text {
+    display: inline;
+  }
 
-.navbar-sidebar__brand {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
+  /* Consistent spacing */
+  .navbar-sidebar__items {
+    padding: 1rem 0.5rem;
+
+    > .navbar-sidebar__item {
+      margin-bottom: 0.25rem;
+    }
+  }
 }
 
-.navbar-sidebar__brand .mobile-nav-icon-links {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
+/* Dark mode for mobile sidebar */
+[data-theme='dark'] .navbar-sidebar {
+  .navbar-sidebar__item .navbar-icon-link {
+    color: var(--ifm-color-white);
 
-.navbar-sidebar__brand .mobile-nav-icon-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.navbar-sidebar__brand .mobile-nav-icon-link img {
-  width: 100%;
-  height: 100%;
+    &:hover,
+    &:focus {
+      color: var(--ifm-color-primary);
+      font-weight: 600;
+    }
+  }
 }

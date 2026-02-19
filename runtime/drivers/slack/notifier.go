@@ -55,6 +55,7 @@ func (n *notifier) SendScheduledReport(s *drivers.ScheduledReport) error {
 		DownloadFormat:   s.DownloadFormat,
 		OpenLink:         s.OpenLink,
 		DownloadLink:     s.DownloadLink,
+		Summary:          s.Summary,
 	}
 
 	buf := new(bytes.Buffer)
@@ -260,6 +261,7 @@ type ReportStatusData struct {
 	OpenLink         string
 	DownloadLink     string
 	UnsubscribeLink  string
+	Summary          string
 }
 
 type AlertStatusData struct {
