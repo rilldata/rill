@@ -28,7 +28,6 @@
   <img src="https://docs.rilldata.com/img/explore/dashboard101/multi-measure-select.png" alt="Rill dashboard" width="80%">
 </p>
 
-
 ## Why Rill?
 
 - [**Full-stack analytics**](https://docs.rilldata.com/) — OLAP + modeling + metrics + visualization in one deployment
@@ -43,8 +42,7 @@ curl https://rill.sh | sh
 rill start my-rill-project
 ```
 
-> [!TIP]
-> **Try it live:** [AI Chat demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/-/ai) · [Embedding demo](https://rill-embedding-example.netlify.app/) · [All live demos](https://ui.rilldata.com/demo)
+> [!TIP] > **Try it live:** [AI Chat demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/-/ai) · [Embedding demo](https://rill-embedding-example.netlify.app/) · [All live demos](https://ui.rilldata.com/demo)
 
 ## Capabilities
 
@@ -112,16 +110,15 @@ measures:
     format_preset: humanize
 ```
 
-> [!TIP]
-> [More examples](https://github.com/rilldata/rill-examples) · [Live demos](https://ui.rilldata.com/demo)
+> [!TIP] > [More examples](https://github.com/rilldata/rill-examples) · [Live demos](https://ui.rilldata.com/demo)
 
 ## Production Examples
 
-| Example | Description | Links |
-| --- | --- | --- |
-| **Programmatic Ads** | Bidstream data for pricing strategies and campaign performance | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) · [Walkthrough](https://docs.rilldata.com/guides/openrtb-analytics) · [Demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads) |
-| **Cost Monitoring** | Cloud infrastructure merged with customer data for efficiency analysis | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) · [Walkthrough](https://docs.rilldata.com/guides/cost-monitoring-analytics) · [Demo](https://ui.rilldata.com/demo/rill-cost-monitoring) |
-| **GitHub Analytics** | Codebase activity, contributor productivity, and commit patterns | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics) · [Walkthrough](https://docs.rilldata.com/guides/github-analytics) · [Demo](https://ui.rilldata.com/demo/rill-github-analytics) |
+| Example              | Description                                                            | Links                                                                                                                                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Programmatic Ads** | Bidstream data for pricing strategies and campaign performance         | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) · [Walkthrough](https://docs.rilldata.com/guides/openrtb-analytics) · [Demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads)       |
+| **Cost Monitoring**  | Cloud infrastructure merged with customer data for efficiency analysis | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) · [Walkthrough](https://docs.rilldata.com/guides/cost-monitoring-analytics) · [Demo](https://ui.rilldata.com/demo/rill-cost-monitoring) |
+| **GitHub Analytics** | Codebase activity, contributor productivity, and commit patterns       | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics) · [Walkthrough](https://docs.rilldata.com/guides/github-analytics) · [Demo](https://ui.rilldata.com/demo/rill-github-analytics)        |
 
 ## Community
 
