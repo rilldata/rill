@@ -47,7 +47,7 @@ const SENSITIVE_HEADER_PATTERN =
  * API keys). Only these headers are stored in `.env`; the rest stay as plain
  * text in the connector YAML.
  */
-export function isSensitiveHeaderKey(headerKey: string): boolean {
+function isSensitiveHeaderKey(headerKey: string): boolean {
   return SENSITIVE_HEADER_PATTERN.test(headerKey.trim());
 }
 
@@ -56,7 +56,7 @@ export function isSensitiveHeaderKey(headerKey: string): boolean {
  * Lowercases, replaces non-alphanumeric characters with underscores, and
  * collapses consecutive underscores.
  */
-export function headerKeyToEnvSegment(headerKey: string): string {
+function headerKeyToEnvSegment(headerKey: string): string {
   return headerKey
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
@@ -76,7 +76,7 @@ const AUTH_SCHEME_PREFIXES = ["Bearer ", "Basic ", "Token ", "Bot "];
  * returns `{ scheme, secret }` where `scheme` includes the trailing space.
  * Returns `null` when no known prefix is detected.
  */
-export function splitAuthSchemePrefix(
+function splitAuthSchemePrefix(
   value: string,
 ): { scheme: string; secret: string } | null {
   for (const prefix of AUTH_SCHEME_PREFIXES) {

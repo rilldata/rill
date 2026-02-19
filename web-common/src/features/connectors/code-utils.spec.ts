@@ -9,9 +9,6 @@ import {
   makeEnvVarKey,
   compileConnectorYAML,
   formatHeadersAsYamlMap,
-  isSensitiveHeaderKey,
-  headerKeyToEnvSegment,
-  splitAuthSchemePrefix,
   updateDotEnvWithSecrets,
 } from "./code-utils";
 
@@ -19,15 +16,6 @@ import {
 vi.mock("../../runtime-client/runtime-store", () => ({
   runtime: { subscribe: vi.fn() },
 }));
-
-// Track fetchQuery calls so tests can inspect them
-let mockEnvBlob = "";
-const mockQueryClient = {
-  invalidateQueries: vi.fn().mockResolvedValue(undefined),
-  fetchQuery: vi
-    .fn()
-    .mockImplementation(() => Promise.resolve({ blob: mockEnvBlob })),
-};
 
 vi.mock("svelte/store", async (importOriginal) => {
   const actual = await importOriginal<typeof import("svelte/store")>();
@@ -525,71 +513,6 @@ DATABASE_URL=something`;
   });
 });
 
-describe("splitAuthSchemePrefix", () => {
-  it("should split Bearer prefix", () => {
-    const result = splitAuthSchemePrefix("Bearer my_token_123");
-    expect(result).toEqual({ scheme: "Bearer ", secret: "my_token_123" });
-  });
-
-  it("should split Basic prefix (case-insensitive)", () => {
-    const result = splitAuthSchemePrefix("basic dXNlcjpwYXNz");
-    expect(result).toEqual({ scheme: "basic ", secret: "dXNlcjpwYXNz" });
-  });
-
-  it("should split Token prefix", () => {
-    const result = splitAuthSchemePrefix("Token abc123");
-    expect(result).toEqual({ scheme: "Token ", secret: "abc123" });
-  });
-
-  it("should split Bot prefix", () => {
-    const result = splitAuthSchemePrefix("Bot xoxb-token");
-    expect(result).toEqual({ scheme: "Bot ", secret: "xoxb-token" });
-  });
-
-  it("should return null for no known prefix", () => {
-    expect(splitAuthSchemePrefix("just_a_token")).toBeNull();
-  });
-
-  it("should return null when value is just the prefix with no secret", () => {
-    expect(splitAuthSchemePrefix("Bearer")).toBeNull();
-  });
-});
-
-describe("isSensitiveHeaderKey", () => {
-  it("should match authorization", () => {
-    expect(isSensitiveHeaderKey("Authorization")).toBe(true);
-    expect(isSensitiveHeaderKey("authorization")).toBe(true);
-  });
-
-  it("should match x-api-key and api-key", () => {
-    expect(isSensitiveHeaderKey("X-API-Key")).toBe(true);
-    expect(isSensitiveHeaderKey("api-key")).toBe(true);
-  });
-
-  it("should match token and x-token", () => {
-    expect(isSensitiveHeaderKey("token")).toBe(true);
-    expect(isSensitiveHeaderKey("X-Token")).toBe(true);
-  });
-
-  it("should not match non-sensitive headers", () => {
-    expect(isSensitiveHeaderKey("Content-Type")).toBe(false);
-    expect(isSensitiveHeaderKey("Accept")).toBe(false);
-    expect(isSensitiveHeaderKey("X-Custom-Header")).toBe(false);
-  });
-});
-
-describe("headerKeyToEnvSegment", () => {
-  it("should lowercase and replace non-alphanumeric with underscores", () => {
-    expect(headerKeyToEnvSegment("X-API-Key")).toBe("x_api_key");
-    expect(headerKeyToEnvSegment("Authorization")).toBe("authorization");
-    expect(headerKeyToEnvSegment("X-Custom-Header")).toBe("x_custom_header");
-  });
-
-  it("should strip leading and trailing underscores", () => {
-    expect(headerKeyToEnvSegment("-header-")).toBe("header");
-  });
-});
-
 describe("formatHeadersAsYamlMap", () => {
   describe("array input", () => {
     it("should format non-sensitive headers as plain text", () => {
@@ -895,6 +818,15 @@ describe("compileConnectorYAML", () => {
 });
 
 describe("updateDotEnvWithSecrets", () => {
+  // Track fetchQuery calls so tests can inspect them
+  let mockEnvBlob = "";
+  const mockQueryClient = {
+    invalidateQueries: vi.fn().mockResolvedValue(undefined),
+    fetchQuery: vi
+      .fn()
+      .mockImplementation(() => Promise.resolve({ blob: mockEnvBlob })),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockEnvBlob = "";

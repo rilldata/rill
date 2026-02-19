@@ -140,7 +140,7 @@ export function buildDuckDbQuery(
 /**
  * Checks if a file extension '.v1.parquet.gz' contains parts like '.parquet'
  */
-export function extensionContainsParts(
+function extensionContainsParts(
   fileExtension: string,
   extensionParts: Array<string>,
 ) {
