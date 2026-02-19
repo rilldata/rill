@@ -41,9 +41,7 @@
     {
       id: "modelName",
       accessorFn: (row) => {
-        const resource = modelResources.get(
-          (row.name ?? "").toLowerCase(),
-        );
+        const resource = modelResources.get((row.name ?? "").toLowerCase());
         return resource?.meta?.name?.name ?? row.name ?? "";
       },
       header: "Model Name",

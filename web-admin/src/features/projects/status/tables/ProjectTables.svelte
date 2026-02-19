@@ -126,10 +126,8 @@
   ));
 
   // Unfiltered split to distinguish "none exist" from "all filtered out"
-  $: ({
-    modelTables: allModelTables,
-    externalTables: allExternalTables,
-  } = splitTablesByModel(filteredTables, modelResources));
+  $: ({ modelTables: allModelTables, externalTables: allExternalTables } =
+    splitTablesByModel(filteredTables, modelResources));
 
   // Dialog states
   let specDialogOpen = false;
@@ -270,12 +268,15 @@
       Error loading tables: {$tablesList.error?.message}
     </div>
   {:else}
-    {@const isLoading = $instanceQuery.isLoading || !connectorName || $tablesList.isLoading}
+    {@const isLoading =
+      $instanceQuery.isLoading || !connectorName || $tablesList.isLoading}
 
     <!-- Models section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        Models{isLoading ? "" : ` (${modelTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
+        Models{isLoading
+          ? ""
+          : ` (${modelTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
       {#if isLoading}
         <div
@@ -327,7 +328,9 @@
     <!-- External Tables section -->
     <section class="flex flex-col gap-y-2">
       <h3 class="text-sm font-semibold text-fg-primary">
-        External Tables{isLoading ? "" : ` (${externalTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
+        External Tables{isLoading
+          ? ""
+          : ` (${externalTables.length}${$tablesList.hasNextPage ? "+" : ""})`}
       </h3>
       {#if isLoading}
         <div
