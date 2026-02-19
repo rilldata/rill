@@ -15,6 +15,7 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { writable } from "svelte/store";
   import ModelsTable from "./ModelsTable.svelte";
   import ExternalTablesTable from "./ExternalTablesTable.svelte";
   import {
@@ -66,21 +67,35 @@
   $: updateDebouncedSearch(searchText);
 
   $: searchPattern = debouncedSearch ? `%${debouncedSearch}%` : undefined;
-  $: tablesList = useInfiniteTablesList(
+
+  // Use a writable store so createInfiniteQuery is called once during init;
+  // parameter changes flow reactively through the store.
+  const tablesParams = writable({
+    instanceId: "",
+    connector: "",
+    searchPattern: undefined as string | undefined,
+  });
+  $: tablesParams.set({
     instanceId,
-    connectorName,
+    connector: connectorName,
     searchPattern,
-  );
+  });
+  const tablesList = useInfiniteTablesList(tablesParams);
 
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
 
-  $: tableMetadata = useTableMetadata(
-    instanceId,
-    connectorName,
-    filteredTables,
-  );
-  $: isViewMap = new Map($tableMetadata?.data?.isView ?? []);
+  // TODO: useTableMetadata disabled to isolate white-page bug.
+  // It creates N queries inside a readable store's start callback,
+  // which crashes during Svelte's reactive cycle.
+  // $: tableMetadata = useTableMetadata(
+  //   instanceId,
+  //   connectorName,
+  //   filteredTables,
+  //   queryClient,
+  // );
+  // $: isViewMap = new Map($tableMetadata?.data?.isView ?? []);
+  $: isViewMap = new Map<string, boolean>();
   $: modelResourcesQuery = useModelResources(instanceId);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
   let typeFilter: (typeof typeValues)[number] = parseEnumParam(

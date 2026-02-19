@@ -5,16 +5,15 @@ import {
 import {
   createRuntimeServiceListResources,
   createRuntimeServicePing,
-  createConnectorServiceOLAPListTables,
   createConnectorServiceOLAPGetTable,
   type V1ListResourcesResponse,
   type V1OlapTableInfo,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { connectorServiceOLAPListTables } from "@rilldata/web-common/runtime-client/gen/connector-service/connector-service";
-import { createInfiniteQuery } from "@tanstack/svelte-query";
+import { createInfiniteQuery, type QueryClient } from "@tanstack/svelte-query";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { readable, type Readable } from "svelte/store";
+import { derived, readable, type Readable } from "svelte/store";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 
 /** Type for the table metadata store result */
@@ -76,52 +75,55 @@ export function useResources(instanceId: string) {
   );
 }
 
-export function useTablesList(instanceId: string, connector: string = "") {
-  return createConnectorServiceOLAPListTables(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: !!instanceId,
-      },
-    },
-  );
-}
-
 /**
  * Paginated tables list using cursor pagination.
  * Accumulates pages into a flat array via `select`.
  * Supports server-side search via ILIKE `searchPattern`.
+ *
+ * Accepts a reactive store so that `createInfiniteQuery` is called once
+ * during component initialization; TanStack Query updates the observer
+ * in-place when the derived options change.
+ *
+ * NOTE: `createInfiniteQuery` cannot be re-created inside a Svelte `$:` block
+ * (unlike `createQuery`). Re-creation causes a white-page crash on first
+ * client-side navigation because the InfiniteQueryObserver teardown/setup
+ * cycle corrupts Svelte's flush. The store-based approach avoids this.
  */
 export function useInfiniteTablesList(
-  instanceId: string,
-  connector: string,
-  searchPattern?: string,
+  params: Readable<{
+    instanceId: string;
+    connector: string;
+    searchPattern?: string;
+  }>,
 ) {
-  return createInfiniteQuery({
-    queryKey: ["/v1/olap/tables", { instanceId, connector, searchPattern }],
-    enabled: !!instanceId && !!connector,
+  const optionsStore = derived(params, ($p) => ({
+    queryKey: [
+      "/v1/olap/tables-infinite",
+      {
+        instanceId: $p.instanceId,
+        connector: $p.connector,
+        searchPattern: $p.searchPattern,
+      },
+    ],
+    enabled: !!$p.instanceId && !!$p.connector,
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage: { nextPageToken?: string }) =>
       lastPage?.nextPageToken || undefined,
-    queryFn: ({ pageParam, signal }) =>
-      connectorServiceOLAPListTables(
-        {
-          instanceId,
-          connector,
-          searchPattern,
-          pageToken: pageParam,
-        },
-        signal,
-      ),
+    queryFn: ({ pageParam }: { pageParam?: string }) =>
+      connectorServiceOLAPListTables({
+        instanceId: $p.instanceId,
+        connector: $p.connector,
+        searchPattern: $p.searchPattern,
+        pageToken: pageParam,
+      }),
     select: (data: any) => ({
       tables: data.pages.flatMap(
         (p: { tables?: V1OlapTableInfo[] }) => p.tables ?? [],
       ),
     }),
-  });
+  }));
+
+  return createInfiniteQuery(optionsStore);
 }
 
 /**
@@ -133,11 +135,17 @@ export function useInfiniteTablesList(
  * 3. Queries are cached and run in parallel via svelte-query
  *
  * If performance becomes an issue with many tables, consider adding a batch API endpoint.
+ *
+ * `queryClient` must be passed explicitly because this function creates
+ * queries inside a `readable` store's start callback, which runs during
+ * store resubscription — a context where Svelte's `getContext()` may not
+ * resolve the QueryClient.
  */
 export function useTableMetadata(
   instanceId: string,
   connector: string = "",
   tables: V1OlapTableInfo[] | undefined,
+  queryClient: QueryClient,
 ): Readable<TableMetadataResult> {
   // If no tables, return empty store immediately
   if (!tables || tables.length === 0) {
@@ -197,6 +205,7 @@ export function useTableMetadata(
               refetchOnWindowFocus: false,
             },
           },
+          queryClient,
         );
 
         const unsubscribe = tableQuery.subscribe((result) => {

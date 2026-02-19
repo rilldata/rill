@@ -2,8 +2,12 @@
   import { page } from "$app/stores";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useTablesList, useTableMetadata } from "../selectors";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { useInfiniteTablesList, useTableMetadata } from "../selectors";
   import { filterTemporaryTables } from "../tables/utils";
+  import { writable } from "svelte/store";
+
+  const queryClient = useQueryClient();
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -14,14 +18,23 @@
   });
   $: instance = $instanceQuery.data?.instance;
 
-  // Get tables list and metadata
+  // Get tables list (first page only; show "+" suffix when more pages exist)
   $: connectorName = instance?.olapConnector ?? "";
-  $: tablesList = useTablesList(instanceId, connectorName);
+  const tablesParams = writable({
+    instanceId: "",
+    connector: "",
+    searchPattern: undefined as string | undefined,
+  });
+  $: tablesParams.set({ instanceId, connector: connectorName });
+  const tablesList = useInfiniteTablesList(tablesParams);
+
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
+  $: hasMore = $tablesList.hasNextPage;
   $: tableMetadata = useTableMetadata(
     instanceId,
     connectorName,
     filteredTables,
+    queryClient,
   );
 
   // Count tables vs views
@@ -42,13 +55,13 @@
   {:else if filteredTables.length > 0}
     <div class="table-chips">
       <a href="{basePage}/tables?type=table" class="table-chip">
-        <span class="font-medium">{tableCount}</span>
+        <span class="font-medium">{tableCount}{hasMore ? "+" : ""}</span>
         <span class="text-fg-secondary"
           >{tableCount === 1 ? "Table" : "Tables"}</span
         >
       </a>
       <a href="{basePage}/tables?type=view" class="table-chip">
-        <span class="font-medium">{viewCount}</span>
+        <span class="font-medium">{viewCount}{hasMore ? "+" : ""}</span>
         <span class="text-fg-secondary"
           >{viewCount === 1 ? "View" : "Views"}</span
         >
