@@ -17,7 +17,6 @@
   export let isEmbedded: boolean = false;
 
   $: ({ options, carryOverSearchParams } = pathOptions);
-  $: groups = pathOptions.groups ?? [];
   $: selected = options.get(current.toLowerCase());
 
   function linkMaker(
@@ -100,79 +99,39 @@
           align="start"
           class="min-w-44 max-h-96 overflow-y-auto"
         >
-          {#if groups.length > 0}
-            {#each groups as group (group.name)}
-              <DropdownMenu.Group class="px-1">
-                {#each group.items as { id, option } (id)}
-                  {@const isSelected = id === current.toLowerCase()}
-                  {@const icon = option.resourceKind
-                    ? resourceIconMapping[option.resourceKind]
-                    : undefined}
-                  <DropdownMenu.CheckboxItem
-                    class="cursor-pointer"
-                    checked={isSelected}
-                    checkSize={"h-3 w-3"}
-                    href={linkMaker(
-                      currentPath,
-                      depth,
-                      id,
-                      option,
-                      $page.route.id ?? "",
-                    )}
-                    preloadData={option.preloadData}
-                    on:click={() => {
-                      if (onSelect) {
-                        onSelect(id);
-                      }
-                    }}
-                  >
-                    <span
-                      class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
-                    >
-                      {#if icon}
-                        <svelte:component this={icon} size="12px" />
-                      {/if}
-                      {option.label}
-                    </span>
-                  </DropdownMenu.CheckboxItem>
-                {/each}
-              </DropdownMenu.Group>
-            {/each}
-          {:else}
-            {#each options as [id, option] (id)}
-              {@const isSelected = id === current.toLowerCase()}
-              {@const icon = option.resourceKind
-                ? resourceIconMapping[option.resourceKind]
-                : undefined}
-              <DropdownMenu.CheckboxItem
-                class="cursor-pointer"
-                checked={isSelected}
-                checkSize={"h-3 w-3"}
-                href={linkMaker(
-                  currentPath,
-                  depth,
-                  id,
-                  option,
-                  $page.route.id ?? "",
-                )}
-                preloadData={option.preloadData}
-                on:click={() => {
-                  if (onSelect) {
-                    onSelect(id);
-                  }
-                }}
+          {#each options as [id, option] (id)}
+            {@const isSelected = id === current.toLowerCase()}
+            {@const icon = option.resourceKind
+              ? resourceIconMapping[option.resourceKind]
+              : undefined}
+            <DropdownMenu.CheckboxItem
+              class="cursor-pointer"
+              checked={isSelected}
+              checkSize={"h-3 w-3"}
+              href={linkMaker(
+                currentPath,
+                depth,
+                id,
+                option,
+                $page.route.id ?? "",
+              )}
+              preloadData={option.preloadData}
+              on:click={() => {
+                if (onSelect) {
+                  onSelect(id);
+                }
+              }}
+            >
+              <span
+                class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
               >
-                <span
-                  class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
-                >
-                  {#if icon}
-                    <svelte:component this={icon} size="12px" />
-                  {/if}
-                  {option.label}
-                </span>
-              </DropdownMenu.CheckboxItem>
-            {/each}
-          {/if}
+                {#if icon}
+                  <svelte:component this={icon} size="12px" />
+                {/if}
+                {option.label}
+              </span>
+            </DropdownMenu.CheckboxItem>
+          {/each}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     {/if}

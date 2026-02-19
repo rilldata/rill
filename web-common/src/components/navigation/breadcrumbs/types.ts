@@ -12,19 +12,7 @@ export type PathOption = {
   resourceKind?: ResourceKind;
 };
 
-export type PathOptionEntry = {
-  id: string;
-  option: PathOption;
-};
-
-export type PathOptionGroup = {
-  name: string;
-  label: string;
-  items: PathOptionEntry[];
-};
-
 export type PathOptions = {
   options: Map<Param, PathOption>;
-  groups?: PathOptionGroup[];
   carryOverSearchParams?: boolean;
 };
