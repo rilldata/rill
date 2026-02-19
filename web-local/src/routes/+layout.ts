@@ -10,12 +10,30 @@ import {
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client/index.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
+import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
+import { PREVIEWER_ALLOWED_PREFIXES } from "./route-constants";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
 
 export async function load({ url, depends, untrack }) {
-  depends("init");
+  depends("app:init");
+
+  // Fetch metadata to check preview mode
+  const metadata = await localServiceGetMetadata();
+  const previewLockedMode = metadata.previewLockedMode ?? false;
+
+  // In previewer mode, only allow preview-related routes; redirect everything else to /home
+  if (previewLockedMode) {
+    const isAllowed =
+      url.pathname === "/" ||
+      PREVIEWER_ALLOWED_PREFIXES.some((prefix) =>
+        url.pathname.startsWith(prefix),
+      );
+    if (!isAllowed) {
+      throw redirect(303, "/home");
+    }
+  }
 
   const instanceId = get(runtime).instanceId;
 
@@ -33,8 +51,14 @@ export async function load({ url, depends, untrack }) {
   let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
 
   const redirectPath = untrack(() => {
+    if (!url.searchParams.get("redirect")) return false;
+
+    // In locked preview mode, redirect to /home instead of /files
+    if (previewLockedMode) {
+      return url.pathname !== "/home" && "/home";
+    }
+
     return (
-      !!url.searchParams.get("redirect") &&
       url.pathname !== `/files${firstDashboardFile?.path}` &&
       `/files${firstDashboardFile?.path}`
     );
@@ -42,9 +66,11 @@ export async function load({ url, depends, untrack }) {
 
   if (!initialized) {
     initialized = await handleUninitializedProject(instanceId);
-  } else if (redirectPath) {
-    throw redirect(303, redirectPath);
+  } else {
+    if (redirectPath) {
+      throw redirect(303, redirectPath);
+    }
   }
 
-  return { initialized };
+  return { initialized, previewLockedMode, metadata };
 }

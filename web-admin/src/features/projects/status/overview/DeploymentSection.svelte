@@ -126,9 +126,9 @@
     </div>
 
     <div class="info-row">
-      <span class="info-label">AI</span>
+      <span class="info-label">AI Connector</span>
       <span class="info-value">
-        {#if aiConnector}
+        {#if aiConnector && aiConnector.name !== "admin"}
           {formatConnectorName(aiConnector.type)}
           <span class="text-fg-tertiary text-xs ml-1">({aiConnector.name})</span
           >

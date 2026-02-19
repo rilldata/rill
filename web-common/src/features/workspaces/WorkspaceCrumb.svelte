@@ -11,10 +11,12 @@
   } from "../entity-management/resource-selectors";
   import { builderActions } from "bits-ui";
   import { GitBranch } from "lucide-svelte";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   const downstreamMapping = new Map([
     [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
+    [ResourceKind.Explore, new Set([ResourceKind.MetricsView])],
     [ResourceKind.Source, new Set([ResourceKind.Model])],
     [
       ResourceKind.Model,
@@ -46,6 +48,31 @@
   $: withoutComponents = resources?.filter((r) => !r?.component);
 
   $: componentsOnly = !withoutComponents.length && resources.length;
+
+  // Whether this crumb is disabled in preview mode (models and upstream non-dashboard resources)
+  $: isDisabledInPreview =
+    $previewModeStore &&
+    (resourceKind === ResourceKind.Model ||
+      (upstream &&
+        resourceKind !== ResourceKind.MetricsView &&
+        resourceKind !== ResourceKind.Explore));
+
+  function isItemDisabledInPreview(kind: string | undefined): boolean {
+    return (
+      $previewModeStore &&
+      (kind === ResourceKind.Model ||
+        (upstream &&
+          kind !== ResourceKind.MetricsView &&
+          kind !== ResourceKind.Explore))
+    );
+  }
+
+  function getPreviewHref(
+    name: string | undefined,
+    filePaths: string[] | undefined,
+  ): string {
+    return `/files${filePaths?.[0] ?? filePath}`;
+  }
 
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();
 
@@ -113,14 +140,24 @@
         <DropdownMenu.Trigger asChild let:builder>
           <svelte:element
             this={dropdown ? "button" : "a"}
+            role={dropdown ? "button" : "link"}
             class:open
             class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
             class:selected={current}
+            class:disabled={isDisabledInPreview}
             href={dropdown
               ? undefined
               : exampleResource
-                ? `/files${exampleResource?.meta?.filePaths?.[0]}`
+                ? isDisabledInPreview
+                  ? "#"
+                  : getPreviewHref(
+                      resourceName,
+                      exampleResource?.meta?.filePaths,
+                    )
                 : "#"}
+            on:click={isDisabledInPreview
+              ? (e) => e.preventDefault()
+              : undefined}
             {...dropdown ? builder : {}}
             use:builderActions={{ builders: dropdown ? [builder] : [] }}
           >
@@ -138,8 +175,15 @@
           <DropdownMenu.Content align="start">
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
+              {@const itemDisabled = isItemDisabledInPreview(kind)}
               <DropdownMenu.Item
-                href="/files{resource?.meta?.filePaths?.[0] ?? '/'}"
+                disabled={itemDisabled}
+                href={itemDisabled
+                  ? "#"
+                  : getPreviewHref(
+                      resource?.meta?.name?.name,
+                      resource?.meta?.filePaths,
+                    )}
               >
                 {#if kind}
                   <svelte:component
@@ -186,6 +230,14 @@
   a:hover,
   button:hover {
     @apply text-fg-primary;
+  }
+
+  .disabled {
+    @apply text-fg-disabled;
+  }
+
+  .disabled:hover {
+    @apply text-fg-disabled;
   }
 
   .selected {

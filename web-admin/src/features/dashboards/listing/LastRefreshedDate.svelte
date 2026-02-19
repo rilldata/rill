@@ -3,7 +3,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { timeAgo } from "./utils";
+  import { timeAgo } from "@rilldata/web-common/lib/time/relative-time";
 
   export let dashboard: string;
 

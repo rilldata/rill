@@ -21,12 +21,18 @@ export interface ConversationManagerOptions {
    * How conversation state should be managed and persisted
    * - "url": Use URL parameters (for full-page chat with shareable URLs)
    * - "browserStorage": Use session storage (for sidebar chat)
+   * - Ignored when `customSelector` is provided
    */
   conversationState: ConversationStateType;
   /**
    * The agent to use for conversations (e.g., "analyst_agent", "developer_agent")
    */
   agent?: string;
+  /**
+   * Optional custom conversation selector. When provided, `conversationState` is ignored.
+   * Use this when the built-in selectors don't fit your URL structure (e.g., web-local /ai routes).
+   */
+  customSelector?: ConversationSelector;
 }
 
 /**
@@ -58,17 +64,21 @@ export class ConversationManager {
     this.agent = options.agent;
     this.createNewConversation();
 
-    switch (options.conversationState) {
-      case "url":
-        this.conversationSelector = new URLConversationSelector();
-        break;
-      case "browserStorage":
-        this.conversationSelector = new BrowserStorageConversationSelector();
-        break;
-      default:
-        throw new Error(
-          `Unknown conversation storage type: ${options.conversationState}`,
-        );
+    if (options.customSelector) {
+      this.conversationSelector = options.customSelector;
+    } else {
+      switch (options.conversationState) {
+        case "url":
+          this.conversationSelector = new URLConversationSelector();
+          break;
+        case "browserStorage":
+          this.conversationSelector = new BrowserStorageConversationSelector();
+          break;
+        default:
+          throw new Error(
+            `Unknown conversation storage type: ${options.conversationState}`,
+          );
+      }
     }
   }
 

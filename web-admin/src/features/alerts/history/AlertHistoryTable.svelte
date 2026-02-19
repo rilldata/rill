@@ -2,7 +2,7 @@
   import AlertHistoryTableCompositeCell from "@rilldata/web-admin/features/alerts/history/AlertHistoryTableCompositeCell.svelte";
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
   import type { V1AlertExecution } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ColumnDef } from "@tanstack/svelte-table";

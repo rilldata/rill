@@ -11,6 +11,8 @@
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
+  import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import {
     initPosthog,
     posthogIdentify,
@@ -20,13 +22,19 @@
     errorEventHandler,
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
-  import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
+  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
+  import PreviewModeNav from "./PreviewModeNav.svelte";
+  import {
+    isPreviewRoute,
+    isDeveloperRoute,
+    showPreviewNav,
+  } from "./route-constants";
   import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
@@ -40,8 +48,29 @@
   initPylonWidget();
 
   let removeJavascriptListeners: () => void;
+
+  // Sync preview mode:
+  // - If --preview-locked flag is set, always lock to preview mode
+  // - Otherwise, infer from the current URL so refresh on preview pages stays in preview mode
+  //   and shared routes (/explore, /canvas) preserve the current mode
+  $: {
+    if (data.previewLockedMode) {
+      previewModeStore.set(true);
+    } else if (isPreviewRoute($page.url.pathname)) {
+      previewModeStore.set(true);
+    } else if (isDeveloperRoute($page.url.pathname)) {
+      previewModeStore.set(false);
+    }
+    // For shared routes (/explore, /canvas, /deploy), keep current store value
+  }
+
   onMount(async () => {
-    const config = await localServiceGetMetadata();
+    // If in preview mode and on root, redirect to /home
+    if ($previewModeStore && window.location.pathname === "/") {
+      goto("/home");
+    }
+
+    const config = data.metadata;
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
@@ -71,9 +100,12 @@
 
   $: ({ host, instanceId } = $runtime);
 
-  $: ({ route } = $page);
+  $: onDeployPage = isDeployPage($page);
 
-  $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
+  $: isPreviewMode = $previewModeStore;
+
+  $: shouldShowPreviewNav =
+    isPreviewMode && showPreviewNav($page.url.pathname) && !onDeployPage;
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -82,13 +114,25 @@
       {#if data.initialized}
         <BannerCenter />
         <RepresentingUserBanner />
-        <ApplicationHeader {mode} />
+        <ApplicationHeader
+          logoHref={isPreviewMode ? "/home" : "/"}
+          breadcrumbResourceHref={isPreviewMode
+            ? (name, kind) => `/${kind}/${name}`
+            : undefined}
+          noBorder={isPreviewMode}
+          previewLockedMode={data.previewLockedMode ?? false}
+        />
+        {#if shouldShowPreviewNav}
+          <PreviewModeNav />
+        {/if}
         {#if $deploy}
           <RemoteProjectManager />
         {/if}
       {/if}
 
-      <slot />
+      <div class="flex-1 overflow-hidden" class:bg-white={onDeployPage}>
+        <slot />
+      </div>
     </div>
   </FileAndResourceWatcher>
 </QueryClientProvider>

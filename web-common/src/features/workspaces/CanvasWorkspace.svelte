@@ -25,6 +25,8 @@
   import CanvasInitialization from "../canvas/CanvasInitialization.svelte";
 
   export let fileArtifact: FileArtifact;
+  export let hideCodeToggle = false;
+  export let inPreviewMode = false;
 
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
@@ -94,20 +96,24 @@
         resource={data}
         hasUnsavedChanges={$hasUnsavedChanges}
         titleInput={fileName}
-        codeToggle
+        codeToggle={!hideCodeToggle}
         onTitleChange={onChangeCallback}
         resourceKind={ResourceKind.Canvas}
       >
         <div class="flex gap-x-2" slot="cta">
-          {#if ready}
-            <SaveDefaultsButton {canvasName} {instanceId} saving={$saving} />
-          {/if}
+          {#if !inPreviewMode}
+            {#if ready}
+              <SaveDefaultsButton {canvasName} {instanceId} saving={$saving} />
+            {/if}
 
-          <PreviewButton
-            href="/canvas/{canvasName}"
-            disabled={!!parseError || !!reconcileError || resourceIsReconciling}
-            reconciling={resourceIsReconciling}
-          />
+            <PreviewButton
+              href="/canvas/{canvasName}"
+              disabled={!!parseError ||
+                !!reconcileError ||
+                resourceIsReconciling}
+              reconciling={resourceIsReconciling}
+            />
+          {/if}
         </div>
       </WorkspaceHeader>
 

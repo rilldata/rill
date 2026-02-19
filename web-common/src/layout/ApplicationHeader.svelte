@@ -18,17 +18,25 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
-  import Tag from "../components/tag/Tag.svelte";
+  import ModeToggle from "./ModeToggle.svelte";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
 
-  export let mode: string;
+  export let logoHref: string = "/";
+  export let breadcrumbResourceHref:
+    | ((resourceName: string, resourceKind: string) => string)
+    | undefined = undefined;
+  export let noBorder = false;
+  export let previewLockedMode = false;
+
+  $: previewMode = $previewModeStore;
 
   $: ({ instanceId } = $runtime);
 
@@ -56,16 +64,40 @@
 
   $: hasValidDashboard = Boolean(defaultDashboard);
 
-  $: dashboardOptions = {
-    options: getBreadcrumbOptions(explores, canvases),
-    carryOverSearchParams: $stickyDashboardState,
-  } satisfies PathOptions;
+  $: dashboardOptions = (() => {
+    const options = getBreadcrumbOptions(explores, canvases);
+
+    if (breadcrumbResourceHref) {
+      const customOptions = new Map<string, PathOption>();
+      options.forEach((option, key) => {
+        const customOption = { ...option };
+        const isExplore = option.section === "explore";
+        const isCanvas = option.section === "canvas";
+        const resourceKind = isExplore
+          ? "explore"
+          : isCanvas
+            ? "canvas"
+            : "resource";
+        customOption.href = breadcrumbResourceHref(key, resourceKind);
+        customOptions.set(key, customOption);
+      });
+      return {
+        options: customOptions,
+        carryOverSearchParams: $stickyDashboardState,
+      } satisfies PathOptions;
+    }
+
+    return {
+      options,
+      carryOverSearchParams: $stickyDashboardState,
+    } satisfies PathOptions;
+  })();
 
   $: projectPath = <PathOption>{
     label: projectTitle,
     section: "project",
     depth: -1,
-    href: "/",
+    href: logoHref,
   };
 
   $: pathParts = [
@@ -96,19 +128,23 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage} class="bg-surface-base">
+<header class:border-b={!onDeployPage && !noBorder} class="bg-surface-base">
   {#if !onDeployPage}
-    <a href="/">
+    <a href={logoHref}>
       <Rill />
     </a>
 
-    <Tag text={mode} color="gray"></Tag>
+    {#if !previewLockedMode}
+      <ModeToggle />
+    {/if}
 
-    {#if mode === "Preview"}
+    {#if previewMode}
       {#if $exploresQuery?.data}
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
-    {:else if mode === "Developer"}
+    {:else if $exploresQuery?.data}
+      <Breadcrumbs {pathParts} {currentPath} />
+    {:else}
       <InputWithConfirm
         size="md"
         bumpDown
@@ -122,13 +158,17 @@
   {/if}
 
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
-    {#if mode === "Preview"}
-      {#if route.id?.includes("explore")}
-        <ExplorePreviewCTAs exploreName={dashboardName} />
-      {:else if route.id?.includes("canvas")}
-        <CanvasPreviewCTAs canvasName={dashboardName} />
-      {/if}
-    {:else if showDeveloperChat}
+    {#if route.id?.includes("explore")}
+      <ExplorePreviewCTAs
+        exploreName={dashboardName}
+        inPreviewMode={previewMode}
+      />
+    {:else if route.id?.includes("canvas")}
+      <CanvasPreviewCTAs
+        canvasName={dashboardName}
+        inPreviewMode={previewMode}
+      />
+    {:else if showDeveloperChat && !previewMode}
       <ChatToggle beta />
     {/if}
     {#if showDeployCTA}

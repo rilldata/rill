@@ -6,6 +6,7 @@
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
 
   export let canvasName: string;
+  export let inPreviewMode = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -18,7 +19,7 @@
 {#if $dashboardChat}
   <ChatToggle />
 {/if}
-{#if !$readOnly}
+{#if !$readOnly && !inPreviewMode}
   <div class="flex gap-2 flex-shrink-0 ml-auto">
     <Button type="secondary" href={`/files${canvasFilePath}`}>Edit</Button>
   </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-  import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
+  import ContentContainer from "@rilldata/web-common/components/layout/ContentContainer.svelte";
+  import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";

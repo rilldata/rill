@@ -193,8 +193,7 @@ function getDeployRouteFromEditor(page: Page, deployUrl: URL) {
 
 function isDashboardVizRoute(page: Page) {
   return (
-    page.route.id === "/(viz)/explore/[name]" ||
-    page.route.id === "/(viz)/canvas/[name]"
+    page.route.id === "/explore/[name]" || page.route.id === "/canvas/[name]"
   );
 }
 

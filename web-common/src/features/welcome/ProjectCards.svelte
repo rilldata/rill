@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import Card from "../../components/card/Card.svelte";
@@ -21,6 +22,9 @@
     connectorIconMapping,
     connectorLabelMapping,
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+
+  // Determine redirect href based on current route
+  $: redirectHref = $page.url.pathname.startsWith("/home") ? "/home" : "/";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -75,6 +79,7 @@
         connectorLabelMapping[example.connector] ?? example.connector}
       <Card
         redirect
+        href={redirectHref}
         imageUrl={example.image}
         disabled={!!selectedProjectName}
         isLoading={selectedProjectName === example.name}

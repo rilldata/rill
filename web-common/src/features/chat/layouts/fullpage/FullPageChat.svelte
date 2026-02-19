@@ -59,6 +59,7 @@
   <!-- Conversation List Sidebar -->
   <ConversationSidebar
     {conversationManager}
+    basePath={`/${organization}/${project}/-/ai`}
     collapsed={$conversationSidebarCollapsed}
     onToggle={toggleConversationSidebar}
     onConversationClick={() => {

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
-  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-common/features/resources/ResourceListEmptyState.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
