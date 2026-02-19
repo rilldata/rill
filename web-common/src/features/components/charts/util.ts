@@ -129,11 +129,9 @@ export function adjustDataForTimeZone(
     // Create a shallow copy of the datum to avoid mutating the original
     const adjustedDatum = { ...datum };
     timeFields.forEach((timeField) => {
-      const value = datum[timeField];
-      if (value == null) return;
       adjustedDatum[timeField] =
         convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
-          value as string,
+          datum[timeField] as string,
           selectedTimezone,
         );
     });
