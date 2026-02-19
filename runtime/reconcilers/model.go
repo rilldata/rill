@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -319,8 +320,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
+	// Capture old row/byte totals before execution (for computing deltas)
+	oldRowsTotal := model.State.RowsTotal
+	oldBytesTotal := model.State.BytesTotal
+
 	// Build the model
-	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, specHash, refsHash, trigger, prevResult)
+	executorConnector, execRes, firstRunIncremental, partitionsProcessed, execErr := r.executeAll(ctx, self, model, modelEnv, specHash, refsHash, trigger, prevResult)
 
 	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
 	var newIncrementalState *structpb.Struct
@@ -349,6 +354,55 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		err = r.updateStateAfterExecution(ctx, self, model, executorConnector, specHash, refsHash, newIncrementalState, newIncrementalStateSchema, partitionsHaveErrors, firstRunIncremental, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
+		}
+
+		// Query output table stats and emit telemetry
+		newRowsTotal, newBytesTotal, statsErr := r.queryOutputTableStats(ctx, execRes.Connector, execRes.Table)
+		if statsErr != nil {
+			r.C.Logger.Warn("failed to query output table stats", zap.String("model", n.Name), zap.Error(statsErr), observability.ZapCtx(ctx))
+		} else {
+			// Compute rows/bytes added
+			var rowsAdded, bytesAdded int64
+			if firstRunIncremental {
+				rowsAdded = newRowsTotal - oldRowsTotal
+				if rowsAdded < 0 {
+					rowsAdded = 0
+				}
+				bytesAdded = newBytesTotal - oldBytesTotal
+				if bytesAdded < 0 {
+					bytesAdded = 0
+				}
+			} else {
+				rowsAdded = newRowsTotal
+				bytesAdded = newBytesTotal
+			}
+
+			// Persist updated totals
+			model.State.RowsTotal = newRowsTotal
+			model.State.BytesTotal = newBytesTotal
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+
+			// Emit telemetry
+			runType := "full"
+			if firstRunIncremental {
+				runType = "incremental"
+			}
+			if r.C.Activity != nil {
+				r.C.Activity.RecordMetric(ctx, "model_reconcile_elapsed_ms", float64(execRes.ExecDuration.Milliseconds()),
+					attribute.String("model", n.Name),
+					attribute.String("input_connector", model.Spec.InputConnector),
+					attribute.String("output_connector", model.Spec.OutputConnector),
+					attribute.String("run_type", runType),
+					attribute.Int("partitions_processed", partitionsProcessed),
+					attribute.Int64("rows_added", rowsAdded),
+					attribute.Int64("rows_total", newRowsTotal),
+					attribute.Int64("bytes_added", bytesAdded),
+					attribute.Int64("bytes_total", newBytesTotal),
+				)
+			}
 		}
 	}
 
@@ -689,6 +743,52 @@ func (r *ModelReconciler) updateStateWithResult(ctx context.Context, self *runti
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
 }
 
+// queryOutputTableStats returns the row count and byte size for a model's output table.
+// It returns (0, 0, nil) if the table or connector is empty or the connector is not an OLAP.
+func (r *ModelReconciler) queryOutputTableStats(ctx context.Context, connector, table string) (int64, int64, error) {
+	if table == "" || connector == "" {
+		return 0, 0, nil
+	}
+
+	olap, release, err := r.C.AcquireOLAP(ctx, connector)
+	if err != nil {
+		// Not an OLAP connector — return zeros, not an error
+		return 0, 0, nil
+	}
+	defer release()
+
+	// Query row count
+	escapedTable := olap.Dialect().EscapeTable("", "", table)
+	res, err := olap.Query(ctx, &drivers.Statement{Query: "SELECT COUNT(*) FROM " + escapedTable})
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to query row count: %w", err)
+	}
+	var rowCount int64
+	if res.Next() {
+		if err := res.Scan(&rowCount); err != nil {
+			_ = res.Close()
+			return 0, 0, fmt.Errorf("failed to scan row count: %w", err)
+		}
+	}
+	if err := res.Err(); err != nil {
+		_ = res.Close()
+		return 0, 0, fmt.Errorf("error iterating row count result: %w", err)
+	}
+	_ = res.Close()
+
+	// Query byte size via InformationSchema
+	tbl, err := olap.InformationSchema().Lookup(ctx, "", "", table)
+	if err != nil {
+		return rowCount, 0, nil
+	}
+	err = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.OlapTable{tbl})
+	if err != nil {
+		return rowCount, 0, nil
+	}
+
+	return rowCount, tbl.PhysicalSizeBytes, nil
+}
+
 // updateStateClear clears the model resource's state.
 func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.Resource) error {
 	mdl := self.GetModel()
@@ -706,6 +806,8 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.IncrementalStateSchema = nil
 	mdl.State.PartitionsModelId = ""
 	mdl.State.PartitionsHaveErrors = false
+	mdl.State.RowsTotal = 0
+	mdl.State.BytesTotal = 0
 
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
 }
@@ -968,7 +1070,7 @@ func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.Mo
 }
 
 // executeAll executes all partitions (if any) of a model with the given execution options.
-func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, specHash, refsHash string, trigger *resolvedTrigger, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
+func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, specHash, refsHash string, trigger *resolvedTrigger, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, int, error) {
 	// Prepare the incremental state to pass to the executor
 	usePartitions := model.Spec.PartitionsResolver != ""
 	incrementalRun := false
@@ -1014,29 +1116,29 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if !incrementalRun {
 		err := r.clearPartitions(ctx, model)
 		if err != nil {
-			return "", nil, false, err
+			return "", nil, false, 0, err
 		}
 	}
 
 	// Get executor(s)
 	executor, release, err := r.acquireExecutor(ctx, self, model, env)
 	if err != nil {
-		return "", nil, false, err
+		return "", nil, false, 0, err
 	}
 	defer release()
 
 	// For safety, double check the ctx before executing the model (there may be some code paths where it's not checked)
 	if ctx.Err() != nil {
-		return "", nil, false, ctx.Err()
+		return "", nil, false, 0, ctx.Err()
 	}
 
 	// If we're not partitionting execution, run the executor directly and return
 	if !usePartitions {
 		res, err := r.executeSingle(ctx, executor, self, model, incrementalRun, incrementalState, "", nil)
 		if err != nil {
-			return "", nil, false, err
+			return "", nil, false, 0, err
 		}
-		return executor.finalConnector, res, incrementalRun, err
+		return executor.finalConnector, res, incrementalRun, 0, err
 	}
 
 	// At this point, we know we're running with partitions configured.
@@ -1044,25 +1146,25 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	// Discover number of concurrent partitions to process at a time
 	concurrency, ok := executor.final.Concurrency(int(model.Spec.PartitionsConcurrencyLimit))
 	if !ok {
-		return "", nil, false, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
+		return "", nil, false, 0, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
 	}
 	if executor.stage != nil {
 		stageConcurrency, ok := executor.stage.Concurrency(int(model.Spec.PartitionsConcurrencyLimit))
 		if !ok {
-			return "", nil, false, fmt.Errorf("invalid concurrency limit %d for model stage executor %q", model.Spec.PartitionsConcurrencyLimit, executor.stageConnector)
+			return "", nil, false, 0, fmt.Errorf("invalid concurrency limit %d for model stage executor %q", model.Spec.PartitionsConcurrencyLimit, executor.stageConnector)
 		}
 		if stageConcurrency < concurrency {
 			concurrency = stageConcurrency
 		}
 	}
 	if concurrency < 1 {
-		return "", nil, false, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
+		return "", nil, false, 0, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
 	}
 
 	// Prepare catalog which tracks partitions
 	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
 	if err != nil {
-		return "", nil, false, err
+		return "", nil, false, 0, err
 	}
 	defer release()
 
@@ -1071,7 +1173,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if trigger.reset || trigger.normal {
 		err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
 		if err != nil {
-			return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
+			return "", nil, false, 0, fmt.Errorf("failed to sync partitions: %w", err)
 		}
 	}
 
@@ -1079,12 +1181,13 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if prevResult == nil && incrementalRun {
 		err = r.markPartitionsExecutedExceptFirst(ctx, model)
 		if err != nil {
-			return "", nil, false, fmt.Errorf("failed to prepare partitions for force incremental run: %w", err)
+			return "", nil, false, 0, fmt.Errorf("failed to prepare partitions for force incremental run: %w", err)
 		}
 	}
 
 	// Track execution metadata
 	var totalExecDuration atomic.Int64
+	var totalPartitionsProcessed atomic.Int64
 	firstRunIsIncremental := incrementalRun
 
 	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
@@ -1097,17 +1200,17 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			Limit:        1,
 		})
 		if err != nil {
-			return "", nil, false, fmt.Errorf("failed to load first partition: %w", err)
+			return "", nil, false, 0, fmt.Errorf("failed to load first partition: %w", err)
 		}
 		if len(partitions) == 0 {
-			return "", nil, false, fmt.Errorf("no partitions found")
+			return "", nil, false, 0, fmt.Errorf("no partitions found")
 		}
 		partition := partitions[0]
 
 		// Execute the first partition (with returnErr=true because for the first partition, we do not log and skip erroring partitions)
 		res, ok, err := r.executePartition(ctx, catalog, executor, self, model, incrementalRun, incrementalState, partition, true)
 		if err != nil {
-			return "", nil, false, err
+			return "", nil, false, 0, err
 		}
 		if !ok {
 			panic("executePartition returned false despite returnErr being set to true") // Can't happen
@@ -1117,11 +1220,12 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		prevResult = res
 		incrementalRun = true
 		totalExecDuration.Add(int64(res.ExecDuration))
+		totalPartitionsProcessed.Add(1)
 
 		// also update the model state so that if there are errors in subsequent partitions the model state will reflect that some partitions have succeeded
 		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res)
 		if err != nil {
-			return "", nil, false, err
+			return "", nil, false, 0, err
 		}
 	}
 
@@ -1136,7 +1240,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			Limit:        _modelPendingPartitionsBatchSize,
 		})
 		if err != nil {
-			return "", nil, false, err
+			return "", nil, false, 0, err
 		}
 		if len(partitions) == 0 {
 			break
@@ -1183,6 +1287,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 					}
 					if ok {
 						totalExecDuration.Add(int64(res.ExecDuration))
+						totalPartitionsProcessed.Add(1)
 						results[workerID] = res
 					}
 				}
@@ -1192,7 +1297,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		// Wait for all workers to finish
 		err = grp.Wait()
 		if err != nil {
-			return "", nil, false, err
+			return "", nil, false, 0, err
 		}
 
 		// Finally combine the results of each worker into the prevResult
@@ -1207,7 +1312,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 			prevResult, err = executor.finalResultManager.MergePartitionResults(prevResult, r)
 			if err != nil {
-				return "", nil, false, fmt.Errorf("failed to merge partition task results: %w", err)
+				return "", nil, false, 0, fmt.Errorf("failed to merge partition task results: %w", err)
 			}
 		}
 
@@ -1219,12 +1324,12 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// Should not happen, could also have been a panic
 	if prevResult == nil {
-		return "", nil, false, fmt.Errorf("partition execution succeeded but did not produce a non-nil result")
+		return "", nil, false, 0, fmt.Errorf("partition execution succeeded but did not produce a non-nil result")
 	}
 
 	// We have continuously updated prevResult with new partition results, so we complete and return it here
 	prevResult.ExecDuration = time.Duration(totalExecDuration.Load())
-	return executor.finalConnector, prevResult, firstRunIsIncremental, nil
+	return executor.finalConnector, prevResult, firstRunIsIncremental, int(totalPartitionsProcessed.Load()), nil
 }
 
 // executePartition processes a drivers.ModelPartition by calling executeSingle and then updating the partition's state in the catalog.

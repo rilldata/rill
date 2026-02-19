@@ -1188,6 +1188,20 @@ export class ModelState extends Message<ModelState> {
    */
   latestExecutionDurationMs = protoInt64.zero;
 
+  /**
+   * rows_total is the total number of rows in the model's output table.
+   *
+   * @generated from field: int64 rows_total = 14;
+   */
+  rowsTotal = protoInt64.zero;
+
+  /**
+   * bytes_total is the total size in bytes of the model's output table.
+   *
+   * @generated from field: int64 bytes_total = 15;
+   */
+  bytesTotal = protoInt64.zero;
+
   constructor(data?: PartialMessage<ModelState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1211,6 +1225,8 @@ export class ModelState extends Message<ModelState> {
     { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "total_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "latest_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 14, name: "rows_total", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 15, name: "bytes_total", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {

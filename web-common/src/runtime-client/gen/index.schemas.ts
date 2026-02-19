@@ -1923,6 +1923,10 @@ This is not the time it took to refresh the model which also includes other stuf
   totalExecutionDurationMs?: string;
   /** latest_execution_duration_ms is the time user queries took to execute in the last successful refresh. */
   latestExecutionDurationMs?: string;
+  /** rows_total is the total number of rows in the model's output table. */
+  rowsTotal?: string;
+  /** bytes_total is the total size in bytes of the model's output table. */
+  bytesTotal?: string;
 }
 
 export type V1ModelTestResolverProperties = { [key: string]: unknown };

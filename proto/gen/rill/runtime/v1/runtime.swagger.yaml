@@ -6795,6 +6795,14 @@ definitions:
         type: string
         format: int64
         description: latest_execution_duration_ms is the time user queries took to execute in the last successful refresh.
+      rowsTotal:
+        type: string
+        format: int64
+        description: rows_total is the total number of rows in the model's output table.
+      bytesTotal:
+        type: string
+        format: int64
+        description: bytes_total is the total size in bytes of the model's output table.
   v1ModelTest:
     type: object
     properties:
