@@ -370,6 +370,7 @@
       use:enhance
     >
       <div class="flex flex-col gap-4 w-full">
+        <!-- Name -->
         <Input
           bind:value={$form.name}
           id="create-user-group-name"
@@ -379,6 +380,92 @@
           alwaysShowError={true}
         />
 
+        <!-- Project access multi-select -->
+        <div class="flex flex-col gap-y-1">
+          <label
+            for="project-access"
+            class="line-clamp-1 text-sm font-medium text-fg-primary"
+          >
+            Project access
+          </label>
+          {#if $projectsQuery?.isLoading}
+            <div class="text-sm text-fg-secondary">Loading projects...</div>
+          {:else if projects.length === 0}
+            <div class="text-sm text-fg-secondary">No projects available</div>
+          {:else}
+            <Dropdown.Root
+              bind:open={projectDropdownOpen}
+              closeOnItemClick={false}
+            >
+              <Dropdown.Trigger
+                class="w-full min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
+                  ? 'bg-gray-200'
+                  : 'hover:bg-surface-hover'}"
+              >
+                <span class="truncate">
+                  {selectedProjectsLabel}
+                </span>
+                {#if projectDropdownOpen}
+                  <CaretUpIcon size="12px" />
+                {:else}
+                  <CaretDownIcon size="12px" />
+                {/if}
+              </Dropdown.Trigger>
+              <Dropdown.Content align="start" class="w-full max-h-60 overflow-y-auto">
+                {#each projects as p (p.id)}
+                  <Dropdown.CheckboxItem
+                    class="font-normal flex items-center overflow-hidden justify-between"
+                    checked={selectedProjects.includes(p.name)}
+                    onCheckedChange={() => toggleProjectSelection(p.name)}
+                  >
+                    <span class="truncate" title={p.name}>{p.name}</span>
+                    {#if selectedProjects.includes(p.name)}
+                      <span class="text-fg-secondary text-xs ml-2 shrink-0">{selectedRoleLabel}</span>
+                    {/if}
+                  </Dropdown.CheckboxItem>
+                {/each}
+              </Dropdown.Content>
+            </Dropdown.Root>
+          {/if}
+        </div>
+
+        <!-- Access level selector -->
+        <div class="flex flex-col gap-y-1">
+          <label
+            for="access-level"
+            class="line-clamp-1 text-sm font-medium text-fg-primary"
+          >
+            Access level
+          </label>
+          <Dropdown.Root bind:open={roleDropdownOpen}>
+            <Dropdown.Trigger
+              class="w-full min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
+                ? 'bg-gray-200'
+                : 'hover:bg-surface-hover'}"
+            >
+              <span>{selectedRoleLabel}</span>
+              {#if roleDropdownOpen}
+                <CaretUpIcon size="12px" />
+              {:else}
+                <CaretDownIcon size="12px" />
+              {/if}
+            </Dropdown.Trigger>
+            <Dropdown.Content align="start" class="w-full">
+              {#each PROJECT_ROLES_OPTIONS as option}
+                <Dropdown.CheckboxItem
+                  checked={selectedRole === option.value}
+                  onCheckedChange={(checked) => {
+                    if (checked) selectedRole = option.value;
+                  }}
+                >
+                  {option.label}
+                </Dropdown.CheckboxItem>
+              {/each}
+            </Dropdown.Content>
+          </Dropdown.Root>
+        </div>
+
+        <!-- Users -->
         <div class="flex flex-col gap-y-1">
           <label
             for="user-group-users"
@@ -421,90 +508,6 @@
             }}
           />
         </div>
-
-        <!-- Project access multi-select -->
-        <div class="flex flex-col gap-y-1">
-          <label
-            for="project-access"
-            class="line-clamp-1 text-sm font-medium text-fg-primary"
-          >
-            Project access
-          </label>
-          {#if $projectsQuery?.isLoading}
-            <div class="text-sm text-fg-secondary">Loading projects...</div>
-          {:else if projects.length === 0}
-            <div class="text-sm text-fg-secondary">No projects available</div>
-          {:else}
-            <Dropdown.Root
-              bind:open={projectDropdownOpen}
-              closeOnItemClick={false}
-            >
-              <Dropdown.Trigger
-                class="w-full min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
-                  ? 'bg-gray-200'
-                  : 'hover:bg-surface-hover'}"
-              >
-                <span class="truncate">
-                  {selectedProjectsLabel}
-                </span>
-                {#if projectDropdownOpen}
-                  <CaretUpIcon size="12px" />
-                {:else}
-                  <CaretDownIcon size="12px" />
-                {/if}
-              </Dropdown.Trigger>
-              <Dropdown.Content align="start" class="w-full max-h-60 overflow-y-auto">
-                {#each projects as p (p.id)}
-                  <Dropdown.CheckboxItem
-                    class="font-normal flex items-center overflow-hidden"
-                    checked={selectedProjects.includes(p.name)}
-                    onCheckedChange={() => toggleProjectSelection(p.name)}
-                  >
-                    <span class="truncate w-full" title={p.name}>{p.name}</span>
-                  </Dropdown.CheckboxItem>
-                {/each}
-              </Dropdown.Content>
-            </Dropdown.Root>
-          {/if}
-        </div>
-
-        <!-- Access level selector -->
-        {#if selectedProjects.length > 0}
-          <div class="flex flex-col gap-y-1">
-            <label
-              for="access-level"
-              class="line-clamp-1 text-sm font-medium text-fg-primary"
-            >
-              Access level
-            </label>
-            <Dropdown.Root bind:open={roleDropdownOpen}>
-              <Dropdown.Trigger
-                class="w-full min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
-                  ? 'bg-gray-200'
-                  : 'hover:bg-surface-hover'}"
-              >
-                <span>{selectedRoleLabel}</span>
-                {#if roleDropdownOpen}
-                  <CaretUpIcon size="12px" />
-                {:else}
-                  <CaretDownIcon size="12px" />
-                {/if}
-              </Dropdown.Trigger>
-              <Dropdown.Content align="start" class="w-full">
-                {#each PROJECT_ROLES_OPTIONS as option}
-                  <Dropdown.CheckboxItem
-                    checked={selectedRole === option.value}
-                    onCheckedChange={(checked) => {
-                      if (checked) selectedRole = option.value;
-                    }}
-                  >
-                    {option.label}
-                  </Dropdown.CheckboxItem>
-                {/each}
-              </Dropdown.Content>
-            </Dropdown.Root>
-          </div>
-        {/if}
       </div>
     </form>
 
