@@ -32,6 +32,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { RefreshCw } from "lucide-svelte";
+  import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   type GroupStatus = "ok" | "pending" | "errored";
   function getGroupStatus(group: ResourceGraphGrouping): GroupStatus {
     if (group.resources.some((r) => !!r.meta?.reconcileError)) return "errored";
@@ -611,7 +612,7 @@
 >
   {#if layout === "sidebar"}
     <!-- Sidebar layout: toolbar always visible, content varies -->
-    <div class="graph-toolbar-bar">
+    <div class="graph-toolbar-bar" class:nav-collapsed={!$navigationOpen}>
       <div class="breadcrumb">
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild let:builder>
@@ -910,6 +911,11 @@
 
   .graph-toolbar-bar {
     @apply flex items-center justify-between px-4 h-11 flex-none gap-x-2;
+    transition: padding-left 300ms ease-in-out;
+  }
+
+  .graph-toolbar-bar.nav-collapsed {
+    padding-left: 44px;
   }
 
   .breadcrumb {

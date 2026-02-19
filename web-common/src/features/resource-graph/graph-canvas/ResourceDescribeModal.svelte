@@ -176,7 +176,7 @@
     if (m.hasSchedule && m.scheduleDescription) {
       lines.push(`cron: "${m.scheduleDescription}"`);
     }
-    if (m.refUpdate) {
+    if (m.refUpdate && m.hasSchedule) {
       lines.push(`ref_update: true`);
     }
     if (m.timeoutSeconds) {
