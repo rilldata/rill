@@ -334,13 +334,6 @@
           (g) => g.id === effectiveSelectedGroupId,
         ) ?? null)
       : null;
-  $: selectedGroupIndex =
-    layout === "sidebar"
-      ? filteredResourceGroups.findIndex(
-          (g) => g.id === effectiveSelectedGroupId,
-        )
-      : -1;
-
   function handleSidebarSelect(id: string) {
     if (isSidebarControlled) {
       onSelectedGroupChange?.(id);
