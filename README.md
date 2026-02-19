@@ -19,21 +19,27 @@
 
 **Rill** is an open-source BI-as-code tool with an embedded OLAP database. Define all of your components in YAML, query in milliseconds, deploy via Git.
 
-- **Sub-second queries** — DuckDB/ClickHouse embedded or BYO OLAP Engine, data and compute co-located
-- **Metrics layer** — Single source of truth for dimensions, measures, and time grains
-- **AI-ready** — Built-in chat + MCP server for Claude, ChatGPT, and custom agents
-- **Git-native** — Version control your dashboards, CI/CD your analytics
+- [**Sub-second queries**](https://docs.rilldata.com/build/connectors/) — DuckDB/ClickHouse embedded or BYO OLAP Engine, data and compute co-located
+- [**Metrics layer**](https://docs.rilldata.com/build/metrics-view/) — Single source of truth for dimensions, measures, and time grains
+- [**AI-ready**](https://docs.rilldata.com/explore/ai-chat) — Built-in chat + MCP server for Claude, ChatGPT, and custom agents
+- [**Git-native**](https://docs.rilldata.com/deploy/deploy-dashboard/) — Version control your dashboards, CI/CD your analytics
 
+<!-- TODO: Replace static screenshot with a ~15s GIF showing interactive exploration
+     (filter click → instant chart update → AI chat question → answer).
+     Redash-style animated demos are the strongest visual asset across top OSS READMEs. -->
 <p align="center">
   <img src="https://docs.rilldata.com/img/explore/dashboard101/multi-measure-select.png" alt="Rill dashboard" width="80%">
 </p>
 
+<!-- TODO: Add architecture diagram showing Data Sources → Rill (Models + Metrics + Dashboards) → Users/AI Agents.
+     Both Cube and Evidence use "how it works" diagrams to instantly communicate the value prop. -->
+
 ## Why Rill?
 
-- **Full-stack analytics** — OLAP + modeling + metrics + visualization in one deployment
-- **Code + AI** — Engineers get code-first; business users get AI-first; both are first-class
-- **Fast at every layer** — Sub-second queries on large datasets, hours from raw data to production
-- **Low barrier to entry** — Two commands to start, free tier, managed cloud, or self-hosted
+- [**Full-stack analytics**](https://docs.rilldata.com/) — OLAP + modeling + metrics + visualization in one deployment
+- [**Code + AI**](https://docs.rilldata.com/explore/ai-chat) — Engineers get code-first; business users get AI-first; both are first-class
+- [**Fast at every layer**](https://docs.rilldata.com/build/models/) — Sub-second queries on large datasets, hours from raw data to production
+- [**Low barrier to entry**](#quickstart) — Two commands to start, free tier, managed cloud, or self-hosted
 
 ## Quickstart
 
@@ -42,7 +48,8 @@ curl https://rill.sh | sh
 rill start my-rill-project
 ```
 
-> [Try AI Chat live](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/-/ai) · [Embedding demo](https://rill-embedding-example.netlify.app/) · [Live demos](https://ui.rilldata.com/demo)
+> [!TIP]
+> **Try it live:** [AI Chat demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/-/ai) · [Embedding demo](https://rill-embedding-example.netlify.app/) · [All live demos](https://ui.rilldata.com/demo)
 
 ## Capabilities
 
@@ -110,7 +117,8 @@ measures:
     format_preset: humanize
 ```
 
-> [More examples](https://github.com/rilldata/rill-examples) | [Live demos](https://ui.rilldata.com/demo)
+> [!TIP]
+> [More examples](https://github.com/rilldata/rill-examples) · [Live demos](https://ui.rilldata.com/demo)
 
 ## Production Examples
 
@@ -119,6 +127,9 @@ measures:
 | **Programmatic Ads** | Bidstream data for pricing strategies and campaign performance | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) · [Walkthrough](https://docs.rilldata.com/guides/openrtb-analytics) · [Demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads) |
 | **Cost Monitoring** | Cloud infrastructure merged with customer data for efficiency analysis | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) · [Walkthrough](https://docs.rilldata.com/guides/cost-monitoring-analytics) · [Demo](https://ui.rilldata.com/demo/rill-cost-monitoring) |
 | **GitHub Analytics** | Codebase activity, contributor productivity, and commit patterns | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics) · [Walkthrough](https://docs.rilldata.com/guides/github-analytics) · [Demo](https://ui.rilldata.com/demo/rill-github-analytics) |
+
+<!-- TODO: Add "Trusted by" section with 4-6 customer logos (with permission).
+     None of the top 5 competitor READMEs do this — unclaimed advantage. -->
 
 ## Community
 
