@@ -244,7 +244,7 @@
             </b>
           {/if}
 
-          {#if showFullRange}
+          {#if showFullRange && interval?.isValid}
             <RangeDisplay {interval} {timeGrain} />
 
             <div

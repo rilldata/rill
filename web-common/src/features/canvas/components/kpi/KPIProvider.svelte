@@ -146,10 +146,13 @@
     },
   );
 
-  $: interval = Interval.fromDateTimes(
-    DateTime.fromISO(start ?? "").setZone(timeZone),
-    DateTime.fromISO(end ?? "").setZone(timeZone),
-  );
+  $: interval =
+    start && end
+      ? Interval.fromDateTimes(
+          DateTime.fromISO(start).setZone(timeZone),
+          DateTime.fromISO(end).setZone(timeZone),
+        )
+      : Interval.invalid("no time range");
 </script>
 
 <KPI

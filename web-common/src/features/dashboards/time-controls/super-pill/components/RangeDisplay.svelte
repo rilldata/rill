@@ -17,8 +17,6 @@
       {#if abbreviation}
         {abbreviation}
       {/if}
-    {:else}
-      Invalid Interval
     {/if}
   </span>
 </div>
