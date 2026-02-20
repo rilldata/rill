@@ -136,6 +136,15 @@ var spec = drivers.Spec{
 			Hint:        "Enable SSL for secure connections. For ClickHouse Cloud, SSL is always enabled.",
 			Default:     "true",
 		},
+		{
+			Key:         "drop_sync",
+			Type:        drivers.BooleanPropertyType,
+			Required:    false,
+			DisplayName: "Drop sync",
+			Description: "When true, use SYNC in DROP TABLE statements to wait for synchronous drop semantics.",
+			Default:     "true",
+			NoPrompt:    true,
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -171,6 +180,8 @@ type configProperties struct {
 	DatabaseWhitelist string `mapstructure:"database_whitelist"`
 	// OptimizeTemporaryTablesBeforePartitionReplace determines whether to optimize temporary tables before partition replacement.
 	OptimizeTemporaryTablesBeforePartitionReplace bool `mapstructure:"optimize_temporary_tables_before_partition_replace"`
+	// DropSync determines whether DROP TABLE should include the SYNC modifier.
+	DropSync bool `mapstructure:"drop_sync"`
 	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
@@ -230,6 +241,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		CanScaleToZero: true,
 		MaxOpenConns:   20,
 		MaxIdleConns:   5,
+		DropSync:       true,
 	}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
