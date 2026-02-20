@@ -1,3 +1,4 @@
+expensive: true
 project_files:
   clickhouse.yaml:
     type: connector

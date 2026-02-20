@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	tcwait "github.com/testcontainers/testcontainers-go/wait"
@@ -33,6 +34,7 @@ const (
 type TestingT interface {
 	Name() string
 	TempDir() string
+	SkipNow()
 	FailNow()
 	Errorf(format string, args ...interface{})
 	Cleanup(f func())
@@ -49,6 +51,7 @@ type StarRocksInfo struct {
 // It returns connection info for the container.
 // The container is automatically terminated when the test ends.
 func Start(t TestingT) StarRocksInfo {
+	testmode.Expensive(t)
 	ctx := context.Background()
 
 	req := testcontainers.ContainerRequest{

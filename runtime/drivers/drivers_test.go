@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -76,6 +77,7 @@ func withFile(t *testing.T, fn func(driver, instanceID string, cfg map[string]an
 }
 
 func withPostgres(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error {
+	testmode.Expensive(t)
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 

@@ -7,6 +7,7 @@ import (
 	goruntime "runtime"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
@@ -18,6 +19,7 @@ import (
 type TestingT interface {
 	Name() string
 	TempDir() string
+	SkipNow()
 	FailNow()
 	Errorf(format string, args ...interface{})
 	Cleanup(f func())
@@ -27,6 +29,8 @@ type TestingT interface {
 // It returns the DSN for connecting to the container.
 // The container is automatically terminated when the test ends.
 func Start(t TestingT) string {
+	testmode.Expensive(t)
+
 	_, currentFile, _, _ := goruntime.Caller(0)
 	testdataPath := filepath.Join(currentFile, "..", "testdata")
 
@@ -65,6 +69,7 @@ func Start(t TestingT) string {
 // It returns the DSN for connecting to the cluster and the cluster name.
 // The cluster is automatically terminated when the test ends.
 func StartCluster(t TestingT) (string, string) {
+	testmode.Expensive(t)
 	_, currentFile, _, _ := goruntime.Caller(0)
 
 	compose, err := tc.NewDockerCompose(filepath.Join(currentFile, "..", "testdata", "ch_cluster_2S_2R", "docker-compose.yaml"))

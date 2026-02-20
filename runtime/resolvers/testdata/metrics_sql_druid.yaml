@@ -1,3 +1,4 @@
+expensive: true
 connectors:
   - druid
 project_files:
