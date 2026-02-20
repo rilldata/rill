@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/provisioner"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -17,6 +18,7 @@ import (
 )
 
 func TestProvision(t *testing.T) {
+	testmode.Expensive(t)
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 

@@ -12,12 +12,14 @@ import (
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 )
 
 // TestPostgres starts Postgres using testcontainers and runs all other tests in
 // this file as sub-tests (to prevent spawning many clusters).
 func TestPostgres(t *testing.T) {
+	testmode.Expensive(t)
 	ctx := context.Background()
 
 	pg := pgtestcontainer.New(t)

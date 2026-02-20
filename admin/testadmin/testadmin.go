@@ -35,6 +35,7 @@ import (
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	riverqueue "github.com/riverqueue/river"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -77,6 +78,7 @@ func New(t *testing.T) *Fixture {
 }
 
 func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
+	testmode.Expensive(t)
 	ctx := t.Context()
 
 	// Postgres

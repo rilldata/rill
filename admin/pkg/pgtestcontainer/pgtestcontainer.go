@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -18,6 +19,7 @@ type Container struct {
 
 // New creates and starts a new Postgres testcontainer. Call Terminate() when done using it.
 func New(t *testing.T) Container {
+	testmode.Expensive(t)
 	ctx := t.Context()
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		Started: true,

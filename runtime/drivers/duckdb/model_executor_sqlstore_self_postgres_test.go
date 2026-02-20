@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -52,6 +53,7 @@ var sqlStmt = `CREATE TYPE country AS ENUM ('IND', 'AUS', 'SA', 'NZ');
   `
 
 func TestTransfer(t *testing.T) {
+	testmode.Expensive(t)
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
