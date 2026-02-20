@@ -79,3 +79,12 @@ export function mapParseErrorToLine(
   }
   return runtimeErrorToLine(error.message, yaml);
 }
+
+export function mapParseErrorsToLines(
+  errors: V1ParseError[],
+  yaml: string,
+): LineStatus[] {
+  return errors
+    .map((e) => mapParseErrorToLine(e, yaml))
+    .filter((s): s is LineStatus => s !== undefined);
+}
