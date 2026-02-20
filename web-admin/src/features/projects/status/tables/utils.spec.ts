@@ -72,24 +72,21 @@ describe("tables utils", () => {
       expect(isLikelyView(true, "1024")).toBe(true);
     });
 
-    it("returns true when physicalSizeBytes is '-1'", () => {
-      expect(isLikelyView(false, "-1")).toBe(true);
+    it("returns false when viewFlag is false (regardless of size)", () => {
+      expect(isLikelyView(false, "-1")).toBe(false);
+      expect(isLikelyView(false, "0")).toBe(false);
+      expect(isLikelyView(false, undefined)).toBe(false);
     });
 
-    it("returns true when physicalSizeBytes is 0", () => {
-      expect(isLikelyView(false, 0)).toBe(true);
+    it("falls back to size heuristic when viewFlag is undefined", () => {
+      expect(isLikelyView(undefined, "-1")).toBe(true);
+      expect(isLikelyView(undefined, 0)).toBe(true);
+      expect(isLikelyView(undefined, "0")).toBe(true);
+      expect(isLikelyView(undefined, "1024")).toBe(false);
     });
 
-    it("returns true when physicalSizeBytes is '0' (string)", () => {
-      expect(isLikelyView(false, "0")).toBe(true);
-    });
-
-    it("returns true when physicalSizeBytes is undefined", () => {
-      expect(isLikelyView(false, undefined)).toBe(true);
-    });
-
-    it("returns false for a table with valid size", () => {
-      expect(isLikelyView(false, "1024")).toBe(false);
+    it("returns undefined when both viewFlag and physicalSizeBytes are undefined", () => {
+      expect(isLikelyView(undefined, undefined)).toBeUndefined();
     });
   });
 
@@ -369,6 +366,31 @@ describe("tables utils", () => {
       expect(result).toEqual([
         { name: "users", physicalSizeBytes: "1024" },
         { name: "orders", physicalSizeBytes: "2048" },
+      ]);
+    });
+
+    it("includes indeterminate tables in both filter modes", () => {
+      const tablesWithUnknown: V1OlapTableInfo[] = [
+        { name: "loaded_table", physicalSizeBytes: "1024" },
+        { name: "loading_table", physicalSizeBytes: undefined },
+      ];
+      // Both physicalSizeBytes=undefined and viewMap miss → isLikelyView returns undefined
+      const emptyMap = new Map<string, boolean>();
+
+      const tableResult = applyTableFilters(
+        tablesWithUnknown,
+        "table",
+        emptyMap,
+      );
+      expect(tableResult).toEqual(tablesWithUnknown);
+
+      const viewResult = applyTableFilters(
+        tablesWithUnknown,
+        "view",
+        emptyMap,
+      );
+      expect(viewResult).toEqual([
+        { name: "loading_table", physicalSizeBytes: undefined },
       ]);
     });
   });

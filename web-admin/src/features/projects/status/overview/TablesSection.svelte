@@ -33,11 +33,12 @@
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
   $: hasMore = $tablesList.hasNextPage;
 
-  // Count tables vs views using size heuristic (same logic as tables page)
-  $: tableCount = filteredTables.filter(
-    (t) => !isLikelyView(undefined, t.physicalSizeBytes),
+  // Count tables vs views using size heuristic (same logic as tables page).
+  // isLikelyView returns undefined when indeterminate; treat as table for counts.
+  $: viewCount = filteredTables.filter(
+    (t) => isLikelyView(undefined, t.physicalSizeBytes) === true,
   ).length;
-  $: viewCount = filteredTables.length - tableCount;
+  $: tableCount = filteredTables.length - viewCount;
 
   // Show loading when prerequisites aren't ready OR doing an initial fetch (no cache).
   // `isLoading && isFetching` is TanStack Query's "hard loading" pattern:

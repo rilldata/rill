@@ -60,17 +60,15 @@
 
     await invalidate();
 
-    // Poll every 2 seconds for up to 30 seconds; stop early if model is no longer running
+    // Poll every 2 seconds for up to 30 seconds.
+    // Note: we don't early-exit on IDLE because in web-admin, `resource` is a
+    // snapshot (not a live query), so reconcileStatus would be stale.
     let pollCount = 0;
     const maxPolls = 15;
     pollInterval = setInterval(async () => {
       pollCount++;
       await invalidate();
-      const doneOrMaxed =
-        pollCount >= maxPolls ||
-        resolvedResource?.meta?.reconcileStatus ===
-          V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-      if (doneOrMaxed && pollInterval) {
+      if (pollCount >= maxPolls && pollInterval) {
         clearInterval(pollInterval);
         pollInterval = null;
       }

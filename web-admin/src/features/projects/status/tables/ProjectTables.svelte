@@ -211,10 +211,9 @@
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
-  <div class="flex items-center justify-between">
-    <h2 class="text-lg font-medium">Tables</h2>
-  </div>
   <div class="flex items-center gap-x-3">
+    <h2 class="text-lg font-medium">Tables</h2>
+
     <DropdownMenu.Root bind:open={typeDropdownOpen}>
       <DropdownMenu.Trigger asChild let:builder>
         <Button builders={[builder]} type="tertiary">
@@ -357,7 +356,7 @@
             </span>
             <span class="text-fg-muted text-sm">
               <a
-                href="https://docs.rilldata.com/deploy/existing-project/connect-olap"
+                href="https://docs.rilldata.com/developers/build/connectors/olap"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-primary-500 hover:text-primary-600"

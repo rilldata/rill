@@ -22,15 +22,16 @@ export function filterTemporaryTables(
  * Determines whether a table is likely a view based on its metadata.
  * Uses the view flag from OLAPGetTable, falling back to size heuristics.
  *
- * Note: returns true when metadata hasn't loaded yet (both params undefined),
- * so callers should account for the loading state separately if needed.
+ * Returns `undefined` when neither signal is available (e.g., data still loading),
+ * so callers can distinguish "not yet known" from a definitive classification.
  */
 export function isLikelyView(
   viewFlag: boolean | undefined,
   physicalSizeBytes: string | number | undefined,
-): boolean {
+): boolean | undefined {
+  if (viewFlag !== undefined) return viewFlag;
+  if (physicalSizeBytes === undefined) return undefined;
   return (
-    viewFlag === true ||
     physicalSizeBytes === "-1" ||
     physicalSizeBytes === 0 ||
     physicalSizeBytes === "0" ||
@@ -166,6 +167,8 @@ export function splitTablesByModel(
 /**
  * Filters OLAP tables by type (table vs view).
  * Search is handled server-side via the API's searchPattern parameter.
+ * Tables with indeterminate type (isLikelyView returns undefined) are included
+ * in both "table" and "view" filters to avoid hiding them during loading.
  */
 export function applyTableFilters(
   tables: V1OlapTableInfo[],
@@ -176,6 +179,7 @@ export function applyTableFilters(
   return tables.filter((t) => {
     const name = t.name ?? "";
     const likelyView = isLikelyView(viewMap.get(name), t.physicalSizeBytes);
+    if (likelyView === undefined) return true;
     return (type === "view" && likelyView) || (type === "table" && !likelyView);
   });
 }

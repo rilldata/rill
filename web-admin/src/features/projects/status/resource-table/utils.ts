@@ -1,7 +1,5 @@
-import {
-  V1ReconcileStatus,
-  type V1Resource,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import { isResourceReconciling } from "$lib/refetch-interval-store";
 
 export type ResourceStatus = "error" | "warn" | "ok";
 
@@ -13,12 +11,7 @@ export type ResourceStatus = "error" | "warn" | "ok";
  */
 export function getResourceStatus(r: V1Resource): ResourceStatus {
   if (r.meta?.reconcileError) return "error";
-  const status = r.meta?.reconcileStatus;
-  if (
-    status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-    status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING
-  )
-    return "warn";
+  if (isResourceReconciling(r)) return "warn";
   return "ok";
 }
 

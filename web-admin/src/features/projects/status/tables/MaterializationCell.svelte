@@ -6,20 +6,18 @@
   export let physicalSizeBytes: string | number | undefined;
 
   $: likelyView = checkIsLikelyView(isView, physicalSizeBytes);
-
-  $: label = likelyView ? "View" : "Table";
-  $: icon = likelyView ? Code2 : Database;
 </script>
 
-<div class="shrink-0 flex items-center gap-x-1">
-  <span
-    class="shrink-0 flex items-center gap-x-1 text-[10px] font-medium px-1.5 py-0.5 rounded
-      {likelyView
-      ? 'bg-cyan-600/15 text-cyan-600'
-      : 'bg-emerald-600/15 text-emerald-600'}"
-  >
-    <!-- Icon inherits text color via currentColor -->
-    <svelte:component this={icon} size="12px" />
-    {label}
-  </span>
-</div>
+{#if likelyView !== undefined}
+  <div class="shrink-0 flex items-center gap-x-1">
+    <span
+      class="shrink-0 flex items-center gap-x-1 text-[10px] font-medium px-1.5 py-0.5 rounded
+        {likelyView
+        ? 'bg-cyan-600/15 text-cyan-600'
+        : 'bg-emerald-600/15 text-emerald-600'}"
+    >
+      <svelte:component this={likelyView ? Code2 : Database} size="12px" />
+      {likelyView ? "View" : "Table"}
+    </span>
+  </div>
+{/if}
