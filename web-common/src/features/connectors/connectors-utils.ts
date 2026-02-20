@@ -139,8 +139,12 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
 
 /**
  * Determines the driver name for a connector.
- * Special case: MotherDuck connectors use "duckdb" as the driver name.
+ * Special cases: MotherDuck uses "duckdb", Supabase uses "postgres".
  */
 export function getDriverNameForConnector(connectorName: string): string {
-  return connectorName === "motherduck" ? "duckdb" : connectorName;
+  const driverMapping: Record<string, string> = {
+    motherduck: "duckdb",
+    supabase: "postgres",
+  };
+  return driverMapping[connectorName] ?? connectorName;
 }
