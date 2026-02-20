@@ -198,6 +198,15 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, err
 	}
 
+	if len(entries) > 0 && entries[0].IsDir {
+		if r.props.Partition == globPartitionTypeUnspecified {
+			r.props.Partition = globPartitionTypeDirectory
+		}
+		if r.props.Partition == globPartitionTypeFile {
+			return nil, fmt.Errorf("glob is getting directory but glob type is %q", r.props.Partition)
+		}
+	}
+
 	var rows []map[string]any
 	switch r.props.Partition {
 	case globPartitionTypeUnspecified, globPartitionTypeFile:
@@ -262,10 +271,6 @@ func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry
 	// Group the entries by directory
 	rows := make(map[string]map[string]any)
 	for _, entry := range entries {
-		if entry.IsDir {
-			continue
-		}
-
 		dir := path.Dir(entry.Path)
 
 		row := rows[dir]
