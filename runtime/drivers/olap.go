@@ -424,6 +424,16 @@ func (d Dialect) UnnestSQLSuffix(tbl string) string {
 	return fmt.Sprintf(", %s", tbl)
 }
 
+func (d Dialect) GetArrayContainsFunction() string {
+	if d == DialectDuckDB {
+		return "list_has_any"
+	}
+	if d == DialectClickHouse {
+		return "hasAny"
+	}
+	panic(fmt.Sprintf("unsupported dialect %q for array contains function", d))
+}
+
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimension) (string, error) {
 	if dimension.LookupTable != "" {
 		var keyExpr string
