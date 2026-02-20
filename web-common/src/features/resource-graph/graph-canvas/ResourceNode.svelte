@@ -113,6 +113,9 @@
       ? connectorIconMapping[connector as keyof typeof connectorIconMapping]
       : null
   ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
+
+  // Connector node metadata
+  $: connectorDriver = metadata?.connectorDriver ?? null;
 </script>
 
 <ConditionalTooltip
@@ -270,9 +273,12 @@
           </span>
         </div>
       {:else if isConnector}
-        <!-- Connector Row 1: Kind -->
-        <div class="meta-row">
+        <!-- Connector Row 1: Kind (left) · Driver (right) -->
+        <div class="meta-row meta-row-spread">
           <span class="meta-kind">OLAP Connector</span>
+          {#if connectorDriver}
+            <span class="badge">{connectorDriver}</span>
+          {/if}
         </div>
       {:else}
         <!-- Fallback -->
@@ -434,16 +440,15 @@
     @apply max-h-[200px] overflow-auto whitespace-pre-wrap text-xs;
   }
 
-  /* Make handles small circular dots, tinted by the node accent */
+  /* Hide handle dots — edges connect as plain lines with no anchors */
   :global(.svelte-flow__node[data-id]) :global(.svelte-flow__handle) {
-    width: 6px;
-    height: 6px;
-    min-width: 6px;
-    min-height: 6px;
-    border-radius: 9999px;
-    background-color: color-mix(in srgb, var(--node-accent) 18%, #ffffff);
-    border: 1px solid color-mix(in srgb, var(--node-accent) 55%, #b1b1b7);
-    box-shadow: 0 0 0 1px #ffffff;
-    opacity: 1;
+    width: 1px;
+    height: 1px;
+    min-width: 1px;
+    min-height: 1px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    opacity: 0;
   }
 </style>

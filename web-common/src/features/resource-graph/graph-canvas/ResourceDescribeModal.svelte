@@ -25,6 +25,7 @@
     ChevronRight,
     HardDrive,
     ArrowRightLeft,
+    Key,
   } from "lucide-svelte";
   import type { ResourceNodeData } from "../shared/types";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
@@ -80,6 +81,26 @@
           ?.toLowerCase()
           ?.replaceAll("_", " ")
       : undefined;
+
+  // Connector metadata
+  $: connectorDriver = metadata?.connectorDriver ?? null;
+  $: connectorProps = metadata?.connectorProperties ?? {};
+  $: connectorTemplated = metadata?.connectorTemplatedProperties ?? [];
+  $: connectorEnvVars = (function () {
+    const envVars: string[] = [];
+    for (const key of connectorTemplated) {
+      const val = connectorProps[key];
+      if (typeof val === "string") {
+        const match = val.match(/\{\{\s*\.env\.(\w+)\s*\}\}/);
+        if (match) {
+          envVars.push(match[1]);
+          continue;
+        }
+      }
+      envVars.push(key);
+    }
+    return envVars;
+  })();
 
   // Collapsible state for measures/dimensions
   let showMeasures = false;
@@ -283,6 +304,39 @@
                 ?.reconcileError}</pre>
           {:else if statusLabel}
             <p class="describe-status">{statusLabel}</p>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Connector Info (for Connector resource type) -->
+      {#if kind === ResourceKind.Connector}
+        <div class="describe-section">
+          <h4 class="describe-section-title">Connector Info</h4>
+          {#if connectorDriver}
+            <div class="describe-row">
+              <span class="describe-row-icon"><Database size={14} /></span>
+              <span>Driver: <span class="describe-mono">{connectorDriver}</span></span>
+            </div>
+          {/if}
+          {#if connectorEnvVars.length > 0}
+            <div class="describe-row">
+              <span class="describe-row-icon"><Key size={14} /></span>
+              <span>Environment Variables</span>
+            </div>
+            <div class="describe-env-list">
+              {#each connectorEnvVars as envVar}
+                <span class="describe-env-tag">{envVar}</span>
+              {/each}
+            </div>
+          {/if}
+          {#if Object.keys(connectorProps).length > 0}
+            <div class="describe-row" style="margin-top: 4px;">
+              <span class="describe-row-icon"><FileText size={14} /></span>
+              <span>Properties</span>
+            </div>
+            <pre class="describe-yaml">{Object.entries(connectorProps)
+                .map(([k, v]) => `${k}: ${String(v)}`)
+                .join("\n")}</pre>
           {/if}
         </div>
       {/if}
@@ -768,5 +822,13 @@
   .describe-yaml {
     @apply text-xs font-mono bg-surface-subtle p-3 rounded overflow-auto whitespace-pre-wrap;
     max-height: 200px;
+  }
+
+  .describe-env-list {
+    @apply flex flex-wrap gap-1.5 ml-7 mt-1;
+  }
+
+  .describe-env-tag {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-mono text-fg-secondary bg-surface-subtle border;
   }
 </style>

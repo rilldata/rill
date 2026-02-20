@@ -316,6 +316,21 @@ function extractResourceMetadata(
     metadata.hasSecurityRules = (canvas.spec.securityRules?.length ?? 0) > 0;
   }
 
+  // Connector metadata
+  const connectorRes = resource.connector;
+  if (connectorRes?.spec) {
+    if (connectorRes.spec.driver) {
+      metadata.connectorDriver = connectorRes.spec.driver;
+    }
+    if (connectorRes.spec.properties) {
+      metadata.connectorProperties = connectorRes.spec.properties;
+    }
+    if (connectorRes.spec.templatedProperties?.length) {
+      metadata.connectorTemplatedProperties =
+        connectorRes.spec.templatedProperties;
+    }
+  }
+
   // Look up alert/API counts from pre-built reverse-reference map (O(1))
   const resourceId = createResourceId(resource.meta);
   if (resourceId) {
