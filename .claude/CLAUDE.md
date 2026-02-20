@@ -58,7 +58,7 @@ Frontend API clients are auto-generated from proto definitions using **Orval**. 
 General rules for writing Go code:
 
 - Write Go code in the style of Uber's Go style guide.
-- Use `golangci-lint` for linting.
+- Use `golangci-lint` for linting. After making Go changes, run `golangci-lint run ./path/to/package/` on the affected packages to catch issues before committing.
 - Non-trivial directories should have a `README.md`. If a directory has a README, always read it before making changes in that directory.
 - Functions should be sorted roughly in call order; functions should be grouped by receiver; plain utility functions belong towards the end of a file.
 - Prefer colons or semi-colons in code comments instead of hyphens or dashes. This keeps comments shorter, which makes them more readable in a monospace font.

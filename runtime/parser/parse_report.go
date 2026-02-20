@@ -35,9 +35,11 @@ type ReportYAML struct {
 		ArgsJSON string         `yaml:"args_json"`
 	} `yaml:"query"`
 	Export struct {
-		Format        string `yaml:"format"`
-		IncludeHeader bool   `yaml:"include_header"`
-		Limit         uint   `yaml:"limit"`
+		Format           string         `yaml:"format"`
+		IncludeHeader    bool           `yaml:"include_header"`
+		Limit            uint           `yaml:"limit"`
+		OutputConnector  string         `yaml:"output_connector"`
+		OutputProperties map[string]any `yaml:"output_properties"`
 	} `yaml:"export"`
 	Email struct {
 		Recipients []string `yaml:"recipients"`
