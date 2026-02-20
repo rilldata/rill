@@ -8,16 +8,19 @@
   export let project: string;
   export let api: string;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId, host } = $runtime);
 
   $: apiQuery = useAPI(instanceId, api);
   $: apiSpec = $apiQuery.data?.resource?.api?.spec;
   $: apiMeta = $apiQuery.data?.resource?.meta;
 
-  // TODO: test with a deployed project that has API resources
   $: securityRuleCount = apiSpec?.securityRules?.length ?? 0;
   $: hasRequestSchema = !!apiSpec?.openapiRequestSchemaJson;
   $: hasResponseSchema = !!apiSpec?.openapiResponseSchemaJson;
+
+  // Construct the endpoint URL
+  $: endpointPath = `/v1/instances/${instanceId}/api/${api}`;
+  $: endpointUrl = host ? `${host}${endpointPath}` : endpointPath;
 
   // Extract SQL from resolver properties (used by "sql" and "metrics_sql" resolvers)
   $: sql = apiSpec?.resolverProperties?.sql as string | undefined;
@@ -41,9 +44,27 @@
       </div>
       <div class="flex gap-x-2 items-center">
         <h1 class="text-fg-primary text-lg font-bold" aria-label="API name">
-          {api}
+          {apiSpec.displayName || api}
         </h1>
         <div class="grow" />
+      </div>
+      {#if apiSpec.description}
+        <p class="text-fg-secondary text-sm">{apiSpec.description}</p>
+      {/if}
+    </div>
+
+    <!-- Endpoint URL -->
+    <div class="flex flex-col gap-y-3">
+      <MetadataLabel>Endpoint</MetadataLabel>
+      <div class="flex items-center gap-x-3">
+        <span
+          class="text-xs font-semibold px-1.5 py-0.5 rounded bg-surface-secondary text-fg-secondary"
+          >GET / POST</span
+        >
+        <code
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md px-3 py-1.5 overflow-x-auto"
+          >{endpointUrl}</code
+        >
       </div>
     </div>
 
@@ -55,15 +76,21 @@
         <MetadataValue>{apiSpec.resolver || "—"}</MetadataValue>
       </div>
 
-      <!-- Security rules -->
-      <div class="flex flex-col gap-y-3" aria-label="API security rules">
-        <MetadataLabel>Security rules</MetadataLabel>
-        <MetadataValue>
-          {securityRuleCount === 0
-            ? "None"
-            : `${securityRuleCount} rule${securityRuleCount > 1 ? "s" : ""}`}
-        </MetadataValue>
+      <!-- Authentication -->
+      <div class="flex flex-col gap-y-3" aria-label="API authentication">
+        <MetadataLabel>Authentication</MetadataLabel>
+        <MetadataValue>Bearer token</MetadataValue>
       </div>
+
+      <!-- Security rules -->
+      {#if securityRuleCount > 0}
+        <div class="flex flex-col gap-y-3" aria-label="API security rules">
+          <MetadataLabel>Security rules</MetadataLabel>
+          <MetadataValue>
+            {securityRuleCount} rule{securityRuleCount > 1 ? "s" : ""}
+          </MetadataValue>
+        </div>
+      {/if}
 
       <!-- Created -->
       {#if apiMeta?.createdOn}
@@ -92,8 +119,6 @@
           </MetadataValue>
         </div>
       {/if}
-
-      <!-- TODO: add API endpoint URL once available from the runtime -->
     </div>
 
     <!-- SQL -->
@@ -115,12 +140,11 @@
     {/if}
 
     <!-- OpenAPI schemas -->
-    <!-- TODO: test rendering of these sections with real API data -->
     {#if hasRequestSchema}
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Request schema</MetadataLabel>
         <pre
-          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{apiSpec.openapiRequestSchemaJson}</pre>
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(JSON.parse(apiSpec.openapiRequestSchemaJson ?? ""), null, 2)}</pre>
       </div>
     {/if}
 
@@ -128,11 +152,10 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Response schema</MetadataLabel>
         <pre
-          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{apiSpec.openapiResponseSchemaJson}</pre>
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(JSON.parse(apiSpec.openapiResponseSchemaJson ?? ""), null, 2)}</pre>
       </div>
     {/if}
 
     <!-- TODO: add a "Try it" section to test the API endpoint inline -->
-    <!-- TODO: add reconcile status / error display -->
   </div>
 {/if}

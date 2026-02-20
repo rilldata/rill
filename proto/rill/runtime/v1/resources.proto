@@ -881,6 +881,10 @@ message API {
 }
 
 message APISpec {
+  // User-facing name
+  string display_name = 12;
+  // User-facing description
+  string description = 13;
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
   string openapi_summary = 3;

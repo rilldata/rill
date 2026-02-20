@@ -3,6 +3,7 @@
 
   export let id: string;
   export let title: string;
+  export let description: string | undefined;
   export let resolver: string | undefined;
   export let openapiSummary: string | undefined;
   export let securityRuleCount: number;
@@ -31,12 +32,15 @@
   <div
     class="flex gap-x-1 text-fg-secondary text-xs font-normal min-h-[16px] overflow-hidden"
   >
+    {#if description}
+      <span class="truncate">{description}</span>
+      <span class="shrink-0">•</span>
+    {:else if openapiSummary}
+      <span class="truncate">{openapiSummary}</span>
+      <span class="shrink-0">•</span>
+    {/if}
     {#if resolver}
       <span class="shrink-0">{resolver}</span>
-    {/if}
-    {#if openapiSummary}
-      <span class="shrink-0">•</span>
-      <span class="truncate">{openapiSummary}</span>
     {/if}
     {#if securityRuleCount > 0}
       <span class="shrink-0">•</span>
@@ -46,6 +50,5 @@
           : ""}</span
       >
     {/if}
-    <!-- TODO: add last invocation time and owner info -->
   </div>
 </a>

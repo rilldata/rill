@@ -16,7 +16,10 @@
       cell: (info) =>
         flexRender(APIsTableCompositeCell, {
           id: info.row.original.meta.name.name,
-          title: info.row.original.meta.name.name,
+          title:
+            info.row.original.api?.spec?.displayName ||
+            info.row.original.meta.name.name,
+          description: info.row.original.api?.spec?.description,
           resolver: info.row.original.api?.spec?.resolver,
           openapiSummary: info.row.original.api?.spec?.openapiSummary,
           securityRuleCount:
