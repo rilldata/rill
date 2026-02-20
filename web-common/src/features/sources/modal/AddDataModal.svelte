@@ -222,7 +222,7 @@
     >
       {#if step === 1}
         {#if isModelingSupported}
-          <Dialog.Title>Data Source</Dialog.Title>
+          <Dialog.Title>Data Source Connector</Dialog.Title>
           <section class="mb-1">
             <div
               class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
@@ -241,18 +241,6 @@
             </div>
           </section>
         {/if}
-        <div class="text-fg-secondary">
-          Check out
-          <a
-            href="https://docs.rilldata.com/build/connectors/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-primary-500 hover:text-primary-600 font-medium"
-          >
-            our docs
-          </a>
-          for more!
-        </div>
       {/if}
 
       {#if step === 1}
