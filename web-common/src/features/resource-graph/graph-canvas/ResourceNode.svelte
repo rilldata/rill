@@ -98,6 +98,7 @@
   $: isMetricsView = kind === ResourceKind.MetricsView;
   $: isExplore = kind === ResourceKind.Explore;
   $: isCanvas = kind === ResourceKind.Canvas;
+  $: isConnector = kind === ResourceKind.Connector;
 
   $: measuresCount = metadata?.measures?.length ?? 0;
   $: dimensionsCount = metadata?.dimensions?.length ?? 0;
@@ -267,6 +268,11 @@
               <Unlock size="10px" />
             {/if}
           </span>
+        </div>
+      {:else if isConnector}
+        <!-- Connector Row 1: Kind -->
+        <div class="meta-row">
+          <span class="meta-kind">OLAP Connector</span>
         </div>
       {:else}
         <!-- Fallback -->

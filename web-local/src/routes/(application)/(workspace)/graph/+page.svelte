@@ -23,8 +23,8 @@
 
   // Parse URL parameters
   $: urlParams = parseGraphUrlParams($page.url);
-  $: activeKind = urlParams.kind;
-  $: seeds = activeKind ? [activeKind] : undefined;
+  $: activeKind = urlParams.kind ?? "connector";
+  $: seeds = [activeKind];
 
   // Sidebar selection from URL ?resource= param
   $: selectedResource =
@@ -46,6 +46,7 @@
   // Kind filter config
   type NodeTypeOption = { label: string; token: KindToken };
   const nodeTypeOptions: NodeTypeOption[] = [
+    { label: "OLAP Connector", token: "connector" },
     { label: "Source Models", token: "sources" },
     { label: "Models", token: "models" },
     { label: "Metric Views", token: "metrics" },
@@ -53,7 +54,7 @@
   ];
 
   $: activeKindLabel =
-    nodeTypeOptions.find((o) => o.token === activeKind)?.label ?? "All types";
+    nodeTypeOptions.find((o) => o.token === activeKind)?.label ?? "OLAP Connector";
 
   function handleKindChange(kind: string | null) {
     if (kind) {
@@ -80,10 +81,10 @@
     }
   }
 
-  // Clear all filters
+  // Clear all filters (reset to OLAP connector default)
   function handleClearFilters() {
     selectedStatuses = [];
-    handleKindChange(null);
+    handleKindChange("connector");
   }
 
   // Refresh all

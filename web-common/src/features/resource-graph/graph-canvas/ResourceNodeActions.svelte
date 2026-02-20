@@ -115,7 +115,7 @@
         >
           <div class="flex items-center gap-x-2">
             <ExternalLink size="12px" />
-            <span>Edit File</span>
+            <span>Go to Resource</span>
           </div>
         </DropdownMenu.Item>
       {/if}

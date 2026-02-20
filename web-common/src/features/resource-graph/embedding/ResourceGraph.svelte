@@ -17,11 +17,12 @@
     isKindToken,
     tokenForKind,
     tokenForSeedString,
+    type KindToken,
   } from "../navigation/seed-parser";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
-  import ResourceKindSelector from "../summary/ResourceKindSelector.svelte";
+  import ResourceNodeSelector from "../summary/ResourceNodeSelector.svelte";
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
   import type {
@@ -88,15 +89,17 @@
   export let onClearFilters: (() => void) | null = null;
 
   type SummaryMemo = {
+    connector: number;
     sources: number;
     models: number;
     metrics: number;
     dashboards: number;
     resources: V1Resource[];
-    activeToken: "sources" | "metrics" | "models" | "dashboards" | null;
+    activeToken: KindToken | null;
   };
   function summaryEquals(a: SummaryMemo, b: SummaryMemo) {
     return (
+      a.connector === b.connector &&
       a.sources === b.sources &&
       a.models === b.models &&
       a.metrics === b.metrics &&
@@ -117,6 +120,15 @@
     normalizedResources,
     coerceResourceKind,
   );
+
+  // Derive active resource ID for the node selector dropdown.
+  // If there's exactly one non-kind-token seed, use its fully qualified ID.
+  $: activeResourceIdForSelector = (function (): string | null {
+    if (!normalizedSeeds || normalizedSeeds.length !== 1) return null;
+    const first = normalizedSeeds[0];
+    if (typeof first === "string") return null;
+    return first.kind && first.name ? `${first.kind}:${first.name}` : null;
+  })();
 
   // Determine if we're filtering by a specific kind (e.g., ?kind=metrics)
   // This is used to filter out groups that don't contain any resource of the filtered kind
@@ -140,12 +152,7 @@
 
   // Determine which overview node should be highlighted based on current seeds
   // For Canvas with MetricsView seeds, prioritize the Canvas token (dashboards) over MetricsView tokens
-  $: overviewActiveToken = (function ():
-    | "sources"
-    | "metrics"
-    | "models"
-    | "dashboards"
-    | null {
+  $: overviewActiveToken = (function (): KindToken | null {
     const rawSeeds = seeds ?? [];
 
     // Check the first seed first - this should be the anchor resource (e.g., Canvas)
@@ -358,35 +365,45 @@
   // Compute resource counts for the summary graph header.
   // We compute directly in a single pass rather than using filter().length for performance.
   // This is more efficient (O(n) instead of O(4n)) and clearer in intent.
-  $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } =
-    (function computeCounts() {
-      let sources = 0,
-        models = 0,
-        metrics = 0,
-        dashboards = 0;
-      for (const r of normalizedResources) {
-        if (r?.meta?.hidden) continue;
-        const k = coerceResourceKind(r);
-        if (!k) continue;
-        if (k === ResourceKind.Source) sources++;
-        else if (k === ResourceKind.Model) models++;
-        else if (k === ResourceKind.MetricsView) metrics++;
-        else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
-          dashboards++;
-      }
-      return {
-        sourcesCount: sources,
-        modelsCount: models,
-        metricsCount: metrics,
-        dashboardsCount: dashboards,
-      };
-    })());
+  $: ({
+    connectorCount,
+    sourcesCount,
+    modelsCount,
+    metricsCount,
+    dashboardsCount,
+  } = (function computeCounts() {
+    let connectors = 0,
+      sources = 0,
+      models = 0,
+      metrics = 0,
+      dashboards = 0;
+    for (const r of normalizedResources) {
+      const k = coerceResourceKind(r);
+      if (!k) continue;
+      // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+      if (r?.meta?.hidden && k !== ResourceKind.Connector) continue;
+      if (k === ResourceKind.Connector) connectors++;
+      else if (k === ResourceKind.Source) sources++;
+      else if (k === ResourceKind.Model) models++;
+      else if (k === ResourceKind.MetricsView) metrics++;
+      else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
+        dashboards++;
+    }
+    return {
+      connectorCount: connectors,
+      sourcesCount: sources,
+      modelsCount: models,
+      metricsCount: metrics,
+      dashboardsCount: dashboards,
+    };
+  })());
 
   // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
   // Without this, the kind selector would re-render on every resource array change
   // even if counts haven't actually changed. The summaryEquals function does shallow comparison
   // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
+    connector: 0,
     sources: 0,
     models: 0,
     metrics: 0,
@@ -396,6 +413,7 @@
   };
   $: {
     const nextSummary: SummaryMemo = {
+      connector: connectorCount,
       sources: sourcesCount,
       models: modelsCount,
       metrics: metricsCount,
@@ -617,42 +635,6 @@
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild let:builder>
             <button
-              class="text-fg-muted px-[5px] py-1"
-              use:builder.action
-              {...builder}
-            >
-              <span class="gap-x-1.5 items-center font-medium flex">
-                <span>{activeKindLabel}</span>
-                <CaretDownIcon size="10px" />
-              </span>
-            </button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="start" class="w-48">
-            <DropdownMenu.Item on:click={() => onKindChange?.(null)}>
-              All types
-            </DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item on:click={() => onKindChange?.("sources")}>
-              Source Models
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("models")}>
-              Models
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("metrics")}>
-              Metric Views
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("dashboards")}>
-              Dashboards
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-        <CaretDownIcon
-          size="12px"
-          className="text-fg-muted -rotate-90 flex-none"
-        />
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild let:builder>
-            <button
               class="text-fg-muted px-[5px] py-1 max-w-fit"
               use:builder.action
               {...builder}
@@ -710,6 +692,30 @@
             >Clear Filter</button
           >
         {/if}
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild let:builder>
+            <Button builders={[builder]} type="tertiary">
+              {activeKindLabel}
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end" class="w-48">
+            <DropdownMenu.Item on:click={() => onKindChange?.("connector")}>
+              OLAP Connector
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => onKindChange?.("sources")}>
+              Source Models
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => onKindChange?.("models")}>
+              Models
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => onKindChange?.("metrics")}>
+              Metric Views
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => onKindChange?.("dashboards")}>
+              Dashboards
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
         {#if statusFilterOptions.length > 0}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild let:builder>
@@ -805,17 +811,15 @@
       {#if showSummary}
         <slot
           name="summary"
+          connector={connectorCount}
           sources={sourcesCount}
           metrics={metricsCount}
           models={modelsCount}
           dashboards={dashboardsCount}
         >
-          <ResourceKindSelector
-            sources={summaryMemo.sources}
-            models={summaryMemo.models}
-            metrics={summaryMemo.metrics}
-            dashboards={summaryMemo.dashboards}
-            activeToken={summaryMemo.activeToken}
+          <ResourceNodeSelector
+            resources={normalizedResources}
+            activeResourceId={activeResourceIdForSelector}
           />
         </slot>
       {/if}

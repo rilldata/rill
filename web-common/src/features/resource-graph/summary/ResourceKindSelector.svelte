@@ -1,30 +1,29 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
 
+  import type { KindToken } from "../navigation/seed-parser";
+
+  export let connector = 0;
   export let sources = 0;
   export let models = 0;
   export let metrics = 0;
   export let dashboards = 0;
-  export let activeToken:
-    | "sources"
-    | "metrics"
-    | "models"
-    | "dashboards"
-    | null = null;
+  export let activeToken: KindToken | null = null;
 
-  $: total = sources + models + metrics + dashboards;
+  $: total = connector + sources + models + metrics + dashboards;
 
-  const kindConfig = [
-    { token: "sources" as const, label: "Source Models" },
-    { token: "models" as const, label: "Models" },
-    { token: "metrics" as const, label: "Metric Views" },
-    { token: "dashboards" as const, label: "Dashboards" },
+  const kindConfig: { token: KindToken; label: string }[] = [
+    { token: "connector", label: "OLAP Connector" },
+    { token: "sources", label: "Source Models" },
+    { token: "models", label: "Models" },
+    { token: "metrics", label: "Metric Views" },
+    { token: "dashboards", label: "Dashboards" },
   ];
 
-  function getCount(
-    token: "sources" | "models" | "metrics" | "dashboards",
-  ): number {
+  function getCount(token: KindToken): number {
     switch (token) {
+      case "connector":
+        return connector;
       case "sources":
         return sources;
       case "models":
