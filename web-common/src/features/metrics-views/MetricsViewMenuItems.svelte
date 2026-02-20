@@ -85,7 +85,7 @@
   {/if}
   <NavigationMenuItem on:click={viewGraph}>
     <GitBranch slot="icon" size="14px" />
-    View DAG graph
+    View Resource Graph
   </NavigationMenuItem>
   {#if resource && $generateCanvas}
     <NavigationMenuItem
@@ -120,6 +120,6 @@
 {:else}
   <NavigationMenuItem on:click={viewGraph}>
     <GitBranch slot="icon" size="14px" />
-    View DAG graph
+    View Resource Graph
   </NavigationMenuItem>
 {/if}

@@ -1,9 +1,6 @@
 <script lang="ts">
   import { Handle, Position } from "@xyflow/svelte";
-  import {
-    ResourceKind,
-    resourceKindStyleName,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { goto } from "$app/navigation";
@@ -13,7 +10,7 @@
   import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ResourceNodeActions from "./ResourceNodeActions.svelte";
-  import { getRelativeTime } from "@rilldata/web-common/lib/time/relative-time";
+
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
   import { Unlock, AlertTriangle, Zap, Layers, Clock } from "lucide-svelte";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
@@ -84,11 +81,6 @@
     reconcileStatus &&
     reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: routeHighlighted = (data as any)?.routeHighlighted === true;
-
-  // Derived metadata for display
-  $: lastRefreshed = metadata?.lastRefreshedOn
-    ? getRelativeTime(metadata.lastRefreshedOn)
-    : null;
 
   $: isSourceOrModel =
     kind === ResourceKind.Source || kind === ResourceKind.Model;

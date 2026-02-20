@@ -115,7 +115,7 @@
 
 <NavigationMenuItem on:click={viewGraph}>
   <GitBranch slot="icon" size="14px" />
-  View DAG graph
+  View Resource Graph
 </NavigationMenuItem>
 
 <NavigationMenuItem on:click={handleCreateModel}>

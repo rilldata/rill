@@ -29,7 +29,11 @@
       ? tokenForSeedString(urlParams.resources[0])
       : null;
   $: activeKind = urlParams.kind ?? derivedKindFromResource ?? "connector";
-  $: seeds = [activeKind];
+  $: seeds = urlParams.kind
+    ? [urlParams.kind]
+    : urlParams.resources.length > 0
+      ? urlParams.resources
+      : [activeKind];
 
   // Sidebar selection from URL ?resource= param
   $: selectedResource =
