@@ -19,6 +19,28 @@ type Table struct {
 	SizeBytes      int64  `db:"-"`
 }
 
+func (d *db) DDL(ctx context.Context, database, schema, name string) (string, error) {
+	connx, release, err := d.AcquireReadConnection(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = release() }()
+
+	// We disregard database and schema since they're not applicable here due to how we use them for table versioning (see treatment in Schema(...) below).
+	q := `
+		SELECT sql FROM duckdb_tables() WHERE table_name = ?
+		UNION ALL
+		SELECT sql FROM duckdb_views() WHERE view_name = ?
+	`
+
+	var sqlStr *string
+	err = connx.QueryRowxContext(ctx, q, name, name).Scan(&sqlStr)
+	if err != nil || sqlStr == nil {
+		return "", nil
+	}
+	return *sqlStr, nil
+}
+
 func (d *db) Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error) {
 	if ilike != "" && name != "" {
 		return nil, "", fmt.Errorf("cannot specify both `ilike` and `name`")

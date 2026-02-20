@@ -214,10 +214,16 @@
     if (!hovering) return;
 
     if (e.shiftKey) {
-      let exportedValue = formatDataTypeAsDuckDbQueryString(
-        hovering.value,
-        hovering.type,
-      );
+      let exportedValue = "";
+      if (hovering?.isHeader) {
+        exportedValue =
+          hovering.value === null ? "null" : hovering.value.toString();
+      } else {
+        exportedValue = formatDataTypeAsDuckDbQueryString(
+          hovering.value,
+          hovering.type,
+        );
+      }
 
       copyToClipboard(exportedValue);
 

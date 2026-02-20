@@ -1,0 +1,27 @@
+{
+  "name": "Rill Developer",
+  "image": "mcr.microsoft.com/devcontainers/go:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+  "hostRequirements": {
+    "cpus": 8,
+    "memory": "16gb"
+  },
+  "containerEnv": {
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "GOTOOLCHAIN": "auto"
+  },
+  "forwardPorts": [9009, 3001],
+  "portsAttributes": {
+    "9009": {
+      "label": "Rill Runtime"
+    },
+    "3001": {
+      "label": "Rill Frontend Dev",
+      "onAutoForward": "openBrowser"
+    }
+  }
+}

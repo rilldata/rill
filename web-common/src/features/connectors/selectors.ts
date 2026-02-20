@@ -107,6 +107,7 @@ export function useListDatabaseSchemas(
   instanceId: string,
   connector: string,
   database?: string,
+  enabled: boolean = true,
 ) {
   return createConnectorServiceListDatabaseSchemas(
     {
@@ -115,7 +116,7 @@ export function useListDatabaseSchemas(
     },
     {
       query: {
-        enabled: !!instanceId && !!connector,
+        enabled: !!instanceId && !!connector && enabled,
         select: (data) => {
           const allSchemas = data.databaseSchemas ?? [];
 

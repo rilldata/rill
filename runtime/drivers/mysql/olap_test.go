@@ -33,7 +33,9 @@ func TestOLAP(t *testing.T) {
 	t.Run("Test Scan Full Table", func(t *testing.T) {
 		testFullTableScan(t, olap)
 	})
-
+	t.Run("Test LoadDDL", func(t *testing.T) {
+		testLoadDDL(t, olap)
+	})
 }
 
 func testMapScan(t *testing.T, olap drivers.OLAPStore) {
@@ -484,6 +486,33 @@ func testFullTableScan(t *testing.T, olap drivers.OLAPStore) {
 	}
 	require.NoError(t, rows.Err())
 	require.Equal(t, count, 3)
+}
+
+func testLoadDDL(t *testing.T, olap drivers.OLAPStore) {
+	// Test DDL for a table
+	table, err := olap.InformationSchema().Lookup(t.Context(), "", "", "all_datatypes")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(t.Context(), table)
+	require.NoError(t, err)
+	require.Contains(t, table.DDL, "CREATE TABLE")
+	require.Contains(t, table.DDL, "all_datatypes")
+
+	// Create a view and test DDL for it
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE OR REPLACE VIEW test_ddl_view AS SELECT int_col, varchar_col FROM all_datatypes"})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = olap.Exec(t.Context(), &drivers.Statement{Query: "DROP VIEW IF EXISTS test_ddl_view"})
+	})
+
+	view, err := olap.InformationSchema().Lookup(t.Context(), "", "", "test_ddl_view")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(t.Context(), view)
+	require.NoError(t, err)
+	// MySQL's DDL output for views is wack, so splitting the pieces out like this. Not worth fixing as it does contain the essential information.
+	require.Contains(t, strings.ToLower(view.DDL), "create")
+	require.Contains(t, strings.ToLower(view.DDL), "view")
+	require.Contains(t, strings.ToLower(view.DDL), "test_ddl_view")
+	require.Contains(t, strings.ToLower(view.DDL), "as select")
 }
 
 func acquireTestMySQL(t *testing.T) (drivers.Handle, drivers.OLAPStore) {

@@ -53,7 +53,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     referenceLink="athena"
   />
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-Bigquery.svg" alt="BigQuery" />}
+    icon={<img src="/img/build/connectors/icons/Logo-BigQuery.svg" alt="BigQuery" />}
     header="BigQuery"
     content="Connect to Google BigQuery for analytics and data warehousing with service account authentication."
     link="/developers/build/connectors/data-source/bigquery"
@@ -87,7 +87,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-mysql.svg" alt="MySQL" />}
+    icon={<img src="/img/build/connectors/icons/Logo-MySQL.svg" alt="MySQL" />}
     header="MySQL"
     content="Connect to MySQL databases with support for various authentication methods and SSL connections."
     link="/developers/build/connectors/data-source/mysql"
