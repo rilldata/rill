@@ -32,7 +32,7 @@
   } from "../../entity-management/resource-selectors";
   import type { V1Resource } from "../../../runtime-client";
   import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import { ICONS } from "./icons";
+  import { ICONS, DRIVER_ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -128,13 +128,20 @@
   function buildSelectOptionsFromConnectors(
     schema: ReturnType<typeof getConnectorSchema>,
     resources: V1Resource[] | undefined,
-  ): Record<string, Array<{ value: string; label: string }>> {
+  ): Record<
+    string,
+    Array<{ value: string; label: string; description?: string; iconKey?: string }>
+  > {
     if (!schema?.properties || !resources) return {};
-    const result: Record<string, Array<{ value: string; label: string }>> = {};
+    const result: Record<
+      string,
+      Array<{ value: string; label: string; description?: string; iconKey?: string }>
+    > = {};
     for (const [key, prop] of Object.entries(schema.properties)) {
       const drivers = prop["x-connector-drivers"] as string[] | undefined;
       if (!drivers?.length) continue;
       const driverSet = new Set(drivers);
+      const isRich = prop["x-select-style"] === "rich";
       result[key] = resources
         .filter((r) => {
           const driver = r.connector?.spec?.driver;
@@ -143,6 +150,9 @@
         .map((r) => {
           const name = r.meta?.name?.name ?? "";
           const driver = r.connector?.spec?.driver ?? "";
+          if (isRich) {
+            return { value: name, label: name, iconKey: driver };
+          }
           return { value: name, label: `${name} (${driver})` };
         });
     }
@@ -369,6 +379,7 @@
             {handleFileUpload}
             selectOptions={dynamicSelectOptions}
             iconMap={ICONS}
+            driverIconMap={DRIVER_ICONS}
           />
         </AddDataFormSection>
       {:else}

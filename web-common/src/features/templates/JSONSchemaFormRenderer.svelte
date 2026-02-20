@@ -17,12 +17,14 @@
     isStepMatch,
     isTabsEnum,
     isVisibleForValues,
-    selectOptions,
+    selectOptions as selectOptionsFromSchema,
   } from "./schema-utils";
   import type { ComponentType, SvelteComponent } from "svelte";
 
   // Icon mapping for select options
   export let iconMap: Record<string, ComponentType<SvelteComponent>> = {};
+  // Square icon-only versions keyed by driver name, for compact rich selects
+  export let driverIconMap: Record<string, ComponentType<SvelteComponent>> = {};
 
   // Use `any` for form values since field types are determined by JSON schema at runtime
   type FormData = Record<string, any>;
@@ -50,10 +52,11 @@
   /**
    * Dynamic options for fields with `x-display: "select"`.
    * Keyed by field name; values are option arrays for the Select component.
+   * Rich selects can include `description` (subtitle) and `iconKey` (maps to iconMap).
    */
   export let selectOptions: Record<
     string,
-    Array<{ value: string; label: string }>
+    Array<{ value: string; label: string; description?: string; iconKey?: string }>
   > = {};
 
   // Resolve OLAP-specific overrides for the current engine.
@@ -202,9 +205,25 @@
   }
 
   function isSelectField(prop: JSONSchemaField) {
-    return prop["x-display"] === "select";
+    return prop["x-display"] === "select" && !prop.enum;
   }
 
+  function isRichSelectField(prop: JSONSchemaField) {
+    return isSelectField(prop) && prop["x-select-style"] === "rich";
+  }
+
+  /** Build an iconMap keyed by option.value from option.iconKey → driverIconMap */
+  function buildRichSelectIconMap(
+    options: Array<{ value: string; iconKey?: string }>,
+  ): Record<string, ComponentType<SvelteComponent>> {
+    const result: Record<string, ComponentType<SvelteComponent>> = {};
+    for (const opt of options) {
+      if (opt.iconKey && driverIconMap[opt.iconKey]) {
+        result[opt.value] = driverIconMap[opt.iconKey];
+      }
+    }
+    return result;
+  }
 
   function computeVisibleEntries(
     currentSchema: MultiStepFormSchema,
@@ -350,7 +369,7 @@
 
   // Local wrapper to pass component's iconMap to imported selectOptions
   function getSelectOptions(prop: JSONSchemaField) {
-    return selectOptions(prop, iconMap);
+    return selectOptionsFromSchema(prop, iconMap);
   }
 
   // Local wrapper to pass iconMap to buildEnumOptions (for GroupedFieldsRenderer)
@@ -491,7 +510,19 @@
 
 {#if schema}
   {#each renderOrder as [key, prop] (key)}
-    {#if isSelectField(prop)}
+    {#if isRichSelectField(prop)}
+      {@const options = selectOptions[key] ?? []}
+      {@const fieldIconMap = buildRichSelectIconMap(options)}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        <ConnectionTypeSelector
+          bind:value={$form[key]}
+          {options}
+          label={prop.title ?? ""}
+          iconMap={fieldIconMap}
+          colorMap={{}}
+        />
+      </div>
+    {:else if isSelectField(prop)}
       {@const options = selectOptions[key] ?? []}
       <div class="py-1.5 first:pt-0 last:pb-0">
         <Select
@@ -631,7 +662,7 @@
           bind:checked={$form[key]}
           {onStringInputChange}
           {handleFileUpload}
-          options={isRadioEnum(prop) ? radioOptions(key, prop) : undefined}
+          options={isRadioEnum(prop) ? radioOptionsLocal(key, prop) : undefined}
           name={`${key}-radio`}
           disabled={isDisabled(key)}
         />

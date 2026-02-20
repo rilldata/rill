@@ -15,6 +15,7 @@ export const stagingSchema: MultiStepFormSchema = {
       title: "Data warehouse",
       description: "Select an existing warehouse connector",
       "x-display": "select",
+      "x-select-style": "rich",
       "x-connector-drivers": ["snowflake", "redshift", "bigquery"],
     },
     sql: {
@@ -29,6 +30,7 @@ export const stagingSchema: MultiStepFormSchema = {
       description:
         "Cloud storage used as temporary staging between the warehouse and ClickHouse",
       "x-display": "select",
+      "x-select-style": "rich",
       "x-connector-drivers": ["s3", "gcs", "azure"],
     },
     staging_path: {

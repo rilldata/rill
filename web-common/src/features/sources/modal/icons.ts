@@ -20,6 +20,24 @@ import ClickHouseCloud from "../../../components/icons/connectors/ClickHouseClou
 import Staging from "../../../components/icons/connectors/Staging.svelte";
 import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
 
+// Icon-only versions (square, with size prop) for use in compact UI like rich selects
+import AmazonAthenaIcon from "@rilldata/web-common/components/icons/connectors/AthenaIcon.svelte";
+import AmazonRedshiftIcon from "@rilldata/web-common/components/icons/connectors/RedshiftIcon.svelte";
+import MySQLIcon from "@rilldata/web-common/components/icons/connectors/MySqlIcon.svelte";
+import AmazonS3Icon from "@rilldata/web-common/components/icons/connectors/AmazonS3Icon.svelte";
+import ApacheDruidIcon from "@rilldata/web-common/components/icons/connectors/ApacheDruidIcon.svelte";
+import ApachePinotIcon from "@rilldata/web-common/components/icons/connectors/ApachePinotIcon.svelte";
+import ClickHouseIcon from "@rilldata/web-common/components/icons/connectors/ClickHouseIcon.svelte";
+import DuckDBIcon from "@rilldata/web-common/components/icons/connectors/DuckDBIcon.svelte";
+import GoogleBigQueryIcon from "@rilldata/web-common/components/icons/connectors/GoogleBigQueryIcon.svelte";
+import MotherDuckIcon from "@rilldata/web-common/components/icons/connectors/MotherDuckIcon.svelte";
+import PostgresIcon from "@rilldata/web-common/components/icons/connectors/PostgresIcon.svelte";
+import SalesforceIcon from "@rilldata/web-common/components/icons/connectors/SalesforceIcon.svelte";
+import SnowflakeIcon from "@rilldata/web-common/components/icons/connectors/SnowflakeIcon.svelte";
+import ClickHouseCloudIcon from "@rilldata/web-common/components/icons/connectors/ClickHouseCloudIcon.svelte";
+import StarRocksIcon from "@rilldata/web-common/components/icons/connectors/StarRocksIcon.svelte";
+
+/** Full connector logos (with wordmarks) for the Add Data modal */
 export const ICONS = {
   gcs: GoogleCloudStorage,
   s3: AmazonS3,
@@ -42,4 +60,29 @@ export const ICONS = {
   druid: ApacheDruid,
   pinot: ApachePinot,
   starrocks: StarRocks,
+};
+
+/** Square icon-only versions keyed by driver name, for compact rich selects */
+export const DRIVER_ICONS = {
+  gcs: GoogleCloudStorage,
+  s3: AmazonS3Icon,
+  azure: MicrosoftAzureBlobStorage,
+  bigquery: GoogleBigQueryIcon,
+  athena: AmazonAthenaIcon,
+  redshift: AmazonRedshiftIcon,
+  duckdb: DuckDBIcon,
+  motherduck: MotherDuckIcon,
+  postgres: PostgresIcon,
+  mysql: MySQLIcon,
+  sqlite: SQLite,
+  snowflake: SnowflakeIcon,
+  salesforce: SalesforceIcon,
+  local_file: LocalFile,
+  https: Https,
+  clickhouse: ClickHouseIcon,
+  clickhousecloud: ClickHouseCloudIcon,
+  staging: Staging,
+  druid: ApacheDruidIcon,
+  pinot: ApachePinotIcon,
+  starrocks: StarRocksIcon,
 };
