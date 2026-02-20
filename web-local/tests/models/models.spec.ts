@@ -15,7 +15,7 @@ test.describe("models", () => {
 
   test("Create and edit model", async ({ page }) => {
     // Add the AdBids source
-    await createSource(page, "AdBids.csv", "/sources/AdBids.yaml");
+    await createSource(page, "AdBids.csv", "/models/AdBids.yaml");
 
     // Create a "Hello world" model named AdBids_model.sql
     await createModel(page, "AdBids_model.sql");

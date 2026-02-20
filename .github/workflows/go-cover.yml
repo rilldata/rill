@@ -25,7 +25,7 @@ jobs:
         # Build list of packages to include in coverage, excluding generated code in 'proto/gen'
         PACKAGES=$(go list ./... | grep -v 'proto/gen/' | tr '\n' ',' | sed -e 's/,$//' | sed -e 's/github.com\/rilldata\/rill/./g')
         # Run tests with coverage output
-        go test ./... -timeout 60m -short -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
+        go test ./... -timeout 60m -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
       env:
         RILL_RUNTIME_TEST_MODE: expensive
         RILL_RUNTIME_DRUID_TEST_DSN: ${{ secrets.RILL_RUNTIME_DRUID_TEST_DSN }}
@@ -59,7 +59,8 @@ jobs:
       with:
         status: ${{ job.status }}
         notification_title: "{workflow} has {status_message}"
-        message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
-        footer: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        message_format: "{emoji} *{workflow}*"
+        footer: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>"
+        notify_when: failure
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEAM_PLATFORM }}
