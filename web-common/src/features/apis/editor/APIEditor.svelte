@@ -131,7 +131,7 @@
               Args
               {#if args.length > 0}
                 <span
-                  class="inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium bg-primary-100 text-primary-700 rounded-full"
+                  class="inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium bg-surface-active text-fg-accent rounded-full"
                 >
                   {args.length}
                 </span>

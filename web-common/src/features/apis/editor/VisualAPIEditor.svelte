@@ -581,7 +581,7 @@
             Test API
           </Button>
           {#if hasErrors}
-            <span class="text-sm text-red-500">
+            <span class="text-sm text-destructive">
               Fix errors above before testing
             </span>
           {/if}
@@ -661,7 +661,7 @@
   }
 
   .type-button.selected {
-    @apply bg-primary-50 border-primary-500;
+    @apply bg-surface-hover border-primary;
   }
 
   .type-label {
@@ -669,7 +669,7 @@
   }
 
   .type-button.selected .type-label {
-    @apply text-primary-700;
+    @apply text-fg-accent;
   }
 
   .type-description {
@@ -681,7 +681,7 @@
   }
 
   .query-editor:focus {
-    @apply ring-2 ring-primary-100 border-primary-500;
+    @apply ring-2 ring-primary/20 border-primary;
   }
 
   .hint {
@@ -690,7 +690,7 @@
 
   .error-banner {
     @apply flex items-start gap-x-2 p-3 rounded-[2px] border mt-4;
-    @apply bg-red-50 border-red-200 text-red-700 text-sm;
+    @apply bg-destructive/15 border-destructive text-destructive text-sm;
   }
 
   .preview-area {
