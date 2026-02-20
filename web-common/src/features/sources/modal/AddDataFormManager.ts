@@ -24,7 +24,6 @@ import {
 } from "./connectorStepStore";
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
-import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import type { ActionResult } from "@sveltejs/kit";
 import type { QueryClient } from "@tanstack/query-core";
 import {
@@ -36,6 +35,8 @@ import {
 } from "../../templates/schema-utils";
 import type { ButtonLabels } from "../../templates/schemas/types";
 import { processFileContent } from "../../templates/file-encoding";
+import { generateTemplate } from "./generate-template";
+import { runtime } from "../../../runtime-client/runtime-store";
 
 type FormData = Record<string, unknown>;
 // Use unknown to be compatible with superforms' complex ValidationErrors type
@@ -498,38 +499,37 @@ export class AddDataFormManager {
 
   /**
    * Compute YAML preview for the current form state.
-   * Schema conditionals handle connector-specific requirements.
+   * HTTPS connector step uses synchronous client-side YAML generation;
+   * all other paths call the GenerateTemplate RPC.
    */
-  computeYamlPreview(ctx: {
+  async computeYamlPreview(ctx: {
     stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
     formValues: Record<string, unknown>;
-    existingEnvBlob?: string;
-  }): string {
+  }): Promise<string> {
     const connector = this.connector;
-    const {
-      stepState,
-      isMultiStepConnector,
-      isConnectorForm,
-      formValues,
-      existingEnvBlob,
-    } = ctx;
+    const { stepState, isMultiStepConnector, isConnectorForm, formValues } =
+      ctx;
 
     const schema = getConnectorSchema(this.schemaName);
-    const schemaConnectorFields = schema
-      ? getSchemaFieldMetaList(schema, { step: "connector" })
-      : null;
-    const schemaConnectorSecretKeys = schema
-      ? getSchemaSecretKeys(schema, { step: "connector" })
-      : undefined;
-    const schemaConnectorStringKeys = schema
-      ? getSchemaStringKeys(schema, { step: "connector" })
-      : undefined;
+    const instanceId = get(runtime).instanceId;
 
-    const connectorPropertiesForPreview = schemaConnectorFields ?? [];
+    // HTTPS connector step: use synchronous client-side YAML generation
+    // (backend doesn't support headers array yet)
+    const getHttpsConnectorYamlPreview = (
+      values: Record<string, unknown>,
+    ): string => {
+      const schemaConnectorFields = schema
+        ? getSchemaFieldMetaList(schema, { step: "connector" })
+        : [];
+      const schemaConnectorSecretKeys = schema
+        ? getSchemaSecretKeys(schema, { step: "connector" })
+        : undefined;
+      const schemaConnectorStringKeys = schema
+        ? getSchemaStringKeys(schema, { step: "connector" })
+        : undefined;
 
-    const getConnectorYamlPreview = (values: Record<string, unknown>) => {
       const filteredValues = schema
         ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
         : values;
@@ -538,77 +538,99 @@ export class AddDataFormManager {
           if ("internal" in property && property.internal) return false;
           return !("noPrompt" in property && property.noPrompt);
         },
-        orderedProperties: connectorPropertiesForPreview,
+        orderedProperties: schemaConnectorFields,
         secretKeys: schemaConnectorSecretKeys,
         stringKeys: schemaConnectorStringKeys,
         schema: schema ?? undefined,
-        existingEnvBlob,
       });
     };
 
-    const getSourceYamlPreview = (values: Record<string, unknown>) => {
-      // For multi-step connectors in step 2, filter out connector properties
-      let filteredValues = values;
-      if (
-        (isMultiStepConnector && stepState?.step === "source") ||
-        stepState?.step === "explorer"
-      ) {
+    // For HTTPS connector step, use client-side preview
+    if (connector.name === "https" && isConnectorForm) {
+      return getHttpsConnectorYamlPreview(formValues);
+    }
+    if (
+      connector.name === "https" &&
+      isMultiStepConnector &&
+      stepState?.step === "connector"
+    ) {
+      return getHttpsConnectorYamlPreview(formValues);
+    }
+
+    // All other paths: use the GenerateTemplate RPC
+    const isOnConnectorStep = !stepState || stepState.step === "connector";
+    const isOnSourceOrExplorerStep =
+      stepState?.step === "source" || stepState?.step === "explorer";
+
+    if (isMultiStepConnector && isOnConnectorStep) {
+      // Step 1 of multi-step: preview the connector YAML
+      const filteredValues = schema
+        ? filterSchemaValuesForSubmit(schema, formValues, {
+            step: "connector",
+          })
+        : formValues;
+      const response = await generateTemplate(instanceId, {
+        resourceType: "connector",
+        driver: connector.name as string,
+        properties: filteredValues,
+      });
+      return response.blob ?? "";
+    }
+
+    if (isMultiStepConnector && isOnSourceOrExplorerStep) {
+      // Step 2 of multi-step: preview the model/source YAML
+      const combinedValues = {
+        ...(stepState?.connectorConfig || {}),
+        ...formValues,
+      } as Record<string, unknown>;
+
+      // Filter out connector-step properties
+      let sourceValues = combinedValues;
+      if (schema) {
         const connectorPropertyKeys = new Set(
-          schema
-            ? getSchemaFieldMetaList(schema, { step: "connector" }).map(
-                (field) => field.key,
-              )
-            : [],
+          getSchemaFieldMetaList(schema, { step: "connector" }).map(
+            (field) => field.key,
+          ),
         );
-        filteredValues = Object.fromEntries(
-          Object.entries(values).filter(
+        sourceValues = Object.fromEntries(
+          Object.entries(combinedValues).filter(
             ([key]) => !connectorPropertyKeys.has(key),
           ),
         );
       }
 
-      const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
-        connector,
-        filteredValues,
-        {
-          connectorInstanceName: stepState?.connectorInstanceName || undefined,
-        },
-      );
-      const isExplorerStep = stepState?.step === "explorer";
-      const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
-      const rewrittenSchema = getConnectorSchema(rewrittenConnector.name ?? "");
-      const sourceStep = isExplorerStep ? "explorer" : "source";
-      const rewrittenSecretKeys = rewrittenSchema
-        ? getSchemaSecretKeys(rewrittenSchema, { step: sourceStep })
-        : undefined;
-      const rewrittenStringKeys = rewrittenSchema
-        ? getSchemaStringKeys(rewrittenSchema, { step: sourceStep })
-        : undefined;
-      if (isRewrittenToDuckDb || isExplorerStep) {
-        return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
-          secretKeys: rewrittenSecretKeys,
-          stringKeys: rewrittenStringKeys,
-          originalDriverName: connector.name || undefined,
-        });
-      }
-      return getConnectorYamlPreview(rewrittenFormValues);
-    };
-
-    // Multi-step connectors (S3, GCS, Azure)
-    if (isMultiStepConnector) {
-      if (stepState?.step === "connector") {
-        return getConnectorYamlPreview(formValues);
-      } else {
-        const combinedValues = {
-          ...(stepState?.connectorConfig || {}),
-          ...formValues,
-        } as Record<string, unknown>;
-        return getSourceYamlPreview(combinedValues);
-      }
+      const response = await generateTemplate(instanceId, {
+        resourceType: "model",
+        driver: connector.name as string,
+        properties: sourceValues,
+        connectorName:
+          stepState?.connectorInstanceName || (connector.name as string),
+      });
+      return response.blob ?? "";
     }
 
-    if (isConnectorForm) return getConnectorYamlPreview(formValues);
-    return getSourceYamlPreview(formValues);
+    if (isConnectorForm) {
+      // Single-step connector
+      const filteredValues = schema
+        ? filterSchemaValuesForSubmit(schema, formValues, {
+            step: "connector",
+          })
+        : formValues;
+      const response = await generateTemplate(instanceId, {
+        resourceType: "connector",
+        driver: connector.name as string,
+        properties: filteredValues,
+      });
+      return response.blob ?? "";
+    }
+
+    // Single-step source form
+    const response = await generateTemplate(instanceId, {
+      resourceType: "model",
+      driver: connector.name as string,
+      properties: formValues,
+    });
+    return response.blob ?? "";
   }
 
   /**
