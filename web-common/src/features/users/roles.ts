@@ -10,3 +10,8 @@ export enum ProjectUserRoles {
   Editor = "editor",
   Admin = "admin",
 }
+
+export function formatProjectRole(role: string): string {
+  if (!role) return "";
+  return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+}
