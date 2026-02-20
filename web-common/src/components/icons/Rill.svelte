@@ -7,7 +7,7 @@
     mode === "adapt"
       ? "fill-primary-700 dark:fill-neutral-900"
       : mode === "dark"
-        ? "fill-neutral-50"
+        ? "fill-neutral-900"
         : "fill-primary-700";
 </script>
 

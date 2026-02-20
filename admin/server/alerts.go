@@ -54,12 +54,12 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 	if req.QueryFor != nil {
 		switch forVal := req.QueryFor.(type) {
 		case *adminv1.GetAlertMetaRequest_QueryForUserId:
-			attr, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.QueryForUserId, "")
+			attr, _, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.QueryForUserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetAlertMetaRequest_QueryForUserEmail:
-			attr, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.QueryForUserEmail)
+			attr, _, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.QueryForUserEmail)
 			if err != nil {
 				return nil, err
 			}

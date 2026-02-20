@@ -44,6 +44,7 @@ export const salesforceSchema: MultiStepFormSchema = {
         "Salesforce password, optionally followed by security token if required",
       "x-placeholder": "your_password_or_password+token",
       "x-secret": true,
+      "x-env-var-name": "SALESFORCE_PASSWORD",
     },
     key: {
       type: "string",
@@ -52,6 +53,7 @@ export const salesforceSchema: MultiStepFormSchema = {
       "x-display": "textarea",
       "x-placeholder": "your_private_key",
       "x-secret": true,
+      "x-env-var-name": "SALESFORCE_KEY",
     },
     client_id: {
       type: "string",

@@ -35,7 +35,7 @@ test.describe("Default olap_connector behavior", () => {
     await uploadFile(page, "AdBids.csv");
 
     // Wait for the source file to be created in the file nav
-    await waitForFileNavEntry(page, "/sources/AdBids.yaml", false);
+    await waitForFileNavEntry(page, "/models/AdBids.yaml", false);
 
     await page.getByText("View this source").click();
 
@@ -43,31 +43,5 @@ test.describe("Default olap_connector behavior", () => {
     // Wait for navigation to complete
     await page.waitForURL("**/files/rill.yaml");
     await expectRillYAMLToContainOlapConnector(page, "duckdb");
-  });
-
-  test("Should set default olap_connector to clickhouse for Rill-managed ClickHouse", async ({
-    page,
-  }) => {
-    await page.getByRole("link", { name: "Empty Project" }).click();
-    await expect(page.getByText("Import data", { exact: true })).toBeVisible();
-
-    await page.getByRole("button", { name: "Add Data" }).click();
-    await page.locator("#clickhouse").click();
-    await page.getByRole("radio", { name: "Rill-managed ClickHouse" }).check();
-    await page
-      .getByRole("dialog", { name: "ClickHouse" })
-      .getByRole("button", {
-        name: "Connect",
-        exact: true,
-      })
-      .click();
-
-    // Wait for the connector file to be created in the file nav
-    await waitForFileNavEntry(page, "/connectors/clickhouse.yaml", false);
-
-    await page.getByRole("link", { name: "rill.yaml" }).click();
-    // Wait for navigation to complete
-    await page.waitForURL("**/files/rill.yaml");
-    await expectRillYAMLToContainOlapConnector(page, "clickhouse");
   });
 });

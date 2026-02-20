@@ -15,6 +15,7 @@ export const redshiftSchema: MultiStepFormSchema = {
       description: "AWS access key ID",
       "x-placeholder": "your_access_key_id",
       "x-secret": true,
+      "x-env-var-name": "AWS_ACCESS_KEY_ID",
     },
     aws_secret_access_key: {
       type: "string",
@@ -22,6 +23,7 @@ export const redshiftSchema: MultiStepFormSchema = {
       description: "AWS secret access key",
       "x-placeholder": "your_secret_access_key",
       "x-secret": true,
+      "x-env-var-name": "AWS_SECRET_ACCESS_KEY",
     },
     region: {
       type: "string",

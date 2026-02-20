@@ -15,8 +15,12 @@ export const bigquerySchema: MultiStepFormSchema = {
       description: "Service account JSON (uploaded or pasted)",
       format: "file",
       "x-display": "file",
-      "x-accept": ".json",
+      "x-file-accept": ".json",
+      "x-file-encoding": "json",
+      "x-file-extract": { project_id: "project_id" },
       "x-secret": true,
+      "x-env-var-name": "GOOGLE_APPLICATION_CREDENTIALS",
+      "x-step": "connector",
     },
     project_id: {
       type: "string",
@@ -25,6 +29,7 @@ export const bigquerySchema: MultiStepFormSchema = {
       "x-placeholder": "my-project",
       "x-hint":
         "If empty, Rill will use the project ID from your credentials when available.",
+      "x-step": "connector",
     },
     sql: {
       type: "string",

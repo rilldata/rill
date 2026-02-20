@@ -145,7 +145,6 @@ export function getSourcesForOlapEngine(
 
 export const OLAP_ENGINES = [
   "clickhouse",
-  "clickhousecloud",
   "motherduck",
   "duckdb",
   "druid",

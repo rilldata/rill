@@ -14,6 +14,10 @@ dimensions:
     name: dom
     property: domain
     description: ""
+  - display_name: Event Date
+    name: event_date
+    expression: toDate(timestamp)
+    description: ""
   - name: nolabel_pub
     property: publisher
   - display_name: Space Label

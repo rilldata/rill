@@ -4,6 +4,7 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
 
@@ -18,6 +19,7 @@
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get } from "svelte/store";
+  import { onMount } from "svelte";
   import { getConnectorSchema } from "./connector-schemas";
   import {
     getRequiredFieldsForValues,
@@ -28,8 +30,9 @@
     ResourceKind,
     useFilteredResources,
   } from "../../entity-management/resource-selectors";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import type { V1Resource } from "../../../runtime-client";
+  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -38,6 +41,7 @@
   export let isSubmitting: boolean;
   export let onBack: () => void;
   export let onClose: () => void;
+  export let onCloseAfterNavigation: () => void = onClose;
 
   let saveAnyway = false;
   let showSaveAnyway = false;
@@ -101,6 +105,7 @@
   let multiStepFormId = baseFormId;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
+  let prevDeploymentType: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
   const olapHiddenFields = connectorSchema?.["x-olap"]?.[olapDriver]?.hiddenFields;
@@ -142,6 +147,52 @@
         });
     }
     return result;
+  }
+
+  // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
+  // This prevents the preview from updating when Test and Connect writes to .env.
+  // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
+  let existingEnvBlob: string | null = null;
+  onMount(async () => {
+    try {
+      const envFile = await runtimeServiceGetFile($runtime.instanceId, {
+        path: ".env",
+      });
+      existingEnvBlob = envFile.blob ?? "";
+    } catch {
+      // .env doesn't exist yet
+      existingEnvBlob = "";
+    }
+  });
+
+  // Clear errors when connection type changes
+  $: {
+    const currentDeploymentType = $form.deployment_type as string | undefined;
+    if (
+      prevDeploymentType !== undefined &&
+      currentDeploymentType !== prevDeploymentType
+    ) {
+      paramsError = null;
+      showSaveAnyway = false;
+    }
+    prevDeploymentType = currentDeploymentType;
+  }
+
+  /**
+   * Clears error state when user modifies form input.
+   * Called from onStringInputChange for text inputs.
+   *
+   * Note: Select/dropdown changes do NOT trigger this - errors only clear on:
+   * - Text input changes (via onStringInputChange)
+   * - Deployment type changes (via reactive statement above)
+   * This is intentional: changing a dropdown option (other than deployment_type)
+   * typically doesn't fix connection errors, so we keep the error visible.
+   */
+  function clearErrorOnInput() {
+    if (paramsError) {
+      paramsError = null;
+      paramsErrorDetails = undefined;
+    }
   }
 
   // Hide Save Anyway once we advance to the model step in step flow connectors.
@@ -212,9 +263,6 @@
 
   $: isSubmitting = submitting;
 
-  // Reset errors when form is modified
-  $: if ($paramsTainted) paramsError = null;
-
   async function handleSaveAnyway() {
     // Save Anyway should only work for connector forms
     if (!isConnectorForm) {
@@ -227,7 +275,10 @@
       values: $form,
     });
     if (result.ok) {
-      onClose();
+      // Use quiet close — saveConnectorAnyway already navigated via goto().
+      // The normal resetModal() fires a synthetic popstate that races with
+      // SvelteKit's router and can revert the navigation.
+      onCloseAfterNavigation();
     } else {
       paramsError = result.message;
       paramsErrorDetails = result.details;
@@ -235,11 +286,13 @@
     saveAnyway = false;
   }
 
+  // Re-compute preview when existingEnvBlob is loaded (changes from null to string)
   $: yamlPreview = formManager.computeYamlPreview({
     stepState,
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
     formValues: $form,
+    existingEnvBlob: existingEnvBlob ?? "",
   });
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
   $: saveAnywayLoading = submitting && saveAnyway;
@@ -257,11 +310,15 @@
     },
   });
 
-  async function handleFileUpload(file: File): Promise<string> {
-    return formManager.handleFileUpload(file);
+  async function handleFileUpload(
+    file: File,
+    fieldKey: string,
+  ): Promise<string> {
+    return formManager.handleFileUpload(file, fieldKey);
   }
 
   function onStringInputChange(event: Event) {
+    clearErrorOnInput();
     formManager.onStringInputChange(
       event,
       $paramsTainted as Record<string, boolean> | null | undefined,
@@ -311,6 +368,7 @@
             {onStringInputChange}
             {handleFileUpload}
             selectOptions={dynamicSelectOptions}
+            iconMap={ICONS}
           />
         </AddDataFormSection>
       {:else}

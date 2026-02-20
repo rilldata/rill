@@ -10,9 +10,7 @@ import {
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
   type V1ConnectorDriver,
-  getRuntimeServiceGetFileQueryKey,
   runtimeServiceDeleteFile,
-  runtimeServiceGetFile,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
@@ -38,6 +36,7 @@ import {
   compileStagingYAML,
   prepareSourceFormData,
 } from "../sourceUtils";
+import { sourceIngestionTracker } from "../sources-store";
 import { OLAP_ENGINES } from "./constants";
 import { getConnectorSchema } from "./connector-schemas";
 import {
@@ -138,31 +137,6 @@ async function setOlapConnectorInRillYAML(
   });
 }
 
-// Check for an existing `.env` file
-// Store the original `.env` blob so we can restore it in case of errors
-async function getOriginalEnvBlob(
-  queryClient: QueryClient,
-  instanceId: string,
-): Promise<string | undefined> {
-  try {
-    const envFile = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
-    });
-    return envFile.blob;
-  } catch (error) {
-    const fileNotFound =
-      error?.response?.data?.message?.includes("no such file");
-    if (fileNotFound) {
-      // Do nothing. We'll create the `.env` file below.
-      return undefined;
-    } else {
-      // We have a problem. Throw the error.
-      throw error;
-    }
-  }
-}
-
 async function saveConnectorAnyway(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -192,14 +166,11 @@ async function saveConnectorAnyway(
   savedAnywayPaths.add(newConnectorFilePath);
 
   // Update .env file with secrets (keep ordering consistent with Test and Connect)
-  const newEnvBlob = await updateDotEnvWithSecrets(
-    queryClient,
-    connector,
-    formValues,
-    "connector",
-    newConnectorName,
-    { secretKeys: schemaSecretKeys },
-  );
+  const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
+    await updateDotEnvWithSecrets(queryClient, connector, formValues, {
+      secretKeys: schemaSecretKeys,
+      schema: schema ?? undefined,
+    });
 
   await runtimeServicePutFile(resolvedInstanceId, {
     path: ".env",
@@ -216,6 +187,8 @@ async function saveConnectorAnyway(
       orderedProperties: schemaFields,
       secretKeys: schemaSecretKeys,
       stringKeys: schemaStringKeys,
+      schema: schema ?? undefined,
+      existingEnvBlob: envBlobForYaml,
       fieldFilter: schemaFields
         ? (property) => !("internal" in property && property.internal)
         : undefined,
@@ -278,6 +251,8 @@ export async function submitAddConnectorForm(
       const newConnectorName = existingSubmission.connectorName;
 
       // Proceed immediately with Save Anyway logic
+      // Use the pre-computed env blobs from the concurrent Test and Connect operation
+      // to ensure consistent variable naming (e.g., GOOGLE_APPLICATION_CREDENTIALS not _2)
       await saveConnectorAnyway(
         queryClient,
         connector,
@@ -315,15 +290,18 @@ export async function submitAddConnectorForm(
       }
 
       // Capture original .env and compute updated contents up front
-      originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
-      const newEnvBlob = await updateDotEnvWithSecrets(
+      // Use originalBlob from updateDotEnvWithSecrets for consistent conflict detection
+      const envResult = await updateDotEnvWithSecrets(
         queryClient,
         connector,
         formValues,
-        "connector",
-        newConnectorName,
-        { secretKeys: schemaSecretKeys },
+        {
+          secretKeys: schemaSecretKeys,
+          schema: schema ?? undefined,
+        },
       );
+      const newEnvBlob = envResult.newBlob;
+      originalEnvBlob = envResult.originalBlob;
 
       if (saveAnyway) {
         // Save Anyway: bypass reconciliation entirely via centralized helper
@@ -360,6 +338,8 @@ export async function submitAddConnectorForm(
             orderedProperties: schemaFields,
             secretKeys: schemaSecretKeys,
             stringKeys: schemaStringKeys,
+            schema: schema ?? undefined,
+            existingEnvBlob: originalEnvBlob,
             fieldFilter: schemaFields
               ? (property) => !("internal" in property && property.internal)
               : undefined,
@@ -526,11 +506,12 @@ export async function submitAddSourceForm(
     ? undefined
     : connectorInstanceName;
 
-  // Make a new <source>.yaml file
+  // Create model YAML file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
     newSourceName,
     EntityType.Table,
   );
+  sourceIngestionTracker.trackPending(`/${newSourceFilePath}`);
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
     blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
@@ -543,17 +524,16 @@ export async function submitAddSourceForm(
     createOnly: false,
   });
 
-  const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
-
   // Create or update the `.env` file
-  const newEnvBlob = await updateDotEnvWithSecrets(
-    queryClient,
-    rewrittenConnector,
-    rewrittenFormValues,
-    "source",
-    undefined,
-    { secretKeys: schemaSecretKeys },
-  );
+  const { newBlob: newEnvBlob, originalBlob: originalEnvBlob } =
+    await updateDotEnvWithSecrets(
+      queryClient,
+      rewrittenConnector,
+      rewrittenFormValues,
+      {
+        secretKeys: schemaSecretKeys,
+      },
+    );
 
   // Save .env — for ClickHouse source-only forms, skip reconciliation/connection test
   // and just create the files. The ClickHouse server will validate on first query.
@@ -583,6 +563,7 @@ export async function submitAddSourceForm(
       );
     } catch (error) {
       // The source file was already created, so we need to delete it
+      sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
       await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
       const errorDetails = (error as any).details;
 
@@ -603,6 +584,7 @@ export async function submitAddSourceForm(
       newSourceFilePath,
     );
     if (errorMessage) {
+      sourceIngestionTracker.trackCancelled(`/${newSourceFilePath}`);
       await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
       throw new Error(errorMessage);
     }

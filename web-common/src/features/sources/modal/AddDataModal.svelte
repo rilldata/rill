@@ -23,6 +23,8 @@
     connectors,
     getBackendConnectorName,
     getConnectorSchema,
+    getFormWidth,
+    isMultiStepConnector as isMultiStepConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
   import { getSourcesForOlapEngine } from "./constants";
@@ -48,6 +50,12 @@
     (c) => c.category !== "olap" && allowedSources.has(c.name),
   );
   $: olapConnectors = connectors.filter((c) => c.category === "olap");
+
+  // Get the form width class for the selected connector
+  $: selectedSchema = selectedSchemaName
+    ? getConnectorSchema(selectedSchemaName)
+    : null;
+  $: formWidthClass = getFormWidth(selectedSchema);
 
   /**
    * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
@@ -127,6 +135,20 @@
     resetConnectorStep();
   }
 
+  /**
+   * Reset modal UI state without history manipulation.
+   * Use this after goto() has already navigated — firing a synthetic popstate
+   * races with SvelteKit's router and can revert the navigation.
+   */
+  function resetModalQuietly() {
+    step = 0;
+    selectedConnector = null;
+    selectedSchemaName = null;
+    requestConnector = false;
+    isSubmittingForm = false;
+    resetConnectorStep();
+  }
+
   async function onCancelDialog() {
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
@@ -148,7 +170,10 @@
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
-      selectedConnector?.name !== "salesforce");
+      selectedConnector?.name !== "salesforce") ||
+    isMultiStepConnectorSchema(
+      getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
+    );
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -164,7 +189,8 @@
   >
     <Dialog.Content
       class={cn(
-        "overflow-hidden max-w-4xl",
+        "overflow-hidden",
+        formWidthClass,
         step === 2 ? "p-0 gap-0" : "p-6 gap-4",
       )}
       noClose={step === 1}
@@ -259,6 +285,7 @@
             formType={olapConfig?.formType ?? (isConnectorType ? "connector" : "source")}
             {olapDriver}
             onClose={resetModal}
+            onCloseAfterNavigation={resetModalQuietly}
             onBack={back}
             bind:isSubmitting={isSubmittingForm}
           />
