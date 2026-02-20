@@ -15,7 +15,9 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -515,6 +517,55 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	// Serve the SSE stream.
 	// This will only return when the background goroutine calls close(events).
 	serveSSEUntilClose(w, events)
+}
+
+func (s *Server) GetAIToolCall(ctx context.Context, req *runtimev1.GetAIToolCallRequest) (*runtimev1.GetAIToolCallResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "failed to find the conversation: %q", req.ConversationId)
+	}
+
+	callMsg, ok := session.Message(ai.FilterByID(req.CallId))
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.CallId)
+	}
+
+	// Suggest adding after the FilterByID lookup:
+	if callMsg.Tool != ai.QueryMetricsViewName {
+		return nil, status.Errorf(codes.InvalidArgument, "call %q is not a query_metrics_view call", req.CallId)
+	}
+	if callMsg.Type != ai.MessageTypeCall {
+		return nil, status.Errorf(codes.InvalidArgument, "message %q is not a tool call", req.CallId)
+	}
+
+	rawReq, err := session.UnmarshalMessageContent(callMsg)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal message content: %v", err)
+	}
+	var queryRes ai.QueryMetricsViewArgs
+	err = mapstructureutil.WeakDecode(rawReq, &queryRes)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to decode message content: %v", err)
+	}
+
+	queryPb, err := pbutil.ToStruct(queryRes, nil)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert query metrics view args to protobuf: %v", err)
+	}
+
+	return &runtimev1.GetAIToolCallResponse{
+		Query: queryPb,
+	}, nil
 }
 
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.
