@@ -12,7 +12,9 @@
     coerceResourceKind,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import {
+    ALLOWED_FOR_GRAPH,
     expandSeedsByKind,
     isKindToken,
     tokenForKind,
@@ -76,9 +78,7 @@
   export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
 
   // Toolbar callbacks (sidebar layout)
-  export let onKindChange: ((kind: string | null) => void) | null = null;
   export let onRefreshAll: (() => void) | null = null;
-  export let activeKindLabel: string = "All types";
   export let statusFilterOptions: {
     label: string;
     value: ResourceStatusFilterValue;
@@ -245,7 +245,6 @@
 
   // Whether any filters are active (kind, status, or tree search)
   $: hasActiveFilters =
-    hasExplicitSeeds ||
     statusFilter.length > 0 ||
     treeSearchQuery.trim().length > 0;
 
@@ -263,6 +262,101 @@
           .includes(treeSearchQuery.toLowerCase().trim()),
       )
     : filteredResourceGroups;
+
+  // All resources organized by kind for the tree dropdown
+  type ResourceDropdownEntry = {
+    name: string;
+    kind: ResourceKind;
+    status: "ok" | "pending" | "errored";
+  };
+  type ResourceDropdownSection = {
+    kind: ResourceKind;
+    label: string;
+    entries: ResourceDropdownEntry[];
+  };
+
+  const DROPDOWN_SECTION_ORDER: ResourceKind[] = [
+    ResourceKind.Connector,
+    ResourceKind.Source,
+    ResourceKind.Model,
+    ResourceKind.MetricsView,
+    ResourceKind.Explore,
+    ResourceKind.Canvas,
+  ];
+
+  const DROPDOWN_SECTION_LABELS: Partial<Record<ResourceKind, string>> = {
+    [ResourceKind.Connector]: "OLAP Connector",
+    [ResourceKind.Source]: "Source Models",
+    [ResourceKind.Model]: "Models",
+    [ResourceKind.MetricsView]: "Metric Views",
+    [ResourceKind.Explore]: "Explore Dashboards",
+    [ResourceKind.Canvas]: "Canvas Dashboards",
+  };
+
+  function getResourceStatus(r: V1Resource): "ok" | "pending" | "errored" {
+    if (r.meta?.reconcileError) return "errored";
+    if (
+      r.meta?.reconcileStatus &&
+      r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE"
+    )
+      return "pending";
+    return "ok";
+  }
+
+  $: allResourceSections = (function (): ResourceDropdownSection[] {
+    const grouped = new Map<ResourceKind, ResourceDropdownEntry[]>();
+
+    for (const r of normalizedResources) {
+      const kind = coerceResourceKind(r);
+      if (!kind || !ALLOWED_FOR_GRAPH.has(kind)) continue;
+      if (r.meta?.hidden && kind !== ResourceKind.Connector) continue;
+      const name = r.meta?.name?.name;
+      if (!name) continue;
+
+      const entries = grouped.get(kind) ?? [];
+      entries.push({ name, kind, status: getResourceStatus(r) });
+      grouped.set(kind, entries);
+    }
+
+    const result: ResourceDropdownSection[] = [];
+    for (const kind of DROPDOWN_SECTION_ORDER) {
+      const entries = grouped.get(kind);
+      if (!entries?.length) continue;
+      entries.sort((a, b) => a.name.localeCompare(b.name));
+      result.push({
+        kind,
+        label: DROPDOWN_SECTION_LABELS[kind] ?? kind,
+        entries,
+      });
+    }
+    return result;
+  })();
+
+  $: filteredResourceSections = (function (): ResourceDropdownSection[] {
+    const query = treeSearchQuery.toLowerCase().trim();
+    const hasSearch = query.length > 0;
+    const hasStatus = statusFilter.length > 0;
+    if (!hasSearch && !hasStatus) return allResourceSections;
+    return allResourceSections
+      .map((section) => ({
+        ...section,
+        entries: section.entries.filter((e) => {
+          if (hasSearch && !e.name.toLowerCase().includes(query)) return false;
+          if (hasStatus && !statusFilter.includes(e.status)) return false;
+          return true;
+        }),
+      }))
+      .filter((section) => section.entries.length > 0);
+  })();
+
+  function handleResourceSelect(entry: ResourceDropdownEntry) {
+    const groupId = `${entry.kind}:${entry.name}`;
+    if (isSidebarControlled) {
+      onSelectedGroupChange?.(groupId);
+    } else {
+      internalSelectedGroupId = groupId;
+    }
+  }
 
   let internalSelectedGroupId: string | null = null;
   $: isSidebarControlled =
@@ -342,6 +436,13 @@
           (g) => g.id === effectiveSelectedGroupId,
         ) ?? null)
       : null;
+
+  // Display label for the breadcrumb trigger
+  $: selectedGroupIsConnector =
+    effectiveSelectedGroupId?.includes("Connector") ?? false;
+  $: breadcrumbLabel = selectedGroupIsConnector
+    ? `Full DAG · ${selectedGroup?.label ?? "OLAP"}`
+    : (selectedGroup?.label ?? "Select resource");
   function handleSidebarSelect(id: string) {
     if (isSidebarControlled) {
       onSelectedGroupChange?.(id);
@@ -640,9 +741,7 @@
               {...builder}
             >
               <span class="gap-x-1.5 items-center font-medium flex">
-                <span class="truncate"
-                  >{selectedGroup?.label ?? "Select tree"}</span
-                >
+                <span class="truncate">{breadcrumbLabel}</span>
                 <CaretDownIcon size="10px" />
               </span>
             </button>
@@ -652,33 +751,55 @@
               <input
                 class="tree-search-input"
                 type="text"
-                placeholder="Filter trees..."
+                placeholder="Filter resources..."
                 bind:value={treeSearchQuery}
                 on:keydown|stopPropagation
               />
             </div>
             <div class="tree-dropdown-list">
-              {#each treeFilteredGroups as group (group.id)}
-                {@const status = getGroupStatus(group)}
-                <DropdownMenu.Item
-                  class="flex items-center gap-2 cursor-pointer {effectiveSelectedGroupId ===
-                  group.id
-                    ? 'font-semibold'
-                    : ''}"
-                  on:click={() => handleSidebarSelect(group.id)}
-                >
-                  <span class="status-dot {status}"></span>
-                  <span class="flex-1 truncate text-xs"
-                    >{group.label ?? group.id}</span
+              {#each filteredResourceSections as section, sIdx}
+                {#if sIdx > 0}
+                  <DropdownMenu.Separator />
+                {/if}
+                <div class="section-header">
+                  <span class="section-label">
+                    <svelte:component
+                      this={resourceIconMapping[section.kind]}
+                      size="10px"
+                    />
+                    {section.label}
+                  </span>
+                  <span class="text-[10px] text-fg-muted"
+                    >{section.entries.length}</span
                   >
-                  <span class="text-xs text-fg-muted"
-                    >{group.resources.length}</span
+                </div>
+                {#each section.entries as entry}
+                  {@const entryId = `${entry.kind}:${entry.name}`}
+                  {@const isConnectorEntry =
+                    entry.kind === ResourceKind.Connector}
+                  <DropdownMenu.Item
+                    class="flex items-center gap-x-2 cursor-pointer {effectiveSelectedGroupId ===
+                    entryId
+                      ? 'font-semibold'
+                      : ''}"
+                    on:click={() => handleResourceSelect(entry)}
                   >
-                </DropdownMenu.Item>
+                    <svelte:component
+                      this={resourceIconMapping[entry.kind]}
+                      size="12px"
+                    />
+                    <span class="flex-1 truncate text-xs">
+                      {isConnectorEntry
+                        ? `Full DAG · ${entry.name}`
+                        : entry.name}
+                    </span>
+                    <span class="status-dot {entry.status}"></span>
+                  </DropdownMenu.Item>
+                {/each}
               {/each}
-              {#if treeFilteredGroups.length === 0}
+              {#if filteredResourceSections.length === 0}
                 <div class="px-3 py-2 text-xs text-fg-muted">
-                  No trees match.
+                  No resources match.
                 </div>
               {/if}
             </div>
@@ -692,30 +813,6 @@
             >Clear Filter</button
           >
         {/if}
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild let:builder>
-            <Button builders={[builder]} type="tertiary">
-              {activeKindLabel}
-            </Button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end" class="w-48">
-            <DropdownMenu.Item on:click={() => onKindChange?.("connector")}>
-              OLAP Connector
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("sources")}>
-              Source Models
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("models")}>
-              Models
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("metrics")}>
-              Metric Views
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("dashboards")}>
-              Dashboards
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
         {#if statusFilterOptions.length > 0}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild let:builder>
@@ -910,7 +1007,7 @@
 
 <style lang="postcss">
   .graph-root {
-    @apply relative h-full w-full overflow-auto flex flex-col min-h-0 gap-y-3;
+    @apply relative h-full w-full overflow-auto flex flex-col min-h-0;
   }
 
   .graph-toolbar-bar {
@@ -971,6 +1068,14 @@
 
   .tree-dropdown-list {
     @apply max-h-72 overflow-y-auto;
+  }
+
+  .section-header {
+    @apply flex items-center justify-between px-2 py-1.5;
+  }
+
+  .section-label {
+    @apply flex items-center gap-x-1 text-[10px] font-medium text-fg-muted uppercase tracking-wide;
   }
 
   .sidebar-main {

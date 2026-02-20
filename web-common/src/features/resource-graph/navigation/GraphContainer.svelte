@@ -19,9 +19,7 @@
   export let layout: "grid" | "sidebar" = "grid";
   export let selectedGroupId: string | null = null;
   export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
-  export let onKindChange: ((kind: string | null) => void) | null = null;
   export let onRefreshAll: (() => void) | null = null;
-  export let activeKindLabel: string = "All types";
   export let statusFilterOptions: {
     label: string;
     value: ResourceStatusFilterValue;
@@ -98,9 +96,7 @@
   {layout}
   {selectedGroupId}
   {onSelectedGroupChange}
-  {onKindChange}
   {onRefreshAll}
-  {activeKindLabel}
   {statusFilterOptions}
   {onStatusToggle}
   {onClearFilters}
