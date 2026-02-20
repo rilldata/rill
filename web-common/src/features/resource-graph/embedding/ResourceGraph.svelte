@@ -18,6 +18,7 @@
     ALLOWED_FOR_GRAPH,
     expandSeedsByKind,
     isKindToken,
+    normalizeSeed,
     tokenForKind,
     tokenForSeedString,
     type KindToken,
@@ -37,19 +38,6 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { RefreshCw } from "lucide-svelte";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  type GroupStatus = "ok" | "pending" | "errored";
-  function getGroupStatus(group: ResourceGraphGrouping): GroupStatus {
-    if (group.resources.some((r) => !!r.meta?.reconcileError)) return "errored";
-    if (
-      group.resources.some(
-        (r) =>
-          r.meta?.reconcileStatus &&
-          r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE",
-      )
-    )
-      return "pending";
-    return "ok";
-  }
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -255,13 +243,6 @@
 
   // --- Sidebar selection state ---
   let treeSearchQuery = "";
-  $: treeFilteredGroups = treeSearchQuery.trim()
-    ? filteredResourceGroups.filter((g) =>
-        (g.label ?? g.id)
-          .toLowerCase()
-          .includes(treeSearchQuery.toLowerCase().trim()),
-      )
-    : filteredResourceGroups;
 
   // All resources organized by kind for the tree dropdown
   type ResourceDropdownEntry = {
@@ -374,6 +355,19 @@
     // Match by name suffix (group.id = "rill.runtime.v1.Kind:name")
     const match = groups.find((g) => g.id.endsWith(`:${id}`));
     if (match) return match.id;
+    // Try normalizing shorthand format (e.g., "model:name" → "rill.runtime.v1.Model:name")
+    if (id.includes(":")) {
+      const normalized = normalizeSeed(id);
+      if (
+        typeof normalized !== "string" &&
+        normalized.kind &&
+        normalized.name
+      ) {
+        const fqId = `${normalized.kind}:${normalized.name}`;
+        const fqMatch = groups.find((g) => g.id === fqId);
+        if (fqMatch) return fqMatch.id;
+      }
+    }
     // Match by label
     const labelMatch = groups.find((g) => g.label === id);
     return labelMatch?.id ?? null;
@@ -443,13 +437,6 @@
   $: breadcrumbLabel = selectedGroupIsConnector
     ? `Full DAG · ${selectedGroup?.label ?? "OLAP"}`
     : (selectedGroup?.label ?? "Select resource");
-  function handleSidebarSelect(id: string) {
-    if (isSidebarControlled) {
-      onSelectedGroupChange?.(id);
-    } else {
-      internalSelectedGroupId = id;
-    }
-  }
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
   let seedTransitionLoading = false;
