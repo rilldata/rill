@@ -6,8 +6,6 @@
   import { ResourceKind } from "../entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import WorkspaceCrumb from "./WorkspaceCrumb.svelte";
-  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/embedding/ResourceGraphOverlay.svelte";
-  import { ALLOWED_FOR_GRAPH } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
 
   export let resource: V1Resource | undefined;
   export let filePath: string;
@@ -21,14 +19,6 @@
     query: { retry: 2, refetchOnMount: true },
   });
   $: allResources = $resourcesQuery.data?.resources ?? [];
-  $: resourcesLoading = $resourcesQuery.isLoading;
-  $: resourcesError = $resourcesQuery.error
-    ? "Failed to load project resources."
-    : null;
-
-  let graphOverlayOpen = false;
-  $: graphSupported =
-    resourceKind && ALLOWED_FOR_GRAPH.has(resourceKind) ? true : false;
 
   $: lateralResources = allResources.filter(({ meta }) => {
     if (meta?.name?.name === resourceName && meta?.name?.kind === resourceKind)
@@ -52,20 +42,10 @@
         {allResources}
         {filePath}
         current
-        {graphSupported}
-        openGraph={() => (graphOverlayOpen = true)}
       />
     </div>
   </div>
 </nav>
-
-<ResourceGraphOverlay
-  bind:open={graphOverlayOpen}
-  anchorResource={resource}
-  resources={allResources}
-  isLoading={resourcesLoading}
-  error={resourcesError}
-/>
 
 <style lang="postcss">
   .resource-breadcrumbs {

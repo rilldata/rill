@@ -259,7 +259,24 @@ func (p *Parser) parseCanvas(node *Node) error {
 		}
 	}
 
-	// Track canvas
+	// Collect MetricsView refs from inline components for direct Canvas -> MetricsView links in the DAG.
+	// This enables the graph to show Canvas -> MetricsView edges and ensures MetricsView changes
+	// trigger canvas reconciliation. Only inline components are checked here; external component
+	// MetricsView dependencies cascade through the Component layer (Canvas -> Component -> MetricsView).
+	existingRefs := make(map[ResourceName]bool, len(node.Refs))
+	for _, ref := range node.Refs {
+		existingRefs[ref] = true
+	}
+	for _, def := range inlineComponentDefs {
+		for _, ref := range def.refs {
+			if ref.Kind == ResourceKindMetricsView && !existingRefs[ref] {
+				node.Refs = append(node.Refs, ref)
+				existingRefs[ref] = true
+			}
+		}
+	}
+
+	// Track canvas (now with MetricsView refs included)
 	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err

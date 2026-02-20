@@ -27,6 +27,7 @@
   import type { Readable } from "svelte/store";
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
   import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
+  import ConnectorMenuItems from "../connectors/ConnectorMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { getIconComponent } from "../entity-management/resource-icon-mapping";
@@ -160,7 +161,9 @@
           Duplicate
         </NavigationMenuItem>
         {#if resourceKind}
-          {#if resourceKind === ResourceKind.Source}
+          {#if resourceKind === ResourceKind.Connector}
+            <ConnectorMenuItems {filePath} />
+          {:else if resourceKind === ResourceKind.Source}
             <SourceMenuItems {filePath} />
           {:else if resourceKind === ResourceKind.Model}
             <ModelMenuItems {filePath} />

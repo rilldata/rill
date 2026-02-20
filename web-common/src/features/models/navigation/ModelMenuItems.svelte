@@ -2,7 +2,8 @@
   import { goto } from "$app/navigation";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
+  import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -45,13 +46,11 @@
   $: tableName = modelResource?.model?.state?.resultTable ?? "";
 
   function viewGraph() {
-    if (!modelResource) {
-      console.warn(
-        "[ModelMenuItems] Cannot open resource graph: resource unavailable.",
-      );
-      return;
-    }
-    openResourceGraphQuickView(modelResource);
+    const name = modelResource?.meta?.name?.name;
+    const kind = modelResource?.meta?.name?.kind as ResourceKind | undefined;
+    if (!name || !kind) return;
+    const shortKind = resourceShorthandMapping[kind];
+    goto(`/graph?resource=${encodeURIComponent(`${shortKind}:${name}`)}`);
   }
 
   async function handleCreateModel() {
@@ -116,7 +115,7 @@
 
 <NavigationMenuItem on:click={viewGraph}>
   <GitBranch slot="icon" size="14px" />
-  View DAG graph
+  View Resource Graph
 </NavigationMenuItem>
 
 <NavigationMenuItem on:click={handleCreateModel}>

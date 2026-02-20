@@ -5,8 +5,12 @@
     closeResourceGraphQuickView,
     resourceGraphQuickViewState,
   } from "./quick-view-store";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceGetInstance,
+    createRuntimeServiceListResources,
+  } from "@rilldata/web-common/runtime-client";
 
   $: currentState = $resourceGraphQuickViewState;
   $: anchorResource = currentState.anchorResource ?? undefined;
@@ -14,6 +18,13 @@
   $: ({ instanceId } = $runtime);
 
   $: shouldFetchResources = currentState.open && !!instanceId;
+
+  $: instanceQuery = createRuntimeServiceGetInstance(
+    instanceId,
+    { sensitive: true },
+    { query: { enabled: !!instanceId } },
+  );
+  $: olapConnectorName = $instanceQuery.data?.instance?.olapConnector;
 
   $: resourcesQuery = createRuntimeServiceListResources(
     instanceId,
@@ -29,7 +40,11 @@
     queryClient,
   );
 
-  $: allResources = $resourcesQuery.data?.resources ?? [];
+  // Filter out non-OLAP connectors
+  $: allResources = ($resourcesQuery.data?.resources ?? []).filter((r) => {
+    if (r.meta?.name?.kind !== ResourceKind.Connector) return true;
+    return r.meta?.name?.name === olapConnectorName;
+  });
   $: resourcesLoading = $resourcesQuery.isLoading;
   $: resourcesError = $resourcesQuery.error
     ? "Failed to load project resources."

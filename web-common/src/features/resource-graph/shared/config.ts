@@ -13,7 +13,7 @@ export const NODE_CONFIG = {
    * Minimum node width in pixels.
    * Chosen to accommodate short names like "Users" or "Orders".
    */
-  MIN_WIDTH: 160,
+  MIN_WIDTH: 200,
 
   /**
    * Maximum node width in pixels before text wraps.
@@ -22,10 +22,9 @@ export const NODE_CONFIG = {
   MAX_WIDTH: 320,
 
   /**
-   * Default height for single-line text with padding.
-   * Optimized for 16px font size.
+   * Default height for node: title row + 2 content rows.
    */
-  DEFAULT_HEIGHT: 56,
+  DEFAULT_HEIGHT: 76,
 
   /**
    * Average pixel width per character in node label font.
@@ -54,8 +53,9 @@ export const DAGRE_CONFIG = {
 
   /**
    * Vertical spacing between graph layers/ranks.
+   * Sized to accommodate taller nodes with metadata rows.
    */
-  RANKSEP: 72,
+  RANKSEP: 96,
 
   /**
    * Minimum spacing between edge paths.
@@ -138,7 +138,7 @@ export const UI_CONFIG = {
    * Default card height in pixels.
    * Sized to fit 3x3 grid comfortably on standard displays.
    */
-  CARD_HEIGHT_PX: 260,
+  CARD_HEIGHT_PX: 360,
 
   /**
    * Default grid columns for graph cards.
