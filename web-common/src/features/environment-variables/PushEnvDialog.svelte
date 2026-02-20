@@ -29,7 +29,8 @@
       const result = await $pushEnvMutation.mutateAsync({
         instanceId: $runtime.instanceId,
         data: {
-          environment: selectedEnvironment === "both" ? "" : selectedEnvironment,
+          environment:
+            selectedEnvironment === "both" ? "" : selectedEnvironment,
         },
       });
 
