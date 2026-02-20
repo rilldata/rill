@@ -32,7 +32,9 @@
   export let downstream = false;
   export let upstream = false;
   export let filePath: string = "";
-  $: graphSupported = resourceKind ? ALLOWED_FOR_GRAPH.has(resourceKind) : false;
+  $: graphSupported = resourceKind
+    ? ALLOWED_FOR_GRAPH.has(resourceKind)
+    : false;
 
   function openGraph() {
     const name = selectedResource?.meta?.name?.name;

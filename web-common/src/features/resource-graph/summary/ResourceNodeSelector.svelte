@@ -125,11 +125,7 @@
 <div class="node-selector">
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
-      <button
-        class="selector-trigger"
-        use:builder.action
-        {...builder}
-      >
+      <button class="selector-trigger" use:builder.action {...builder}>
         <span class="trigger-label">{activeLabel}</span>
         <CaretDownIcon size="10px" />
       </button>
@@ -142,11 +138,11 @@
         <DropdownMenu.Separator />
         <div class="section-header">
           <ResourceTypeBadge kind={section.kind} />
-          <span class="text-[10px] text-fg-muted">{section.entries.length}</span>
+          <span class="text-[10px] text-fg-muted">{section.entries.length}</span
+          >
         </div>
         {#each section.entries as entry}
-          {@const isActive =
-            activeResourceId === `${entry.kind}:${entry.name}`}
+          {@const isActive = activeResourceId === `${entry.kind}:${entry.name}`}
           <DropdownMenu.Item
             class="flex items-center gap-x-2 {isActive ? 'font-semibold' : ''}"
             on:click={() => handleSelect(entry)}

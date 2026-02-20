@@ -40,7 +40,9 @@
     if (!groupId) return;
     const name = groupId.includes(":") ? groupId.split(":").pop() : groupId;
     // Derive kind from the fully qualified group ID (e.g. "rill.runtime.v1.Model:orders")
-    const kindPart = groupId.includes(":") ? groupId.split(":").slice(0, -1).join(":") : null;
+    const kindPart = groupId.includes(":")
+      ? groupId.split(":").slice(0, -1).join(":")
+      : null;
     const derivedKind = kindPart ? tokenForKind(kindPart) : null;
     const params = new URLSearchParams();
     params.set("kind", derivedKind ?? activeKind);

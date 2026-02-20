@@ -188,9 +188,7 @@ export function tokenForKind(
  * tokenForSeedString("metrics") // "metrics"
  * tokenForSeedString("orders") // "metrics" (defaults to metrics)
  */
-export function tokenForSeedString(
-  seed?: string | null,
-): KindToken | null {
+export function tokenForSeedString(seed?: string | null): KindToken | null {
   if (!seed) return null;
   const normalized = seed.trim().toLowerCase();
   if (!normalized) return null;

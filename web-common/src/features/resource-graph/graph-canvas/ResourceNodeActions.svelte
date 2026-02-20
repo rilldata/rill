@@ -5,7 +5,13 @@
   import { Button } from "@rilldata/web-common/components/button";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { RefreshCw, RotateCcw, ExternalLink, Info, GitBranch } from "lucide-svelte";
+  import {
+    RefreshCw,
+    RotateCcw,
+    ExternalLink,
+    Info,
+    GitBranch,
+  } from "lucide-svelte";
   import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { goto } from "$app/navigation";

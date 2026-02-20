@@ -246,8 +246,7 @@
 
   // Whether any filters are active (kind, status, or tree search)
   $: hasActiveFilters =
-    statusFilter.length > 0 ||
-    treeSearchQuery.trim().length > 0;
+    statusFilter.length > 0 || treeSearchQuery.trim().length > 0;
 
   function handleClearFilters() {
     treeSearchQuery = "";

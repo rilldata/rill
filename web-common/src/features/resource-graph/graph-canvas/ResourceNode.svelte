@@ -111,7 +111,8 @@
       : null
   ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
 
-  $: filePath = data?.resource?.meta?.filePaths?.[0]?.replace(/^\//, "") ?? null;
+  $: filePath =
+    data?.resource?.meta?.filePaths?.[0]?.replace(/^\//, "") ?? null;
   $: checkTooltip =
     testCount === 0
       ? "No checks"
@@ -193,7 +194,9 @@
             {#if metadata?.isMaterialized}
               <span class="badge" title="Materialized">Materialized</span>
             {/if}
-            <span class="badge" title={filePath}>{metadata?.isSqlModel ? "SQL" : "YAML"}</span>
+            <span class="badge" title={filePath}
+              >{metadata?.isSqlModel ? "SQL" : "YAML"}</span
+            >
           </span>
           <span class="icon-group">
             {#if metadata?.incremental}
@@ -207,7 +210,10 @@
               </span>
             {/if}
             {#if metadata?.hasSchedule}
-              <span class="icon-indicator" title={metadata?.scheduleDescription ?? "Scheduled"}>
+              <span
+                class="icon-indicator"
+                title={metadata?.scheduleDescription ?? "Scheduled"}
+              >
                 <Clock size="10px" />
               </span>
             {/if}
@@ -232,7 +238,13 @@
           <span class="meta-detail">
             {measuresCount} meas, {dimensionsCount} dims
           </span>
-          <span class="lock-indicator" class:secured={hasSecurityRules} title={hasSecurityRules ? "Security policy defined" : "No security policy"}>
+          <span
+            class="lock-indicator"
+            class:secured={hasSecurityRules}
+            title={hasSecurityRules
+              ? "Security policy defined"
+              : "No security policy"}
+          >
             {#if hasSecurityRules}
               <Lock size="10px" color="currentColor" />
             {:else}
@@ -250,7 +262,13 @@
               ? "all"
               : (metadata?.exploreDimensionsCount ?? 0)} dims
           </span>
-          <span class="lock-indicator" class:secured={hasSecurityRules} title={hasSecurityRules ? "Security policy defined" : "No security policy"}>
+          <span
+            class="lock-indicator"
+            class:secured={hasSecurityRules}
+            title={hasSecurityRules
+              ? "Security policy defined"
+              : "No security policy"}
+          >
             {#if hasSecurityRules}
               <Lock size="10px" color="currentColor" />
             {:else}
@@ -263,7 +281,13 @@
           <span class="meta-detail">
             {componentCount} component{componentCount !== 1 ? "s" : ""}
           </span>
-          <span class="lock-indicator" class:secured={hasSecurityRules} title={hasSecurityRules ? "Security policy defined" : "No security policy"}>
+          <span
+            class="lock-indicator"
+            class:secured={hasSecurityRules}
+            title={hasSecurityRules
+              ? "Security policy defined"
+              : "No security policy"}
+          >
             {#if hasSecurityRules}
               <Lock size="10px" color="currentColor" />
             {:else}

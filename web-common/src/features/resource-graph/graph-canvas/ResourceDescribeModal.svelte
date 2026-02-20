@@ -276,7 +276,9 @@
               {#if kind}{displayResourceKind(kind)}{:else}Unknown{/if}
             </span>
             {#if filePath}
-              <span class="describe-filepath">{filePath.replace(/^\//, "")}</span>
+              <span class="describe-filepath"
+                >{filePath.replace(/^\//, "")}</span
+              >
             {/if}
           </div>
         </div>
@@ -315,7 +317,10 @@
           {#if connectorDriver}
             <div class="describe-row">
               <span class="describe-row-icon"><Database size={14} /></span>
-              <span>Driver: <span class="describe-mono">{connectorDriver}</span></span>
+              <span
+                >Driver: <span class="describe-mono">{connectorDriver}</span
+                ></span
+              >
             </div>
           {/if}
           {#if connectorEnvVars.length > 0}
