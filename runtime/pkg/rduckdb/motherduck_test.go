@@ -31,10 +31,35 @@ func TestMain(m *testing.M) {
 	_ = m.Run()
 }
 
-func TestMotherDuckDB(t *testing.T) {
-	t.Parallel()
+// TestMotherDuck provisions a single MotherDuck database and runs all tests
+// as sub-tests to avoid spawning many databases.
+func TestMotherDuck(t *testing.T) {
 	testmode.Expensive(t)
-	db := prepareMotherDuckDB(t)
+
+	randomDB := provisionDatabase(t)
+
+	tempDir := t.TempDir()
+	db, err := NewGeneric(context.Background(), &GenericOptions{
+		DBInitQueries:      []string{"INSTALL motherduck; LOAD motherduck; SET motherduck_token = '" + os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN") + "'"},
+		Path:               fmt.Sprintf("md:%s", randomDB),
+		LocalDataDir:       tempDir,
+		LocalMemoryLimitGB: 2,
+		LocalCPU:           1,
+		Logger:             zap.NewNop(),
+	})
+	require.NoError(t, err)
+	// Just to test that connections are closed properly
+	db.(*generic).db.SetMaxOpenConns(1)
+	defer func() { require.NoError(t, db.Close()) }()
+
+	t.Run("CRUD", func(t *testing.T) { testMotherDuckCRUD(t, db) })
+	t.Run("CreateTable", func(t *testing.T) { testMotherDuckCreateTable(t, db) })
+	t.Run("DropTable", func(t *testing.T) { testMotherDuckDropTable(t, db) })
+	t.Run("MutateTable", func(t *testing.T) { testMotherDuckMutateTable(t, db) })
+	t.Run("OtherSchema", func(t *testing.T) { testOtherSchema(t, randomDB) })
+}
+
+func testMotherDuckCRUD(t *testing.T, db DB) {
 	ctx := context.Background()
 	// create table
 	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
@@ -87,13 +112,9 @@ func TestMotherDuckDB(t *testing.T) {
 	// drop table
 	err = db.DropTable(ctx, "test2")
 	require.NoError(t, err)
-	require.NoError(t, db.Close())
 }
 
-func TestMotherDuckCreateTable(t *testing.T) {
-	t.Parallel()
-	testmode.Expensive(t)
-	db := prepareMotherDuckDB(t)
+func testMotherDuckCreateTable(t *testing.T, db DB) {
 	ctx := context.Background()
 	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
@@ -136,13 +157,9 @@ func TestMotherDuckCreateTable(t *testing.T) {
 	_, err = db.CreateTableAsSelect(ctx, "test", "SELECT * FROM test_view", &CreateTableOptions{View: true})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
-	require.NoError(t, db.Close())
 }
 
-func TestMotherDuckDropTable(t *testing.T) {
-	t.Parallel()
-	testmode.Expensive(t)
-	db := prepareMotherDuckDB(t)
+func testMotherDuckDropTable(t *testing.T, db DB) {
 	ctx := context.Background()
 	// create table
 	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
@@ -164,13 +181,9 @@ func TestMotherDuckDropTable(t *testing.T) {
 	// drop table
 	err = db.DropTable(ctx, "test")
 	require.NoError(t, err)
-	require.NoError(t, db.Close())
 }
 
-func TestMotherDuckMutateTable(t *testing.T) {
-	t.Parallel()
-	testmode.Expensive(t)
-	db := prepareMotherDuckDB(t)
+func testMotherDuckMutateTable(t *testing.T, db DB) {
 	ctx := context.Background()
 
 	// create table
@@ -201,14 +214,10 @@ func TestMotherDuckMutateTable(t *testing.T) {
 	})
 
 	verifyTable(t, db, "SELECT * FROM test", []testData{{ID: 1, City: "Delhi", Country: "India"}, {ID: 2, City: "NY", Country: "USA"}})
-	require.NoError(t, db.Close())
 }
 
-func TestOtherSchema(t *testing.T) {
-	t.Parallel()
-	testmode.Expensive(t)
+func testOtherSchema(t *testing.T, randomDB string) {
 	tempDir := t.TempDir()
-	randomDB := provisionDatabase(t)
 	db, err := NewGeneric(context.Background(), &GenericOptions{
 		DBInitQueries:      []string{"INSTALL motherduck; LOAD motherduck; SET motherduck_token = '" + os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN") + "'"},
 		Path:               fmt.Sprintf("md:%s", randomDB),
@@ -219,6 +228,7 @@ func TestOtherSchema(t *testing.T) {
 		SchemaName:         "other",
 	})
 	require.NoError(t, err)
+	defer func() { require.NoError(t, db.Close()) }()
 	ctx := context.Background()
 
 	// create table in other schema
@@ -233,30 +243,14 @@ func TestOtherSchema(t *testing.T) {
 	conn.QueryRowContext(ctx, "SELECT * FROM test_other").Scan(&greeting)
 	require.Equal(t, "hello", greeting)
 	require.NoError(t, release())
-
-	require.NoError(t, db.Close())
-}
-
-func prepareMotherDuckDB(t *testing.T) DB {
-	tempDir := t.TempDir()
-	randomDB := provisionDatabase(t)
-	db, err := NewGeneric(context.Background(), &GenericOptions{
-		DBInitQueries:      []string{"INSTALL motherduck; LOAD motherduck; SET motherduck_token = '" + os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN") + "'"},
-		Path:               fmt.Sprintf("md:%s", randomDB),
-		LocalDataDir:       tempDir,
-		LocalMemoryLimitGB: 2,
-		LocalCPU:           1,
-		Logger:             zap.NewNop(),
-	})
-	require.NoError(t, err)
-	// Just to test that connections are closed properly
-	db.(*generic).db.SetMaxOpenConns(1)
-	return db
 }
 
 func provisionDatabase(t *testing.T) string {
 	db, err := sql.Open("duckdb", "md:my_db?motherduck_token="+os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN"))
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, db.Close())
+	})
 
 	name := "db" + uuid.NewString()[:8]
 	_, err = db.Exec("CREATE DATABASE " + name)
@@ -265,7 +259,6 @@ func provisionDatabase(t *testing.T) string {
 	t.Cleanup(func() {
 		_, err = db.Exec("DROP DATABASE " + name)
 		require.NoError(t, err)
-		require.NoError(t, db.Close())
 	})
 
 	_, err = db.Exec(fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s.other", name))
@@ -273,5 +266,6 @@ func provisionDatabase(t *testing.T) string {
 
 	_, err = db.Exec(fmt.Sprintf("CREATE OR REPLACE TABLE %s.other.test AS SELECT 'hello' AS greeting", name))
 	require.NoError(t, err)
+
 	return name
 }
