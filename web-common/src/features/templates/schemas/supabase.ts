@@ -35,8 +35,7 @@ export const supabaseSchema: MultiStepFormSchema = {
       type: "string",
       title: "Host",
       description: "Supabase database host",
-      "x-placeholder":
-        "aws-0-[region].pooler.supabase.com",
+      "x-placeholder": "aws-0-[region].pooler.supabase.com",
     },
     port: {
       type: "string",

@@ -112,6 +112,7 @@ export function makeTablePreviewHref(
  * Special cases:
  * - MotherDuck connectors use "motherduck" icon even though they have driver: duckdb
  * - ClickHouse Cloud connectors use "clickhousecloud" icon even though they have driver: clickhouse
+ * - Supabase connectors use "supabase" icon even though they have driver: postgres
  */
 export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
   // Special case: MotherDuck connectors use md: path prefix
@@ -130,6 +131,19 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
       (typeof dsn === "string" && dsn.includes("clickhouse.cloud"))
     ) {
       return "clickhousecloud";
+    }
+  }
+
+  // Special case: Supabase connectors have "supabase.com" in host or dsn
+  if (connector.driver?.name === "postgres") {
+    const host = connector.config?.host;
+    const dsn = connector.config?.dsn;
+
+    if (
+      (typeof host === "string" && host.includes("supabase")) ||
+      (typeof dsn === "string" && dsn.includes("supabase"))
+    ) {
+      return "supabase";
     }
   }
 
