@@ -1,13 +1,16 @@
 <script lang="ts">
   import APIIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
+  import type { V1SecurityRule } from "@rilldata/web-common/runtime-client";
 
   export let id: string;
   export let title: string;
   export let description: string | undefined;
   export let resolver: string | undefined;
   export let openapiSummary: string | undefined;
-  export let securityRuleCount: number;
+  export let securityRules: V1SecurityRule[];
   export let reconcileError: string | undefined;
+
+  $: accessExpression = securityRules?.[0]?.access?.conditionExpression;
 </script>
 
 <a
@@ -21,7 +24,6 @@
     >
       {title}
     </span>
-    <!-- TODO: add status icon (check/error) once API execution state is tracked -->
     {#if reconcileError}
       <span
         class="text-red-500 text-xs font-normal shrink-0"
@@ -42,13 +44,9 @@
     {#if resolver}
       <span class="shrink-0">{resolver}</span>
     {/if}
-    {#if securityRuleCount > 0}
+    {#if accessExpression}
       <span class="shrink-0">•</span>
-      <span class="shrink-0"
-        >{securityRuleCount} security rule{securityRuleCount > 1
-          ? "s"
-          : ""}</span
-      >
+      <span class="shrink-0 font-mono">access: {accessExpression}</span>
     {/if}
   </div>
 </a>

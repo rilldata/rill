@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useAPI } from "@rilldata/web-admin/features/apis/selectors";
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
@@ -14,9 +15,13 @@
   $: apiSpec = $apiQuery.data?.resource?.api?.spec;
   $: apiMeta = $apiQuery.data?.resource?.meta;
 
-  $: securityRuleCount = apiSpec?.securityRules?.length ?? 0;
+  $: securityRules = apiSpec?.securityRules ?? [];
   $: hasRequestSchema = !!apiSpec?.openapiRequestSchemaJson;
   $: hasResponseSchema = !!apiSpec?.openapiResponseSchemaJson;
+
+  $: projectQuery = createAdminServiceGetProject(organization, project);
+  $: canViewPolicy =
+    !!$projectQuery.data?.projectPermissions?.manageProd;
 
   // Construct the endpoint URL
   $: endpointPath = `/v1/instances/${instanceId}/api/${api}`;
@@ -83,14 +88,23 @@
       </div>
 
       <!-- Security rules -->
-      {#if securityRuleCount > 0}
-        <div class="flex flex-col gap-y-3" aria-label="API security rules">
-          <MetadataLabel>Security rules</MetadataLabel>
-          <MetadataValue>
-            {securityRuleCount} rule{securityRuleCount > 1 ? "s" : ""}
-          </MetadataValue>
-        </div>
-      {/if}
+      <div class="flex flex-col gap-y-3" aria-label="API security rules">
+        <MetadataLabel>Access policy</MetadataLabel>
+        {#if securityRules.length === 0}
+          <MetadataValue>No additional rules</MetadataValue>
+        {:else if canViewPolicy}
+          {#each securityRules as rule}
+            <MetadataValue>
+              <code class="font-mono text-xs"
+                >{rule.access?.allow ? "allow" : "deny"}: {rule.access
+                  ?.conditionExpression ?? "—"}</code
+              >
+            </MetadataValue>
+          {/each}
+        {:else}
+          <MetadataValue>Enabled</MetadataValue>
+        {/if}
+      </div>
 
       <!-- Created -->
       {#if apiMeta?.createdOn}
