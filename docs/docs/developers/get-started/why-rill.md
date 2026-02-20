@@ -1,7 +1,7 @@
 ---
 title: Why Rill?
 sidebar_label: Why Rill?
-sidebar_position: 10
+sidebar_position: 15
 ---
 
 Data teams often struggle with a fragmented stack: while data lakes and warehouses are cost-effective for large volumes, they often lack the sub-second performance required for interactive, operational analytics. Engineering teams spend too much time managing ETL pipelines and answering ad-hoc requests, while business users are stuck with slow, static dashboards that don't allow for true exploration.

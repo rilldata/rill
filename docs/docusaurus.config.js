@@ -316,7 +316,7 @@ const config = {
           },
           {
             from: '/example-projects',
-            to: '/#examples',
+            to: '/developers/tutorials/',
           },
           {
             from: '/integration/embedding',
