@@ -89,12 +89,12 @@ export const SOURCES = [
   "postgres",
   "redshift",
   "s3",
-  "salesforce",
   "snowflake",
-  "sqlite",
   "https",
-  "local_file",
 ];
+
+// model connectors shown in the "Add a model" section
+export const MODEL_CONNECTORS = ["public", "local_file"];
 
 export const OLAP_ENGINES = [
   "clickhouse",
