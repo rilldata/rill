@@ -1094,6 +1094,9 @@ message DeveloperAgentContext {
   // Optional path to the file that the user is currently viewing/editing.
   // This helps the agent understand which file the user is referring to in their request.
   string current_file_path = 2;
+  // Optional flag to enable checkpoint commits before a write_file.
+  // Used to revert changes made by developer_agent.
+  bool enable_checkpoint_commits = 3;
 }
 
 // Context for prompts handled by the feedback_agent.
@@ -1107,6 +1110,12 @@ message FeedbackAgentContext {
   repeated string categories = 3;
   // Optional free-text comment.
   string comment = 4;
+}
+
+// Context for restoring changes made after a checkpoint.
+message RestoreChangesContext {
+  // Write file call id which has the checkpoint commit hash.
+  string revert_till_write_call_id = 1;
 }
 
 // Request message for RuntimeService.ListConversations
@@ -1188,6 +1197,9 @@ message CompleteRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
+  // Optional context for restoring changes made after a checkpoint.
+  // The field is ignored if another agent is selected.
+  RestoreChangesContext restore_changes_context = 14;
 }
 
 // Response message for RuntimeService.Complete
@@ -1216,6 +1228,9 @@ message CompleteStreamingRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
+  // Optional context for restoring changes made after a checkpoint.
+  // The field is ignored if another agent is selected.
+  RestoreChangesContext restore_changes_context = 14;
 }
 
 // Response message for RuntimeService.CompleteStreaming
@@ -1329,6 +1344,7 @@ message GitCommitResponse {
 message RestoreGitCommitRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string commit_sha = 2 [(validate.rules).string.min_len = 1];
+  bool revert_all = 3;
 }
 
 // Response message for RuntimeService.RestoreGitCommit

@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -141,6 +142,12 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 	dbDirPath := filepath.Join(projectPath, DefaultDBDir)
 	err = os.MkdirAll(dbDirPath, os.ModePerm) // Create project dir and db dir if it doesn't exist
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize the dir as a git repo if it isn't already
+	err = gitutil.MaybeInitGit(projectPath)
 	if err != nil {
 		return nil, err
 	}
