@@ -17,11 +17,15 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import List from "@rilldata/web-common/components/icons/List.svelte";
+  import DAGIcon from "@rilldata/web-common/components/icons/DAGIcon.svelte";
   import {
     ResourceKind,
     prettyResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
+  import GraphContainer from "@rilldata/web-common/features/resource-graph/navigation/GraphContainer.svelte";
+  import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
@@ -30,10 +34,13 @@
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
+  type ViewMode = "table" | "graph";
+
   // Reactively track URL search params (updates on back/forward navigation)
   $: kindParam = $page.url.searchParams.get("kind");
   $: statusParam = $page.url.searchParams.get("status");
   $: qParam = $page.url.searchParams.get("q");
+  $: viewParam = $page.url.searchParams.get("view");
 
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
@@ -47,6 +54,8 @@
     const s = $page.url.searchParams.get("status");
     return s ? s.split(",").filter(Boolean) : [];
   })();
+  let viewMode: ViewMode =
+    $page.url.searchParams.get("view") === "graph" ? "graph" : "table";
   let mounted = false;
   let lastSyncedSearch = $page.url.search;
 
@@ -58,11 +67,12 @@
       ? statusParam.split(",").filter(Boolean)
       : [];
     searchText = qParam ?? "";
+    viewMode = viewParam === "graph" ? "graph" : "table";
   }
 
   // Sync filter state to URL params
   $: if (mounted) {
-    syncFiltersToUrl(selectedTypes, selectedStatuses, searchText);
+    syncFiltersToUrl(selectedTypes, selectedStatuses, searchText, viewMode);
   }
 
   onMount(() => {
@@ -73,6 +83,7 @@
     types: string[],
     statuses: string[],
     search: string,
+    view: ViewMode,
   ) {
     const url = new URL($page.url);
     if (types.length > 0) {
@@ -90,12 +101,21 @@
     } else {
       url.searchParams.delete("q");
     }
+    if (view === "graph") {
+      url.searchParams.set("view", "graph");
+    } else {
+      url.searchParams.delete("view");
+    }
     lastSyncedSearch = url.search;
     void goto(url.pathname + url.search, {
       replaceState: true,
       noScroll: true,
       keepFocus: true,
     });
+  }
+
+  function setView(mode: ViewMode) {
+    viewMode = mode;
   }
 
   type StatusFilter = { label: string; value: string };
@@ -219,122 +239,231 @@
         });
       });
   }
+
+  // --- Graph view filter mapping ---
+
+  // Map table status values to graph status values
+  const statusToGraphStatus: Record<string, ResourceStatusFilterValue> = {
+    error: "errored",
+    warn: "pending",
+    ok: "ok",
+  };
+
+  $: graphStatusFilter = selectedStatuses
+    .map((s) => statusToGraphStatus[s])
+    .filter(Boolean) as ResourceStatusFilterValue[];
+
+  // Map selected ResourceKind types to seed tokens for graph filtering
+  const kindToSeedToken: Record<string, string> = {
+    [ResourceKind.Source]: "sources",
+    [ResourceKind.Model]: "models",
+    [ResourceKind.MetricsView]: "metrics",
+    [ResourceKind.Explore]: "dashboards",
+    [ResourceKind.Canvas]: "dashboards",
+  };
+
+  $: graphSeeds = selectedTypes.length > 0
+    ? [...new Set(selectedTypes.map((t) => kindToSeedToken[t]).filter(Boolean))]
+    : undefined;
+
+  const graphStatusOptions: {
+    label: string;
+    value: ResourceStatusFilterValue;
+  }[] = [
+    { label: "OK", value: "ok" },
+    { label: "Pending", value: "pending" },
+    { label: "Errored", value: "errored" },
+  ];
+
+  const graphToTableStatus: Record<ResourceStatusFilterValue, string> = {
+    errored: "error",
+    pending: "warn",
+    ok: "ok",
+  };
+
+  function handleGraphStatusToggle(value: ResourceStatusFilterValue) {
+    const tableStatus = graphToTableStatus[value];
+    toggleStatus(tableStatus);
+  }
+
+  function handleGraphKindChange(kind: string | null) {
+    // When graph kind changes, update selectedTypes accordingly
+    if (!kind) {
+      selectedTypes = [];
+      return;
+    }
+    // Find all ResourceKinds that map to this seed token
+    const matchingKinds = Object.entries(kindToSeedToken)
+      .filter(([, token]) => token === kind)
+      .map(([k]) => k);
+    selectedTypes = matchingKinds;
+  }
+
+  $: graphActiveKindLabel =
+    selectedTypes.length === 0
+      ? "All types"
+      : selectedTypes.length === 1
+        ? prettyResourceKind(selectedTypes[0])
+        : `${prettyResourceKind(selectedTypes[0])}, +${selectedTypes.length - 1}`;
 </script>
 
 <section class="flex flex-col gap-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
+    <div class="view-toggle">
+      <Button
+        type="tertiary"
+        square
+        compact
+        selected={viewMode === "table"}
+        onClick={() => setView("table")}
+        label="Table view"
+      >
+        <List size="16px" />
+      </Button>
+      <Button
+        type="tertiary"
+        square
+        compact
+        selected={viewMode === "graph"}
+        onClick={() => setView("graph")}
+        label="Graph view"
+      >
+        <DAGIcon size="16px" />
+      </Button>
+    </div>
   </div>
 
-  <!-- Filter and Search Controls -->
-  <div class="flex items-center gap-x-3">
-    <DropdownMenu.Root bind:open={filterDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {#if selectedTypes.length === 0}
-              All types
-            {:else if selectedTypes.length === 1}
-              {prettyResourceKind(selectedTypes[0])}
-            {:else}
-              {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length -
-                1} other{selectedTypes.length > 2 ? "s" : ""}
-            {/if}
-            {#if filterDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" class="w-48">
-        {#each filterableTypes as type}
-          <DropdownMenu.CheckboxItem
-            checked={selectedTypes.includes(type)}
-            onCheckedChange={() => toggleType(type)}
-          >
-            {prettyResourceKind(type)}
-          </DropdownMenu.CheckboxItem>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+  {#if viewMode === "table"}
+    <!-- Filter and Search Controls -->
+    <div class="flex items-center gap-x-3">
+      <DropdownMenu.Root bind:open={filterDropdownOpen}>
+        <DropdownMenu.Trigger asChild let:builder>
+          <Button builders={[builder]} type="tertiary">
+            <span class="flex items-center gap-x-1.5">
+              {#if selectedTypes.length === 0}
+                All types
+              {:else if selectedTypes.length === 1}
+                {prettyResourceKind(selectedTypes[0])}
+              {:else}
+                {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length -
+                  1} other{selectedTypes.length > 2 ? "s" : ""}
+              {/if}
+              {#if filterDropdownOpen}
+                <CaretUpIcon size="12px" />
+              {:else}
+                <CaretDownIcon size="12px" />
+              {/if}
+            </span>
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="start" class="w-48">
+          {#each filterableTypes as type}
+            <DropdownMenu.CheckboxItem
+              checked={selectedTypes.includes(type)}
+              onCheckedChange={() => toggleType(type)}
+            >
+              {prettyResourceKind(type)}
+            </DropdownMenu.CheckboxItem>
+          {/each}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
 
-    <DropdownMenu.Root bind:open={statusDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {#if selectedStatuses.length === 0}
-              All statuses
-            {:else if selectedStatuses.length === 1}
-              {statusFilters.find((s) => s.value === selectedStatuses[0])
-                ?.label ?? selectedStatuses[0]}
-            {:else}
-              {statusFilters.find((s) => s.value === selectedStatuses[0])
-                ?.label}, +{selectedStatuses.length - 1} other{selectedStatuses.length >
-              2
-                ? "s"
-                : ""}
-            {/if}
-            {#if statusDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="start" class="w-48">
-        {#each statusFilters as status}
-          <DropdownMenu.CheckboxItem
-            checked={selectedStatuses.includes(status.value)}
-            onCheckedChange={() => toggleStatus(status.value)}
-          >
-            {status.label}
-          </DropdownMenu.CheckboxItem>
-        {/each}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+      <DropdownMenu.Root bind:open={statusDropdownOpen}>
+        <DropdownMenu.Trigger asChild let:builder>
+          <Button builders={[builder]} type="tertiary">
+            <span class="flex items-center gap-x-1.5">
+              {#if selectedStatuses.length === 0}
+                All statuses
+              {:else if selectedStatuses.length === 1}
+                {statusFilters.find((s) => s.value === selectedStatuses[0])
+                  ?.label ?? selectedStatuses[0]}
+              {:else}
+                {statusFilters.find((s) => s.value === selectedStatuses[0])
+                  ?.label}, +{selectedStatuses.length - 1} other{selectedStatuses.length >
+                2
+                  ? "s"
+                  : ""}
+              {/if}
+              {#if statusDropdownOpen}
+                <CaretUpIcon size="12px" />
+              {:else}
+                <CaretDownIcon size="12px" />
+              {/if}
+            </span>
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="start" class="w-48">
+          {#each statusFilters as status}
+            <DropdownMenu.CheckboxItem
+              checked={selectedStatuses.includes(status.value)}
+              onCheckedChange={() => toggleStatus(status.value)}
+            >
+              {status.label}
+            </DropdownMenu.CheckboxItem>
+          {/each}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
 
-    {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
-      <button
-        class="text-sm text-primary-500 hover:text-primary-600"
-        on:click={clearFilters}
+      {#if selectedTypes.length > 0 || searchText || selectedStatuses.length > 0}
+        <button
+          class="text-sm text-primary-500 hover:text-primary-600"
+          on:click={clearFilters}
+        >
+          Clear filters
+        </button>
+      {/if}
+
+      <!-- Spacer -->
+      <div class="flex-1" />
+
+      <div class="w-64">
+        <Search
+          bind:value={searchText}
+          placeholder="Search by name..."
+          autofocus={false}
+        />
+      </div>
+
+      <Button
+        type="secondary"
+        onClick={() => {
+          isConfirmDialogOpen = true;
+        }}
+        disabled={isRefreshButtonDisabled}
       >
-        Clear filters
-      </button>
+        Refresh all sources and models
+      </Button>
+    </div>
+
+    {#if $resources.isLoading}
+      <DelayedSpinner isLoading={true} size="16px" />
+    {:else if $resources.isError}
+      <div class="text-red-500">
+        Error loading resources: {$resources.error?.message}
+      </div>
+    {:else if $resources.data}
+      <ProjectResourcesTable data={filteredResources} />
     {/if}
-
-    <!-- Spacer -->
-    <div class="flex-1" />
-
-    <div class="w-64">
-      <Search
-        bind:value={searchText}
-        placeholder="Search by name..."
-        autofocus={false}
+  {:else}
+    <!-- Graph View -->
+    <div class="graph-container">
+      <GraphContainer
+        seeds={graphSeeds}
+        searchQuery={searchText}
+        statusFilter={graphStatusFilter}
+        showSummary={false}
+        layout="sidebar"
+        onKindChange={handleGraphKindChange}
+        onRefreshAll={() => {
+          isConfirmDialogOpen = true;
+        }}
+        activeKindLabel={graphActiveKindLabel}
+        statusFilterOptions={graphStatusOptions}
+        onStatusToggle={handleGraphStatusToggle}
+        onClearFilters={clearFilters}
       />
     </div>
-
-    <Button
-      type="secondary"
-      onClick={() => {
-        isConfirmDialogOpen = true;
-      }}
-      disabled={isRefreshButtonDisabled}
-    >
-      Refresh all sources and models
-    </Button>
-  </div>
-
-  {#if $resources.isLoading}
-    <DelayedSpinner isLoading={true} size="16px" />
-  {:else if $resources.isError}
-    <div class="text-red-500">
-      Error loading resources: {$resources.error?.message}
-    </div>
-  {:else if $resources.data}
-    <ProjectResourcesTable data={filteredResources} />
   {/if}
 
   <div class="parse-errors">
@@ -367,6 +496,12 @@
 />
 
 <style lang="postcss">
+  .view-toggle {
+    @apply flex items-center gap-x-1 border border-gray-200 rounded-md p-0.5;
+  }
+  .graph-container {
+    @apply h-[700px];
+  }
   .parse-errors {
     @apply pt-4 mt-2;
   }
