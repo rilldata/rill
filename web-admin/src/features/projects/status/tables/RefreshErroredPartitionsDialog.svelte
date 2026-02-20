@@ -10,20 +10,10 @@
   import { Button } from "@rilldata/web-common/components/button/index.js";
 
   export let open = false;
-  export let name: string;
+  export let modelName: string;
   export let onRefresh: () => Promise<void> | void;
-  export let refreshType: "full" | "incremental" = "full";
 
   let isRefreshing = false;
-
-  const MAX_NAME_LENGTH = 37;
-
-  function truncateName(str: string): string {
-    if (str.length > MAX_NAME_LENGTH) {
-      return str.substring(0, MAX_NAME_LENGTH) + "...";
-    }
-    return str;
-  }
 
   async function handleRefresh() {
     try {
@@ -31,7 +21,7 @@
       await onRefresh();
       open = false;
     } catch (error) {
-      console.error("Failed to refresh resource:", error);
+      console.error("Failed to refresh errored partitions:", error);
     } finally {
       isRefreshing = false;
     }
@@ -42,19 +32,12 @@
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>
-        {refreshType === "full" ? "Full Refresh" : "Incremental Refresh"}
-        <span class="font-semibold" title={name}>{truncateName(name)}</span>?
+        Refresh Errored Partitions for {modelName}?
       </AlertDialogTitle>
       <AlertDialogDescription>
         <div class="mt-1">
-          {#if refreshType === "full"}
-            ⚠️ Warning: A full refresh will re-ingest ALL data from scratch.
-            This operation can take a significant amount of time and will update
-            all dependent resources. Only proceed if you're certain this is
-            necessary.
-          {:else}
-            Refreshing this resource will update all dependent resources.
-          {/if}
+          This will re-execute all partitions that failed during their last run.
+          The refresh will happen in the background.
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
@@ -70,7 +53,7 @@
         type="primary"
         onClick={handleRefresh}
         disabled={isRefreshing}
-        loading={isRefreshing}>Yes, refresh</Button
+        loading={isRefreshing}>Refresh Errored Partitions</Button
       >
     </AlertDialogFooter>
   </AlertDialogContent>
