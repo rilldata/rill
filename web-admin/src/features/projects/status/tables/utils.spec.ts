@@ -384,11 +384,7 @@ describe("tables utils", () => {
       );
       expect(tableResult).toEqual(tablesWithUnknown);
 
-      const viewResult = applyTableFilters(
-        tablesWithUnknown,
-        "view",
-        emptyMap,
-      );
+      const viewResult = applyTableFilters(tablesWithUnknown, "view", emptyMap);
       expect(viewResult).toEqual([
         { name: "loading_table", physicalSizeBytes: undefined },
       ]);
