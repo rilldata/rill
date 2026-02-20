@@ -24,7 +24,7 @@ Rill automatically turns your SQL data models into interactive, exploratory dash
 This approach means engineering teams can:
 1.   **Orchestrate data** out of cloud [data warehouses](/developers/build/connectors/data-source#data-warehouses) or [object stores](/developers/build/connectors#object-storage) into the fast serving layer.
 2.   **Define metrics & dimensions** in [metrics view](/developers/build/metrics-view) to automatically aggregate and prune raw tables.
-3.  **Deploy** your [project to Rill Cloud](/developers/deploy/deploy-dashboard) without managing separate BI servers or database infrastructure.
+3.  **Deploy** your [project to Rill Cloud](/developers/deploy/deploy-to-cloud) without managing separate BI servers or database infrastructure.
 
 ## Built for Operational Analytics
 

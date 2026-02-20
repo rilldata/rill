@@ -9,7 +9,7 @@ hide_table_of_contents: false
 
 Rill offers two unique but complementary experiences within our broader product suite, **Rill Cloud** and **Rill Developer**.
 
-As the name suggests, Rill _Developer_ is designed with the developer in mind, where project development actually occurs. Rill Developer is meant for the primary developers of project assets and dashboards, allowing them to import, wrangle, iterate on, and explore the data before presenting it for broader consumption by the team. Rill Developer is meant to run on your local machine - see here for some [recommendations and best practices](/developers/tutorials/performance#local-development--rill-developer) - but it is a simple process to [deploy a project](/developers/deploy/deploy-dashboard) once ready to Rill Cloud.
+As the name suggests, Rill _Developer_ is designed with the developer in mind, where project development actually occurs. Rill Developer is meant for the primary developers of project assets and dashboards, allowing them to import, wrangle, iterate on, and explore the data before presenting it for broader consumption by the team. Rill Developer is meant to run on your local machine - see here for some [recommendations and best practices](/developers/tutorials/performance#local-development--rill-developer) - but it is a simple process to [deploy a project](/developers/deploy/deploy-to-cloud) once ready to Rill Cloud.
 
 
 Rill Cloud, on the other hand, is designed for our dashboard consumers and allows broader team members to easily collaborate. Once the developer has deployed the dashboard onto Rill Cloud, these users will be able to utilize the dashboards to interact with their data, set alerts / bookmarks, investigate nuances / anomalies, or otherwise perform everyday tasks for their business needs at Rill speed.
@@ -66,7 +66,7 @@ Rill Developer is designed around developers. Using a familiar IDE-like interfac
 
 ## Rill Cloud
 
-Once the dashboard has been [deployed to Rill Cloud](/developers/deploy/deploy-dashboard), the dashboard can be shared with others and viewed by other members of your Rill Cloud organization. As you can see below, the UI is different from Developer. Upon accessing Rill Cloud, a user will be able to view all the projects they have been granted access to by project admins. 
+Once the dashboard has been [deployed to Rill Cloud](/developers/deploy/deploy-to-cloud), the dashboard can be shared with others and viewed by other members of your Rill Cloud organization. As you can see below, the UI is different from Developer. Upon accessing Rill Cloud, a user will be able to view all the projects they have been granted access to by project admins. 
 
 
 ![Rill Cloud Projects](/img/concepts/rcvsrd/rill-cloud-projects.png)
