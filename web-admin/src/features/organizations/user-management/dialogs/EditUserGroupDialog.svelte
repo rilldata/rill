@@ -89,9 +89,6 @@
     initialized = true;
   }
 
-  // TODO: we need to get role from a separate query and fill in selectedUsers
-  //       organizationUsers is not guaranteed to have the user present in the group.
-
   const queryClient = useQueryClient();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
