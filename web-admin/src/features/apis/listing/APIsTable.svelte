@@ -22,8 +22,7 @@
           description: info.row.original.api?.spec?.description,
           resolver: info.row.original.api?.spec?.resolver,
           openapiSummary: info.row.original.api?.spec?.openapiSummary,
-          securityRules:
-            info.row.original.api?.spec?.securityRules ?? [],
+          securityRules: info.row.original.api?.spec?.securityRules ?? [],
           reconcileError: info.row.original.meta?.reconcileError,
         }),
     },

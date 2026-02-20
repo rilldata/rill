@@ -20,8 +20,7 @@
   $: hasResponseSchema = !!apiSpec?.openapiResponseSchemaJson;
 
   $: projectQuery = createAdminServiceGetProject(organization, project);
-  $: canViewPolicy =
-    !!$projectQuery.data?.projectPermissions?.manageProd;
+  $: canViewPolicy = !!$projectQuery.data?.projectPermissions?.manageProd;
 
   // Construct the endpoint URL
   $: endpointPath = `/v1/instances/${instanceId}/api/${api}`;
@@ -149,7 +148,11 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Resolver properties</MetadataLabel>
         <pre
-          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(otherResolverProperties, null, 2)}</pre>
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(
+            otherResolverProperties,
+            null,
+            2,
+          )}</pre>
       </div>
     {/if}
 
@@ -158,7 +161,11 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Request schema</MetadataLabel>
         <pre
-          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(JSON.parse(apiSpec.openapiRequestSchemaJson ?? ""), null, 2)}</pre>
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(
+            JSON.parse(apiSpec.openapiRequestSchemaJson ?? ""),
+            null,
+            2,
+          )}</pre>
       </div>
     {/if}
 
@@ -166,7 +173,11 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Response schema</MetadataLabel>
         <pre
-          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(JSON.parse(apiSpec.openapiResponseSchemaJson ?? ""), null, 2)}</pre>
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(
+            JSON.parse(apiSpec.openapiResponseSchemaJson ?? ""),
+            null,
+            2,
+          )}</pre>
       </div>
     {/if}
 
