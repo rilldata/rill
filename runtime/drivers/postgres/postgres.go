@@ -94,7 +94,7 @@ var spec = drivers.Spec{
 var supabaseSpec = drivers.Spec{
 	DisplayName: "Supabase",
 	Description: "Connect to Supabase.",
-	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/postgres",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/supabase",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
