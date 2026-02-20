@@ -173,6 +173,14 @@ service RuntimeService {
     };
   }
 
+  // GenerateTemplate generates a connector or model YAML file from structured form data
+  rpc GenerateTemplate(GenerateTemplateRequest) returns (GenerateTemplateResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/generate/template",
+      body: "*"
+    };
+  }
+
   // QueryResolver queries a resolver with the given properties and arguments
   rpc QueryResolver(QueryResolverRequest) returns (QueryResolverResponse) {
     option (google.api.http) = {
@@ -756,6 +764,23 @@ message GenerateRendererRequest {
 message GenerateRendererResponse {
   string renderer = 1;
   google.protobuf.Struct renderer_properties = 2;
+}
+
+message GenerateTemplateRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string resource_type = 2 [(validate.rules).string = {in: ["connector", "model"]}];
+  string driver = 3 [(validate.rules).string = {pattern: "^[a-z][a-z0-9_]*$"}];
+  google.protobuf.Struct properties = 4;
+  string connector_name = 5;
+}
+
+message GenerateTemplateResponse {
+  string blob = 1;
+  map<string, string> env_vars = 2;
+  // Actual resource type used; may differ from request when driver is rewritten
+  string resource_type = 3;
+  // Actual driver used; may differ from request when rewritten to duckdb
+  string driver = 4;
 }
 
 message QueryResolverRequest {

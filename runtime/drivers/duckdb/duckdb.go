@@ -105,6 +105,7 @@ var motherduckSpec = drivers.Spec{
 			Key:         "token",
 			Type:        drivers.StringPropertyType,
 			Secret:      true,
+			EnvVarName:  "MOTHERDUCK_TOKEN",
 			Required:    true,
 			DisplayName: "Token",
 			Description: "MotherDuck token",

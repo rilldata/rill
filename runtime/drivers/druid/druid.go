@@ -42,6 +42,7 @@ var spec = drivers.Spec{
 			DisplayName: "Connection string",
 			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
 			Secret:      true,
+			EnvVarName:  "DRUID_DSN",
 			NoPrompt:    true,
 		},
 		{
@@ -76,6 +77,7 @@ var spec = drivers.Spec{
 			Description: "Password to connect to the Druid server",
 			Placeholder: "password",
 			Secret:      true,
+			EnvVarName:  "DRUID_PASSWORD",
 		},
 		{
 			Key:         "ssl",

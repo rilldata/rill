@@ -46,8 +46,9 @@ type PropertySpec struct {
 	Hint        string
 	Default     string
 	Placeholder string
-	Secret      bool
-	NoPrompt    bool
+	Secret     bool
+	EnvVarName string
+	NoPrompt   bool
 }
 
 // PropertyType is an enum of types supported for connector properties.

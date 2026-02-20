@@ -43,6 +43,7 @@ var spec = drivers.Spec{
 			Description: "GCP credentials as JSON string",
 			Placeholder: "Paste your GCP service account JSON here",
 			Secret:      true,
+			EnvVarName:  "GOOGLE_APPLICATION_CREDENTIALS",
 			Required:    true,
 		},
 	},

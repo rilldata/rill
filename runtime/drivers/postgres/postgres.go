@@ -37,6 +37,7 @@ var spec = drivers.Spec{
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
 			Hint:        "Can be configured here or by setting the 'connector.postgres.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
+			EnvVarName:  "POSTGRES_DSN",
 		},
 		{
 			Key:         "host",
@@ -69,6 +70,7 @@ var spec = drivers.Spec{
 			Placeholder: "your_password",
 			Hint:        "Postgres password for authentication",
 			Secret:      true,
+			EnvVarName:  "POSTGRES_PASSWORD",
 		},
 		{
 			Key:         "dbname",

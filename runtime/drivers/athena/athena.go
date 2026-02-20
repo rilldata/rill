@@ -42,6 +42,7 @@ var spec = drivers.Spec{
 			Placeholder: "your_access_key_id",
 			Required:    true,
 			Secret:      true,
+			EnvVarName:  "AWS_ACCESS_KEY_ID",
 		},
 		{
 			Key:         "aws_secret_access_key",
@@ -51,6 +52,7 @@ var spec = drivers.Spec{
 			Placeholder: "your_secret_access_key",
 			Required:    true,
 			Secret:      true,
+			EnvVarName:  "AWS_SECRET_ACCESS_KEY",
 		},
 		{
 			Key:         "output_location",
