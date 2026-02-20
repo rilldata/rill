@@ -2029,6 +2029,16 @@ export interface V1ProjectParserState {
   watching?: boolean;
 }
 
+export interface V1PullEnvResponse {
+  variablesCount?: number;
+  modified?: boolean;
+}
+
+export interface V1PushEnvResponse {
+  addedCount?: number;
+  changedCount?: number;
+}
+
 export interface V1PutFileResponse {
   filePath?: string;
 }
@@ -2701,6 +2711,16 @@ export type ConnectorServiceListObjectsParams = {
   delimiter?: string;
   pageSize?: number;
   pageToken?: string;
+};
+
+export type RuntimeServicePullEnvBody = {
+  /** Environment to pull from: "dev" or "prod". Defaults to "dev". */
+  environment?: string;
+};
+
+export type RuntimeServicePushEnvBody = {
+  /** Environment to push to: "dev", "prod", or empty for both. */
+  environment?: string;
 };
 
 export type RuntimeServiceListFilesParams = {

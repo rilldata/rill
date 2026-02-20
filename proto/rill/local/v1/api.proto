@@ -62,11 +62,6 @@ service LocalService {
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {}
 
-  // PullEnv pulls environment variables from cloud to local .env file
-  rpc PullEnv(PullEnvRequest) returns (PullEnvResponse) {}
-
-  // PushEnv pushes local environment variables to cloud
-  rpc PushEnv(PushEnvRequest) returns (PushEnvResponse) {}
 }
 
 message PingRequest {}
@@ -246,34 +241,3 @@ message GetProjectResponse {
   admin.v1.ProjectPermissions project_permissions = 4;
 }
 
-message PullEnvRequest {
-  // Optional project name to pull from. If not provided, will be inferred from git remote.
-  string project = 1;
-  // Optional organization name. If not provided, will use default org.
-  string org = 2;
-  // Environment to pull from: "dev" or "prod". Defaults to "dev".
-  string environment = 3;
-}
-
-message PullEnvResponse {
-  // Number of variables pulled from cloud
-  int32 variables_count = 1;
-  // Whether the .env file was modified
-  bool modified = 2;
-}
-
-message PushEnvRequest {
-  // Optional project name to push to. If not provided, will be inferred from git remote.
-  string project = 1;
-  // Optional organization name. If not provided, will use default org.
-  string org = 2;
-  // Environment to push to: "dev", "prod", or empty for both. Defaults to empty.
-  string environment = 3;
-}
-
-message PushEnvResponse {
-  // Number of variables added
-  int32 added_count = 1;
-  // Number of variables changed
-  int32 changed_count = 2;
-}

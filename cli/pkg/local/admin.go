@@ -79,3 +79,63 @@ func (l *localAdminService) ListDeployments(ctx context.Context) ([]*drivers.Dep
 
 	return res, nil
 }
+
+// GetProjectVariables implements drivers.AdminService.
+func (l *localAdminService) GetProjectVariables(ctx context.Context, environment string) (map[string]string, error) {
+	if l.ch.AdminToken() == "" {
+		return nil, drivers.ErrNotAuthenticated
+	}
+
+	client, err := l.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	projects, err := l.ch.InferProjects(ctx, l.ch.Org, l.root)
+	if err != nil {
+		return nil, err
+	}
+	project := projects[0]
+
+	resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+		Org:         project.OrgName,
+		Project:     project.Name,
+		Environment: environment,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	vars := make(map[string]string, len(resp.Variables))
+	for _, v := range resp.Variables {
+		vars[v.Name] = v.Value
+	}
+
+	return vars, nil
+}
+
+// UpdateProjectVariables implements drivers.AdminService.
+func (l *localAdminService) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
+	if l.ch.AdminToken() == "" {
+		return drivers.ErrNotAuthenticated
+	}
+
+	client, err := l.ch.Client()
+	if err != nil {
+		return err
+	}
+
+	projects, err := l.ch.InferProjects(ctx, l.ch.Org, l.root)
+	if err != nil {
+		return err
+	}
+	project := projects[0]
+
+	_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+		Org:         project.OrgName,
+		Project:     project.Name,
+		Environment: environment,
+		Variables:   variables,
+	})
+	return err
+}

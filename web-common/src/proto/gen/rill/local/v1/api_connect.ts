@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GithubRepoStatusRequest, GithubRepoStatusResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PullEnvRequest, PullEnvResponse, PushEnvRequest, PushEnvResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GithubRepoStatusRequest, GithubRepoStatusResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -202,28 +202,6 @@ export const LocalService = {
       name: "GetProject",
       I: GetProjectRequest,
       O: GetProjectResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * PullEnv pulls environment variables from cloud to local .env file
-     *
-     * @generated from rpc rill.local.v1.LocalService.PullEnv
-     */
-    pullEnv: {
-      name: "PullEnv",
-      I: PullEnvRequest,
-      O: PullEnvResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * PushEnv pushes local environment variables to cloud
-     *
-     * @generated from rpc rill.local.v1.LocalService.PushEnv
-     */
-    pushEnv: {
-      name: "PushEnv",
-      I: PushEnvRequest,
-      O: PushEnvResponse,
       kind: MethodKind.Unary,
     },
   }

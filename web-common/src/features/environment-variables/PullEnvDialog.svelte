@@ -9,12 +9,9 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
-  import {
-    createLocalServicePullEnv,
-    createLocalServiceGetCurrentProject,
-  } from "@rilldata/web-common/runtime-client/local-service";
+  import { createRuntimeServicePullEnv } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { get } from "svelte/store";
 
   export let open = false;
   export let isProjectLinked = false;
@@ -22,25 +19,18 @@
 
   let selectedEnvironment: "dev" | "prod" = "dev";
 
-  const currentProjectQuery = createLocalServiceGetCurrentProject();
-  const pullEnvMutation = createLocalServicePullEnv();
+  const pullEnvMutation = createRuntimeServicePullEnv();
 
   $: isPending = $pullEnvMutation.isPending;
   $: error = $pullEnvMutation.error;
 
   async function handlePull() {
-    const currentProject = get(currentProjectQuery).data;
-    const project = currentProject?.project;
-
-    // Try to get project info, but allow backend to infer if not available
-    const orgName = project?.orgName ?? "";
-    const projectName = project?.name ?? "";
-
     try {
       const result = await $pullEnvMutation.mutateAsync({
-        org: orgName,
-        project: projectName,
-        environment: selectedEnvironment,
+        instanceId: $runtime.instanceId,
+        data: {
+          environment: selectedEnvironment,
+        },
       });
 
       const variablesCount = result.variablesCount ?? 0;

@@ -9,12 +9,9 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
-  import {
-    createLocalServicePushEnv,
-    createLocalServiceGetCurrentProject,
-  } from "@rilldata/web-common/runtime-client/local-service";
+  import { createRuntimeServicePushEnv } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { get } from "svelte/store";
 
   export let open = false;
   export let isProjectLinked = false;
@@ -22,25 +19,18 @@
 
   let selectedEnvironment: "dev" | "prod" | "both" = "both";
 
-  const currentProjectQuery = createLocalServiceGetCurrentProject();
-  const pushEnvMutation = createLocalServicePushEnv();
+  const pushEnvMutation = createRuntimeServicePushEnv();
 
   $: isPending = $pushEnvMutation.isPending;
   $: error = $pushEnvMutation.error;
 
   async function handlePush() {
-    const currentProject = get(currentProjectQuery).data;
-    const project = currentProject?.project;
-
-    // Try to get project info, but allow backend to infer if not available
-    const orgName = project?.orgName ?? "";
-    const projectName = project?.name ?? "";
-
     try {
       const result = await $pushEnvMutation.mutateAsync({
-        org: orgName,
-        project: projectName,
-        environment: selectedEnvironment === "both" ? "" : selectedEnvironment,
+        instanceId: $runtime.instanceId,
+        data: {
+          environment: selectedEnvironment === "both" ? "" : selectedEnvironment,
+        },
       });
 
       const addedCount = result.addedCount ?? 0;
