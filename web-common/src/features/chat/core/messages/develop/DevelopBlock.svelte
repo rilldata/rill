@@ -5,8 +5,6 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import { PenIcon } from "lucide-svelte";
-  import { createRuntimeServiceRestoreGitCommit } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import FileDiffBlock from "@rilldata/web-common/features/chat/core/messages/file-diff/FileDiffBlock.svelte";
   import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
 
@@ -15,15 +13,10 @@
 
   let isExpanded = true; // Make this expanded by default
 
-  $: ({ instanceId } = $runtime);
-
-  const revertCommit = createRuntimeServiceRestoreGitCommit();
-  async function undoChanges() {
-    await $revertCommit.mutateAsync({
-      instanceId,
-      commitSha: conversation.conversationId,
-      data: {
-        revertAll: true,
+  function undoChanges() {
+    void conversation.sendMessage({
+      restoreChangesContext: {
+        revertTillWriteCallId: "",
       },
     });
   }
@@ -48,7 +41,9 @@
           Made {block.diffs.length} change(s)
         </div>
       </button>
-      <Button onClick={undoChanges} noStroke>Undo</Button>
+      {#if block.checkpointCommitHash}
+        <Button onClick={undoChanges} noStroke>Undo</Button>
+      {/if}
     </div>
   </Collapsible.Trigger>
 

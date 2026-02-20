@@ -36,6 +36,7 @@ import {
   createDevelopBlock,
   type DevelopBlock,
 } from "@rilldata/web-common/features/chat/core/messages/develop/develop-block.ts";
+import type { RestoreChangesBlock } from "@rilldata/web-common/features/chat/core/messages/restore/restore-block.ts";
 
 // =============================================================================
 // TYPES
@@ -48,6 +49,7 @@ export type Block =
   | FileDiffBlock
   | WorkingBlock
   | DevelopBlock
+  | RestoreChangesBlock
   | SimpleToolCall;
 
 export type {
@@ -144,7 +146,11 @@ export function transformToBlocks(
 
       case "block": {
         flushThinking(true);
-        const block = routing.config.createBlock?.(msg, resultMap.get(msg.id));
+        const block = routing.config.createBlock?.(
+          msg,
+          resultMap.get(msg.id),
+          messages,
+        );
         if (block) {
           blocks.push(block);
         }

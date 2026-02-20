@@ -22,6 +22,10 @@ import {
   type SimpleToolCall,
 } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils.ts";
+import {
+  createRestoreChangesBlock,
+  type RestoreChangesBlock,
+} from "@rilldata/web-common/features/chat/core/messages/restore/restore-block.ts";
 
 // =============================================================================
 // RENDER MODES
@@ -45,7 +49,11 @@ export enum ToolGroupTypes {
 // =============================================================================
 
 /** Block types that can be created by tools */
-export type ToolBlockType = ChartBlock | FileDiffBlock | SimpleToolCall;
+export type ToolBlockType =
+  | ChartBlock
+  | FileDiffBlock
+  | SimpleToolCall
+  | RestoreChangesBlock;
 
 /**
  * Configuration for a tool's rendering behavior.
@@ -61,6 +69,7 @@ export interface ToolConfig {
   createBlock?: (
     callMessage: V1Message,
     resultMessage: V1Message | undefined,
+    allMessages: V1Message[],
   ) => ToolBlockType | null;
 
   /** Used to process any UI action or side effects from tool calls. */
@@ -107,6 +116,11 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createFileDiffBlock,
     onResult: handleWriteFilesToolResult,
   },
+  [ToolName.RESTORE_CHANGES]: {
+    renderMode: "block",
+    createBlock: createRestoreChangesBlock,
+  },
+
   // Feedback agent: hidden - the AI text response handles acknowledgment
   [ToolName.FEEDBACK_AGENT]: {
     renderMode: "hidden",

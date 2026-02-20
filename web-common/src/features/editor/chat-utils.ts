@@ -21,11 +21,16 @@ export const developerChatConfig = {
 function getActiveFileContext(): Readable<Partial<RuntimeServiceCompleteBody>> {
   return derived(page, (pageState) => {
     const filePath = pageState.params?.file;
-    if (!filePath) return {} satisfies Partial<RuntimeServiceCompleteBody>;
+    // TODO: toggle for enableCheckpointCommits
+    if (!filePath)
+      return {
+        developerAgentContext: { enableCheckpointCommits: true },
+      } satisfies Partial<RuntimeServiceCompleteBody>;
 
     return {
       developerAgentContext: {
         currentFilePath: filePath,
+        enableCheckpointCommits: true,
       },
     } satisfies Partial<RuntimeServiceCompleteBody>;
   });

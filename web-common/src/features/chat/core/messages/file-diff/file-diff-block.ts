@@ -1,9 +1,6 @@
-import {
-  type V1Message,
-  V1ReconcileStatus,
-  type V1ResourceName,
-} from "@rilldata/web-common/runtime-client";
+import { type V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageContentType } from "../../types";
+import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
 
 // =============================================================================
 // BACKEND TYPES (mirror runtime/ai tool definitions)
@@ -74,7 +71,7 @@ export function createFileDiffBlock(
       id: `file-diff-${message.id}`,
       message,
       resultMessage,
-      filePath,
+      filePath: addLeadingSlash(filePath),
       diff: resultData.diff || "",
       isNewFile: resultData.is_new_file || false,
       checkpointCommitHash: resultData.checkpoint_commit_hash || null,

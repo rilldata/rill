@@ -832,6 +832,9 @@ This should only be used when the project directory contains an empty project (e
   /** Optional path to the file that the user is currently viewing/editing.
 This helps the agent understand which file the user is referring to in their request. */
   currentFilePath?: string;
+  /** Optional flag to enable checkpoint commits before a write_file.
+Used to revert changes made by developer_agent. */
+  enableCheckpointCommits?: boolean;
 }
 
 export interface V1DirEntry {
@@ -2321,6 +2324,14 @@ export interface V1ResourceName {
   name?: string;
 }
 
+/**
+ * Context for restoring changes made after a checkpoint.
+ */
+export interface V1RestoreChangesContext {
+  /** Write file call id which has the checkpoint commit hash. */
+  revertTillWriteCallId?: string;
+}
+
 export interface V1RestoreGitCommitResponse {
   newCommitSha?: string;
 }
@@ -2685,6 +2696,7 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  restoreChangesContext?: V1RestoreChangesContext;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2698,6 +2710,7 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  restoreChangesContext?: V1RestoreChangesContext;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

@@ -436,6 +436,11 @@ paths:
                 description: |-
                   Optional context for prompts handled by the feedback_agent.
                   The field is ignored if another agent is selected.
+              restoreChangesContext:
+                $ref: '#/definitions/v1RestoreChangesContext'
+                description: |-
+                  Optional context for restoring changes made after a checkpoint.
+                  The field is ignored if another agent is selected.
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -495,6 +500,11 @@ paths:
                 $ref: '#/definitions/v1FeedbackAgentContext'
                 description: |-
                   Optional context for prompts handled by the feedback_agent.
+                  The field is ignored if another agent is selected.
+              restoreChangesContext:
+                $ref: '#/definitions/v1RestoreChangesContext'
+                description: |-
+                  Optional context for restoring changes made after a checkpoint.
                   The field is ignored if another agent is selected.
             title: Request message for RuntimeService.CompleteStreaming
       tags:
@@ -4955,6 +4965,11 @@ definitions:
         description: |-
           Optional path to the file that the user is currently viewing/editing.
           This helps the agent understand which file the user is referring to in their request.
+      enableCheckpointCommits:
+        type: boolean
+        description: |-
+          Optional flag to enable checkpoint commits before a write_file.
+          Used to revert changes made by developer_agent.
     description: Context for prompts handled by the developer_agent.
   v1DirEntry:
     type: object
@@ -7416,6 +7431,13 @@ definitions:
         type: string
       name:
         type: string
+  v1RestoreChangesContext:
+    type: object
+    properties:
+      revertTillWriteCallId:
+        type: string
+        description: Write file call id which has the checkpoint commit hash.
+    description: Context for restoring changes made after a checkpoint.
   v1RestoreGitCommitResponse:
     type: object
     properties:

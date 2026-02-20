@@ -5613,6 +5613,9 @@ type DeveloperAgentContext struct {
 	// Optional path to the file that the user is currently viewing/editing.
 	// This helps the agent understand which file the user is referring to in their request.
 	CurrentFilePath string `protobuf:"bytes,2,opt,name=current_file_path,json=currentFilePath,proto3" json:"current_file_path,omitempty"`
+	// Optional flag to enable checkpoint commits before a write_file.
+	// Used to revert changes made by developer_agent.
+	EnableCheckpointCommits bool `protobuf:"varint,3,opt,name=enable_checkpoint_commits,json=enableCheckpointCommits,proto3" json:"enable_checkpoint_commits,omitempty"`
 }
 
 func (x *DeveloperAgentContext) Reset() {
@@ -5659,6 +5662,13 @@ func (x *DeveloperAgentContext) GetCurrentFilePath() string {
 		return x.CurrentFilePath
 	}
 	return ""
+}
+
+func (x *DeveloperAgentContext) GetEnableCheckpointCommits() bool {
+	if x != nil {
+		return x.EnableCheckpointCommits
+	}
+	return false
 }
 
 // Context for prompts handled by the feedback_agent.
@@ -5738,6 +5748,55 @@ func (x *FeedbackAgentContext) GetComment() string {
 	return ""
 }
 
+// Context for restoring changes made after a checkpoint.
+type RestoreChangesContext struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Write file call id which has the checkpoint commit hash.
+	RevertTillWriteCallId string `protobuf:"bytes,1,opt,name=revert_till_write_call_id,json=revertTillWriteCallId,proto3" json:"revert_till_write_call_id,omitempty"`
+}
+
+func (x *RestoreChangesContext) Reset() {
+	*x = RestoreChangesContext{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[84]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RestoreChangesContext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreChangesContext) ProtoMessage() {}
+
+func (x *RestoreChangesContext) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[84]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreChangesContext.ProtoReflect.Descriptor instead.
+func (*RestoreChangesContext) Descriptor() ([]byte, []int) {
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{84}
+}
+
+func (x *RestoreChangesContext) GetRevertTillWriteCallId() string {
+	if x != nil {
+		return x.RevertTillWriteCallId
+	}
+	return ""
+}
+
 // Request message for RuntimeService.ListConversations
 type ListConversationsRequest struct {
 	state         protoimpl.MessageState
@@ -5752,7 +5811,7 @@ type ListConversationsRequest struct {
 func (x *ListConversationsRequest) Reset() {
 	*x = ListConversationsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[84]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[85]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5765,7 +5824,7 @@ func (x *ListConversationsRequest) String() string {
 func (*ListConversationsRequest) ProtoMessage() {}
 
 func (x *ListConversationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[84]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[85]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5778,7 +5837,7 @@ func (x *ListConversationsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConversationsRequest.ProtoReflect.Descriptor instead.
 func (*ListConversationsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{84}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *ListConversationsRequest) GetInstanceId() string {
@@ -5807,7 +5866,7 @@ type ListConversationsResponse struct {
 func (x *ListConversationsResponse) Reset() {
 	*x = ListConversationsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[85]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[86]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5820,7 +5879,7 @@ func (x *ListConversationsResponse) String() string {
 func (*ListConversationsResponse) ProtoMessage() {}
 
 func (x *ListConversationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[85]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[86]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5833,7 +5892,7 @@ func (x *ListConversationsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConversationsResponse.ProtoReflect.Descriptor instead.
 func (*ListConversationsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{85}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *ListConversationsResponse) GetConversations() []*Conversation {
@@ -5856,7 +5915,7 @@ type GetConversationRequest struct {
 func (x *GetConversationRequest) Reset() {
 	*x = GetConversationRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[86]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[87]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5869,7 +5928,7 @@ func (x *GetConversationRequest) String() string {
 func (*GetConversationRequest) ProtoMessage() {}
 
 func (x *GetConversationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[86]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[87]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5882,7 +5941,7 @@ func (x *GetConversationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConversationRequest.ProtoReflect.Descriptor instead.
 func (*GetConversationRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{86}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *GetConversationRequest) GetInstanceId() string {
@@ -5913,7 +5972,7 @@ type GetConversationResponse struct {
 func (x *GetConversationResponse) Reset() {
 	*x = GetConversationResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[87]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[88]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5926,7 +5985,7 @@ func (x *GetConversationResponse) String() string {
 func (*GetConversationResponse) ProtoMessage() {}
 
 func (x *GetConversationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[87]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[88]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5939,7 +5998,7 @@ func (x *GetConversationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConversationResponse.ProtoReflect.Descriptor instead.
 func (*GetConversationResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{87}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *GetConversationResponse) GetConversation() *Conversation {
@@ -5980,7 +6039,7 @@ type ShareConversationRequest struct {
 func (x *ShareConversationRequest) Reset() {
 	*x = ShareConversationRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[88]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[89]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5993,7 +6052,7 @@ func (x *ShareConversationRequest) String() string {
 func (*ShareConversationRequest) ProtoMessage() {}
 
 func (x *ShareConversationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[88]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[89]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6006,7 +6065,7 @@ func (x *ShareConversationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShareConversationRequest.ProtoReflect.Descriptor instead.
 func (*ShareConversationRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{88}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *ShareConversationRequest) GetInstanceId() string {
@@ -6040,7 +6099,7 @@ type ShareConversationResponse struct {
 func (x *ShareConversationResponse) Reset() {
 	*x = ShareConversationResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[89]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[90]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6053,7 +6112,7 @@ func (x *ShareConversationResponse) String() string {
 func (*ShareConversationResponse) ProtoMessage() {}
 
 func (x *ShareConversationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[89]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[90]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6066,7 +6125,7 @@ func (x *ShareConversationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShareConversationResponse.ProtoReflect.Descriptor instead.
 func (*ShareConversationResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{89}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{90}
 }
 
 // Request message for RuntimeService.ForkConversation
@@ -6082,7 +6141,7 @@ type ForkConversationRequest struct {
 func (x *ForkConversationRequest) Reset() {
 	*x = ForkConversationRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[90]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[91]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6095,7 +6154,7 @@ func (x *ForkConversationRequest) String() string {
 func (*ForkConversationRequest) ProtoMessage() {}
 
 func (x *ForkConversationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[90]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[91]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6108,7 +6167,7 @@ func (x *ForkConversationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ForkConversationRequest.ProtoReflect.Descriptor instead.
 func (*ForkConversationRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{90}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *ForkConversationRequest) GetInstanceId() string {
@@ -6137,7 +6196,7 @@ type ForkConversationResponse struct {
 func (x *ForkConversationResponse) Reset() {
 	*x = ForkConversationResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[91]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[92]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6150,7 +6209,7 @@ func (x *ForkConversationResponse) String() string {
 func (*ForkConversationResponse) ProtoMessage() {}
 
 func (x *ForkConversationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[91]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[92]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6163,7 +6222,7 @@ func (x *ForkConversationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ForkConversationResponse.ProtoReflect.Descriptor instead.
 func (*ForkConversationResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{91}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *ForkConversationResponse) GetConversationId() string {
@@ -6185,7 +6244,7 @@ type ListToolsRequest struct {
 func (x *ListToolsRequest) Reset() {
 	*x = ListToolsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[92]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[93]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6198,7 +6257,7 @@ func (x *ListToolsRequest) String() string {
 func (*ListToolsRequest) ProtoMessage() {}
 
 func (x *ListToolsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[92]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[93]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6211,7 +6270,7 @@ func (x *ListToolsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListToolsRequest.ProtoReflect.Descriptor instead.
 func (*ListToolsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{92}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *ListToolsRequest) GetInstanceId() string {
@@ -6233,7 +6292,7 @@ type ListToolsResponse struct {
 func (x *ListToolsResponse) Reset() {
 	*x = ListToolsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[93]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[94]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6246,7 +6305,7 @@ func (x *ListToolsResponse) String() string {
 func (*ListToolsResponse) ProtoMessage() {}
 
 func (x *ListToolsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[93]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[94]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6259,7 +6318,7 @@ func (x *ListToolsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListToolsResponse.ProtoReflect.Descriptor instead.
 func (*ListToolsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{93}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *ListToolsResponse) GetTools() []*v1.Tool {
@@ -6293,12 +6352,15 @@ type CompleteRequest struct {
 	// Optional context for prompts handled by the feedback_agent.
 	// The field is ignored if another agent is selected.
 	FeedbackAgentContext *FeedbackAgentContext `protobuf:"bytes,13,opt,name=feedback_agent_context,json=feedbackAgentContext,proto3" json:"feedback_agent_context,omitempty"`
+	// Optional context for restoring changes made after a checkpoint.
+	// The field is ignored if another agent is selected.
+	RestoreChangesContext *RestoreChangesContext `protobuf:"bytes,14,opt,name=restore_changes_context,json=restoreChangesContext,proto3" json:"restore_changes_context,omitempty"`
 }
 
 func (x *CompleteRequest) Reset() {
 	*x = CompleteRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[94]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[95]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6311,7 +6373,7 @@ func (x *CompleteRequest) String() string {
 func (*CompleteRequest) ProtoMessage() {}
 
 func (x *CompleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[94]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[95]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6324,7 +6386,7 @@ func (x *CompleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteRequest.ProtoReflect.Descriptor instead.
 func (*CompleteRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{94}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *CompleteRequest) GetInstanceId() string {
@@ -6376,6 +6438,13 @@ func (x *CompleteRequest) GetFeedbackAgentContext() *FeedbackAgentContext {
 	return nil
 }
 
+func (x *CompleteRequest) GetRestoreChangesContext() *RestoreChangesContext {
+	if x != nil {
+		return x.RestoreChangesContext
+	}
+	return nil
+}
+
 // Response message for RuntimeService.Complete
 type CompleteResponse struct {
 	state         protoimpl.MessageState
@@ -6389,7 +6458,7 @@ type CompleteResponse struct {
 func (x *CompleteResponse) Reset() {
 	*x = CompleteResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[95]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[96]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6402,7 +6471,7 @@ func (x *CompleteResponse) String() string {
 func (*CompleteResponse) ProtoMessage() {}
 
 func (x *CompleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[95]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[96]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6415,7 +6484,7 @@ func (x *CompleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteResponse.ProtoReflect.Descriptor instead.
 func (*CompleteResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{95}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *CompleteResponse) GetConversationId() string {
@@ -6456,12 +6525,15 @@ type CompleteStreamingRequest struct {
 	// Optional context for prompts handled by the feedback_agent.
 	// The field is ignored if another agent is selected.
 	FeedbackAgentContext *FeedbackAgentContext `protobuf:"bytes,13,opt,name=feedback_agent_context,json=feedbackAgentContext,proto3" json:"feedback_agent_context,omitempty"`
+	// Optional context for restoring changes made after a checkpoint.
+	// The field is ignored if another agent is selected.
+	RestoreChangesContext *RestoreChangesContext `protobuf:"bytes,14,opt,name=restore_changes_context,json=restoreChangesContext,proto3" json:"restore_changes_context,omitempty"`
 }
 
 func (x *CompleteStreamingRequest) Reset() {
 	*x = CompleteStreamingRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[96]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[97]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6474,7 +6546,7 @@ func (x *CompleteStreamingRequest) String() string {
 func (*CompleteStreamingRequest) ProtoMessage() {}
 
 func (x *CompleteStreamingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[96]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[97]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6487,7 +6559,7 @@ func (x *CompleteStreamingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteStreamingRequest.ProtoReflect.Descriptor instead.
 func (*CompleteStreamingRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{96}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *CompleteStreamingRequest) GetInstanceId() string {
@@ -6539,6 +6611,13 @@ func (x *CompleteStreamingRequest) GetFeedbackAgentContext() *FeedbackAgentConte
 	return nil
 }
 
+func (x *CompleteStreamingRequest) GetRestoreChangesContext() *RestoreChangesContext {
+	if x != nil {
+		return x.RestoreChangesContext
+	}
+	return nil
+}
+
 // Response message for RuntimeService.CompleteStreaming
 type CompleteStreamingResponse struct {
 	state         protoimpl.MessageState
@@ -6552,7 +6631,7 @@ type CompleteStreamingResponse struct {
 func (x *CompleteStreamingResponse) Reset() {
 	*x = CompleteStreamingResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[97]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[98]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6565,7 +6644,7 @@ func (x *CompleteStreamingResponse) String() string {
 func (*CompleteStreamingResponse) ProtoMessage() {}
 
 func (x *CompleteStreamingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[97]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[98]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6578,7 +6657,7 @@ func (x *CompleteStreamingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteStreamingResponse.ProtoReflect.Descriptor instead.
 func (*CompleteStreamingResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{97}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *CompleteStreamingResponse) GetConversationId() string {
@@ -6613,7 +6692,7 @@ type IssueDevJWTRequest struct {
 func (x *IssueDevJWTRequest) Reset() {
 	*x = IssueDevJWTRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[98]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[99]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6626,7 +6705,7 @@ func (x *IssueDevJWTRequest) String() string {
 func (*IssueDevJWTRequest) ProtoMessage() {}
 
 func (x *IssueDevJWTRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[98]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[99]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6639,7 +6718,7 @@ func (x *IssueDevJWTRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueDevJWTRequest.ProtoReflect.Descriptor instead.
 func (*IssueDevJWTRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{98}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *IssueDevJWTRequest) GetName() string {
@@ -6689,7 +6768,7 @@ type IssueDevJWTResponse struct {
 func (x *IssueDevJWTResponse) Reset() {
 	*x = IssueDevJWTResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[99]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[100]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6702,7 +6781,7 @@ func (x *IssueDevJWTResponse) String() string {
 func (*IssueDevJWTResponse) ProtoMessage() {}
 
 func (x *IssueDevJWTResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[99]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[100]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6715,7 +6794,7 @@ func (x *IssueDevJWTResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IssueDevJWTResponse.ProtoReflect.Descriptor instead.
 func (*IssueDevJWTResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{99}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *IssueDevJWTResponse) GetJwt() string {
@@ -6737,7 +6816,7 @@ type AnalyzeVariablesRequest struct {
 func (x *AnalyzeVariablesRequest) Reset() {
 	*x = AnalyzeVariablesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[100]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[101]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6750,7 +6829,7 @@ func (x *AnalyzeVariablesRequest) String() string {
 func (*AnalyzeVariablesRequest) ProtoMessage() {}
 
 func (x *AnalyzeVariablesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[100]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[101]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6763,7 +6842,7 @@ func (x *AnalyzeVariablesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnalyzeVariablesRequest.ProtoReflect.Descriptor instead.
 func (*AnalyzeVariablesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{100}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *AnalyzeVariablesRequest) GetInstanceId() string {
@@ -6785,7 +6864,7 @@ type AnalyzeVariablesResponse struct {
 func (x *AnalyzeVariablesResponse) Reset() {
 	*x = AnalyzeVariablesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[101]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[102]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6798,7 +6877,7 @@ func (x *AnalyzeVariablesResponse) String() string {
 func (*AnalyzeVariablesResponse) ProtoMessage() {}
 
 func (x *AnalyzeVariablesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[101]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[102]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6811,7 +6890,7 @@ func (x *AnalyzeVariablesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnalyzeVariablesResponse.ProtoReflect.Descriptor instead.
 func (*AnalyzeVariablesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{101}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *AnalyzeVariablesResponse) GetVariables() []*AnalyzedVariable {
@@ -6837,7 +6916,7 @@ type AnalyzedVariable struct {
 func (x *AnalyzedVariable) Reset() {
 	*x = AnalyzedVariable{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[102]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[103]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6850,7 +6929,7 @@ func (x *AnalyzedVariable) String() string {
 func (*AnalyzedVariable) ProtoMessage() {}
 
 func (x *AnalyzedVariable) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[102]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[103]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6863,7 +6942,7 @@ func (x *AnalyzedVariable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnalyzedVariable.ProtoReflect.Descriptor instead.
 func (*AnalyzedVariable) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{102}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *AnalyzedVariable) GetName() string {
@@ -6900,7 +6979,7 @@ type ListGitCommitsRequest struct {
 func (x *ListGitCommitsRequest) Reset() {
 	*x = ListGitCommitsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[103]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[104]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6913,7 +6992,7 @@ func (x *ListGitCommitsRequest) String() string {
 func (*ListGitCommitsRequest) ProtoMessage() {}
 
 func (x *ListGitCommitsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[103]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[104]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6926,7 +7005,7 @@ func (x *ListGitCommitsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGitCommitsRequest.ProtoReflect.Descriptor instead.
 func (*ListGitCommitsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{103}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *ListGitCommitsRequest) GetInstanceId() string {
@@ -6962,7 +7041,7 @@ type ListGitCommitsResponse struct {
 func (x *ListGitCommitsResponse) Reset() {
 	*x = ListGitCommitsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[104]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[105]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6975,7 +7054,7 @@ func (x *ListGitCommitsResponse) String() string {
 func (*ListGitCommitsResponse) ProtoMessage() {}
 
 func (x *ListGitCommitsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[104]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[105]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6988,7 +7067,7 @@ func (x *ListGitCommitsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGitCommitsResponse.ProtoReflect.Descriptor instead.
 func (*ListGitCommitsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{104}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *ListGitCommitsResponse) GetCommits() []*GitCommit {
@@ -7020,7 +7099,7 @@ type GitCommit struct {
 func (x *GitCommit) Reset() {
 	*x = GitCommit{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[105]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[106]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7033,7 +7112,7 @@ func (x *GitCommit) String() string {
 func (*GitCommit) ProtoMessage() {}
 
 func (x *GitCommit) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[105]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[106]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7046,7 +7125,7 @@ func (x *GitCommit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitCommit.ProtoReflect.Descriptor instead.
 func (*GitCommit) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{105}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *GitCommit) GetCommitSha() string {
@@ -7095,7 +7174,7 @@ type GitStatusRequest struct {
 func (x *GitStatusRequest) Reset() {
 	*x = GitStatusRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[106]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[107]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7108,7 +7187,7 @@ func (x *GitStatusRequest) String() string {
 func (*GitStatusRequest) ProtoMessage() {}
 
 func (x *GitStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[106]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[107]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7121,7 +7200,7 @@ func (x *GitStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitStatusRequest.ProtoReflect.Descriptor instead.
 func (*GitStatusRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{106}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *GitStatusRequest) GetInstanceId() string {
@@ -7153,7 +7232,7 @@ type GitStatusResponse struct {
 func (x *GitStatusResponse) Reset() {
 	*x = GitStatusResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[107]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[108]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7166,7 +7245,7 @@ func (x *GitStatusResponse) String() string {
 func (*GitStatusResponse) ProtoMessage() {}
 
 func (x *GitStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[107]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[108]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7179,7 +7258,7 @@ func (x *GitStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitStatusResponse.ProtoReflect.Descriptor instead.
 func (*GitStatusResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{107}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *GitStatusResponse) GetBranch() string {
@@ -7235,7 +7314,7 @@ type ListGitBranchesRequest struct {
 func (x *ListGitBranchesRequest) Reset() {
 	*x = ListGitBranchesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[108]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[109]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7248,7 +7327,7 @@ func (x *ListGitBranchesRequest) String() string {
 func (*ListGitBranchesRequest) ProtoMessage() {}
 
 func (x *ListGitBranchesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[108]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[109]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7261,7 +7340,7 @@ func (x *ListGitBranchesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGitBranchesRequest.ProtoReflect.Descriptor instead.
 func (*ListGitBranchesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{108}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *ListGitBranchesRequest) GetInstanceId() string {
@@ -7283,7 +7362,7 @@ type ListGitBranchesResponse struct {
 func (x *ListGitBranchesResponse) Reset() {
 	*x = ListGitBranchesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[109]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[110]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7296,7 +7375,7 @@ func (x *ListGitBranchesResponse) String() string {
 func (*ListGitBranchesResponse) ProtoMessage() {}
 
 func (x *ListGitBranchesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[109]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[110]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7309,7 +7388,7 @@ func (x *ListGitBranchesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGitBranchesResponse.ProtoReflect.Descriptor instead.
 func (*ListGitBranchesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{109}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *ListGitBranchesResponse) GetCurrentBranch() string {
@@ -7339,7 +7418,7 @@ type GitBranch struct {
 func (x *GitBranch) Reset() {
 	*x = GitBranch{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[110]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[111]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7352,7 +7431,7 @@ func (x *GitBranch) String() string {
 func (*GitBranch) ProtoMessage() {}
 
 func (x *GitBranch) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[110]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[111]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7365,7 +7444,7 @@ func (x *GitBranch) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitBranch.ProtoReflect.Descriptor instead.
 func (*GitBranch) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{110}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{111}
 }
 
 func (x *GitBranch) GetName() string {
@@ -7401,7 +7480,7 @@ type GitCommitRequest struct {
 func (x *GitCommitRequest) Reset() {
 	*x = GitCommitRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[111]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[112]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7414,7 +7493,7 @@ func (x *GitCommitRequest) String() string {
 func (*GitCommitRequest) ProtoMessage() {}
 
 func (x *GitCommitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[111]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[112]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7427,7 +7506,7 @@ func (x *GitCommitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitCommitRequest.ProtoReflect.Descriptor instead.
 func (*GitCommitRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{111}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *GitCommitRequest) GetInstanceId() string {
@@ -7455,7 +7534,7 @@ type GitCommitResponse struct {
 func (x *GitCommitResponse) Reset() {
 	*x = GitCommitResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[112]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[113]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7468,7 +7547,7 @@ func (x *GitCommitResponse) String() string {
 func (*GitCommitResponse) ProtoMessage() {}
 
 func (x *GitCommitResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[112]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[113]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7481,7 +7560,7 @@ func (x *GitCommitResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitCommitResponse.ProtoReflect.Descriptor instead.
 func (*GitCommitResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{112}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{113}
 }
 
 func (x *GitCommitResponse) GetCommitSha() string {
@@ -7505,7 +7584,7 @@ type RestoreGitCommitRequest struct {
 func (x *RestoreGitCommitRequest) Reset() {
 	*x = RestoreGitCommitRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[113]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[114]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7518,7 +7597,7 @@ func (x *RestoreGitCommitRequest) String() string {
 func (*RestoreGitCommitRequest) ProtoMessage() {}
 
 func (x *RestoreGitCommitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[113]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[114]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7531,7 +7610,7 @@ func (x *RestoreGitCommitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreGitCommitRequest.ProtoReflect.Descriptor instead.
 func (*RestoreGitCommitRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{113}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{114}
 }
 
 func (x *RestoreGitCommitRequest) GetInstanceId() string {
@@ -7567,7 +7646,7 @@ type RestoreGitCommitResponse struct {
 func (x *RestoreGitCommitResponse) Reset() {
 	*x = RestoreGitCommitResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[114]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[115]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7580,7 +7659,7 @@ func (x *RestoreGitCommitResponse) String() string {
 func (*RestoreGitCommitResponse) ProtoMessage() {}
 
 func (x *RestoreGitCommitResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[114]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[115]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7593,7 +7672,7 @@ func (x *RestoreGitCommitResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RestoreGitCommitResponse.ProtoReflect.Descriptor instead.
 func (*RestoreGitCommitResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{114}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{115}
 }
 
 func (x *RestoreGitCommitResponse) GetNewCommitSha() string {
@@ -7617,7 +7696,7 @@ type GitMergeToBranchRequest struct {
 func (x *GitMergeToBranchRequest) Reset() {
 	*x = GitMergeToBranchRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[115]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[116]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7630,7 +7709,7 @@ func (x *GitMergeToBranchRequest) String() string {
 func (*GitMergeToBranchRequest) ProtoMessage() {}
 
 func (x *GitMergeToBranchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[115]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[116]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7643,7 +7722,7 @@ func (x *GitMergeToBranchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitMergeToBranchRequest.ProtoReflect.Descriptor instead.
 func (*GitMergeToBranchRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{115}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{116}
 }
 
 func (x *GitMergeToBranchRequest) GetInstanceId() string {
@@ -7679,7 +7758,7 @@ type GitMergeToBranchResponse struct {
 func (x *GitMergeToBranchResponse) Reset() {
 	*x = GitMergeToBranchResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[116]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[117]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7692,7 +7771,7 @@ func (x *GitMergeToBranchResponse) String() string {
 func (*GitMergeToBranchResponse) ProtoMessage() {}
 
 func (x *GitMergeToBranchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[116]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[117]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7705,7 +7784,7 @@ func (x *GitMergeToBranchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitMergeToBranchResponse.ProtoReflect.Descriptor instead.
 func (*GitMergeToBranchResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{116}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{117}
 }
 
 func (x *GitMergeToBranchResponse) GetOutput() string {
@@ -7729,7 +7808,7 @@ type GitSwitchBranchRequest struct {
 func (x *GitSwitchBranchRequest) Reset() {
 	*x = GitSwitchBranchRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[117]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[118]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7742,7 +7821,7 @@ func (x *GitSwitchBranchRequest) String() string {
 func (*GitSwitchBranchRequest) ProtoMessage() {}
 
 func (x *GitSwitchBranchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[117]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[118]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7755,7 +7834,7 @@ func (x *GitSwitchBranchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitSwitchBranchRequest.ProtoReflect.Descriptor instead.
 func (*GitSwitchBranchRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{117}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{118}
 }
 
 func (x *GitSwitchBranchRequest) GetInstanceId() string {
@@ -7795,7 +7874,7 @@ type GitSwitchBranchResponse struct {
 func (x *GitSwitchBranchResponse) Reset() {
 	*x = GitSwitchBranchResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[118]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[119]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7808,7 +7887,7 @@ func (x *GitSwitchBranchResponse) String() string {
 func (*GitSwitchBranchResponse) ProtoMessage() {}
 
 func (x *GitSwitchBranchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[118]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[119]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7821,7 +7900,7 @@ func (x *GitSwitchBranchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitSwitchBranchResponse.ProtoReflect.Descriptor instead.
 func (*GitSwitchBranchResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{118}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{119}
 }
 
 type GitPullRequest struct {
@@ -7836,7 +7915,7 @@ type GitPullRequest struct {
 func (x *GitPullRequest) Reset() {
 	*x = GitPullRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[119]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[120]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7849,7 +7928,7 @@ func (x *GitPullRequest) String() string {
 func (*GitPullRequest) ProtoMessage() {}
 
 func (x *GitPullRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[119]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[120]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7862,7 +7941,7 @@ func (x *GitPullRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitPullRequest.ProtoReflect.Descriptor instead.
 func (*GitPullRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{119}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *GitPullRequest) GetInstanceId() string {
@@ -7891,7 +7970,7 @@ type GitPullResponse struct {
 func (x *GitPullResponse) Reset() {
 	*x = GitPullResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[120]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[121]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7904,7 +7983,7 @@ func (x *GitPullResponse) String() string {
 func (*GitPullResponse) ProtoMessage() {}
 
 func (x *GitPullResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[120]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[121]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7917,7 +7996,7 @@ func (x *GitPullResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitPullResponse.ProtoReflect.Descriptor instead.
 func (*GitPullResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{120}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *GitPullResponse) GetOutput() string {
@@ -7940,7 +8019,7 @@ type GitPushRequest struct {
 func (x *GitPushRequest) Reset() {
 	*x = GitPushRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[121]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[122]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7953,7 +8032,7 @@ func (x *GitPushRequest) String() string {
 func (*GitPushRequest) ProtoMessage() {}
 
 func (x *GitPushRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[121]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[122]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7966,7 +8045,7 @@ func (x *GitPushRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitPushRequest.ProtoReflect.Descriptor instead.
 func (*GitPushRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{121}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *GitPushRequest) GetInstanceId() string {
@@ -7999,7 +8078,7 @@ type GitPushResponse struct {
 func (x *GitPushResponse) Reset() {
 	*x = GitPushResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[122]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[123]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8012,7 +8091,7 @@ func (x *GitPushResponse) String() string {
 func (*GitPushResponse) ProtoMessage() {}
 
 func (x *GitPushResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[122]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[123]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8025,7 +8104,7 @@ func (x *GitPushResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitPushResponse.ProtoReflect.Descriptor instead.
 func (*GitPushResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{122}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{123}
 }
 
 // Property represents the spec of one of the driver's config properties
@@ -8061,7 +8140,7 @@ type ConnectorDriver_Property struct {
 func (x *ConnectorDriver_Property) Reset() {
 	*x = ConnectorDriver_Property{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[131]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[132]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8074,7 +8153,7 @@ func (x *ConnectorDriver_Property) String() string {
 func (*ConnectorDriver_Property) ProtoMessage() {}
 
 func (x *ConnectorDriver_Property) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[131]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[132]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9072,23 +9151,32 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x03, 0x6b, 0x65, 0x79, 0x12, 0x31, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
 	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
-	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x66, 0x0a, 0x15, 0x44,
-	0x65, 0x76, 0x65, 0x6c, 0x6f, 0x70, 0x65, 0x72, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e,
-	0x74, 0x65, 0x78, 0x74, 0x12, 0x21, 0x0a, 0x0c, 0x69, 0x6e, 0x69, 0x74, 0x5f, 0x70, 0x72, 0x6f,
-	0x6a, 0x65, 0x63, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0b, 0x69, 0x6e, 0x69, 0x74,
-	0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x2a, 0x0a, 0x11, 0x63, 0x75, 0x72, 0x72, 0x65,
-	0x6e, 0x74, 0x5f, 0x66, 0x69, 0x6c, 0x65, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x0f, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x46, 0x69, 0x6c, 0x65, 0x50,
-	0x61, 0x74, 0x68, 0x22, 0x9a, 0x01, 0x0a, 0x14, 0x46, 0x65, 0x65, 0x64, 0x62, 0x61, 0x63, 0x6b,
-	0x41, 0x67, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x2a, 0x0a, 0x11,
-	0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x5f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x5f, 0x69,
-	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x4d,
-	0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x49, 0x64, 0x12, 0x1c, 0x0a, 0x09, 0x73, 0x65, 0x6e, 0x74,
-	0x69, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x73, 0x65, 0x6e,
-	0x74, 0x69, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x1e, 0x0a, 0x0a, 0x63, 0x61, 0x74, 0x65, 0x67, 0x6f,
-	0x72, 0x69, 0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0a, 0x63, 0x61, 0x74, 0x65,
-	0x67, 0x6f, 0x72, 0x69, 0x65, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e,
-	0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74,
+	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0xa2, 0x01, 0x0a, 0x15,
+	0x44, 0x65, 0x76, 0x65, 0x6c, 0x6f, 0x70, 0x65, 0x72, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x43, 0x6f,
+	0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x21, 0x0a, 0x0c, 0x69, 0x6e, 0x69, 0x74, 0x5f, 0x70, 0x72,
+	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0b, 0x69, 0x6e, 0x69,
+	0x74, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x12, 0x2a, 0x0a, 0x11, 0x63, 0x75, 0x72, 0x72,
+	0x65, 0x6e, 0x74, 0x5f, 0x66, 0x69, 0x6c, 0x65, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0f, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x46, 0x69, 0x6c, 0x65,
+	0x50, 0x61, 0x74, 0x68, 0x12, 0x3a, 0x0a, 0x19, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x63,
+	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x5f, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74,
+	0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x17, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x43,
+	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x73,
+	0x22, 0x9a, 0x01, 0x0a, 0x14, 0x46, 0x65, 0x65, 0x64, 0x62, 0x61, 0x63, 0x6b, 0x41, 0x67, 0x65,
+	0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x2a, 0x0a, 0x11, 0x74, 0x61, 0x72,
+	0x67, 0x65, 0x74, 0x5f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x74, 0x61, 0x72, 0x67, 0x65, 0x74, 0x4d, 0x65, 0x73, 0x73,
+	0x61, 0x67, 0x65, 0x49, 0x64, 0x12, 0x1c, 0x0a, 0x09, 0x73, 0x65, 0x6e, 0x74, 0x69, 0x6d, 0x65,
+	0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x73, 0x65, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x6e, 0x74, 0x12, 0x1e, 0x0a, 0x0a, 0x63, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72, 0x69, 0x65,
+	0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0a, 0x63, 0x61, 0x74, 0x65, 0x67, 0x6f, 0x72,
+	0x69, 0x65, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x22, 0x51, 0x0a,
+	0x15, 0x52, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x43,
+	0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x38, 0x0a, 0x19, 0x72, 0x65, 0x76, 0x65, 0x72, 0x74,
+	0x5f, 0x74, 0x69, 0x6c, 0x6c, 0x5f, 0x77, 0x72, 0x69, 0x74, 0x65, 0x5f, 0x63, 0x61, 0x6c, 0x6c,
+	0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x15, 0x72, 0x65, 0x76, 0x65, 0x72,
+	0x74, 0x54, 0x69, 0x6c, 0x6c, 0x57, 0x72, 0x69, 0x74, 0x65, 0x43, 0x61, 0x6c, 0x6c, 0x49, 0x64,
 	0x22, 0x83, 0x01, 0x0a, 0x18, 0x4c, 0x69, 0x73, 0x74, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x73,
 	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x39, 0x0a,
 	0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
@@ -9155,7 +9243,7 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x73, 0x74, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
 	0x26, 0x0a, 0x05, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x10,
 	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c,
-	0x52, 0x05, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x22, 0xf4, 0x03, 0x0a, 0x0f, 0x43, 0x6f, 0x6d, 0x70,
+	0x52, 0x05, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x22, 0xd4, 0x04, 0x0a, 0x0f, 0x43, 0x6f, 0x6d, 0x70,
 	0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x39, 0x0a, 0x0b, 0x69,
 	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
 	0x42, 0x18, 0xfa, 0x42, 0x15, 0x72, 0x13, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c, 0x2d, 0x61, 0x2d,
@@ -9186,7 +9274,13 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x0b, 0x32, 0x25, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65,
 	0x2e, 0x76, 0x31, 0x2e, 0x46, 0x65, 0x65, 0x64, 0x62, 0x61, 0x63, 0x6b, 0x41, 0x67, 0x65, 0x6e,
 	0x74, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x14, 0x66, 0x65, 0x65, 0x64, 0x62, 0x61,
-	0x63, 0x6b, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x22, 0x71,
+	0x63, 0x6b, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x5e,
+	0x0a, 0x17, 0x72, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65,
+	0x73, 0x5f, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x18, 0x0e, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x26, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x52, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73,
+	0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x15, 0x72, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65,
+	0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x22, 0x71,
 	0x0a, 0x10, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
 	0x73, 0x65, 0x12, 0x27, 0x0a, 0x0f, 0x63, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x73, 0x61, 0x74, 0x69,
 	0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x63, 0x6f, 0x6e,
@@ -9194,7 +9288,7 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x18, 0x2e,
 	0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e,
 	0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52, 0x08, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65,
-	0x73, 0x22, 0xfd, 0x03, 0x0a, 0x18, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x74,
+	0x73, 0x22, 0xdd, 0x04, 0x0a, 0x18, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x74,
 	0x72, 0x65, 0x61, 0x6d, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x39,
 	0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x09, 0x42, 0x18, 0xfa, 0x42, 0x15, 0x72, 0x13, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c,
@@ -9226,6 +9320,12 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x65, 0x65, 0x64, 0x62, 0x61, 0x63, 0x6b, 0x41,
 	0x67, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x14, 0x66, 0x65, 0x65,
 	0x64, 0x62, 0x61, 0x63, 0x6b, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78,
+	0x74, 0x12, 0x5e, 0x0a, 0x17, 0x72, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x63, 0x68, 0x61,
+	0x6e, 0x67, 0x65, 0x73, 0x5f, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x18, 0x0e, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x26, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x43, 0x68, 0x61, 0x6e,
+	0x67, 0x65, 0x73, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x15, 0x72, 0x65, 0x73, 0x74,
+	0x6f, 0x72, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78,
 	0x74, 0x22, 0x78, 0x0a, 0x19, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x74, 0x72,
 	0x65, 0x61, 0x6d, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x27,
 	0x0a, 0x0f, 0x63, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x73, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x69,
@@ -9937,7 +10037,7 @@ func file_rill_runtime_v1_api_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_runtime_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_rill_runtime_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 134)
+var file_rill_runtime_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 135)
 var file_rill_runtime_v1_api_proto_goTypes = []any{
 	(FileEvent)(0),                          // 0: rill.runtime.v1.FileEvent
 	(LogLevel)(0),                           // 1: rill.runtime.v1.LogLevel
@@ -10027,275 +10127,278 @@ var file_rill_runtime_v1_api_proto_goTypes = []any{
 	(*AnalystAgentContext)(nil),             // 85: rill.runtime.v1.AnalystAgentContext
 	(*DeveloperAgentContext)(nil),           // 86: rill.runtime.v1.DeveloperAgentContext
 	(*FeedbackAgentContext)(nil),            // 87: rill.runtime.v1.FeedbackAgentContext
-	(*ListConversationsRequest)(nil),        // 88: rill.runtime.v1.ListConversationsRequest
-	(*ListConversationsResponse)(nil),       // 89: rill.runtime.v1.ListConversationsResponse
-	(*GetConversationRequest)(nil),          // 90: rill.runtime.v1.GetConversationRequest
-	(*GetConversationResponse)(nil),         // 91: rill.runtime.v1.GetConversationResponse
-	(*ShareConversationRequest)(nil),        // 92: rill.runtime.v1.ShareConversationRequest
-	(*ShareConversationResponse)(nil),       // 93: rill.runtime.v1.ShareConversationResponse
-	(*ForkConversationRequest)(nil),         // 94: rill.runtime.v1.ForkConversationRequest
-	(*ForkConversationResponse)(nil),        // 95: rill.runtime.v1.ForkConversationResponse
-	(*ListToolsRequest)(nil),                // 96: rill.runtime.v1.ListToolsRequest
-	(*ListToolsResponse)(nil),               // 97: rill.runtime.v1.ListToolsResponse
-	(*CompleteRequest)(nil),                 // 98: rill.runtime.v1.CompleteRequest
-	(*CompleteResponse)(nil),                // 99: rill.runtime.v1.CompleteResponse
-	(*CompleteStreamingRequest)(nil),        // 100: rill.runtime.v1.CompleteStreamingRequest
-	(*CompleteStreamingResponse)(nil),       // 101: rill.runtime.v1.CompleteStreamingResponse
-	(*IssueDevJWTRequest)(nil),              // 102: rill.runtime.v1.IssueDevJWTRequest
-	(*IssueDevJWTResponse)(nil),             // 103: rill.runtime.v1.IssueDevJWTResponse
-	(*AnalyzeVariablesRequest)(nil),         // 104: rill.runtime.v1.AnalyzeVariablesRequest
-	(*AnalyzeVariablesResponse)(nil),        // 105: rill.runtime.v1.AnalyzeVariablesResponse
-	(*AnalyzedVariable)(nil),                // 106: rill.runtime.v1.AnalyzedVariable
-	(*ListGitCommitsRequest)(nil),           // 107: rill.runtime.v1.ListGitCommitsRequest
-	(*ListGitCommitsResponse)(nil),          // 108: rill.runtime.v1.ListGitCommitsResponse
-	(*GitCommit)(nil),                       // 109: rill.runtime.v1.GitCommit
-	(*GitStatusRequest)(nil),                // 110: rill.runtime.v1.GitStatusRequest
-	(*GitStatusResponse)(nil),               // 111: rill.runtime.v1.GitStatusResponse
-	(*ListGitBranchesRequest)(nil),          // 112: rill.runtime.v1.ListGitBranchesRequest
-	(*ListGitBranchesResponse)(nil),         // 113: rill.runtime.v1.ListGitBranchesResponse
-	(*GitBranch)(nil),                       // 114: rill.runtime.v1.GitBranch
-	(*GitCommitRequest)(nil),                // 115: rill.runtime.v1.GitCommitRequest
-	(*GitCommitResponse)(nil),               // 116: rill.runtime.v1.GitCommitResponse
-	(*RestoreGitCommitRequest)(nil),         // 117: rill.runtime.v1.RestoreGitCommitRequest
-	(*RestoreGitCommitResponse)(nil),        // 118: rill.runtime.v1.RestoreGitCommitResponse
-	(*GitMergeToBranchRequest)(nil),         // 119: rill.runtime.v1.GitMergeToBranchRequest
-	(*GitMergeToBranchResponse)(nil),        // 120: rill.runtime.v1.GitMergeToBranchResponse
-	(*GitSwitchBranchRequest)(nil),          // 121: rill.runtime.v1.GitSwitchBranchRequest
-	(*GitSwitchBranchResponse)(nil),         // 122: rill.runtime.v1.GitSwitchBranchResponse
-	(*GitPullRequest)(nil),                  // 123: rill.runtime.v1.GitPullRequest
-	(*GitPullResponse)(nil),                 // 124: rill.runtime.v1.GitPullResponse
-	(*GitPushRequest)(nil),                  // 125: rill.runtime.v1.GitPushRequest
-	(*GitPushResponse)(nil),                 // 126: rill.runtime.v1.GitPushResponse
-	nil,                                     // 127: rill.runtime.v1.HealthResponse.InstancesHealthEntry
-	nil,                                     // 128: rill.runtime.v1.InstanceHealth.MetricsViewErrorsEntry
-	nil,                                     // 129: rill.runtime.v1.Instance.VariablesEntry
-	nil,                                     // 130: rill.runtime.v1.Instance.ProjectVariablesEntry
-	nil,                                     // 131: rill.runtime.v1.Instance.FeatureFlagsEntry
-	nil,                                     // 132: rill.runtime.v1.Instance.AnnotationsEntry
-	nil,                                     // 133: rill.runtime.v1.CreateInstanceRequest.VariablesEntry
-	nil,                                     // 134: rill.runtime.v1.CreateInstanceRequest.AnnotationsEntry
-	(*ConnectorDriver_Property)(nil),        // 135: rill.runtime.v1.ConnectorDriver.Property
-	nil,                                     // 136: rill.runtime.v1.AnalyzedConnector.EnvConfigEntry
-	nil,                                     // 137: rill.runtime.v1.AnalystAgentContext.WherePerMetricsViewEntry
-	(*timestamppb.Timestamp)(nil),           // 138: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),                 // 139: google.protobuf.Struct
-	(*StructType)(nil),                      // 140: rill.runtime.v1.StructType
-	(*Resource)(nil),                        // 141: rill.runtime.v1.Resource
-	(*ResourceName)(nil),                    // 142: rill.runtime.v1.ResourceName
-	(*RefreshModelTrigger)(nil),             // 143: rill.runtime.v1.RefreshModelTrigger
-	(*v1.ContentBlock)(nil),                 // 144: rill.ai.v1.ContentBlock
-	(*Expression)(nil),                      // 145: rill.runtime.v1.Expression
-	(*v1.Tool)(nil),                         // 146: rill.ai.v1.Tool
+	(*RestoreChangesContext)(nil),           // 88: rill.runtime.v1.RestoreChangesContext
+	(*ListConversationsRequest)(nil),        // 89: rill.runtime.v1.ListConversationsRequest
+	(*ListConversationsResponse)(nil),       // 90: rill.runtime.v1.ListConversationsResponse
+	(*GetConversationRequest)(nil),          // 91: rill.runtime.v1.GetConversationRequest
+	(*GetConversationResponse)(nil),         // 92: rill.runtime.v1.GetConversationResponse
+	(*ShareConversationRequest)(nil),        // 93: rill.runtime.v1.ShareConversationRequest
+	(*ShareConversationResponse)(nil),       // 94: rill.runtime.v1.ShareConversationResponse
+	(*ForkConversationRequest)(nil),         // 95: rill.runtime.v1.ForkConversationRequest
+	(*ForkConversationResponse)(nil),        // 96: rill.runtime.v1.ForkConversationResponse
+	(*ListToolsRequest)(nil),                // 97: rill.runtime.v1.ListToolsRequest
+	(*ListToolsResponse)(nil),               // 98: rill.runtime.v1.ListToolsResponse
+	(*CompleteRequest)(nil),                 // 99: rill.runtime.v1.CompleteRequest
+	(*CompleteResponse)(nil),                // 100: rill.runtime.v1.CompleteResponse
+	(*CompleteStreamingRequest)(nil),        // 101: rill.runtime.v1.CompleteStreamingRequest
+	(*CompleteStreamingResponse)(nil),       // 102: rill.runtime.v1.CompleteStreamingResponse
+	(*IssueDevJWTRequest)(nil),              // 103: rill.runtime.v1.IssueDevJWTRequest
+	(*IssueDevJWTResponse)(nil),             // 104: rill.runtime.v1.IssueDevJWTResponse
+	(*AnalyzeVariablesRequest)(nil),         // 105: rill.runtime.v1.AnalyzeVariablesRequest
+	(*AnalyzeVariablesResponse)(nil),        // 106: rill.runtime.v1.AnalyzeVariablesResponse
+	(*AnalyzedVariable)(nil),                // 107: rill.runtime.v1.AnalyzedVariable
+	(*ListGitCommitsRequest)(nil),           // 108: rill.runtime.v1.ListGitCommitsRequest
+	(*ListGitCommitsResponse)(nil),          // 109: rill.runtime.v1.ListGitCommitsResponse
+	(*GitCommit)(nil),                       // 110: rill.runtime.v1.GitCommit
+	(*GitStatusRequest)(nil),                // 111: rill.runtime.v1.GitStatusRequest
+	(*GitStatusResponse)(nil),               // 112: rill.runtime.v1.GitStatusResponse
+	(*ListGitBranchesRequest)(nil),          // 113: rill.runtime.v1.ListGitBranchesRequest
+	(*ListGitBranchesResponse)(nil),         // 114: rill.runtime.v1.ListGitBranchesResponse
+	(*GitBranch)(nil),                       // 115: rill.runtime.v1.GitBranch
+	(*GitCommitRequest)(nil),                // 116: rill.runtime.v1.GitCommitRequest
+	(*GitCommitResponse)(nil),               // 117: rill.runtime.v1.GitCommitResponse
+	(*RestoreGitCommitRequest)(nil),         // 118: rill.runtime.v1.RestoreGitCommitRequest
+	(*RestoreGitCommitResponse)(nil),        // 119: rill.runtime.v1.RestoreGitCommitResponse
+	(*GitMergeToBranchRequest)(nil),         // 120: rill.runtime.v1.GitMergeToBranchRequest
+	(*GitMergeToBranchResponse)(nil),        // 121: rill.runtime.v1.GitMergeToBranchResponse
+	(*GitSwitchBranchRequest)(nil),          // 122: rill.runtime.v1.GitSwitchBranchRequest
+	(*GitSwitchBranchResponse)(nil),         // 123: rill.runtime.v1.GitSwitchBranchResponse
+	(*GitPullRequest)(nil),                  // 124: rill.runtime.v1.GitPullRequest
+	(*GitPullResponse)(nil),                 // 125: rill.runtime.v1.GitPullResponse
+	(*GitPushRequest)(nil),                  // 126: rill.runtime.v1.GitPushRequest
+	(*GitPushResponse)(nil),                 // 127: rill.runtime.v1.GitPushResponse
+	nil,                                     // 128: rill.runtime.v1.HealthResponse.InstancesHealthEntry
+	nil,                                     // 129: rill.runtime.v1.InstanceHealth.MetricsViewErrorsEntry
+	nil,                                     // 130: rill.runtime.v1.Instance.VariablesEntry
+	nil,                                     // 131: rill.runtime.v1.Instance.ProjectVariablesEntry
+	nil,                                     // 132: rill.runtime.v1.Instance.FeatureFlagsEntry
+	nil,                                     // 133: rill.runtime.v1.Instance.AnnotationsEntry
+	nil,                                     // 134: rill.runtime.v1.CreateInstanceRequest.VariablesEntry
+	nil,                                     // 135: rill.runtime.v1.CreateInstanceRequest.AnnotationsEntry
+	(*ConnectorDriver_Property)(nil),        // 136: rill.runtime.v1.ConnectorDriver.Property
+	nil,                                     // 137: rill.runtime.v1.AnalyzedConnector.EnvConfigEntry
+	nil,                                     // 138: rill.runtime.v1.AnalystAgentContext.WherePerMetricsViewEntry
+	(*timestamppb.Timestamp)(nil),           // 139: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),                 // 140: google.protobuf.Struct
+	(*StructType)(nil),                      // 141: rill.runtime.v1.StructType
+	(*Resource)(nil),                        // 142: rill.runtime.v1.Resource
+	(*ResourceName)(nil),                    // 143: rill.runtime.v1.ResourceName
+	(*RefreshModelTrigger)(nil),             // 144: rill.runtime.v1.RefreshModelTrigger
+	(*v1.ContentBlock)(nil),                 // 145: rill.ai.v1.ContentBlock
+	(*Expression)(nil),                      // 146: rill.runtime.v1.Expression
+	(*v1.Tool)(nil),                         // 147: rill.ai.v1.Tool
 }
 var file_rill_runtime_v1_api_proto_depIdxs = []int32{
-	138, // 0: rill.runtime.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
-	127, // 1: rill.runtime.v1.HealthResponse.instances_health:type_name -> rill.runtime.v1.HealthResponse.InstancesHealthEntry
+	139, // 0: rill.runtime.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
+	128, // 1: rill.runtime.v1.HealthResponse.instances_health:type_name -> rill.runtime.v1.HealthResponse.InstancesHealthEntry
 	10,  // 2: rill.runtime.v1.InstanceHealthResponse.instance_health:type_name -> rill.runtime.v1.InstanceHealth
-	128, // 3: rill.runtime.v1.InstanceHealth.metrics_view_errors:type_name -> rill.runtime.v1.InstanceHealth.MetricsViewErrorsEntry
-	138, // 4: rill.runtime.v1.Instance.created_on:type_name -> google.protobuf.Timestamp
-	138, // 5: rill.runtime.v1.Instance.updated_on:type_name -> google.protobuf.Timestamp
+	129, // 3: rill.runtime.v1.InstanceHealth.metrics_view_errors:type_name -> rill.runtime.v1.InstanceHealth.MetricsViewErrorsEntry
+	139, // 4: rill.runtime.v1.Instance.created_on:type_name -> google.protobuf.Timestamp
+	139, // 5: rill.runtime.v1.Instance.updated_on:type_name -> google.protobuf.Timestamp
 	12,  // 6: rill.runtime.v1.Instance.connectors:type_name -> rill.runtime.v1.Connector
 	12,  // 7: rill.runtime.v1.Instance.project_connectors:type_name -> rill.runtime.v1.Connector
-	129, // 8: rill.runtime.v1.Instance.variables:type_name -> rill.runtime.v1.Instance.VariablesEntry
-	130, // 9: rill.runtime.v1.Instance.project_variables:type_name -> rill.runtime.v1.Instance.ProjectVariablesEntry
-	131, // 10: rill.runtime.v1.Instance.feature_flags:type_name -> rill.runtime.v1.Instance.FeatureFlagsEntry
-	132, // 11: rill.runtime.v1.Instance.annotations:type_name -> rill.runtime.v1.Instance.AnnotationsEntry
-	139, // 12: rill.runtime.v1.Connector.config:type_name -> google.protobuf.Struct
-	139, // 13: rill.runtime.v1.Connector.provision_args:type_name -> google.protobuf.Struct
+	130, // 8: rill.runtime.v1.Instance.variables:type_name -> rill.runtime.v1.Instance.VariablesEntry
+	131, // 9: rill.runtime.v1.Instance.project_variables:type_name -> rill.runtime.v1.Instance.ProjectVariablesEntry
+	132, // 10: rill.runtime.v1.Instance.feature_flags:type_name -> rill.runtime.v1.Instance.FeatureFlagsEntry
+	133, // 11: rill.runtime.v1.Instance.annotations:type_name -> rill.runtime.v1.Instance.AnnotationsEntry
+	140, // 12: rill.runtime.v1.Connector.config:type_name -> google.protobuf.Struct
+	140, // 13: rill.runtime.v1.Connector.provision_args:type_name -> google.protobuf.Struct
 	11,  // 14: rill.runtime.v1.ListInstancesResponse.instances:type_name -> rill.runtime.v1.Instance
 	11,  // 15: rill.runtime.v1.GetInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
 	12,  // 16: rill.runtime.v1.CreateInstanceRequest.connectors:type_name -> rill.runtime.v1.Connector
-	133, // 17: rill.runtime.v1.CreateInstanceRequest.variables:type_name -> rill.runtime.v1.CreateInstanceRequest.VariablesEntry
-	134, // 18: rill.runtime.v1.CreateInstanceRequest.annotations:type_name -> rill.runtime.v1.CreateInstanceRequest.AnnotationsEntry
+	134, // 17: rill.runtime.v1.CreateInstanceRequest.variables:type_name -> rill.runtime.v1.CreateInstanceRequest.VariablesEntry
+	135, // 18: rill.runtime.v1.CreateInstanceRequest.annotations:type_name -> rill.runtime.v1.CreateInstanceRequest.AnnotationsEntry
 	11,  // 19: rill.runtime.v1.CreateInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
 	12,  // 20: rill.runtime.v1.EditInstanceRequest.connectors:type_name -> rill.runtime.v1.Connector
 	11,  // 21: rill.runtime.v1.EditInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
 	27,  // 22: rill.runtime.v1.ListFilesResponse.files:type_name -> rill.runtime.v1.DirEntry
 	0,   // 23: rill.runtime.v1.WatchFilesResponse.event:type_name -> rill.runtime.v1.FileEvent
-	138, // 24: rill.runtime.v1.GetFileResponse.updated_on:type_name -> google.protobuf.Timestamp
+	139, // 24: rill.runtime.v1.GetFileResponse.updated_on:type_name -> google.protobuf.Timestamp
 	40,  // 25: rill.runtime.v1.ListExamplesResponse.examples:type_name -> rill.runtime.v1.Example
-	139, // 26: rill.runtime.v1.GenerateResolverResponse.resolver_properties:type_name -> google.protobuf.Struct
-	139, // 27: rill.runtime.v1.GenerateRendererRequest.resolver_properties:type_name -> google.protobuf.Struct
-	139, // 28: rill.runtime.v1.GenerateRendererResponse.renderer_properties:type_name -> google.protobuf.Struct
-	139, // 29: rill.runtime.v1.QueryResolverRequest.resolver_properties:type_name -> google.protobuf.Struct
-	139, // 30: rill.runtime.v1.QueryResolverRequest.resolver_args:type_name -> google.protobuf.Struct
-	139, // 31: rill.runtime.v1.QueryResolverResponse.meta:type_name -> google.protobuf.Struct
-	140, // 32: rill.runtime.v1.QueryResolverResponse.schema:type_name -> rill.runtime.v1.StructType
-	139, // 33: rill.runtime.v1.QueryResolverResponse.data:type_name -> google.protobuf.Struct
+	140, // 26: rill.runtime.v1.GenerateResolverResponse.resolver_properties:type_name -> google.protobuf.Struct
+	140, // 27: rill.runtime.v1.GenerateRendererRequest.resolver_properties:type_name -> google.protobuf.Struct
+	140, // 28: rill.runtime.v1.GenerateRendererResponse.renderer_properties:type_name -> google.protobuf.Struct
+	140, // 29: rill.runtime.v1.QueryResolverRequest.resolver_properties:type_name -> google.protobuf.Struct
+	140, // 30: rill.runtime.v1.QueryResolverRequest.resolver_args:type_name -> google.protobuf.Struct
+	140, // 31: rill.runtime.v1.QueryResolverResponse.meta:type_name -> google.protobuf.Struct
+	141, // 32: rill.runtime.v1.QueryResolverResponse.schema:type_name -> rill.runtime.v1.StructType
+	140, // 33: rill.runtime.v1.QueryResolverResponse.data:type_name -> google.protobuf.Struct
 	1,   // 34: rill.runtime.v1.Log.level:type_name -> rill.runtime.v1.LogLevel
-	138, // 35: rill.runtime.v1.Log.time:type_name -> google.protobuf.Timestamp
-	139, // 36: rill.runtime.v1.ModelPartition.data:type_name -> google.protobuf.Struct
-	138, // 37: rill.runtime.v1.ModelPartition.watermark:type_name -> google.protobuf.Timestamp
-	138, // 38: rill.runtime.v1.ModelPartition.executed_on:type_name -> google.protobuf.Timestamp
+	139, // 35: rill.runtime.v1.Log.time:type_name -> google.protobuf.Timestamp
+	140, // 36: rill.runtime.v1.ModelPartition.data:type_name -> google.protobuf.Struct
+	139, // 37: rill.runtime.v1.ModelPartition.watermark:type_name -> google.protobuf.Timestamp
+	139, // 38: rill.runtime.v1.ModelPartition.executed_on:type_name -> google.protobuf.Timestamp
 	1,   // 39: rill.runtime.v1.GetLogsRequest.level:type_name -> rill.runtime.v1.LogLevel
 	57,  // 40: rill.runtime.v1.GetLogsResponse.logs:type_name -> rill.runtime.v1.Log
 	1,   // 41: rill.runtime.v1.WatchLogsRequest.level:type_name -> rill.runtime.v1.LogLevel
 	57,  // 42: rill.runtime.v1.WatchLogsResponse.log:type_name -> rill.runtime.v1.Log
-	141, // 43: rill.runtime.v1.ListResourcesResponse.resources:type_name -> rill.runtime.v1.Resource
+	142, // 43: rill.runtime.v1.ListResourcesResponse.resources:type_name -> rill.runtime.v1.Resource
 	2,   // 44: rill.runtime.v1.WatchResourcesResponse.event:type_name -> rill.runtime.v1.ResourceEvent
-	142, // 45: rill.runtime.v1.WatchResourcesResponse.name:type_name -> rill.runtime.v1.ResourceName
-	141, // 46: rill.runtime.v1.WatchResourcesResponse.resource:type_name -> rill.runtime.v1.Resource
-	142, // 47: rill.runtime.v1.GetResourceRequest.name:type_name -> rill.runtime.v1.ResourceName
-	141, // 48: rill.runtime.v1.GetResourceResponse.resource:type_name -> rill.runtime.v1.Resource
-	141, // 49: rill.runtime.v1.GetExploreResponse.explore:type_name -> rill.runtime.v1.Resource
-	141, // 50: rill.runtime.v1.GetExploreResponse.metrics_view:type_name -> rill.runtime.v1.Resource
+	143, // 45: rill.runtime.v1.WatchResourcesResponse.name:type_name -> rill.runtime.v1.ResourceName
+	142, // 46: rill.runtime.v1.WatchResourcesResponse.resource:type_name -> rill.runtime.v1.Resource
+	143, // 47: rill.runtime.v1.GetResourceRequest.name:type_name -> rill.runtime.v1.ResourceName
+	142, // 48: rill.runtime.v1.GetResourceResponse.resource:type_name -> rill.runtime.v1.Resource
+	142, // 49: rill.runtime.v1.GetExploreResponse.explore:type_name -> rill.runtime.v1.Resource
+	142, // 50: rill.runtime.v1.GetExploreResponse.metrics_view:type_name -> rill.runtime.v1.Resource
 	58,  // 51: rill.runtime.v1.GetModelPartitionsResponse.partitions:type_name -> rill.runtime.v1.ModelPartition
-	142, // 52: rill.runtime.v1.CreateTriggerRequest.resources:type_name -> rill.runtime.v1.ResourceName
-	143, // 53: rill.runtime.v1.CreateTriggerRequest.models:type_name -> rill.runtime.v1.RefreshModelTrigger
-	135, // 54: rill.runtime.v1.ConnectorDriver.config_properties:type_name -> rill.runtime.v1.ConnectorDriver.Property
-	135, // 55: rill.runtime.v1.ConnectorDriver.source_properties:type_name -> rill.runtime.v1.ConnectorDriver.Property
+	143, // 52: rill.runtime.v1.CreateTriggerRequest.resources:type_name -> rill.runtime.v1.ResourceName
+	144, // 53: rill.runtime.v1.CreateTriggerRequest.models:type_name -> rill.runtime.v1.RefreshModelTrigger
+	136, // 54: rill.runtime.v1.ConnectorDriver.config_properties:type_name -> rill.runtime.v1.ConnectorDriver.Property
+	136, // 55: rill.runtime.v1.ConnectorDriver.source_properties:type_name -> rill.runtime.v1.ConnectorDriver.Property
 	75,  // 56: rill.runtime.v1.AnalyzedConnector.driver:type_name -> rill.runtime.v1.ConnectorDriver
-	139, // 57: rill.runtime.v1.AnalyzedConnector.config:type_name -> google.protobuf.Struct
-	139, // 58: rill.runtime.v1.AnalyzedConnector.preset_config:type_name -> google.protobuf.Struct
-	139, // 59: rill.runtime.v1.AnalyzedConnector.project_config:type_name -> google.protobuf.Struct
-	136, // 60: rill.runtime.v1.AnalyzedConnector.env_config:type_name -> rill.runtime.v1.AnalyzedConnector.EnvConfigEntry
-	139, // 61: rill.runtime.v1.AnalyzedConnector.provision_args:type_name -> google.protobuf.Struct
-	142, // 62: rill.runtime.v1.AnalyzedConnector.used_by:type_name -> rill.runtime.v1.ResourceName
+	140, // 57: rill.runtime.v1.AnalyzedConnector.config:type_name -> google.protobuf.Struct
+	140, // 58: rill.runtime.v1.AnalyzedConnector.preset_config:type_name -> google.protobuf.Struct
+	140, // 59: rill.runtime.v1.AnalyzedConnector.project_config:type_name -> google.protobuf.Struct
+	137, // 60: rill.runtime.v1.AnalyzedConnector.env_config:type_name -> rill.runtime.v1.AnalyzedConnector.EnvConfigEntry
+	140, // 61: rill.runtime.v1.AnalyzedConnector.provision_args:type_name -> google.protobuf.Struct
+	143, // 62: rill.runtime.v1.AnalyzedConnector.used_by:type_name -> rill.runtime.v1.ResourceName
 	75,  // 63: rill.runtime.v1.ListConnectorDriversResponse.connectors:type_name -> rill.runtime.v1.ConnectorDriver
 	76,  // 64: rill.runtime.v1.AnalyzeConnectorsResponse.connectors:type_name -> rill.runtime.v1.AnalyzedConnector
 	12,  // 65: rill.runtime.v1.ListNotifierConnectorsResponse.connectors:type_name -> rill.runtime.v1.Connector
-	138, // 66: rill.runtime.v1.Conversation.created_on:type_name -> google.protobuf.Timestamp
-	138, // 67: rill.runtime.v1.Conversation.updated_on:type_name -> google.protobuf.Timestamp
+	139, // 66: rill.runtime.v1.Conversation.created_on:type_name -> google.protobuf.Timestamp
+	139, // 67: rill.runtime.v1.Conversation.updated_on:type_name -> google.protobuf.Timestamp
 	84,  // 68: rill.runtime.v1.Conversation.messages:type_name -> rill.runtime.v1.Message
-	138, // 69: rill.runtime.v1.Message.created_on:type_name -> google.protobuf.Timestamp
-	138, // 70: rill.runtime.v1.Message.updated_on:type_name -> google.protobuf.Timestamp
-	144, // 71: rill.runtime.v1.Message.content:type_name -> rill.ai.v1.ContentBlock
-	145, // 72: rill.runtime.v1.AnalystAgentContext.where:type_name -> rill.runtime.v1.Expression
-	137, // 73: rill.runtime.v1.AnalystAgentContext.where_per_metrics_view:type_name -> rill.runtime.v1.AnalystAgentContext.WherePerMetricsViewEntry
-	138, // 74: rill.runtime.v1.AnalystAgentContext.time_start:type_name -> google.protobuf.Timestamp
-	138, // 75: rill.runtime.v1.AnalystAgentContext.time_end:type_name -> google.protobuf.Timestamp
+	139, // 69: rill.runtime.v1.Message.created_on:type_name -> google.protobuf.Timestamp
+	139, // 70: rill.runtime.v1.Message.updated_on:type_name -> google.protobuf.Timestamp
+	145, // 71: rill.runtime.v1.Message.content:type_name -> rill.ai.v1.ContentBlock
+	146, // 72: rill.runtime.v1.AnalystAgentContext.where:type_name -> rill.runtime.v1.Expression
+	138, // 73: rill.runtime.v1.AnalystAgentContext.where_per_metrics_view:type_name -> rill.runtime.v1.AnalystAgentContext.WherePerMetricsViewEntry
+	139, // 74: rill.runtime.v1.AnalystAgentContext.time_start:type_name -> google.protobuf.Timestamp
+	139, // 75: rill.runtime.v1.AnalystAgentContext.time_end:type_name -> google.protobuf.Timestamp
 	83,  // 76: rill.runtime.v1.ListConversationsResponse.conversations:type_name -> rill.runtime.v1.Conversation
 	83,  // 77: rill.runtime.v1.GetConversationResponse.conversation:type_name -> rill.runtime.v1.Conversation
 	84,  // 78: rill.runtime.v1.GetConversationResponse.messages:type_name -> rill.runtime.v1.Message
-	146, // 79: rill.runtime.v1.ListToolsResponse.tools:type_name -> rill.ai.v1.Tool
+	147, // 79: rill.runtime.v1.ListToolsResponse.tools:type_name -> rill.ai.v1.Tool
 	85,  // 80: rill.runtime.v1.CompleteRequest.analyst_agent_context:type_name -> rill.runtime.v1.AnalystAgentContext
 	86,  // 81: rill.runtime.v1.CompleteRequest.developer_agent_context:type_name -> rill.runtime.v1.DeveloperAgentContext
 	87,  // 82: rill.runtime.v1.CompleteRequest.feedback_agent_context:type_name -> rill.runtime.v1.FeedbackAgentContext
-	84,  // 83: rill.runtime.v1.CompleteResponse.messages:type_name -> rill.runtime.v1.Message
-	85,  // 84: rill.runtime.v1.CompleteStreamingRequest.analyst_agent_context:type_name -> rill.runtime.v1.AnalystAgentContext
-	86,  // 85: rill.runtime.v1.CompleteStreamingRequest.developer_agent_context:type_name -> rill.runtime.v1.DeveloperAgentContext
-	87,  // 86: rill.runtime.v1.CompleteStreamingRequest.feedback_agent_context:type_name -> rill.runtime.v1.FeedbackAgentContext
-	84,  // 87: rill.runtime.v1.CompleteStreamingResponse.message:type_name -> rill.runtime.v1.Message
-	139, // 88: rill.runtime.v1.IssueDevJWTRequest.attributes:type_name -> google.protobuf.Struct
-	106, // 89: rill.runtime.v1.AnalyzeVariablesResponse.variables:type_name -> rill.runtime.v1.AnalyzedVariable
-	142, // 90: rill.runtime.v1.AnalyzedVariable.used_by:type_name -> rill.runtime.v1.ResourceName
-	109, // 91: rill.runtime.v1.ListGitCommitsResponse.commits:type_name -> rill.runtime.v1.GitCommit
-	138, // 92: rill.runtime.v1.GitCommit.committed_on:type_name -> google.protobuf.Timestamp
-	114, // 93: rill.runtime.v1.ListGitBranchesResponse.branches:type_name -> rill.runtime.v1.GitBranch
-	10,  // 94: rill.runtime.v1.HealthResponse.InstancesHealthEntry.value:type_name -> rill.runtime.v1.InstanceHealth
-	3,   // 95: rill.runtime.v1.ConnectorDriver.Property.type:type_name -> rill.runtime.v1.ConnectorDriver.Property.Type
-	145, // 96: rill.runtime.v1.AnalystAgentContext.WherePerMetricsViewEntry.value:type_name -> rill.runtime.v1.Expression
-	4,   // 97: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
-	6,   // 98: rill.runtime.v1.RuntimeService.Health:input_type -> rill.runtime.v1.HealthRequest
-	8,   // 99: rill.runtime.v1.RuntimeService.InstanceHealth:input_type -> rill.runtime.v1.InstanceHealthRequest
-	13,  // 100: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
-	15,  // 101: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
-	17,  // 102: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
-	21,  // 103: rill.runtime.v1.RuntimeService.EditInstance:input_type -> rill.runtime.v1.EditInstanceRequest
-	19,  // 104: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
-	23,  // 105: rill.runtime.v1.RuntimeService.ReloadConfig:input_type -> rill.runtime.v1.ReloadConfigRequest
-	25,  // 106: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
-	28,  // 107: rill.runtime.v1.RuntimeService.WatchFiles:input_type -> rill.runtime.v1.WatchFilesRequest
-	30,  // 108: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
-	32,  // 109: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
-	34,  // 110: rill.runtime.v1.RuntimeService.CreateDirectory:input_type -> rill.runtime.v1.CreateDirectoryRequest
-	36,  // 111: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
-	38,  // 112: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
-	41,  // 113: rill.runtime.v1.RuntimeService.ListExamples:input_type -> rill.runtime.v1.ListExamplesRequest
-	43,  // 114: rill.runtime.v1.RuntimeService.UnpackExample:input_type -> rill.runtime.v1.UnpackExampleRequest
-	45,  // 115: rill.runtime.v1.RuntimeService.UnpackEmpty:input_type -> rill.runtime.v1.UnpackEmptyRequest
-	47,  // 116: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:input_type -> rill.runtime.v1.GenerateMetricsViewFileRequest
-	49,  // 117: rill.runtime.v1.RuntimeService.GenerateCanvasFile:input_type -> rill.runtime.v1.GenerateCanvasFileRequest
-	51,  // 118: rill.runtime.v1.RuntimeService.GenerateResolver:input_type -> rill.runtime.v1.GenerateResolverRequest
-	53,  // 119: rill.runtime.v1.RuntimeService.GenerateRenderer:input_type -> rill.runtime.v1.GenerateRendererRequest
-	55,  // 120: rill.runtime.v1.RuntimeService.QueryResolver:input_type -> rill.runtime.v1.QueryResolverRequest
-	59,  // 121: rill.runtime.v1.RuntimeService.GetLogs:input_type -> rill.runtime.v1.GetLogsRequest
-	61,  // 122: rill.runtime.v1.RuntimeService.WatchLogs:input_type -> rill.runtime.v1.WatchLogsRequest
-	63,  // 123: rill.runtime.v1.RuntimeService.ListResources:input_type -> rill.runtime.v1.ListResourcesRequest
-	65,  // 124: rill.runtime.v1.RuntimeService.WatchResources:input_type -> rill.runtime.v1.WatchResourcesRequest
-	67,  // 125: rill.runtime.v1.RuntimeService.GetResource:input_type -> rill.runtime.v1.GetResourceRequest
-	69,  // 126: rill.runtime.v1.RuntimeService.GetExplore:input_type -> rill.runtime.v1.GetExploreRequest
-	71,  // 127: rill.runtime.v1.RuntimeService.GetModelPartitions:input_type -> rill.runtime.v1.GetModelPartitionsRequest
-	73,  // 128: rill.runtime.v1.RuntimeService.CreateTrigger:input_type -> rill.runtime.v1.CreateTriggerRequest
-	77,  // 129: rill.runtime.v1.RuntimeService.ListConnectorDrivers:input_type -> rill.runtime.v1.ListConnectorDriversRequest
-	79,  // 130: rill.runtime.v1.RuntimeService.AnalyzeConnectors:input_type -> rill.runtime.v1.AnalyzeConnectorsRequest
-	81,  // 131: rill.runtime.v1.RuntimeService.ListNotifierConnectors:input_type -> rill.runtime.v1.ListNotifierConnectorsRequest
-	88,  // 132: rill.runtime.v1.RuntimeService.ListConversations:input_type -> rill.runtime.v1.ListConversationsRequest
-	90,  // 133: rill.runtime.v1.RuntimeService.GetConversation:input_type -> rill.runtime.v1.GetConversationRequest
-	92,  // 134: rill.runtime.v1.RuntimeService.ShareConversation:input_type -> rill.runtime.v1.ShareConversationRequest
-	94,  // 135: rill.runtime.v1.RuntimeService.ForkConversation:input_type -> rill.runtime.v1.ForkConversationRequest
-	96,  // 136: rill.runtime.v1.RuntimeService.ListTools:input_type -> rill.runtime.v1.ListToolsRequest
-	98,  // 137: rill.runtime.v1.RuntimeService.Complete:input_type -> rill.runtime.v1.CompleteRequest
-	100, // 138: rill.runtime.v1.RuntimeService.CompleteStreaming:input_type -> rill.runtime.v1.CompleteStreamingRequest
-	102, // 139: rill.runtime.v1.RuntimeService.IssueDevJWT:input_type -> rill.runtime.v1.IssueDevJWTRequest
-	104, // 140: rill.runtime.v1.RuntimeService.AnalyzeVariables:input_type -> rill.runtime.v1.AnalyzeVariablesRequest
-	107, // 141: rill.runtime.v1.RuntimeService.ListGitCommits:input_type -> rill.runtime.v1.ListGitCommitsRequest
-	110, // 142: rill.runtime.v1.RuntimeService.GitStatus:input_type -> rill.runtime.v1.GitStatusRequest
-	112, // 143: rill.runtime.v1.RuntimeService.ListGitBranches:input_type -> rill.runtime.v1.ListGitBranchesRequest
-	115, // 144: rill.runtime.v1.RuntimeService.GitCommit:input_type -> rill.runtime.v1.GitCommitRequest
-	117, // 145: rill.runtime.v1.RuntimeService.RestoreGitCommit:input_type -> rill.runtime.v1.RestoreGitCommitRequest
-	119, // 146: rill.runtime.v1.RuntimeService.GitMergeToBranch:input_type -> rill.runtime.v1.GitMergeToBranchRequest
-	121, // 147: rill.runtime.v1.RuntimeService.GitSwitchBranch:input_type -> rill.runtime.v1.GitSwitchBranchRequest
-	123, // 148: rill.runtime.v1.RuntimeService.GitPull:input_type -> rill.runtime.v1.GitPullRequest
-	125, // 149: rill.runtime.v1.RuntimeService.GitPush:input_type -> rill.runtime.v1.GitPushRequest
-	5,   // 150: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
-	7,   // 151: rill.runtime.v1.RuntimeService.Health:output_type -> rill.runtime.v1.HealthResponse
-	9,   // 152: rill.runtime.v1.RuntimeService.InstanceHealth:output_type -> rill.runtime.v1.InstanceHealthResponse
-	14,  // 153: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
-	16,  // 154: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
-	18,  // 155: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
-	22,  // 156: rill.runtime.v1.RuntimeService.EditInstance:output_type -> rill.runtime.v1.EditInstanceResponse
-	20,  // 157: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
-	24,  // 158: rill.runtime.v1.RuntimeService.ReloadConfig:output_type -> rill.runtime.v1.ReloadConfigResponse
-	26,  // 159: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
-	29,  // 160: rill.runtime.v1.RuntimeService.WatchFiles:output_type -> rill.runtime.v1.WatchFilesResponse
-	31,  // 161: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
-	33,  // 162: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
-	35,  // 163: rill.runtime.v1.RuntimeService.CreateDirectory:output_type -> rill.runtime.v1.CreateDirectoryResponse
-	37,  // 164: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
-	39,  // 165: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
-	42,  // 166: rill.runtime.v1.RuntimeService.ListExamples:output_type -> rill.runtime.v1.ListExamplesResponse
-	44,  // 167: rill.runtime.v1.RuntimeService.UnpackExample:output_type -> rill.runtime.v1.UnpackExampleResponse
-	46,  // 168: rill.runtime.v1.RuntimeService.UnpackEmpty:output_type -> rill.runtime.v1.UnpackEmptyResponse
-	48,  // 169: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:output_type -> rill.runtime.v1.GenerateMetricsViewFileResponse
-	50,  // 170: rill.runtime.v1.RuntimeService.GenerateCanvasFile:output_type -> rill.runtime.v1.GenerateCanvasFileResponse
-	52,  // 171: rill.runtime.v1.RuntimeService.GenerateResolver:output_type -> rill.runtime.v1.GenerateResolverResponse
-	54,  // 172: rill.runtime.v1.RuntimeService.GenerateRenderer:output_type -> rill.runtime.v1.GenerateRendererResponse
-	56,  // 173: rill.runtime.v1.RuntimeService.QueryResolver:output_type -> rill.runtime.v1.QueryResolverResponse
-	60,  // 174: rill.runtime.v1.RuntimeService.GetLogs:output_type -> rill.runtime.v1.GetLogsResponse
-	62,  // 175: rill.runtime.v1.RuntimeService.WatchLogs:output_type -> rill.runtime.v1.WatchLogsResponse
-	64,  // 176: rill.runtime.v1.RuntimeService.ListResources:output_type -> rill.runtime.v1.ListResourcesResponse
-	66,  // 177: rill.runtime.v1.RuntimeService.WatchResources:output_type -> rill.runtime.v1.WatchResourcesResponse
-	68,  // 178: rill.runtime.v1.RuntimeService.GetResource:output_type -> rill.runtime.v1.GetResourceResponse
-	70,  // 179: rill.runtime.v1.RuntimeService.GetExplore:output_type -> rill.runtime.v1.GetExploreResponse
-	72,  // 180: rill.runtime.v1.RuntimeService.GetModelPartitions:output_type -> rill.runtime.v1.GetModelPartitionsResponse
-	74,  // 181: rill.runtime.v1.RuntimeService.CreateTrigger:output_type -> rill.runtime.v1.CreateTriggerResponse
-	78,  // 182: rill.runtime.v1.RuntimeService.ListConnectorDrivers:output_type -> rill.runtime.v1.ListConnectorDriversResponse
-	80,  // 183: rill.runtime.v1.RuntimeService.AnalyzeConnectors:output_type -> rill.runtime.v1.AnalyzeConnectorsResponse
-	82,  // 184: rill.runtime.v1.RuntimeService.ListNotifierConnectors:output_type -> rill.runtime.v1.ListNotifierConnectorsResponse
-	89,  // 185: rill.runtime.v1.RuntimeService.ListConversations:output_type -> rill.runtime.v1.ListConversationsResponse
-	91,  // 186: rill.runtime.v1.RuntimeService.GetConversation:output_type -> rill.runtime.v1.GetConversationResponse
-	93,  // 187: rill.runtime.v1.RuntimeService.ShareConversation:output_type -> rill.runtime.v1.ShareConversationResponse
-	95,  // 188: rill.runtime.v1.RuntimeService.ForkConversation:output_type -> rill.runtime.v1.ForkConversationResponse
-	97,  // 189: rill.runtime.v1.RuntimeService.ListTools:output_type -> rill.runtime.v1.ListToolsResponse
-	99,  // 190: rill.runtime.v1.RuntimeService.Complete:output_type -> rill.runtime.v1.CompleteResponse
-	101, // 191: rill.runtime.v1.RuntimeService.CompleteStreaming:output_type -> rill.runtime.v1.CompleteStreamingResponse
-	103, // 192: rill.runtime.v1.RuntimeService.IssueDevJWT:output_type -> rill.runtime.v1.IssueDevJWTResponse
-	105, // 193: rill.runtime.v1.RuntimeService.AnalyzeVariables:output_type -> rill.runtime.v1.AnalyzeVariablesResponse
-	108, // 194: rill.runtime.v1.RuntimeService.ListGitCommits:output_type -> rill.runtime.v1.ListGitCommitsResponse
-	111, // 195: rill.runtime.v1.RuntimeService.GitStatus:output_type -> rill.runtime.v1.GitStatusResponse
-	113, // 196: rill.runtime.v1.RuntimeService.ListGitBranches:output_type -> rill.runtime.v1.ListGitBranchesResponse
-	116, // 197: rill.runtime.v1.RuntimeService.GitCommit:output_type -> rill.runtime.v1.GitCommitResponse
-	118, // 198: rill.runtime.v1.RuntimeService.RestoreGitCommit:output_type -> rill.runtime.v1.RestoreGitCommitResponse
-	120, // 199: rill.runtime.v1.RuntimeService.GitMergeToBranch:output_type -> rill.runtime.v1.GitMergeToBranchResponse
-	122, // 200: rill.runtime.v1.RuntimeService.GitSwitchBranch:output_type -> rill.runtime.v1.GitSwitchBranchResponse
-	124, // 201: rill.runtime.v1.RuntimeService.GitPull:output_type -> rill.runtime.v1.GitPullResponse
-	126, // 202: rill.runtime.v1.RuntimeService.GitPush:output_type -> rill.runtime.v1.GitPushResponse
-	150, // [150:203] is the sub-list for method output_type
-	97,  // [97:150] is the sub-list for method input_type
-	97,  // [97:97] is the sub-list for extension type_name
-	97,  // [97:97] is the sub-list for extension extendee
-	0,   // [0:97] is the sub-list for field type_name
+	88,  // 83: rill.runtime.v1.CompleteRequest.restore_changes_context:type_name -> rill.runtime.v1.RestoreChangesContext
+	84,  // 84: rill.runtime.v1.CompleteResponse.messages:type_name -> rill.runtime.v1.Message
+	85,  // 85: rill.runtime.v1.CompleteStreamingRequest.analyst_agent_context:type_name -> rill.runtime.v1.AnalystAgentContext
+	86,  // 86: rill.runtime.v1.CompleteStreamingRequest.developer_agent_context:type_name -> rill.runtime.v1.DeveloperAgentContext
+	87,  // 87: rill.runtime.v1.CompleteStreamingRequest.feedback_agent_context:type_name -> rill.runtime.v1.FeedbackAgentContext
+	88,  // 88: rill.runtime.v1.CompleteStreamingRequest.restore_changes_context:type_name -> rill.runtime.v1.RestoreChangesContext
+	84,  // 89: rill.runtime.v1.CompleteStreamingResponse.message:type_name -> rill.runtime.v1.Message
+	140, // 90: rill.runtime.v1.IssueDevJWTRequest.attributes:type_name -> google.protobuf.Struct
+	107, // 91: rill.runtime.v1.AnalyzeVariablesResponse.variables:type_name -> rill.runtime.v1.AnalyzedVariable
+	143, // 92: rill.runtime.v1.AnalyzedVariable.used_by:type_name -> rill.runtime.v1.ResourceName
+	110, // 93: rill.runtime.v1.ListGitCommitsResponse.commits:type_name -> rill.runtime.v1.GitCommit
+	139, // 94: rill.runtime.v1.GitCommit.committed_on:type_name -> google.protobuf.Timestamp
+	115, // 95: rill.runtime.v1.ListGitBranchesResponse.branches:type_name -> rill.runtime.v1.GitBranch
+	10,  // 96: rill.runtime.v1.HealthResponse.InstancesHealthEntry.value:type_name -> rill.runtime.v1.InstanceHealth
+	3,   // 97: rill.runtime.v1.ConnectorDriver.Property.type:type_name -> rill.runtime.v1.ConnectorDriver.Property.Type
+	146, // 98: rill.runtime.v1.AnalystAgentContext.WherePerMetricsViewEntry.value:type_name -> rill.runtime.v1.Expression
+	4,   // 99: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
+	6,   // 100: rill.runtime.v1.RuntimeService.Health:input_type -> rill.runtime.v1.HealthRequest
+	8,   // 101: rill.runtime.v1.RuntimeService.InstanceHealth:input_type -> rill.runtime.v1.InstanceHealthRequest
+	13,  // 102: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
+	15,  // 103: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
+	17,  // 104: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
+	21,  // 105: rill.runtime.v1.RuntimeService.EditInstance:input_type -> rill.runtime.v1.EditInstanceRequest
+	19,  // 106: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
+	23,  // 107: rill.runtime.v1.RuntimeService.ReloadConfig:input_type -> rill.runtime.v1.ReloadConfigRequest
+	25,  // 108: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
+	28,  // 109: rill.runtime.v1.RuntimeService.WatchFiles:input_type -> rill.runtime.v1.WatchFilesRequest
+	30,  // 110: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
+	32,  // 111: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
+	34,  // 112: rill.runtime.v1.RuntimeService.CreateDirectory:input_type -> rill.runtime.v1.CreateDirectoryRequest
+	36,  // 113: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
+	38,  // 114: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
+	41,  // 115: rill.runtime.v1.RuntimeService.ListExamples:input_type -> rill.runtime.v1.ListExamplesRequest
+	43,  // 116: rill.runtime.v1.RuntimeService.UnpackExample:input_type -> rill.runtime.v1.UnpackExampleRequest
+	45,  // 117: rill.runtime.v1.RuntimeService.UnpackEmpty:input_type -> rill.runtime.v1.UnpackEmptyRequest
+	47,  // 118: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:input_type -> rill.runtime.v1.GenerateMetricsViewFileRequest
+	49,  // 119: rill.runtime.v1.RuntimeService.GenerateCanvasFile:input_type -> rill.runtime.v1.GenerateCanvasFileRequest
+	51,  // 120: rill.runtime.v1.RuntimeService.GenerateResolver:input_type -> rill.runtime.v1.GenerateResolverRequest
+	53,  // 121: rill.runtime.v1.RuntimeService.GenerateRenderer:input_type -> rill.runtime.v1.GenerateRendererRequest
+	55,  // 122: rill.runtime.v1.RuntimeService.QueryResolver:input_type -> rill.runtime.v1.QueryResolverRequest
+	59,  // 123: rill.runtime.v1.RuntimeService.GetLogs:input_type -> rill.runtime.v1.GetLogsRequest
+	61,  // 124: rill.runtime.v1.RuntimeService.WatchLogs:input_type -> rill.runtime.v1.WatchLogsRequest
+	63,  // 125: rill.runtime.v1.RuntimeService.ListResources:input_type -> rill.runtime.v1.ListResourcesRequest
+	65,  // 126: rill.runtime.v1.RuntimeService.WatchResources:input_type -> rill.runtime.v1.WatchResourcesRequest
+	67,  // 127: rill.runtime.v1.RuntimeService.GetResource:input_type -> rill.runtime.v1.GetResourceRequest
+	69,  // 128: rill.runtime.v1.RuntimeService.GetExplore:input_type -> rill.runtime.v1.GetExploreRequest
+	71,  // 129: rill.runtime.v1.RuntimeService.GetModelPartitions:input_type -> rill.runtime.v1.GetModelPartitionsRequest
+	73,  // 130: rill.runtime.v1.RuntimeService.CreateTrigger:input_type -> rill.runtime.v1.CreateTriggerRequest
+	77,  // 131: rill.runtime.v1.RuntimeService.ListConnectorDrivers:input_type -> rill.runtime.v1.ListConnectorDriversRequest
+	79,  // 132: rill.runtime.v1.RuntimeService.AnalyzeConnectors:input_type -> rill.runtime.v1.AnalyzeConnectorsRequest
+	81,  // 133: rill.runtime.v1.RuntimeService.ListNotifierConnectors:input_type -> rill.runtime.v1.ListNotifierConnectorsRequest
+	89,  // 134: rill.runtime.v1.RuntimeService.ListConversations:input_type -> rill.runtime.v1.ListConversationsRequest
+	91,  // 135: rill.runtime.v1.RuntimeService.GetConversation:input_type -> rill.runtime.v1.GetConversationRequest
+	93,  // 136: rill.runtime.v1.RuntimeService.ShareConversation:input_type -> rill.runtime.v1.ShareConversationRequest
+	95,  // 137: rill.runtime.v1.RuntimeService.ForkConversation:input_type -> rill.runtime.v1.ForkConversationRequest
+	97,  // 138: rill.runtime.v1.RuntimeService.ListTools:input_type -> rill.runtime.v1.ListToolsRequest
+	99,  // 139: rill.runtime.v1.RuntimeService.Complete:input_type -> rill.runtime.v1.CompleteRequest
+	101, // 140: rill.runtime.v1.RuntimeService.CompleteStreaming:input_type -> rill.runtime.v1.CompleteStreamingRequest
+	103, // 141: rill.runtime.v1.RuntimeService.IssueDevJWT:input_type -> rill.runtime.v1.IssueDevJWTRequest
+	105, // 142: rill.runtime.v1.RuntimeService.AnalyzeVariables:input_type -> rill.runtime.v1.AnalyzeVariablesRequest
+	108, // 143: rill.runtime.v1.RuntimeService.ListGitCommits:input_type -> rill.runtime.v1.ListGitCommitsRequest
+	111, // 144: rill.runtime.v1.RuntimeService.GitStatus:input_type -> rill.runtime.v1.GitStatusRequest
+	113, // 145: rill.runtime.v1.RuntimeService.ListGitBranches:input_type -> rill.runtime.v1.ListGitBranchesRequest
+	116, // 146: rill.runtime.v1.RuntimeService.GitCommit:input_type -> rill.runtime.v1.GitCommitRequest
+	118, // 147: rill.runtime.v1.RuntimeService.RestoreGitCommit:input_type -> rill.runtime.v1.RestoreGitCommitRequest
+	120, // 148: rill.runtime.v1.RuntimeService.GitMergeToBranch:input_type -> rill.runtime.v1.GitMergeToBranchRequest
+	122, // 149: rill.runtime.v1.RuntimeService.GitSwitchBranch:input_type -> rill.runtime.v1.GitSwitchBranchRequest
+	124, // 150: rill.runtime.v1.RuntimeService.GitPull:input_type -> rill.runtime.v1.GitPullRequest
+	126, // 151: rill.runtime.v1.RuntimeService.GitPush:input_type -> rill.runtime.v1.GitPushRequest
+	5,   // 152: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
+	7,   // 153: rill.runtime.v1.RuntimeService.Health:output_type -> rill.runtime.v1.HealthResponse
+	9,   // 154: rill.runtime.v1.RuntimeService.InstanceHealth:output_type -> rill.runtime.v1.InstanceHealthResponse
+	14,  // 155: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
+	16,  // 156: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
+	18,  // 157: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
+	22,  // 158: rill.runtime.v1.RuntimeService.EditInstance:output_type -> rill.runtime.v1.EditInstanceResponse
+	20,  // 159: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
+	24,  // 160: rill.runtime.v1.RuntimeService.ReloadConfig:output_type -> rill.runtime.v1.ReloadConfigResponse
+	26,  // 161: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
+	29,  // 162: rill.runtime.v1.RuntimeService.WatchFiles:output_type -> rill.runtime.v1.WatchFilesResponse
+	31,  // 163: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
+	33,  // 164: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
+	35,  // 165: rill.runtime.v1.RuntimeService.CreateDirectory:output_type -> rill.runtime.v1.CreateDirectoryResponse
+	37,  // 166: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
+	39,  // 167: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
+	42,  // 168: rill.runtime.v1.RuntimeService.ListExamples:output_type -> rill.runtime.v1.ListExamplesResponse
+	44,  // 169: rill.runtime.v1.RuntimeService.UnpackExample:output_type -> rill.runtime.v1.UnpackExampleResponse
+	46,  // 170: rill.runtime.v1.RuntimeService.UnpackEmpty:output_type -> rill.runtime.v1.UnpackEmptyResponse
+	48,  // 171: rill.runtime.v1.RuntimeService.GenerateMetricsViewFile:output_type -> rill.runtime.v1.GenerateMetricsViewFileResponse
+	50,  // 172: rill.runtime.v1.RuntimeService.GenerateCanvasFile:output_type -> rill.runtime.v1.GenerateCanvasFileResponse
+	52,  // 173: rill.runtime.v1.RuntimeService.GenerateResolver:output_type -> rill.runtime.v1.GenerateResolverResponse
+	54,  // 174: rill.runtime.v1.RuntimeService.GenerateRenderer:output_type -> rill.runtime.v1.GenerateRendererResponse
+	56,  // 175: rill.runtime.v1.RuntimeService.QueryResolver:output_type -> rill.runtime.v1.QueryResolverResponse
+	60,  // 176: rill.runtime.v1.RuntimeService.GetLogs:output_type -> rill.runtime.v1.GetLogsResponse
+	62,  // 177: rill.runtime.v1.RuntimeService.WatchLogs:output_type -> rill.runtime.v1.WatchLogsResponse
+	64,  // 178: rill.runtime.v1.RuntimeService.ListResources:output_type -> rill.runtime.v1.ListResourcesResponse
+	66,  // 179: rill.runtime.v1.RuntimeService.WatchResources:output_type -> rill.runtime.v1.WatchResourcesResponse
+	68,  // 180: rill.runtime.v1.RuntimeService.GetResource:output_type -> rill.runtime.v1.GetResourceResponse
+	70,  // 181: rill.runtime.v1.RuntimeService.GetExplore:output_type -> rill.runtime.v1.GetExploreResponse
+	72,  // 182: rill.runtime.v1.RuntimeService.GetModelPartitions:output_type -> rill.runtime.v1.GetModelPartitionsResponse
+	74,  // 183: rill.runtime.v1.RuntimeService.CreateTrigger:output_type -> rill.runtime.v1.CreateTriggerResponse
+	78,  // 184: rill.runtime.v1.RuntimeService.ListConnectorDrivers:output_type -> rill.runtime.v1.ListConnectorDriversResponse
+	80,  // 185: rill.runtime.v1.RuntimeService.AnalyzeConnectors:output_type -> rill.runtime.v1.AnalyzeConnectorsResponse
+	82,  // 186: rill.runtime.v1.RuntimeService.ListNotifierConnectors:output_type -> rill.runtime.v1.ListNotifierConnectorsResponse
+	90,  // 187: rill.runtime.v1.RuntimeService.ListConversations:output_type -> rill.runtime.v1.ListConversationsResponse
+	92,  // 188: rill.runtime.v1.RuntimeService.GetConversation:output_type -> rill.runtime.v1.GetConversationResponse
+	94,  // 189: rill.runtime.v1.RuntimeService.ShareConversation:output_type -> rill.runtime.v1.ShareConversationResponse
+	96,  // 190: rill.runtime.v1.RuntimeService.ForkConversation:output_type -> rill.runtime.v1.ForkConversationResponse
+	98,  // 191: rill.runtime.v1.RuntimeService.ListTools:output_type -> rill.runtime.v1.ListToolsResponse
+	100, // 192: rill.runtime.v1.RuntimeService.Complete:output_type -> rill.runtime.v1.CompleteResponse
+	102, // 193: rill.runtime.v1.RuntimeService.CompleteStreaming:output_type -> rill.runtime.v1.CompleteStreamingResponse
+	104, // 194: rill.runtime.v1.RuntimeService.IssueDevJWT:output_type -> rill.runtime.v1.IssueDevJWTResponse
+	106, // 195: rill.runtime.v1.RuntimeService.AnalyzeVariables:output_type -> rill.runtime.v1.AnalyzeVariablesResponse
+	109, // 196: rill.runtime.v1.RuntimeService.ListGitCommits:output_type -> rill.runtime.v1.ListGitCommitsResponse
+	112, // 197: rill.runtime.v1.RuntimeService.GitStatus:output_type -> rill.runtime.v1.GitStatusResponse
+	114, // 198: rill.runtime.v1.RuntimeService.ListGitBranches:output_type -> rill.runtime.v1.ListGitBranchesResponse
+	117, // 199: rill.runtime.v1.RuntimeService.GitCommit:output_type -> rill.runtime.v1.GitCommitResponse
+	119, // 200: rill.runtime.v1.RuntimeService.RestoreGitCommit:output_type -> rill.runtime.v1.RestoreGitCommitResponse
+	121, // 201: rill.runtime.v1.RuntimeService.GitMergeToBranch:output_type -> rill.runtime.v1.GitMergeToBranchResponse
+	123, // 202: rill.runtime.v1.RuntimeService.GitSwitchBranch:output_type -> rill.runtime.v1.GitSwitchBranchResponse
+	125, // 203: rill.runtime.v1.RuntimeService.GitPull:output_type -> rill.runtime.v1.GitPullResponse
+	127, // 204: rill.runtime.v1.RuntimeService.GitPush:output_type -> rill.runtime.v1.GitPushResponse
+	152, // [152:205] is the sub-list for method output_type
+	99,  // [99:152] is the sub-list for method input_type
+	99,  // [99:99] is the sub-list for extension type_name
+	99,  // [99:99] is the sub-list for extension extendee
+	0,   // [0:99] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_api_proto_init() }
@@ -11316,7 +11419,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[84].Exporter = func(v any, i int) any {
-			switch v := v.(*ListConversationsRequest); i {
+			switch v := v.(*RestoreChangesContext); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11328,7 +11431,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[85].Exporter = func(v any, i int) any {
-			switch v := v.(*ListConversationsResponse); i {
+			switch v := v.(*ListConversationsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11340,7 +11443,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[86].Exporter = func(v any, i int) any {
-			switch v := v.(*GetConversationRequest); i {
+			switch v := v.(*ListConversationsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11352,7 +11455,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[87].Exporter = func(v any, i int) any {
-			switch v := v.(*GetConversationResponse); i {
+			switch v := v.(*GetConversationRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11364,7 +11467,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[88].Exporter = func(v any, i int) any {
-			switch v := v.(*ShareConversationRequest); i {
+			switch v := v.(*GetConversationResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11376,7 +11479,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[89].Exporter = func(v any, i int) any {
-			switch v := v.(*ShareConversationResponse); i {
+			switch v := v.(*ShareConversationRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11388,7 +11491,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[90].Exporter = func(v any, i int) any {
-			switch v := v.(*ForkConversationRequest); i {
+			switch v := v.(*ShareConversationResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11400,7 +11503,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[91].Exporter = func(v any, i int) any {
-			switch v := v.(*ForkConversationResponse); i {
+			switch v := v.(*ForkConversationRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11412,7 +11515,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[92].Exporter = func(v any, i int) any {
-			switch v := v.(*ListToolsRequest); i {
+			switch v := v.(*ForkConversationResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11424,7 +11527,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[93].Exporter = func(v any, i int) any {
-			switch v := v.(*ListToolsResponse); i {
+			switch v := v.(*ListToolsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11436,7 +11539,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[94].Exporter = func(v any, i int) any {
-			switch v := v.(*CompleteRequest); i {
+			switch v := v.(*ListToolsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11448,7 +11551,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[95].Exporter = func(v any, i int) any {
-			switch v := v.(*CompleteResponse); i {
+			switch v := v.(*CompleteRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11460,7 +11563,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[96].Exporter = func(v any, i int) any {
-			switch v := v.(*CompleteStreamingRequest); i {
+			switch v := v.(*CompleteResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11472,7 +11575,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[97].Exporter = func(v any, i int) any {
-			switch v := v.(*CompleteStreamingResponse); i {
+			switch v := v.(*CompleteStreamingRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11484,7 +11587,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[98].Exporter = func(v any, i int) any {
-			switch v := v.(*IssueDevJWTRequest); i {
+			switch v := v.(*CompleteStreamingResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11496,7 +11599,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[99].Exporter = func(v any, i int) any {
-			switch v := v.(*IssueDevJWTResponse); i {
+			switch v := v.(*IssueDevJWTRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11508,7 +11611,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[100].Exporter = func(v any, i int) any {
-			switch v := v.(*AnalyzeVariablesRequest); i {
+			switch v := v.(*IssueDevJWTResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11520,7 +11623,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[101].Exporter = func(v any, i int) any {
-			switch v := v.(*AnalyzeVariablesResponse); i {
+			switch v := v.(*AnalyzeVariablesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11532,7 +11635,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[102].Exporter = func(v any, i int) any {
-			switch v := v.(*AnalyzedVariable); i {
+			switch v := v.(*AnalyzeVariablesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11544,7 +11647,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[103].Exporter = func(v any, i int) any {
-			switch v := v.(*ListGitCommitsRequest); i {
+			switch v := v.(*AnalyzedVariable); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11556,7 +11659,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[104].Exporter = func(v any, i int) any {
-			switch v := v.(*ListGitCommitsResponse); i {
+			switch v := v.(*ListGitCommitsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11568,7 +11671,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[105].Exporter = func(v any, i int) any {
-			switch v := v.(*GitCommit); i {
+			switch v := v.(*ListGitCommitsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11580,7 +11683,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[106].Exporter = func(v any, i int) any {
-			switch v := v.(*GitStatusRequest); i {
+			switch v := v.(*GitCommit); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11592,7 +11695,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[107].Exporter = func(v any, i int) any {
-			switch v := v.(*GitStatusResponse); i {
+			switch v := v.(*GitStatusRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11604,7 +11707,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[108].Exporter = func(v any, i int) any {
-			switch v := v.(*ListGitBranchesRequest); i {
+			switch v := v.(*GitStatusResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11616,7 +11719,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[109].Exporter = func(v any, i int) any {
-			switch v := v.(*ListGitBranchesResponse); i {
+			switch v := v.(*ListGitBranchesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11628,7 +11731,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[110].Exporter = func(v any, i int) any {
-			switch v := v.(*GitBranch); i {
+			switch v := v.(*ListGitBranchesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11640,7 +11743,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[111].Exporter = func(v any, i int) any {
-			switch v := v.(*GitCommitRequest); i {
+			switch v := v.(*GitBranch); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11652,7 +11755,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[112].Exporter = func(v any, i int) any {
-			switch v := v.(*GitCommitResponse); i {
+			switch v := v.(*GitCommitRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11664,7 +11767,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[113].Exporter = func(v any, i int) any {
-			switch v := v.(*RestoreGitCommitRequest); i {
+			switch v := v.(*GitCommitResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11676,7 +11779,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[114].Exporter = func(v any, i int) any {
-			switch v := v.(*RestoreGitCommitResponse); i {
+			switch v := v.(*RestoreGitCommitRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11688,7 +11791,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[115].Exporter = func(v any, i int) any {
-			switch v := v.(*GitMergeToBranchRequest); i {
+			switch v := v.(*RestoreGitCommitResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11700,7 +11803,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[116].Exporter = func(v any, i int) any {
-			switch v := v.(*GitMergeToBranchResponse); i {
+			switch v := v.(*GitMergeToBranchRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11712,7 +11815,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[117].Exporter = func(v any, i int) any {
-			switch v := v.(*GitSwitchBranchRequest); i {
+			switch v := v.(*GitMergeToBranchResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11724,7 +11827,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[118].Exporter = func(v any, i int) any {
-			switch v := v.(*GitSwitchBranchResponse); i {
+			switch v := v.(*GitSwitchBranchRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11736,7 +11839,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[119].Exporter = func(v any, i int) any {
-			switch v := v.(*GitPullRequest); i {
+			switch v := v.(*GitSwitchBranchResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11748,7 +11851,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[120].Exporter = func(v any, i int) any {
-			switch v := v.(*GitPullResponse); i {
+			switch v := v.(*GitPullRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11760,7 +11863,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[121].Exporter = func(v any, i int) any {
-			switch v := v.(*GitPushRequest); i {
+			switch v := v.(*GitPullResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11772,6 +11875,18 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[122].Exporter = func(v any, i int) any {
+			switch v := v.(*GitPushRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_runtime_v1_api_proto_msgTypes[123].Exporter = func(v any, i int) any {
 			switch v := v.(*GitPushResponse); i {
 			case 0:
 				return &v.state
@@ -11783,7 +11898,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[131].Exporter = func(v any, i int) any {
+		file_rill_runtime_v1_api_proto_msgTypes[132].Exporter = func(v any, i int) any {
 			switch v := v.(*ConnectorDriver_Property); i {
 			case 0:
 				return &v.state
@@ -11803,7 +11918,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_runtime_v1_api_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   134,
+			NumMessages:   135,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

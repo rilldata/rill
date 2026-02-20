@@ -30,6 +30,7 @@ type RouterAgentArgs struct {
 	AnalystAgentArgs   *AnalystAgentArgs   `json:"analyst_agent_args,omitempty" jsonschema:"Optional arguments to pass to the analyst agent if the selected agent is analyst_agent."`
 	DeveloperAgentArgs *DeveloperAgentArgs `json:"developer_agent_args,omitempty" jsonschema:"Optional arguments to pass to the developer agent if the selected agent is developer_agent."`
 	FeedbackAgentArgs  *FeedbackAgentArgs  `json:"feedback_agent_args,omitempty" jsonschema:"Optional arguments to pass to the feedback agent if the selected agent is feedback_agent."`
+	RestoreChangesArgs *RestoreChangesArgs `json:"restore_changes_args,omitempty" jsonschema:"Optional arguments to pass to the restore changes agent if the selected agent is restore_changes_agent."`
 	SkipHandoff        bool                `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
 }
 
@@ -200,6 +201,19 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			return nil, err
 		}
 		return &RouterAgentResult{Response: res.Response, Agent: FeedbackAgentName}, nil
+
+	case RestoreChangesName:
+		var res *RestoreChangesResult
+		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
+			Role: RoleUser,
+			Tool: RestoreChangesName,
+			Out:  &res,
+			Args: args.RestoreChangesArgs,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &RouterAgentResult{Response: "Changes restored.", Agent: RestoreChangesName}, nil
 	}
 
 	return nil, fmt.Errorf("agent %q not implemented", args.Agent)

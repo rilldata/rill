@@ -573,7 +573,7 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string, revert
 	}
 
 	if revertAll {
-		err = revertToCommit(gitPath, subpath, commitSHA)
+		err = revertToCommit(gitPath, commitSHA)
 		if err != nil {
 			return "", err
 		}
@@ -793,14 +793,10 @@ func restoreToCommit(path, subpath, commithash string) error {
 	return nil
 }
 
-func revertToCommit(path, subpath, commithash string) error {
+func revertToCommit(path, commithash string) error {
+	// TODO: test with subpath
 	var args []string
 	args = append(args, "-C", path, "revert", "--no-commit", fmt.Sprintf("%s^..HEAD", commithash))
-	if subpath != "" {
-		args = append(args, "--", subpath)
-	} else {
-		args = append(args, "--", ".")
-	}
 	cmd := exec.Command("git", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {

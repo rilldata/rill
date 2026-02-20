@@ -1,7 +1,4 @@
-import {
-  type V1Message,
-  type V1ResourceName,
-} from "@rilldata/web-common/runtime-client";
+import { type V1Message } from "@rilldata/web-common/runtime-client";
 import {
   createFileDiffBlock,
   type FileDiffBlock,
@@ -31,11 +28,13 @@ export function createDevelopBlock(
     const diffs = writeMessages.map((message) =>
       createFileDiffBlock(message, resultMessagesByParentId.get(message.id)),
     );
+    const nonNullDiffs = diffs.filter(Boolean) as FileDiffBlock[];
+    if (nonNullDiffs.length === 0) return null;
 
     return {
       type: "develop",
       id,
-      diffs: diffs.filter(Boolean) as FileDiffBlock[],
+      diffs: nonNullDiffs,
       checkpointCommitHash: diffs[0]?.checkpointCommitHash || "",
     };
   } catch {

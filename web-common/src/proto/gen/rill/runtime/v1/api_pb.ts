@@ -4622,6 +4622,14 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
    */
   currentFilePath = "";
 
+  /**
+   * Optional flag to enable checkpoint commits before a write_file.
+   * Used to revert changes made by developer_agent.
+   *
+   * @generated from field: bool enable_checkpoint_commits = 3;
+   */
+  enableCheckpointCommits = false;
+
   constructor(data?: PartialMessage<DeveloperAgentContext>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4632,6 +4640,7 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "init_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "current_file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "enable_checkpoint_commits", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeveloperAgentContext {
@@ -4714,6 +4723,47 @@ export class FeedbackAgentContext extends Message$1<FeedbackAgentContext> {
 
   static equals(a: FeedbackAgentContext | PlainMessage<FeedbackAgentContext> | undefined, b: FeedbackAgentContext | PlainMessage<FeedbackAgentContext> | undefined): boolean {
     return proto3.util.equals(FeedbackAgentContext, a, b);
+  }
+}
+
+/**
+ * Context for restoring changes made after a checkpoint.
+ *
+ * @generated from message rill.runtime.v1.RestoreChangesContext
+ */
+export class RestoreChangesContext extends Message$1<RestoreChangesContext> {
+  /**
+   * Write file call id which has the checkpoint commit hash.
+   *
+   * @generated from field: string revert_till_write_call_id = 1;
+   */
+  revertTillWriteCallId = "";
+
+  constructor(data?: PartialMessage<RestoreChangesContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RestoreChangesContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "revert_till_write_call_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RestoreChangesContext {
+    return new RestoreChangesContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RestoreChangesContext {
+    return new RestoreChangesContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RestoreChangesContext {
+    return new RestoreChangesContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RestoreChangesContext | PlainMessage<RestoreChangesContext> | undefined, b: RestoreChangesContext | PlainMessage<RestoreChangesContext> | undefined): boolean {
+    return proto3.util.equals(RestoreChangesContext, a, b);
   }
 }
 
@@ -5212,6 +5262,14 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   feedbackAgentContext?: FeedbackAgentContext;
 
+  /**
+   * Optional context for restoring changes made after a checkpoint.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.RestoreChangesContext restore_changes_context = 14;
+   */
+  restoreChangesContext?: RestoreChangesContext;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5227,6 +5285,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
     { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
+    { no: 14, name: "restore_changes_context", kind: "message", T: RestoreChangesContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -5350,6 +5409,14 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
    */
   feedbackAgentContext?: FeedbackAgentContext;
 
+  /**
+   * Optional context for restoring changes made after a checkpoint.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.RestoreChangesContext restore_changes_context = 14;
+   */
+  restoreChangesContext?: RestoreChangesContext;
+
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5365,6 +5432,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
     { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
+    { no: 14, name: "restore_changes_context", kind: "message", T: RestoreChangesContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {
