@@ -197,9 +197,6 @@
     if (m.hasSchedule && m.scheduleDescription) {
       lines.push(`cron: "${m.scheduleDescription}"`);
     }
-    if (m.refUpdate && m.hasSchedule) {
-      lines.push(`ref_update: true`);
-    }
     if (m.timeoutSeconds) {
       lines.push(`timeout_seconds: ${m.timeoutSeconds}`);
     }
@@ -278,6 +275,9 @@
             <span class="describe-kind">
               {#if kind}{displayResourceKind(kind)}{:else}Unknown{/if}
             </span>
+            {#if filePath}
+              <span class="describe-filepath">{filePath.replace(/^\//, "")}</span>
+            {/if}
           </div>
         </div>
       </Dialog.Title>
@@ -716,6 +716,10 @@
 
   .describe-kind {
     @apply text-xs text-fg-secondary capitalize;
+  }
+
+  .describe-filepath {
+    @apply text-xs text-fg-muted font-mono truncate;
   }
 
   .describe-body {

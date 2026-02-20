@@ -5,13 +5,14 @@
   import { Button } from "@rilldata/web-common/components/button";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { RefreshCw, RotateCcw, ExternalLink, Info } from "lucide-svelte";
+  import { RefreshCw, RotateCcw, ExternalLink, Info, GitBranch } from "lucide-svelte";
   import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { goto } from "$app/navigation";
   import type { ResourceNodeData } from "../shared/types";
   import ResourceDescribeModal from "./ResourceDescribeModal.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { tokenForKind } from "../navigation/seed-parser";
 
   export let data: ResourceNodeData;
 
@@ -87,6 +88,15 @@
     isOpen = false;
     describeOpen = true;
   }
+
+  function viewNodeTree() {
+    isOpen = false;
+    const kindToken = tokenForKind(kind);
+    const params = new URLSearchParams();
+    if (kindToken) params.set("kind", kindToken);
+    if (resourceName) params.set("resource", resourceName);
+    goto(`/graph?${params.toString()}`);
+  }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -106,6 +116,15 @@
         <div class="flex items-center gap-x-2">
           <Info size="12px" />
           <span>Describe</span>
+        </div>
+      </DropdownMenu.Item>
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={viewNodeTree}
+      >
+        <div class="flex items-center gap-x-2">
+          <GitBranch size="12px" />
+          <span>View Resource Tree</span>
         </div>
       </DropdownMenu.Item>
       {#if filePath}

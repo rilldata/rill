@@ -5,6 +5,7 @@
   import {
     parseGraphUrlParams,
     tokenForKind,
+    tokenForSeedString,
   } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
   import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -23,7 +24,11 @@
 
   // Parse URL parameters
   $: urlParams = parseGraphUrlParams($page.url);
-  $: activeKind = urlParams.kind ?? "connector";
+  $: derivedKindFromResource =
+    urlParams.resources.length > 0
+      ? tokenForSeedString(urlParams.resources[0])
+      : null;
+  $: activeKind = urlParams.kind ?? derivedKindFromResource ?? "connector";
   $: seeds = [activeKind];
 
   // Sidebar selection from URL ?resource= param
