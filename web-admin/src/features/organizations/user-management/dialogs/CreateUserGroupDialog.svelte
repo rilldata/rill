@@ -93,7 +93,9 @@
   function toggleProjectSelection(projectName: string) {
     const idx = selectedProjects.indexOf(projectName);
     if (idx >= 0) {
-      selectedProjects = selectedProjects.filter((name) => name !== projectName);
+      selectedProjects = selectedProjects.filter(
+        (name) => name !== projectName,
+      );
     } else {
       selectedProjects = [...selectedProjects, projectName];
     }
@@ -148,7 +150,8 @@
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
-  const addProjectMemberUsergroup = createAdminServiceAddProjectMemberUsergroup();
+  const addProjectMemberUsergroup =
+    createAdminServiceAddProjectMemberUsergroup();
 
   async function handleCreate(newName: string) {
     try {
@@ -411,7 +414,10 @@
                   <CaretDownIcon size="12px" />
                 {/if}
               </Dropdown.Trigger>
-              <Dropdown.Content align="start" class="w-full max-h-60 overflow-y-auto">
+              <Dropdown.Content
+                align="start"
+                class="w-full max-h-60 overflow-y-auto"
+              >
                 {#each projects as p (p.id)}
                   <Dropdown.CheckboxItem
                     class="font-normal flex items-center overflow-hidden"

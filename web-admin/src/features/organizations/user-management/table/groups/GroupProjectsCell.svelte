@@ -20,14 +20,12 @@
   let isDropdownOpen = false;
   let isPending = true;
   let accessibleProjects: ProjectWithRole[] = [];
-  let error: string | null = null;
   let hasLoaded = false;
 
   async function loadProjectsForGroup() {
     if (hasLoaded) return;
 
     isPending = true;
-    error = null;
 
     try {
       const projectsResponse =
@@ -65,8 +63,8 @@
         .filter((r) => r.hasAccess && r.project)
         .map((r) => r.project as ProjectWithRole);
       hasLoaded = true;
-    } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to load projects";
+    } catch {
+      // Ignore errors, will show "No projects"
     } finally {
       isPending = false;
     }
@@ -111,7 +109,9 @@
           class="flex items-center justify-between gap-4"
         >
           <span class="truncate">{project.name}</span>
-          <span class="text-fg-secondary text-xs shrink-0">{formatRoleName(project.roleName)}</span>
+          <span class="text-fg-secondary text-xs shrink-0"
+            >{formatRoleName(project.roleName)}</span
+          >
         </Dropdown.Item>
       {/each}
     </Dropdown.Content>
