@@ -198,8 +198,13 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, err
 	}
 
-	if len(entries) > 0 && entries[0].IsDir && r.props.Partition == globPartitionTypeUnspecified {
-		r.props.Partition = globPartitionTypeDirectory
+	if len(entries) > 0 && entries[0].IsDir {
+		if r.props.Partition == globPartitionTypeUnspecified {
+			r.props.Partition = globPartitionTypeDirectory
+		}
+		if r.props.Partition == globPartitionTypeFile {
+			return nil, fmt.Errorf("glob is getting directory but glob type is %q", r.props.Partition)
+		}
 	}
 
 	var rows []map[string]any
