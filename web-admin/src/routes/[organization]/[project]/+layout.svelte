@@ -27,6 +27,7 @@
 </script>
 
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     V1DeploymentStatus,
@@ -48,7 +49,6 @@
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
-  import { effectiveProjectPermissionsStore } from "@rilldata/web-admin/features/view-as-user/effectivePermissionsStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
@@ -58,6 +58,7 @@
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -65,6 +66,28 @@
     url: { pathname },
     params: { organization, project, token },
   } = $page);
+
+  // Initialize view-as store for this project scope (loads from sessionStorage)
+  $: if (organization && project) {
+    viewAsUserStore.initForProject(organization, project);
+  }
+
+  // Clear view-as state when navigating to a different project
+  onNavigate(({ from, to }) => {
+    const changedProject =
+      !from ||
+      !to ||
+      from.params?.organization !== to.params?.organization ||
+      from.params?.project !== to.params?.project;
+    if (changedProject) {
+      viewAsUserStore.clear();
+    }
+  });
+
+  // Clear view-as state when unmounting (e.g., navigating to org page)
+  onDestroy(() => {
+    viewAsUserStore.clear();
+  });
 
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
@@ -150,13 +173,6 @@
     mockedUserId && $mockedUserProjectQuery.data?.projectPermissions
       ? $mockedUserProjectQuery.data.projectPermissions
       : projectData?.projectPermissions;
-
-  // Update the global store so TopNavigationBar can access effective permissions
-  $: effectiveProjectPermissionsStore.set(
-    mockedUserId && $mockedUserProjectQuery.data?.projectPermissions
-      ? $mockedUserProjectQuery.data.projectPermissions
-      : null,
-  );
 
   $: deploymentStatus = projectData?.deployment?.status;
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
