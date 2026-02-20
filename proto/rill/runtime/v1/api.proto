@@ -1084,12 +1084,20 @@ message Message {
 message AnalystAgentContext {
   // Optional explore dashboard.
   string explore = 4;
+  // Optional canvas dashboard.
+  string canvas = 10;
+  // Optional canvas component within a dashboard.
+  string canvas_component = 11;
   // Optional dimensions.
   repeated string dimensions = 5;
   // Optional measures.
   repeated string measures = 6;
   // Optional filters.
   rill.runtime.v1.Expression where = 7;
+  // Filter expressions as key-value pairs for the canvas.
+  // Key: Metrics view name
+  // Value: Expression object
+  map<string, rill.runtime.v1.Expression> where_per_metrics_view = 12;
   // Optional start of a time range.
   google.protobuf.Timestamp time_start = 8;
   // Optional end of a time range.
@@ -1104,6 +1112,19 @@ message DeveloperAgentContext {
   // Optional path to the file that the user is currently viewing/editing.
   // This helps the agent understand which file the user is referring to in their request.
   string current_file_path = 2;
+}
+
+// Context for prompts handled by the feedback_agent.
+// When provided, the agent records feedback and, for negative sentiment, runs attribution.
+message FeedbackAgentContext {
+  // The ID of the message being rated.
+  string target_message_id = 1;
+  // Sentiment: "positive" or "negative".
+  string sentiment = 2;
+  // Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other".
+  repeated string categories = 3;
+  // Optional free-text comment.
+  string comment = 4;
 }
 
 // Request message for RuntimeService.ListConversations
@@ -1175,13 +1196,16 @@ message CompleteRequest {
   string prompt = 3;
   // Optional agent to use for the completion.
   // If not set, it will infer an agent based on the prompt and conversation history.
-  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent"]}];
+  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent", "feedback_agent"]}];
   // Optional context for prompts handled by the analyst_agent.
   // The field is ignored if another agent is selected.
   AnalystAgentContext analyst_agent_context = 11;
   // Optional context for prompts handled by the developer_agent.
   // The field is ignored if another agent is selected.
   DeveloperAgentContext developer_agent_context = 12;
+  // Optional context for prompts handled by the feedback_agent.
+  // The field is ignored if another agent is selected.
+  FeedbackAgentContext feedback_agent_context = 13;
 }
 
 // Response message for RuntimeService.Complete
@@ -1200,13 +1224,16 @@ message CompleteStreamingRequest {
   string prompt = 3;
   // Optional agent to use for the completion.
   // If not set, it will infer an agent based on the prompt and conversation history.
-  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent"]}];
+  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent", "feedback_agent"]}];
   // Optional context for prompts handled by the analyst_agent.
   // The field is ignored if another agent is selected.
   AnalystAgentContext analyst_agent_context = 11;
   // Optional context for prompts handled by the developer_agent.
   // The field is ignored if another agent is selected.
   DeveloperAgentContext developer_agent_context = 12;
+  // Optional context for prompts handled by the feedback_agent.
+  // The field is ignored if another agent is selected.
+  FeedbackAgentContext feedback_agent_context = 13;
 }
 
 // Response message for RuntimeService.CompleteStreaming

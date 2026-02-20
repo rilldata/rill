@@ -1,5 +1,30 @@
 components:
     schemas:
+        GetAlertMetaResponseURLs:
+            properties:
+                editUrl:
+                    type: string
+                openUrl:
+                    type: string
+                unsubscribeUrl:
+                    type: string
+            type: object
+        GetReportMetaResponseDeliveryMeta:
+            properties:
+                editUrl:
+                    type: string
+                exportUrl:
+                    type: string
+                openUrl:
+                    type: string
+                unsubscribeUrl:
+                    type: string
+                userAttrs:
+                    title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
+                    type: object
+                userId:
+                    type: string
+            type: object
         ListGithubUserReposResponseRepo:
             properties:
                 defaultBranch:
@@ -542,8 +567,6 @@ components:
             type: object
         v1EditReportResponse:
             type: object
-        v1EditUsergroupResponse:
-            type: object
         v1ExportFormat:
             default: EXPORT_FORMAT_UNSPECIFIED
             enum:
@@ -578,17 +601,8 @@ components:
                     type: object
                 recipientUrls:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1GetAlertMetaResponseURLs'
+                        $ref: '#/components/schemas/GetAlertMetaResponseURLs'
                     type: object
-            type: object
-        v1GetAlertMetaResponseURLs:
-            properties:
-                editUrl:
-                    type: string
-                openUrl:
-                    type: string
-                unsubscribeUrl:
-                    type: string
             type: object
         v1GetAlertYAMLResponse:
             properties:
@@ -859,21 +873,10 @@ components:
             type: object
         v1GetReportMetaResponse:
             properties:
-                recipientUrls:
+                deliveryMeta:
                     additionalProperties:
-                        $ref: '#/components/schemas/v1GetReportMetaResponseURLs'
+                        $ref: '#/components/schemas/GetReportMetaResponseDeliveryMeta'
                     type: object
-            type: object
-        v1GetReportMetaResponseURLs:
-            properties:
-                editUrl:
-                    type: string
-                exportUrl:
-                    type: string
-                openUrl:
-                    type: string
-                unsubscribeUrl:
-                    type: string
             type: object
         v1GetServiceResponse:
             properties:
@@ -1709,8 +1712,6 @@ components:
             type: object
         v1RemoveWhitelistedDomainResponse:
             type: object
-        v1RenameUsergroupResponse:
-            type: object
         v1RenewBillingSubscriptionResponse:
             properties:
                 organization:
@@ -1738,18 +1739,22 @@ components:
                 exportLimit:
                     format: uint64
                     type: string
-                filter:
-                    $ref: '#/components/schemas/v1Expression'
                 intervalDuration:
                     type: string
                 queryArgsJson:
+                    title: use resolver/resolver_properties instead
                     type: string
                 queryName:
+                    title: use resolver/resolver_properties instead
                     type: string
                 refreshCron:
                     type: string
                 refreshTimeZone:
                     type: string
+                resolver:
+                    type: string
+                resolverProperties:
+                    type: object
                 slackChannels:
                     items:
                         type: string
@@ -1765,10 +1770,9 @@ components:
                 webOpenMode:
                     title: |-
                         web_open_mode is used to determine how to create or disable open link for the report
-                        - send "recipient" for older reports (old behaviour)
-                        - send "creator" for reports that should be opened with creators permissions
+                        - send "recipient" for reports that should be opened with recipient's permissions - requires login
+                        - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
                         - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-                        - send "filtered" for reports that should be opened with creators permissions but with locked filters
                     type: string
                 webOpenPath:
                     description: Annotation for the subpath of <UI host>/org/project to open for the report.
@@ -2184,6 +2188,11 @@ components:
                 preferences:
                     $ref: '#/components/schemas/v1UserPreferences'
             type: object
+        v1UpdateUsergroupResponse:
+            properties:
+                usergroup:
+                    $ref: '#/components/schemas/v1Usergroup'
+            type: object
         v1User:
             properties:
                 createdOn:
@@ -2477,7 +2486,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: UpdateOrganization deletes an organizations
+            summary: UpdateOrganization updates an organization
             x-visibility: public
     /v1/orgs/{org}/billing/issues: {}
     /v1/orgs/{org}/billing/payments/portal-url: {}
@@ -2638,7 +2647,6 @@ paths:
             x-visibility: public
     /v1/orgs/{org}/members/{email}/attributes: {}
     /v1/orgs/{org}/members/current: {}
-    /v1/orgs/{org}/project/{project}/usergroups: {}
     /v1/orgs/{org}/projects:
         get:
             operationId: AdminService_ListProjectsForOrganization
@@ -2670,7 +2678,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
+            summary: ListProjectsForOrganization lists all the projects currently available for a given organization.
             x-visibility: public
         post:
             operationId: AdminService_CreateProject
@@ -2764,7 +2772,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: DeleteProject deletes an project
+            summary: DeleteProject deletes a project
             x-visibility: public
         get:
             operationId: AdminService_GetProject
@@ -2887,9 +2895,253 @@ paths:
     /v1/orgs/{org}/projects/{project}/deployments: {}
     /v1/orgs/{org}/projects/{project}/hibernate: {}
     /v1/orgs/{org}/projects/{project}/iframe: {}
-    /v1/orgs/{org}/projects/{project}/invites: {}
-    /v1/orgs/{org}/projects/{project}/members: {}
-    /v1/orgs/{org}/projects/{project}/members/{email}: {}
+    /v1/orgs/{org}/projects/{project}/invites:
+        get:
+            operationId: AdminService_ListProjectInvites
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: pageSize
+                  schema:
+                    format: int64
+                    type: integer
+                - in: query
+                  name: pageToken
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListProjectInvitesResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListProjectInvites lists all the project invites
+            x-visibility: public
+    /v1/orgs/{org}/projects/{project}/members:
+        get:
+            operationId: AdminService_ListProjectMemberUsers
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - description: Optionally filter by role
+                  in: query
+                  name: role
+                  schema:
+                    type: string
+                - in: query
+                  name: pageSize
+                  schema:
+                    format: int64
+                    type: integer
+                - in: query
+                  name: pageToken
+                  schema:
+                    type: string
+                - in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListProjectMemberUsersResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListProjectMemberUsers lists all the project members
+            x-visibility: public
+        post:
+            operationId: AdminService_AddProjectMemberUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                email:
+                                    type: string
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
+                                role:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1AddProjectMemberUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: AddProjectMemberUser adds a member to the project
+            x-visibility: public
+    /v1/orgs/{org}/projects/{project}/members/{email}:
+        delete:
+            operationId: AdminService_RemoveProjectMemberUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: email
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1RemoveProjectMemberUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: RemoveProjectMemberUser removes member from the project
+            x-visibility: public
+        get:
+            operationId: AdminService_GetProjectMemberUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: email
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetProjectMemberUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetProjectMemberUser gets the member details
+            x-visibility: public
+        put:
+            operationId: AdminService_SetProjectMemberUserRole
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: email
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
+                                role:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SetProjectMemberUserRoleResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SetProjectMemberUserRole sets the role for the member
+            x-visibility: public
     /v1/orgs/{org}/projects/{project}/members/{email}/usergroups: {}
     /v1/orgs/{org}/projects/{project}/redeploy: {}
     /v1/orgs/{org}/projects/{project}/reports: {}
@@ -2902,7 +3154,186 @@ paths:
     /v1/orgs/{org}/projects/{project}/services/{name}: {}
     /v1/orgs/{org}/projects/{project}/services/{name}/role: {}
     /v1/orgs/{org}/projects/{project}/tokens/magic: {}
-    /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles: {}
+    /v1/orgs/{org}/projects/{project}/usergroups:
+        get:
+            operationId: AdminService_ListProjectMemberUsergroups
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - description: Optionally filter by role
+                  in: query
+                  name: role
+                  schema:
+                    type: string
+                - description: Optionally include counts
+                  in: query
+                  name: includeCounts
+                  schema:
+                    type: boolean
+                - in: query
+                  name: pageSize
+                  schema:
+                    format: int64
+                    type: integer
+                - in: query
+                  name: pageToken
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListProjectMemberUsergroupsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListProjectMemberUsergroups lists the user groups assigned to a project
+            x-visibility: public
+    /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles:
+        delete:
+            operationId: AdminService_RemoveProjectMemberUsergroup
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: usergroup
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1RemoveProjectMemberUsergroupResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: RemoveProjectMemberUsergroup revokes the project-level role for the user group
+            x-visibility: public
+        post:
+            operationId: AdminService_AddProjectMemberUsergroup
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: usergroup
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
+                                role:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1AddProjectMemberUsergroupResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: AddProjectMemberUsergroup adds a user group to the project with a role
+            x-visibility: public
+        put:
+            operationId: AdminService_SetProjectMemberUsergroupRole
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: usergroup
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
+                                role:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SetProjectMemberUsergroupRoleResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: SetProjectMemberUsergroupRole sets the role for the user group
+            x-visibility: public
     /v1/orgs/{org}/projects/{project}/users/search: {}
     /v1/orgs/{org}/projects/{project}/variables:
         get:
@@ -2955,11 +3386,301 @@ paths:
     /v1/orgs/{org}/services/{name}: {}
     /v1/orgs/{org}/services/{name}/role: {}
     /v1/orgs/{org}/services/{serviceName}/tokens: {}
-    /v1/orgs/{org}/usergroups: {}
+    /v1/orgs/{org}/usergroups:
+        get:
+            operationId: AdminService_ListOrganizationMemberUsergroups
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - description: Optionally filter by role
+                  in: query
+                  name: role
+                  schema:
+                    type: string
+                - description: Optionally include counts
+                  in: query
+                  name: includeCounts
+                  schema:
+                    type: boolean
+                - in: query
+                  name: pageSize
+                  schema:
+                    format: int64
+                    type: integer
+                - in: query
+                  name: pageToken
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListOrganizationMemberUsergroupsResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListOrganizationMemberUsergroups lists the organization's user groups
+            x-visibility: public
+        post:
+            operationId: AdminService_CreateUsergroup
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                name:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1CreateUsergroupResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: CreateUsergroup creates a user group in the organization
+            x-visibility: public
     /v1/orgs/{org}/usergroups-for-user: {}
-    /v1/orgs/{org}/usergroups/{usergroup}: {}
-    /v1/orgs/{org}/usergroups/{usergroup}/members: {}
-    /v1/orgs/{org}/usergroups/{usergroup}/members/{email}: {}
+    /v1/orgs/{org}/usergroups/{usergroup}:
+        delete:
+            operationId: AdminService_DeleteUsergroup
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: usergroup
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeleteUsergroupResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: DeleteUsergroup deletes the user group from the organization
+            x-visibility: public
+        get:
+            operationId: AdminService_GetUsergroup
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: usergroup
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: pageSize
+                  schema:
+                    format: int64
+                    type: integer
+                - in: query
+                  name: pageToken
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetUsergroupResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetUsergroup returns the user group details
+            x-visibility: public
+        patch:
+            operationId: AdminService_UpdateUsergroup
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: usergroup
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                description:
+                                    type: string
+                                newName:
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1UpdateUsergroupResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: UpdateUsergroup updates a user group's name and/or description
+            x-visibility: public
+    /v1/orgs/{org}/usergroups/{usergroup}/members:
+        get:
+            operationId: AdminService_ListUsergroupMemberUsers
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: usergroup
+                  required: true
+                  schema:
+                    type: string
+                - in: query
+                  name: pageSize
+                  schema:
+                    format: int64
+                    type: integer
+                - in: query
+                  name: pageToken
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1ListUsergroupMemberUsersResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: ListUsergroupMemberUsers lists all the user group members
+            x-visibility: public
+    /v1/orgs/{org}/usergroups/{usergroup}/members/{email}:
+        delete:
+            operationId: AdminService_RemoveUsergroupMemberUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: usergroup
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: email
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1RemoveUsergroupMemberUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: RemoveUsergroupMemberUser removes member from the user group
+            x-visibility: public
+        put:
+            operationId: AdminService_AddUsergroupMemberUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: usergroup
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: email
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1AddUsergroupMemberUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: AddUsergroupMemberUser adds a member to the user group
+            x-visibility: public
     /v1/orgs/{org}/usergroups/{usergroup}/role: {}
     /v1/orgs/{org}/whitelisted: {}
     /v1/orgs/{org}/whitelisted/{domain}: {}

@@ -4,7 +4,9 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
+  import KeyValueInput from "@rilldata/web-common/components/forms/KeyValueInput.svelte";
   import { normalizeErrors } from "./error-utils";
+  import { getFileAccept } from "./file-encoding";
   import type { JSONSchemaField } from "./schemas/types";
 
   export let id: string;
@@ -12,13 +14,17 @@
   export let optional: boolean;
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
-  export let handleFileUpload: (file: File) => Promise<string>;
+  export let handleFileUpload: (
+    file: File,
+    fieldKey: string,
+  ) => Promise<string>;
   export let value: any;
   export let checked: boolean | undefined;
   export let options:
     | Array<{ value: string; label: string; description?: string }>
     | undefined;
   export let name: string | undefined;
+  export let disabled: boolean = false;
 </script>
 
 {#if prop["x-informational"]}
@@ -34,8 +40,8 @@
     hint={prop.description ?? prop["x-hint"]}
     {optional}
     bind:value
-    uploadFile={handleFileUpload}
-    accept={prop["x-accept"]}
+    uploadFile={(file) => handleFileUpload(file, id)}
+    accept={getFileAccept(prop)}
   />
 {:else if prop.type === "boolean"}
   <Checkbox
@@ -44,9 +50,19 @@
     label={prop.title ?? id}
     hint={prop.description ?? prop["x-hint"]}
     {optional}
+    {disabled}
+  />
+{:else if prop["x-display"] === "key-value"}
+  <KeyValueInput
+    {id}
+    label={prop.title ?? id}
+    hint={prop.description ?? prop["x-hint"]}
+    {optional}
+    bind:value
+    keyPlaceholder={prop["x-placeholder"]}
   />
 {:else if options?.length}
-  <Radio bind:value {options} {name} />
+  <Radio bind:value {options} {name} {disabled} />
 {:else}
   <Input
     {id}
@@ -58,8 +74,9 @@
     errors={normalizeErrors(errors)}
     bind:value
     multiline={prop["x-display"] === "textarea"}
-    fontFamily="inherit"
+    fontFamily={prop["x-monospace"] ? "monospace" : "inherit"}
     onInput={(_, e) => onStringInputChange(e)}
     alwaysShowError
+    {disabled}
   />
 {/if}

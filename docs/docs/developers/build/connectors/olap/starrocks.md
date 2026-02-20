@@ -23,7 +23,7 @@ Rill supports connecting to an existing StarRocks cluster via a read-only OLAP c
 
 When using StarRocks for local development, you can connect via connection parameters or by using a DSN.
 
-After selecting "Add Data", select StarRocks and fill in your connection parameters. This will automatically create the `starrocks.yaml` file in your `connectors` directory and populate the `.env` file with `connector.starrocks.password`.
+After selecting "Add Data", select StarRocks and fill in your connection parameters. This will automatically create the `starrocks.yaml` file in your `connectors` directory and populate the `.env` file with `STARROCKS_PASSWORD`.
 
 ### Connection Parameters
 
@@ -34,7 +34,7 @@ driver: starrocks
 host: <HOSTNAME>
 port: 9030
 username: <USERNAME>
-password: "{{ .env.connector.starrocks.password }}"
+password: "{{ .env.STARROCKS_PASSWORD }}"
 catalog: default_catalog
 database: <DATABASE>
 ssl: false
@@ -48,7 +48,7 @@ Rill can also connect to StarRocks using a DSN connection string. StarRocks uses
 type: connector
 driver: starrocks
 
-dsn: "{{ .env.connector.starrocks.dsn }}"
+dsn: "{{ .env.STARROCKS_DSN }}"
 ```
 
 #### Using default_catalog
@@ -106,7 +106,7 @@ driver: starrocks
 host: starrocks-fe.example.com
 port: 9030
 username: analyst
-password: "{{ .env.connector.starrocks.password }}"
+password: "{{ .env.STARROCKS_PASSWORD }}"
 catalog: iceberg_catalog
 database: my_database
 ```

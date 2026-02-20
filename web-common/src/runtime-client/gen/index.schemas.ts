@@ -301,17 +301,26 @@ export interface V1AlertState {
   executionCount?: number;
 }
 
+export type V1AnalystAgentContextWherePerMetricsView = {
+  [key: string]: V1Expression;
+};
+
 /**
  * Context for prompts handled by the analyst_agent.
  */
 export interface V1AnalystAgentContext {
   /** Optional explore dashboard. */
   explore?: string;
+  /** Optional canvas dashboard. */
+  canvas?: string;
+  /** Optional canvas component within a dashboard. */
+  canvasComponent?: string;
   /** Optional dimensions. */
   dimensions?: string[];
   /** Optional measures. */
   measures?: string[];
   where?: V1Expression;
+  wherePerMetricsView?: V1AnalystAgentContextWherePerMetricsView;
   /** Optional start of a time range. */
   timeStart?: string;
   /** Optional end of a time range. */
@@ -1002,6 +1011,21 @@ export interface V1Expression {
   val?: unknown;
   cond?: V1Condition;
   subquery?: V1Subquery;
+}
+
+/**
+ * Context for prompts handled by the feedback_agent.
+When provided, the agent records feedback and, for negative sentiment, runs attribution.
+ */
+export interface V1FeedbackAgentContext {
+  /** The ID of the message being rated. */
+  targetMessageId?: string;
+  /** Sentiment: "positive" or "negative". */
+  sentiment?: string;
+  /** Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other". */
+  categories?: string[];
+  /** Optional free-text comment. */
+  comment?: string;
 }
 
 /**
@@ -2171,6 +2195,8 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export type V1ReportSpecResolverProperties = { [key: string]: unknown };
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -2178,6 +2204,8 @@ export interface V1ReportSpec {
   trigger?: boolean;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
+  resolver?: string;
+  resolverProperties?: V1ReportSpecResolverProperties;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
@@ -2666,6 +2694,7 @@ If not set, it will infer an agent based on the prompt and conversation history.
   agent?: string;
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
+  feedbackAgentContext?: V1FeedbackAgentContext;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2678,6 +2707,7 @@ If not set, it will infer an agent based on the prompt and conversation history.
   agent?: string;
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
+  feedbackAgentContext?: V1FeedbackAgentContext;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

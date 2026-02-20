@@ -54,21 +54,18 @@ In various locations throughout the platform, you have the opportunity to fast-t
 
 **Directly from your connector's tables:**
 
-<img src='/img/build/dashboard/explorable-metrics.png' class='rounded-gif' />
-<br />
+![Explorable Metrics](/img/build/dashboard/explorable-metrics.png)
 
 **From an ingested model:**
 
 
-<img src='/img/build/metrics-view/create-with-ai.png' class='rounded-gif' />
-<br />
+![Create With AI](/img/build/metrics-view/create-with-ai.png)
 
 ## Preview a Dashboard in Rill Developer
 
 Once a dashboard is ready to preview, before [deploying to Rill Cloud](/developers/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer.
 
-<img src='/img/build/dashboard/preview.png' class='rounded-gif' />
-<br />
+![Preview](/img/build/dashboard/preview.png)
 
 ### Setting Up Dashboard Access
 
@@ -76,4 +73,4 @@ If you are setting up [dashboard policies](/developers/build/dashboards/customiz
 
 
 
-<img src='/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />
+![Preview Dashboard](/img/build/dashboard/preview-dashboard.png)
