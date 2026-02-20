@@ -10,6 +10,12 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v4
+    - name: Login to GCR
+      uses: docker/login-action@v3
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.RILL_BINARY_SA }}
     - name: Restore DuckDB extensions
       id: restore-duckdb-extensions
       uses: actions/cache/restore@v5
