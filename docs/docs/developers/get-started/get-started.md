@@ -7,7 +7,7 @@ sidebar_position: 00
 
 import FeatureList from '@site/src/components/FeatureList';
 
-Rill developer users encompass the data engineers, analytics engineers, BI developers, and platform teams — all building data pipelines, defining metrics, and delivering interactive dashboards with Rill. In addition to Rill Developer for local project development, these docs cover deploying to Rill Cloud, embedding dashboards into your own applications, and integrating with external tools and APIs.
+Rill Developer users encompass the data engineers, analytics engineers, BI developers, and platform teams — all building data pipelines, defining metrics, and delivering interactive dashboards with Rill. In addition to Rill Developer for local project development, these docs cover deploying to Rill Cloud, embedding dashboards into your own applications, and integrating with external tools and APIs.
 
 Looking to **explore dashboards and data** that your team has already set up? Head over to the [User Guide](/guide).
 
