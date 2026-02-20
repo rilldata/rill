@@ -315,6 +315,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
+	e.rewriteQueryArrayUnnest(qry)
+
 	ast, err := metricsview.NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
@@ -442,6 +444,8 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
 		return "", err
 	}
+
+	e.rewriteQueryArrayUnnest(qry)
 
 	ast, err := metricsview.NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
