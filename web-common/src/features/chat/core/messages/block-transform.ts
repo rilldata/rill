@@ -28,9 +28,14 @@ import {
   getToolConfig,
   isHiddenTool,
   type ToolConfig,
+  ToolGroupTypes,
 } from "./tools/tool-registry";
 import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
 import type { SimpleToolCall } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
+import {
+  createDevelopBlock,
+  type DevelopBlock,
+} from "@rilldata/web-common/features/chat/core/messages/develop/develop-block.ts";
 
 // =============================================================================
 // TYPES
@@ -42,6 +47,7 @@ export type Block =
   | ChartBlock
   | FileDiffBlock
   | WorkingBlock
+  | DevelopBlock
   | SimpleToolCall;
 
 export type {
@@ -73,22 +79,38 @@ export function transformToBlocks(
   // messages in the array, so we need the data ready before we encounter the target.
   const resultMap = buildResultMessageMap(messages);
   const feedbackMap = buildFeedbackMap(messages);
-
-  // Accumulator for messages going into the current thinking block
-  let thinkingMessages: V1Message[] = [];
+  const groupedMessages = new Map<ToolGroupTypes, V1Message[]>();
 
   function flushThinking(isComplete: boolean): void {
-    if (thinkingMessages.length > 0) {
-      blocks.push(
-        createThinkingBlock(
-          thinkingMessages,
-          resultMap,
-          `thinking-${blocks.length}`,
-          isComplete,
-        ),
-      );
-      thinkingMessages = [];
+    const thinkingMessages = groupedMessages.get(ToolGroupTypes.Thinking);
+    if (!thinkingMessages || thinkingMessages.length === 0) {
+      return;
     }
+    groupedMessages.delete(ToolGroupTypes.Thinking);
+
+    blocks.push(
+      createThinkingBlock(
+        thinkingMessages,
+        resultMap,
+        `thinking-${blocks.length}`,
+        isComplete,
+      ),
+    );
+  }
+
+  function flushDevelop(): void {
+    const developMessages = groupedMessages.get(ToolGroupTypes.Develop);
+    if (!developMessages || developMessages.length === 0) {
+      return;
+    }
+    groupedMessages.delete(ToolGroupTypes.Develop);
+
+    const block = createDevelopBlock(
+      developMessages,
+      `develop-${blocks.length}`,
+      resultMap,
+    );
+    if (block) blocks.push(block);
   }
 
   // Process each message
@@ -97,7 +119,9 @@ export function transformToBlocks(
 
     switch (routing.route) {
       case "text": {
+        // Text blocks close any open blocks
         flushThinking(true);
+        flushDevelop();
         // Attach feedback for assistant messages (router_agent results)
         const feedback =
           msg.role === "assistant" ? feedbackMap.get(msg.id!) : undefined;
@@ -105,9 +129,18 @@ export function transformToBlocks(
         break;
       }
 
-      case "thinking":
-        thinkingMessages.push(msg);
+      case "group": {
+        const groups = routing.config?.groups ?? ["thinking"];
+        groups.forEach((group) => {
+          if (groupedMessages.has(group)) {
+            groupedMessages.get(group)!.push(msg);
+          } else {
+            groupedMessages.set(group, [msg]);
+          }
+        });
+
         break;
+      }
 
       case "block": {
         flushThinking(true);
@@ -125,6 +158,8 @@ export function transformToBlocks(
 
   // Flush remaining thinking messages
   flushThinking(!isStreaming && !isConversationLoading);
+  // Flush remaining develop messages
+  flushDevelop();
 
   // Add working indicator if AI is still processing
   if (shouldShowWorking(blocks, isStreaming, isConversationLoading)) {
@@ -142,7 +177,7 @@ export function transformToBlocks(
 
 type BlockRoute =
   | { route: "text" }
-  | { route: "thinking" }
+  | { route: "group"; config?: ToolConfig }
   | { route: "block"; config: ToolConfig }
   | { route: "skip" };
 
@@ -162,7 +197,7 @@ function getBlockRoute(msg: V1Message): BlockRoute {
 
   // Progress → thinking
   if (msg.type === MessageType.PROGRESS) {
-    return { route: "thinking" };
+    return { route: "group" };
   }
 
   // Tool calls → consult registry for block vs inline
@@ -170,7 +205,7 @@ function getBlockRoute(msg: V1Message): BlockRoute {
     const config = getToolConfig(msg.tool);
     return config.renderMode === "block"
       ? { route: "block", config }
-      : { route: "thinking" };
+      : { route: "group", config };
   }
 
   return { route: "skip" };

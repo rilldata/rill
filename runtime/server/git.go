@@ -185,7 +185,7 @@ func (s *Server) RestoreGitCommit(ctx context.Context, req *runtimev1.RestoreGit
 	}
 	defer release()
 
-	newCommitSHA, err := repo.RestoreCommit(ctx, req.CommitSha)
+	newCommitSHA, err := repo.RestoreCommit(ctx, req.CommitSha, req.RevertAll)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to restore commit: %v", err)
 	}

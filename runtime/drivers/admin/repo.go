@@ -521,7 +521,7 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 }
 
 // RestoreCommit implements drivers.RepoStore.
-func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, error) {
+func (r *repo) RestoreCommit(ctx context.Context, commitSHA string, revertAll bool) (string, error) {
 	return "", drivers.ErrNotImplemented
 }
 

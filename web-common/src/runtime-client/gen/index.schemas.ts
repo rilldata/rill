@@ -2868,7 +2868,9 @@ export type RuntimeServiceGitPushBody = {
   force?: boolean;
 };
 
-export type RuntimeServiceRestoreGitCommitBody = { [key: string]: unknown };
+export type RuntimeServiceRestoreGitCommitBody = {
+  revertAll?: boolean;
+};
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;

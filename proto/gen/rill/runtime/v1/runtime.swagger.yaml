@@ -1429,6 +1429,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              revertAll:
+                type: boolean
             title: Request message for RuntimeService.RestoreGitCommit
       tags:
         - RuntimeService

@@ -429,10 +429,11 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 				return nil, err
 			}
 			return &drivers.RepoStatus{
-				IsGitRepo: true,
-				Branch:    st.Branch,
-				RemoteURL: st.RemoteURL,
-				Subpath:   subPath,
+				IsGitRepo:    true,
+				Branch:       st.Branch,
+				RemoteURL:    st.RemoteURL,
+				Subpath:      subPath,
+				LocalChanges: st.LocalChanges,
 			}, nil
 		}
 		return nil, err
@@ -529,7 +530,7 @@ func (c *connection) Commit(ctx context.Context, message string) (string, error)
 }
 
 // RestoreCommit implements drivers.RepoStore.
-func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (string, error) {
+func (c *connection) RestoreCommit(ctx context.Context, commitSHA string, revertAll bool) (string, error) {
 	// If its a Git repository, revert the specified commit.
 	if !c.isGitRepo() {
 		return "", errors.New("not a git repository")
@@ -571,9 +572,16 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 		return "", err
 	}
 
-	err = restoreToCommit(gitPath, subpath, commitSHA)
-	if err != nil {
-		return "", err
+	if revertAll {
+		err = revertToCommit(gitPath, subpath, commitSHA)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		err = restoreToCommit(gitPath, subpath, commitSHA)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// Create the restore commit
@@ -781,6 +789,22 @@ func restoreToCommit(path, subpath, commithash string) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to restore to commit: %s, %w", string(output), err)
+	}
+	return nil
+}
+
+func revertToCommit(path, subpath, commithash string) error {
+	var args []string
+	args = append(args, "-C", path, "revert", "--no-commit", fmt.Sprintf("%s^..HEAD", commithash))
+	if subpath != "" {
+		args = append(args, "--", subpath)
+	} else {
+		args = append(args, "--", ".")
+	}
+	cmd := exec.Command("git", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to revert to commit: %s, %w", string(output), err)
 	}
 	return nil
 }

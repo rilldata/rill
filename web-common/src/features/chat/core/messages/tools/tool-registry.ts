@@ -29,11 +29,16 @@ import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer
 
 /**
  * How a tool call renders in the UI:
- * - "inline": Shown as a collapsible tool call in thinking blocks
+ * - "grouped": Grouped in a collapsible block in certain tools
  * - "block": Renders as a standalone block with its own header (chart, diff, etc.)
  * - "hidden": Not shown (internal orchestration agents)
  */
-export type ToolRenderMode = "inline" | "block" | "hidden";
+export type ToolRenderMode = "grouped" | "block" | "hidden";
+
+export enum ToolGroupTypes {
+  Thinking = "thinking",
+  Develop = "develop",
+}
 
 // =============================================================================
 // TOOL CONFIGURATION
@@ -47,6 +52,8 @@ export type ToolBlockType = ChartBlock | FileDiffBlock | SimpleToolCall;
  */
 export interface ToolConfig {
   renderMode: ToolRenderMode;
+  groups?: ToolGroupTypes[];
+
   /**
    * For block tools: factory function to create the block.
    * Receives the tool call message and its result message (if available).
@@ -69,7 +76,8 @@ export interface ToolConfig {
  * Most tools render inline within thinking blocks.
  */
 const DEFAULT_TOOL_CONFIG: ToolConfig = {
-  renderMode: "inline",
+  renderMode: "grouped",
+  groups: [ToolGroupTypes.Thinking],
 };
 
 /**
@@ -94,7 +102,8 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createChartBlock,
   },
   [ToolName.WRITE_FILE]: {
-    renderMode: "block",
+    renderMode: "grouped",
+    groups: [ToolGroupTypes.Thinking, ToolGroupTypes.Develop],
     createBlock: createFileDiffBlock,
     onResult: handleWriteFilesToolResult,
   },

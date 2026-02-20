@@ -6161,6 +6161,11 @@ export class RestoreGitCommitRequest extends Message$1<RestoreGitCommitRequest> 
    */
   commitSha = "";
 
+  /**
+   * @generated from field: bool revert_all = 3;
+   */
+  revertAll = false;
+
   constructor(data?: PartialMessage<RestoreGitCommitRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6171,6 +6176,7 @@ export class RestoreGitCommitRequest extends Message$1<RestoreGitCommitRequest> 
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "revert_all", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RestoreGitCommitRequest {

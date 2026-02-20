@@ -1329,6 +1329,7 @@ message GitCommitResponse {
 message RestoreGitCommitRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string commit_sha = 2 [(validate.rules).string.min_len = 1];
+  bool revert_all = 3;
 }
 
 // Response message for RuntimeService.RestoreGitCommit
