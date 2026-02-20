@@ -13,6 +13,7 @@
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import {
     ALLOWED_FOR_GRAPH,
     expandSeedsByKind,
@@ -762,13 +763,7 @@
                   <DropdownMenu.Separator />
                 {/if}
                 <div class="section-header">
-                  <span class="section-label">
-                    <svelte:component
-                      this={resourceIconMapping[section.kind]}
-                      size="10px"
-                    />
-                    {section.label}
-                  </span>
+                  <ResourceTypeBadge kind={section.kind} />
                   <span class="text-[10px] text-fg-muted"
                     >{section.entries.length}</span
                   >
@@ -1072,10 +1067,6 @@
 
   .section-header {
     @apply flex items-center justify-between px-2 py-1.5;
-  }
-
-  .section-label {
-    @apply flex items-center gap-x-1 text-[10px] font-medium text-fg-muted uppercase tracking-wide;
   }
 
   .sidebar-main {

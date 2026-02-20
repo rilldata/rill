@@ -1,11 +1,11 @@
 <script lang="ts">
   import { Handle, Position } from "@xyflow/svelte";
-  import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     resourceIconMapping,
+    resourceLabelMapping,
     resourceShorthandMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { ResourceNodeData } from "../shared/types";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
@@ -63,6 +63,7 @@
 
   $: kind = data?.kind;
   $: metadata = data?.metadata;
+  $: kindLabel = kind ? (resourceLabelMapping[kind] ?? "") : "";
   $: icon =
     kind && resourceIconMapping[kind]
       ? resourceIconMapping[kind]
@@ -154,11 +155,14 @@
       isConnectable={isConnectable ?? true}
     />
 
-    <!-- Title row: icon + name + actions -->
+    <!-- Title row: icon + kind + name + actions -->
     <div class="title-row">
       <span class="inline-icon" style={`color:${color}`}>
         <svelte:component this={icon} size="12px" color="currentColor" />
       </span>
+      {#if kindLabel}
+        <span class="kind-label" style={`color:${color}`}>{kindLabel}</span>
+      {/if}
       <p class="title" title={data?.label}>{data?.label}</p>
       {#if showActions}
         <div class="actions-trigger">
@@ -167,19 +171,9 @@
       {/if}
     </div>
 
-    <!-- Content rows -->
+    <!-- Content row -->
     <div class="content">
       {#if isSourceOrModel}
-        <!-- Source/Model Row 1: Kind (left) · Last refreshed (right) -->
-        <div class="meta-row meta-row-spread">
-          <span class="meta-kind">
-            {#if kind}{displayResourceKind(kind)}{:else}Unknown{/if}
-          </span>
-          {#if lastRefreshed}
-            <span class="meta-detail">{lastRefreshed}</span>
-          {/if}
-        </div>
-        <!-- Source/Model Row 2: Connector + Badges (left) · Check (right) -->
         <div class="meta-row meta-row-spread">
           <span class="badge-group">
             {#if connectorIcon}
@@ -205,14 +199,6 @@
           </span>
         </div>
       {:else if isMetricsView}
-        <!-- MetricsView Row 1: Kind (left) · Time (right) -->
-        <div class="meta-row meta-row-spread">
-          <span class="meta-kind">{displayResourceKind(kind)}</span>
-          {#if lastRefreshed}
-            <span class="meta-detail">{lastRefreshed}</span>
-          {/if}
-        </div>
-        <!-- MetricsView Row 2: Measures/Dims (left) · Lock (right) -->
         <div class="meta-row meta-row-spread">
           <span class="meta-detail">
             {measuresCount} meas, {dimensionsCount} dims
@@ -226,14 +212,6 @@
           </span>
         </div>
       {:else if isExplore}
-        <!-- Explore Row 1: Kind (left) · Time (right) -->
-        <div class="meta-row meta-row-spread">
-          <span class="meta-kind">{displayResourceKind(kind)}</span>
-          {#if lastRefreshed}
-            <span class="meta-detail">{lastRefreshed}</span>
-          {/if}
-        </div>
-        <!-- Explore Row 2: Measures/Dims (left) · Lock (right) -->
         <div class="meta-row meta-row-spread">
           <span class="meta-detail">
             {metadata?.exploreMeasuresAll
@@ -252,14 +230,6 @@
           </span>
         </div>
       {:else if isCanvas}
-        <!-- Canvas Row 1: Kind (left) · Time (right) -->
-        <div class="meta-row meta-row-spread">
-          <span class="meta-kind">{displayResourceKind(kind)}</span>
-          {#if lastRefreshed}
-            <span class="meta-detail">{lastRefreshed}</span>
-          {/if}
-        </div>
-        <!-- Canvas Row 2: Components (left) · Lock (right) -->
         <div class="meta-row meta-row-spread">
           <span class="meta-detail">
             {componentCount} component{componentCount !== 1 ? "s" : ""}
@@ -273,18 +243,11 @@
           </span>
         </div>
       {:else if isConnector}
-        <!-- Connector Row 1: Kind (left) · Driver (right) -->
-        <div class="meta-row meta-row-spread">
-          <span class="meta-kind">OLAP Connector</span>
-          {#if connectorDriver}
+        {#if connectorDriver}
+          <div class="meta-row">
             <span class="badge">{connectorDriver}</span>
-          {/if}
-        </div>
-      {:else}
-        <!-- Fallback -->
-        <div class="meta-row">
-          <span class="meta-kind">Unknown</span>
-        </div>
+          </div>
+        {/if}
       {/if}
     </div>
   </div>
@@ -363,6 +326,10 @@
     @apply flex-shrink-0 flex items-center;
   }
 
+  .kind-label {
+    @apply flex-shrink-0 text-[10px] font-medium;
+  }
+
   .title {
     @apply font-normal text-xs leading-snug truncate flex-1 min-w-0;
   }
@@ -382,10 +349,6 @@
 
   .meta-row-spread {
     @apply justify-between;
-  }
-
-  .meta-kind {
-    @apply capitalize inline-flex items-center gap-x-1;
   }
 
   .meta-detail {

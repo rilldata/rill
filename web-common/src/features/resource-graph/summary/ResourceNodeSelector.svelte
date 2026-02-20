@@ -10,8 +10,8 @@
   import {
     coerceResourceKind,
     ResourceKind,
-    resourceKindStyleName,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { ALLOWED_FOR_GRAPH } from "../navigation/seed-parser";
 
@@ -29,7 +29,6 @@
   type ResourceSection = {
     kind: ResourceKind;
     label: string;
-    styleName: string | undefined;
     entries: ResourceEntry[];
   };
 
@@ -94,7 +93,6 @@
       result.push({
         kind,
         label: SECTION_LABELS[kind] ?? resourceLabelMapping[kind] ?? "Unknown",
-        styleName: resourceKindStyleName(kind),
         entries,
       });
     }
@@ -143,15 +141,7 @@
       {#each sections as section}
         <DropdownMenu.Separator />
         <div class="section-header">
-          <span
-            class="shrink-0 flex items-center gap-x-1 text-[10px] font-medium px-1.5 py-0.5 rounded {section.styleName}"
-          >
-            <svelte:component
-              this={resourceIconMapping[section.kind]}
-              size="10px"
-            />
-            {section.label}
-          </span>
+          <ResourceTypeBadge kind={section.kind} />
           <span class="text-[10px] text-fg-muted">{section.entries.length}</span>
         </div>
         {#each section.entries as entry}

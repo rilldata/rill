@@ -461,6 +461,9 @@ export function buildResourceGraph(
   // dependentsMap: sourceId -> Set of dependentIds (outgoing edges from source)
   const dependentsMap = new Map<string, Set<string>>();
 
+  // First pass: collect all refs per dependent, tracking which have non-connector parents
+  const nonConnectorParents = new Set<string>();
+
   for (const resource of resourceMap.values()) {
     const dependentId = createResourceId(resource.meta);
     if (!dependentId) continue;
@@ -470,6 +473,14 @@ export function buildResourceGraph(
       if (!sourceId) continue;
       if (!resourceMap.has(sourceId)) continue;
       if (sourceId === dependentId) continue;
+
+      const sourceResource = resourceMap.get(sourceId);
+      const sourceKind = sourceResource
+        ? coerceResourceKind(sourceResource)
+        : undefined;
+      if (sourceKind !== ResourceKind.Connector) {
+        nonConnectorParents.add(dependentId);
+      }
 
       // Track outgoing edges (source -> dependent)
       if (!dependentsMap.has(sourceId)) dependentsMap.set(sourceId, new Set());
@@ -482,8 +493,18 @@ export function buildResourceGraph(
 
   for (const [sourceId, dependents] of dependentsMap) {
     if (!dependents?.size) continue;
+    const sourceResource = resourceMap.get(sourceId);
+    const sourceKind = sourceResource
+      ? coerceResourceKind(sourceResource)
+      : undefined;
+    const isConnectorSource = sourceKind === ResourceKind.Connector;
+
     for (const dependentId of dependents) {
       if (!resourceMap.has(sourceId) || !resourceMap.has(dependentId)) continue;
+
+      // Only connect connector to root nodes (those with no other non-connector parents)
+      if (isConnectorSource && nonConnectorParents.has(dependentId)) continue;
+
       const edgeId = `${sourceId}->${dependentId}`;
       if (edgeIds.has(edgeId)) continue;
       edgeIds.add(edgeId);
