@@ -12,6 +12,7 @@
   export let hasUnsavedChanges: boolean;
   export let resourceKind: ResourceKind | undefined;
   export let resource: V1Resource | undefined;
+  export let showIcon = true;
 
   let fileName: string;
 
@@ -38,6 +39,10 @@
   onTitleChange={onChangeCallback}
   {hasUnsavedChanges}
   showInspectorToggle={false}
+  {showIcon}
   titleInput={fileName}
   {resource}
-/>
+>
+  <slot name="left" slot="left" />
+  <slot name="workspace-controls" slot="workspace-controls" />
+</WorkspaceHeader>
