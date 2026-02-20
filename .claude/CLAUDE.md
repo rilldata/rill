@@ -38,6 +38,8 @@ Two deployment modes share the same codebase:
 - **Test frontend (unit)**: `npm run test -w web-common` (fast, use for tight feedback loops)
 - **Test frontend (e2e)**: `npm run test -w web-local` or `npm run test -w web-admin` (Playwright, slow)
 - **Lint/format frontend**: `npm run quality`
+- **Regenerate docs**: `make docs.generate` (run after changes to `proto/` or `cli/`)
+- **Regenerate API bindings:** `make proto.generate` (run after changes to `proto/`)
 
 ### Adding or Changing APIs
 
