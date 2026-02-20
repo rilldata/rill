@@ -18,6 +18,16 @@
   $: securityRuleCount = apiSpec?.securityRules?.length ?? 0;
   $: hasRequestSchema = !!apiSpec?.openapiRequestSchemaJson;
   $: hasResponseSchema = !!apiSpec?.openapiResponseSchemaJson;
+
+  // Extract SQL from resolver properties (used by "sql" and "metrics_sql" resolvers)
+  $: sql = apiSpec?.resolverProperties?.sql as string | undefined;
+
+  // Filter out "sql" from resolver properties to show the remaining ones
+  $: otherResolverProperties = (() => {
+    if (!apiSpec?.resolverProperties) return null;
+    const { sql: _sql, ...rest } = apiSpec.resolverProperties;
+    return Object.keys(rest).length > 0 ? rest : null;
+  })();
 </script>
 
 {#if apiSpec}
@@ -55,12 +65,10 @@
         </MetadataValue>
       </div>
 
-      <!-- TODO: add API endpoint URL once available from the runtime -->
-
       <!-- Created -->
       {#if apiMeta?.createdOn}
         <div class="flex flex-col gap-y-3" aria-label="API created date">
-          <MetadataLabel>Created</MetadataLabel>
+          <MetadataLabel>Created on</MetadataLabel>
           <MetadataValue>
             {new Date(apiMeta.createdOn).toLocaleDateString(undefined, {
               year: "numeric",
@@ -72,11 +80,11 @@
       {/if}
 
       <!-- Last updated -->
-      {#if apiMeta?.specUpdatedOn}
-        <div class="flex flex-col gap-y-3" aria-label="API last updated date">
-          <MetadataLabel>Last updated</MetadataLabel>
+      {#if apiMeta?.stateUpdatedOn}
+        <div class="flex flex-col gap-y-3" aria-label="API last executed date">
+          <MetadataLabel>Last executed on</MetadataLabel>
           <MetadataValue>
-            {new Date(apiMeta.specUpdatedOn).toLocaleDateString(undefined, {
+            {new Date(apiMeta.stateUpdatedOn).toLocaleDateString(undefined, {
               year: "numeric",
               month: "short",
               day: "numeric",
@@ -84,14 +92,25 @@
           </MetadataValue>
         </div>
       {/if}
+
+      <!-- TODO: add API endpoint URL once available from the runtime -->
     </div>
 
-    <!-- Resolver properties -->
-    {#if apiSpec.resolverProperties && Object.keys(apiSpec.resolverProperties).length > 0}
+    <!-- SQL -->
+    {#if sql}
+      <div class="flex flex-col gap-y-3">
+        <MetadataLabel>SQL</MetadataLabel>
+        <pre
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{sql.trim()}</pre>
+      </div>
+    {/if}
+
+    <!-- Other resolver properties -->
+    {#if otherResolverProperties}
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Resolver properties</MetadataLabel>
         <pre
-          class="text-fg-primary text-xs bg-surface-secondary rounded-md p-3 overflow-x-auto">{JSON.stringify(apiSpec.resolverProperties, null, 2)}</pre>
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{JSON.stringify(otherResolverProperties, null, 2)}</pre>
       </div>
     {/if}
 
@@ -101,7 +120,7 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Request schema</MetadataLabel>
         <pre
-          class="text-fg-primary text-xs bg-surface-secondary rounded-md p-3 overflow-x-auto">{apiSpec.openapiRequestSchemaJson}</pre>
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{apiSpec.openapiRequestSchemaJson}</pre>
       </div>
     {/if}
 
@@ -109,7 +128,7 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Response schema</MetadataLabel>
         <pre
-          class="text-fg-primary text-xs bg-surface-secondary rounded-md p-3 overflow-x-auto">{apiSpec.openapiResponseSchemaJson}</pre>
+          class="text-fg-primary text-xs font-mono bg-surface-secondary border border-border rounded-md p-4 overflow-x-auto whitespace-pre-wrap">{apiSpec.openapiResponseSchemaJson}</pre>
       </div>
     {/if}
 
