@@ -1,11 +1,13 @@
 <script lang="ts">
   import { Handle, Position } from "@xyflow/svelte";
-  import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
-    resourceIconMapping,
-    resourceShorthandMapping,
-  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+    ResourceKind,
+    resourceKindStyleName,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { resourceShorthandMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
+  import { goto } from "$app/navigation";
+  import { tokenForKind } from "../navigation/seed-parser";
   import type { ResourceNodeData } from "../shared/types";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import ConditionalTooltip from "@rilldata/web-common/components/tooltip/ConditionalTooltip.svelte";
@@ -13,7 +15,7 @@
   import ResourceNodeActions from "./ResourceNodeActions.svelte";
   import { getRelativeTime } from "@rilldata/web-common/lib/time/relative-time";
   import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
-  import { Unlock, AlertTriangle } from "lucide-svelte";
+  import { Unlock, AlertTriangle, Zap, Layers, Clock } from "lucide-svelte";
   import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
@@ -59,14 +61,9 @@
   $: showActions = data?.showNodeActions !== false;
 
   const DEFAULT_COLOR = "#6B7280";
-  const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
 
   $: kind = data?.kind;
   $: metadata = data?.metadata;
-  $: icon =
-    kind && resourceIconMapping[kind]
-      ? resourceIconMapping[kind]
-      : DEFAULT_ICON;
   $: color =
     kind && resourceShorthandMapping[kind]
       ? `var(--${resourceShorthandMapping[kind]})`
@@ -98,6 +95,7 @@
   $: isMetricsView = kind === ResourceKind.MetricsView;
   $: isExplore = kind === ResourceKind.Explore;
   $: isCanvas = kind === ResourceKind.Canvas;
+  $: isConnector = kind === ResourceKind.Connector;
 
   $: measuresCount = metadata?.measures?.length ?? 0;
   $: dimensionsCount = metadata?.dimensions?.length ?? 0;
@@ -112,6 +110,27 @@
       ? connectorIconMapping[connector as keyof typeof connectorIconMapping]
       : null
   ) as ComponentType<SvelteComponent<{ size?: string }>> | null;
+
+  $: filePath =
+    data?.resource?.meta?.filePaths?.[0]?.replace(/^\//, "") ?? null;
+  $: checkTooltip =
+    testCount === 0
+      ? "No checks"
+      : testHasErrors
+        ? `${testCount} check${testCount > 1 ? "s" : ""} failed`
+        : `${testCount} check${testCount > 1 ? "s" : ""} passed`;
+
+  // Connector node metadata
+  $: connectorDriver = metadata?.connectorDriver ?? null;
+
+  function handleDoubleClick() {
+    const name = data?.resource?.meta?.name?.name;
+    const kindToken = tokenForKind(kind);
+    const params = new URLSearchParams();
+    if (kindToken) params.set("kind", kindToken);
+    if (name) params.set("resource", name);
+    goto(`/graph?${params.toString()}`);
+  }
 </script>
 
 <ConditionalTooltip
@@ -136,6 +155,7 @@
     data-kind={kind}
     role="button"
     tabindex="0"
+    on:dblclick={handleDoubleClick}
   >
     <Handle
       id="target"
@@ -150,11 +170,9 @@
       isConnectable={isConnectable ?? true}
     />
 
-    <!-- Title row: icon + name + actions -->
+    <!-- Title row: kind badge + name + actions -->
     <div class="title-row">
-      <span class="inline-icon" style={`color:${color}`}>
-        <svelte:component this={icon} size="12px" color="currentColor" />
-      </span>
+      {#if kind}<ResourceTypeBadge {kind} />{/if}
       <p class="title" title={data?.label}>{data?.label}</p>
       {#if showActions}
         <div class="actions-trigger">
@@ -163,57 +181,70 @@
       {/if}
     </div>
 
-    <!-- Content rows -->
+    <!-- Content row -->
     <div class="content">
       {#if isSourceOrModel}
-        <!-- Source/Model Row 1: Kind (left) · Last refreshed (right) -->
-        <div class="meta-row meta-row-spread">
-          <span class="meta-kind">
-            {#if kind}{displayResourceKind(kind)}{:else}Unknown{/if}
-          </span>
-          {#if lastRefreshed}
-            <span class="meta-detail">{lastRefreshed}</span>
-          {/if}
-        </div>
-        <!-- Source/Model Row 2: Connector + Badges (left) · Check (right) -->
         <div class="meta-row meta-row-spread">
           <span class="badge-group">
-            {#if connectorIcon}
-              <svelte:component this={connectorIcon} size="10px" />
+            {#if connectorIcon && kind === ResourceKind.Source}
+              <span title={connector}>
+                <svelte:component this={connectorIcon} size="10px" />
+              </span>
             {/if}
             {#if metadata?.isMaterialized}
-              <span class="badge">Materialized</span>
+              <span class="badge" title="Materialized">Materialized</span>
             {/if}
-            <span class="badge">{metadata?.isSqlModel ? "SQL" : "YAML"}</span>
+            <span class="badge" title={filePath}
+              >{metadata?.isSqlModel ? "SQL" : "YAML"}</span
+            >
           </span>
-          <span
-            class="check-indicator"
-            class:checks-none={testCount === 0}
-            class:checks-pass={testCount > 0 && !testHasErrors}
-            class:checks-fail={testCount > 0 && testHasErrors}
-          >
-            {#if testHasErrors}
-              <AlertTriangle size="10px" />
-            {:else}
-              <CheckCircle size="10px" color="currentColor" />
+          <span class="icon-group">
+            {#if metadata?.incremental}
+              <span class="icon-indicator" title="Incremental">
+                <Zap size="10px" />
+              </span>
             {/if}
-            {testCount}
+            {#if metadata?.partitioned}
+              <span class="icon-indicator" title="Partitioned">
+                <Layers size="10px" />
+              </span>
+            {/if}
+            {#if metadata?.hasSchedule}
+              <span
+                class="icon-indicator"
+                title={metadata?.scheduleDescription ?? "Scheduled"}
+              >
+                <Clock size="10px" />
+              </span>
+            {/if}
+            <span
+              class="check-indicator"
+              class:checks-none={testCount === 0}
+              class:checks-pass={testCount > 0 && !testHasErrors}
+              class:checks-fail={testCount > 0 && testHasErrors}
+              title={checkTooltip}
+            >
+              {#if testHasErrors}
+                <AlertTriangle size="10px" />
+              {:else}
+                <CheckCircle size="10px" color="currentColor" />
+              {/if}
+              {testCount}
+            </span>
           </span>
         </div>
       {:else if isMetricsView}
-        <!-- MetricsView Row 1: Kind (left) · Time (right) -->
-        <div class="meta-row meta-row-spread">
-          <span class="meta-kind">{displayResourceKind(kind)}</span>
-          {#if lastRefreshed}
-            <span class="meta-detail">{lastRefreshed}</span>
-          {/if}
-        </div>
-        <!-- MetricsView Row 2: Measures/Dims (left) · Lock (right) -->
         <div class="meta-row meta-row-spread">
           <span class="meta-detail">
             {measuresCount} meas, {dimensionsCount} dims
           </span>
-          <span class="lock-indicator" class:secured={hasSecurityRules}>
+          <span
+            class="lock-indicator"
+            class:secured={hasSecurityRules}
+            title={hasSecurityRules
+              ? "Security policy defined"
+              : "No security policy"}
+          >
             {#if hasSecurityRules}
               <Lock size="10px" color="currentColor" />
             {:else}
@@ -222,14 +253,6 @@
           </span>
         </div>
       {:else if isExplore}
-        <!-- Explore Row 1: Kind (left) · Time (right) -->
-        <div class="meta-row meta-row-spread">
-          <span class="meta-kind">{displayResourceKind(kind)}</span>
-          {#if lastRefreshed}
-            <span class="meta-detail">{lastRefreshed}</span>
-          {/if}
-        </div>
-        <!-- Explore Row 2: Measures/Dims (left) · Lock (right) -->
         <div class="meta-row meta-row-spread">
           <span class="meta-detail">
             {metadata?.exploreMeasuresAll
@@ -239,7 +262,13 @@
               ? "all"
               : (metadata?.exploreDimensionsCount ?? 0)} dims
           </span>
-          <span class="lock-indicator" class:secured={hasSecurityRules}>
+          <span
+            class="lock-indicator"
+            class:secured={hasSecurityRules}
+            title={hasSecurityRules
+              ? "Security policy defined"
+              : "No security policy"}
+          >
             {#if hasSecurityRules}
               <Lock size="10px" color="currentColor" />
             {:else}
@@ -248,19 +277,17 @@
           </span>
         </div>
       {:else if isCanvas}
-        <!-- Canvas Row 1: Kind (left) · Time (right) -->
-        <div class="meta-row meta-row-spread">
-          <span class="meta-kind">{displayResourceKind(kind)}</span>
-          {#if lastRefreshed}
-            <span class="meta-detail">{lastRefreshed}</span>
-          {/if}
-        </div>
-        <!-- Canvas Row 2: Components (left) · Lock (right) -->
         <div class="meta-row meta-row-spread">
           <span class="meta-detail">
             {componentCount} component{componentCount !== 1 ? "s" : ""}
           </span>
-          <span class="lock-indicator" class:secured={hasSecurityRules}>
+          <span
+            class="lock-indicator"
+            class:secured={hasSecurityRules}
+            title={hasSecurityRules
+              ? "Security policy defined"
+              : "No security policy"}
+          >
             {#if hasSecurityRules}
               <Lock size="10px" color="currentColor" />
             {:else}
@@ -268,11 +295,12 @@
             {/if}
           </span>
         </div>
-      {:else}
-        <!-- Fallback -->
-        <div class="meta-row">
-          <span class="meta-kind">Unknown</span>
-        </div>
+      {:else if isConnector}
+        {#if connectorDriver}
+          <div class="meta-row">
+            <span class="badge">{connectorDriver}</span>
+          </div>
+        {/if}
       {/if}
     </div>
   </div>
@@ -287,7 +315,7 @@
 
 <style lang="postcss">
   .node {
-    @apply relative border flex flex-col rounded-lg bg-surface-subtle px-2.5 py-2 cursor-pointer shadow-sm;
+    @apply relative border flex flex-col justify-between rounded-lg bg-surface-subtle px-2.5 py-2 cursor-pointer shadow-sm;
     border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
     transition:
       box-shadow 120ms ease,
@@ -347,10 +375,6 @@
     @apply flex items-center gap-x-1.5 min-w-0;
   }
 
-  .inline-icon {
-    @apply flex-shrink-0 flex items-center;
-  }
-
   .title {
     @apply font-normal text-xs leading-snug truncate flex-1 min-w-0;
   }
@@ -361,7 +385,7 @@
 
   /* Content section below title */
   .content {
-    @apply flex flex-col gap-y-0.5 mt-1;
+    @apply flex flex-col gap-y-0.5;
   }
 
   .meta-row {
@@ -372,16 +396,20 @@
     @apply justify-between;
   }
 
-  .meta-kind {
-    @apply capitalize inline-flex items-center gap-x-1;
-  }
-
   .meta-detail {
     @apply text-fg-muted truncate;
   }
 
   .badge-group {
     @apply inline-flex items-center gap-x-1.5;
+  }
+
+  .icon-group {
+    @apply inline-flex items-center gap-x-1.5;
+  }
+
+  .icon-indicator {
+    @apply inline-flex items-center text-fg-muted;
   }
 
   .badge {
@@ -428,16 +456,15 @@
     @apply max-h-[200px] overflow-auto whitespace-pre-wrap text-xs;
   }
 
-  /* Make handles small circular dots, tinted by the node accent */
+  /* Hide handle dots — edges connect as plain lines with no anchors */
   :global(.svelte-flow__node[data-id]) :global(.svelte-flow__handle) {
-    width: 6px;
-    height: 6px;
-    min-width: 6px;
-    min-height: 6px;
-    border-radius: 9999px;
-    background-color: color-mix(in srgb, var(--node-accent) 18%, #ffffff);
-    border: 1px solid color-mix(in srgb, var(--node-accent) 55%, #b1b1b7);
-    box-shadow: 0 0 0 1px #ffffff;
-    opacity: 1;
+    width: 1px;
+    height: 1px;
+    min-width: 1px;
+    min-height: 1px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    opacity: 0;
   }
 </style>

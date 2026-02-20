@@ -35,6 +35,7 @@ const DEFAULT_EDGE_STYLE = EDGE_CONFIG.DEFAULT_STYLE;
 
 // Resource kinds that should be displayed in the graph
 const ALLOWED_KINDS = new Set<ResourceKind>([
+  ResourceKind.Connector,
   ResourceKind.Source,
   ResourceKind.Model,
   ResourceKind.MetricsView,
@@ -315,6 +316,21 @@ function extractResourceMetadata(
     metadata.hasSecurityRules = (canvas.spec.securityRules?.length ?? 0) > 0;
   }
 
+  // Connector metadata
+  const connectorRes = resource.connector;
+  if (connectorRes?.spec) {
+    if (connectorRes.spec.driver) {
+      metadata.connectorDriver = connectorRes.spec.driver;
+    }
+    if (connectorRes.spec.properties) {
+      metadata.connectorProperties = connectorRes.spec.properties;
+    }
+    if (connectorRes.spec.templatedProperties?.length) {
+      metadata.connectorTemplatedProperties =
+        connectorRes.spec.templatedProperties;
+    }
+  }
+
   // Look up alert/API counts from pre-built reverse-reference map (O(1))
   const resourceId = createResourceId(resource.meta);
   if (resourceId) {
@@ -391,13 +407,17 @@ export function buildResourceGraph(
 
     const kind = coerceResourceKind(resource);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
-    if (resource.meta?.hidden) continue;
+    // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+    if (resource.meta?.hidden && kind !== ResourceKind.Connector) continue;
 
     resourceMap.set(id, resource);
     const label = resource.meta?.name?.name ?? "";
     const nodeWidth = estimateNodeWidth(label);
     let rankConstraint: "min" | "max" | undefined;
     switch (kind) {
+      case ResourceKind.Connector:
+        rankConstraint = "min";
+        break;
       case ResourceKind.Source:
       case ResourceKind.Model:
         // No special rank constraint - let them flow naturally in the graph
@@ -441,6 +461,9 @@ export function buildResourceGraph(
   // dependentsMap: sourceId -> Set of dependentIds (outgoing edges from source)
   const dependentsMap = new Map<string, Set<string>>();
 
+  // First pass: collect all refs per dependent, tracking which have non-connector parents
+  const nonConnectorParents = new Set<string>();
+
   for (const resource of resourceMap.values()) {
     const dependentId = createResourceId(resource.meta);
     if (!dependentId) continue;
@@ -450,6 +473,14 @@ export function buildResourceGraph(
       if (!sourceId) continue;
       if (!resourceMap.has(sourceId)) continue;
       if (sourceId === dependentId) continue;
+
+      const sourceResource = resourceMap.get(sourceId);
+      const sourceKind = sourceResource
+        ? coerceResourceKind(sourceResource)
+        : undefined;
+      if (sourceKind !== ResourceKind.Connector) {
+        nonConnectorParents.add(dependentId);
+      }
 
       // Track outgoing edges (source -> dependent)
       if (!dependentsMap.has(sourceId)) dependentsMap.set(sourceId, new Set());
@@ -462,8 +493,18 @@ export function buildResourceGraph(
 
   for (const [sourceId, dependents] of dependentsMap) {
     if (!dependents?.size) continue;
+    const sourceResource = resourceMap.get(sourceId);
+    const sourceKind = sourceResource
+      ? coerceResourceKind(sourceResource)
+      : undefined;
+    const isConnectorSource = sourceKind === ResourceKind.Connector;
+
     for (const dependentId of dependents) {
       if (!resourceMap.has(sourceId) || !resourceMap.has(dependentId)) continue;
+
+      // Only connect connector to root nodes (those with no other non-connector parents)
+      if (isConnectorSource && nonConnectorParents.has(dependentId)) continue;
+
       const edgeId = `${sourceId}->${dependentId}`;
       if (edgeIds.has(edgeId)) continue;
       edgeIds.add(edgeId);
@@ -604,7 +645,8 @@ function buildVisibleResourceMap(
     if (!id) continue;
     const kind = toResourceKind(resource.meta?.name);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
-    if (resource.meta?.hidden) continue;
+    // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+    if (resource.meta?.hidden && kind !== ResourceKind.Connector) continue;
     resourceMap.set(id, resource);
   }
   return resourceMap;
@@ -643,6 +685,30 @@ function createSeedBasedGroups(
   const assigned = new Set<string>();
 
   for (const seedId of normalizedSeeds) {
+    // Connector seeds show the full DAG (all visible resources).
+    // Connectors are conceptually the root of the entire project graph,
+    // but sources may not have explicit refs to them, so we include everything.
+    const seedResource = resourceMap.get(seedId);
+    const seedKind = toResourceKind(seedResource?.meta?.name);
+    if (seedKind === ResourceKind.Connector) {
+      const allResources = Array.from(resourceMap.values());
+      if (!allResources.length) continue;
+      const label = seedResource?.meta?.name?.name ?? seedId;
+      const group: ResourceGraphGrouping = {
+        id: seedId,
+        resources: allResources,
+        label,
+      };
+      groups.push(group);
+      groupById.set(group.id, group);
+      graphCache.setLabel(group.id, group.label ?? group.id);
+      for (const r of allResources) {
+        const rid = createResourceId(r.meta);
+        if (rid) assigned.add(rid);
+      }
+      continue;
+    }
+
     // Directed closure: only upstream via incoming and only downstream via outgoing
     const upIds = traverseUpstream(seedId, incoming);
     const downIds = traverseDownstream(seedId, outgoing);
@@ -869,7 +935,8 @@ export function partitionResourcesByMetrics(
     if (!id) continue;
     const kind = toResourceKind(res.meta?.name);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
-    if (res.meta?.hidden) continue;
+    // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+    if (res.meta?.hidden && kind !== ResourceKind.Connector) continue;
     resourceMap.set(id, res);
     if (!adjacency.has(id)) adjacency.set(id, new Set());
   }
@@ -927,6 +994,23 @@ export function partitionResourcesByMetrics(
     graphCache.setLabel(m.id, m.label);
   }
 
+  // Create connector groups. Connectors are the conceptual root of the
+  // project, so selecting one displays the full DAG (all visible resources).
+  // Insert at the beginning so they appear first in the sidebar tree.
+  const connectorGroups: ResourceGraphGrouping[] = [];
+  for (const [id, res] of resourceMap) {
+    const kind = toResourceKind(res.meta?.name);
+    if (kind !== ResourceKind.Connector) continue;
+    const label = res.meta?.name?.name ?? id;
+    connectorGroups.push({
+      id,
+      resources: Array.from(resourceMap.values()),
+      label,
+    });
+    graphCache.setLabel(id, label);
+    assigned.add(id);
+  }
+
   // Group remaining resources not connected to any metrics view.
   const remaining = Array.from(resourceMap.keys()).filter(
     (id) => !assigned.has(id),
@@ -950,7 +1034,8 @@ export function partitionResourcesByMetrics(
   }
 
   // Persist grouping assignments
-  for (const g of groups) {
+  const finalGroups = [...connectorGroups, ...groups];
+  for (const g of finalGroups) {
     if (g.label) graphCache.setLabel(g.id, g.label);
     for (const r of g.resources) {
       const rid = createResourceId(r.meta);
@@ -959,5 +1044,5 @@ export function partitionResourcesByMetrics(
   }
 
   graphCache.persist();
-  return groups;
+  return finalGroups;
 }

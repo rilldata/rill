@@ -12,16 +12,20 @@
     coerceResourceKind,
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import {
+    ALLOWED_FOR_GRAPH,
     expandSeedsByKind,
     isKindToken,
     tokenForKind,
     tokenForSeedString,
+    type KindToken,
   } from "../navigation/seed-parser";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
-  import ResourceKindSelector from "../summary/ResourceKindSelector.svelte";
+  import ResourceNodeSelector from "../summary/ResourceNodeSelector.svelte";
   import { onDestroy } from "svelte";
   import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
   import type {
@@ -75,9 +79,7 @@
   export let onSelectedGroupChange: ((id: string | null) => void) | null = null;
 
   // Toolbar callbacks (sidebar layout)
-  export let onKindChange: ((kind: string | null) => void) | null = null;
   export let onRefreshAll: (() => void) | null = null;
-  export let activeKindLabel: string = "All types";
   export let statusFilterOptions: {
     label: string;
     value: ResourceStatusFilterValue;
@@ -88,15 +90,17 @@
   export let onClearFilters: (() => void) | null = null;
 
   type SummaryMemo = {
+    connector: number;
     sources: number;
     models: number;
     metrics: number;
     dashboards: number;
     resources: V1Resource[];
-    activeToken: "sources" | "metrics" | "models" | "dashboards" | null;
+    activeToken: KindToken | null;
   };
   function summaryEquals(a: SummaryMemo, b: SummaryMemo) {
     return (
+      a.connector === b.connector &&
       a.sources === b.sources &&
       a.models === b.models &&
       a.metrics === b.metrics &&
@@ -117,6 +121,15 @@
     normalizedResources,
     coerceResourceKind,
   );
+
+  // Derive active resource ID for the node selector dropdown.
+  // If there's exactly one non-kind-token seed, use its fully qualified ID.
+  $: activeResourceIdForSelector = (function (): string | null {
+    if (!normalizedSeeds || normalizedSeeds.length !== 1) return null;
+    const first = normalizedSeeds[0];
+    if (typeof first === "string") return null;
+    return first.kind && first.name ? `${first.kind}:${first.name}` : null;
+  })();
 
   // Determine if we're filtering by a specific kind (e.g., ?kind=metrics)
   // This is used to filter out groups that don't contain any resource of the filtered kind
@@ -140,12 +153,7 @@
 
   // Determine which overview node should be highlighted based on current seeds
   // For Canvas with MetricsView seeds, prioritize the Canvas token (dashboards) over MetricsView tokens
-  $: overviewActiveToken = (function ():
-    | "sources"
-    | "metrics"
-    | "models"
-    | "dashboards"
-    | null {
+  $: overviewActiveToken = (function (): KindToken | null {
     const rawSeeds = seeds ?? [];
 
     // Check the first seed first - this should be the anchor resource (e.g., Canvas)
@@ -238,9 +246,7 @@
 
   // Whether any filters are active (kind, status, or tree search)
   $: hasActiveFilters =
-    hasExplicitSeeds ||
-    statusFilter.length > 0 ||
-    treeSearchQuery.trim().length > 0;
+    statusFilter.length > 0 || treeSearchQuery.trim().length > 0;
 
   function handleClearFilters() {
     treeSearchQuery = "";
@@ -256,6 +262,101 @@
           .includes(treeSearchQuery.toLowerCase().trim()),
       )
     : filteredResourceGroups;
+
+  // All resources organized by kind for the tree dropdown
+  type ResourceDropdownEntry = {
+    name: string;
+    kind: ResourceKind;
+    status: "ok" | "pending" | "errored";
+  };
+  type ResourceDropdownSection = {
+    kind: ResourceKind;
+    label: string;
+    entries: ResourceDropdownEntry[];
+  };
+
+  const DROPDOWN_SECTION_ORDER: ResourceKind[] = [
+    ResourceKind.Connector,
+    ResourceKind.Source,
+    ResourceKind.Model,
+    ResourceKind.MetricsView,
+    ResourceKind.Explore,
+    ResourceKind.Canvas,
+  ];
+
+  const DROPDOWN_SECTION_LABELS: Partial<Record<ResourceKind, string>> = {
+    [ResourceKind.Connector]: "OLAP Connector",
+    [ResourceKind.Source]: "Source Models",
+    [ResourceKind.Model]: "Models",
+    [ResourceKind.MetricsView]: "Metric Views",
+    [ResourceKind.Explore]: "Explore Dashboards",
+    [ResourceKind.Canvas]: "Canvas Dashboards",
+  };
+
+  function getResourceStatus(r: V1Resource): "ok" | "pending" | "errored" {
+    if (r.meta?.reconcileError) return "errored";
+    if (
+      r.meta?.reconcileStatus &&
+      r.meta.reconcileStatus !== "RECONCILE_STATUS_IDLE"
+    )
+      return "pending";
+    return "ok";
+  }
+
+  $: allResourceSections = (function (): ResourceDropdownSection[] {
+    const grouped = new Map<ResourceKind, ResourceDropdownEntry[]>();
+
+    for (const r of normalizedResources) {
+      const kind = coerceResourceKind(r);
+      if (!kind || !ALLOWED_FOR_GRAPH.has(kind)) continue;
+      if (r.meta?.hidden && kind !== ResourceKind.Connector) continue;
+      const name = r.meta?.name?.name;
+      if (!name) continue;
+
+      const entries = grouped.get(kind) ?? [];
+      entries.push({ name, kind, status: getResourceStatus(r) });
+      grouped.set(kind, entries);
+    }
+
+    const result: ResourceDropdownSection[] = [];
+    for (const kind of DROPDOWN_SECTION_ORDER) {
+      const entries = grouped.get(kind);
+      if (!entries?.length) continue;
+      entries.sort((a, b) => a.name.localeCompare(b.name));
+      result.push({
+        kind,
+        label: DROPDOWN_SECTION_LABELS[kind] ?? kind,
+        entries,
+      });
+    }
+    return result;
+  })();
+
+  $: filteredResourceSections = (function (): ResourceDropdownSection[] {
+    const query = treeSearchQuery.toLowerCase().trim();
+    const hasSearch = query.length > 0;
+    const hasStatus = statusFilter.length > 0;
+    if (!hasSearch && !hasStatus) return allResourceSections;
+    return allResourceSections
+      .map((section) => ({
+        ...section,
+        entries: section.entries.filter((e) => {
+          if (hasSearch && !e.name.toLowerCase().includes(query)) return false;
+          if (hasStatus && !statusFilter.includes(e.status)) return false;
+          return true;
+        }),
+      }))
+      .filter((section) => section.entries.length > 0);
+  })();
+
+  function handleResourceSelect(entry: ResourceDropdownEntry) {
+    const groupId = `${entry.kind}:${entry.name}`;
+    if (isSidebarControlled) {
+      onSelectedGroupChange?.(groupId);
+    } else {
+      internalSelectedGroupId = groupId;
+    }
+  }
 
   let internalSelectedGroupId: string | null = null;
   $: isSidebarControlled =
@@ -335,6 +436,13 @@
           (g) => g.id === effectiveSelectedGroupId,
         ) ?? null)
       : null;
+
+  // Display label for the breadcrumb trigger
+  $: selectedGroupIsConnector =
+    effectiveSelectedGroupId?.includes("Connector") ?? false;
+  $: breadcrumbLabel = selectedGroupIsConnector
+    ? `Full DAG · ${selectedGroup?.label ?? "OLAP"}`
+    : (selectedGroup?.label ?? "Select resource");
   function handleSidebarSelect(id: string) {
     if (isSidebarControlled) {
       onSelectedGroupChange?.(id);
@@ -358,35 +466,45 @@
   // Compute resource counts for the summary graph header.
   // We compute directly in a single pass rather than using filter().length for performance.
   // This is more efficient (O(n) instead of O(4n)) and clearer in intent.
-  $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } =
-    (function computeCounts() {
-      let sources = 0,
-        models = 0,
-        metrics = 0,
-        dashboards = 0;
-      for (const r of normalizedResources) {
-        if (r?.meta?.hidden) continue;
-        const k = coerceResourceKind(r);
-        if (!k) continue;
-        if (k === ResourceKind.Source) sources++;
-        else if (k === ResourceKind.Model) models++;
-        else if (k === ResourceKind.MetricsView) metrics++;
-        else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
-          dashboards++;
-      }
-      return {
-        sourcesCount: sources,
-        modelsCount: models,
-        metricsCount: metrics,
-        dashboardsCount: dashboards,
-      };
-    })());
+  $: ({
+    connectorCount,
+    sourcesCount,
+    modelsCount,
+    metricsCount,
+    dashboardsCount,
+  } = (function computeCounts() {
+    let connectors = 0,
+      sources = 0,
+      models = 0,
+      metrics = 0,
+      dashboards = 0;
+    for (const r of normalizedResources) {
+      const k = coerceResourceKind(r);
+      if (!k) continue;
+      // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only
+      if (r?.meta?.hidden && k !== ResourceKind.Connector) continue;
+      if (k === ResourceKind.Connector) connectors++;
+      else if (k === ResourceKind.Source) sources++;
+      else if (k === ResourceKind.Model) models++;
+      else if (k === ResourceKind.MetricsView) metrics++;
+      else if (k === ResourceKind.Explore || k === ResourceKind.Canvas)
+        dashboards++;
+    }
+    return {
+      connectorCount: connectors,
+      sourcesCount: sources,
+      modelsCount: models,
+      metricsCount: metrics,
+      dashboardsCount: dashboards,
+    };
+  })());
 
   // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
   // Without this, the kind selector would re-render on every resource array change
   // even if counts haven't actually changed. The summaryEquals function does shallow comparison
   // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
+    connector: 0,
     sources: 0,
     models: 0,
     metrics: 0,
@@ -396,6 +514,7 @@
   };
   $: {
     const nextSummary: SummaryMemo = {
+      connector: connectorCount,
       sources: sourcesCount,
       models: modelsCount,
       metrics: metricsCount,
@@ -617,50 +736,12 @@
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild let:builder>
             <button
-              class="text-fg-muted px-[5px] py-1"
-              use:builder.action
-              {...builder}
-            >
-              <span class="gap-x-1.5 items-center font-medium flex">
-                <span>{activeKindLabel}</span>
-                <CaretDownIcon size="10px" />
-              </span>
-            </button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="start" class="w-48">
-            <DropdownMenu.Item on:click={() => onKindChange?.(null)}>
-              All types
-            </DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item on:click={() => onKindChange?.("sources")}>
-              Source Models
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("models")}>
-              Models
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("metrics")}>
-              Metric Views
-            </DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => onKindChange?.("dashboards")}>
-              Dashboards
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-        <CaretDownIcon
-          size="12px"
-          className="text-fg-muted -rotate-90 flex-none"
-        />
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild let:builder>
-            <button
               class="text-fg-muted px-[5px] py-1 max-w-fit"
               use:builder.action
               {...builder}
             >
               <span class="gap-x-1.5 items-center font-medium flex">
-                <span class="truncate"
-                  >{selectedGroup?.label ?? "Select tree"}</span
-                >
+                <span class="truncate">{breadcrumbLabel}</span>
                 <CaretDownIcon size="10px" />
               </span>
             </button>
@@ -670,33 +751,49 @@
               <input
                 class="tree-search-input"
                 type="text"
-                placeholder="Filter trees..."
+                placeholder="Filter resources..."
                 bind:value={treeSearchQuery}
                 on:keydown|stopPropagation
               />
             </div>
             <div class="tree-dropdown-list">
-              {#each treeFilteredGroups as group (group.id)}
-                {@const status = getGroupStatus(group)}
-                <DropdownMenu.Item
-                  class="flex items-center gap-2 cursor-pointer {effectiveSelectedGroupId ===
-                  group.id
-                    ? 'font-semibold'
-                    : ''}"
-                  on:click={() => handleSidebarSelect(group.id)}
-                >
-                  <span class="status-dot {status}"></span>
-                  <span class="flex-1 truncate text-xs"
-                    >{group.label ?? group.id}</span
+              {#each filteredResourceSections as section, sIdx}
+                {#if sIdx > 0}
+                  <DropdownMenu.Separator />
+                {/if}
+                <div class="section-header">
+                  <ResourceTypeBadge kind={section.kind} />
+                  <span class="text-[10px] text-fg-muted"
+                    >{section.entries.length}</span
                   >
-                  <span class="text-xs text-fg-muted"
-                    >{group.resources.length}</span
+                </div>
+                {#each section.entries as entry}
+                  {@const entryId = `${entry.kind}:${entry.name}`}
+                  {@const isConnectorEntry =
+                    entry.kind === ResourceKind.Connector}
+                  <DropdownMenu.Item
+                    class="flex items-center gap-x-2 cursor-pointer {effectiveSelectedGroupId ===
+                    entryId
+                      ? 'font-semibold'
+                      : ''}"
+                    on:click={() => handleResourceSelect(entry)}
                   >
-                </DropdownMenu.Item>
+                    <svelte:component
+                      this={resourceIconMapping[entry.kind]}
+                      size="12px"
+                    />
+                    <span class="flex-1 truncate text-xs">
+                      {isConnectorEntry
+                        ? `Full DAG · ${entry.name}`
+                        : entry.name}
+                    </span>
+                    <span class="status-dot {entry.status}"></span>
+                  </DropdownMenu.Item>
+                {/each}
               {/each}
-              {#if treeFilteredGroups.length === 0}
+              {#if filteredResourceSections.length === 0}
                 <div class="px-3 py-2 text-xs text-fg-muted">
-                  No trees match.
+                  No resources match.
                 </div>
               {/if}
             </div>
@@ -805,17 +902,15 @@
       {#if showSummary}
         <slot
           name="summary"
+          connector={connectorCount}
           sources={sourcesCount}
           metrics={metricsCount}
           models={modelsCount}
           dashboards={dashboardsCount}
         >
-          <ResourceKindSelector
-            sources={summaryMemo.sources}
-            models={summaryMemo.models}
-            metrics={summaryMemo.metrics}
-            dashboards={summaryMemo.dashboards}
-            activeToken={summaryMemo.activeToken}
+          <ResourceNodeSelector
+            resources={normalizedResources}
+            activeResourceId={activeResourceIdForSelector}
           />
         </slot>
       {/if}
@@ -906,7 +1001,7 @@
 
 <style lang="postcss">
   .graph-root {
-    @apply relative h-full w-full overflow-auto flex flex-col min-h-0 gap-y-3;
+    @apply relative h-full w-full overflow-auto flex flex-col min-h-0;
   }
 
   .graph-toolbar-bar {
@@ -967,6 +1062,10 @@
 
   .tree-dropdown-list {
     @apply max-h-72 overflow-y-auto;
+  }
+
+  .section-header {
+    @apply flex items-center justify-between px-2 py-1.5;
   }
 
   .sidebar-main {

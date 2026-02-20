@@ -4,7 +4,8 @@
   import GraphContainer from "@rilldata/web-common/features/resource-graph/navigation/GraphContainer.svelte";
   import {
     parseGraphUrlParams,
-    type KindToken,
+    tokenForKind,
+    tokenForSeedString,
   } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
   import type { ResourceStatusFilterValue } from "@rilldata/web-common/features/resource-graph/shared/types";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -23,8 +24,12 @@
 
   // Parse URL parameters
   $: urlParams = parseGraphUrlParams($page.url);
-  $: activeKind = urlParams.kind;
-  $: seeds = activeKind ? [activeKind] : undefined;
+  $: derivedKindFromResource =
+    urlParams.resources.length > 0
+      ? tokenForSeedString(urlParams.resources[0])
+      : null;
+  $: activeKind = urlParams.kind ?? derivedKindFromResource ?? "connector";
+  $: seeds = [activeKind];
 
   // Sidebar selection from URL ?resource= param
   $: selectedResource =
@@ -34,26 +39,19 @@
   function handleSelectedGroupChange(groupId: string | null) {
     if (!groupId) return;
     const name = groupId.includes(":") ? groupId.split(":").pop() : groupId;
+    // Derive kind from the fully qualified group ID (e.g. "rill.runtime.v1.Model:orders")
+    const kindPart = groupId.includes(":")
+      ? groupId.split(":").slice(0, -1).join(":")
+      : null;
+    const derivedKind = kindPart ? tokenForKind(kindPart) : null;
     const params = new URLSearchParams();
-    if (activeKind) params.set("kind", activeKind);
+    params.set("kind", derivedKind ?? activeKind);
     if (name) params.set("resource", name);
-    goto(`/graph${params.toString() ? "?" + params.toString() : ""}`, {
+    goto(`/graph?${params.toString()}`, {
       replaceState: true,
       noScroll: true,
     });
   }
-
-  // Kind filter config
-  type NodeTypeOption = { label: string; token: KindToken };
-  const nodeTypeOptions: NodeTypeOption[] = [
-    { label: "Source Models", token: "sources" },
-    { label: "Models", token: "models" },
-    { label: "Metric Views", token: "metrics" },
-    { label: "Dashboards", token: "dashboards" },
-  ];
-
-  $: activeKindLabel =
-    nodeTypeOptions.find((o) => o.token === activeKind)?.label ?? "All types";
 
   function handleKindChange(kind: string | null) {
     if (kind) {
@@ -80,10 +78,10 @@
     }
   }
 
-  // Clear all filters
+  // Clear all filters (reset to OLAP connector default)
   function handleClearFilters() {
     selectedStatuses = [];
-    handleKindChange(null);
+    handleKindChange("connector");
   }
 
   // Refresh all
@@ -126,9 +124,7 @@
     layout="sidebar"
     {selectedGroupId}
     onSelectedGroupChange={handleSelectedGroupChange}
-    onKindChange={handleKindChange}
     onRefreshAll={handleRefreshAll}
-    {activeKindLabel}
     statusFilterOptions={statusOptions}
     onStatusToggle={toggleStatus}
     onClearFilters={handleClearFilters}

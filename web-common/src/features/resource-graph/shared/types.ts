@@ -77,6 +77,11 @@ export interface ResourceMetadata {
   componentCount?: number;
   rowCount?: number;
 
+  // Connector metadata
+  connectorDriver?: string;
+  connectorProperties?: Record<string, unknown>;
+  connectorTemplatedProperties?: string[]; // property names that use env templating
+
   // Security
   hasSecurityRules?: boolean;
 

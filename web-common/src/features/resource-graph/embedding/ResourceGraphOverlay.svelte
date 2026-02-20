@@ -14,6 +14,7 @@
   export let error: string | null = null;
 
   type GraphableKind =
+    | ResourceKind.Connector
     | ResourceKind.Source
     | ResourceKind.Model
     | ResourceKind.MetricsView
@@ -21,6 +22,7 @@
     | ResourceKind.Canvas;
 
   const KIND_TOKEN_BY_KIND: Record<GraphableKind, string> = {
+    [ResourceKind.Connector]: "connector",
     [ResourceKind.Source]: "sources",
     [ResourceKind.Model]: "models",
     [ResourceKind.MetricsView]: "metrics",
@@ -44,7 +46,9 @@
 
   $: overlaySeeds = (function (): string[] | undefined {
     if (!anchorName || !anchorKind) return undefined;
-    if (anchorKind === ResourceKind.Canvas) {
+    if (anchorKind === ResourceKind.Connector) {
+      return [`connector:${anchorName}`];
+    } else if (anchorKind === ResourceKind.Canvas) {
       return [`canvas:${anchorName}`];
     } else if (anchorKind === ResourceKind.Explore) {
       return [`explore:${anchorName}`];

@@ -27,7 +27,12 @@ export const URL_PARAMS = {
 /**
  * Valid kind tokens that can be used in the `kind` URL parameter.
  */
-export type KindToken = "metrics" | "sources" | "models" | "dashboards";
+export type KindToken =
+  | "connector"
+  | "metrics"
+  | "sources"
+  | "models"
+  | "dashboards";
 
 /**
  * Normalize plural forms to singular forms for graph seed parsing.
@@ -39,6 +44,8 @@ function normalizePluralToSingular(kind: string): string {
 
   // Map plural forms to singular forms
   const pluralToSingular: Record<string, string> = {
+    connector: "connector",
+    connectors: "connector",
     metrics: "metricsview",
     models: "model",
     sources: "source",
@@ -69,6 +76,7 @@ function resolveKindAlias(kindAlias: string): ResourceKind | undefined {
  * Resource kinds that are allowed in the graph visualization.
  */
 export const ALLOWED_FOR_GRAPH = new Set<ResourceKind>([
+  ResourceKind.Connector,
   ResourceKind.Source,
   ResourceKind.Model,
   ResourceKind.MetricsView,
@@ -150,9 +158,10 @@ export function isKindToken(s: string): ResourceKind | undefined {
  */
 export function tokenForKind(
   kind?: ResourceKind | string | null,
-): "metrics" | "sources" | "models" | "dashboards" | null {
+): KindToken | null {
   if (!kind) return null;
   const key = `${kind}`.toLowerCase();
+  if (key.includes("connector")) return "connector";
   if (key.includes("source")) return "sources";
   if (key.includes("model")) return "models";
   if (key.includes("metricsview") || key.includes("metric")) return "metrics";
@@ -179,9 +188,7 @@ export function tokenForKind(
  * tokenForSeedString("metrics") // "metrics"
  * tokenForSeedString("orders") // "metrics" (defaults to metrics)
  */
-export function tokenForSeedString(
-  seed?: string | null,
-): "metrics" | "sources" | "models" | "dashboards" | null {
+export function tokenForSeedString(seed?: string | null): KindToken | null {
   if (!seed) return null;
   const normalized = seed.trim().toLowerCase();
   if (!normalized) return null;
@@ -251,11 +258,14 @@ export function expandSeedsByKind(
     expanded.push(s);
   };
 
-  // Filter to visible resources only (to align with graph rendering)
-  const visible = resources.filter(
-    (r) =>
-      ALLOWED_FOR_GRAPH.has(coerceKindFn(r) as ResourceKind) && !r.meta?.hidden,
-  );
+  // Filter to visible resources only (to align with graph rendering).
+  // Allow connectors even if hidden; GraphContainer pre-filters to OLAP only.
+  const visible = resources.filter((r) => {
+    const kind = coerceKindFn(r);
+    if (!kind || !ALLOWED_FOR_GRAPH.has(kind)) return false;
+    if (r.meta?.hidden && kind !== ResourceKind.Connector) return false;
+    return true;
+  });
 
   for (const raw of input) {
     if (!raw) continue;
@@ -355,7 +365,9 @@ export function parseGraphUrlParams(
   const validKind = normalizedKindParam as KindToken | null;
   const kind =
     validKind &&
-    ["metrics", "sources", "models", "dashboards"].includes(validKind)
+    ["connector", "metrics", "sources", "models", "dashboards"].includes(
+      validKind,
+    )
       ? validKind
       : null;
 
