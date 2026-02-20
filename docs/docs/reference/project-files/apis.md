@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: API YAML
-sidebar_position: 38
+sidebar_position: 39
 ---
 
 Custom APIs allow you to create endpoints that can be called to retrieve or manipulate data.
@@ -11,6 +11,14 @@ Custom APIs allow you to create endpoints that can be called to retrieve or mani
 ### `type`
 
 _[string]_ - Refers to the resource type and must be `api` _(required)_
+
+### `display_name`
+
+_[string]_ - A human-readable display name for the API 
+
+### `description`
+
+_[string]_ - A brief description of what this API does 
 
 ### `openapi`
 

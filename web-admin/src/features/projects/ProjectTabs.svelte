@@ -46,6 +46,11 @@
       hasPermission: $alerts,
     },
     {
+      route: `/${organization}/${project}/-/apis`,
+      label: "APIs",
+      hasPermission: true, // TODO: gate behind a feature flag or permission check
+    },
+    {
       route: `/${organization}/${project}/-/status`,
       label: "Status",
       hasPermission: projectPermissions.manageProject,

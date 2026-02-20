@@ -1,26 +1,34 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: Alert YAML
-sidebar_position: 37
+title: Report YAML
+sidebar_position: 38
 ---
 
-Along with alertings at the dashboard level and can be created via the UI, there might be more extensive alerting that you might want to develop and can be done so the an alert.yaml. When creating an alert via a YAML file, you'll see this denoted in the UI as `Created through code`.
+Reports allow you to schedule and deliver data exports or AI-powered insights to recipients via email or Slack.
+
 
 ## Properties
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `alert` _(required)_
+_[string]_ - Refers to the resource type and must be `report` _(required)_
+
+### `display_name`
+
+_[string]_ - Display name for the report shown in notifications and UI 
+
+### `title`
+
+_[string]_ - Deprecated: use display_name instead 
 
 ### `refresh`
 
-_[object]_ - Refresh schedule for the alert
-  ```yaml
-  refresh:
-    cron: "* * * * *"
-    #every: "24h"
-  ```
- _(required)_
+_[object]_ - Refresh schedule for the report
+```yaml
+refresh:
+  cron: "0 9 * * *"
+```
+ 
 
   - **`cron`** - _[string]_ - A cron expression that defines the execution schedule 
 
@@ -32,35 +40,29 @@ _[object]_ - Refresh schedule for the alert
 
   - **`run_in_dev`** - _[boolean]_ - If true, allows the schedule to run in development mode. 
 
-### `display_name`
-
-_[string]_ - Display name for the alert 
-
-### `description`
-
-_[string]_ - Description for the alert 
-
-### `intervals`
-
-_[object]_ - define the interval of the alert to check 
-
-  - **`duration`** - _[string]_ - a valid ISO8601 duration to define the interval duration 
-
-  - **`limit`** - _[integer]_ - maximum number of intervals to check for on invocation 
-
-  - **`check_unclosed`** - _[boolean]_ - boolean, whether unclosed intervals should be checked 
-
 ### `watermark`
 
 _[string]_ - Specifies how the watermark is determined for incremental processing. Use 'trigger_time' to set it at runtime or 'inherit' to use the upstream model's watermark. 
 
+### `intervals`
+
+_[object]_ - Define the interval of the report to check 
+
+  - **`duration`** - _[string]_ - A valid ISO8601 duration to define the interval duration 
+
+  - **`limit`** - _[integer]_ - Maximum number of intervals to check for on invocation 
+
+  - **`check_unclosed`** - _[boolean]_ - Whether unclosed intervals should be checked 
+
 ### `timeout`
 
-_[string]_ - define the timeout of the alert in seconds (optional). 
+_[string]_ - Define the timeout for the report execution (e.g., '5m', '1h') 
 
 ### `data`
 
-_[oneOf]_ - Data source for the alert _(required)_
+_[oneOf]_ - Data source for the report using the generic resolver pattern.
+Supports ai resolvers only as of now.
+ 
 
   - **option 1** - _[object]_ - Executes a raw SQL query against the project's data models.
 
@@ -132,45 +134,29 @@ _[oneOf]_ - Data source for the alert _(required)_
 
         - **`measures`** - _[array of string]_ - List of measures to include in analysis 
 
-### `for`
+### `query`
 
-_[oneOf]_ - Specifies how user identity or attributes should be evaluated for security policy enforcement. 
+_[object]_ - Legacy query-based report configuration 
 
-  - **option 1** - _[object]_ - Specifies a unique user identifier for applying security policies.
+  - **`name`** - _[string]_ - Name of the query to execute (e.g., MetricsViewAggregation) 
 
-    - **`user_id`** - _[string]_ - The unique user ID used to evaluate security policies. _(required)_
+  - **`args`** - _[object]_ - Arguments to pass to the query 
 
-  - **option 2** - _[object]_ - Specifies a user's email address for applying security policies.
+  - **`args_json`** - _[string]_ - Query arguments as a JSON string (alternative to args) 
 
-    - **`user_email`** - _[string]_ - The user's email address used to evaluate security policies. _(required)_
+### `export`
 
-  - **option 3** - _[object]_ - Specifies a set of arbitrary user attributes for applying security policies.
+_[object]_ - Export configuration for query-based reports 
 
-    - **`attributes`** - _[object]_ - A dictionary of user attributes used to evaluate security policies. _(required)_
+  - **`format`** - _[string]_ - Export file format 
 
-### `on_recover`
+  - **`include_header`** - _[boolean]_ - Include column headers in the export 
 
-_[boolean]_ - Send an alert when a previously failing alert recovers. Defaults to false. 
-
-### `on_fail`
-
-_[boolean]_ - Send an alert when a failure occurs. Defaults to true. 
-
-### `on_error`
-
-_[boolean]_ - Send an alert when an error occurs during evaluation. Defaults to false. 
-
-### `renotify`
-
-_[boolean]_ - Enable repeated notifications for unresolved alerts. Defaults to false. 
-
-### `renotify_after`
-
-_[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24h'), equivalent to snooze duration in UI, defaults to 'Off' 
+  - **`limit`** - _[integer]_ - Maximum number of rows to export 
 
 ### `notify`
 
-_[object]_ - Notification configuration for email and Slack delivery _(required)_
+_[object]_ - Notification configuration for email and Slack delivery 
 
   - **`email`** - _[object]_ - Send notifications via email. 
 
@@ -186,7 +172,7 @@ _[object]_ - Notification configuration for email and Slack delivery _(required)
 
 ### `annotations`
 
-_[object]_ - Key value pair used for annotations 
+_[object]_ - Key-value pairs for report metadata (e.g., admin_owner_user_id for AI reports) 
 
 ## Common Properties
 
@@ -209,25 +195,51 @@ _[object]_ - Overrides any properties in production environment.
 ## Examples
 
 ```yaml
-# Example: To send alert when data lags by more than 1 day to slack channel #rill-cloud-alerts
-type: alert
-display_name: Data lags by more than 1 day
-# Check the alert every hour.
+# Example: query-based report with CSV export
+type: report
+display_name: Weekly Sales Report
 refresh:
-    cron: 0 * * * *
-# Query that returns non-empty results if the measures lag by more than 1 day.
+    cron: "0 9 * * 1"
 data:
-    sql: |-
-        SELECT  *
-        FROM
-        (
-          SELECT  MAX(event_time) AS max_time
-          FROM rill_metrics_model
-        )
-        WHERE max_time < NOW() - INTERVAL '1 day'
-# Send notifications in Slack.
+    metrics:
+        metrics_view: sales_metrics
+        dimensions:
+            - name: region
+        measures:
+            - name: total_sales
+        time_range:
+            expression: "7D as of latest/D"
+export:
+    format: csv
+    limit: 1000
 notify:
-    slack:
-        channels:
-            - '#rill-cloud-alerts'
+    email:
+        recipients:
+            - sales@example.com
+annotations:
+    admin_owner_user_id: user-123
+    web_open_mode: recipient # report will use recipient's permission to run the query
+```
+
+```yaml
+# Example: AI-powered insight report
+type: report
+display_name: Daily AI Insights
+refresh:
+    cron: "0 8 * * *"
+data:
+    ai:
+        prompt: "Analyze key metrics and identify significant changes"
+        time_range:
+            expression: "1D as of latest/D"
+        comparison_time_range:
+            expression: "1D as of latest/D offset -1D"
+        context:
+            explore: my_explore
+notify:
+    email:
+        recipients:
+            - team@example.com
+annotations:
+    admin_owner_user_id: user-123 # report will be run with this user permission
 ```

@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Theme YAML
-sidebar_position: 39
+sidebar_position: 40
 ---
 
 In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.

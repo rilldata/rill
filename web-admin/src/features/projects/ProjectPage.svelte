@@ -6,7 +6,7 @@
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import type { CreateQueryResult, QueryKey } from "@tanstack/svelte-query";
 
-  export let kind: "report" | "dashboard" | "alert";
+  export let kind: "report" | "dashboard" | "alert" | "API";
   export let query: CreateQueryResult<V1ListResourcesResponse, HTTPError> & {
     queryKey: QueryKey;
   };

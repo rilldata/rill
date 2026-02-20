@@ -230,6 +230,8 @@ export interface V1API {
 export type V1APISpecResolverProperties = { [key: string]: unknown };
 
 export interface V1APISpec {
+  displayName?: string;
+  description?: string;
   resolver?: string;
   resolverProperties?: V1APISpecResolverProperties;
   openapiSummary?: string;
