@@ -1,5 +1,5 @@
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import { isResourceReconciling } from "$lib/refetch-interval-store";
+import { isResourceReconciling } from "../../../../lib/refetch-interval-store";
 
 export type ResourceStatus = "error" | "warn" | "ok";
 
