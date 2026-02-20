@@ -13,7 +13,7 @@ Rill Developer is a great tool for building, testing, and viewing your data loca
 - [**Deployment Credentials**](/developers/deploy/deploy-credentials) - Confirm deployment credentials based on your deployment environment
 
 ### Deployment
-- [**Deploy your Dashboard**](/developers/deploy/deploy-dashboard) - Publish your dashboard to Rill Cloud
+- [**Deploy to Rill Cloud**](/developers/deploy/deploy-to-cloud) - Publish your dashboard to Rill Cloud
 
 ### Post-Deployment Steps
 - [**Managing Project Errors**](/developers/deploy/project-errors) - Troubleshooting errors in Rill Cloud

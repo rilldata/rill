@@ -28,6 +28,7 @@ Follow along, refer to the in-line linked documentation, and explore our product
 - [**Deploy from Gitlab:**](/developers/tutorials/deploy-from-cli) Set up continuous deploys to Rill Cloud from Gitlab
 - [**Optimize Performance in Rill:**](/developers/tutorials/performance) Best practices and guidelines to keep your dashboards performant
 - [**Integrating with Rill's Admin API:**](/developers/tutorials/integrating-with-rill) Build custom integrations using Rill's Admin API
+- [**Rill MCP Server:**](/guide/ai/mcp) Connect to Rill via MCP and query your metrics views from AI tools
 
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!

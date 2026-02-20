@@ -9,14 +9,13 @@ import ThemedImage from '@theme/ThemedImage';
 
 Once you've built your dashboards locally, deploying to Rill Cloud lets you share them with your team, set up [alerts and scheduled reports](/guide/dashboards/explore), [embed dashboards](/developers/integrate/embedding) in other apps, and collaborate with others.
 
-- [Deploy from the UI](#deploy-from-the-ui) — The quickest way to get started
-- [Deploy from the CLI](#deploy-from-the-cli) — For scripting and automation
-- [Deploy with GitHub](#deploy-from-cli-with-github) — Best for teams and ongoing projects
-- [Connect GitHub later](#connect-github-to-an-existing-project) — Add version control after your first deploy
+## Deploy without GitHub
 
-## Deploy from the UI
+The fastest way to get started. You can always [connect GitHub later](#connect-github-to-an-existing-project).
 
-The fastest way to deploy is right from Rill Developer. Just click the **Deploy** button and follow the prompts.
+### From the UI
+
+Click the **Deploy** button in Rill Developer and follow the prompts.
 
 <img src='/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
 <br/>
@@ -24,33 +23,44 @@ The fastest way to deploy is right from Rill Developer. Just click the **Deploy*
 Made some changes? Click **Update** to push them to the cloud.
 
 <ThemedImage
-  alt="Description"
+  alt="Update button in Rill Developer showing how to push local changes to Rill Cloud"
   sources={{
     light: '/img/deploy/update-light.png',
     dark: '/img/deploy/update-dark.png',
   }}
 />
 
-## Deploy from the CLI
-
-Prefer the command line? Run:
+### From the CLI
 
 ```bash
 rill project deploy
 ```
 
-This uploads your project directly to Rill Cloud. It's great for quick deploys or when you want to set up GitHub integration later.
+This uploads your project directly to Rill Cloud. It's great for quick deploys or when you want to script deployments.
 
-## Deploy from CLI with GitHub
+## Deploy with GitHub
 
-For team projects or dashboards you'll maintain over time, we recommend connecting to GitHub. This gives you:
+Best for teams — gives you version control, continuous deployment, and PR workflows.
 
 - **Automatic updates** — Push to GitHub, and your dashboards update automatically
 - **Version history** — See what changed and roll back if needed
 - **Team collaboration** — Everyone can contribute through pull requests
 - **BI-as-code** — Your dashboards live alongside your other code
 
-To deploy with GitHub from the start, run:
+### From the UI
+
+1. Deploy your project using the **Deploy** button
+2. Go to the **Status** page in Rill Cloud
+3. Click **Connect to GitHub**
+4. Create a new repo or pick an existing one
+
+<img src='/img/deploy/existing-project/install-rill-cloud.png' class='rounded-gif' />
+
+:::note Need admin help?
+The Rill Cloud GitHub app needs permission to read and write to your repository. If you're not a GitHub org admin, you may need to ask them to approve the app first.
+:::
+
+### From the CLI
 
 ```bash
 rill project connect-github
@@ -62,7 +72,7 @@ Rill will either create a new repository or connect to an existing one, then set
 No problem! Check out our [GitHub Basics](/developers/tutorials/github-101) guide, which walks you through everything using GitHub Desktop — no command line required.
 :::
 
-### Deploy from a specific branch
+#### Deploy from a specific branch
 
 By default, Rill deploys from the repository's default Git branch. To deploy from a different branch:
 
@@ -70,7 +80,7 @@ By default, Rill deploys from the repository's default Git branch. To deploy fro
 rill project connect-github --primary-branch my-branch-name
 ```
 
-### Deploy from a monorepo
+#### Deploy from a monorepo
 
 If your Rill project lives inside a larger repository, use the `--subpath` flag to point to the project directory:
 
@@ -78,7 +88,11 @@ If your Rill project lives inside a larger repository, use the `--subpath` flag 
 rill project connect-github --subpath path/to/project
 ```
 
-## Connect GitHub to an Existing Project
+:::warning
+You must run `rill project connect-github` from the root of your Git repository, **not** the root of your Rill project.
+:::
+
+## Connect GitHub to an existing project
 
 Already deployed without GitHub? You can add it anytime:
 

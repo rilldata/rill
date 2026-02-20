@@ -267,6 +267,10 @@ const config = {
             to: '/developers/tutorials/deploy-from-cli',
           },
           {
+            from: '/developers/deploy/deploy-dashboard',
+            to: '/developers/deploy/deploy-to-cloud',
+          },
+          {
             from: '/install',
             to: '/developers/get-started/install',
           },
@@ -1063,11 +1067,11 @@ const config = {
           },
           {
             from: '/deploy/deploy-dashboard',
-            to: '/developers/deploy/deploy-dashboard',
+            to: '/developers/deploy/deploy-to-cloud',
           },
           {
             from: '/deploy/deploy-dashboard/deploy-dashboard',
-            to: '/developers/deploy/deploy-dashboard',
+            to: '/developers/deploy/deploy-to-cloud',
           },
           {
             from: '/deploy/deploy-dashboard/deploy-from-cli',
