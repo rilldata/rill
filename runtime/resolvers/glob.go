@@ -266,7 +266,6 @@ func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry
 	// Group the entries by directory
 	rows := make(map[string]map[string]any)
 	for _, entry := range entries {
-
 		dir := path.Dir(entry.Path)
 
 		row := rows[dir]
