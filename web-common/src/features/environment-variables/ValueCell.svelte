@@ -33,14 +33,10 @@
 
 <div class="flex flex-row gap-2 items-center truncate">
   <button
-    class="hover:bg-slate-100 rounded-sm p-0.5 flex-none"
+    class="hover:bg-surface-hover rounded-sm p-0.5 flex-none"
     on:click={toggleShowValue}
   >
-    <svelte:component
-      this={showValue ? EyeInvisible : Eye}
-      color="#374151"
-      size="18px"
-    />
+    <svelte:component this={showValue ? EyeInvisible : Eye} size="18px" />
   </button>
 
   {#if showValue}

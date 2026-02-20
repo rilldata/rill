@@ -227,7 +227,7 @@
         bind:autoSave={$autoSave}
       />
     {:else}
-      <div class="h-full w-full overflow-auto p-4">
+      <div class="h-full w-full overflow-auto p-4 bg-surface-background">
         <EnvVariablesTable data={envVariables} {actionsColumn} />
       </div>
     {/if}
