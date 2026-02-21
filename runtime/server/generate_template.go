@@ -87,7 +87,7 @@ func (s *Server) GenerateTemplate(ctx context.Context, req *runtimev1.GenerateTe
 			blob = renderModelYAML(spec, actualDriver, props, req.ConnectorName, existingEnv, envVars)
 		} else {
 			// Rewritten to DuckDB
-			blob = renderDuckDBModelYAML(props, req.ConnectorName)
+			blob = renderDuckDBModelYAML(props)
 		}
 	}
 
@@ -297,7 +297,7 @@ func renderModelYAML(spec drivers.Spec, driverName string, props map[string]any,
 }
 
 // renderDuckDBModelYAML builds a DuckDB model YAML file for rewritten object/file store drivers.
-func renderDuckDBModelYAML(props map[string]any, connectorName string) string {
+func renderDuckDBModelYAML(props map[string]any) string {
 	doc := &yaml.Node{Kind: yaml.DocumentNode}
 	mapping := &yaml.Node{Kind: yaml.MappingNode}
 	mapping.HeadComment = "Model YAML\nReference documentation: https://docs.rilldata.com/developers/build/connectors/olap/duckdb"

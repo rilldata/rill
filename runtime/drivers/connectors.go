@@ -46,7 +46,7 @@ type PropertySpec struct {
 	Hint        string
 	Default     string
 	Placeholder string
-	Secret bool
+	Secret      bool
 	// EnvVarName is the conventional env var name for this property (e.g. AWS_ACCESS_KEY_ID, GOOGLE_APPLICATION_CREDENTIALS).
 	// It must be specified explicitly because the mapping doesn't follow a mechanical pattern;
 	// some keys use well-known names shared across drivers (AWS_*), others add infixes (AZURE_STORAGE_*),

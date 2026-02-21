@@ -244,9 +244,6 @@ export async function submitAddConnectorForm(
         throw new Error("Operation cancelled");
       }
 
-      let newEnvBlob: string;
-      let connectorYamlBlob: string;
-
       const templateResponse = await generateTemplate(instanceId, {
         resourceType: "connector",
         driver: connector.name as string,
@@ -256,9 +253,9 @@ export async function submitAddConnectorForm(
         queryClient,
         templateResponse.envVars ?? {},
       );
-      newEnvBlob = envResult.newBlob;
+      const newEnvBlob = envResult.newBlob;
       originalEnvBlob = envResult.originalBlob;
-      connectorYamlBlob = templateResponse.blob ?? "";
+      const connectorYamlBlob = templateResponse.blob ?? "";
 
       if (saveAnyway) {
         // Save Anyway: bypass reconciliation entirely via centralized helper
