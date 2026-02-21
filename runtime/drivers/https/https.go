@@ -25,6 +25,14 @@ var spec = drivers.Spec{
 	Description: "Connect to a remote file.",
 	DocsURL:     "https://docs.rilldata.com/developers/build/connect/#adding-a-remote-source",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "headers",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Headers",
+			Description: "HTTP headers to include in requests.",
+		},
+	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",

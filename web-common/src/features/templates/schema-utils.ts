@@ -340,7 +340,35 @@ export function filterSchemaValuesForSubmit(
   opts?: { step?: "connector" | "source" | string },
 ): Record<string, unknown> {
   const tabFiltered = filterValuesByTabGroups(schema, values, opts);
-  return filterSchemaInternalValues(schema, tabFiltered, opts);
+  const internalFiltered = filterSchemaInternalValues(
+    schema,
+    tabFiltered,
+    opts,
+  );
+  return convertKeyValueFieldsToMap(schema, internalFiltered);
+}
+
+/**
+ * Convert key-value display fields from array format [{key, value}] to a plain
+ * map {key: value}. The backend RPC expects map-typed properties, but the
+ * key-value UI produces arrays.
+ */
+function convertKeyValueFieldsToMap(
+  schema: MultiStepFormSchema,
+  values: Record<string, unknown>,
+): Record<string, unknown> {
+  const result = { ...values };
+  for (const [key, prop] of Object.entries(schema.properties ?? {})) {
+    if (prop["x-display"] !== "key-value") continue;
+    const val = result[key];
+    if (!Array.isArray(val)) continue;
+    result[key] = Object.fromEntries(
+      (val as Array<{ key: string; value: string }>)
+        .filter((e) => e.key?.trim())
+        .map((e) => [e.key.trim(), e.value ?? ""]),
+    );
+  }
+  return result;
 }
 
 export function findRadioEnumKey(schema: MultiStepFormSchema): string | null {

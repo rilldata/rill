@@ -23,15 +23,12 @@ import {
   type ConnectorStepState,
 } from "./connectorStepStore";
 import { get } from "svelte/store";
-import { compileConnectorYAML } from "../../connectors/code-utils";
 import type { ActionResult } from "@sveltejs/kit";
 import type { QueryClient } from "@tanstack/query-core";
 import {
   filterSchemaValuesForSubmit,
   findRadioEnumKey,
   getSchemaFieldMetaList,
-  getSchemaSecretKeys,
-  getSchemaStringKeys,
 } from "../../templates/schema-utils";
 import type { ButtonLabels } from "../../templates/schemas/types";
 import { processFileContent } from "../../templates/file-encoding";
@@ -499,8 +496,7 @@ export class AddDataFormManager {
 
   /**
    * Compute YAML preview for the current form state.
-   * HTTPS connector step uses synchronous client-side YAML generation;
-   * all other paths call the GenerateTemplate RPC.
+   * All connectors use the GenerateTemplate RPC.
    */
   async computeYamlPreview(ctx: {
     stepState: ConnectorStepState | undefined;
@@ -515,49 +511,6 @@ export class AddDataFormManager {
     const schema = getConnectorSchema(this.schemaName);
     const instanceId = get(runtime).instanceId;
 
-    // HTTPS connector step: use synchronous client-side YAML generation
-    // (backend doesn't support headers array yet)
-    const getHttpsConnectorYamlPreview = (
-      values: Record<string, unknown>,
-    ): string => {
-      const schemaConnectorFields = schema
-        ? getSchemaFieldMetaList(schema, { step: "connector" })
-        : [];
-      const schemaConnectorSecretKeys = schema
-        ? getSchemaSecretKeys(schema, { step: "connector" })
-        : undefined;
-      const schemaConnectorStringKeys = schema
-        ? getSchemaStringKeys(schema, { step: "connector" })
-        : undefined;
-
-      const filteredValues = schema
-        ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
-        : values;
-      return compileConnectorYAML(connector, filteredValues, {
-        fieldFilter: (property) => {
-          if ("internal" in property && property.internal) return false;
-          return !("noPrompt" in property && property.noPrompt);
-        },
-        orderedProperties: schemaConnectorFields,
-        secretKeys: schemaConnectorSecretKeys,
-        stringKeys: schemaConnectorStringKeys,
-        schema: schema ?? undefined,
-      });
-    };
-
-    // For HTTPS connector step, use client-side preview
-    if (connector.name === "https" && isConnectorForm) {
-      return getHttpsConnectorYamlPreview(formValues);
-    }
-    if (
-      connector.name === "https" &&
-      isMultiStepConnector &&
-      stepState?.step === "connector"
-    ) {
-      return getHttpsConnectorYamlPreview(formValues);
-    }
-
-    // All other paths: use the GenerateTemplate RPC
     const isOnConnectorStep = !stepState || stepState.step === "connector";
     const isOnSourceOrExplorerStep =
       stepState?.step === "source" || stepState?.step === "explorer";

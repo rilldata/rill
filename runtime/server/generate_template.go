@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -214,6 +216,11 @@ func renderConnectorYAML(spec drivers.Spec, driverName string, props map[string]
 		if !ok || isEmpty(val) {
 			continue
 		}
+		// Handle map-typed properties (e.g. headers)
+		if mapVal, isMap := val.(map[string]any); isMap {
+			renderHeadersMap(mapping, mapVal, driverName, existingEnv, envVars)
+			continue
+		}
 		// Skip managed: false for ClickHouse (it's the default)
 		if propSpec.Key == "managed" && !toBool(val) {
 			continue
@@ -392,6 +399,85 @@ func addDevSection(m *yaml.Node) {
 	m.Content = append(m.Content,
 		&yaml.Node{Kind: yaml.ScalarNode, Value: "dev"},
 		devMapping,
+	)
+}
+
+// sensitiveHeaderPattern matches header keys that carry secret values.
+var sensitiveHeaderPattern = regexp.MustCompile(
+	`(?i)^(authorization|x-api-key|api-key|token|x-token|x-auth|x-secret|proxy-authorization)$`,
+)
+
+// isSensitiveHeaderKey returns true when a header key likely carries a secret value.
+func isSensitiveHeaderKey(key string) bool {
+	return sensitiveHeaderPattern.MatchString(strings.TrimSpace(key))
+}
+
+// authSchemePrefixes are common HTTP authentication scheme prefixes.
+// When a sensitive header value starts with one of these (case-insensitive),
+// only the token portion is stored in .env.
+var authSchemePrefixes = []string{"Bearer ", "Basic ", "Token ", "Bot "}
+
+// splitAuthSchemePrefix splits a value into scheme prefix and secret if it starts
+// with a known auth scheme. Returns ("", "", false) when no prefix matches.
+func splitAuthSchemePrefix(value string) (scheme, secret string, ok bool) {
+	for _, prefix := range authSchemePrefixes {
+		if len(value) > len(prefix) && strings.EqualFold(value[:len(prefix)], prefix) {
+			return value[:len(prefix)], value[len(prefix):], true
+		}
+	}
+	return "", "", false
+}
+
+// headerKeyToEnvSegment sanitizes a header key into a valid .env variable segment.
+func headerKeyToEnvSegment(key string) string {
+	return regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(strings.ToLower(key), "_")
+}
+
+// resolveHeaderEnvVarName determines the env var name for a header, resolving conflicts.
+func resolveHeaderEnvVarName(connectorName, segment string, existingEnv map[string]bool) string {
+	base := fmt.Sprintf("connector.%s.%s", connectorName, segment)
+	candidate := base
+	for i := 1; existingEnv[candidate]; i++ {
+		candidate = fmt.Sprintf("%s_%d", base, i)
+	}
+	return candidate
+}
+
+// renderHeadersMap builds a YAML headers mapping, extracting sensitive values to envVars.
+func renderHeadersMap(m *yaml.Node, headers map[string]any, connectorName string, existingEnv map[string]bool, envVars map[string]string) {
+	if len(headers) == 0 {
+		return
+	}
+
+	// Sort keys for deterministic output
+	keys := make([]string, 0, len(headers))
+	for k := range headers {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	headerMapping := &yaml.Node{Kind: yaml.MappingNode}
+	for _, key := range keys {
+		strVal := fmt.Sprintf("%v", headers[key])
+		if isSensitiveHeaderKey(key) {
+			envSegment := headerKeyToEnvSegment(key)
+			envName := resolveHeaderEnvVarName(connectorName, envSegment, existingEnv)
+			existingEnv[envName] = true
+			if scheme, secret, ok := splitAuthSchemePrefix(strVal); ok {
+				envVars[envName] = secret
+				addQuotedPair(headerMapping, key, fmt.Sprintf("%s{{ .env.%s }}", scheme, envName))
+			} else {
+				envVars[envName] = strVal
+				addQuotedPair(headerMapping, key, fmt.Sprintf("{{ .env.%s }}", envName))
+			}
+		} else {
+			addQuotedPair(headerMapping, key, strVal)
+		}
+	}
+
+	m.Content = append(m.Content,
+		&yaml.Node{Kind: yaml.ScalarNode, Value: "headers"},
+		headerMapping,
 	)
 }
 

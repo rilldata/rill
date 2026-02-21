@@ -560,6 +560,7 @@ func TestGenerateTemplateAllConnectorDrivers(t *testing.T) {
 		{"pinot", map[string]any{"broker_host": "localhost"}},
 		{"starrocks", map[string]any{"host": "localhost"}},
 		{"salesforce", map[string]any{"username": "test"}},
+		{"https", map[string]any{}},
 	}
 
 	for _, d := range driversWithConfig {
@@ -872,6 +873,140 @@ func TestGenerateTemplateValidateProperties(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestGenerateTemplateHTTPSConnectorWithHeaders tests HTTPS connector with non-sensitive headers.
+func TestGenerateTemplateHTTPSConnectorWithHeaders(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": ``,
+		},
+	})
+
+	ctx := testCtx()
+	srv, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	require.NoError(t, err)
+
+	resp, err := srv.GenerateTemplate(ctx, &runtimev1.GenerateTemplateRequest{
+		InstanceId:   instanceID,
+		ResourceType: "connector",
+		Driver:       "https",
+		Properties: mustStruct(map[string]any{
+			"headers": map[string]any{
+				"Content-Type": "application/json",
+				"Accept":       "text/html",
+			},
+		}),
+	})
+	require.NoError(t, err)
+
+	require.Contains(t, resp.Blob, "type: connector")
+	require.Contains(t, resp.Blob, "driver: https")
+	require.Contains(t, resp.Blob, "headers:")
+	require.Contains(t, resp.Blob, `"application/json"`)
+	require.Contains(t, resp.Blob, `"text/html"`)
+	require.Empty(t, resp.EnvVars)
+}
+
+// TestGenerateTemplateHTTPSConnectorWithSensitiveHeaders tests Authorization header extraction.
+func TestGenerateTemplateHTTPSConnectorWithSensitiveHeaders(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": ``,
+		},
+	})
+
+	ctx := testCtx()
+	srv, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	require.NoError(t, err)
+
+	resp, err := srv.GenerateTemplate(ctx, &runtimev1.GenerateTemplateRequest{
+		InstanceId:   instanceID,
+		ResourceType: "connector",
+		Driver:       "https",
+		Properties: mustStruct(map[string]any{
+			"headers": map[string]any{
+				"Authorization": "my_secret_token",
+			},
+		}),
+	})
+	require.NoError(t, err)
+
+	require.Contains(t, resp.Blob, "{{ .env.connector.https.authorization }}")
+	require.NotContains(t, resp.Blob, "my_secret_token")
+	require.Contains(t, resp.EnvVars, "connector.https.authorization")
+	require.Equal(t, "my_secret_token", resp.EnvVars["connector.https.authorization"])
+}
+
+// TestGenerateTemplateHTTPSConnectorBearerPrefix tests Bearer scheme preservation.
+func TestGenerateTemplateHTTPSConnectorBearerPrefix(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": ``,
+		},
+	})
+
+	ctx := testCtx()
+	srv, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	require.NoError(t, err)
+
+	resp, err := srv.GenerateTemplate(ctx, &runtimev1.GenerateTemplateRequest{
+		InstanceId:   instanceID,
+		ResourceType: "connector",
+		Driver:       "https",
+		Properties: mustStruct(map[string]any{
+			"headers": map[string]any{
+				"Authorization": "Bearer my_token_123",
+			},
+		}),
+	})
+	require.NoError(t, err)
+
+	// Bearer prefix preserved in YAML, only token in envVars
+	require.Contains(t, resp.Blob, "Bearer {{ .env.connector.https.authorization }}")
+	require.NotContains(t, resp.Blob, "my_token_123")
+	require.Contains(t, resp.EnvVars, "connector.https.authorization")
+	require.Equal(t, "my_token_123", resp.EnvVars["connector.https.authorization"])
+}
+
+// TestGenerateTemplateHTTPSConnectorMixedHeaders tests a mix of sensitive and non-sensitive headers.
+func TestGenerateTemplateHTTPSConnectorMixedHeaders(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": ``,
+		},
+	})
+
+	ctx := testCtx()
+	srv, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	require.NoError(t, err)
+
+	resp, err := srv.GenerateTemplate(ctx, &runtimev1.GenerateTemplateRequest{
+		InstanceId:   instanceID,
+		ResourceType: "connector",
+		Driver:       "https",
+		Properties: mustStruct(map[string]any{
+			"headers": map[string]any{
+				"Content-Type":  "application/json",
+				"Authorization": "Basic dXNlcjpwYXNz",
+				"X-API-Key":     "secret_key_value",
+			},
+		}),
+	})
+	require.NoError(t, err)
+
+	// Non-sensitive header as plain text
+	require.Contains(t, resp.Blob, `"application/json"`)
+
+	// Authorization with Basic prefix preserved
+	require.Contains(t, resp.Blob, "Basic {{ .env.connector.https.authorization }}")
+	require.NotContains(t, resp.Blob, "dXNlcjpwYXNz")
+	require.Equal(t, "dXNlcjpwYXNz", resp.EnvVars["connector.https.authorization"])
+
+	// X-API-Key is sensitive, no prefix
+	require.Contains(t, resp.Blob, "{{ .env.connector.https.x_api_key }}")
+	require.NotContains(t, resp.Blob, "secret_key_value")
+	require.Equal(t, "secret_key_value", resp.EnvVars["connector.https.x_api_key"])
 }
 
 func mustStruct(m map[string]any) *structpb.Struct {
