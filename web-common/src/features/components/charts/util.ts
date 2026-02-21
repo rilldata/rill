@@ -1,5 +1,5 @@
 import { CHART_CONFIG } from "@rilldata/web-common/features/components/charts/config";
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import chroma from "chroma-js";
@@ -188,7 +188,7 @@ export function getColorForValues(
     );
     const colorVar =
       overrideColor?.color ||
-      COMPARIONS_COLORS[index % COMPARIONS_COLORS.length];
+      COMPARISON_COLORS[index % COMPARISON_COLORS.length];
 
     return {
       value,
@@ -301,8 +301,8 @@ export function colorToVariableReference(
   if (!resolvedColor || typeof window === "undefined") return resolvedColor;
 
   // Check all comparison colors (qualitative palette)
-  for (let i = 0; i < COMPARIONS_COLORS.length; i++) {
-    const varRef = COMPARIONS_COLORS[i];
+  for (let i = 0; i < COMPARISON_COLORS.length; i++) {
+    const varRef = COMPARISON_COLORS[i];
     const resolved = resolveCSSVariable(varRef, isDarkMode);
 
     // Compare colors (normalize by converting both to chroma and back)
