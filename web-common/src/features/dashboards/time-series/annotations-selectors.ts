@@ -1,4 +1,4 @@
-import type { Annotation } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
+import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { Period, TimeUnit } from "@rilldata/web-common/lib/time/types.ts";
 import {

@@ -25,7 +25,7 @@
   import type { Interval } from "luxon";
   import { DateTime } from "luxon";
   import { groupAnnotations } from "./annotation-utils";
-  import type { Annotation } from "@rilldata/web-common/components/data-graphic/marks/annotations";
+  import type { Annotation } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/annotation-utils";
   import { AnnotationPopoverController } from "./AnnotationPopoverController";
   import MeasureChartGrid from "./MeasureChartGrid.svelte";
   import MeasureChartAnnotationMarkers from "./MeasureChartAnnotationMarkers.svelte";

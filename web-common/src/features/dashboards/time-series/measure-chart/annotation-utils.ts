@@ -1,8 +1,17 @@
-import type { Annotation } from "@rilldata/web-common/components/data-graphic/marks/annotations";
 import type { ChartScales, ChartConfig, TimeSeriesPoint } from "./types";
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type {
+  V1MetricsViewAnnotationsResponseAnnotation,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 import { dateToIndex } from "./utils";
+import type { DateTime } from "luxon";
+
+export type Annotation = V1MetricsViewAnnotationsResponseAnnotation & {
+  startTime: DateTime;
+  endTime?: DateTime;
+  formattedTimeOrRange: string;
+};
 
 export type AnnotationGroup = {
   items: Annotation[];
