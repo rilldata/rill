@@ -28,6 +28,7 @@
   } from "../../templates/schema-utils";
   import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { ICONS } from "./icons";
+  import { dataExplorerStore } from "../../connectors/explorer/data-explorer-store";
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -258,6 +259,13 @@
     },
     setShowSaveAnyway: (value: boolean) => {
       showSaveAnyway = value;
+    },
+    onOpenDataExplorer: () => {
+      // Open the DataExplorer with the connector's driver info
+      dataExplorerStore.open({
+        name: "", // Will be populated by the modal's query
+        driver: connector,
+      });
     },
   });
 

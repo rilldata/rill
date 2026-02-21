@@ -1,9 +1,16 @@
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { derived, get, writable, type Writable } from "svelte/store";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
 
 type ConnectorExplorerState = {
   showConnectors: boolean;
   expandedItems: Record<string, boolean>;
+  selectedKey: string | null;
 };
 
 export class ConnectorExplorerStore {
@@ -12,6 +19,8 @@ export class ConnectorExplorerStore {
   allowSelectTable: boolean;
   allowShowSchema: boolean;
   store: Writable<ConnectorExplorerState>;
+  private selectedCache = new Map<string, Readable<boolean>>();
+  private expandedChildrenCache = new Map<string, Readable<boolean>>();
   onToggleItem:
     | undefined
     | ((
@@ -50,8 +59,9 @@ export class ConnectorExplorerStore {
       ? localStorageStore<ConnectorExplorerState>("connector-explorer-state", {
           showConnectors,
           expandedItems,
+          selectedKey: null,
         })
-      : writable({ showConnectors, expandedItems });
+      : writable({ showConnectors, expandedItems, selectedKey: null });
   }
 
   createItemIfNotExists(
@@ -128,6 +138,14 @@ export class ConnectorExplorerStore {
     if (this.onToggleItem)
       this.onToggleItem(connector, database, schema, table);
 
+    if (table && this.allowSelectTable) {
+      const key = getItemKey(connector, database, schema, table);
+      this.store.update((state) => ({
+        ...state,
+        selectedKey: state.selectedKey === key ? null : key,
+      }));
+    }
+
     if (table && !this.allowShowSchema) return;
 
     this.store.update((state) => {
@@ -143,6 +161,43 @@ export class ConnectorExplorerStore {
         },
       };
     });
+  };
+
+  isSelected = (
+    connector: string,
+    database?: string,
+    schema?: string,
+    table?: string,
+  ) => {
+    const key = getItemKey(connector, database, schema, table);
+    if (!this.selectedCache.has(key)) {
+      this.selectedCache.set(
+        key,
+        derived(this.store, ($state) => $state.selectedKey === key),
+      );
+    }
+    return this.selectedCache.get(key)!;
+  };
+
+  clearSelection = () => {
+    this.store.update((state) => ({ ...state, selectedKey: null }));
+    this.selectedCache.clear();
+    this.expandedChildrenCache.clear();
+  };
+
+  hasExpandedChildren = (connector: string, database?: string) => {
+    const prefix = getItemKey(connector, database);
+    if (!this.expandedChildrenCache.has(prefix)) {
+      this.expandedChildrenCache.set(
+        prefix,
+        derived(this.store, ($state) =>
+          Object.entries($state.expandedItems).some(
+            ([key, value]) => key !== prefix && key.startsWith(prefix) && value,
+          ),
+        ),
+      );
+    }
+    return this.expandedChildrenCache.get(prefix)!;
   };
 
   // Not used yet. Currently, the reconciler does not track connector renames.

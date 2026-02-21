@@ -9,41 +9,58 @@
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
+  export let searchPattern: string = "";
 
   $: connectorName = connector?.name as string;
-  $: hasError = !!connector?.errorMessage;
-
-  $: queryEnabled = !hasError;
+  $: isConnectorReady = !connector?.errorMessage;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
     instanceId,
     connectorName,
     undefined,
-    queryEnabled,
+    isConnectorReady,
   );
 
   $: ({ data: rawData, error, isLoading } = $databaseSchemasQuery);
-
-  // TanStack Query returns cached data even when disabled
-  $: data = queryEnabled ? rawData : undefined;
+  $: data = isConnectorReady ? rawData : undefined;
 </script>
 
 <div class="wrapper">
-  {#if hasError}
-    <span class="message pl-6">Error: {connector.errorMessage}</span>
-  {:else if isLoading && queryEnabled}
-    <span class="message pl-6">Loading tables...</span>
-  {:else if error && queryEnabled}
-    <span class="message pl-6"
+  {#if !isConnectorReady}
+    <span
+      class="message"
+      style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
+      >Error: {connector.errorMessage}</span
+    >
+  {:else if isLoading}
+    <span
+      class="message"
+      style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
+      >Loading tables...</span
+    >
+  {:else if error}
+    <span
+      class="message"
+      style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
       >Error: {error.message || error.response?.data?.message}</span
     >
   {:else if data}
     {#if data.length === 0}
-      <span class="message pl-6">No tables found</span>
+      <span
+        class="message"
+        style="padding-left: calc(24px + var(--explorer-indent-offset, 0px))"
+        >No tables found</span
+      >
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
-          <DatabaseEntry {instanceId} {connector} {database} {store} />
+          <DatabaseEntry
+            {instanceId}
+            {connector}
+            {database}
+            {store}
+            {searchPattern}
+          />
         {/each}
       </ol>
     {/if}

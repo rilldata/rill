@@ -83,7 +83,7 @@
     @apply z-10 bg-surface-subtle;
   }
 
-  button:hover {
+  .connector-entry-header:hover {
     @apply bg-popover-accent;
   }
 
