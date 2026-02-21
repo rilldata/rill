@@ -3,6 +3,7 @@ import ApacheDruidIcon from "../../components/icons/connectors/ApacheDruidIcon.s
 import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
+import ApacheIcebergIcon from "../../components/icons/connectors/ApacheIcebergIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
@@ -22,6 +23,7 @@ export const connectorIconMapping = {
   motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
+  iceberg: ApacheIcebergIcon,
   mysql: MySqlIcon,
   pinot: ApachePinotIcon,
   postgres: PostgresIcon,

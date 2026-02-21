@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Select as SelectPrimitive } from "bits-ui";
   import * as Select from "@rilldata/web-common/components/select";
-  import { Cloud, Play, Server, Sparkles } from "lucide-svelte";
+  import { Cloud, HardDrive, Play, Server, Sparkles } from "lucide-svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
 
@@ -24,6 +24,10 @@
     "self-managed": Server,
     "self-hosted": Server,
     "rill-managed": Sparkles,
+    gcs: Cloud,
+    s3: Cloud,
+    azure: Cloud,
+    local: HardDrive,
   };
 
   export let colorMap: Record<string, { bg: string; text: string }> = {
@@ -32,6 +36,10 @@
     "self-managed": { bg: "bg-purple-100", text: "text-purple-600" },
     "self-hosted": { bg: "bg-purple-100", text: "text-purple-600" },
     "rill-managed": { bg: "bg-blue-100", text: "text-blue-600" },
+    gcs: { bg: "bg-blue-100", text: "text-blue-600" },
+    s3: { bg: "bg-orange-100", text: "text-orange-600" },
+    azure: { bg: "bg-sky-100", text: "text-sky-600" },
+    local: { bg: "bg-gray-100", text: "text-gray-600" },
   };
 
   function getIcon(optionValue: string): ComponentType<SvelteComponent> {

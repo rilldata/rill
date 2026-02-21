@@ -16,6 +16,7 @@ import { sqliteSchema } from "../../templates/schemas/sqlite";
 import { localFileSchema } from "../../templates/schemas/local_file";
 import { duckdbSchema } from "../../templates/schemas/duckdb";
 import { httpsSchema } from "../../templates/schemas/https";
+import { icebergSchema } from "../../templates/schemas/iceberg";
 import { motherduckSchema } from "../../templates/schemas/motherduck";
 import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
@@ -42,6 +43,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   https: httpsSchema,
   s3: s3Schema,
   gcs: gcsSchema,
+  iceberg: icebergSchema,
   azure: azureSchema,
 };
 
