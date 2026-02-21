@@ -445,6 +445,36 @@ export function prepareDimensionTableRows(
     Object.fromEntries(
       allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)]),
     );
+  // Big number formatters for compact in-table rendering
+  const bigNumberFormatters: { [key: string]: (val: number) => string } =
+    Object.fromEntries(
+      allMeasuresForSpec.map((m) => [
+        m.name,
+        createMeasureValueFormatter(m, "big-number"),
+      ]),
+    );
+  // Tooltip formatters for precise, human-readable tooltips (e.g., comma thousands)
+  const tooltipFormatters: { [key: string]: (val: number) => string } =
+    Object.fromEntries(
+      allMeasuresForSpec.map((m) => {
+        const withDefaultLocale = {
+          ...m,
+          // Provide a default locale to ensure thousands separators in tooltips
+          formatD3Locale:
+            m.formatD3Locale ??
+            ({
+              thousands: ",",
+              decimal: ".",
+              grouping: [3],
+              currency: ["", ""],
+            } as any),
+        };
+        return [
+          m.name,
+          createMeasureValueFormatter(withDefaultLocale, "tooltip"),
+        ];
+      }),
+    );
 
   const tableRows: DimensionTableRow[] = queryRows
     .filter((row) => row[activeMeasureName] !== undefined)
@@ -477,9 +507,15 @@ export function prepareDimensionTableRows(
           if (deltaAbs !== undefined) {
             rowOut[`${measure.name}_delta`] =
               castUnknownToNumberOrNull(deltaAbs);
+            // Table cell should use big-number formatting for compact display
             rowOut[`__formatted_${measure.name}_delta`] =
               deltaAbs !== null
-                ? formattersForMeasures[measure.name](deltaAbs as number)
+                ? bigNumberFormatters[measure.name](deltaAbs as number)
+                : PERC_DIFF.PREV_VALUE_NO_DATA;
+            // Tooltip should use precise, human-readable formatting
+            rowOut[`__tooltip_${measure.name}_delta`] =
+              deltaAbs !== null
+                ? tooltipFormatters[measure.name](deltaAbs as number)
                 : PERC_DIFF.PREV_VALUE_NO_DATA;
           }
 
@@ -491,6 +527,10 @@ export function prepareDimensionTableRows(
               deltaRel !== null
                 ? formatMeasurePercentageDifference(deltaRel as number)
                 : PERC_DIFF.PREV_VALUE_NO_DATA;
+            // For tooltip, reuse the same parts (more compact) for now.
+            // If needed later, we can add a higher-precision tooltip formatter for percentages.
+            rowOut[`__tooltip_${measure.name}_delta_perc`] =
+              rowOut[`__formatted_${measure.name}_delta_perc`];
           }
         });
       }
