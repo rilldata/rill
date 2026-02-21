@@ -98,6 +98,11 @@ latest.txt
 .claude/plans/
 .claude/worktrees/
 
+# Personal docs and config (do not commit)
+docs/brainstorms/
+docs/plans/
+.mcp.json
+
 # Vite temp files
 vite.config.ts.timestamp-*
 
