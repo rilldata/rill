@@ -24,7 +24,7 @@ export const AD_BIDS_EXPLORE_PATH =
 
 export async function createAdBidsModel(page: Page) {
   await Promise.all([
-    waitForSource(page, "/sources/AdBids.yaml", [
+    waitForSource(page, "/models/AdBids.yaml", [
       "publisher",
       "domain",
       "timestamp",

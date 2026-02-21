@@ -119,7 +119,7 @@ Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tuto
 Opening project in browser...
 ```
 
-If you have not already [configured your connections' credentials](https://docs.rilldata.com/build/connectors/credentials), you will be reminded here which connections are required.
+If you have not already [configured your connections' credentials](https://docs.rilldata.com/developers/build/connectors/credentials), you will be reminded here which connections are required.
 
 **First deployment**
 

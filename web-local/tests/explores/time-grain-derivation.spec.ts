@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
+import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
 
 test.describe("Time grain derivation from URL", () => {
   test.use({ project: "AdBids" });
@@ -13,15 +14,16 @@ test.describe("Time grain derivation from URL", () => {
     const currentUrl = new URL(page.url());
     const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
 
+    // Wait for all resources to reconcile
+    await waitForReconciliation(page);
+
     await page.goto(
       `${baseUrl}/explore/AdBids_metrics_explore?tr=${encodeURIComponent(timeRange)}`,
     );
 
     // Wait for the time grain selector to appear and contain the expected grain
     const timeGrainSelector = page.getByLabel("Select aggregation grain");
-    await expect(timeGrainSelector).toContainText(`by ${expectedGrain}`, {
-      timeout: 10000,
-    });
+    await expect(timeGrainSelector).toContainText(`by ${expectedGrain}`);
 
     // Check the grain parameter in the URL
     const url = new URL(page.url());

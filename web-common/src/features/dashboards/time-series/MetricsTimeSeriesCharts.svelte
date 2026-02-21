@@ -137,6 +137,9 @@
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
+  $: measureSelection.setZone(selectedTimezone);
+  $: if (activeTimeGrain) measureSelection.setTimeGrain(activeTimeGrain);
+
   $: chartScrubInterval = (() => {
     const range = $exploreState?.lastDefinedScrubRange;
     if (!range) return undefined;
