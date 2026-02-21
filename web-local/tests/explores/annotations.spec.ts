@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
 import { gotoNavEntry } from "../utils/waitHelpers";
+import { waitForReconciliation } from "../utils/wait-for-reconciliation";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { formatGrainBucket } from "@rilldata/web-common/lib/time/ranges/formatter";
 import { DateTime } from "luxon";
@@ -149,6 +150,10 @@ async function setupDashboard(page: Page, dashboardTZ: string) {
   // Write annotation files while still in the editor view. This triggers
   // re-reconciliation in the background.
   await installAnnotations(page);
+
+  // Wait for the runtime to finish reconciling the updated metrics view
+  // with the new annotations before navigating to the explore.
+  await waitForReconciliation(page);
 
   // Navigate directly to the explore with the timezone already set.
   const base = new URL(page.url()).origin;
