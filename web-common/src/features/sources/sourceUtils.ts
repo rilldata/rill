@@ -11,6 +11,7 @@ import {
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../templates/schema-utils";
+import { deepEqual } from "vega-lite";
 
 // Helper text that we put at the top of every Model YAML file
 function sourceModelFileTop(driverName: string) {
@@ -296,6 +297,14 @@ export function maybeRewriteToDuckDb(
       delete formValues.gcs_info;
       delete formValues.s3_info;
       delete formValues.azure_info;
+      delete formValues.connection_mode;
+      delete formValues.catalog_type;
+      delete formValues.postgres_info;
+      delete formValues.postgres_table;
+      delete formValues.mysql_info;
+      delete formValues.mysql_table;
+      delete formValues.rest_info;
+      delete formValues.rest_uri;
 
       break;
     }
