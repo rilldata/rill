@@ -26,6 +26,9 @@
   // Icon mapping for select options
   export let iconMap: Record<string, ComponentType<SvelteComponent>> = {};
 
+  // Map of option value → disabled reason for rich select options
+  export let disabledOptions: Record<string, string> = {};
+
   // Use `any` for form values since field types are determined by JSON schema at runtime
   type FormData = Record<string, any>;
 
@@ -410,6 +413,7 @@
         <ConnectionTypeSelector
           bind:value={$form[key]}
           {options}
+          {disabledOptions}
           label={prop.title ?? ""}
           onChange={(newValue) => handleSelectChange(key, newValue)}
         />
