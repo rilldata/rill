@@ -91,6 +91,7 @@ export const SOURCES = [
   "s3",
   "salesforce",
   "snowflake",
+  "databricks",
   "sqlite",
   "https",
   "local_file",
