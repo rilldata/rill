@@ -1,4 +1,7 @@
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  flattenInExpressionValues,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
@@ -44,6 +47,11 @@ export function getFiltersFromText(filterText: string) {
       sanitisedExpr.cond?.op !== V1Operation.OPERATION_OR
     ) {
       sanitisedExpr = createAndExpression([sanitisedExpr]);
+    }
+    // Normalize array-valued IN/NIN expressions into individual value expressions
+    if (sanitisedExpr.cond?.exprs) {
+      sanitisedExpr.cond.exprs =
+        sanitisedExpr.cond.exprs.map(flattenInExpressionValues);
     }
     return { expr: sanitisedExpr, dimensionsWithInlistFilter };
   } catch (e) {
