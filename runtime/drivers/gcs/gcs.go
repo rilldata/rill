@@ -37,6 +37,7 @@ var spec = drivers.Spec{
 			Description: "GCP credentials as JSON string",
 			Placeholder: "Paste your GCP service account JSON here",
 			Secret:      true,
+			EnvVarName:  "GOOGLE_APPLICATION_CREDENTIALS",
 		},
 		{
 			Key:         "key_id",
@@ -45,6 +46,7 @@ var spec = drivers.Spec{
 			Description: "HMAC access key ID for S3-compatible authentication",
 			Hint:        "Optional S3-compatible Key ID when used in compatibility mode",
 			Secret:      true,
+			EnvVarName:  "GCP_ACCESS_KEY_ID",
 		},
 		{
 			Key:         "secret",
@@ -53,6 +55,7 @@ var spec = drivers.Spec{
 			Description: "HMAC secret access key for S3-compatible authentication",
 			Hint:        "Optional S3-compatible Secret when used in compatibility mode",
 			Secret:      true,
+			EnvVarName:  "GCP_SECRET_ACCESS_KEY",
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{

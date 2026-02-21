@@ -18,7 +18,6 @@ export const motherduckSchema: MultiStepFormSchema = {
       description: "MotherDuck token",
       "x-placeholder": "your_motherduck_token",
       "x-secret": true,
-      "x-env-var-name": "MOTHERDUCK_TOKEN",
     },
     schema_name: {
       type: "string",

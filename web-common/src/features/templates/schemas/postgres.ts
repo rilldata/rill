@@ -26,7 +26,6 @@ export const postgresSchema: MultiStepFormSchema = {
         "e.g. postgresql://user:password@host:5432/dbname?sslmode=require",
       "x-placeholder": "postgresql://postgres:postgres@localhost:5432/postgres",
       "x-secret": true,
-      "x-env-var-name": "POSTGRES_DSN",
       "x-hint":
         "Use a DSN or provide host/user/password/dbname below (but not both).",
     },
@@ -57,7 +56,6 @@ export const postgresSchema: MultiStepFormSchema = {
       description: "Postgres password",
       "x-placeholder": "your_password",
       "x-secret": true,
-      "x-env-var-name": "POSTGRES_PASSWORD",
     },
     dbname: {
       type: "string",

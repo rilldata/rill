@@ -44,6 +44,7 @@ var spec = drivers.Spec{
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
 			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
+			EnvVarName:  "SNOWFLAKE_DSN",
 		},
 		{
 			Key:         "account",
@@ -69,6 +70,7 @@ var spec = drivers.Spec{
 			Placeholder: "your_password",
 			Hint:        "Your Snowflake database password. This will be stored securely and used to authenticate your connection.",
 			Secret:      true,
+			EnvVarName:  "SNOWFLAKE_PASSWORD",
 		},
 		{
 			Key:         "database",

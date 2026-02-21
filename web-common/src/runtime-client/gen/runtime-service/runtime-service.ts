@@ -39,6 +39,7 @@ import type {
   RuntimeServiceGenerateMetricsViewFileBody,
   RuntimeServiceGenerateRendererBody,
   RuntimeServiceGenerateResolverBody,
+  RuntimeServiceGenerateTemplateBody,
   RuntimeServiceGetExploreParams,
   RuntimeServiceGetFileParams,
   RuntimeServiceGetInstanceParams,
@@ -84,6 +85,7 @@ import type {
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
   V1GenerateResolverResponse,
+  V1GenerateTemplateResponse,
   V1GetConversationResponse,
   V1GetExploreResponse,
   V1GetFileResponse,
@@ -3129,6 +3131,94 @@ export const createRuntimeServiceGenerateResolver = <
 > => {
   const mutationOptions =
     getRuntimeServiceGenerateResolverMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GenerateTemplate generates a connector or model YAML file from structured form data
+ */
+export const runtimeServiceGenerateTemplate = (
+  instanceId: string,
+  runtimeServiceGenerateTemplateBody: RuntimeServiceGenerateTemplateBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GenerateTemplateResponse>({
+    url: `/v1/instances/${instanceId}/generate/template`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGenerateTemplateBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGenerateTemplateMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGenerateTemplate>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateTemplateBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceGenerateTemplate>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGenerateTemplateBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceGenerateTemplate"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGenerateTemplate>>,
+    { instanceId: string; data: RuntimeServiceGenerateTemplateBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGenerateTemplate(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceGenerateTemplateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateTemplate>>
+>;
+export type RuntimeServiceGenerateTemplateMutationBody =
+  RuntimeServiceGenerateTemplateBody;
+export type RuntimeServiceGenerateTemplateMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GenerateTemplate generates a connector or model YAML file from structured form data
+ */
+export const createRuntimeServiceGenerateTemplate = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGenerateTemplate>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGenerateTemplateBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceGenerateTemplate>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGenerateTemplateBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceGenerateTemplateMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

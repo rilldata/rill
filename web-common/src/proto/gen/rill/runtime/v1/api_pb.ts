@@ -2639,6 +2639,126 @@ export class GenerateRendererResponse extends Message$1<GenerateRendererResponse
 }
 
 /**
+ * @generated from message rill.runtime.v1.GenerateTemplateRequest
+ */
+export class GenerateTemplateRequest extends Message$1<GenerateTemplateRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string resource_type = 2;
+   */
+  resourceType = "";
+
+  /**
+   * @generated from field: string driver = 3;
+   */
+  driver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct properties = 4;
+   */
+  properties?: Struct;
+
+  /**
+   * @generated from field: string connector_name = 5;
+   */
+  connectorName = "";
+
+  constructor(data?: PartialMessage<GenerateTemplateRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateTemplateRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "properties", kind: "message", T: Struct },
+    { no: 5, name: "connector_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateTemplateRequest {
+    return new GenerateTemplateRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateTemplateRequest {
+    return new GenerateTemplateRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateTemplateRequest {
+    return new GenerateTemplateRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateTemplateRequest | PlainMessage<GenerateTemplateRequest> | undefined, b: GenerateTemplateRequest | PlainMessage<GenerateTemplateRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateTemplateRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GenerateTemplateResponse
+ */
+export class GenerateTemplateResponse extends Message$1<GenerateTemplateResponse> {
+  /**
+   * @generated from field: string blob = 1;
+   */
+  blob = "";
+
+  /**
+   * @generated from field: map<string, string> env_vars = 2;
+   */
+  envVars: { [key: string]: string } = {};
+
+  /**
+   * Actual resource type used; may differ from request when driver is rewritten
+   *
+   * @generated from field: string resource_type = 3;
+   */
+  resourceType = "";
+
+  /**
+   * Actual driver used; may differ from request when rewritten to duckdb
+   *
+   * @generated from field: string driver = 4;
+   */
+  driver = "";
+
+  constructor(data?: PartialMessage<GenerateTemplateResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateTemplateResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "blob", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "env_vars", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateTemplateResponse {
+    return new GenerateTemplateResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateTemplateResponse {
+    return new GenerateTemplateResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateTemplateResponse {
+    return new GenerateTemplateResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateTemplateResponse | PlainMessage<GenerateTemplateResponse> | undefined, b: GenerateTemplateResponse | PlainMessage<GenerateTemplateResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateTemplateResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.QueryResolverRequest
  */
 export class QueryResolverRequest extends Message$1<QueryResolverRequest> {

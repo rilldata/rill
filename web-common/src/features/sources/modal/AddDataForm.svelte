@@ -4,7 +4,6 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
 
@@ -19,14 +18,13 @@
   import { createConnectorForm } from "./FormValidation";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get } from "svelte/store";
-  import { onMount } from "svelte";
+  import { onDestroy } from "svelte";
   import { getConnectorSchema } from "./connector-schemas";
   import {
     getRequiredFieldsForValues,
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
-  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
@@ -101,22 +99,6 @@
   let prevDeploymentType: string | undefined = undefined;
 
   const connectorSchema = getConnectorSchema(schemaName);
-
-  // Capture .env blob ONCE on mount for consistent conflict detection in YAML preview.
-  // This prevents the preview from updating when Test and Connect writes to .env.
-  // Use null to indicate "not yet loaded" vs "" for "loaded but empty"
-  let existingEnvBlob: string | null = null;
-  onMount(async () => {
-    try {
-      const envFile = await runtimeServiceGetFile($runtime.instanceId, {
-        path: ".env",
-      });
-      existingEnvBlob = envFile.blob ?? "";
-    } catch {
-      // .env doesn't exist yet
-      existingEnvBlob = "";
-    }
-  });
 
   // Clear errors when connection type changes
   $: {
@@ -237,14 +219,26 @@
     saveAnyway = false;
   }
 
-  // Re-compute preview when existingEnvBlob is loaded (changes from null to string)
-  $: yamlPreview = formManager.computeYamlPreview({
-    stepState,
-    isMultiStepConnector: isStepFlowConnector,
-    isConnectorForm,
-    formValues: $form,
-    existingEnvBlob: existingEnvBlob ?? "",
-  });
+  // Debounced async YAML preview via the GenerateTemplate RPC
+  let yamlPreview = "";
+  let previewTimer: ReturnType<typeof setTimeout>;
+  $: {
+    const ctx = {
+      stepState,
+      isMultiStepConnector: isStepFlowConnector,
+      isConnectorForm,
+      formValues: $form,
+    };
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(async () => {
+      try {
+        yamlPreview = await formManager.computeYamlPreview(ctx);
+      } catch {
+        // Keep last valid preview on error (e.g., incomplete form data)
+      }
+    }, 150);
+  }
+  onDestroy(() => clearTimeout(previewTimer));
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
   $: saveAnywayLoading = submitting && saveAnyway;
 

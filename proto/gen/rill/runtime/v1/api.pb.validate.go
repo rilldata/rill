@@ -6386,6 +6386,291 @@ var _ interface {
 	ErrorName() string
 } = GenerateRendererResponseValidationError{}
 
+// Validate checks the field values on GenerateTemplateRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateTemplateRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateTemplateRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateTemplateRequestMultiError, or nil if none found.
+func (m *GenerateTemplateRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateTemplateRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateTemplateRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateTemplateRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if _, ok := _GenerateTemplateRequest_ResourceType_InLookup[m.GetResourceType()]; !ok {
+		err := GenerateTemplateRequestValidationError{
+			field:  "ResourceType",
+			reason: "value must be in list [connector model]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if !_GenerateTemplateRequest_Driver_Pattern.MatchString(m.GetDriver()) {
+		err := GenerateTemplateRequestValidationError{
+			field:  "Driver",
+			reason: "value does not match regex pattern \"^[a-z][a-z0-9_]*$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if all {
+		switch v := interface{}(m.GetProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GenerateTemplateRequestValidationError{
+					field:  "Properties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GenerateTemplateRequestValidationError{
+					field:  "Properties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GenerateTemplateRequestValidationError{
+				field:  "Properties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for ConnectorName
+
+	if len(errors) > 0 {
+		return GenerateTemplateRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateTemplateRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateTemplateRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateTemplateRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateTemplateRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateTemplateRequestMultiError) AllErrors() []error { return m }
+
+// GenerateTemplateRequestValidationError is the validation error returned by
+// GenerateTemplateRequest.Validate if the designated constraints aren't met.
+type GenerateTemplateRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateTemplateRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateTemplateRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateTemplateRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateTemplateRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateTemplateRequestValidationError) ErrorName() string {
+	return "GenerateTemplateRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateTemplateRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateTemplateRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateTemplateRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateTemplateRequestValidationError{}
+
+var _GenerateTemplateRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+var _GenerateTemplateRequest_ResourceType_InLookup = map[string]struct{}{
+	"connector": {},
+	"model":     {},
+}
+
+var _GenerateTemplateRequest_Driver_Pattern = regexp.MustCompile("^[a-z][a-z0-9_]*$")
+
+// Validate checks the field values on GenerateTemplateResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateTemplateResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateTemplateResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateTemplateResponseMultiError, or nil if none found.
+func (m *GenerateTemplateResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateTemplateResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Blob
+
+	// no validation rules for EnvVars
+
+	// no validation rules for ResourceType
+
+	// no validation rules for Driver
+
+	if len(errors) > 0 {
+		return GenerateTemplateResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateTemplateResponseMultiError is an error wrapping multiple validation
+// errors returned by GenerateTemplateResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateTemplateResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateTemplateResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateTemplateResponseMultiError) AllErrors() []error { return m }
+
+// GenerateTemplateResponseValidationError is the validation error returned by
+// GenerateTemplateResponse.Validate if the designated constraints aren't met.
+type GenerateTemplateResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateTemplateResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateTemplateResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateTemplateResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateTemplateResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateTemplateResponseValidationError) ErrorName() string {
+	return "GenerateTemplateResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateTemplateResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateTemplateResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateTemplateResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateTemplateResponseValidationError{}
+
 // Validate checks the field values on QueryResolverRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

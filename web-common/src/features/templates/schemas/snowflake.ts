@@ -56,7 +56,6 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Snowflake password",
       "x-placeholder": "your_password",
       "x-secret": true,
-      "x-env-var-name": "SNOWFLAKE_PASSWORD",
       "x-visible-if": { auth_method: "password" },
     },
     privateKey: {
@@ -68,7 +67,6 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-file-accept": ".pem,.p8",
       "x-file-encoding": "base64",
       "x-secret": true,
-      "x-env-var-name": "SNOWFLAKE_PRIVATE_KEY",
       "x-visible-if": { auth_method: "private_key" },
     },
     warehouse: {
@@ -103,7 +101,6 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-placeholder":
         "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>",
       "x-secret": true,
-      "x-env-var-name": "SNOWFLAKE_DSN",
       "x-hint":
         "Include authenticator and privateKey query params for JWT if needed.",
       "x-visible-if": { auth_method: "dsn" },
