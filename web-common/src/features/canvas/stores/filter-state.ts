@@ -185,6 +185,8 @@ export class FilterState {
     const { expr, dimensionsWithInlistFilter: dimensionsWithInListFilter } =
       getFiltersFromText(filterString ?? "");
 
+    console.log({ expr, dimensionsWithInListFilter, filterString });
+
     return this.parseFilter({ expr, filterString, dimensionsWithInListFilter });
   };
 
