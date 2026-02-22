@@ -85,7 +85,7 @@ func newMetricsViewCacheKeyResolver(ctx context.Context, opts *runtime.ResolverO
 		userAttrs = opts.Claims.UserAttributes
 	}
 
-	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority, userAttrs)
+	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, false, security, args.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}

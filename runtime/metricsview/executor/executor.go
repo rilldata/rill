@@ -31,6 +31,7 @@ type Executor struct {
 	instanceID  string
 	metricsView *runtimev1.MetricsViewSpec
 	streaming   bool
+	aiQuery     bool
 	security    *runtime.ResolvedSecurity
 	priority    int
 
@@ -43,7 +44,7 @@ type Executor struct {
 }
 
 // New creates a new Executor for the provided metrics view.
-func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, userAttrs map[string]any) (*Executor, error) {
+func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming, aiQuery bool, sec *runtime.ResolvedSecurity, priority int, userAttrs map[string]any) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -85,6 +86,7 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 		instanceID:      instanceID,
 		metricsView:     mv,
 		streaming:       streaming,
+		aiQuery:         aiQuery,
 		security:        sec,
 		priority:        priority,
 		olap:            olap,
@@ -307,6 +309,10 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
+	if err := e.enforceAILimits(qry); err != nil {
+		return nil, err
+	}
+
 	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
 		return nil, err
 	}
@@ -432,6 +438,10 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 	}
 
 	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+		return "", err
+	}
+
+	if err := e.enforceAILimits(qry); err != nil {
 		return "", err
 	}
 

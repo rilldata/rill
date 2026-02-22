@@ -43,7 +43,7 @@ Request:
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
 - Prefer using absolute 'start' and 'end' times in 'time_range' and 'comparison_time_range' if available. 
-  Otherwise, use 'expression' for relative time ranges, when specifying 'expression' make sure no other time range fields should be set as its not supported. 
+  Otherwise, use 'expression' for relative time ranges, when specifying 'expression' make sure no other time range fields other than 'time_dimension' should be set as its not supported.
   Relative durations are evaluated against the execution time for scheduled insight mode or latest data for ad-hoc analysis.
 
 Response:
@@ -226,6 +226,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Compute a hard limit to prevent large results that bloat the context
+	// ideally can be moved to executor.enforceAILimits to keep all ai limitations in one place, but then we cannot return the warning message in the result as easily
 	var limit int64
 	var isSystemLimit bool
 	if v, ok := args["limit"]; ok { // Hackily extracting the query's 'limit' to avoid parsing the entire query outside of the resolver
@@ -252,10 +253,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		InstanceID:         session.InstanceID(),
 		Resolver:           "metrics",
 		ResolverProperties: map[string]any(args),
-		Args: map[string]any{
-			"ensure_bounded_time_range": true, // Enforce bounded time range for better performance and to prevent runaway queries; the resolver will return an error if the query does not have a bounded time range
-		},
-		Claims: session.Claims(),
+		Claims:             session.Claims(),
 	})
 	if err != nil {
 		return nil, err

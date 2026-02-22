@@ -68,7 +68,7 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		userAttrs = q.SecurityClaims.UserAttributes
 	}
 
-	exec, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority, userAttrs)
+	exec, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, false, sec, priority, userAttrs)
 	if err != nil {
 		return err
 	}

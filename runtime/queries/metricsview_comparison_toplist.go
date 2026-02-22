@@ -104,7 +104,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		userAttrs = q.SecurityClaims.UserAttributes
 	}
 
-	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, userAttrs)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, false, security, priority, userAttrs)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 		userAttrs = q.SecurityClaims.UserAttributes
 	}
 
-	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, userAttrs)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, false, security, opts.Priority, userAttrs)
 	if err != nil {
 		return err
 	}

@@ -32,9 +32,9 @@ type metricsResolver struct {
 }
 
 type metricsResolverArgs struct {
-	Priority               int        `mapstructure:"priority"`
-	ExecutionTime          *time.Time `mapstructure:"execution_time"`
-	EnsureBoundedTimeRange bool       `mapstructure:"ensure_bounded_time_range"` // If true, the resolver will return an error if the query does not have a bounded time range.
+	Priority      int        `mapstructure:"priority"`
+	ExecutionTime *time.Time `mapstructure:"execution_time"`
+	aiQuery       bool       `mapstructure:"ai_query"` // If true, the resolver will pass on this information to executor so that it can apply instance specific ai limits
 }
 
 func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -51,10 +51,6 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 	args := &metricsResolverArgs{}
 	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
-	}
-
-	if args.EnsureBoundedTimeRange && qry.TimeRange.IsZero() {
-		return nil, errors.New("query must have a bounded time range")
 	}
 
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
@@ -86,7 +82,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		userAttrs = opts.Claims.UserAttributes
 	}
 
-	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority, userAttrs)
+	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, args.aiQuery, security, args.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}

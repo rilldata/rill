@@ -119,6 +119,8 @@ type InstanceConfig struct {
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
 	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
 	AIMaxQueryLimit int64 `mapstructure:"rill.ai.max_query_limit"`
+	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
+	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
