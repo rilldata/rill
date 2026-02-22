@@ -285,8 +285,24 @@ export function maybeRewriteToDuckDb(
         formValues.create_secrets_from_connectors = storageType;
       }
 
-      // Build iceberg_scan SQL
-      formValues.sql = `SELECT *\nFROM iceberg_scan('${icebergPath}',\n  allow_moved_paths = true)`;
+      // Build iceberg_scan parameter list
+      const scanParams: string[] = [];
+
+      const allowMovedPaths = formValues.allow_moved_paths;
+      if (allowMovedPaths !== undefined && allowMovedPaths !== "") {
+        scanParams.push(`allow_moved_paths = ${allowMovedPaths}`);
+      }
+
+      const icebergVersion = formValues.version as string;
+      if (icebergVersion?.trim()) {
+        scanParams.push(`version = '${icebergVersion.trim()}'`);
+      }
+
+      const paramsStr = scanParams.length
+        ? `,\n  ${scanParams.join(",\n  ")}`
+        : "";
+
+      formValues.sql = `SELECT *\nFROM iceberg_scan('${icebergPath}'${paramsStr})`;
 
       // Clean up intermediate fields
       delete formValues.storage_type;
@@ -297,14 +313,8 @@ export function maybeRewriteToDuckDb(
       delete formValues.gcs_info;
       delete formValues.s3_info;
       delete formValues.azure_info;
-      delete formValues.connection_mode;
-      delete formValues.catalog_type;
-      delete formValues.postgres_info;
-      delete formValues.postgres_table;
-      delete formValues.mysql_info;
-      delete formValues.mysql_table;
-      delete formValues.rest_info;
-      delete formValues.rest_uri;
+      delete formValues.allow_moved_paths;
+      delete formValues.version;
 
       break;
     }
