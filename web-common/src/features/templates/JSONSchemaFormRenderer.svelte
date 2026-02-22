@@ -520,92 +520,93 @@
                   {#if groupedFieldChildKeys.has(childKey)}
                     <!-- Skip: rendered by GroupedFieldsRenderer of parent selector -->
                   {:else}
-                  <div class="py-1.5 first:pt-0 last:pb-0">
-                    {#if isRichSelectEnum(childProp)}
-                      {@const childOptions = getSelectOptions(childProp)}
-                      <ConnectionTypeSelector
-                        bind:value={$form[childKey]}
-                        options={childOptions}
-                        {disabledOptions}
-                        label={childProp.title ?? ""}
-                        onChange={(newValue) =>
-                          handleSelectChange(childKey, newValue)}
-                      />
-                      {#if groupedFields.get(childKey)}
-                        <GroupedFieldsRenderer
-                          fields={getGroupedFieldsForOption(
-                            childKey,
-                            $form[childKey],
-                          )}
-                          formStore={form}
-                          {errors}
+                    <div class="py-1.5 first:pt-0 last:pb-0">
+                      {#if isRichSelectEnum(childProp)}
+                        {@const childOptions = getSelectOptions(childProp)}
+                        <ConnectionTypeSelector
+                          bind:value={$form[childKey]}
+                          options={childOptions}
+                          {disabledOptions}
+                          label={childProp.title ?? ""}
+                          onChange={(newValue) =>
+                            handleSelectChange(childKey, newValue)}
+                        />
+                        {#if groupedFields.get(childKey)}
+                          <GroupedFieldsRenderer
+                            fields={getGroupedFieldsForOption(
+                              childKey,
+                              $form[childKey],
+                            )}
+                            formStore={form}
+                            {errors}
+                            {onStringInputChange}
+                            {handleFileUpload}
+                            {isRequired}
+                            {isDisabled}
+                            {getTabFieldsForOption}
+                            {tabGroupedFields}
+                            buildEnumOptions={buildEnumOptionsWithIconMap}
+                            {disabledOptions}
+                            groupedFieldsMap={groupedFields}
+                            {getGroupedFieldsForOption}
+                            {handleSelectChange}
+                          />
+                        {/if}
+                      {:else if isSelectEnum(childProp)}
+                        {@const childSelectOptions =
+                          getSelectOptions(childProp)}
+                        <Select
+                          id={childKey}
+                          bind:value={$form[childKey]}
+                          options={childSelectOptions}
+                          label={childProp.title ?? ""}
+                          placeholder={childProp["x-placeholder"] ??
+                            "Select an option"}
+                          tooltip={childProp.description ?? ""}
+                          optional={!isRequired(childKey)}
+                          full
+                          onChange={(newValue) =>
+                            handleSelectChange(childKey, newValue)}
+                        />
+                        {#if groupedFields.get(childKey)}
+                          <GroupedFieldsRenderer
+                            fields={getGroupedFieldsForOption(
+                              childKey,
+                              $form[childKey],
+                            )}
+                            formStore={form}
+                            {errors}
+                            {onStringInputChange}
+                            {handleFileUpload}
+                            {isRequired}
+                            {isDisabled}
+                            {getTabFieldsForOption}
+                            {tabGroupedFields}
+                            buildEnumOptions={buildEnumOptionsWithIconMap}
+                            {disabledOptions}
+                            groupedFieldsMap={groupedFields}
+                            {getGroupedFieldsForOption}
+                            {handleSelectChange}
+                          />
+                        {/if}
+                      {:else}
+                        <SchemaField
+                          id={childKey}
+                          prop={childProp}
+                          optional={!isRequired(childKey)}
+                          errors={errors?.[childKey]}
+                          bind:value={$form[childKey]}
+                          bind:checked={$form[childKey]}
                           {onStringInputChange}
                           {handleFileUpload}
-                          {isRequired}
-                          {isDisabled}
-                          {getTabFieldsForOption}
-                          {tabGroupedFields}
-                          buildEnumOptions={buildEnumOptionsWithIconMap}
-                          {disabledOptions}
-                          groupedFieldsMap={groupedFields}
-                          {getGroupedFieldsForOption}
-                          {handleSelectChange}
+                          options={isRadioEnum(childProp)
+                            ? radioOptions(childProp)
+                            : undefined}
+                          name={`${childKey}-radio`}
+                          disabled={isDisabled(childKey)}
                         />
                       {/if}
-                    {:else if isSelectEnum(childProp)}
-                      {@const childSelectOptions = getSelectOptions(childProp)}
-                      <Select
-                        id={childKey}
-                        bind:value={$form[childKey]}
-                        options={childSelectOptions}
-                        label={childProp.title ?? ""}
-                        placeholder={childProp["x-placeholder"] ??
-                          "Select an option"}
-                        tooltip={childProp.description ?? ""}
-                        optional={!isRequired(childKey)}
-                        full
-                        onChange={(newValue) =>
-                          handleSelectChange(childKey, newValue)}
-                      />
-                      {#if groupedFields.get(childKey)}
-                        <GroupedFieldsRenderer
-                          fields={getGroupedFieldsForOption(
-                            childKey,
-                            $form[childKey],
-                          )}
-                          formStore={form}
-                          {errors}
-                          {onStringInputChange}
-                          {handleFileUpload}
-                          {isRequired}
-                          {isDisabled}
-                          {getTabFieldsForOption}
-                          {tabGroupedFields}
-                          buildEnumOptions={buildEnumOptionsWithIconMap}
-                          {disabledOptions}
-                          groupedFieldsMap={groupedFields}
-                          {getGroupedFieldsForOption}
-                          {handleSelectChange}
-                        />
-                      {/if}
-                    {:else}
-                      <SchemaField
-                        id={childKey}
-                        prop={childProp}
-                        optional={!isRequired(childKey)}
-                        errors={errors?.[childKey]}
-                        bind:value={$form[childKey]}
-                        bind:checked={$form[childKey]}
-                        {onStringInputChange}
-                        {handleFileUpload}
-                        options={isRadioEnum(childProp)
-                          ? radioOptions(childProp)
-                          : undefined}
-                        name={`${childKey}-radio`}
-                        disabled={isDisabled(childKey)}
-                      />
-                    {/if}
-                  </div>
+                    </div>
                   {/if}
                 {/each}
               {/if}

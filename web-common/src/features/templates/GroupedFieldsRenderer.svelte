@@ -50,8 +50,10 @@
 
   // Props for rich select support (nested ConnectionTypeSelector)
   export let disabledOptions: Record<string, string> = {};
-  export let groupedFieldsMap: Map<string, Record<string, string[]>> =
-    new Map();
+  export let groupedFieldsMap: Map<
+    string,
+    Record<string, string[]>
+  > = new Map();
   export let getGroupedFieldsForOption: (
     controllerKey: string,
     optionValue: string | number | boolean,
