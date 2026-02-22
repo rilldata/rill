@@ -7,6 +7,7 @@ import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte
 import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
 import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
 import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
+import ApacheIceberg from "../../../components/icons/connectors/ApacheIceberg.svelte";
 import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
 import Https from "../../../components/icons/connectors/HTTPS.svelte";
 import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
@@ -20,6 +21,7 @@ import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
 
 export const ICONS = {
   gcs: GoogleCloudStorage,
+  iceberg: ApacheIceberg,
   s3: AmazonS3,
   azure: MicrosoftAzureBlobStorage,
   bigquery: GoogleBigQuery,
