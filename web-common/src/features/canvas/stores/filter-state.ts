@@ -32,7 +32,6 @@ import { convertExpressionToFilterParam } from "../../dashboards/url-state/filte
 import { FilterManager, type UIFilters } from "./filter-manager";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-import { filter } from "d3-array";
 
 export type ParsedFilters = ReturnType<typeof initFilterBase>;
 

@@ -50,8 +50,9 @@ export function getFiltersFromText(filterText: string) {
     }
     // Normalize array-valued IN/NIN expressions into individual value expressions
     if (sanitisedExpr.cond?.exprs) {
-      sanitisedExpr.cond.exprs =
-        sanitisedExpr.cond.exprs.map(flattenInExpressionValues);
+      sanitisedExpr.cond.exprs = sanitisedExpr.cond.exprs.map(
+        flattenInExpressionValues,
+      );
     }
     return { expr: sanitisedExpr, dimensionsWithInlistFilter };
   } catch (e) {
