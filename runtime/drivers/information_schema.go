@@ -16,7 +16,8 @@ type InformationSchema interface {
 
 const (
 	// DefaultPageSize is the default page size used when pageSize is not defined
-	DefaultPageSize = 100
+	DefaultPageSize           = 100
+	DefaultPageSizeForObjects = 1000
 )
 
 // SchemaInfo represents a schema in an information schema.
