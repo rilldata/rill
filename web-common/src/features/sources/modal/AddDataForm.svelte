@@ -327,6 +327,7 @@
           bind:primaryLoadingCopy={multiStepLoadingCopy}
           bind:formId={multiStepFormId}
           bind:shouldShowSkipLink
+          {disabledOptions}
         />
       {:else if connectorSchema}
         <AddDataFormSection
