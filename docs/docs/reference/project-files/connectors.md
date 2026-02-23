@@ -33,6 +33,9 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**GCS**](#gcs) - Google Cloud Storage
 - [**S3**](#s3) - Amazon S3 storage
 
+### _Table Formats_
+- [**Delta Lake**](#delta) - Delta Lake tables via DuckDB
+
 ### Service Integrations
 - [**Claude**](#claude) - Claude connector for chat with your own API key
 - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
@@ -1053,6 +1056,84 @@ aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}" # AWS Secret Access Ke
 aws_access_token: "{{ .env.AWS_ACCESS_TOKEN }}" # Optional AWS session token for temporary credentials
 endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage
 region: "us-east-1" # AWS region of the S3 bucket
+```
+
+## Delta
+
+Delta Lake is an open-source storage framework that brings ACID transactions to data lakes. Rill supports reading Delta tables directly from object storage through compatible query engine integrations. Today, this is powered by DuckDB's [Delta extension](https://duckdb.org/docs/stable/core_extensions/delta).
+
+Delta tables are not configured as standalone connectors. Instead, they are read through DuckDB models using the `delta_scan()` function. For cloud storage backends (S3, Azure), you must first configure the corresponding storage connector with valid credentials.
+
+:::note Direct file access only
+Rill reads Delta tables by scanning the table's transaction log and data files directly from object storage. Catalog-based access (e.g., through Unity Catalog) is not currently supported.
+:::
+
+### Supported storage backends
+
+| Backend | URI format | Authentication |
+|---|---|---|
+| Amazon S3 | `s3://bucket/path/to/table` | Requires an [S3 connector](#s3) |
+| Azure Blob Storage | `azure://container/path/to/table` | Requires an [Azure connector](#azure) |
+| Local filesystem | `/path/to/table` | No authentication needed |
+
+:::info GCS not yet supported
+Google Cloud Storage is not currently supported for Delta tables. GCS support depends on the upstream DuckDB Delta extension adding it.
+:::
+
+### Limitations
+
+- **Direct file access only**: Catalog integrations (e.g., Unity Catalog) are not supported.
+- **DuckDB engine only**: Delta support is currently provided through DuckDB's Delta extension.
+- **No GCS support**: Google Cloud Storage is not yet supported by the Delta extension.
+- **Read-only**: Rill reads from Delta tables but does not write to them.
+
+
+### `connector`
+
+_[string]_ - Must be `duckdb` since Delta tables are read through DuckDB's Delta extension 
+
+### `create_secrets_from_connectors`
+
+_[string, array]_ - Storage connector name to use for authentication (e.g., `s3` or `azure`). Required for cloud storage backends. 
+
+### `materialize`
+
+_[boolean]_ - Whether to materialize the model results. Set to `true` for Delta sources. 
+
+### `sql`
+
+_[string]_ - SQL query using DuckDB's `delta_scan()` function to read the Delta table. 
+
+```yaml
+# Example: Delta Lake model reading from S3
+type: model
+connector: duckdb
+create_secrets_from_connectors: s3
+materialize: true
+sql: |
+    SELECT *
+    FROM delta_scan('s3://my-bucket/path/to/delta_table')
+```
+
+```yaml
+# Example: Delta Lake model reading from Azure
+type: model
+connector: duckdb
+create_secrets_from_connectors: azure
+materialize: true
+sql: |
+    SELECT *
+    FROM delta_scan('azure://my-container/path/to/delta_table')
+```
+
+```yaml
+# Example: Delta Lake model reading from local filesystem
+type: model
+connector: duckdb
+materialize: true
+sql: |
+    SELECT *
+    FROM delta_scan('/path/to/delta_table')
 ```
 
 ## Salesforce
