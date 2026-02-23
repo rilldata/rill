@@ -104,18 +104,21 @@
 
   const connectorSchema = getConnectorSchema(schemaName);
 
-  // For Delta: check which cloud storage connectors exist and disable unavailable options
+  // Cloud storage backends that require an existing connector, per table format
+  const STORAGE_CONNECTOR_DEPS: Record<string, Record<string, string>> = {
+    delta: { s3: "S3", azure: "Azure" },
+    iceberg: { gcs: "GCS", s3: "S3", azure: "Azure" },
+  };
+
+  // Disable cloud storage options when the required connector doesn't exist
   $: disabledOptions = (() => {
-    if (schemaName !== "delta") return {};
+    const deps = STORAGE_CONNECTOR_DEPS[schemaName];
+    if (!deps) return {};
     const existingConnectors = new Set(
       fileArtifacts.getNamesForKind(ResourceKind.Connector),
     );
     const disabled: Record<string, string> = {};
-    const connectorMap: Record<string, string> = {
-      s3: "S3",
-      azure: "Azure",
-    };
-    for (const [key, label] of Object.entries(connectorMap)) {
+    for (const [key, label] of Object.entries(deps)) {
       if (!existingConnectors.has(key)) {
         disabled[key] = `Create a ${label} connector first`;
       }
