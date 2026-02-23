@@ -8,6 +8,7 @@ import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { mysqlSchema } from "../../templates/schemas/mysql";
+import { oracleSchema } from "../../templates/schemas/oracle";
 import { postgresSchema } from "../../templates/schemas/postgres";
 import { redshiftSchema } from "../../templates/schemas/redshift";
 import { salesforceSchema } from "../../templates/schemas/salesforce";
@@ -28,6 +29,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   bigquery: bigquerySchema,
   clickhouse: clickhouseSchema,
   mysql: mysqlSchema,
+  oracle: oracleSchema,
   postgres: postgresSchema,
   redshift: redshiftSchema,
   salesforce: salesforceSchema,
