@@ -3,20 +3,22 @@
 // =============================================================================
 
 import type { V1Message } from "@rilldata/web-common/runtime-client";
+import { MessageContentType } from "@rilldata/web-common/features/chat/core/types.ts";
 import {
-  MessageContentType,
-  ToolName,
-} from "@rilldata/web-common/features/chat/core/types.ts";
+  getMessage,
+  getNearestUserMessage,
+  MessageSelectors,
+} from "@rilldata/web-common/features/chat/core/messages/message-selectors.ts";
 
 /** Arguments for the write_file tool call */
-interface RestoreChangesCallData {
+export interface RestoreChangesCallData {
   revert_till_write_call_id: string;
 }
 
 export type RestoreChangesBlock = {
   type: "restore-changes";
   id: string;
-  revertedConversations: V1Message[];
+  restoredMessage: V1Message;
 };
 
 export function createRestoreChangesBlock(
@@ -32,22 +34,19 @@ export function createRestoreChangesBlock(
       message.contentData || "{}",
     );
     if (!callData.revert_till_write_call_id) return null;
-    const revertedConversations: V1Message[] = [];
-    let found = false;
-    for (let i = allMessages.length - 1; i >= 0; i--) {
-      const message = allMessages[i];
-      if (message.id === callData.revert_till_write_call_id) found = true;
 
-      if (message.role === "user") {
-        revertedConversations.push(message);
-        if (found) break;
-      }
-    }
+    const restoreCall = getMessage(allMessages, [
+      MessageSelectors.ById(callData.revert_till_write_call_id),
+    ]);
+    if (!restoreCall) return null;
+
+    const restoredMessage = getNearestUserMessage(allMessages, restoreCall);
+    if (!restoredMessage) return null;
 
     return {
       type: "restore-changes",
       id: `restore-changes-${message.id}`,
-      revertedConversations,
+      restoredMessage,
     };
   } catch {
     return null;

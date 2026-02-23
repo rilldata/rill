@@ -111,6 +111,7 @@ export function transformToBlocks(
       developMessages,
       `develop-${blocks.length}`,
       resultMap,
+      messages,
     );
     if (block) blocks.push(block);
   }
@@ -127,7 +128,8 @@ export function transformToBlocks(
         // Attach feedback for assistant messages (router_agent results)
         const feedback =
           msg.role === "assistant" ? feedbackMap.get(msg.id!) : undefined;
-        blocks.push(createTextBlock(msg, feedback));
+        const block = createTextBlock(msg, feedback);
+        if (block) blocks.push(block);
         break;
       }
 

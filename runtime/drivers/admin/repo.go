@@ -539,6 +539,7 @@ func (r *repo) CommitHash(ctx context.Context) (string, error) {
 	defer r.mu.RUnlock()
 
 	if r.archive != nil {
+		fmt.Println("Commit from archive", r.archive.archiveID)
 		return r.archive.archiveID, nil
 	}
 	return r.git.commitHash()

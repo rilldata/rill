@@ -143,7 +143,7 @@
       {:else if block.type === "chart"}
         <ChartBlock {block} {tools} />
       {:else if block.type === "develop"}
-        <DevelopBlock {block} />
+        <DevelopBlock {block} conversation={currentConversation} />
       {:else if block.type === "restore-changes"}
         <RestoreChangesBlock {block} />
       {:else if block.type === "simple-tool-call-block"}

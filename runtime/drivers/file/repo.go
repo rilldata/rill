@@ -208,7 +208,7 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 // ListBranches implements drivers.RepoStore.
 func (c *connection) ListBranches(ctx context.Context) ([]string, string, error) {
 	if !c.isGitRepo() {
-		return nil, "", errors.New("not a git repository")
+		return nil, "", gitutil.ErrNotAGitRepository
 	}
 
 	c.gitMu.Lock()
@@ -300,7 +300,7 @@ func (c *connection) ListBranches(ctx context.Context) ([]string, string, error)
 // SwitchBranch implements drivers.RepoStore.
 func (c *connection) SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error {
 	if !c.isGitRepo() {
-		return errors.New("not a git repository")
+		return gitutil.ErrGitRemoteNotFound
 	}
 
 	c.gitMu.Lock()
@@ -337,7 +337,7 @@ func (c *connection) SwitchBranch(ctx context.Context, branchName string, create
 // ListCommits implements drivers.RepoStore.
 func (c *connection) ListCommits(ctx context.Context, pageToken string, limit int) ([]drivers.Commit, string, error) {
 	if !c.isGitRepo() {
-		return nil, "", errors.New("not a git repository")
+		return nil, "", gitutil.ErrNotAGitRepository
 	}
 
 	c.gitMu.Lock()
@@ -501,7 +501,7 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 func (c *connection) Commit(ctx context.Context, message string) (string, error) {
 	// If its a Git repository, commit the changes with the given message to the current branch.
 	if !c.isGitRepo() {
-		return "", errors.New("not a git repository")
+		return "", gitutil.ErrNotAGitRepository
 	}
 
 	c.gitMu.Lock()
@@ -533,7 +533,7 @@ func (c *connection) Commit(ctx context.Context, message string) (string, error)
 func (c *connection) RestoreCommit(ctx context.Context, commitSHA string, revertAll bool) (string, error) {
 	// If its a Git repository, revert the specified commit.
 	if !c.isGitRepo() {
-		return "", errors.New("not a git repository")
+		return "", gitutil.ErrNotAGitRepository
 	}
 
 	c.gitMu.Lock()
@@ -577,30 +577,40 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string, revert
 		if err != nil {
 			return "", err
 		}
+
+		var args []string
+		args = append(args, "-C", gitPath, "revert", "--continue", "--no-edit")
+		cmd := exec.Command("git", args...)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return "", fmt.Errorf("failed to revert to commit: %s, %w", string(output), err)
+		}
+
+		return "", nil // TODO: get hash
 	} else {
 		err = restoreToCommit(gitPath, subpath, commitSHA)
 		if err != nil {
 			return "", err
 		}
-	}
 
-	// Create the restore commit
-	hash, err := gitCommitAll(gitPath, subpath, fmt.Sprintf("Restore commit %s", commitSHA[:7]), author)
-	if err != nil {
-		if errors.Is(err, git.ErrEmptyCommit) {
-			return "", fmt.Errorf("restore would result in no changes")
+		// Create the restore commit
+		hash, err := gitCommitAll(gitPath, subpath, fmt.Sprintf("Restore commit %s", commitSHA[:7]), author)
+		if err != nil {
+			if errors.Is(err, git.ErrEmptyCommit) {
+				return "", fmt.Errorf("restore would result in no changes")
+			}
+			return "", fmt.Errorf("failed to commit restore: %w", err)
 		}
-		return "", fmt.Errorf("failed to commit restore: %w", err)
-	}
 
-	return hash, nil
+		return hash, nil
+	}
 }
 
 // CommitAndPush commits local changes to the remote repository and pushes them.
 func (c *connection) CommitAndPush(ctx context.Context, message string, force bool) error {
 	// If its a Git repository, commit and push the changes with the given message to the current branch.
 	if !c.isGitRepo() {
-		return errors.New("not a git repository")
+		return gitutil.ErrNotAGitRepository
 	}
 
 	c.gitMu.Lock()
@@ -665,7 +675,7 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 func (c *connection) MergeToBranch(ctx context.Context, branch string, force bool) (resErr error) {
 	// If its a Git repository, merge the current branch to the specified branch.
 	if !c.isGitRepo() {
-		return errors.New("not a git repository")
+		return gitutil.ErrNotAGitRepository
 	}
 
 	c.gitMu.Lock()
@@ -727,7 +737,24 @@ func (c *connection) MergeToBranch(ctx context.Context, branch string, force boo
 
 // CommitHash implements drivers.RepoStore.
 func (c *connection) CommitHash(ctx context.Context) (string, error) {
-	return "", nil
+	if !c.isGitRepo() {
+		return "", gitutil.ErrNotAGitRepository
+	}
+
+	repo, err := git.PlainOpen(c.root)
+	if err != nil {
+		return "", err
+	}
+	ref, err := repo.Head()
+	if err != nil {
+		return "", err
+	}
+
+	if ref.Hash().IsZero() {
+		return "", nil
+	}
+
+	return ref.Hash().String(), nil
 }
 
 // CommitTimestamp implements drivers.RepoStore.
@@ -796,7 +823,7 @@ func restoreToCommit(path, subpath, commithash string) error {
 func revertToCommit(path, commithash string) error {
 	// TODO: test with subpath
 	var args []string
-	args = append(args, "-C", path, "revert", "--no-commit", fmt.Sprintf("%s^..HEAD", commithash))
+	args = append(args, "-C", path, "revert", "--no-commit", fmt.Sprintf("%s..HEAD", commithash))
 	cmd := exec.Command("git", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {

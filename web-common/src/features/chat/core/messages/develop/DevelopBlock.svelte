@@ -7,18 +7,30 @@
   import { PenIcon } from "lucide-svelte";
   import FileDiffBlock from "@rilldata/web-common/features/chat/core/messages/file-diff/FileDiffBlock.svelte";
   import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
+  import { ToolName } from "@rilldata/web-common/features/chat/core/types.ts";
 
   export let block: DevelopBlock;
   export let conversation: Conversation;
 
   let isExpanded = true; // Make this expanded by default
 
-  function undoChanges() {
-    void conversation.sendMessage({
-      restoreChangesContext: {
-        revertTillWriteCallId: "",
-      },
-    });
+  let restoring = false;
+  $: canRestore = block.checkpointCommitHash && block.firstWriteCall;
+
+  async function restoreChanges() {
+    if (!block.firstWriteCall) return;
+    restoring = true;
+    try {
+      await conversation.adhocToolCall(ToolName.RESTORE_CHANGES, {
+        restoreChangesContext: {
+          revertTillWriteCallId: block.firstWriteCall.id,
+        },
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      restoring = false;
+    }
   }
 </script>
 
@@ -41,8 +53,17 @@
           Made {block.diffs.length} change(s)
         </div>
       </button>
-      {#if block.checkpointCommitHash}
-        <Button onClick={undoChanges} noStroke>Undo</Button>
+      {#if block.restored}
+        <div class="text-xs text-gray-500">Restored</div>
+      {:else if canRestore}
+        <Button
+          onClick={restoreChanges}
+          noStroke
+          loading={restoring}
+          disabled={restoring}
+        >
+          Restore
+        </Button>
       {/if}
     </div>
   </Collapsible.Trigger>

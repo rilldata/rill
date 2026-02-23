@@ -211,8 +211,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	}
 
 	// Validate request - either prompt or feedback context must be provided
-	if req.Prompt == "" && req.FeedbackAgentContext == nil {
-		return nil, status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
+	if req.Prompt == "" && req.FeedbackAgentContext == nil && req.RestoreChangesContext == nil {
+		return nil, status.Error(codes.InvalidArgument, "prompt, feedback_agent_context, or restore_changes_context must be provided")
 	}
 
 	// Setup user agent
@@ -330,8 +330,8 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	}
 
 	// Validate request - either prompt or feedback context must be provided
-	if req.Prompt == "" && req.FeedbackAgentContext == nil {
-		return status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
+	if req.Prompt == "" && req.FeedbackAgentContext == nil && req.RestoreChangesContext == nil {
+		return status.Error(codes.InvalidArgument, "prompt, feedback_agent_context, or restore_changes_context must be provided")
 	}
 
 	// Setup user agent

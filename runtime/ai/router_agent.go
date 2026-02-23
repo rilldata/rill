@@ -213,7 +213,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		if err != nil {
 			return nil, err
 		}
-		return &RouterAgentResult{Response: "Changes restored.", Agent: RestoreChangesName}, nil
+		return &RouterAgentResult{Agent: RestoreChangesName}, nil
 	}
 
 	return nil, fmt.Errorf("agent %q not implemented", args.Agent)

@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pmezard/go-difflib/difflib"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
@@ -224,7 +226,8 @@ func (t *WriteFile) maybeCreateCheckpoint(ctx context.Context, s *Session, path 
 	} else {
 		hash, err = repo.CommitHash(ctx)
 	}
-	if err != nil {
+	// Ignore ErrNotAGitRepository. Shouldn't happen, but we shouldn't fail the conversation just because of it.
+	if err != nil && !errors.Is(err, gitutil.ErrNotAGitRepository) {
 		return "", err
 	}
 	return hash, nil
