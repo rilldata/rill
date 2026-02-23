@@ -3,8 +3,8 @@ package databricks
 import (
 	"context"
 	"database/sql"
-	"errors"
 	sqld "database/sql/driver"
+	"errors"
 	"fmt"
 	"io"
 	"os"
