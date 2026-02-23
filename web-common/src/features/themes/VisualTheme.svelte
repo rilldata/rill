@@ -183,7 +183,7 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply size-full overflow-hidden;
+    @apply size-full overflow-hidden flex flex-col;
   }
 
   .main-area {
