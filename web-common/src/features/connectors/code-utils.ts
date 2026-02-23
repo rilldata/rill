@@ -103,7 +103,7 @@ function splitAuthSchemePrefix(
  * `{{ .env.connector.<name>.<header_key> }}` references so that secrets are
  * stored in `.env` rather than in the connector YAML file.
  */
-function formatHeadersAsYamlMap(
+export function formatHeadersAsYamlMap(
   value: Array<{ key: string; value: string }> | string,
   driverName?: string,
   connectorInstanceName?: string,
@@ -166,7 +166,7 @@ export function compileConnectorYAML(
     ) => boolean;
     orderedProperties?: Array<
       | ConnectorDriverProperty
-      | { key?: string; type?: string; secret?: boolean }
+      | { key?: string; type?: string; secret?: boolean; internal?: boolean }
     >;
     connectorInstanceName?: string;
     secretKeys?: string[];

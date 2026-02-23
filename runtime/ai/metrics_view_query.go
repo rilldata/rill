@@ -42,6 +42,9 @@ Request:
 - 'time_range' is inclusive of start time, exclusive of end time
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
+- Prefer using absolute 'start' and 'end' times in 'time_range' and 'comparison_time_range' if available. 
+  Otherwise, use 'expression' for relative time ranges, when specifying 'expression' make sure no other time range fields should be set as its not supported. 
+  Relative durations are evaluated against the execution time for scheduled insight mode or latest data for ad-hoc analysis.
 
 Response:
 - Returns aggregated data matching your query parameters
@@ -142,6 +145,44 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		"comparison_time_range": {
 			"start": "2025-04-01T00:00:00Z",
 			"end": "2025-04-30T23:59:59Z"
+		},
+		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
+		"limit": 10
+	}
+
+Example: Get the top 10 demographic segments (by country, gender, and age group) with the largest absolute revenue difference comparing last month as of latest day (base period) to previous month (comparison period):
+	{
+		"metrics_view": "ecommerce_financials",
+		"measures": [
+			{"name": "total_revenue"},
+			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+		],
+		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
+		"time_range": {
+			"expression": "1M as of latest/D"
+		},
+		"comparison_time_range": {
+			expression": "1M as of latest/D offset -1M"
+		},
+		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
+		"limit": 10
+	}
+
+Example: Get the top 10 demographic segments (by country, gender, and age group) with the largest absolute revenue difference comparing last day as of latest minute (base period) to previous day (comparison period):
+	{
+		"metrics_view": "ecommerce_financials",
+		"measures": [
+			{"name": "total_revenue"},
+			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+		],
+		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
+		"time_range": {
+			"expression": "1D as of latest/m"
+		},
+		"comparison_time_range": {
+			expression": "1D as of latest/m offset -1D"
 		},
 		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
 		"limit": 10

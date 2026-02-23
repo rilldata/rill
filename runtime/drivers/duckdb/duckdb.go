@@ -446,6 +446,9 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 				return &selfToFileExecutor{c}, nil
 			}
 		}
+		if _, ok := opts.OutputHandle.AsObjectStore(); ok {
+			return &selfToObjectStoreExecutor{c}, nil
+		}
 	}
 	return nil, drivers.ErrNotImplemented
 }

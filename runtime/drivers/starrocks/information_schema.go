@@ -200,6 +200,29 @@ func (i *informationSchema) LoadPhysicalSize(ctx context.Context, tables []*driv
 	return nil
 }
 
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (i *informationSchema) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db := i.c.db
+
+	catalog := table.Database
+	if catalog == "" {
+		catalog = i.c.configProp.Catalog
+	}
+	schema := table.DatabaseSchema
+	if schema == "" {
+		schema = i.c.configProp.Database
+	}
+
+	q := fmt.Sprintf("SHOW CREATE TABLE %s.%s.%s", safeSQLName(catalog), safeSQLName(schema), safeSQLName(table.Name))
+	var name, ddl string
+	err := db.QueryRowxContext(ctx, q).Scan(&name, &ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
+	return nil
+}
+
 // InformationSchema interface implementation for drivers.InformationSchema
 
 var _ drivers.InformationSchema = (*informationSchemaImpl)(nil)

@@ -1014,6 +1014,21 @@ export interface V1Expression {
 }
 
 /**
+ * Context for prompts handled by the feedback_agent.
+When provided, the agent records feedback and, for negative sentiment, runs attribution.
+ */
+export interface V1FeedbackAgentContext {
+  /** The ID of the message being rated. */
+  targetMessageId?: string;
+  /** Sentiment: "positive" or "negative". */
+  sentiment?: string;
+  /** Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other". */
+  categories?: string[];
+  /** Optional free-text comment. */
+  comment?: string;
+}
+
+/**
  * FieldSelector describes logic for selecting a list of fields.
 It is useful for dynamically evaluating fields when the list of potential fields is not known at parse time.
  */
@@ -2170,6 +2185,8 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export type V1ReportSpecResolverProperties = { [key: string]: unknown };
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -2177,6 +2194,8 @@ export interface V1ReportSpec {
   trigger?: boolean;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
+  resolver?: string;
+  resolverProperties?: V1ReportSpecResolverProperties;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
@@ -2665,6 +2684,7 @@ If not set, it will infer an agent based on the prompt and conversation history.
   agent?: string;
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
+  feedbackAgentContext?: V1FeedbackAgentContext;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2677,6 +2697,7 @@ If not set, it will infer an agent based on the prompt and conversation history.
   agent?: string;
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
+  feedbackAgentContext?: V1FeedbackAgentContext;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {
@@ -2706,8 +2727,15 @@ export type ConnectorServiceListBucketsParams = {
 };
 
 export type ConnectorServiceListObjectsParams = {
+  /**
+   * Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
+   */
   path?: string;
   delimiter?: string;
+  /**
+   * Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
+   */
+  glob?: string;
   pageSize?: number;
   pageToken?: string;
 };

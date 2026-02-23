@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	goruntime "runtime"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"sync"
@@ -49,6 +50,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &RouterAgent{Runtime: rt})
 	RegisterTool(r, &AnalystAgent{Runtime: rt})
 	RegisterTool(r, &DeveloperAgent{Runtime: rt})
+	RegisterTool(r, &FeedbackAgent{Runtime: rt})
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
@@ -1253,7 +1255,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				if errors.Is(err, llmCtx.Err()) && errors.Is(err, context.DeadlineExceeded) {
 					return nil, fmt.Errorf("LLM request timed out after %s: %w", llmRequestTimeout, err)
 				}
-				return nil, fmt.Errorf("completion failed: %w", err)
+				return nil, fmt.Errorf("completion failed: %w (stack: %s)", err, string(debug.Stack()))
 			}
 
 			// Break the tool call loop if no tool calls were requested.

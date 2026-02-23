@@ -2,8 +2,10 @@
 
 Your report for *{{ .ReportTimeString }}* is ready to view.
 
+{{ if .Summary }}
+*Summary* {{ .Summary }}
+{{ end }}
 <{{ .OpenLink }}|Open in browser> to see the full details.
 
-Or <{{ .DownloadLink }}|download the {{ .DownloadFormat }} file> directly.
-
+{{ if .DownloadLink }}Or <{{ .DownloadLink }}|download the {{ .DownloadFormat }} file> directly.{{ end }}
 {{ if .UnsubscribeLink }}To unsubscribe from this report, <{{ .UnsubscribeLink }}|click here>.{{ end }}

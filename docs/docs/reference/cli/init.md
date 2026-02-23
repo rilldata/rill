@@ -11,10 +11,10 @@ Add Rill project files from a template
 Initialize a new Rill project or add files to an existing project from a template.
 
 The available templates are:
-- duckdb: Creates an empty Rill project configured to use DuckDB as the OLAP database.
-- clickhouse: Creates an empty Rill project configured to use ClickHouse as the OLAP database.
-- cursor: Adds Cursor rules in .cursor to an existing Rill project.
-- claude: Adds Claude Code instruction in .claude to an existing Rill project.
+- empty-duckdb: Create a new empty Rill project with DuckDB.
+- empty-clickhouse: Create a new empty Rill project with ClickHouse.
+- cursor: Add Cursor rules to an existing Rill project.
+- claude: Add Claude Code instructions to an existing Rill project.
 
 
 ```
@@ -25,7 +25,7 @@ rill init [<path>] [flags]
 
 ```
       --force             Overwrite existing files when unpacking a template
-      --template string   Project template to use (options: duckdb, clickhouse, cursor) (default "duckdb")
+      --template string   Project template to use (default: prompt to select)
 ```
 
 ### Global flags
