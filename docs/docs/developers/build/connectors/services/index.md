@@ -44,6 +44,20 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
 
 </div>
 
+## API Integrations
+
+### Google Analytics 4
+
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-GoogleAnalytics.svg" alt="Google Analytics 4" className="sheets-icon" />}
+    header="Google Analytics 4"
+    content="Import GA4 report data into Rill using the Data API."
+    link="/developers/build/connectors/services/google-analytics"
+    linkLabel="Learn more"
+    referenceLink="google_analytics"
+  />
+</div>
 
 ## Notifications
 

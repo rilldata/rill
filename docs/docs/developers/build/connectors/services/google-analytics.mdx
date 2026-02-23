@@ -1,0 +1,124 @@
+---
+title: Google Analytics 4
+description: Import data from Google Analytics 4 into Rill
+sidebar_label: Google Analytics 4
+sidebar_position: 10
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
+
+## Overview
+
+[Google Analytics 4](https://developers.google.com/analytics/devguides/reporting/data/v1) is Google's latest analytics platform for measuring website and app traffic. Rill connects to the GA4 Data API to import report data (dimensions and metrics) into DuckDB for analysis. Authentication uses a Google Cloud service account with GA4 read access.
+
+## Authentication
+
+To connect to Google Analytics 4, you need:
+
+1. A **Google Cloud service account JSON** key with the **Google Analytics Data API** enabled
+2. The **GA4 Property ID** for the property you want to query
+
+<TwoStepFlowIntro
+  connector="Google Analytics 4"
+  step1Description="Upload your service account JSON and enter your GA4 Property ID"
+  step2Description="Choose a report type and date range"
+/>
+
+## Setting Up Credentials
+
+### Create a Service Account
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts) and create a new service account (or reuse an existing one).
+2. Enable the **Google Analytics Data API** in your project under [APIs & Services](https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com).
+3. Create a JSON key for the service account and download it.
+4. In Google Analytics, go to **Admin → Property Access Management** and add the service account email with **Viewer** access.
+
+### Find Your Property ID
+
+In Google Analytics, go to **Admin → Property Settings**. The Property ID is the numeric ID displayed at the top (e.g., `123456789`).
+
+## Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **Google Analytics 4**
+3. In the authentication step:
+   - Upload your service account JSON key file
+   - Enter your GA4 Property ID
+4. In the report configuration step:
+   - Select a **report type** (or choose Custom for full control)
+   - Set a **start date** and optional end date
+   - Enter a **source name**
+5. Click **Create** to import the data
+
+## Report Types
+
+Rill provides several preset report types that map to common GA4 analyses:
+
+| Report Type | Dimensions | Metrics |
+|---|---|---|
+| **Traffic overview** | `date`, `sessionSource`, `sessionMedium`, `sessionCampaignName` | `sessions`, `activeUsers`, `newUsers`, `bounceRate` |
+| **Page views** | `date`, `pagePath`, `pageTitle` | `screenPageViews`, `activeUsers`, `averageSessionDuration` |
+| **Demographics** | `date`, `country`, `city`, `language` | `activeUsers`, `sessions`, `newUsers` |
+| **Events** | `date`, `eventName` | `eventCount`, `activeUsers`, `eventCountPerUser` |
+| **Custom** | User-specified | User-specified |
+
+For **Custom** reports, enter comma-separated GA4 [dimension](https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#dimensions) and [metric](https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#metrics) API names.
+
+## Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/google_analytics.yaml`:
+
+```yaml
+type: connector
+driver: google_analytics
+
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
+property_id: "123456789"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=<json_credentials>
+```
+
+<EnvPullTip />
+
+**Step 3: Create a model**
+
+Create `models/ga4_traffic.yaml`:
+
+```yaml
+type: model
+connector: google_analytics
+
+report_type: traffic
+start_date: "2024-01-01"
+end_date: "today"
+```
+
+Or for a custom report:
+
+```yaml
+type: model
+connector: google_analytics
+
+report_type: custom
+dimensions: "date,country,city"
+metrics: "activeUsers,sessions"
+start_date: "2024-01-01"
+```
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="Google Analytics 4"
+  connectorId="google_analytics"
+  credentialDescription="a JSON key file for a Google Cloud service account with GA4 read access"
+/>

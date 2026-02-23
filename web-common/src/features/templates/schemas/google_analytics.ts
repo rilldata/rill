@@ -56,6 +56,8 @@ export const googleAnalyticsSchema: MultiStepFormSchema = {
       description: "Comma-separated GA4 dimension names",
       "x-placeholder": "date,country,city",
       "x-hint": "See GA4 API dimensions reference for available names.",
+      "x-docs-url":
+        "https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#dimensions",
       "x-visible-if": { report_type: "custom" },
       "x-step": "explorer",
     },
@@ -65,6 +67,8 @@ export const googleAnalyticsSchema: MultiStepFormSchema = {
       description: "Comma-separated GA4 metric names",
       "x-placeholder": "activeUsers,sessions",
       "x-hint": "See GA4 API metrics reference for available names.",
+      "x-docs-url":
+        "https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#metrics",
       "x-visible-if": { report_type: "custom" },
       "x-step": "explorer",
     },

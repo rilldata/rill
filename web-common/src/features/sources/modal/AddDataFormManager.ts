@@ -178,10 +178,11 @@ export class AddDataFormManager {
 
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
-    if (!this.isMultiStepConnector || stepState.step !== "connector") return;
+    if (stepState.step !== "connector") return;
+    if (!this.isMultiStepConnector && !this.hasExplorerStep) return;
     setConnectorConfig({});
     setConnectorInstanceName(null);
-    setStep("source");
+    setStep(this.hasExplorerStep ? "explorer" : "source");
   }
 
   handleBack(onBack: () => void): void {
