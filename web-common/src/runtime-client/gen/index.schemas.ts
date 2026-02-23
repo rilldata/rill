@@ -1088,6 +1088,15 @@ export interface V1GenerateResolverResponse {
   resolverProperties?: V1GenerateResolverResponseResolverProperties;
 }
 
+export type V1GenerateTemplateResponseEnvVars = { [key: string]: string };
+
+export interface V1GenerateTemplateResponse {
+  blob?: string;
+  envVars?: V1GenerateTemplateResponseEnvVars;
+  resourceType?: string;
+  driver?: string;
+}
+
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
@@ -2843,6 +2852,17 @@ export type RuntimeServiceGenerateResolverBody = {
   table?: string;
   /** table and connector should not be provided if metrics_view is provided. */
   metricsView?: string;
+};
+
+export type RuntimeServiceGenerateTemplateBodyProperties = {
+  [key: string]: unknown;
+};
+
+export type RuntimeServiceGenerateTemplateBody = {
+  resourceType?: string;
+  driver?: string;
+  properties?: RuntimeServiceGenerateTemplateBodyProperties;
+  connectorName?: string;
 };
 
 export type RuntimeServiceGitSwitchBranchBody = {

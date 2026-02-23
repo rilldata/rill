@@ -16,7 +16,6 @@ export const bigquerySchema: MultiStepFormSchema = {
       "x-file-encoding": "json",
       "x-file-extract": { project_id: "project_id" },
       "x-secret": true,
-      "x-env-var-name": "GOOGLE_APPLICATION_CREDENTIALS",
       "x-step": "connector",
     },
     project_id: {

@@ -27,7 +27,6 @@ export const druidSchema: MultiStepFormSchema = {
       "x-placeholder":
         "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=user&avaticaPassword=pass",
       "x-secret": true,
-      "x-env-var-name": "DRUID_DSN",
     },
     host: {
       type: "string",
@@ -55,7 +54,6 @@ export const druidSchema: MultiStepFormSchema = {
       description: "Druid password",
       "x-placeholder": "password",
       "x-secret": true,
-      "x-env-var-name": "DRUID_PASSWORD",
     },
     ssl: {
       type: "boolean",

@@ -67,6 +67,7 @@ var spec = drivers.Spec{
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=password",
 			Secret:      true,
+			EnvVarName:  "CLICKHOUSE_DSN",
 			NoPrompt:    true,
 		},
 		{
@@ -106,6 +107,7 @@ var spec = drivers.Spec{
 			Description: "Password to connect to the ClickHouse server",
 			Placeholder: "Database password",
 			Secret:      true,
+			EnvVarName:  "CLICKHOUSE_PASSWORD",
 			Hint:        "Password to your database",
 		},
 		{

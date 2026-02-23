@@ -1203,6 +1203,40 @@ paths:
                 description: table and connector should not be provided if metrics_view is provided.
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/generate/template:
+    post:
+      summary: GenerateTemplate generates a connector or model YAML file from structured form data
+      operationId: RuntimeService_GenerateTemplate
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateTemplateResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resourceType:
+                type: string
+              driver:
+                type: string
+              properties:
+                type: object
+              connectorName:
+                type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/git/branches:
     get:
       operationId: RuntimeService_ListGitBranches
@@ -5331,6 +5365,21 @@ definitions:
         type: string
       resolverProperties:
         type: object
+  v1GenerateTemplateResponse:
+    type: object
+    properties:
+      blob:
+        type: string
+      envVars:
+        type: object
+        additionalProperties:
+          type: string
+      resourceType:
+        type: string
+        title: Actual resource type used; may differ from request when driver is rewritten
+      driver:
+        type: string
+        title: Actual driver used; may differ from request when rewritten to duckdb
   v1GetConversationResponse:
     type: object
     properties:

@@ -32,6 +32,7 @@ var spec = drivers.Spec{
 			Description: "AWS access key ID for explicit credentials",
 			Placeholder: "Enter your AWS access key ID",
 			Secret:      true,
+			EnvVarName:  "AWS_ACCESS_KEY_ID",
 			Required:    true,
 		},
 		{
@@ -41,6 +42,7 @@ var spec = drivers.Spec{
 			Description: "AWS secret access key for explicit credentials",
 			Placeholder: "Enter your AWS secret access key",
 			Secret:      true,
+			EnvVarName:  "AWS_SECRET_ACCESS_KEY",
 			Required:    true,
 		},
 		{
@@ -65,6 +67,7 @@ var spec = drivers.Spec{
 			Key:         "aws_role_arn",
 			Type:        drivers.StringPropertyType,
 			Secret:      true,
+			EnvVarName:  "AWS_ROLE_ARN",
 			Description: "AWS Role ARN to assume",
 		},
 		{
