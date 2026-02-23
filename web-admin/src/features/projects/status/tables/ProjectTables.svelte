@@ -201,6 +201,7 @@
       });
     } catch (error) {
       console.error("Failed to refresh model:", error);
+      throw error;
     }
   }
 
@@ -211,21 +212,33 @@
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
-  <div class="flex items-center gap-x-3">
+  <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Tables</h2>
+  </div>
+
+  <div class="flex flex-row gap-x-4 min-h-9">
+    <Search
+      bind:value={searchText}
+      placeholder="Search"
+      large
+      autofocus={false}
+      showBorderOnFocus={false}
+    />
 
     <DropdownMenu.Root bind:open={typeDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {typeOptions.find((o) => o.value === typeFilter)?.label ?? "All"}
-            {#if typeDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
+      <DropdownMenu.Trigger
+        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {typeDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {typeOptions.find((o) => o.value === typeFilter)?.label ?? "All"}
+        </span>
+        {#if typeDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="w-32">
         {#each typeOptions as option}
@@ -251,17 +264,6 @@
         Clear filters
       </button>
     {/if}
-
-    <div class="flex-1" />
-
-    <div class="w-64">
-      <Search
-        bind:value={searchText}
-        placeholder="Search by name..."
-        autofocus={false}
-        retainValueOnMount={true}
-      />
-    </div>
   </div>
 
   {#if $tablesList.isError}

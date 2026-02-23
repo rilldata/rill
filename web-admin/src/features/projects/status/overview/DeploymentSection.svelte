@@ -14,6 +14,7 @@
     getStatusDotClass,
     getStatusLabel,
   } from "../display-utils";
+  import { getGitUrlFromRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import ProjectClone from "./ProjectClone.svelte";
   import OverviewCard from "./OverviewCard.svelte";
 
@@ -50,6 +51,13 @@
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
+  // Repo — only shown when the user connected their own GitHub
+  $: githubUrl = projectData?.gitRemote
+    ? getGitUrlFromRemote(projectData.gitRemote)
+    : "";
+  $: isGithubConnected =
+    !!projectData?.gitRemote && !projectData?.managedGitId && !!githubUrl;
+
   $: olapConnector = instance?.projectConnectors?.find(
     (c) => c.name === instance?.olapConnector,
   );
@@ -83,10 +91,26 @@
       </span>
     </div>
 
-    {#if primaryBranch}
+    {#if isGithubConnected}
+      <div class="info-row">
+        <span class="info-label">Repo</span>
+        <span class="info-value">
+          <a
+            href={githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="repo-link"
+          >
+            {githubUrl.replace("https://github.com/", "")}
+          </a>
+        </span>
+      </div>
+    {/if}
+
+    {#if isGithubConnected && primaryBranch}
       <div class="info-row">
         <span class="info-label">Branch</span>
-        <span class="info-value font-mono text-xs">{primaryBranch}</span>
+        <span class="info-value">{primaryBranch}</span>
       </div>
     {/if}
 
@@ -108,7 +132,7 @@
     {#if version}
       <div class="info-row">
         <span class="info-label">Runtime</span>
-        <span class="info-value font-mono text-xs">{version}</span>
+        <span class="info-value">{version}</span>
       </div>
     {/if}
 
@@ -157,5 +181,11 @@
   }
   .status-dot {
     @apply w-2 h-2 rounded-full inline-block;
+  }
+  .repo-link {
+    @apply text-primary-500 text-sm;
+  }
+  .repo-link:hover {
+    @apply underline;
   }
 </style>

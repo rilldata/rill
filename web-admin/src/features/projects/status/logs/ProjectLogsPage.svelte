@@ -8,7 +8,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { V1LogLevel, type V1Log } from "@rilldata/web-common/runtime-client";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -239,19 +238,29 @@
     </div>
   </div>
 
-  <div class="flex items-center gap-x-3">
+  <div class="flex flex-row gap-x-4 min-h-9">
+    <Search
+      bind:value={searchText}
+      placeholder="Search"
+      large
+      autofocus={false}
+      showBorderOnFocus={false}
+    />
+
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {selectedLevelLabel}
-            {#if filterDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
+      <DropdownMenu.Trigger
+        class="min-w-fit min-h-9 flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {selectedLevelLabel}
+        </span>
+        {#if filterDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="w-48">
         {#each filterableLevels as level}
@@ -273,17 +282,6 @@
         Clear filters
       </button>
     {/if}
-
-    <div class="flex-1" />
-
-    <div class="w-64">
-      <Search
-        bind:value={searchText}
-        placeholder="Search logs..."
-        autofocus={false}
-        retainValueOnMount={true}
-      />
-    </div>
   </div>
 
   <div class="logs-container" bind:this={logsContainer}>
