@@ -2,6 +2,7 @@ package databricks
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -156,19 +157,14 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 
 // GetTable returns column metadata for a specific table.
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	q := fmt.Sprintf(`
-		SELECT column_name, data_type
-		FROM %s.information_schema.columns
-		WHERE table_schema = ? AND table_name = ?
-		ORDER BY ordinal_position
-	`, sqlSafeName(database))
+	fqn := fmt.Sprintf("%s.%s.%s", sqlSafeName(database), sqlSafeName(databaseSchema), sqlSafeName(table))
 
 	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
+	rows, err := db.QueryxContext(ctx, fmt.Sprintf("DESCRIBE TABLE %s", fqn))
 	if err != nil {
 		return nil, err
 	}
@@ -177,10 +173,15 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	t := &drivers.TableMetadata{
 		Schema: make(map[string]string),
 	}
-	var colName, colType string
 	for rows.Next() {
-		if err := rows.Scan(&colName, &colType); err != nil {
+		var colName, colType string
+		var comment sql.NullString
+		if err := rows.Scan(&colName, &colType, &comment); err != nil {
 			return nil, err
+		}
+		// DESCRIBE TABLE may include partition/metadata rows with empty col names.
+		if colName == "" || strings.HasPrefix(colName, "#") {
+			break
 		}
 		t.Schema[colName] = colType
 	}
