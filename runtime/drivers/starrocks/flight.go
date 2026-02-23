@@ -47,8 +47,10 @@ func (c *connection) initFlightClient() error {
 	// Add authentication interceptor
 	username, password := c.flightSQLAuth()
 	if username != "" {
-		dialOpts = append(dialOpts, grpc.WithUnaryInterceptor(basicAuthUnaryInterceptor(username, password)))
-		dialOpts = append(dialOpts, grpc.WithStreamInterceptor(basicAuthStreamInterceptor(username, password)))
+		dialOpts = append(dialOpts,
+			grpc.WithUnaryInterceptor(basicAuthUnaryInterceptor(username, password)),
+			grpc.WithStreamInterceptor(basicAuthStreamInterceptor(username, password)),
+		)
 	}
 
 	client, err := flightsql.NewClient(addr, nil, nil, dialOpts...)
@@ -219,8 +221,10 @@ func (c *connection) createBEFlightClient(addr string) (*flightsql.Client, error
 
 	username, password := c.flightSQLAuth()
 	if username != "" {
-		dialOpts = append(dialOpts, grpc.WithUnaryInterceptor(basicAuthUnaryInterceptor(username, password)))
-		dialOpts = append(dialOpts, grpc.WithStreamInterceptor(basicAuthStreamInterceptor(username, password)))
+		dialOpts = append(dialOpts,
+			grpc.WithUnaryInterceptor(basicAuthUnaryInterceptor(username, password)),
+			grpc.WithStreamInterceptor(basicAuthStreamInterceptor(username, password)),
+		)
 	}
 
 	return flightsql.NewClient(addr, nil, nil, dialOpts...)

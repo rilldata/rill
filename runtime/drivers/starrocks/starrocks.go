@@ -218,10 +218,10 @@ func (c *ConfigProperties) Validate() error {
 }
 
 const (
-	defaultCatalog            = "default_catalog"
-	defaultPort               = 9030
-	defaultFlightSQLPort      = 9408
-	defaultFlightSQLMaxConns  = 100
+	defaultCatalog           = "default_catalog"
+	defaultPort              = 9030
+	defaultFlightSQLPort     = 9408
+	defaultFlightSQLMaxConns = 100
 )
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {

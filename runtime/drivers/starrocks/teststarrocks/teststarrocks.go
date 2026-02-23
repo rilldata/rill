@@ -40,12 +40,12 @@ type TestingT interface {
 
 // StarRocksInfo contains connection info for a StarRocks container
 type StarRocksInfo struct {
-	Host              string // Container host
-	DSN               string // MySQL protocol DSN (port 9030)
-	FEHTTPAddr        string // FE HTTP address for Stream Load (port 8030)
-	BEHTTPAddr        string // BE HTTP address for Stream Load redirect (port 8040)
-	FlightSQLPort     int    // Arrow Flight SQL port (mapped from FE's arrow_flight_port 9408)
-	FlightSQLBEPort   int    // Arrow Flight SQL BE port (mapped from BE's arrow_flight_port 9419)
+	Host            string // Container host
+	DSN             string // MySQL protocol DSN (port 9030)
+	FEHTTPAddr      string // FE HTTP address for Stream Load (port 8030)
+	BEHTTPAddr      string // BE HTTP address for Stream Load redirect (port 8040)
+	FlightSQLPort   int    // Arrow Flight SQL port (mapped from FE's arrow_flight_port 9408)
+	FlightSQLBEPort int    // Arrow Flight SQL BE port (mapped from BE's arrow_flight_port 9419)
 }
 
 // Start starts a StarRocks all-in-one container for testing.
@@ -67,12 +67,12 @@ func Start(t TestingT) StarRocksInfo {
 			{
 				HostFilePath:      beConfPath,
 				ContainerFilePath: "/data/deploy/starrocks/be/conf/be.conf",
-				FileMode:          0644,
+				FileMode:          0o644,
 			},
 			{
 				HostFilePath:      feConfPath,
 				ContainerFilePath: "/data/deploy/starrocks/fe/conf/fe.conf",
-				FileMode:          0644,
+				FileMode:          0o644,
 			},
 		},
 		WaitingFor: tcwait.ForAll(

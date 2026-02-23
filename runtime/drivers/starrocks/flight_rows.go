@@ -117,7 +117,7 @@ func (c *connection) querySchemaFlightSQL(ctx context.Context, query string, arg
 type flightRows struct {
 	reader       *flight.Reader
 	arrowSchema  *arrow.Schema
-	currentBatch arrow.Record
+	currentBatch arrow.RecordBatch
 	batchIdx     int64 // current row index within the current batch
 	err          error
 	closed       bool
@@ -142,7 +142,7 @@ func (r *flightRows) Next() bool {
 
 	// Read next batch from the stream
 	for r.reader.Next() {
-		rec := r.reader.Record()
+		rec := r.reader.RecordBatch()
 		if rec.NumRows() == 0 {
 			continue
 		}
@@ -224,11 +224,11 @@ func (r *flightRows) Err() error {
 // emptyRows is a Rows implementation for empty result sets.
 type emptyRows struct{}
 
-func (r *emptyRows) Next() bool                      { return false }
+func (r *emptyRows) Next() bool                        { return false }
 func (r *emptyRows) MapScan(dest map[string]any) error { return fmt.Errorf("no rows") }
-func (r *emptyRows) Scan(dest ...any) error           { return fmt.Errorf("no rows") }
-func (r *emptyRows) Close() error                     { return nil }
-func (r *emptyRows) Err() error                       { return nil }
+func (r *emptyRows) Scan(dest ...any) error            { return fmt.Errorf("no rows") }
+func (r *emptyRows) Close() error                      { return nil }
+func (r *emptyRows) Err() error                        { return nil }
 
 // extractArrowValue extracts a Go value from an Arrow column at the given row index.
 // The returned types match those produced by the MySQL protocol path for consistency.
