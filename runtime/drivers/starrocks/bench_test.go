@@ -2,7 +2,9 @@ package starrocks
 
 import (
 	"context"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/starrocks/teststarrocks"
@@ -53,6 +55,7 @@ func BenchmarkTransport(b *testing.B) {
 }
 
 // benchQuery runs a query b.N times, consuming all rows and counting them.
+// On StarRocks FE connection limit errors, it pauses outside the timer and retries.
 func benchQuery(b *testing.B, ctx context.Context, olap drivers.OLAPStore, query string) {
 	b.Helper()
 
@@ -71,6 +74,14 @@ func benchQuery(b *testing.B, ctx context.Context, olap drivers.OLAPStore, query
 	for i := 0; i < b.N; i++ {
 		res, err := olap.Query(ctx, &drivers.Statement{Query: query})
 		if err != nil {
+			if isConnLimitErr(err) {
+				// Pause timer, wait for FE connections to drain, retry
+				b.StopTimer()
+				time.Sleep(5 * time.Second)
+				b.StartTimer()
+				i--
+				continue
+			}
 			b.Fatalf("query failed on iteration %d: %v", i, err)
 		}
 		totalRows += drainRows(b, res)
@@ -147,6 +158,13 @@ func BenchmarkTransportScanOnly(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				res, err := tc.olap.Query(ctx, &drivers.Statement{Query: query})
 				if err != nil {
+					if isConnLimitErr(err) {
+						b.StopTimer()
+						time.Sleep(5 * time.Second)
+						b.StartTimer()
+						i--
+						continue
+					}
 					b.Fatalf("query failed: %v", err)
 				}
 				var count int64
@@ -169,4 +187,9 @@ func BenchmarkTransportScanOnly(b *testing.B) {
 			b.ReportMetric(avgRowsPerSec, "rows/sec")
 		})
 	}
+}
+
+// isConnLimitErr returns true if the error is a StarRocks FE connection limit error.
+func isConnLimitErr(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "connection limit")
 }

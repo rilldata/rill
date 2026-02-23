@@ -14,19 +14,30 @@ import (
 
 // queryFlightSQL executes a query using Arrow Flight SQL and returns a drivers.Result.
 // If stmt.Args is non-empty, falls back to MySQL because Flight SQL does not support
-// parameterized queries.
+// parameterized queries. Concurrency is limited by flightSem to prevent exhausting
+// StarRocks FE's per-user connection limit.
 func (c *connection) queryFlightSQL(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	// Flight SQL does not support parameterized queries; fall back to MySQL.
 	if len(stmt.Args) > 0 {
 		return c.queryMySQL(ctx, stmt)
 	}
 
+	// Acquire semaphore to limit concurrent Flight SQL queries
+	if err := c.flightSem.Acquire(ctx, 1); err != nil {
+		return nil, err
+	}
+	// NOTE: We cannot simply "defer c.flightSem.Release(1)" because the rows
+	// are consumed after this function returns. Release happens in Result.Close()
+	// via SetCleanupFunc, following the same pattern as DuckDB.
+
 	info, err := c.flightClient.Execute(ctx, stmt.Query)
 	if err != nil {
+		c.flightSem.Release(1)
 		return nil, fmt.Errorf("flight sql execute: %w", err)
 	}
 
 	if len(info.Endpoint) == 0 {
+		c.flightSem.Release(1)
 		return &drivers.Result{
 			Schema: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{}},
 			Rows:   &emptyRows{},
@@ -37,6 +48,7 @@ func (c *connection) queryFlightSQL(ctx context.Context, stmt *drivers.Statement
 	// StarRocks returns data from BE nodes; the FE client cannot serve DoGet.
 	reader, err := c.doGetFromEndpoint(ctx, info.Endpoint[0])
 	if err != nil {
+		c.flightSem.Release(1)
 		return nil, err
 	}
 
@@ -44,6 +56,7 @@ func (c *connection) queryFlightSQL(ctx context.Context, stmt *drivers.Statement
 	schema, err := arrowSchemaToRuntimeSchema(arrowSchema)
 	if err != nil {
 		reader.Release()
+		c.flightSem.Release(1)
 		return nil, fmt.Errorf("flight sql schema conversion: %w", err)
 	}
 
@@ -52,10 +65,16 @@ func (c *connection) queryFlightSQL(ctx context.Context, stmt *drivers.Statement
 		arrowSchema: arrowSchema,
 	}
 
-	return &drivers.Result{
+	res := &drivers.Result{
 		Schema: schema,
 		Rows:   rows,
-	}, nil
+	}
+	res.SetCleanupFunc(func() error {
+		c.flightSem.Release(1)
+		return nil
+	})
+
+	return res, nil
 }
 
 // querySchemaFlightSQL returns the schema of a query using Arrow Flight SQL.
@@ -66,6 +85,12 @@ func (c *connection) querySchemaFlightSQL(ctx context.Context, query string, arg
 	if len(args) > 0 {
 		return c.querySchemaMySQL(ctx, query, args)
 	}
+
+	// Acquire semaphore to limit concurrent Flight SQL queries
+	if err := c.flightSem.Acquire(ctx, 1); err != nil {
+		return nil, err
+	}
+	defer c.flightSem.Release(1)
 
 	schemaQuery := fmt.Sprintf("SELECT * FROM (%s) AS _schema_query LIMIT 0", query)
 

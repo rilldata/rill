@@ -9,7 +9,7 @@ sidebar_position: 25
 
 :::note Supported Versions
 
-Rill supports connecting to StarRocks 4.0 or newer versions.
+Rill supports connecting to StarRocks 4.0 or newer versions. If using Arrow Flight SQL transport, **StarRocks 4.0.4+** is required (earlier versions have issues serializing certain data types such as VARBINARY over Arrow Flight).
 
 :::
 
@@ -78,6 +78,42 @@ Only MySQL-style DSN format is supported. The `starrocks://` URL scheme is **not
 
 :::
 
+## Arrow Flight SQL
+
+By default, Rill connects to StarRocks using the MySQL protocol. You can optionally enable [Arrow Flight SQL](https://docs.starrocks.io/docs/sql-reference/sql-statements/cluster-management/EXPORT/#arrow-flight-sql) for significantly faster query performance on large result sets.
+
+Arrow Flight SQL uses Apache Arrow's columnar format for data transfer, which reduces serialization overhead and memory allocations compared to the row-based MySQL protocol. In benchmarks with 100K rows, Flight SQL is **~2.8x faster** with **61% fewer memory allocations**.
+
+To enable Arrow Flight SQL, set `transport: flight_sql` in your connector configuration:
+
+```yaml
+type: connector
+driver: starrocks
+
+host: starrocks-fe.example.com
+port: 9030
+username: analyst
+password: "{{ .env.STARROCKS_PASSWORD }}"
+database: my_database
+transport: flight_sql
+```
+
+:::warning StarRocks Version Requirement
+
+Arrow Flight SQL requires **StarRocks 4.0.4 or newer**. Versions 4.0.3 and earlier have known issues with Arrow Flight serialization for certain data types (e.g., VARBINARY). Additionally, the `arrow_flight_sql_port` must be enabled on both FE and BE nodes in your StarRocks cluster configuration.
+
+:::
+
+### When to use Arrow Flight SQL
+
+| Scenario | Recommended Transport |
+|---|---|
+| Large result sets (10K+ rows) | `flight_sql` |
+| Small result sets or low-latency lookups | `mysql` (default) |
+| Parameterized queries | `mysql` (automatic fallback) |
+
+Arrow Flight SQL does not support parameterized queries. When parameterized queries are detected, Rill automatically falls back to the MySQL protocol.
+
 ## Configuration Properties
 
 | Property      | Description                                                           | Default              |
@@ -90,6 +126,10 @@ Only MySQL-style DSN format is supported. The `starrocks://` URL scheme is **not
 | `database`    | StarRocks database name                                               | -                    |
 | `ssl`         | Enable SSL/TLS encryption                                             | `false`              |
 | `dsn`         | MySQL-format connection string (alternative to individual parameters) | -                    |
+| `transport`   | Query transport protocol: `mysql` or `flight_sql`                     | `mysql`              |
+| `flight_sql_port` | Arrow Flight SQL port on FE                                      | `9408`               |
+| `flight_sql_be_addr` | Override BE address (`host:port`) for Flight SQL DoGet calls  | -                    |
+| `flight_sql_max_conns` | Maximum concurrent Flight SQL queries                       | `100`                |
 | `log_queries` | Enable logging of all SQL queries (useful for debugging)              | `false`              |
 
 ## External Catalogs
@@ -152,6 +192,15 @@ If you encounter connection issues:
 3. Ensure network connectivity to the StarRocks FE node
 4. For SSL connections, verify SSL is enabled on the StarRocks server
 
+### Arrow Flight SQL Issues
+
+If Arrow Flight SQL queries fail:
+
+1. Verify your StarRocks version is **4.0.4 or newer** (`SELECT version()`)
+2. Check that `arrow_flight_sql_port` is enabled in both FE (`fe.conf`) and BE (`be.conf`) configurations
+3. Ensure the FE Flight SQL port (default: 9408) and BE Arrow Flight port (default: 8419) are accessible from the Rill host
+4. In containerized/NAT environments where BE advertises an internal address, use `flight_sql_be_addr` to specify the externally reachable BE address
+
 ### Timezone Handling
 
 All timestamp values are returned in UTC. The driver parses DATETIME values from StarRocks as UTC time.
@@ -159,6 +208,7 @@ All timestamp values are returned in UTC. The driver parses DATETIME values from
 ## Known Limitations
 
 - **Read-only connector**: StarRocks is a read-only OLAP connector. Model creation and execution is not supported.
+- **Arrow Flight SQL parameterized queries**: Flight SQL does not support parameterized queries. Rill automatically falls back to MySQL when parameters are present.
 
 :::info Need help connecting to StarRocks?
 

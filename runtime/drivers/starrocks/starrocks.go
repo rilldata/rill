@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -140,6 +141,15 @@ var spec = drivers.Spec{
 			Description: "Override BE address (host:port) for Flight SQL DoGet calls. Use when BE nodes are behind NAT/Docker.",
 			Hint:        "Only needed if BE nodes advertise internal addresses that are not directly reachable.",
 		},
+		{
+			Key:         "flight_sql_max_conns",
+			Type:        drivers.NumberPropertyType,
+			DisplayName: "Arrow Flight SQL Max Concurrent Queries",
+			Required:    false,
+			Default:     "100",
+			Description: "Maximum number of concurrent Arrow Flight SQL queries. Prevents exhausting StarRocks FE connection limit (default 1024).",
+			Hint:        "Only used when transport is 'flight_sql'. Set lower if FE is shared across many clients.",
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -179,6 +189,9 @@ type ConfigProperties struct {
 	// addresses from FlightInfo endpoint Locations. Useful when BE nodes are behind
 	// NAT/Docker and their advertised addresses are not directly reachable.
 	FlightSQLBEAddr string `mapstructure:"flight_sql_be_addr"`
+	// FlightSQLMaxConns limits concurrent Flight SQL queries to prevent
+	// exhausting StarRocks FE's per-user connection limit (default 1024).
+	FlightSQLMaxConns int `mapstructure:"flight_sql_max_conns"`
 }
 
 // Validate checks the configuration for errors.
@@ -205,9 +218,10 @@ func (c *ConfigProperties) Validate() error {
 }
 
 const (
-	defaultCatalog       = "default_catalog"
-	defaultPort          = 9030
-	defaultFlightSQLPort = 9408
+	defaultCatalog            = "default_catalog"
+	defaultPort               = 9030
+	defaultFlightSQLPort      = 9408
+	defaultFlightSQLMaxConns  = 100
 )
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -232,6 +246,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 	if cfg.FlightSQLPort == 0 {
 		cfg.FlightSQLPort = defaultFlightSQLPort
+	}
+	if cfg.FlightSQLMaxConns == 0 {
+		cfg.FlightSQLMaxConns = defaultFlightSQLMaxConns
 	}
 
 	conn := &connection{
@@ -274,6 +291,9 @@ type connection struct {
 	// Reusing clients avoids per-query gRPC connection overhead.
 	beClients   map[string]*flightsql.Client
 	beClientsMu sync.Mutex
+	// flightSem limits concurrent Flight SQL queries to prevent exhausting
+	// StarRocks FE's per-user connection limit (default 1024).
+	flightSem *semaphore.Weighted
 }
 
 var _ drivers.Handle = (*connection)(nil)
@@ -465,6 +485,7 @@ func (c *connection) initDB() error {
 			db.Close()
 			return fmt.Errorf("failed to initialize Arrow Flight SQL client: %w", err)
 		}
+		c.flightSem = semaphore.NewWeighted(int64(c.configProp.FlightSQLMaxConns))
 	}
 
 	return nil
