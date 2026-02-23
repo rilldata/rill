@@ -15,6 +15,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -118,7 +119,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	ctx, span := tracer.Start(ctx, "runtime.Resolve", trace.WithAttributes(attribute.String("resolver", opts.Resolver)))
 	var cacheHit bool
 	defer func() {
-		span.SetAttributes(attribute.Bool("cache_hit", cacheHit))
+		observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", cacheHit))
 		if resErr != nil {
 			span.SetAttributes(attribute.String("err", resErr.Error()))
 		}
