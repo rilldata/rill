@@ -130,7 +130,6 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 			// Match directory if the glob is not double-star ("**")
 			// and the file level is greater than the glob level.
 			if !hasDoubleStar && fileLevel > globLevel {
-
 				dirPath := fileutil.PrefixUntilLevel(obj.Key, globLevel, delimiter)
 
 				// If this is a different directory, finalize the previous one
@@ -199,7 +198,6 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 			if len(entries) == validPageSize {
 				break
 			}
-
 		}
 
 		if len(entries) == validPageSize {
