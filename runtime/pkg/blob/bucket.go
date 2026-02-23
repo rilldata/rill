@@ -120,7 +120,7 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 		for i, obj := range retval {
 			// Skip entries until we're past startAfter
 			if startAfter != "" {
-				//error out here because we already have  StartOffset/StartAfter/StartFrom pass in api
+				// error out here because we already have StartOffset/StartAfter/StartFrom pass in api
 				if obj.Key < startAfter {
 					return nil, "", fmt.Errorf("blob: entry with key < startAfter (%q)", startAfter)
 				}
