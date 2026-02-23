@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Component YAML
-sidebar_position: 40
+sidebar_position: 41
 ---
 
 Defines a reusable dashboard component that can be embedded in canvas dashboards
