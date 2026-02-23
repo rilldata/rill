@@ -190,7 +190,8 @@
           : "Testing connection...";
   $: formId = baseFormId;
   $: shouldShowSkipLink =
-    stepState.step === "connector" && formManager.isMultiStepConnector;
+    stepState.step === "connector" &&
+    (formManager.isMultiStepConnector || formManager.hasExplorerStep);
 </script>
 
 <AddDataFormSection

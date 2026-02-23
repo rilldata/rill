@@ -7,6 +7,7 @@ import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
 import { gcsSchema } from "../../templates/schemas/gcs";
+import { googleAnalyticsSchema } from "../../templates/schemas/google_analytics";
 import { mysqlSchema } from "../../templates/schemas/mysql";
 import { postgresSchema } from "../../templates/schemas/postgres";
 import { redshiftSchema } from "../../templates/schemas/redshift";
@@ -42,6 +43,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   https: httpsSchema,
   s3: s3Schema,
   gcs: gcsSchema,
+  google_analytics: googleAnalyticsSchema,
   azure: azureSchema,
 };
 

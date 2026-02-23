@@ -5,6 +5,7 @@ import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.sve
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
 import DuckDbIcon from "../../components/icons/connectors/DuckDBIcon.svelte";
 import GoogleBigQueryIcon from "../../components/icons/connectors/GoogleBigQueryIcon.svelte";
+import GoogleAnalyticsIcon from "../../components/icons/connectors/GoogleAnalyticsIcon.svelte";
 import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
 import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
@@ -30,6 +31,7 @@ export const connectorIconMapping = {
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
   starrocks: StarRocksIcon,
+  google_analytics: GoogleAnalyticsIcon,
 };
 
 export const connectorLabelMapping = {

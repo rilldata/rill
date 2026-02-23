@@ -8,6 +8,7 @@ import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
 import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
 import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
 import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
+import GoogleAnalytics from "../../../components/icons/connectors/GoogleAnalytics.svelte";
 import Https from "../../../components/icons/connectors/HTTPS.svelte";
 import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
 import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
@@ -38,4 +39,5 @@ export const ICONS = {
   druid: ApacheDruid,
   pinot: ApachePinot,
   starrocks: StarRocks,
+  google_analytics: GoogleAnalytics,
 };
