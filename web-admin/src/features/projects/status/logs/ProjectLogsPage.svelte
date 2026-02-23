@@ -238,15 +238,17 @@
     </div>
   </div>
 
-  <div class="flex flex-row gap-x-4 min-h-9">
-    <Search
-      bind:value={searchText}
-      placeholder="Search"
-      large
-      autofocus={false}
-      showBorderOnFocus={false}
-      retainValueOnMount
-    />
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
+    <div class="flex-1 min-w-0 min-h-9">
+      <Search
+        bind:value={searchText}
+        placeholder="Search"
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+        retainValueOnMount
+      />
+    </div>
 
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
       <DropdownMenu.Trigger
@@ -277,7 +279,7 @@
 
     {#if selectedLevels.length > 0 || searchText}
       <button
-        class="text-sm text-primary-500 hover:text-primary-600"
+        class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         on:click={clearFilters}
       >
         Clear filters

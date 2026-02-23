@@ -168,11 +168,10 @@
       onClick={() => void githubAccessManager.ensureGithubAccess()}
     >
       <Github className="w-5 h-5 flex-shrink-0" />
-      <span class="hidden min-[1200px]:inline">Connect to GitHub</span>
-      <span class="min-[1200px]:hidden">Connect</span>
+      Connect to GitHub
     </Button>
   </Dialog.Trigger>
-  <Dialog.Content class="top-[calc(50%-200px)]">
+  <Dialog.Content>
     <Dialog.Header>
       <div class="flex flex-row gap-x-2 items-center">
         <Github size="40px" />
@@ -196,6 +195,7 @@
         id="type"
         label="Connection type"
         sameWidth
+        portal="body"
         options={GithubSelectionTypeOptions}
         onChange={resetMutations}
       />
@@ -205,9 +205,11 @@
           bind:value={$form.org}
           id="org"
           label="Repository org"
+          placeholder="Select organization"
           options={$githubUserOrgs.data ?? []}
           optionsLoading={$githubUserOrgs.isFetching}
           sameWidth
+          portal="body"
           enableSearch
           onAddNew={() => githubAccessManager.reselectOrgOrRepos(false)}
           addNewLabel="+ Connect other orgs"
@@ -225,7 +227,9 @@
           bind:value={$form.repo}
           id="name"
           label="Repository"
+          placeholder="Select repository"
           sameWidth
+          portal="body"
           options={$githubUserRepos.data?.repoOptions ?? []}
           optionsLoading={$githubUserRepos.isFetching}
           enableSearch
