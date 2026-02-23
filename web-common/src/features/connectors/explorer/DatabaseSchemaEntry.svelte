@@ -90,7 +90,7 @@
   {#if expanded}
     {#if error && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        Error: {error.message}
+        Error: {error.message || error.response?.data?.message}
       </div>
     {:else if isLoading && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">

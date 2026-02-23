@@ -35,8 +35,8 @@ var supportedTableHeadDialects = map[drivers.Dialect]bool{
 	drivers.DialectRedshift:   true,
 	drivers.DialectMySQL:      true,
 	drivers.DialectPostgres:   true,
-	drivers.DialectStarRocks:    true,
-	drivers.DialectDatabricks:  true,
+	drivers.DialectStarRocks:  true,
+	drivers.DialectDatabricks: true,
 }
 
 func (q *TableHead) Key() string {

@@ -3,6 +3,7 @@ package databricks
 import (
 	"context"
 	"database/sql"
+	"errors"
 	sqld "database/sql/driver"
 	"fmt"
 	"io"
@@ -183,7 +184,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 	for f.streams.HasNext() {
 		reader, err := f.streams.Next()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, fmt.Errorf("databricks: failed to get next IPC stream: %w", err)
@@ -212,7 +213,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 		}
 
 		for ipcReader.Next() {
-			rec := ipcReader.Record()
+			rec := ipcReader.RecordBatch()
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 				writer.NewBufferedRowGroup()
 			}

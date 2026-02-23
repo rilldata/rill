@@ -113,11 +113,10 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
-		q += ` AND table_name > ? ORDER BY table_name LIMIT ?`
-		args = append(args, startAfter, limit+1)
+		q += fmt.Sprintf(` AND table_name > ? ORDER BY table_name LIMIT %d`, limit+1)
+		args = append(args, startAfter)
 	} else {
-		q += ` ORDER BY table_name LIMIT ?`
-		args = append(args, limit+1)
+		q += fmt.Sprintf(` ORDER BY table_name LIMIT %d`, limit+1)
 	}
 
 	db, err := c.getDB(ctx)
@@ -158,16 +157,11 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 // GetTable returns column metadata for a specific table.
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := fmt.Sprintf(`
-		SELECT
-			CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS is_view,
-			c.column_name,
-			c.data_type
-		FROM %s.information_schema.tables t
-		JOIN %s.information_schema.columns c
-		ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-		WHERE t.table_schema = ? AND t.table_name = ?
-		ORDER BY c.ordinal_position
-	`, sqlSafeName(database), sqlSafeName(database))
+		SELECT column_name, data_type
+		FROM %s.information_schema.columns
+		WHERE table_schema = ? AND table_name = ?
+		ORDER BY ordinal_position
+	`, sqlSafeName(database))
 
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -183,16 +177,12 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	t := &drivers.TableMetadata{
 		Schema: make(map[string]string),
 	}
-	var (
-		colName, colType string
-		isView           bool
-	)
+	var colName, colType string
 	for rows.Next() {
-		if err := rows.Scan(&isView, &colName, &colType); err != nil {
+		if err := rows.Scan(&colName, &colType); err != nil {
 			return nil, err
 		}
 		t.Schema[colName] = colType
-		t.View = isView
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

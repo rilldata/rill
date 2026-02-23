@@ -120,10 +120,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 
 	rtSchema := &runtimev1.StructType{}
 	for colName, colType := range meta.Schema {
-		t, err := databaseTypeToPB(colType, true)
-		if err != nil {
-			return nil, err
-		}
+		t := databaseTypeToPB(colType, true)
 		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
 			Name: colName,
 			Type: t,
@@ -156,11 +153,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 			nullable = true
 		}
 
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
-		if err != nil {
-			return nil, err
-		}
-
+		t := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
 		fields[i] = &runtimev1.StructType_Field{
 			Name: ct.Name(),
 			Type: t,
@@ -171,7 +164,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 }
 
 // databaseTypeToPB maps Databricks/Spark SQL types to proto types.
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: nullable}
 	switch dbt {
 	case "BOOLEAN":
@@ -207,5 +200,5 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	default:
 		t.Code = runtimev1.Type_CODE_STRING
 	}
-	return t, nil
+	return t
 }
