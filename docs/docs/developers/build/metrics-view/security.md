@@ -182,14 +182,13 @@ On the dashboard page (provided you've added a policy), you'll see a "View as" b
 ### Rill Cloud
 If you want to test what your users are seeing in Rill Cloud after deploying, you can find this in the dropdown of your account. You will see the actual users in the dropdown of this list, not the mock users defined in the rill.yaml file.
 
-<img src = '/img/manage/access-policies/rill-cloud-view-as.png' class='rounded-gif' />
-<br />
+![Rill Cloud View As](/img/manage/access-policies/rill-cloud-view-as.png)
 
 ### Embedded Dashboards
 
-When [requesting an embedded dashboard from Rill](/developers/integrate/embedding) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
+When [requesting an embedded dashboard from Rill](/developers/embed/dashboards) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
 
-For more information, see [our embedding docs](/developers/integrate/embedding#backend-build-an-iframe-url).
+For more information, see [our embedding docs](/developers/embed/dashboards#2-build-the-iframe-url-backend).
 
 
 ## Examples
@@ -313,7 +312,7 @@ security:
 
 ### Advanced Example: Custom attributes (Embed Dashboards)
 
-Another use case for row access policies is to ensure that your embedded dashboard provides a specific view for your end users. During the [embed dashboard request](/developers/integrate/embedding), you can pass custom attributes (other than the ones provided out-of-the-box) that map directly to a value within your Rill explore dashboard.
+Another use case for row access policies is to ensure that your embedded dashboard provides a specific view for your end users. During the [embed dashboard request](/developers/embed/dashboards), you can pass custom attributes (other than the ones provided out-of-the-box) that map directly to a value within your Rill explore dashboard.
 
 ```yaml
 security:

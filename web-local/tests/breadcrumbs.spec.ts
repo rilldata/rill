@@ -65,7 +65,7 @@ test.describe("Breadcrumbs", () => {
 
       await page.getByRole("link", { name: "AdBids", exact: true }).click();
 
-      await page.waitForURL("**/files/sources/AdBids.yaml");
+      await page.waitForURL("**/files/models/AdBids.yaml");
 
       await expect(
         page.getByRole("link", {

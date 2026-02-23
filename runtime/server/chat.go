@@ -210,9 +210,9 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		return nil, ErrForbidden
 	}
 
-	// Add basic validation - fail fast for invalid requests
-	if req.Prompt == "" {
-		return nil, status.Error(codes.InvalidArgument, "prompt cannot be empty")
+	// Validate request - either prompt or feedback context must be provided
+	if req.Prompt == "" && req.FeedbackAgentContext == nil {
+		return nil, status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
 	}
 
 	// Setup user agent
@@ -246,13 +246,21 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
+		wherePerMetricsView := map[string]*metricsview.Expression{}
+		for m, e := range req.AnalystAgentContext.WherePerMetricsView {
+			wherePerMetricsView[m] = metricsview.NewExpressionFromProto(e)
+		}
+
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.AnalystAgentContext.Explore,
-			Dimensions: req.AnalystAgentContext.Dimensions,
-			Measures:   req.AnalystAgentContext.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
-			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
-			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+			Explore:             req.AnalystAgentContext.Explore,
+			Canvas:              req.AnalystAgentContext.Canvas,
+			CanvasComponent:     req.AnalystAgentContext.CanvasComponent,
+			WherePerMetricsView: wherePerMetricsView,
+			Dimensions:          req.AnalystAgentContext.Dimensions,
+			Measures:            req.AnalystAgentContext.Measures,
+			Where:               metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:           req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:             req.AnalystAgentContext.TimeEnd.AsTime(),
 		}
 	}
 	var developerAgentArgs *ai.DeveloperAgentArgs
@@ -260,6 +268,15 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		developerAgentArgs = &ai.DeveloperAgentArgs{
 			InitProject:     req.DeveloperAgentContext.InitProject,
 			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
+		}
+	}
+	var feedbackAgentArgs *ai.FeedbackAgentArgs
+	if req.FeedbackAgentContext != nil {
+		feedbackAgentArgs = &ai.FeedbackAgentArgs{
+			TargetMessageID: req.FeedbackAgentContext.TargetMessageId,
+			Sentiment:       req.FeedbackAgentContext.Sentiment,
+			Categories:      req.FeedbackAgentContext.Categories,
+			Comment:         req.FeedbackAgentContext.Comment,
 		}
 	}
 
@@ -270,6 +287,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		Agent:              req.Agent,
 		AnalystAgentArgs:   analystAgentArgs,
 		DeveloperAgentArgs: developerAgentArgs,
+		FeedbackAgentArgs:  feedbackAgentArgs,
 	})
 	if err != nil && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
@@ -303,9 +321,9 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return ErrForbidden
 	}
 
-	// Add basic validation - fail fast for invalid requests
-	if req.Prompt == "" {
-		return status.Error(codes.InvalidArgument, "prompt cannot be empty")
+	// Validate request - either prompt or feedback context must be provided
+	if req.Prompt == "" && req.FeedbackAgentContext == nil {
+		return status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
 	}
 
 	// Setup user agent
@@ -364,16 +382,24 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
-	// Prepare agent args if provided
+	// Prepare optional context args
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
+		wherePerMetricsView := map[string]*metricsview.Expression{}
+		for m, e := range req.AnalystAgentContext.WherePerMetricsView {
+			wherePerMetricsView[m] = metricsview.NewExpressionFromProto(e)
+		}
+
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.AnalystAgentContext.Explore,
-			Dimensions: req.AnalystAgentContext.Dimensions,
-			Measures:   req.AnalystAgentContext.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
-			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
-			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+			Explore:             req.AnalystAgentContext.Explore,
+			Canvas:              req.AnalystAgentContext.Canvas,
+			CanvasComponent:     req.AnalystAgentContext.CanvasComponent,
+			WherePerMetricsView: wherePerMetricsView,
+			Dimensions:          req.AnalystAgentContext.Dimensions,
+			Measures:            req.AnalystAgentContext.Measures,
+			Where:               metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:           req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:             req.AnalystAgentContext.TimeEnd.AsTime(),
 		}
 	}
 	var developerAgentArgs *ai.DeveloperAgentArgs
@@ -381,6 +407,15 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		developerAgentArgs = &ai.DeveloperAgentArgs{
 			InitProject:     req.DeveloperAgentContext.InitProject,
 			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
+		}
+	}
+	var feedbackAgentArgs *ai.FeedbackAgentArgs
+	if req.FeedbackAgentContext != nil {
+		feedbackAgentArgs = &ai.FeedbackAgentArgs{
+			TargetMessageID: req.FeedbackAgentContext.TargetMessageId,
+			Sentiment:       req.FeedbackAgentContext.Sentiment,
+			Categories:      req.FeedbackAgentContext.Categories,
+			Comment:         req.FeedbackAgentContext.Comment,
 		}
 	}
 
@@ -391,6 +426,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		Agent:              req.Agent,
 		AnalystAgentArgs:   analystAgentArgs,
 		DeveloperAgentArgs: developerAgentArgs,
+		FeedbackAgentArgs:  feedbackAgentArgs,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.

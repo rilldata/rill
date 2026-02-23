@@ -431,6 +431,11 @@ paths:
                 description: |-
                   Optional context for prompts handled by the developer_agent.
                   The field is ignored if another agent is selected.
+              feedbackAgentContext:
+                $ref: '#/definitions/v1FeedbackAgentContext'
+                description: |-
+                  Optional context for prompts handled by the feedback_agent.
+                  The field is ignored if another agent is selected.
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -485,6 +490,11 @@ paths:
                 $ref: '#/definitions/v1DeveloperAgentContext'
                 description: |-
                   Optional context for prompts handled by the developer_agent.
+                  The field is ignored if another agent is selected.
+              feedbackAgentContext:
+                $ref: '#/definitions/v1FeedbackAgentContext'
+                description: |-
+                  Optional context for prompts handled by the feedback_agent.
                   The field is ignored if another agent is selected.
             title: Request message for RuntimeService.CompleteStreaming
       tags:
@@ -689,10 +699,16 @@ paths:
           required: true
           type: string
         - name: path
+          description: Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
           in: query
           required: false
           type: string
         - name: delimiter
+          in: query
+          required: false
+          type: string
+        - name: glob
+          description: Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
           in: query
           required: false
           type: string
@@ -4049,6 +4065,12 @@ definitions:
       explore:
         type: string
         description: Optional explore dashboard.
+      canvas:
+        type: string
+        description: Optional canvas dashboard.
+      canvasComponent:
+        type: string
+        description: Optional canvas component within a dashboard.
       dimensions:
         type: array
         items:
@@ -4062,6 +4084,14 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         description: Optional filters.
+      wherePerMetricsView:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
+        title: |-
+          Filter expressions as key-value pairs for the canvas.
+          Key: Metrics view name
+          Value: Expression object
       timeStart:
         type: string
         format: date-time
@@ -5217,6 +5247,26 @@ definitions:
         $ref: '#/definitions/v1Condition'
       subquery:
         $ref: '#/definitions/v1Subquery'
+  v1FeedbackAgentContext:
+    type: object
+    properties:
+      targetMessageId:
+        type: string
+        description: The ID of the message being rated.
+      sentiment:
+        type: string
+        description: 'Sentiment: "positive" or "negative".'
+      categories:
+        type: array
+        items:
+          type: string
+        description: 'Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other".'
+      comment:
+        type: string
+        description: Optional free-text comment.
+    description: |-
+      Context for prompts handled by the feedback_agent.
+      When provided, the agent records feedback and, for negative sentiment, runs attribution.
   v1FieldSelector:
     type: object
     properties:
@@ -7168,8 +7218,14 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
+      resolver:
+        type: string
+        title: Generic resolver configuration (preferred for new reports)
+      resolverProperties:
+        type: object
       queryName:
         type: string
+        title: Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
       queryArgsJson:
         type: string
       exportLimit:

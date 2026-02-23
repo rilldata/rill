@@ -46,6 +46,8 @@
         >
           <svelte:component
             this={CANVAS_CHART_CONFIG[chart].icon}
+            primaryColor="var(--color-primary-600)"
+            secondaryColor="var(--color-primary-300)"
             size="20px"
           />
         </Button>

@@ -98,11 +98,11 @@ export const SOURCES = [
 
 export const OLAP_ENGINES = [
   "clickhouse",
-  "clickhousecloud",
   "motherduck",
   "duckdb",
   "druid",
   "pinot",
+  "starrocks",
 ];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];

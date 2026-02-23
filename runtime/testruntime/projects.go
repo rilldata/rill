@@ -10,7 +10,7 @@ func ProjectOpenRTB(t TestingT) (int, map[string]string) {
 	auctionsParquet := DatasetPath(t, DatasetOpenRTBAuctions)
 	bidsParquet := DatasetPath(t, DatasetOpenRTBBids)
 
-	return 9, map[string]string{
+	return 13, map[string]string{
 		// Raw auctions data (NOTE: not materialized)
 		"models/auctions_data_raw.yaml": fmt.Sprintf(`
 type: model
@@ -167,6 +167,52 @@ measures:
     window:
       order: __time
       frame: RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW
+`,
+		"/dashboard/bids_canvas.yaml": `
+type: canvas
+display_name: "Canvas Dashboard"
+defaults:
+  time_range: PT24H
+  comparison_mode: time
+rows:
+  - items:
+      - line_chart:
+          color: primary
+          metrics_view: bids_metrics
+          x:
+            field: __time
+            limit: 20
+            sort: -y
+            type: temporal
+          y:
+            field: total_bids
+            type: quantitative
+            zeroBasedOrigin: true
+        width: 12
+    height: 40px
+  - items:
+      - kpi_grid:
+          comparison:
+            - delta
+            - percent_change
+          measures:
+            - overall_spend
+            - total_bids
+            - win_rate
+            - ctr
+          metrics_view: bids_metrics
+        width: 12
+    height: 40px
+  - items:
+      - leaderboard:
+          dimensions:
+            - adomain
+            - advertiser_name
+          measures:
+            - overall_spend
+          metrics_view: bids_metrics
+          num_rows: 7
+          dimension_filters: app_or_site IN ('App')
 `,
 	}
 }

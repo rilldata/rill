@@ -6,14 +6,23 @@ sidebar_position: 0
 slug: "/guide"
 ---
 import TileIcon from '@site/src/components/TileIcon';
+import ThemedImage from '@theme/ThemedImage';
 
 # Getting Started with Rill Cloud
 
 Rill Cloud is a fully-managed platform that brings powerful, interactive analytics directly to your fingertips. Explore your data through instant dashboards, ask questions in plain English with AI Chat, and share insights with your team—all without writing SQL or waiting for custom reports. Your data team has already set up the metrics and dashboards you need; you simply explore, analyze, and collaborate.
 
-<img src='/img/guide/home/project-home.png' class='rounded-gif' />
-<br />
+This guide is for **anyone who consumes dashboards and insights in Rill Cloud** — business analysts, marketing and finance teams, operations leads, executives, and anyone else on your team who needs to explore data, set up alerts, schedule reports, or share findings. No coding or SQL experience required.
 
+Need to **build or maintain Rill projects** — connect data sources, write models, define metrics, or deploy dashboards? See the [Developer Docs](/).
+
+<ThemedImage
+  alt="Dark Mode"
+  sources={{
+    light: '/img/guide/home/project-home.png',
+    dark: '/img/guide/home/project-home-dark.png',
+  }}
+/>
 
 <div className="tile-icon-grid">
 <TileIcon

@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Project YAML
-sidebar_position: 41
+sidebar_position: 42
 ---
 
 The `rill.yaml` file contains metadata about your project.
@@ -82,7 +82,7 @@ _[object]_ - Defines project-wide default settings for canvases. Unless overridd
 
 ```yaml
 # For complete examples, see: 
-# https://docs.rilldata.com/build/rill-project-file#dashboard-defaults
+# https://docs.rilldata.com/developers/build/rill-project-file#dashboard-defaults
 models:
     refresh:
         cron: '0 * * * *'

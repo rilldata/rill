@@ -51,7 +51,7 @@ services:
       - "9411:9411"
   mailpit:
     <<: *service
-    profiles: ["full"]
+    profiles: ["full", "e2e"]
     container_name: mailpit
     image: axllent/mailpit
     ports:

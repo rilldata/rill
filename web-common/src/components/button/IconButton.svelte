@@ -19,6 +19,7 @@
   export let tooltipAlignment: Alignment = "middle";
   export let marginClasses = "";
   export let ariaLabel = "";
+  export let ariaPressed: boolean | undefined = undefined;
 </script>
 
 <Tooltip
@@ -31,6 +32,7 @@
     on:click
     {disabled}
     aria-label={ariaLabel}
+    aria-pressed={ariaPressed}
     class:cursor-auto={disabled}
     class:rounded
     class:text-fg-disabled={disabled}

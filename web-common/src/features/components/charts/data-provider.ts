@@ -5,6 +5,7 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
 import type { CanvasEntity } from "../../canvas/stores/canvas-entity";
@@ -146,7 +147,7 @@ export function getTimeDimensionDefinition(
 
     if (grain) {
       const timeUnit = timeGrainToVegaTimeUnitMap[grain];
-      const format = TIME_GRAIN[grain]?.d3format as string;
+      const format = TIME_GRAIN[grain]?.d3format;
       return {
         field,
         timeUnit,
@@ -159,4 +160,38 @@ export function getTimeDimensionDefinition(
       displayName,
     };
   });
+}
+
+export function getFieldsForSpec<T extends ChartSpec = ChartSpec>(
+  config: ChartDataDependencies<T>["config"],
+  metricsView: V1MetricsViewSpec,
+) {
+  const { measures, dimensions, timeDimensions } = getFieldsByType(config);
+
+  const fields = {} as Record<
+    string,
+    | MetricsViewSpecMeasure
+    | MetricsViewSpecDimension
+    | TimeDimensionDefinition
+    | undefined
+  >;
+
+  measures.forEach((measure) => {
+    fields[measure] = metricsView.measures?.find((m) => m.name === measure);
+  });
+
+  dimensions.forEach((dimension) => {
+    fields[dimension] = metricsView.dimensions?.find(
+      (d) => d.name === dimension,
+    );
+  });
+
+  timeDimensions.forEach((timeDimension) => {
+    fields[timeDimension] = {
+      field: timeDimension,
+      displayName: "Time",
+    };
+  });
+
+  return fields;
 }
