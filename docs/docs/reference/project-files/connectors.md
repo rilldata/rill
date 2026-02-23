@@ -25,6 +25,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 
 ### _Databases_
 - [**MySQL**](#mysql) - MySQL databases
+- [**Oracle**](#oracle) - Oracle databases
 - [**PostgreSQL**](#postgres) - PostgreSQL databases
 - [**SQLite**](#sqlite) - SQLite databases
 
@@ -632,6 +633,66 @@ ssl-mode: preferred
 type: connector
 driver: mysql
 dsn: "{{ .env.MYSQL_DSN }}" # Define DSN in .env file
+```
+
+## Oracle
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `oracle` _(required)_
+
+### `dsn`
+
+_[string]_ - **Data Source Name (DSN)** for the Oracle connection, provided in Oracle URI format.
+The DSN must follow the standard Oracle URI scheme:
+```text
+oracle://user:password@host:1521/service_name
+```
+Rules for special characters in password:
+- The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+- All other special characters must be percent-encoded (`%XX` format).
+```text
+oracle://user:pa%40ss@localhost:1521/ORCLPDB1   # password contains '@'
+oracle://user:pa%3Ass@localhost:1521/ORCLPDB1   # password contains ':'
+```
+ 
+
+### `host`
+
+_[string]_ - Hostname or IP address of the Oracle server 
+
+### `port`
+
+_[integer]_ - Oracle listener port (default is 1521) 
+
+### `service_name`
+
+_[string]_ - Oracle service name or SID 
+
+### `user`
+
+_[string]_ - Username for authentication 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+```yaml
+# Example: Oracle connector configured using individual properties
+type: connector
+driver: oracle
+host: localhost
+port: 1521
+service_name: ORCLPDB1
+user: myuser
+password: "{{ .env.ORACLE_PASSWORD }}"
+```
+
+```yaml
+# Example: Oracle connector configured using dsn
+type: connector
+driver: oracle
+dsn: "{{ .env.ORACLE_DSN }}" # Define DSN in .env file
 ```
 
 ## OpenAI

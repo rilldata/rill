@@ -1,0 +1,109 @@
+---
+title: Oracle
+description: Connect to data in Oracle
+sidebar_label: Oracle
+sidebar_position: 45
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+{/* WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. */}
+
+## Overview
+
+[Oracle Database](https://www.oracle.com/database/) is a multi-model relational database management system produced by Oracle Corporation. Known for its scalability, reliability, and comprehensive feature set, Oracle Database is widely used in enterprise environments for transaction processing, data warehousing, and mixed workloads. It provides advanced capabilities including partitioning, high availability, and support for structured and unstructured data. You can connect to and read from Oracle databases directly.
+
+## Authentication Methods
+
+To connect to Oracle, you need to provide database connection credentials. Rill supports connecting via individual parameters (host, port, service name, user, password).
+
+<TwoStepFlowIntro
+  connector="Oracle"
+  step1Description="Set up your Oracle connector with connection credentials (host, port, service name, user, password)"
+  step2Description="Define which table or query to execute"
+/>
+
+### Connection String Format
+
+When connecting to Oracle, you can also specify an appropriate Data Source Name (DSN) using the following syntax:
+
+```bash
+oracle://<user>:<password>@<host>:<port>/<service_name>
+```
+
+- **user** and **password**: Should correspond to the user credentials that Rill will use to connect to Oracle.
+- **host** and **port**: Should correspond to the hostname and port (default 1521) of your Oracle database listener.
+- **service_name**: Should correspond to the Oracle service name (or SID) for the database you are connecting to.
+
+## Method 1: Connection Credentials
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **Oracle** as the data source type
+3. In the authentication step:
+   - Enter your Oracle host and port
+   - Enter the service name
+   - Enter your username and password
+4. In the data model configuration step, enter your SQL query
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/oracle.yaml`:
+
+```yaml
+type: connector
+driver: oracle
+
+host: "localhost"
+port: 1521
+service_name: "ORCLPDB1"
+user: "myuser"
+password: "{{ .env.ORACLE_PASSWORD }}"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+ORACLE_PASSWORD=your-secure-password
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Create Your First Model
+
+Once your connector is configured, create a model to define what data to pull.
+
+Create `models/oracle_data.yaml`:
+
+```yaml
+type: model
+connector: oracle
+dev:
+  sql: SELECT * FROM my_table WHERE ROWNUM <= 10000
+
+sql: SELECT * FROM my_table
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="Oracle"
+  connectorId="oracle"
+  credentialDescription="the Oracle connection credentials"
+/>

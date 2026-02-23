@@ -137,6 +137,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 ## Databases
 ### MySQL
+### Oracle
 ### PostgreSQL
 ### SQLite
 
@@ -148,6 +149,14 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     link="/developers/build/connectors/data-source/mysql"
     linkLabel="Learn more"
     referenceLink="mysql"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Oracle.svg" alt="Oracle" />}
+    header="Oracle"
+    content="Connect to Oracle databases with support for service name and connection string authentication."
+    link="/developers/build/connectors/data-source/oracle"
+    linkLabel="Learn more"
+    referenceLink="oracle"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Postgres.svg" alt="PostgreSQL" />}

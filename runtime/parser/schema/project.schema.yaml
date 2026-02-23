@@ -62,6 +62,7 @@ definitions:
 
       ### _Databases_
       - [**MySQL**](#mysql) - MySQL databases
+      - [**Oracle**](#oracle) - Oracle databases
       - [**PostgreSQL**](#postgres) - PostgreSQL databases
       - [**SQLite**](#sqlite) - SQLite databases
 
@@ -618,6 +619,57 @@ definitions:
               type: connector
               driver: mysql
               dsn: "{{ .env.MYSQL_DSN }}"   # Define DSN in .env file
+          required:
+            - driver
+        - type: object
+          title: Oracle
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `oracle`
+            dsn:
+              type: string
+              description: |
+                **Data Source Name (DSN)** for the Oracle connection, provided in Oracle URI format.
+                The DSN must follow the standard Oracle URI scheme:
+                ```text
+                oracle://user:password@host:1521/service_name
+                ```
+                Rules for special characters in password:
+                - The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+                - All other special characters must be percent-encoded (`%XX` format).
+                ```text
+                oracle://user:pa%40ss@localhost:1521/ORCLPDB1   # password contains '@'
+                oracle://user:pa%3Ass@localhost:1521/ORCLPDB1   # password contains ':'
+                ```
+            host:
+              type: string
+              description: Hostname or IP address of the Oracle server
+            port:
+              type: integer
+              description: Oracle listener port (default is 1521)
+            service_name:
+              type: string
+              description: Oracle service name or SID
+            user:
+              type: string
+              description: Username for authentication
+            password:
+              type: string
+              description: Password for authentication
+          examples:
+            - # Example: Oracle connector configured using individual properties
+              type: connector
+              driver: oracle
+              host: localhost
+              port: 1521
+              service_name: ORCLPDB1
+              user: myuser
+              password: "{{ .env.ORACLE_PASSWORD }}"
+            - # Example: Oracle connector configured using dsn
+              type: connector
+              driver: oracle
+              dsn: "{{ .env.ORACLE_DSN }}"   # Define DSN in .env file
           required:
             - driver
         - type: object
@@ -1190,6 +1242,7 @@ definitions:
               - motherduck
               - athena
               - redshift
+              - oracle
               - postgres
               - sqlite
               - snowflake
