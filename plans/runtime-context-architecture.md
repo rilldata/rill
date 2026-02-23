@@ -1,385 +1,421 @@
-# Runtime Context Architecture Plan
+# Runtime Context + ConnectRPC Migration
 
-## Summary
+## Context
 
-This document proposes a new architecture for managing runtime context (host, instanceId, JWT) in the frontend. The new architecture enables multi-runtime support, cleaner component code, and a migration path from Orval/REST to Connect/gRPC.
+Rill's frontend uses a global mutable Svelte store (`runtime`) to hold connection info (host, instanceId, JWT) for talking to the runtime data plane. This singleton prevents supporting multiple simultaneous runtimes, which is needed for cloud editing (PR #8912, where a dev deployment coexists with production). The cloud editing MVP hacks around the global store with conditional rendering, manual overwriting, and cleanup-on-destroy. This plan replaces the global store with Svelte context + ConnectRPC, building on Brian's POC (PR #8603) which introduced the proto gen pipeline and proved the ConnectRPC approach.
 
-## Problem Statement
+**Key design decisions:**
+- **`RuntimeClient` class** — encapsulates transport, JWT lifecycle, and service clients. Each `RuntimeProvider` creates its own instance and sets it in Svelte context. Not a singleton; scoped to the provider subtree.
+- JWT reactivity via **mutable ref inside the class** — transport interceptor reads `this.currentJwt`, updated by the provider when props change. No re-mounting needed.
+- No singleton manager — **Svelte context IS the registry**; nesting providers gives multi-runtime
+- Code generator built early — 62+ Orval-generated functions are too many to hand-write
+- Global store removed ASAP — bridge exists only during migration, not as a permanent pattern
 
-### The Immediate Bug (PR #8559)
+---
 
-Canvas navigation between projects causes errors because:
+## Phase 1: Foundation
 
-1. SvelteKit load functions call `setRuntime()` during navigation
-2. The global `runtime` store updates immediately
-3. Old components (still mounted) react to the new `instanceId`
-4. They attempt to access canvas entities that don't exist for the new instanceId
-5. Error occurs before old components unmount
+Branch off Brian's `bgh/connectrpc-poc`, keeping:
+- `proto/buf.gen.runtime.yaml` (buf config for ConnectRPC TS stubs)
+- Generated `*_connect.ts` files in `web-common/src/proto/gen/rill/runtime/v1/`
+- `@connectrpc/connect`, `@connectrpc/connect-web` dependencies in `web-common/package.json`
 
-### The Underlying Architecture Issue
+Discard:
+- `ProjectProvider.svelte`, `project-manager.ts` (replaced by Svelte context)
+- `connectrpc.ts` (replaced by code generator output)
+- All consumer-side changes (Leaderboard, timeseries-data-store, etc.)
 
-The current architecture uses a **global mutable store** (`runtime`) that:
-
-- Is updated from load functions (wrong timing)
-- Is read reactively by components (causes race conditions)
-- Cannot support multiple runtimes simultaneously
-- Mixes concerns (auth, routing, data fetching)
-
-## Options Considered
-
-### Option A: Quick Fix (PR #8559)
-
-- Remove `setRuntime` from load functions
-- Set runtime via `RuntimeProvider` component (after old tree unmounts)
-- Add `{#key instanceId}` to force component remount
-- Add `enabled: !!instanceId` guards on queries
-
-**Verdict:** Fixes the immediate bug but doesn't address architectural issues.
-
-### Option B: HTTP Client State (PR #8572)
-
-- Remove the `runtime` store entirely
-- Store host, instanceId, JWT on `httpClient` singleton
-- Components call `httpClient.getInstanceId()` (non-reactive)
-
-**Verdict:** Cleaner than A, but commits to a singleton pattern that doesn't support multi-runtime. Would be a detour if we want multi-runtime later.
-
-### Option C: Context-Based Architecture with Connect Web
-
-- Use Svelte context to provide runtime configuration
-- Migrate from Orval/REST to Connect/gRPC
-- Generate TanStack Query hooks that use context
-- Support multiple runtimes by nesting providers
-
-**Verdict:** Recommended. Solves the immediate problem, enables multi-runtime, and aligns with the desired migration to Connect/gRPC.
-
-## Recommended Architecture
-
-### Core Concepts
-
+Create `web-common/src/runtime-client/v2/`:
 ```
-┌─────────────────────────────────────────────────────────┐
-│  RuntimeProvider                                        │
-│    - Creates Connect transport with host + auth         │
-│    - Sets transport in Svelte context                   │
-│    - Children only render when transport is ready       │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│  use{Service}() Factory Hook                            │
-│    - Calls getContext() to get transport                │
-│    - Creates Connect client                             │
-│    - Returns query/mutation creators                    │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│  Component                                              │
-│    const { createGetExploreQuery } = useRuntimeService()│
-│    const query = createGetExploreQuery({ name });       │
-└─────────────────────────────────────────────────────────┘
+v2/
+  runtime-client.ts     # RuntimeClient class
+  context.ts            # useRuntimeClient() — reads from getContext()
+  RuntimeProvider.svelte # Creates RuntimeClient, sets context
+  gen/                  # Code generator output (Phase 2)
 ```
 
-### RuntimeProvider
+### `RuntimeClient` class
+
+```typescript
+// runtime-client.ts
+import { createClient, type Client, type Transport } from "@connectrpc/connect";
+import { createConnectTransport } from "@connectrpc/connect-web";
+import { QueryService } from "../../proto/gen/rill/runtime/v1/queries_connect";
+import { RuntimeService } from "../../proto/gen/rill/runtime/v1/api_connect";
+import { ConnectorService } from "../../proto/gen/rill/runtime/v1/connectors_connect";
+
+export type AuthContext = "user" | "mock" | "magic" | "embed";
+
+export class RuntimeClient {
+  readonly instanceId: string;
+  readonly transport: Transport;
+
+  // JWT state (mutable; read by the transport interceptor)
+  private currentJwt: string | undefined;
+  private jwtReceivedAt: number;
+  private authContext: AuthContext;
+
+  // Cached service clients (created once per RuntimeClient)
+  private _queryService: Client<typeof QueryService> | null = null;
+  private _runtimeService: Client<typeof RuntimeService> | null = null;
+  private _connectorService: Client<typeof ConnectorService> | null = null;
+
+  constructor(opts: {
+    host: string;
+    instanceId: string;
+    jwt?: string;
+    authContext?: AuthContext;
+  }) {
+    this.instanceId = opts.instanceId;
+    this.currentJwt = opts.jwt;
+    this.jwtReceivedAt = opts.jwt ? Date.now() : 0;
+    this.authContext = opts.authContext ?? "user";
+
+    this.transport = createConnectTransport({
+      baseUrl: opts.host,
+      interceptors: [(next) => async (req) => {
+        if (this.currentJwt) {
+          await this.waitForFreshJwt();
+          req.header.set("Authorization", `Bearer ${this.currentJwt}`);
+        }
+        return next(req);
+      }],
+    });
+  }
+
+  // Called by RuntimeProvider when the parent passes a new JWT prop
+  updateJwt(jwt: string | undefined, authContext?: AuthContext): boolean {
+    const authContextChanged = !!this.authContext && !!authContext
+      && authContext !== this.authContext;
+    if (jwt !== this.currentJwt) {
+      this.currentJwt = jwt;
+      this.jwtReceivedAt = Date.now();
+    }
+    if (authContext) this.authContext = authContext;
+    return authContextChanged; // caller invalidates queries if true
+  }
+
+  // Getter for JWT (used by SSE clients and other non-query consumers)
+  getJwt(): string | undefined { return this.currentJwt; }
+
+  // Lazy service client getters
+  get queryService() {
+    return this._queryService ??= createClient(QueryService, this.transport);
+  }
+  get runtimeService() {
+    return this._runtimeService ??= createClient(RuntimeService, this.transport);
+  }
+  get connectorService() {
+    return this._connectorService ??= createClient(ConnectorService, this.transport);
+  }
+
+  // Port of maybeWaitForFreshJWT from http-client.ts:50-70
+  private async waitForFreshJwt(): Promise<void> {
+    if (this.authContext === "embed") return; // 24h TTL, skip
+    const expiresAt = this.jwtReceivedAt + RUNTIME_ACCESS_TOKEN_DEFAULT_TTL;
+    while (Date.now() + JWT_EXPIRY_WARNING_WINDOW > expiresAt) {
+      await new Promise((r) => setTimeout(r, 50));
+      // Loop exits when provider calls updateJwt() with a fresh token
+    }
+  }
+
+  dispose(): void {
+    // Future: clean up SSE connections, cancel pending requests, etc.
+  }
+}
+```
+
+### `RuntimeProvider.svelte`
+
+`host` and `instanceId` are stable for the provider's lifetime. If they change (e.g. navigating between projects), the **parent layout** re-mounts the provider via `{#key}`. JWT-only changes — including View As / impersonation and periodic refresh — are handled in-place via `client.updateJwt()`.
 
 ```svelte
-<!-- RuntimeProvider.svelte -->
 <script lang="ts">
-  import { setContext } from 'svelte';
-  import { createConnectTransport } from '@connectrpc/connect-web';
-  import type { Transport } from '@connectrpc/connect';
+  import { setContext, onDestroy } from "svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { RuntimeClient } from "./runtime-client";
+  import { RUNTIME_CONTEXT_KEY } from "./context";
+  import { invalidateRuntimeQueries } from "../invalidation";
+  import { runtime } from "../runtime-store"; // BRIDGE (temporary)
+
+  const queryClient = useQueryClient();
 
   export let host: string;
   export let instanceId: string;
   export let jwt: string | undefined = undefined;
+  export let authContext: AuthContext = "user";
 
-  const transport = createConnectTransport({
-    baseUrl: host,
-    interceptors: jwt ? [authInterceptor(jwt)] : [],
-  });
+  // Created once. If host/instanceId change, parent's {#key} re-mounts us.
+  const client = new RuntimeClient({ host, instanceId, jwt, authContext });
+  setContext(RUNTIME_CONTEXT_KEY, client);
 
-  // Provide both transport and instanceId via context
-  setContext('runtime', { transport, instanceId });
+  // JWT-only changes (common: 15-min refresh, View As with same host)
+  $: {
+    const authContextChanged = client.updateJwt(jwt, authContext);
+    if (authContextChanged) void invalidateRuntimeQueries(queryClient, instanceId);
+  }
+
+  // BRIDGE (temporary): also set global store for unmigrated Orval consumers
+  $: runtime.setRuntime(queryClient, host, instanceId, jwt, authContext);
+
+  onDestroy(() => client.dispose());
 </script>
 
-{#if host && instanceId}
-  <slot />
-{/if}
+{#if host && instanceId}<slot />{/if}
 ```
 
-### Generated Service Hook
+### Wire into layouts
 
+- **`web-admin/.../[project]/+layout.svelte`**:
+  - Swap import to `v2/RuntimeProvider`
+  - Move `RuntimeProvider` higher to wrap BOTH `ProjectTabs` and `<slot />` (currently `ProjectTabs` is outside the provider, lines 169-176)
+  - Wrap `RuntimeProvider` in `{#key}` keyed on `host::instanceId` so that project navigation correctly re-mounts the provider (View As does NOT change host/instanceId — it only changes the JWT and auth context):
+    ```svelte
+    {#key `${effectiveHost}::${effectiveInstanceId}`}
+      <RuntimeProvider host={effectiveHost} instanceId={effectiveInstanceId} jwt={effectiveJwt} {authContext}>
+        {#if onProjectPage && deploymentStatus === RUNNING}
+          <ProjectTabs ... />
+        {/if}
+        <slot />
+      </RuntimeProvider>
+    {/key}
+    ```
+- **`web-local/src/routes/+layout.svelte`**: add `v2/RuntimeProvider` wrapping the app (host from env, instanceId="default", no JWT). No `{#key}` needed (host/instanceId never change).
+- **`web-local/src/hooks.client.ts`**: keep `runtime.set()` during bridge period
+
+### `featureFlags` → per-client
+
+`web-common/src/features/feature-flags.ts` is a module-level singleton that subscribes to the global `runtime` store. In the new architecture, feature flags are **per-RuntimeClient** (they're fetched from the instance's API, so different runtimes may have different flags).
+
+During the bridge period, `featureFlags` continues to use the global store. During consumer migration (Phase 4), it becomes a `RuntimeClient` property:
 ```typescript
-// Generated: useRuntimeService.ts
-import { getContext } from 'svelte';
-import { createClient } from '@connectrpc/connect';
-import { createQuery, createMutation } from '@tanstack/svelte-query';
-import { RuntimeService } from '../proto/gen/rill/runtime/v1/api_connect';
-import type { Transport } from '@connectrpc/connect';
-
-interface RuntimeContext {
-  transport: Transport;
-  instanceId: string;
-}
-
-export function useRuntimeService() {
-  const { transport, instanceId } = getContext<RuntimeContext>('runtime');
-  const client = createClient(RuntimeService, transport);
-
-  return {
-    instanceId,
-
-    createGetExploreQuery: (
-      params: { name: string },
-      options?: { query?: CreateQueryOptions }
-    ) => createQuery({
-      queryKey: ['RuntimeService', 'getExplore', instanceId, params],
-      queryFn: () => client.getExplore({ instanceId, ...params }),
-      enabled: !!instanceId,
-      ...options?.query,
-    }),
-
-    createListResourcesQuery: (
-      params: { kind?: string },
-      options?: { query?: CreateQueryOptions }
-    ) => createQuery({
-      queryKey: ['RuntimeService', 'listResources', instanceId, params],
-      queryFn: () => client.listResources({ instanceId, ...params }),
-      enabled: !!instanceId,
-      ...options?.query,
-    }),
-
-    // ... other RPCs
-  };
-}
-
-// For use in load functions (explicit transport)
-export function createRuntimeServiceClient(transport: Transport) {
-  return createClient(RuntimeService, transport);
+class RuntimeClient {
+  readonly featureFlags: FeatureFlagStore;
+  constructor(opts) {
+    this.featureFlags = new FeatureFlagStore(this);
+  }
 }
 ```
+Components access via `const client = useRuntimeClient(); $: flags = client.featureFlags;`
 
-### Component Usage
+**Validation:** Both web-admin and web-local load correctly (bridge keeps old consumers alive).
 
-```svelte
-<script lang="ts">
-  const { instanceId, createGetExploreQuery } = useRuntimeService();
+---
 
-  export let exploreName: string;
+## Phase 2: Code Generator
 
-  const exploreQuery = createGetExploreQuery({ name: exploreName });
-</script>
-
-{#if $exploreQuery.isLoading}
-  <LoadingSpinner />
-{:else if $exploreQuery.data}
-  <ExploreDashboard explore={$exploreQuery.data} />
-{/if}
-```
-
-### Load Function Usage
-
-```typescript
-// +layout.ts
-export async function load({ params }) {
-  // Fetch runtime config (host, jwt) from admin API or parent
-  const runtimeConfig = await fetchProjectRuntime(params.org, params.project);
-
-  return {
-    runtime: runtimeConfig, // Passed to RuntimeProvider via data prop
-  };
-}
-```
-
-```svelte
-<!-- +layout.svelte -->
-<script>
-  export let data;
-</script>
-
-<RuntimeProvider
-  host={data.runtime.host}
-  instanceId={data.runtime.instanceId}
-  jwt={data.runtime.jwt}
->
-  <slot />
-</RuntimeProvider>
-```
-
-### Load Function Data Fetching
-
-When load functions need to fetch data:
-
-```typescript
-// +page.ts
-export async function load({ params, parent }) {
-  const { runtime } = await parent();
-
-  const transport = createConnectTransport({
-    baseUrl: runtime.host,
-    interceptors: runtime.jwt ? [authInterceptor(runtime.jwt)] : [],
-  });
-
-  const client = createRuntimeServiceClient(transport);
-  const explore = await client.getExplore({
-    instanceId: runtime.instanceId,
-    name: params.exploreName
-  });
-
-  return { explore };
-}
-```
-
-## Multi-Runtime Support
-
-The context-based architecture naturally supports multiple runtimes:
-
-```svelte
-<!-- Compare two projects side-by-side -->
-<div class="comparison">
-  <RuntimeProvider {...projectA}>
-    <ProjectDashboard />
-  </RuntimeProvider>
-
-  <RuntimeProvider {...projectB}>
-    <ProjectDashboard />
-  </RuntimeProvider>
-</div>
-```
-
-Each subtree uses its own transport and instanceId. Components don't need to know which runtime they're in.
-
-## Code Generator
+Create `web-common/scripts/generate-query-hooks.ts` — a build-time script that reads the ConnectRPC `*_connect.ts` service descriptors and produces TanStack Query hooks.
 
 ### Input
 
-The generator reads from `*_connect.ts` files produced by `protoc-gen-es`:
+The three generated files:
+- `web-common/src/proto/gen/rill/runtime/v1/api_connect.ts` (RuntimeService)
+- `web-common/src/proto/gen/rill/runtime/v1/queries_connect.ts` (QueryService)
+- `web-common/src/proto/gen/rill/runtime/v1/connectors_connect.ts` (ConnectorService)
+
+### Classification config
+
+`web-common/scripts/query-hooks-config.ts`:
+- **ConnectorService**: all methods → query (all GET)
+- **QueryService**: all unary methods → query (semantically read-only, POST for complex bodies), except `export`/`exportReport`/`query` → mutation; `queryBatch` → skip (streaming)
+- **RuntimeService**: methods starting with `Get`/`List`/`Ping`/`Health`/`Analyze` → query; `Watch*`/`CompleteStreaming` → skip (streaming); `IssueDevJWT`/`GetModelPartitions` → query (per Orval config); rest → mutation
+
+### Output per unary query method (4 tiers)
 
 ```typescript
-// proto/gen/rill/runtime/v1/api_connect.ts
-export const RuntimeService = {
-  typeName: "rill.runtime.v1.RuntimeService",
-  methods: {
-    getExplore: {
-      name: "GetExplore",
-      I: GetExploreRequest,
-      O: GetExploreResponse,
-      kind: MethodKind.Unary,
-    },
-    // ...
-  }
-};
-```
-
-### Output
-
-For each service, generates:
-
-1. `use{Service}.ts` - Factory hook for components (context-based)
-2. Query key generators for cache management
-3. Type exports for request/response
-
-### Generator Scope
-
-Estimated ~300-500 lines of TypeScript. Responsibilities:
-
-- Parse service definitions from `*_connect.ts`
-- Determine query vs mutation (unary GETs → query, others → mutation)
-- Generate TanStack Query wrappers with proper typing
-- Generate query key factories
-
-## Migration Strategy
-
-### Phase 0: Immediate Fix (Now)
-
-Merge PR #8559's quick fix to unblock the Canvas navigation bug. This is compatible with the long-term architecture.
-
-### Phase 1: Infrastructure (1-2 weeks)
-
-1. Create `RuntimeProvider` component
-2. Write the code generator
-3. Generate hooks for `LocalService` (already using Connect)
-4. Validate pattern works end-to-end
-
-### Phase 2: Incremental Migration
-
-Migrate RPCs incrementally, not all at once:
-
-1. **Per-RPC migration:** Generate Connect hook for one RPC, update components, verify
-2. **Coexistence:** Old Orval hooks and new Connect hooks can coexist
-3. **Priority order:**
-   - Start with low-traffic RPCs to validate
-   - Then high-pain RPCs (ones causing issues)
-   - Leave rarely-used RPCs for last
-
-### Phase 3: Cleanup
-
-Once a service is fully migrated:
-
-1. Remove Orval-generated code for that service
-2. Update Orval config to exclude migrated services
-3. Eventually remove Orval dependency entirely
-
-## JWT Handling
-
-### Refresh Flow
-
-```typescript
-// RuntimeProvider handles JWT refresh
-<script>
-  export let jwt: string | undefined;
-  export let onJwtExpiring: () => Promise<string>;
-
-  const transport = createConnectTransport({
-    baseUrl: host,
-    interceptors: [
-      createAuthInterceptor(jwt, onJwtExpiring),
-    ],
-  });
-</script>
-```
-
-The interceptor can detect expiring JWTs and trigger refresh before requests fail.
-
-### User Impersonation
-
-```typescript
-// Switch to viewing as another user
-async function impersonateUser(userId: string) {
-  const newJwt = await adminService.getImpersonationToken(userId);
-  // Update RuntimeProvider props → new transport created → queries refetch
+// --- Tier 1: Raw function ---
+export function queryServiceMetricsViewAggregation(
+  client: RuntimeClient,
+  request: PartialMessage<Omit<MetricsViewAggregationRequest, "instanceId">>,
+  options?: { signal?: AbortSignal },
+): Promise<MetricsViewAggregationResponse> {
+  return client.queryService.metricsViewAggregation(
+    { instanceId: client.instanceId, ...request },
+    { signal: options?.signal },
+  );
 }
+
+// --- Tier 2: Query key (no client needed) ---
+export function getQueryServiceMetricsViewAggregationQueryKey(
+  instanceId: string,
+  request: PartialMessage<Omit<MetricsViewAggregationRequest, "instanceId">>,
+): QueryKey
+// Format: ["QueryService", "metricsViewAggregation", instanceId, request]
+
+// --- Tier 3: Query options ---
+export function getQueryServiceMetricsViewAggregationQueryOptions(
+  client: RuntimeClient,
+  request: ...,
+  options?: { query?: Partial<CreateQueryOptions<...>> },
+): CreateQueryOptions & { queryKey: QueryKey }
+
+// --- Tier 4: Convenience hook ---
+export function createQueryServiceMetricsViewAggregation(
+  client: RuntimeClient,
+  request: ...,
+  options?: { query?: Partial<CreateQueryOptions<...>> },
+): CreateQueryResult
 ```
 
-Since transport is recreated when props change, queries automatically use the new auth context.
+Key details:
+- Generated hooks take `client: RuntimeClient` as the first argument
+- `instanceId` is **omitted from the request type** and injected from `client.instanceId`
+- Raw functions call `client.queryService.*` (cached service client, not recreated per call)
+- Query keys use `["QueryService", "metricsViewAggregation", instanceId, request]` format
+- `enabled` defaults to `!!client.instanceId` (generator can add more based on config)
+- Mutations follow the same pattern but produce `createMutation` / `getMutationOptions`
+- For SSE/streaming consumers, `client.getJwt()` provides current JWT without global store access
 
-## Open Questions
+### Output location
 
-1. **Query key namespacing:** Should query keys include a version or hash to handle proto schema changes?
+```
+web-common/src/runtime-client/v2/gen/
+  query-service.ts       # All QueryService hooks
+  runtime-service.ts     # All RuntimeService hooks
+  connector-service.ts   # All ConnectorService hooks
+  index.ts               # Barrel re-export
+```
 
-2. **Streaming RPCs:** How should server-streaming RPCs (like `WatchResources`) integrate with TanStack Query?
+### npm integration
 
-3. **Error handling:** Should the generator produce error type mappings from Connect errors to application errors?
+Add to `web-common/package.json`: `"generate:query-hooks": "tsx scripts/generate-query-hooks.ts"`
+Wire into Makefile after `buf generate`.
 
-4. **Caching strategy:** Should we generate cache update helpers for common patterns (optimistic updates, cache invalidation)?
+**Validation:** Generated files compile. Function count matches expected (~62 query + ~25 mutation methods).
 
-## Appendix: Comparison with Current Architecture
+---
 
-| Aspect | Current (Orval + Global Store) | Proposed (Connect + Context) |
-|--------|-------------------------------|------------------------------|
-| Runtime config | Global mutable store | Svelte context per subtree |
-| Client generation | Orval from OpenAPI | Custom generator from protobuf |
-| Protocol | REST/HTTP | Connect (gRPC-compatible) |
-| Multi-runtime | Not supported | Supported via nested providers |
-| Type safety | Generated from OpenAPI | Generated from protobuf |
-| Load function support | Problematic (caused bug) | Supported with explicit client |
-| Migration | N/A | Incremental, per-RPC |
+## Phase 3: Update Invalidation Logic
 
-## References
+Before migrating consumers, update cache invalidation to support both old (URL-path) and new (service/method) query key formats.
 
-- [PR #8559: Canvas navigation fix](https://github.com/rilldata/rill/pull/8559)
-- [PR #8572: Refactor instanceId handling](https://github.com/rilldata/rill/pull/8572)
-- [Connect Web documentation](https://connectrpc.com/docs/web/getting-started/)
-- [TanStack Query Svelte](https://tanstack.com/query/latest/docs/framework/svelte/overview)
-- [Connect-Query (React reference)](https://github.com/connectrpc/connect-query-es)
+### Files to modify
+
+**`web-common/src/runtime-client/invalidation.ts`:**
+- `invalidateRuntimeQueries`: match `key[0].startsWith("rill.runtime.v1.") && key[2] === instanceId` (new) OR `key[0].startsWith("/v1/instances/${instanceId}")` (old bridge)
+- `invalidationForMetricsViewData`: match `key[0] === "QueryService" && key[1] includes "metricsView" && request contains metricsViewName` (new) OR URL regex (old)
+- `invalidateAllMetricsViews`: same dual-match pattern
+- `invalidateComponentData`: match `key[1] === "resolveComponent" && request.component === name`
+
+**`web-common/src/runtime-client/query-matcher.ts`:**
+- `isRuntimeQuery`: match new key format too
+- `isProfilingQuery` / `isTableProfilingQuery` / `isColumnProfilingQuery`: match new keys (these use `queryHash` regex which won't work with new format — rewrite to inspect `queryKey` structure)
+
+**Validation:** Existing tests pass (old keys still match). New key format also matches.
+
+---
+
+## Phase 4: Consumer Migration
+
+Migrate all ~100 consumer files from Orval imports + `$runtime` to v2 imports + `useRuntimeClient()`.
+
+### Migration pattern
+
+**.svelte files:**
+```diff
+- import { createQueryServiceFoo } from "@rilldata/web-common/runtime-client";
+- import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
++ import { createQueryServiceFoo, useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
++ const client = useRuntimeClient();
+
+- $: query = createQueryServiceFoo($runtime.instanceId, param, body, opts);
++ $: query = createQueryServiceFoo(client, { param, ...body }, opts);
+```
+
+**.ts query factories** (accept `RuntimeClient` instead of `instanceId: string`):
+```diff
+- export function useExplore(instanceId: string, name: string) {
+-   return createRuntimeServiceGetExplore(instanceId, { name });
++ export function useExplore(client: RuntimeClient, name: string) {
++   return createRuntimeServiceGetExplore(client, { name });
+```
+
+**`derived` store patterns** (become simpler since client is stable):
+```diff
+- const queryOpts = derived(runtime, ($r) =>
+-   getQueryServiceFooQueryOptions($r.instanceId, params));
+- const query = createQuery(queryOpts);
++ const query = createQueryServiceFoo(client, params);
+```
+
+### Critical migration: `state-managers.ts`
+
+`web-common/src/features/dashboards/state-managers/state-managers.ts` threads `runtime: Writable<Runtime>` through the dashboard state system. Replace with `client: RuntimeClient` in the `StateManagers` interface and all downstream consumers.
+
+### Migration order (by dependency, leaves first)
+
+1. **Chart providers** (6 files) — `web-common/src/features/components/charts/*/`
+2. **Canvas components** (~15 files) — `web-common/src/features/canvas/`
+3. **Connectors / column profile** (~10 files) — `web-common/src/features/connectors/`, `column-profile/`
+4. **Dashboard state managers** (~15 files) — `state-managers.ts`, selectors, time controls, pivot
+5. **Explore + dashboard data** (~15 files) — leaderboard, time-series, totals
+6. **Chat, alerts, reports** (~15 files)
+7. **File management / workspaces** (~15 files)
+8. **web-admin specific** (~15 files) — project status, dashboards listing
+9. **web-local specific** (~5 files)
+10. **Special cases** — `query-options.ts`, SSE clients, `StreamingQueryBatch`
+
+### SSE / streaming migration
+
+These consumers currently read JWT from the global `runtime` store. Migrate them to accept `RuntimeClient` (or its `getJwt()` method):
+- `sse-fetch-client.ts`: change `start()` to accept `getJwt: () => string | undefined` instead of reading `get(runtime).jwt`
+- `StreamingQueryBatch.ts`: accept `RuntimeClient` in constructor; use `client.instanceId`, `client.getJwt()`
+- `FileAndResourceWatcher.svelte`: pass `client.getJwt` as the JWT getter
+- `file-and-resource-watcher.ts`: accept `instanceId` as constructor parameter
+
+**Validation per batch:** `npm run check`, `npm run test -w web-common` after each batch. Full e2e after batches 4 and 8.
+
+---
+
+## Phase 5: Remove Bridge + Cleanup
+
+Once all consumers are migrated:
+
+### Delete
+- `web-common/src/runtime-client/runtime-store.ts`
+- `web-common/src/runtime-client/http-client.ts`
+- `web-common/src/runtime-client/fetchWrapper.ts`
+- `web-common/src/runtime-client/http-request-queue/` (entire directory)
+- `web-common/src/runtime-client/gen/` (Orval output)
+- `web-common/orval.config.ts`
+- `orval` dependency from `web-common/package.json`
+
+### Update
+- `v2/RuntimeProvider.svelte`: remove the `$: runtime.setRuntime(...)` bridge line
+- `web-local/src/hooks.client.ts`: remove `runtime.set()` call
+- `invalidation.ts` / `query-matcher.ts`: remove old URL-path matching branches
+- Move `v2/` contents to `web-common/src/runtime-client/` (or update barrel export)
+- Update all `runtime-client/v2` imports to `runtime-client`
+
+### Verify
+- `grep -r "runtime-store" web-common/ web-admin/ web-local/` → zero results
+- `grep -r "from.*runtime-client/gen/" web-common/ web-admin/ web-local/` → zero results
+- Full test suite passes
+- Manual smoke: explore dashboard, canvas dashboard, View As, file editing, chat
+
+---
+
+## Addressing Previous Feedback
+
+Responses to comments on the original design doc (PR #8590):
+
+**Brian's comment (ProjectProvider vs RuntimeProvider):** We use `RuntimeProvider` because the abstraction is the data plane connection, not the project. Multiple edit sessions create multiple runtimes for the same project. However, we adopt Brian's key ideas: the `RuntimeClient` class (encapsulating transport, JWT, and service clients), the dual return pattern (`create()` + `options`), and the ConnectRPC proto gen pipeline from his branch.
+
+**Aditya: "Is there a library for [the code generator] already?"** — No. `connect-query-es` only supports React. Brian also noted this gap ([connectrpc/connect-query-es#324](https://github.com/connectrpc/connect-query-es/issues/324)). We build a custom generator (~300-500 lines).
+
+**Aditya: "Load function fetching doesn't populate the TanStack cache"** — Correct. Our plan avoids load function data fetching entirely. All queries go through TanStack Query hooks (which manage the cache). If load functions need to pre-fetch, they can use `queryClient.prefetchQuery()` with the generated query options.
+
+**Aditya: "What does removing Orval give us if the backend REST endpoints still exist?"** — The backend doesn't change (gRPC-Gateway continues serving REST). The benefit is removing the global `httpClient` + `runtime` store on the frontend — the core architectural issue. ConnectRPC clients use the transport from Svelte context, enabling multi-runtime support.
+
+**Aditya: "Would the impersonation function sit above the RuntimeProvider?"** — Yes. The project layout (parent of RuntimeProvider) handles View As: it fetches mock credentials via `GetDeploymentCredentials` and passes them as props to RuntimeProvider. `GetDeploymentCredentials` returns the same production host/instanceId with a different JWT (confirmed in `admin/server/deployment.go:642-647`), so View As is handled entirely by `client.updateJwt()` — no re-mount needed.
+
+---
+
+## PR Strategy
+
+- **PR 1 (infrastructure):** Phases 1-3. RuntimeProvider, code generator, invalidation updates, bridge. Proves the pattern end-to-end without touching consumers.
+- **PR 2 (migration: charts + canvas):** Batches 1-3 — chart providers, canvas components, connectors, column profile. Leaf components, low coupling.
+- **PR 3 (migration: dashboard core):** Batches 4-5 — `state-managers.ts`, dashboard selectors, time controls, pivot, leaderboard, time-series, totals. The hardest batch (threading `RuntimeClient` through the state manager system).
+- **PR 4 (migration: features):** Batches 6-7 — chat, alerts, scheduled reports, file management, workspaces.
+- **PR 5 (migration: app shells + SSE):** Batches 8-10 — web-admin routes/features, web-local routes, SSE clients, `StreamingQueryBatch`.
+- **PR 6 (cleanup):** Phase 5. Remove bridge, delete Orval/global store, move `v2/` to primary path.
