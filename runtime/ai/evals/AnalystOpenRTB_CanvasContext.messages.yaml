@@ -1,100 +1,100 @@
-- id: 4bbd5fd1-f5dc-4bb8-b1a5-e00c9799619e
+- id: b8840753-1ccc-4b53-8dbd-321ff852a342
   parent_id: ""
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:42.762734Z
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:52.648479Z
   index: 0
   role: user
   type: call
   tool: analyst_agent
   content_type: json
   content: '{"prompt":"Tell me which advertiser_name has the highest overall_spend. Make the minimal number of tool calls necessary to answer.","canvas":"bids_canvas","canvas_component":"bids_canvas--component-2-0","where_per_metrics_view":{"bids_metrics":{"cond":{"op":"eq","exprs":[{"name":"auction_type"},{"val":"First Price"}]}}},"time_start":"2023-09-11T00:00:00Z","time_end":"2023-09-14T00:00:00Z","comparison_time_start":"0001-01-01T00:00:00Z","comparison_time_end":"0001-01-01T00:00:00Z","disable_charts":false,"is_report":false}'
-- id: 800eb9cd-3e93-4e73-88cb-093d2a3451bc
-  parent_id: 4bbd5fd1-f5dc-4bb8-b1a5-e00c9799619e
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:42.762755Z
+- id: e0f5d241-4b25-4fd3-aa11-c0cf17b9e2b4
+  parent_id: b8840753-1ccc-4b53-8dbd-321ff852a342
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:52.648513Z
   index: 1
   role: assistant
   type: call
   tool: get_canvas
   content_type: json
   content: '{"canvas":"bids_canvas"}'
-- id: 3b6eb905-99bf-4f27-8f42-2156558e6671
-  parent_id: 800eb9cd-3e93-4e73-88cb-093d2a3451bc
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:42.763231Z
+- id: 909bed4e-078f-4445-9ee2-ddb691ecbbcd
+  parent_id: e0f5d241-4b25-4fd3-aa11-c0cf17b9e2b4
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:52.649303Z
   index: 2
   role: assistant
   type: result
   tool: get_canvas
   content_type: json
   content: '{"spec":{"allowCustomTimeRange":true,"defaultPreset":{"comparisonMode":"EXPLORE_COMPARISON_MODE_TIME","timeRange":"PT24H"},"displayName":"Canvas Dashboard","filtersEnabled":true,"rows":[{"height":40,"heightUnit":"px","items":[{"component":"bids_canvas--component-0-0","definedInCanvas":true,"width":12}]},{"height":40,"heightUnit":"px","items":[{"component":"bids_canvas--component-1-0","definedInCanvas":true,"width":12}]},{"items":[{"component":"bids_canvas--component-2-0","definedInCanvas":true}]}]},"components":{"bids_canvas--component-0-0":{"definedInCanvas":true,"renderer":"line_chart","rendererProperties":{"color":"primary","metrics_view":"bids_metrics","x":{"field":"__time","limit":20,"sort":"-y","type":"temporal"},"y":{"field":"total_bids","type":"quantitative","zeroBasedOrigin":true}}},"bids_canvas--component-1-0":{"definedInCanvas":true,"renderer":"kpi_grid","rendererProperties":{"comparison":["delta","percent_change"],"measures":["overall_spend","total_bids","win_rate","ctr"],"metrics_view":"bids_metrics"}},"bids_canvas--component-2-0":{"definedInCanvas":true,"renderer":"leaderboard","rendererProperties":{"dimension_filters":"app_or_site IN (''App'')","dimensions":["adomain","advertiser_name"],"measures":["overall_spend"],"metrics_view":"bids_metrics","num_rows":7}}},"metrics_views":{"bids_metrics":{"connector":"duckdb","dimensions":[{"column":"__time","dataType":{"code":"CODE_TIMESTAMP","nullable":true},"displayName":"__time","name":"__time","smallestTimeGrain":"TIME_GRAIN_SECOND","type":"DIMENSION_TYPE_TIME"},{"column":"adomain","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Adomain","name":"adomain","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"advertiser_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Advertiser Name","name":"advertiser_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"app_or_site","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"App Or Site","name":"app_or_site","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"app_site_domain","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"App Site Domain","name":"app_site_domain","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"app_site_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"App Site Name","name":"app_site_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"auction_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Auction Type","name":"auction_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"bid_floor_bucket","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Bid Floor Bucket","name":"bid_floor_bucket","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"campaign_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Campaign Name","name":"campaign_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"creative_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Creative Type","name":"creative_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_os","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Os","name":"device_os","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_osv","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Osv","name":"device_osv","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_region","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Region","name":"device_region","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Type","name":"device_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"interstitial","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Interstitial","name":"interstitial","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"line_item_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Line Item Name","name":"line_item_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"placement_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Placement Type","name":"placement_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"platform_browser","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Platform Browser","name":"platform_browser","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"player_size","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Player Size","name":"player_size","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"privacy","dataType":{"code":"CODE_BOOL","nullable":true},"displayName":"Privacy","name":"privacy","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"pub_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Pub Name","name":"pub_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"sdk","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Sdk","name":"sdk","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"video_activity","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Video Activity","name":"video_activity","type":"DIMENSION_TYPE_CATEGORICAL"}],"displayName":"Bids Metrics","measures":[{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Total Spend","displayName":"Overall Spend","expression":"sum(media_spend_usd)/1000","formatPreset":"currency_usd","name":"overall_spend","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Bids","displayName":"Total Bids","expression":"sum(bid_cnt)","formatPreset":"humanize","name":"total_bids","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Impressions","displayName":"Impressions","expression":"sum(imp_cnt)","formatPreset":"humanize","name":"impressions","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Impressions / Bids","displayName":"Win Rate","expression":"sum(imp_cnt)*1.0/sum(bid_cnt)","formatPreset":"percentage","name":"win_rate","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Clicks","displayName":"Clicks","expression":"sum(click_reg_cnt)","formatPreset":"humanize","name":"clicks","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Click Through Rate","displayName":"Ctr","expression":"sum(click_reg_cnt)*1.0/nullif(sum(imp_cnt),0)","formatPreset":"percentage","name":"ctr","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Video Starts","displayName":"Video Starts","expression":"sum(video_start_cnt)","formatPreset":"humanize","name":"video_starts","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Video Completes","displayName":"Video Completes","expression":"sum(video_complete_cnt)","formatPreset":"humanize","name":"video_completes","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Video Completion Rate","displayName":"Video Completion Rate","expression":"sum(video_complete_cnt)*1.0/sum(video_start_cnt)","formatPreset":"percentage","name":"video_completion_rate","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Average Bid Price","displayName":"Avg Bid Price","expression":"sum(bid_price_usd)*1.0/sum(bid_cnt)/1000","formatPreset":"currency_usd","name":"avg_bid_price","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"eCPM","displayName":"Ecpm","expression":"sum(media_spend_usd)*1.0/1000/nullif(sum(imp_cnt),0)","formatPreset":"currency_usd","name":"ecpm","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Average Bid Floor","displayName":"Avg Bid Floor","expression":"sum(bid_floor)*1.0/sum(has_bid_floor_cnt)","formatPreset":"currency_usd","name":"avg_bid_floor","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"displayName":"Bids 7Day Rolling Avg","expression":"AVG(total_bids)","name":"bids_7day_rolling_avg","referencedMeasures":["total_bids"],"requiredDimensions":[{"name":"__time"}],"type":"MEASURE_TYPE_DERIVED","window":{"frameExpression":"RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW","orderBy":[{"name":"__time"}],"partition":true}}],"model":"bids_data","smallestTimeGrain":"TIME_GRAIN_HOUR","table":"bids_data","timeDimension":"__time"}}}'
-- id: 19f37462-8d08-4df9-b58d-fc8721f38c54
-  parent_id: 4bbd5fd1-f5dc-4bb8-b1a5-e00c9799619e
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:42.763239Z
+- id: c58f4ed4-f93a-453f-b5c7-63271eb46404
+  parent_id: b8840753-1ccc-4b53-8dbd-321ff852a342
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:52.649317Z
   index: 3
   role: assistant
   type: call
   tool: query_metrics_view_summary
   content_type: json
   content: '{"metrics_view":"bids_metrics"}'
-- id: 5d7fdb8a-9e8b-4b05-a410-b813441c0873
-  parent_id: 19f37462-8d08-4df9-b58d-fc8721f38c54
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:42.784575Z
+- id: fc52b616-954a-4ca4-b675-a00ad02e904e
+  parent_id: c58f4ed4-f93a-453f-b5c7-63271eb46404
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:52.649581Z
   index: 4
   role: assistant
   type: result
   tool: query_metrics_view_summary
   content_type: json
   content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2023-09-16T00:00:00Z","min_value":"2023-09-09T00:00:00Z","name":"__time"},{"data_type":"CODE_STRING","example_value":"clorox.com","max_value":"zyp.test","min_value":"1800petmeds.com","name":"adomain"},{"data_type":"CODE_STRING","example_value":"Clorox","max_value":"vertex","min_value":"6sense","name":"advertiser_name"},{"data_type":"CODE_STRING","example_value":"App","max_value":"Site","min_value":"App","name":"app_or_site"},{"data_type":"CODE_STRING","example_value":"Not Available","max_value":"zoosk.com","min_value":"1point3acres.com","name":"app_site_domain"},{"data_type":"CODE_STRING","example_value":"BBC.com | News PBS","max_value":"라인웹툰기본","min_value":"$''more","name":"app_site_name"},{"data_type":"CODE_STRING","example_value":"First Price","max_value":"Second Price","min_value":"First Price","name":"auction_type"},{"data_type":"CODE_STRING","example_value":"0.00-0.05","max_value":"9.50-10.00","min_value":"0.00-0.05","name":"bid_floor_bucket"},{"data_type":"CODE_STRING","example_value":"Clorox_BoostBlast","max_value":"vertex_PrimeProfit","min_value":"#N/A","name":"campaign_name"},{"data_type":"CODE_STRING","example_value":"BANNER","max_value":"VIDEO","min_value":"BANNER","name":"creative_type"},{"data_type":"CODE_STRING","example_value":"Android","max_value":"webOS","min_value":"Android","name":"device_os"},{"data_type":"CODE_STRING","example_value":"8.1","max_value":"XP","min_value":"10","name":"device_osv"},{"data_type":"CODE_STRING","example_value":"CAN/MB","max_value":"wy","min_value":"000/00","name":"device_region"},{"data_type":"CODE_STRING","example_value":"Mobile/Tablet","max_value":"Tablet","min_value":"Connected Device","name":"device_type"},{"data_type":"CODE_STRING","example_value":"Not Interstitial","max_value":"Not Interstitial","min_value":"Interstitial/Full Screen","name":"interstitial"},{"data_type":"CODE_STRING","example_value":"Clorox_BoostBlast_15621","max_value":"vertex_PrimeProfit_33969","min_value":"#N/A","name":"line_item_name"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2023-09-16T00:00:00Z","min_value":"2023-09-09T00:00:00Z","name":"__time"}}}'
-- id: 46838b2e-91f3-49dd-865e-0a3c56799ba2
-  parent_id: 4bbd5fd1-f5dc-4bb8-b1a5-e00c9799619e
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:42.784581Z
+- id: c6a92329-79d9-4bb9-b28a-2adef2615701
+  parent_id: b8840753-1ccc-4b53-8dbd-321ff852a342
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:52.649585Z
   index: 5
   role: assistant
   type: call
   tool: get_metrics_view
   content_type: json
   content: '{"metrics_view":"bids_metrics"}'
-- id: bd97e955-4308-4569-8d48-9cd058e449f7
-  parent_id: 46838b2e-91f3-49dd-865e-0a3c56799ba2
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:42.784886Z
+- id: 8e4b48cf-d7b9-484b-afd7-e33f17406dc1
+  parent_id: c6a92329-79d9-4bb9-b28a-2adef2615701
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:52.650002Z
   index: 6
   role: assistant
   type: result
   tool: get_metrics_view
   content_type: json
   content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"__time","dataType":{"code":"CODE_TIMESTAMP","nullable":true},"displayName":"__time","name":"__time","smallestTimeGrain":"TIME_GRAIN_SECOND","type":"DIMENSION_TYPE_TIME"},{"column":"adomain","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Adomain","name":"adomain","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"advertiser_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Advertiser Name","name":"advertiser_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"app_or_site","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"App Or Site","name":"app_or_site","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"app_site_domain","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"App Site Domain","name":"app_site_domain","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"app_site_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"App Site Name","name":"app_site_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"auction_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Auction Type","name":"auction_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"bid_floor_bucket","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Bid Floor Bucket","name":"bid_floor_bucket","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"campaign_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Campaign Name","name":"campaign_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"creative_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Creative Type","name":"creative_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_os","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Os","name":"device_os","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_osv","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Osv","name":"device_osv","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_region","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Region","name":"device_region","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"device_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Device Type","name":"device_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"interstitial","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Interstitial","name":"interstitial","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"line_item_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Line Item Name","name":"line_item_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"placement_type","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Placement Type","name":"placement_type","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"platform_browser","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Platform Browser","name":"platform_browser","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"player_size","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Player Size","name":"player_size","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"privacy","dataType":{"code":"CODE_BOOL","nullable":true},"displayName":"Privacy","name":"privacy","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"pub_name","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Pub Name","name":"pub_name","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"sdk","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Sdk","name":"sdk","type":"DIMENSION_TYPE_CATEGORICAL"},{"column":"video_activity","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Video Activity","name":"video_activity","type":"DIMENSION_TYPE_CATEGORICAL"}],"displayName":"Bids Metrics","measures":[{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Total Spend","displayName":"Overall Spend","expression":"sum(media_spend_usd)/1000","formatPreset":"currency_usd","name":"overall_spend","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Bids","displayName":"Total Bids","expression":"sum(bid_cnt)","formatPreset":"humanize","name":"total_bids","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Impressions","displayName":"Impressions","expression":"sum(imp_cnt)","formatPreset":"humanize","name":"impressions","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Impressions / Bids","displayName":"Win Rate","expression":"sum(imp_cnt)*1.0/sum(bid_cnt)","formatPreset":"percentage","name":"win_rate","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Clicks","displayName":"Clicks","expression":"sum(click_reg_cnt)","formatPreset":"humanize","name":"clicks","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Click Through Rate","displayName":"Ctr","expression":"sum(click_reg_cnt)*1.0/nullif(sum(imp_cnt),0)","formatPreset":"percentage","name":"ctr","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Video Starts","displayName":"Video Starts","expression":"sum(video_start_cnt)","formatPreset":"humanize","name":"video_starts","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"description":"Total Video Completes","displayName":"Video Completes","expression":"sum(video_complete_cnt)","formatPreset":"humanize","name":"video_completes","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Video Completion Rate","displayName":"Video Completion Rate","expression":"sum(video_complete_cnt)*1.0/sum(video_start_cnt)","formatPreset":"percentage","name":"video_completion_rate","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Average Bid Price","displayName":"Avg Bid Price","expression":"sum(bid_price_usd)*1.0/sum(bid_cnt)/1000","formatPreset":"currency_usd","name":"avg_bid_price","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"eCPM","displayName":"Ecpm","expression":"sum(media_spend_usd)*1.0/1000/nullif(sum(imp_cnt),0)","formatPreset":"currency_usd","name":"ecpm","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"description":"Average Bid Floor","displayName":"Avg Bid Floor","expression":"sum(bid_floor)*1.0/sum(has_bid_floor_cnt)","formatPreset":"currency_usd","name":"avg_bid_floor","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_FLOAT64","nullable":true},"displayName":"Bids 7Day Rolling Avg","expression":"AVG(total_bids)","name":"bids_7day_rolling_avg","referencedMeasures":["total_bids"],"requiredDimensions":[{"name":"__time"}],"type":"MEASURE_TYPE_DERIVED","window":{"frameExpression":"RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW","orderBy":[{"name":"__time"}],"partition":true}}],"model":"bids_data","smallestTimeGrain":"TIME_GRAIN_HOUR","table":"bids_data","timeDimension":"__time"}}'
-- id: ffe5cf36-8431-4fee-995f-0e2aacd455b0
-  parent_id: 4bbd5fd1-f5dc-4bb8-b1a5-e00c9799619e
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:45.41236Z
+- id: 8ad35868-0ee0-44a4-bf73-94c883ecf0a9
+  parent_id: b8840753-1ccc-4b53-8dbd-321ff852a342
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:55.136115Z
   index: 7
   role: assistant
   type: call
   tool: query_metrics_view
   content_type: json
   content: '{"dimensions":[{"name":"advertiser_name"}],"limit":1,"measures":[{"name":"overall_spend"}],"metrics_view":"bids_metrics","sort":[{"desc":true,"name":"overall_spend"}],"time_range":{"end":"2023-09-14T00:00:00Z","start":"2023-09-11T00:00:00Z"},"where":{"cond":{"exprs":[{"cond":{"exprs":[{"name":"auction_type"},{"val":"First Price"}],"op":"eq"}},{"cond":{"exprs":[{"name":"app_or_site"},{"val":"App"}],"op":"eq"}}],"op":"and"}}}'
-- id: 676d8707-d198-49eb-8857-720b0798135b
-  parent_id: ffe5cf36-8431-4fee-995f-0e2aacd455b0
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:45.432858Z
+- id: 21ff837f-cbae-478a-bae3-a0e5fd525c52
+  parent_id: 8ad35868-0ee0-44a4-bf73-94c883ecf0a9
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:55.152675Z
   index: 8
   role: assistant
   type: result
   tool: query_metrics_view
   content_type: json
   content: '{"schema":[{"name":"advertiser_name","type":"STRING"},{"name":"overall_spend","type":"FLOAT64"}],"data":[["ESPACIO URBANO",15832.241]]}'
-- id: bef1802e-c5bf-4bbb-a17d-ec7a0de722fa
-  parent_id: 4bbd5fd1-f5dc-4bb8-b1a5-e00c9799619e
-  session_id: 53234840-67d3-4473-9cb6-0e2a2bd89981
-  time: 2026-02-23T13:22:47.269247Z
+- id: d9d44069-bd67-4a9b-b7b4-aa667dd664d9
+  parent_id: b8840753-1ccc-4b53-8dbd-321ff852a342
+  session_id: 40e65664-9154-400f-8e64-16c9b5e9702d
+  time: 2026-02-23T13:27:56.709734Z
   index: 9
   role: user
   type: result
   tool: analyst_agent
   content_type: json
-  content: '{"response":"**ESPACIO URBANO** has the highest **overall_spend** in the current dashboard filters/time range, with **$15,832.241** in spend ([Top advertiser by overall spend](undefined))."}'
+  content: '{"response":"**ESPACIO URBANO** has the highest **overall_spend** at **$15,832.241** in the current dashboard filters/time range ([Top advertiser by overall spend](undefined))."}'
