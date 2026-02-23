@@ -5,6 +5,7 @@ import {
   type CartesianChartSpec as CartesianChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
 import {
+  ChartSortType,
   type ChartDataQuery,
   type ChartFieldsMap,
   type FieldConfig,
@@ -27,7 +28,7 @@ export type CartesianCanvasChartSpec = BaseChartConfig & CartesianChartSpecBase;
 
 const DEFAULT_NOMINAL_LIMIT = 20;
 const DEFAULT_SPLIT_LIMIT = 10;
-const DEFAULT_SORT = "-y";
+const DEFAULT_SORT = ChartSortType.Y_DESC;
 
 export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec> {
   private provider: CartesianChartProvider;
@@ -43,7 +44,15 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["x", "-x", "y", "-y", "custom"],
+            options: [
+              ChartSortType.X_ASC,
+              ChartSortType.X_DESC,
+              ChartSortType.Y_ASC,
+              ChartSortType.Y_DESC,
+              ChartSortType.Y_DELTA_ASC,
+              ChartSortType.Y_DELTA_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           nullSelector: true,

@@ -167,13 +167,18 @@ const config = {
                 label: "Project Files",
               },
               {
-                to: "/reference/cli",
-                label: "CLI",
-              },
-              {
                 to: "/reference/time-syntax/rill-iso-extensions",
                 label: "Rill ISO 8601",
               },
+              {
+                to: "/reference/url-syntax/url-parameters",
+                label: "URL Parameters",
+              },
+              {
+                to: "/reference/cli",
+                label: "CLI",
+              },
+
               {
                 to: "/api/admin/",
                 label: "REST API",
@@ -300,7 +305,7 @@ const config = {
           },
           {
             from: '/integration/embedding',
-            to: '/developers/integrate/embedding',
+            to: '/developers/embed/dashboards',
           },
           {
             from: '/develop/import-data',
@@ -1248,31 +1253,63 @@ const config = {
             to: '/developers/tutorials/rill-clickhouse/r_ch_ingest',
           },
           // ============================================
-          // /integrate/* → /developers/integrate/*
+          // /integrate/* → /developers/embed/* (renamed)
           // ============================================
           {
             from: '/integrate',
-            to: '/developers/integrate',
+            to: '/developers/embed',
           },
           {
             from: '/integrate/index',
-            to: '/developers/integrate',
+            to: '/developers/embed',
+          },
+          {
+            from: '/developers/integrate',
+            to: '/developers/embed',
           },
           {
             from: '/integrate/custom-api',
-            to: '/developers/integrate/custom-api',
+            to: '/developers/build/custom-apis/calling',
+          },
+          {
+            from: '/developers/integrate/custom-api',
+            to: '/developers/build/custom-apis/calling',
           },
           {
             from: '/integrate/embed-api',
-            to: '/developers/integrate/embed-iframe-api',
+            to: '/developers/embed/iframe-api',
+          },
+          {
+            from: '/developers/integrate/embed-iframe-api',
+            to: '/developers/embed/iframe-api',
+          },
+          {
+            from: '/developers/embed/embed-iframe-api',
+            to: '/developers/embed/iframe-api',
           },
           {
             from: '/integrate/embedding',
-            to: '/developers/integrate/embedding',
+            to: '/developers/embed/dashboards',
+          },
+          {
+            from: '/developers/integrate/embedding',
+            to: '/developers/embed/dashboards',
+          },
+          {
+            from: '/developers/embed/embedding',
+            to: '/developers/embed/dashboards',
           },
           {
             from: '/integrate/url-parameters',
-            to: '/developers/integrate/url-parameters',
+            to: '/reference/url-syntax/url-parameters',
+          },
+          {
+            from: '/developers/integrate/url-parameters',
+            to: '/reference/url-syntax/url-parameters',
+          },
+          {
+            from: '/developers/embed/url-parameters',
+            to: '/reference/url-syntax/url-parameters',
           },
           {
             from: '/integrate/custom-apis',

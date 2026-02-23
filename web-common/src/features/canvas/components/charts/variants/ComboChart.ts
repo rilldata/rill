@@ -4,9 +4,10 @@ import {
   ComboChartProvider,
   type ComboChartSpec as ComboChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/combo/ComboChartProvider";
-import type {
-  ChartFieldsMap,
-  FieldConfig,
+import {
+  ChartSortType,
+  type ChartFieldsMap,
+  type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
@@ -25,7 +26,7 @@ import { BaseChart, type BaseChartConfig } from "../BaseChart";
 export type ComboCanvasChartSpec = BaseChartConfig & ComboChartSpecBase;
 
 const DEFAULT_NOMINAL_LIMIT = 20;
-const DEFAULT_SORT = "-y";
+const DEFAULT_SORT = ChartSortType.Y_DESC;
 
 export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
   private provider: ComboChartProvider;
@@ -41,7 +42,13 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
           sortSelector: {
             enable: true,
             defaultSort: DEFAULT_SORT,
-            options: ["x", "-x", "y", "-y", "custom"],
+            options: [
+              ChartSortType.X_ASC,
+              ChartSortType.X_DESC,
+              ChartSortType.Y_ASC,
+              ChartSortType.Y_DESC,
+              ChartSortType.CUSTOM,
+            ],
           },
           limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
           nullSelector: true,

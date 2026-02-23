@@ -18,8 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/azurite"
-	"github.com/testcontainers/testcontainers-go/modules/mssql"
+	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -262,6 +261,8 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			ctx,
 			"mcr.microsoft.com/azure-storage/azurite:3.34.0",
 			azurite.WithInMemoryPersistence(64),
+			azurite.WithEnabledServices(azurite.BlobService),
+			testcontainers.WithCmdArgs("--skipApiVersionCheck"),
 		)
 		t.Cleanup(func() {
 			err := testcontainers.TerminateContainer(azuriteContainer)
@@ -269,7 +270,9 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		})
 		require.NoError(t, err)
 
-		blobServiceURL := fmt.Sprintf("%s/%s", azuriteContainer.MustServiceURL(ctx, azurite.BlobService), azurite.AccountName)
+		blobServiceURLBase, err := azuriteContainer.BlobServiceURL(ctx)
+		require.NoError(t, err)
+		blobServiceURL := fmt.Sprintf("%s/%s", blobServiceURLBase, azurite.AccountName)
 
 		cred, err := azblob.NewSharedKeyCredential(azurite.AccountName, azurite.AccountKey)
 		require.NoError(t, err)
