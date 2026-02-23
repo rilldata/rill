@@ -203,8 +203,20 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     linkLabel="Learn more"
     referenceLink="azure"
   />
+</div>
 
+## Table Formats
+### Delta Lake
 
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Delta.svg" alt="Delta Lake" />}
+    header="Delta Lake"
+    content="Read Delta tables directly from object storage through compatible query engines."
+    link="/developers/build/connectors/data-source/delta"
+    linkLabel="Learn more"
+    referenceLink="delta"
+  />
 </div>
 
 ## Other Data Connectors
