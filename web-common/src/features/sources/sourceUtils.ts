@@ -11,7 +11,6 @@ import {
   getSchemaSecretKeys,
   getSchemaStringKeys,
 } from "../templates/schema-utils";
-import { deepEqual } from "vega-lite";
 
 // Helper text that we put at the top of every Model YAML file
 function sourceModelFileTop(driverName: string) {
