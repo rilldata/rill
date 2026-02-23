@@ -9,6 +9,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/storage"
@@ -74,20 +75,26 @@ type ModelInputProperties struct {
 }
 
 func (p *ModelInputProperties) Decode(props map[string]any) error {
-	err := mapstructure.WeakDecode(props, p)
+	_, err := p.DecodeWithWarnings(props)
+	return err
+}
+
+// DecodeWithWarnings is like Decode but also returns any unused keys from the input.
+func (p *ModelInputProperties) DecodeWithWarnings(props map[string]any) ([]string, error) {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(props, p)
 	if err != nil {
-		return fmt.Errorf("failed to parse input properties: %w", err)
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if p.Path == "" && p.URI == "" {
-		return fmt.Errorf("missing property `path`")
+		return nil, fmt.Errorf("missing property `path`")
 	}
 	if p.Path != "" && p.URI != "" {
-		return fmt.Errorf("cannot specify both `path` and `uri`")
+		return nil, fmt.Errorf("cannot specify both `path` and `uri`")
 	}
 	if p.URI != "" { // Backwards compatibility
 		p.Path = p.URI
 	}
-	return nil
+	return unused, nil
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {

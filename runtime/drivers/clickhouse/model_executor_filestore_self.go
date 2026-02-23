@@ -13,6 +13,9 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 type fileStoreInputProps struct {
@@ -49,11 +52,12 @@ func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 
 	// Parse the input and output properties
 	inputProps := &fileStoreInputProps{}
-	if err := mapstructure.WeakDecode(opts.InputHandle.Config(), inputProps); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputHandle.Config(), inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 
 	inputPropsMap := map[string]any{}
@@ -62,8 +66,12 @@ func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}
 
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+	unused, err = mapstructureutil.WeakDecodeWithWarnings(opts.OutputProperties, outputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in output properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 
 	// Require materialization for fileStore
@@ -73,7 +81,7 @@ func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	outputProps.Materialize = boolptr(true)
 
 	// Validate the output properties
-	err := e.c.validateAndApplyDefaults(opts, nil, outputProps)
+	err = e.c.validateAndApplyDefaults(opts, nil, outputProps)
 	if err != nil {
 		return nil, fmt.Errorf("invalid model properties: %w", err)
 	}

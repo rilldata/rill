@@ -9,6 +9,9 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/exportutil"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 type selfToObjectStoreExecutor struct {
@@ -31,16 +34,24 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.M
 	}
 
 	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
 	outputProps := &drivers.ObjectStoreModelOutputProperties{}
-	if err := mapstructure.Decode(opts.OutputProperties, outputProps); err != nil {
+	unused, err = mapstructureutil.DecodeWithWarnings(opts.OutputProperties, outputProps)
+	if err != nil {
 		return nil, err
+	}
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in output properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 
 	if outputProps.Format != "" && outputProps.Format != drivers.FileFormatParquet {

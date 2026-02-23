@@ -515,7 +515,7 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	p, err := parser.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector)
+	p, err := parser.Parse(ctx, repo, instanceID, a.Instance.Environment, a.Instance.OLAPConnector, zap.NewNop())
 	if err != nil {
 		return err
 	}

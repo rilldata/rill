@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -208,6 +209,33 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		if tmp.PartitionsWatermark == "" {
 			if partitionsResolver == "glob" {
 				tmp.PartitionsWatermark = "updated_on"
+			}
+		}
+
+		// make a minimal struct to only parse partitions properties for validation
+		// it should not contain any extra fields
+		minimal := struct {
+			Partitions *DataYAML `yaml:"partitions"`
+		}{}
+		// extract partitions field from the original YAML to validate it
+		tmp := make(map[string]any)
+		if node.YAML == nil {
+			node.YAML = &yaml.Node{}
+		}
+		err := node.YAML.Decode(tmp)
+		if err != nil {
+			return err
+		}
+		if partitionsData, ok := tmp["partitions"]; ok {
+			partitionsBytes, err := yaml.Marshal(map[string]any{"partitions": partitionsData})
+			if err != nil {
+				return fmt.Errorf(`failed to marshal "partitions" for validation: %w`, err)
+			}
+			dec := yaml.NewDecoder(strings.NewReader(string(partitionsBytes)))
+			dec.KnownFields(true)
+			if err := dec.Decode(&minimal); err != nil {
+				name := node.Name
+				p.Logger.Warn("Undefined fields in partitions. Will be ignored", zap.String("model", name))
 			}
 		}
 	}

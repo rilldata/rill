@@ -12,6 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
@@ -49,13 +50,15 @@ type aiArgs struct {
 func newAI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	// Parse props
 	props := &aiProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
+	unused, err := mapstructureutil.DecodeWithWarnings(opts.Properties, props)
+	if err != nil {
 		return nil, err
 	}
+	logUnusedProperties(ctx, opts, "ai", unused)
 
 	// Parse args
 	args := &aiArgs{}
-	if err := mapstructure.Decode(opts.Args, args); err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
 		return nil, err
 	}
 

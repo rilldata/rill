@@ -155,7 +155,12 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// Parse the project
 	// NOTE: Explicitly passing inst.OLAPConnector instead of inst.ResolveOLAPConnector() since the parser expects the base name to use if not overridden in rill.yaml.
-	parser, err := parserpkg.Parse(ctx, repo, r.C.InstanceID, inst.Environment, inst.OLAPConnector)
+	logger, err := r.C.Runtime.InstanceLogger(ctx, r.C.InstanceID)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to get instance logger: %w", err)}
+	}
+
+	parser, err := parserpkg.Parse(ctx, repo, r.C.InstanceID, inst.Environment, inst.OLAPConnector, logger)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
 	}

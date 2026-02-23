@@ -36,9 +36,11 @@ type metricsSummaryProps struct {
 
 func newMetricsSummaryResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	tr := &metricsSummaryProps{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, tr); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.Properties, tr)
+	if err != nil {
 		return nil, err
 	}
+	logUnusedProperties(ctx, opts, "metrics_summary", unused)
 
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {

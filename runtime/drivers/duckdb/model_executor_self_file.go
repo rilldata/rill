@@ -11,6 +11,9 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/file"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 type selfToFileExecutor struct {
@@ -33,16 +36,24 @@ func (e *selfToFileExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}
 
 	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in input properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
 	outputProps := &file.ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+	unused, err = mapstructureutil.WeakDecodeWithWarnings(opts.OutputProperties, outputProps)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+	if len(unused) > 0 {
+		e.c.logger.Warn("Undefined fields in output properties. Will be ignored", zap.String("model", opts.ModelName), zap.Strings("fields", unused), observability.ZapCtx(ctx))
 	}
 	if err := outputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)

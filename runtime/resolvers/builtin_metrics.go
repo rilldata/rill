@@ -35,11 +35,12 @@ func newBuiltinMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runt
 
 	// Rewrite to the metrics resolver
 	return newMetrics(ctx, &runtime.ResolverOptions{
-		Runtime:    opts.Runtime,
-		InstanceID: opts.InstanceID,
-		Properties: props,
-		Args:       args,
-		Claims:     opts.Claims,
-		ForExport:  opts.ForExport,
+		Runtime:                opts.Runtime,
+		InstanceID:             opts.InstanceID,
+		Properties:             props,
+		Args:                   args,
+		Claims:                 opts.Claims,
+		ForExport:              opts.ForExport,
+		SkipPropertyValidation: true, // All API args are passed as properties; many won't match struct fields
 	})
 }

@@ -1,6 +1,8 @@
 package mapstructureutil
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -21,4 +23,63 @@ func WeakDecode(input, output any) error {
 	}
 
 	return decoder.Decode(input)
+}
+
+// WeakDecodeWithWarnings is like WeakDecode but also returns any unused keys from the input.
+func WeakDecodeWithWarnings(input, output any) ([]string, error) {
+	md := &mapstructure.Metadata{}
+	config := &mapstructure.DecoderConfig{
+		DecodeHook:       mapstructure.StringToTimeHookFunc(time.RFC3339Nano),
+		Metadata:         md,
+		Result:           output,
+		WeaklyTypedInput: true,
+	}
+
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return nil, err
+	}
+
+	err = decoder.Decode(input)
+	if err != nil {
+		return nil, err
+	}
+
+	return md.Unused, nil
+}
+
+// DecodeWithWarnings is like mapstructure.Decode but also returns any unused keys from the input.
+func DecodeWithWarnings(input, output any) ([]string, error) {
+	md := &mapstructure.Metadata{}
+	config := &mapstructure.DecoderConfig{
+		Metadata: md,
+		Result:   output,
+	}
+
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return nil, err
+	}
+
+	err = decoder.Decode(input)
+	if err != nil {
+		return nil, err
+	}
+
+	return md.Unused, nil
+}
+
+// FormatPropertyWarnings formats unused keys into warning messages.
+func FormatPropertyWarnings(context string, unused []string) []string {
+	if len(unused) == 0 {
+		return nil
+	}
+	var sb strings.Builder
+	for i, key := range unused {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		fmt.Fprintf(&sb, "%q", key)
+	}
+	return []string{fmt.Sprintf("%s: unsupported properties: %s", context, sb.String())}
 }
