@@ -111,6 +111,20 @@ func TestDatabaseTypeToPB(t *testing.T) {
 		{"XMLTYPE", runtimev1.Type_CODE_STRING},
 		{"INTERVAL YEAR TO MONTH", runtimev1.Type_CODE_STRING},
 		{"INTERVAL DAY TO SECOND", runtimev1.Type_CODE_STRING},
+		// go-ora driver type names (differ from standard Oracle names)
+		{"IBFloat", runtimev1.Type_CODE_FLOAT32},
+		{"IBDouble", runtimev1.Type_CODE_FLOAT64},
+		{"BFloat", runtimev1.Type_CODE_FLOAT32},
+		{"BDouble", runtimev1.Type_CODE_FLOAT64},
+		{"LongRaw", runtimev1.Type_CODE_BYTES},
+		{"LongVarChar", runtimev1.Type_CODE_STRING},
+		{"OCIClobLocator", runtimev1.Type_CODE_STRING},
+		{"OCIBlobLocator", runtimev1.Type_CODE_BYTES},
+		{"TimeStampDTY", runtimev1.Type_CODE_TIMESTAMP},
+		{"TimeStampTZ_DTY", runtimev1.Type_CODE_TIMESTAMP},
+		{"TimeStampeLTZ", runtimev1.Type_CODE_TIMESTAMP},
+		{"IntervalYM", runtimev1.Type_CODE_STRING},
+		{"IntervalDS", runtimev1.Type_CODE_STRING},
 		{"UNKNOWN_TYPE", runtimev1.Type_CODE_UNSPECIFIED},
 	}
 

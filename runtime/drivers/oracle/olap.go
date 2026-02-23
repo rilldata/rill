@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -191,32 +190,38 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
+// databaseTypeToPB maps Oracle/go-ora type names to protobuf type codes.
+// The go-ora driver returns its own type names (e.g., "IBFloat", "TimeStampDTY", "LongRaw")
+// rather than standard Oracle type names, so we match both.
 func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: nullable}
-	switch strings.ToUpper(dbt) {
+	switch dbt {
 	case "NUMBER":
 		// Oracle NUMBER is versatile; map to float64 for general use
 		t.Code = runtimev1.Type_CODE_FLOAT64
-	case "FLOAT", "BINARY_FLOAT":
+	case "FLOAT", "BINARY_FLOAT", "BFloat", "IBFloat":
 		t.Code = runtimev1.Type_CODE_FLOAT32
-	case "BINARY_DOUBLE":
+	case "BINARY_DOUBLE", "BDouble", "IBDouble":
 		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "INTEGER", "INT", "SMALLINT":
 		t.Code = runtimev1.Type_CODE_INT64
-	case "VARCHAR2", "NVARCHAR2", "CHAR", "NCHAR", "LONG", "ROWID", "UROWID":
+	case "VARCHAR2", "NVARCHAR2", "CHAR", "NCHAR", "LONG", "ROWID", "UROWID",
+		"VARCHAR", "LongVarChar", "CHARZ":
 		t.Code = runtimev1.Type_CODE_STRING
-	case "CLOB", "NCLOB":
+	case "CLOB", "NCLOB", "OCIClobLocator":
 		t.Code = runtimev1.Type_CODE_STRING
-	case "BLOB", "RAW", "LONG RAW":
+	case "BLOB", "RAW", "LONG RAW", "OCIBlobLocator", "LongRaw", "LongVarRaw", "VarRaw":
 		t.Code = runtimev1.Type_CODE_BYTES
 	case "DATE":
 		// Oracle DATE includes time components
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	case "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITH LOCAL TIME ZONE":
+	case "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITH LOCAL TIME ZONE",
+		"TimeStampDTY", "TimeStampTZ_DTY", "TimeStampLTZ_DTY", "TimeStampTZ", "TimeStampeLTZ":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	case "INTERVAL YEAR TO MONTH", "INTERVAL DAY TO SECOND":
+	case "INTERVAL YEAR TO MONTH", "INTERVAL DAY TO SECOND",
+		"IntervalYM", "IntervalDS", "IntervalYM_DTY", "IntervalDS_DTY":
 		t.Code = runtimev1.Type_CODE_STRING
-	case "XMLTYPE":
+	case "XMLTYPE", "XMLType", "OCIXMLType":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "JSON":
 		t.Code = runtimev1.Type_CODE_JSON

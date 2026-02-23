@@ -207,17 +207,19 @@ func oracleTypeToArrow(dbType string) arrow.DataType {
 	switch dbType {
 	case "NUMBER":
 		return arrow.PrimitiveTypes.Float64
-	case "FLOAT", "BINARY_FLOAT":
+	case "FLOAT", "BINARY_FLOAT", "BFloat", "IBFloat":
 		return arrow.PrimitiveTypes.Float32
-	case "BINARY_DOUBLE":
+	case "BINARY_DOUBLE", "BDouble", "IBDouble":
 		return arrow.PrimitiveTypes.Float64
 	case "INTEGER", "INT", "SMALLINT":
 		return arrow.PrimitiveTypes.Int64
-	case "VARCHAR2", "NVARCHAR2", "CHAR", "NCHAR", "LONG", "CLOB", "NCLOB", "ROWID", "UROWID", "XMLTYPE":
+	case "VARCHAR2", "NVARCHAR2", "CHAR", "NCHAR", "LONG", "CLOB", "NCLOB", "ROWID", "UROWID", "XMLTYPE",
+		"VARCHAR", "OCIClobLocator", "LongVarChar":
 		return arrow.BinaryTypes.String
-	case "BLOB", "RAW", "LONG RAW":
+	case "BLOB", "RAW", "LONG RAW", "OCIBlobLocator", "LongRaw", "LongVarRaw", "VarRaw":
 		return arrow.BinaryTypes.Binary
-	case "DATE", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITH LOCAL TIME ZONE":
+	case "DATE", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITH LOCAL TIME ZONE",
+		"TimeStampDTY", "TimeStampTZ_DTY", "TimeStampLTZ_DTY", "TimeStampTZ", "TimeStampeLTZ":
 		return arrow.FixedWidthTypes.Timestamp_us
 	case "BOOLEAN", "BOOL":
 		return arrow.FixedWidthTypes.Boolean
@@ -231,15 +233,17 @@ func makeWarehouseScanDest(colTypes []*sql.ColumnType) []any {
 	dest := make([]any, len(colTypes))
 	for i, ct := range colTypes {
 		switch ct.DatabaseTypeName() {
-		case "NUMBER", "FLOAT", "BINARY_FLOAT", "BINARY_DOUBLE":
+		case "NUMBER", "FLOAT", "BINARY_FLOAT", "BINARY_DOUBLE",
+			"BFloat", "IBFloat", "BDouble", "IBDouble":
 			dest[i] = &sql.NullFloat64{}
 		case "INTEGER", "INT", "SMALLINT":
 			dest[i] = &sql.NullInt64{}
 		case "BOOLEAN", "BOOL":
 			dest[i] = &sql.NullBool{}
-		case "DATE", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITH LOCAL TIME ZONE":
+		case "DATE", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITH LOCAL TIME ZONE",
+			"TimeStampDTY", "TimeStampTZ_DTY", "TimeStampLTZ_DTY", "TimeStampTZ", "TimeStampeLTZ":
 			dest[i] = &sql.NullTime{}
-		case "BLOB", "RAW", "LONG RAW":
+		case "BLOB", "RAW", "LONG RAW", "OCIBlobLocator", "LongRaw", "LongVarRaw", "VarRaw":
 			dest[i] = new(any)
 		default:
 			dest[i] = &sql.NullString{}
@@ -285,11 +289,19 @@ func readBatch(ctx context.Context, rows *sql.Rows, colTypes []*sql.ColumnType, 
 // appendValue appends a scanned value to the appropriate Arrow array builder.
 func appendValue(fb array.Builder, dbType string, val any) {
 	switch dbType {
-	case "NUMBER", "FLOAT", "BINARY_FLOAT", "BINARY_DOUBLE":
+	case "NUMBER", "BINARY_DOUBLE", "BDouble", "IBDouble":
 		b := fb.(*array.Float64Builder)
 		v := val.(*sql.NullFloat64)
 		if v.Valid {
 			b.Append(v.Float64)
+		} else {
+			b.AppendNull()
+		}
+	case "FLOAT", "BINARY_FLOAT", "BFloat", "IBFloat":
+		b := fb.(*array.Float32Builder)
+		v := val.(*sql.NullFloat64)
+		if v.Valid {
+			b.Append(float32(v.Float64))
 		} else {
 			b.AppendNull()
 		}
@@ -309,7 +321,8 @@ func appendValue(fb array.Builder, dbType string, val any) {
 		} else {
 			b.AppendNull()
 		}
-	case "DATE", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITH LOCAL TIME ZONE":
+	case "DATE", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITH LOCAL TIME ZONE",
+		"TimeStampDTY", "TimeStampTZ_DTY", "TimeStampLTZ_DTY", "TimeStampTZ", "TimeStampeLTZ":
 		b := fb.(*array.TimestampBuilder)
 		v := val.(*sql.NullTime)
 		if v.Valid {
@@ -317,7 +330,7 @@ func appendValue(fb array.Builder, dbType string, val any) {
 		} else {
 			b.AppendNull()
 		}
-	case "BLOB", "RAW", "LONG RAW":
+	case "BLOB", "RAW", "LONG RAW", "OCIBlobLocator", "LongRaw", "LongVarRaw", "VarRaw":
 		b := fb.(*array.BinaryBuilder)
 		v := val.(*any)
 		if *v != nil {

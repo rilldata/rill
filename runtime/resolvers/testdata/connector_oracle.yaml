@@ -15,12 +15,12 @@ tests:
       sql: "describe all_datatypes_duckdb"
     result_csv: |
       column_name,column_type,null,key,default,extra
-      ID,BIGINT,YES,,,
+      ID,DOUBLE,YES,,,
       NUMBER_COL,DOUBLE,YES,,,
       BINARY_FLOAT_COL,FLOAT,YES,,,
       BINARY_DOUBLE_COL,DOUBLE,YES,,,
-      INTEGER_COL,BIGINT,YES,,,
-      SMALLINT_COL,BIGINT,YES,,,
+      INTEGER_COL,DOUBLE,YES,,,
+      SMALLINT_COL,DOUBLE,YES,,,
       VARCHAR2_COL,VARCHAR,YES,,,
       NVARCHAR2_COL,VARCHAR,YES,,,
       CHAR_COL,VARCHAR,YES,,,
@@ -28,9 +28,9 @@ tests:
       CLOB_COL,VARCHAR,YES,,,
       BLOB_COL,BLOB,YES,,,
       RAW_COL,BLOB,YES,,,
-      DATE_COL,TIMESTAMP,YES,,,
-      TIMESTAMP_COL,TIMESTAMP,YES,,,
-      TIMESTAMP_TZ_COL,TIMESTAMP,YES,,,
+      DATE_COL,TIMESTAMP WITH TIME ZONE,YES,,,
+      TIMESTAMP_COL,TIMESTAMP WITH TIME ZONE,YES,,,
+      TIMESTAMP_TZ_COL,TIMESTAMP WITH TIME ZONE,YES,,,
       BOOLEAN_COL,DOUBLE,YES,,,
       JSON_COL,VARCHAR,YES,,,
   - name: query_row_count_duckdb
