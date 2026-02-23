@@ -12,6 +12,7 @@ import Https from "../../../components/icons/connectors/HTTPS.svelte";
 import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
 import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
 import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
+import Oracle from "../../../components/icons/connectors/Oracle.svelte";
 import Postgres from "../../../components/icons/connectors/Postgres.svelte";
 import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
 import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
@@ -29,6 +30,7 @@ export const ICONS = {
   motherduck: MotherDuck,
   postgres: Postgres,
   mysql: MySQL,
+  oracle: Oracle,
   sqlite: SQLite,
   snowflake: Snowflake,
   salesforce: Salesforce,
