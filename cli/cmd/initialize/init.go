@@ -123,7 +123,7 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to add Claude Code files: %w", err)
 				}
-				ch.Printf("Added Claude instructions in .claude\n")
+				ch.Printf("Added Claude instructions in .claude and .mcp.json\n")
 
 			default:
 				return fmt.Errorf("unknown template: %s", template)

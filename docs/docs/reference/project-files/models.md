@@ -285,6 +285,32 @@ partitions:
     sql: SELECT range AS num FROM range(0,10)
 ```
 
+### `tests`
+
+_[array of object]_ - Define data quality tests for the model. Each test must have a `name` and either an `assert` expression or a `sql` query. An `assert` test passes when no rows violate the condition. A `sql` test passes when the query returns zero rows. 
+
+  - **`name`** - _[string]_ - A unique name for the test. _(required)_
+
+  - **`assert`** - _[string]_ - A SQL boolean expression applied to each row of the model. The test passes if no rows violate the condition (i.e., all rows satisfy `assert`). Cannot be combined with `sql`. 
+
+  - **`sql`** - _[string]_ - A SQL query that returns rows representing test failures. The test passes if the query returns zero rows. Cannot be combined with `assert`. 
+
+  - **`connector`** - _[string]_ - The connector to use when executing the test query. Defaults to the model's connector. 
+
+```yaml
+tests:
+    - name: assert_positive_revenue
+      assert: revenue >= 0
+    - name: no_null_ids
+      assert: id IS NOT NULL
+```
+
+```yaml
+tests:
+    - name: row_count_check
+      sql: SELECT 'fail' WHERE (SELECT COUNT(*) FROM my_model) = 0
+```
+
 ### `materialize`
 
 _[boolean]_ - models will be materialized in olap 
