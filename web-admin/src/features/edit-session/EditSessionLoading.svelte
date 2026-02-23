@@ -26,8 +26,8 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    <div class="h-36">
-      <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
+    <div class="h-16">
+      <Spinner status={EntityStatus.Running} size="3rem" duration={725} />
     </div>
     <CtaHeader variant="bold">
       {message}

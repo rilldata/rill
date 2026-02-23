@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
+  import {
+    navigateToFile,
+    navigateToHome,
+  } from "@rilldata/web-common/features/workspaces/workspace-routing";
   import {
     deleteFileArtifact,
     duplicateFileArtifact,
@@ -77,7 +80,7 @@
 
     try {
       const newFilePath = await duplicateFileArtifact(instanceId, filePath);
-      await goto(`/files${newFilePath}`);
+      await navigateToFile(newFilePath);
     } catch {
       eventBus.emit("notification", {
         message: `Failed to copy ${filePath}`,
@@ -101,7 +104,7 @@
     }
     await deleteFileArtifact(instanceId, filePath);
     if (isCurrentActivePage(filePath, isDir)) {
-      await goto("/");
+      await navigateToHome();
     }
   }
 
@@ -109,7 +112,7 @@
     await deleteFileArtifact(instanceId, forceDeletePath, true);
     // onForceDelete is only called on folders, so isDir is always true
     if (isCurrentActivePage(forceDeletePath, true)) {
-      await goto("/");
+      await navigateToHome();
     }
   }
 
@@ -133,7 +136,7 @@
       await renameFileArtifact(instanceId, fromPath, newFilePath);
 
       if (isCurrentFile) {
-        await goto(`/files${newFilePath}`);
+        await navigateToFile(newFilePath);
       }
     }
   }

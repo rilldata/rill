@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
+  import { navigateToFile } from "@rilldata/web-common/features/workspaces/workspace-routing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -35,7 +35,7 @@
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const [newModelPath, newModelName] = await modelCreationFn();
-      await goto(`/files${newModelPath}`);
+      await navigateToFile(newModelPath);
       await behaviourEvent?.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,

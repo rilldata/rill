@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { File } from "lucide-svelte";
+  import { navigateToFile } from "@rilldata/web-common/features/workspaces/workspace-routing";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
@@ -133,7 +133,7 @@
       },
     });
 
-    await goto(`/files/${path}`);
+    await navigateToFile(`/${path}`);
   }
 </script>
 

@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import {
+    getFileHref,
+    navigateToFile,
+  } from "@rilldata/web-common/features/workspaces/workspace-routing";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
@@ -89,21 +92,14 @@
         const newPath = (folderName ? `${folderName}/` : "") + values.newName;
         await renameFileArtifact(instanceId, filePath, newPath);
         if (isDir) {
-          if (
-            $page.url.pathname.startsWith(
-              `/files/${removeLeadingSlash(filePath)}`,
-            )
-          ) {
-            // if the file focused has the dir then replace the dir path to the new one
-            await goto(
-              $page.url.pathname.replace(
-                `/files/${removeLeadingSlash(filePath)}`,
-                `/files/${removeLeadingSlash(newPath)}`,
-              ),
-            );
+          const oldHref = getFileHref(`/${removeLeadingSlash(filePath)}`);
+          if ($page.url.pathname.startsWith(oldHref)) {
+            const newHref = getFileHref(`/${removeLeadingSlash(newPath)}`);
+            const { goto } = await import("$app/navigation");
+            await goto($page.url.pathname.replace(oldHref, newHref));
           }
         } else {
-          await goto(`/files/${removeLeadingSlash(newPath)}`, {
+          await navigateToFile(`/${removeLeadingSlash(newPath)}`, {
             replaceState: true,
           });
         }

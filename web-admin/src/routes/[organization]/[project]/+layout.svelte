@@ -37,6 +37,7 @@
     type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
   import {
+    isEditPage,
     isProjectPage,
     isPublicAlertPage,
     isPublicReportPage,
@@ -66,6 +67,7 @@
   } = $page);
 
   $: onProjectPage = isProjectPage($page);
+  $: onEditPage = isEditPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onPublicReportOrAlertPage =
     isPublicReportPage($page) || isPublicAlertPage($page);
@@ -166,7 +168,7 @@
   }
 </script>
 
-{#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+{#if onProjectPage && !onEditPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
   <ProjectTabs
     projectPermissions={projectData.projectPermissions}
     {organization}
@@ -196,19 +198,24 @@
         : "There was an error deploying your project. Please contact support."}
     />
   {:else if isProjectAvailable}
-    <RuntimeProvider
-      instanceId={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.instanceId
-        : projectData.deployment.runtimeInstanceId}
-      host={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.runtimeHost
-        : projectData.deployment.runtimeHost}
-      jwt={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.accessToken
-        : projectData.jwt}
-      {authContext}
-    >
+    {#if onEditPage}
+      <!-- Edit session manages its own runtime; skip RuntimeProvider to avoid conflicts -->
       <slot />
-    </RuntimeProvider>
+    {:else}
+      <RuntimeProvider
+        instanceId={mockedUserId && mockedUserDeploymentCredentials
+          ? mockedUserDeploymentCredentials.instanceId
+          : projectData.deployment.runtimeInstanceId}
+        host={mockedUserId && mockedUserDeploymentCredentials
+          ? mockedUserDeploymentCredentials.runtimeHost
+          : projectData.deployment.runtimeHost}
+        jwt={mockedUserId && mockedUserDeploymentCredentials
+          ? mockedUserDeploymentCredentials.accessToken
+          : projectData.jwt}
+        {authContext}
+      >
+        <slot />
+      </RuntimeProvider>
+    {/if}
   {/if}
 {/if}

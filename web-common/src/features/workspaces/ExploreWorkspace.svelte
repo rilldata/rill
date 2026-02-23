@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { workspaceRoute } from "@rilldata/web-common/features/workspaces/workspace-routing";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -101,7 +102,7 @@
       >
         <div class="flex gap-x-2" slot="cta">
           <PreviewButton
-            href="/explore/{exploreName}"
+            href={workspaceRoute(`/explore/${exploreName}`)}
             disabled={!!parseError || !!reconcileError || resourceIsReconciling}
             reconciling={resourceIsReconciling}
           />

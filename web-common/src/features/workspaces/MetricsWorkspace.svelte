@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { workspaceRoute } from "@rilldata/web-common/features/workspaces/workspace-routing";
   import { createRootCauseErrorQuery } from "@rilldata/web-common/features/entity-management/error-utils";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -99,7 +100,7 @@
     <div class="flex gap-x-2" slot="cta">
       {#if isOldMetricsView}
         <PreviewButton
-          href="/explore/{metricsViewName}"
+          href={workspaceRoute(`/explore/${metricsViewName}`)}
           disabled={!!parseError || !!reconcileError}
         />
       {:else}
