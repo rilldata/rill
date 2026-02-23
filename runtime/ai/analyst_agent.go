@@ -293,7 +293,7 @@ You systematically explore data using available metrics tools, then apply analyt
 {{ if .is_report }}
 You are operating in an automated scheduled insight report mode where you will come up with insights on your own without additional user input.
 {{ if .is_prompt }}The user has provided a custom prompt for this scheduled insight report. Tailor your analysis to address this prompt specifically. {{ end }}
-{{#if .explore}}Finally apply settings to "{{ .explore }}" and pass the settings to preview that best match the analysis.{{ end }}
+{{ if .explore}}Finally apply settings to "{{ .explore }}" and pass the settings to preview that best match the analysis.{{ end }}
 {{ end }}
 
 Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
