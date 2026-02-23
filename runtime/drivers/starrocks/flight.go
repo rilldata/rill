@@ -153,6 +153,9 @@ func (c *connection) doGetFromEndpoint(ctx context.Context, ep *flight.FlightEnd
 
 	reader, err := beClient.DoGet(ctx, ep.GetTicket())
 	if err != nil {
+		// Evict the cached client so the next query creates a fresh connection.
+		// This handles BE restarts or network disruptions.
+		c.evictBEClient(beAddr)
 		return nil, fmt.Errorf("flight sql doget from BE %s: %w", beAddr, err)
 	}
 
@@ -182,6 +185,19 @@ func (c *connection) getOrCreateBEClient(addr string) (*flightsql.Client, error)
 	c.beClients[addr] = client
 	c.logger.Debug("Created and cached BE flight client", zap.String("addr", addr))
 	return client, nil
+}
+
+// evictBEClient removes a cached BE client after a connection failure,
+// so the next query creates a fresh connection.
+func (c *connection) evictBEClient(addr string) {
+	c.beClientsMu.Lock()
+	defer c.beClientsMu.Unlock()
+
+	if client, ok := c.beClients[addr]; ok {
+		_ = client.Close()
+		delete(c.beClients, addr)
+		c.logger.Debug("Evicted failed BE flight client", zap.String("addr", addr))
+	}
 }
 
 // createBEFlightClient creates a new Flight SQL client for a BE node address.

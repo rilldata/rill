@@ -64,6 +64,12 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 			zap.String("transport", c.configProp.Transport))
 	}
 
+	if stmt.ExecutionTimeout != 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+		defer cancel()
+	}
+
 	// Handle DryRun: always use MySQL (EXPLAIN)
 	if stmt.DryRun {
 		rows, err := c.db.QueryxContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
