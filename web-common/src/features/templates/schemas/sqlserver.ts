@@ -21,8 +21,7 @@ export const sqlserverSchema: MultiStepFormSchema = {
           "database",
           "user",
           "password",
-          "encrypt_connection",
-          "tls",
+          "encrypt",
         ],
         dsn: ["dsn"],
       },
@@ -31,8 +30,8 @@ export const sqlserverSchema: MultiStepFormSchema = {
       type: "string",
       title: "SQL Server connection string",
       description:
-        "Full DSN, e.g. msql://user:password@host:0000/database?ssl-mode=REQUIRED",
-      "x-placeholder": "msql://user:password@host:0000/database",
+        "Full DSN, e.g. mssql://user:password@host:1433/database?encrypt=true",
+      "x-placeholder": "mssql://user:password@host:1433/database",
       "x-secret": true,
       "x-env-var-name": "SQLSERVER_DSN",
       "x-hint":
@@ -50,7 +49,8 @@ export const sqlserverSchema: MultiStepFormSchema = {
       description: "SQL Server server port",
       pattern: "^\\d+$",
       errorMessage: { pattern: "Port must be a number" },
-      default: "0000",
+      default: "1433",
+      "x-placeholder": "1433",
     },
     database: {
       type: "string",
@@ -62,7 +62,7 @@ export const sqlserverSchema: MultiStepFormSchema = {
       type: "string",
       title: "Username",
       description: "SQL Server user",
-      "x-placeholder": "msql",
+      "x-placeholder": "sa",
     },
     password: {
       type: "string",
@@ -72,15 +72,10 @@ export const sqlserverSchema: MultiStepFormSchema = {
       "x-secret": true,
       "x-env-var-name": "SQLSERVER_PASSWORD",
     },
-    "encrypt_connection": {
+    encrypt: {
       type: "boolean",
       title: "Encrypt connection",
-      description: "",
-    },
-    "tls": {
-      type: "boolean",
-      title: "TLS mode",
-      description: "",
+      description: "Encrypt the connection using TLS",
     },
     sql: {
       type: "string",
@@ -110,8 +105,7 @@ export const sqlserverSchema: MultiStepFormSchema = {
           { required: ["user"] },
           { required: ["password"] },
           { required: ["port"] },
-          { required: ["encrypt_connection"] },
-          { required: ["tls"] },
+          { required: ["encrypt"] },
         ],
       },
     },

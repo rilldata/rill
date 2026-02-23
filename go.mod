@@ -10,7 +10,7 @@ require (
 	connectrpc.com/vanguard v0.3.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Andrew-M-C/go.jsonvalue v1.3.4
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.41.0
 	github.com/ForceCLI/force v1.1.0
@@ -83,7 +83,7 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 	github.com/prometheus/client_golang v1.22.0
-	github.com/redis/go-redis/v9 v9.6.3
+	github.com/redis/go-redis/v9 v9.8.0
 	github.com/riverqueue/river v0.19.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.19.0
 	github.com/riverqueue/river/rivertype v0.19.0
@@ -146,6 +146,9 @@ require (
 	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.3.3 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.3.3 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.3.3 // indirect
+	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
+	github.com/golang-sql/sqlexp v0.1.0 // indirect
+	github.com/microsoft/go-mssqldb v1.9.6 // indirect
 )
 
 require (
@@ -159,12 +162,12 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
-	github.com/AzureAD/microsoft-authentication-library-for-go v1.3.2 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/ClickHouse/ch-go v0.69.0 // indirect
 	github.com/DefangLabs/secret-detector v0.0.0-20250403165618-22662109213e // indirect
