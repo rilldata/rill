@@ -12,10 +12,13 @@ import (
 	"testing"
 	"time"
 
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
+	_ "github.com/sijms/go-ora/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azurite"
@@ -219,6 +222,59 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NoError(t, err)
 
 		return map[string]string{"dsn": dsn, "ip": ip}
+	},
+	// oracle starts an Oracle Free testcontainer with tables initialized from testdata/init_data/oracle_init_data.sql.
+	"oracle": func(t TestingT) map[string]string {
+		_, currentFile, _, _ := goruntime.Caller(0)
+		testdataPath := filepath.Join(currentFile, "..", "testdata")
+		oracleInitData := filepath.Join(testdataPath, "init_data", "oracle_init_data.sql")
+
+		ctx := context.Background()
+		oracleContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:        "gvenzl/oracle-free:slim-faststart",
+				ExposedPorts: []string{"1521/tcp"},
+				Env: map[string]string{
+					"ORACLE_PASSWORD": "oracle",
+				},
+				WaitingFor: wait.ForLog("DATABASE IS READY TO USE!").WithStartupTimeout(5 * time.Minute),
+			},
+			Started: true,
+		})
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			err := oracleContainer.Terminate(ctx)
+			require.NoError(t, err)
+		})
+
+		host, err := oracleContainer.Host(ctx)
+		require.NoError(t, err)
+		port, err := oracleContainer.MappedPort(ctx, "1521/tcp")
+		require.NoError(t, err)
+
+		dsn := fmt.Sprintf("oracle://system:oracle@%s:%s/FREEPDB1", host, port.Port())
+
+		// Execute init SQL statements one at a time (Oracle doesn't support multiple statements in one exec)
+		db, err := sql.Open("oracle", dsn)
+		require.NoError(t, err)
+		defer db.Close()
+
+		sqlFile, err := os.ReadFile(oracleInitData)
+		require.NoError(t, err)
+
+		// Split on semicolons and execute each statement individually
+		stmts := strings.Split(string(sqlFile), ";")
+		for _, stmt := range stmts {
+			stmt = strings.TrimSpace(stmt)
+			if stmt == "" {
+				continue
+			}
+			_, err = db.ExecContext(ctx, stmt)
+			require.NoError(t, err, "failed to execute Oracle init statement: %s", stmt)
+		}
+
+		return map[string]string{"dsn": dsn}
 	},
 	"azure": func(t TestingT) map[string]string {
 		ctx := context.Background()

@@ -1,0 +1,42 @@
+connectors:
+  - oracle
+project_files:
+  all_datatypes_duckdb.yaml:
+    type: model
+    connector: oracle
+    materialize: true
+    sql: "SELECT * FROM all_datatypes ORDER BY id"
+    output:
+      connector: duckdb
+tests:
+  - name: query_all_datatypes_duckdb
+    resolver: sql
+    properties:
+      sql: "describe all_datatypes_duckdb"
+    result_csv: |
+      column_name,column_type,null,key,default,extra
+      ID,BIGINT,YES,,,
+      NUMBER_COL,DOUBLE,YES,,,
+      BINARY_FLOAT_COL,FLOAT,YES,,,
+      BINARY_DOUBLE_COL,DOUBLE,YES,,,
+      INTEGER_COL,BIGINT,YES,,,
+      SMALLINT_COL,BIGINT,YES,,,
+      VARCHAR2_COL,VARCHAR,YES,,,
+      NVARCHAR2_COL,VARCHAR,YES,,,
+      CHAR_COL,VARCHAR,YES,,,
+      NCHAR_COL,VARCHAR,YES,,,
+      CLOB_COL,VARCHAR,YES,,,
+      BLOB_COL,BLOB,YES,,,
+      RAW_COL,BLOB,YES,,,
+      DATE_COL,TIMESTAMP,YES,,,
+      TIMESTAMP_COL,TIMESTAMP,YES,,,
+      TIMESTAMP_TZ_COL,TIMESTAMP,YES,,,
+      BOOLEAN_COL,DOUBLE,YES,,,
+      JSON_COL,VARCHAR,YES,,,
+  - name: query_row_count_duckdb
+    resolver: sql
+    properties:
+      sql: "SELECT COUNT(*) AS cnt FROM all_datatypes_duckdb"
+    result_csv: |
+      cnt
+      3
