@@ -14,139 +14,103 @@ import (
 	"go.uber.org/zap"
 )
 
+// openMySQLConn creates a StarRocks connection using MySQL transport.
+func openMySQLConn(tb testing.TB, info teststarrocks.StarRocksInfo) (drivers.Handle, drivers.OLAPStore) {
+	conn, err := driver{}.Open("default", map[string]any{
+		"dsn": info.DSN,
+	}, storage.MustNew(tb.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(tb, err)
+	olap, ok := conn.AsOLAP("default")
+	require.True(tb, ok)
+	return conn, olap
+}
+
+// openFlightSQLConn creates a StarRocks connection using Arrow Flight SQL transport.
+func openFlightSQLConn(tb testing.TB, info teststarrocks.StarRocksInfo) (drivers.Handle, drivers.OLAPStore) {
+	beAddr := fmt.Sprintf("%s:%d", info.Host, info.FlightSQLBEPort)
+	conn, err := driver{}.Open("default", map[string]any{
+		"dsn":                info.DSN,
+		"transport":          "flight_sql",
+		"flight_sql_port":    info.FlightSQLPort,
+		"flight_sql_be_addr": beAddr,
+	}, storage.MustNew(tb.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(tb, err)
+	olap, ok := conn.AsOLAP("default")
+	require.True(tb, ok)
+	return conn, olap
+}
+
 func TestStarRocksOLAP(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 
-	dsn := teststarrocks.StartWithData(t)
+	// Start a single StarRocks container shared by both transports
+	info := teststarrocks.StartWithDataFull(t)
 
-	conn, err := driver{}.Open("default", map[string]any{
-		"dsn": dsn,
-	}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	defer conn.Close()
+	mysqlConn, mysqlOLAP := openMySQLConn(t, info)
+	defer mysqlConn.Close()
 
-	olap, ok := conn.AsOLAP("default")
-	require.True(t, ok)
+	flightConn, flightOLAP := openFlightSQLConn(t, info)
+	defer flightConn.Close()
 
-	// Basic type tests
-	t.Run("VarcharNotBinary", func(t *testing.T) {
-		testVarcharNotBinary(t, olap)
-	})
+	// Common tests: run with both MySQL and Flight SQL transports
+	for _, tc := range []struct {
+		name string
+		olap drivers.OLAPStore
+	}{
+		{"MySQL", mysqlOLAP},
+		{"FlightSQL", flightOLAP},
+	} {
+		olap := tc.olap
+		t.Run(tc.name, func(t *testing.T) {
+			// Basic type tests
+			t.Run("VarcharNotBinary", func(t *testing.T) { testVarcharNotBinary(t, olap) })
+			t.Run("NullHandling", func(t *testing.T) { testNullHandling(t, olap) })
+			t.Run("NumericTypes", func(t *testing.T) { testNumericTypes(t, olap) })
+			t.Run("AllBasicTypes", func(t *testing.T) { testAllBasicTypes(t, olap) })
+			t.Run("DateTimeTypes", func(t *testing.T) { testDateTimeTypes(t, olap) })
+			t.Run("StringTypes", func(t *testing.T) { testStringTypes(t, olap) })
+			t.Run("BinaryTypes", func(t *testing.T) { testBinaryTypes(t, olap) })
+			t.Run("AggregateTypes", func(t *testing.T) { testAggregateTypes(t, olap) })
+			t.Run("UnicodeStrings", func(t *testing.T) { testUnicodeStrings(t, olap) })
+			t.Run("JSONType", func(t *testing.T) { testJSONType(t, olap) })
 
-	t.Run("NullHandling", func(t *testing.T) {
-		testNullHandling(t, olap)
-	})
+			// API tests (DryRun/Exec always use MySQL internally, but run against both connections)
+			t.Run("DryRun", func(t *testing.T) { testDryRun(t, olap) })
+			t.Run("Exec", func(t *testing.T) { testExec(t, olap) })
+			t.Run("QuerySchema", func(t *testing.T) { testQuerySchema(t, olap) })
 
-	t.Run("NumericTypes", func(t *testing.T) {
-		testNumericTypes(t, olap)
-	})
+			// Result set tests
+			t.Run("EmptyResultSet", func(t *testing.T) { testEmptyResultSet(t, olap) })
+			t.Run("MultipleRows", func(t *testing.T) { testMultipleRows(t, olap) })
 
-	// All types tests
-	t.Run("AllBasicTypes", func(t *testing.T) {
-		testAllBasicTypes(t, olap)
-	})
+			// Boundary and special cases
+			t.Run("BoundaryValues", func(t *testing.T) { testBoundaryValues(t, olap) })
+			t.Run("NullHandlingDetailed", func(t *testing.T) { testNullHandlingDetailed(t, olap) })
+			t.Run("NegativeValues", func(t *testing.T) { testNegativeValues(t, olap) })
+			t.Run("SpecialCharacters", func(t *testing.T) { testSpecialCharacters(t, olap) })
 
-	t.Run("DateTimeTypes", func(t *testing.T) {
-		testDateTimeTypes(t, olap)
-	})
+			// Complex types
+			t.Run("ComplexTypes", func(t *testing.T) { testComplexTypes(t, olap) })
 
-	t.Run("StringTypes", func(t *testing.T) {
-		testStringTypes(t, olap)
-	})
+			// Error cases
+			t.Run("ErrorCases", func(t *testing.T) { testErrorCases(t, olap) })
 
-	t.Run("BinaryTypes", func(t *testing.T) {
-		testBinaryTypes(t, olap)
-	})
+			// Aggregate functions
+			t.Run("AggregateFunctions", func(t *testing.T) { testAggregateFunctions(t, olap) })
+		})
+	}
 
-	t.Run("AggregateTypes", func(t *testing.T) {
-		testAggregateTypes(t, olap)
-	})
+	// MySQL-specific tests (use MySQL-internal types or features)
+	t.Run("MySQL/ParameterBinding", func(t *testing.T) { testParameterBinding(t, mysqlOLAP) })
+	t.Run("MySQL/SchemaValidation", func(t *testing.T) { testSchemaValidation(t, mysqlOLAP) })
+	t.Run("MySQL/AllTypesOutput", func(t *testing.T) { testAllTypesOutput(t, mysqlOLAP) })
+	t.Run("MySQL/DecimalPrecision", func(t *testing.T) { testDecimalPrecision(t, mysqlOLAP) })
+	t.Run("MySQL/LoadDDL", func(t *testing.T) { testLoadDDL(t, mysqlConn) })
 
-	t.Run("UnicodeStrings", func(t *testing.T) {
-		testUnicodeStrings(t, olap)
-	})
-
-	t.Run("JSONType", func(t *testing.T) {
-		testJSONType(t, olap)
-	})
-
-	// API tests
-	t.Run("DryRun", func(t *testing.T) {
-		testDryRun(t, olap)
-	})
-
-	t.Run("Exec", func(t *testing.T) {
-		testExec(t, olap)
-	})
-
-	t.Run("QuerySchema", func(t *testing.T) {
-		testQuerySchema(t, olap)
-	})
-
-	// Result set tests
-	t.Run("EmptyResultSet", func(t *testing.T) {
-		testEmptyResultSet(t, olap)
-	})
-
-	t.Run("MultipleRows", func(t *testing.T) {
-		testMultipleRows(t, olap)
-	})
-
-	// Boundary and special cases
-	t.Run("BoundaryValues", func(t *testing.T) {
-		testBoundaryValues(t, olap)
-	})
-
-	t.Run("NullHandlingDetailed", func(t *testing.T) {
-		testNullHandlingDetailed(t, olap)
-	})
-
-	t.Run("NegativeValues", func(t *testing.T) {
-		testNegativeValues(t, olap)
-	})
-
-	t.Run("SpecialCharacters", func(t *testing.T) {
-		testSpecialCharacters(t, olap)
-	})
-
-	// Complex types
-	t.Run("ComplexTypes", func(t *testing.T) {
-		testComplexTypes(t, olap)
-	})
-
-	// Error cases
-	t.Run("ErrorCases", func(t *testing.T) {
-		testErrorCases(t, olap)
-	})
-
-	// Other tests
-	t.Run("ParameterBinding", func(t *testing.T) {
-		testParameterBinding(t, olap)
-	})
-
-	t.Run("SchemaValidation", func(t *testing.T) {
-		testSchemaValidation(t, olap)
-	})
-
-	t.Run("AggregateFunctions", func(t *testing.T) {
-		testAggregateFunctions(t, olap)
-	})
-
-	// Output all types and values
-	t.Run("AllTypesOutput", func(t *testing.T) {
-		testAllTypesOutput(t, olap)
-	})
-
-	// High-precision DECIMAL test (DECIMAL32, DECIMAL64, DECIMAL128)
-	t.Run("DecimalPrecision", func(t *testing.T) {
-		testDecimalPrecision(t, olap)
-	})
-
-	t.Run("LoadDDL", func(t *testing.T) {
-		testLoadDDL(t, conn)
-	})
+	// Flight SQL-specific tests
+	t.Run("FlightSQL/AllTypesFromTable", func(t *testing.T) { testFlightAllTypesFromTable(t, flightOLAP) })
 }
 
 func testVarcharNotBinary(t *testing.T, olap drivers.OLAPStore) {
@@ -305,16 +269,14 @@ func testDateTimeTypes(t *testing.T, olap drivers.OLAPStore) {
 	err = res.MapScan(row)
 	require.NoError(t, err)
 
-	// DATE - should be string (StarRocks returns as string via MySQL protocol)
-	dateVal, ok := row["date_col"].(string)
-	require.True(t, ok, "expected string type for DATE, got %T", row["date_col"])
-	require.Contains(t, dateVal, "2024-01-15")
+	// DATE: MySQL returns string, Flight SQL may return string or time.Time
+	dateStr := fmt.Sprintf("%v", row["date_col"])
+	require.Contains(t, dateStr, "2024-01-15")
 
-	// DATETIME - should be string (MySQL driver returns as string without parseTime=true)
-	datetimeVal, ok := row["datetime_col"].(string)
-	require.True(t, ok, "expected string type for DATETIME, got %T", row["datetime_col"])
-	require.Contains(t, datetimeVal, "2024-01-15")
-	require.Contains(t, datetimeVal, "10:30:00")
+	// DATETIME: MySQL returns time.Time (parseTime=true), Flight SQL returns time.Time or string
+	datetimeStr := fmt.Sprintf("%v", row["datetime_col"])
+	require.Contains(t, datetimeStr, "2024-01-15")
+	require.Contains(t, datetimeStr, "10:30:00")
 }
 
 func testStringTypes(t *testing.T, olap drivers.OLAPStore) {

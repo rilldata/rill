@@ -57,26 +57,35 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	db := c.db
-
 	if c.configProp.LogQueries {
 		c.logger.Info("StarRocks query",
 			zap.String("query", stmt.Query),
-			zap.Any("args", stmt.Args))
+			zap.Any("args", stmt.Args),
+			zap.String("transport", c.configProp.Transport))
 	}
 
-	// Handle DryRun: validate query without execution
+	// Handle DryRun: always use MySQL (EXPLAIN)
 	if stmt.DryRun {
-		rows, err := db.QueryxContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+		rows, err := c.db.QueryxContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
 		if err != nil {
 			return nil, err
 		}
 		rows.Close()
-		// Return nil result for dry run (query is valid)
 		return nil, nil
 	}
 
-	rows, err := db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+	// Use Arrow Flight SQL transport if configured.
+	// queryFlightSQL will fall back to MySQL internally when stmt.Args is non-empty.
+	if c.configProp.Transport == "flight_sql" && c.flightClient != nil {
+		return c.queryFlightSQL(ctx, stmt)
+	}
+
+	return c.queryMySQL(ctx, stmt)
+}
+
+// queryMySQL executes a query using the MySQL protocol.
+func (c *connection) queryMySQL(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,26 +102,32 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		return nil, err
 	}
 
-	starrocksRows := &starrocksRows{
-		Rows:     rows,
-		scanDest: prepareScanDest(schema),
-		colTypes: cts,
-	}
-
 	return &drivers.Result{
-		Rows:   starrocksRows,
+		Rows: &starrocksRows{
+			Rows:     rows,
+			scanDest: prepareScanDest(schema),
+			colTypes: cts,
+		},
 		Schema: schema,
 	}, nil
 }
 
 // QuerySchema implements drivers.OLAPStore.
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
-	db := c.db
+	// Use Arrow Flight SQL transport if configured.
+	// querySchemaFlightSQL will fall back to MySQL internally when args is non-empty.
+	if c.configProp.Transport == "flight_sql" && c.flightClient != nil {
+		return c.querySchemaFlightSQL(ctx, query, args)
+	}
 
-	// Use LIMIT 0 to get schema without data
+	return c.querySchemaMySQL(ctx, query, args)
+}
+
+// querySchemaMySQL returns the schema of a query using the MySQL protocol.
+func (c *connection) querySchemaMySQL(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
 	schemaQuery := fmt.Sprintf("SELECT * FROM (%s) AS _schema_query LIMIT 0", query)
 
-	rows, err := db.QueryxContext(ctx, schemaQuery, args...)
+	rows, err := c.db.QueryxContext(ctx, schemaQuery, args...)
 	if err != nil {
 		return nil, err
 	}

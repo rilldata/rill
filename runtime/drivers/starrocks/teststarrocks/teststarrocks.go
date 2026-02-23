@@ -24,7 +24,7 @@ import (
 
 const (
 	// StarRocksVersion is the StarRocks version used for testing
-	StarRocksVersion = "4.0.3"
+	StarRocksVersion = "4.0.4"
 	// StarRocksImage is the Docker image for StarRocks all-in-one container
 	StarRocksImage = "starrocks/allin1-ubuntu:" + StarRocksVersion
 )
@@ -40,9 +40,12 @@ type TestingT interface {
 
 // StarRocksInfo contains connection info for a StarRocks container
 type StarRocksInfo struct {
-	DSN        string // MySQL protocol DSN (port 9030)
-	FEHTTPAddr string // FE HTTP address for Stream Load (port 8030)
-	BEHTTPAddr string // BE HTTP address for Stream Load redirect (port 8040)
+	Host              string // Container host
+	DSN               string // MySQL protocol DSN (port 9030)
+	FEHTTPAddr        string // FE HTTP address for Stream Load (port 8030)
+	BEHTTPAddr        string // BE HTTP address for Stream Load redirect (port 8040)
+	FlightSQLPort     int    // Arrow Flight SQL port (mapped from FE's arrow_flight_port 9408)
+	FlightSQLBEPort   int    // Arrow Flight SQL BE port (mapped from BE's arrow_flight_port 9419)
 }
 
 // Start starts a StarRocks all-in-one container for testing.
@@ -51,13 +54,32 @@ type StarRocksInfo struct {
 func Start(t TestingT) StarRocksInfo {
 	ctx := context.Background()
 
+	// Mount custom be.conf and fe.conf to enable Arrow Flight SQL
+	_, currentFile, _, _ := runtime.Caller(0)
+	testdataDir := filepath.Join(filepath.Dir(currentFile), "testdata")
+	beConfPath := filepath.Join(testdataDir, "be.conf")
+	feConfPath := filepath.Join(testdataDir, "fe.conf")
+
 	req := testcontainers.ContainerRequest{
 		Image:        StarRocksImage,
-		ExposedPorts: []string{"9030/tcp", "8030/tcp", "8040/tcp"},
+		ExposedPorts: []string{"9030/tcp", "8030/tcp", "8040/tcp", "9408/tcp", "9419/tcp"},
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      beConfPath,
+				ContainerFilePath: "/data/deploy/starrocks/be/conf/be.conf",
+				FileMode:          0644,
+			},
+			{
+				HostFilePath:      feConfPath,
+				ContainerFilePath: "/data/deploy/starrocks/fe/conf/fe.conf",
+				FileMode:          0644,
+			},
+		},
 		WaitingFor: tcwait.ForAll(
 			tcwait.ForListeningPort("9030/tcp"),
 			tcwait.ForListeningPort("8030/tcp"),
 			tcwait.ForListeningPort("8040/tcp"),
+			tcwait.ForListeningPort("9419/tcp"), // BE Arrow Flight SQL
 			tcwait.ForLog("Enjoy the journey to StarRocks"),
 		).WithDeadline(5 * time.Minute),
 	}
@@ -85,16 +107,32 @@ func Start(t TestingT) StarRocksInfo {
 	beHTTPPort, err := container.MappedPort(ctx, nat.Port("8040/tcp"))
 	require.NoError(t, err)
 
+	flightSQLPort, err := container.MappedPort(ctx, nat.Port("9408/tcp"))
+	require.NoError(t, err)
+
+	flightSQLBEPort, err := container.MappedPort(ctx, nat.Port("9419/tcp"))
+	require.NoError(t, err)
+
 	return StarRocksInfo{
-		DSN:        fmt.Sprintf("root:@tcp(%s:%s)/?parseTime=true&loc=UTC", host, mysqlPort.Port()),
-		FEHTTPAddr: fmt.Sprintf("%s:%s", host, feHTTPPort.Port()),
-		BEHTTPAddr: fmt.Sprintf("%s:%s", host, beHTTPPort.Port()),
+		Host:            host,
+		DSN:             fmt.Sprintf("root:@tcp(%s:%s)/?parseTime=true&loc=UTC", host, mysqlPort.Port()),
+		FEHTTPAddr:      fmt.Sprintf("%s:%s", host, feHTTPPort.Port()),
+		BEHTTPAddr:      fmt.Sprintf("%s:%s", host, beHTTPPort.Port()),
+		FlightSQLPort:   flightSQLPort.Int(),
+		FlightSQLBEPort: flightSQLBEPort.Int(),
 	}
 }
 
 // StartWithData starts a StarRocks container and initializes it with test tables.
 // Returns DSN for connecting to the container.
 func StartWithData(t TestingT) string {
+	info := StartWithDataFull(t)
+	return info.DSN
+}
+
+// StartWithDataFull starts a StarRocks container with test data and returns full connection info.
+// Use this when you need access to Arrow Flight SQL port or other connection details.
+func StartWithDataFull(t TestingT) StarRocksInfo {
 	info := Start(t)
 
 	// Wait for StarRocks to be fully ready
@@ -106,7 +144,7 @@ func StartWithData(t TestingT) string {
 	// Load ad_bids data from CSV via Stream Load
 	loadAdBidsData(t, info.FEHTTPAddr, info.BEHTTPAddr)
 
-	return info.DSN
+	return info
 }
 
 // waitForStarRocks waits for StarRocks to be ready to accept queries

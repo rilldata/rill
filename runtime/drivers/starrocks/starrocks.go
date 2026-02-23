@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/apache/arrow-go/v18/arrow/flight/flightsql"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -111,6 +113,33 @@ var spec = drivers.Spec{
 			Description: "Enable logging of all SQL queries",
 			Hint:        "Useful for debugging (logs all SQL statements)",
 		},
+		{
+			Key:         "transport",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Transport Protocol",
+			Required:    false,
+			Default:     "mysql",
+			Description: "Query transport protocol: 'mysql' (default) or 'flight_sql' (Arrow Flight SQL for better performance)",
+			Hint:        "Arrow Flight SQL requires StarRocks 3.0+ with arrow_flight_sql_port enabled",
+		},
+		{
+			Key:         "flight_sql_port",
+			Type:        drivers.NumberPropertyType,
+			DisplayName: "Arrow Flight SQL Port",
+			Required:    false,
+			Default:     "9408",
+			Placeholder: "9408",
+			Description: "Arrow Flight SQL port on the StarRocks FE node (arrow_flight_port in fe.conf)",
+			Hint:        "Only used when transport is 'flight_sql'. Connect to FE, which handles load balancing to BE nodes.",
+		},
+		{
+			Key:         "flight_sql_be_addr",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Arrow Flight SQL BE Address Override",
+			Required:    false,
+			Description: "Override BE address (host:port) for Flight SQL DoGet calls. Use when BE nodes are behind NAT/Docker.",
+			Hint:        "Only needed if BE nodes advertise internal addresses that are not directly reachable.",
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -140,6 +169,16 @@ type ConfigProperties struct {
 	SSL bool `mapstructure:"ssl"`
 	// LogQueries enables SQL query logging.
 	LogQueries bool `mapstructure:"log_queries"`
+	// Transport selects the query transport protocol: "mysql" (default) or "flight_sql".
+	Transport string `mapstructure:"transport"`
+	// FlightSQLPort is the Arrow Flight SQL port on FE (default: 9408).
+	// Only used when Transport is "flight_sql".
+	FlightSQLPort int `mapstructure:"flight_sql_port"`
+	// FlightSQLBEAddr overrides the BE address (host:port) for Flight SQL DoGet calls.
+	// When set, all DoGet calls are routed to this address instead of the BE
+	// addresses from FlightInfo endpoint Locations. Useful when BE nodes are behind
+	// NAT/Docker and their advertised addresses are not directly reachable.
+	FlightSQLBEAddr string `mapstructure:"flight_sql_be_addr"`
 }
 
 // Validate checks the configuration for errors.
@@ -157,12 +196,18 @@ func (c *ConfigProperties) Validate() error {
 		}
 	}
 
+	// Validate transport
+	if c.Transport != "" && c.Transport != "mysql" && c.Transport != "flight_sql" {
+		return fmt.Errorf("invalid transport %q: must be 'mysql' or 'flight_sql'", c.Transport)
+	}
+
 	return nil
 }
 
 const (
-	defaultCatalog = "default_catalog"
-	defaultPort    = 9030
+	defaultCatalog       = "default_catalog"
+	defaultPort          = 9030
+	defaultFlightSQLPort = 9408
 )
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -184,6 +229,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 	if cfg.Port == 0 {
 		cfg.Port = defaultPort
+	}
+	if cfg.FlightSQLPort == 0 {
+		cfg.FlightSQLPort = defaultFlightSQLPort
 	}
 
 	conn := &connection{
@@ -218,8 +266,14 @@ type connection struct {
 	logger     *zap.Logger
 	activity   *activity.Client
 
-	// db is initialized in drivers.Open
+	// db is initialized in drivers.Open (always available for Exec/Ping/DDL)
 	db *sqlx.DB
+	// flightClient is initialized when transport is "flight_sql"
+	flightClient *flightsql.Client
+	// beClients caches Flight SQL clients for BE nodes, keyed by "host:port".
+	// Reusing clients avoids per-query gRPC connection overhead.
+	beClients   map[string]*flightsql.Client
+	beClientsMu sync.Mutex
 }
 
 var _ drivers.Handle = (*connection)(nil)
@@ -253,10 +307,26 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 
 // Close implements drivers.Handle.
 func (c *connection) Close() error {
-	if c.db != nil {
-		return c.db.Close()
+	var errs []error
+	c.beClientsMu.Lock()
+	for addr, client := range c.beClients {
+		if err := client.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close BE flight client %s: %w", addr, err))
+		}
 	}
-	return nil
+	c.beClients = nil
+	c.beClientsMu.Unlock()
+	if c.flightClient != nil {
+		if err := c.flightClient.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close flight client: %w", err))
+		}
+	}
+	if c.db != nil {
+		if err := c.db.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close db: %w", err))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // AsRegistry implements drivers.Handle.
@@ -388,6 +458,15 @@ func (c *connection) initDB() error {
 	}
 
 	c.db = db
+
+	// Initialize Arrow Flight SQL client if transport is "flight_sql"
+	if c.configProp.Transport == "flight_sql" {
+		if err := c.initFlightClient(); err != nil {
+			db.Close()
+			return fmt.Errorf("failed to initialize Arrow Flight SQL client: %w", err)
+		}
+	}
+
 	return nil
 }
 
