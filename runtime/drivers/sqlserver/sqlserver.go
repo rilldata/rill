@@ -8,9 +8,8 @@ import (
 	"net/url"
 	"time"
 
-	_ "github.com/microsoft/go-mssqldb"
-
 	"github.com/jmoiron/sqlx"
+	_ "github.com/microsoft/go-mssqldb" // SQL Server driver for database/sql
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
