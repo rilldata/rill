@@ -78,7 +78,7 @@
   $: hasProjects = projectCount > 0;
 
   function getProjectUrl(projectName: string) {
-    return `/${organization}/${projectName}/-/share`;
+    return `/${organization}/${projectName}/-/dashboards?share=true`;
   }
 
   function formatRoleName(roleName: string): string {
@@ -106,6 +106,8 @@
       {#each accessibleProjects as project (project.id)}
         <Dropdown.Item
           href={getProjectUrl(project.name)}
+          target="_blank"
+          rel="noopener noreferrer"
           class="flex items-center justify-between gap-4"
         >
           <span class="truncate">{project.name}</span>

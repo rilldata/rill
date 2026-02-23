@@ -299,7 +299,7 @@
     }),
   );
 
-  const { form, enhance, submit, errors, submitting } = superForm(
+  const { form, enhance, submit, errors, submitting, reset } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
@@ -327,9 +327,6 @@
       : undefined;
   }
 
-  // Check if form has been modified
-  $: hasFormChanges = $form.name !== initialValues.name;
-
   function handleClose() {
     open = false;
     searchInput = "";
@@ -340,11 +337,7 @@
     selectedRole = ProjectUserRoles.Viewer;
     projectDropdownOpen = false;
     roleDropdownOpen = false;
-    $errors = {};
-    // Only reset the form if it has been modified
-    if (hasFormChanges) {
-      $form.name = initialValues.name;
-    }
+    reset();
   }
 </script>
 
