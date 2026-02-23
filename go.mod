@@ -101,6 +101,7 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/azure v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/clickhouse v0.33.0
 	github.com/testcontainers/testcontainers-go/modules/compose v0.39.1
+	github.com/testcontainers/testcontainers-go/modules/mssql v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/mysql v0.35.0
 	github.com/xuri/excelize/v2 v2.7.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0
@@ -139,8 +140,6 @@ require (
 	k8s.io/client-go v0.32.3
 	modernc.org/sqlite v1.29.6
 )
-
-require github.com/testcontainers/testcontainers-go/modules/mssql v0.40.0
 
 require (
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.3.3 // indirect
