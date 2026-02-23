@@ -217,6 +217,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     content="Read Iceberg tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/iceberg"
     linkLabel="Learn more"
+    referenceLink="iceberg"
   />
 </div>
 

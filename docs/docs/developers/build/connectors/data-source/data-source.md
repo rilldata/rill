@@ -158,6 +158,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Read Iceberg tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/iceberg"
     linkLabel="Learn more"
+    referenceLink="iceberg"
   />
 </div>
 
