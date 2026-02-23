@@ -140,6 +140,8 @@ require (
 	modernc.org/sqlite v1.29.6
 )
 
+require github.com/testcontainers/testcontainers-go/modules/mssql v0.40.0 // indirect
+
 require (
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.3.3 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-arm64 v0.3.3 // indirect

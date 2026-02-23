@@ -2387,6 +2387,8 @@ github.com/testcontainers/testcontainers-go/modules/clickhouse v0.33.0 h1:YbB5DB
 github.com/testcontainers/testcontainers-go/modules/clickhouse v0.33.0/go.mod h1:qJuMPl9yWIWasmdBILM2uDk1Ny1kdeigcKMJ6A8PZz0=
 github.com/testcontainers/testcontainers-go/modules/compose v0.39.1 h1:/3kEZY3xH/ibgnUGAACmEcqVIqfXzqD1LdXnJqfsBrM=
 github.com/testcontainers/testcontainers-go/modules/compose v0.39.1/go.mod h1:qxH8QmljpneFWkGJ7RzjPOnoyRN760OZdq3bE0aG/bg=
+github.com/testcontainers/testcontainers-go/modules/mssql v0.40.0 h1:0Q+9qFg6h6TGcjeR77RiAHP0rLKveKq0NPxhjKEHDyI=
+github.com/testcontainers/testcontainers-go/modules/mssql v0.40.0/go.mod h1:Rjr3Kc8N3gZaYY+gphybvO7sqLl5GfMCKI+eDPb29h0=
 github.com/testcontainers/testcontainers-go/modules/mysql v0.35.0 h1:9voGAf+1KxC0ck/XtrC/AUrkr74SSGpQRBp0O851B3Y=
 github.com/testcontainers/testcontainers-go/modules/mysql v0.35.0/go.mod h1:rxKSkFpc5XZtG00prjqPfobuMgt5EpFEOrzZgYdOX0c=
 github.com/theupdateframework/notary v0.7.0 h1:QyagRZ7wlSpjT5N2qQAh/pN+DVqgekv4DzbAiAiEL3c=
