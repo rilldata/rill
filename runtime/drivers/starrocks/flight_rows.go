@@ -10,6 +10,7 @@ import (
 	"github.com/apache/arrow-go/v18/arrow/flight"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/sqlconvert"
 )
 
 // queryFlightSQL executes a query using Arrow Flight SQL and returns a drivers.Result.
@@ -187,11 +188,13 @@ func (r *flightRows) Scan(dest ...any) error {
 
 	for i := 0; i < int(r.currentBatch.NumCols()); i++ {
 		col := r.currentBatch.Column(i)
-		if col.IsNull(int(r.batchIdx)) {
-			dest[i] = nil
-			continue
+		var val any
+		if !col.IsNull(int(r.batchIdx)) {
+			val = extractArrowValue(col, int(r.batchIdx), r.arrowSchema.Field(i).Type)
 		}
-		dest[i] = extractArrowValue(col, int(r.batchIdx), r.arrowSchema.Field(i).Type)
+		if err := sqlconvert.ConvertAssign(dest[i], val); err != nil {
+			return fmt.Errorf("scan column %d (%s): %w", i, r.arrowSchema.Field(i).Name, err)
+		}
 	}
 
 	return nil

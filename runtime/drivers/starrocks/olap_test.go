@@ -111,6 +111,10 @@ func TestStarRocksOLAP(t *testing.T) {
 
 	// Flight SQL-specific tests
 	t.Run("FlightSQL/AllTypesFromTable", func(t *testing.T) { testFlightAllTypesFromTable(t, flightOLAP) })
+	t.Run("FlightSQL/ScanWithPointers", func(t *testing.T) { testFlightScanWithPointers(t, flightOLAP) })
+	t.Run("FlightSQL/ScanNullValues", func(t *testing.T) { testFlightScanNullValues(t, flightOLAP) })
+	t.Run("FlightSQL/ScanColumnMismatch", func(t *testing.T) { testFlightScanColumnMismatch(t, flightOLAP) })
+	t.Run("FlightSQL/ParameterFallback", func(t *testing.T) { testFlightParameterFallback(t, flightOLAP) })
 }
 
 func testVarcharNotBinary(t *testing.T, olap drivers.OLAPStore) {
