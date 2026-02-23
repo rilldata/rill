@@ -7,45 +7,47 @@ export const databricksSchema: MultiStepFormSchema = {
   "x-category": "warehouse",
   "x-form-height": "tall",
   properties: {
-    account: {
+    host: {
       type: "string",
       title: "Host",
       description: "",
       "x-placeholder": "adb-12345.azuredatabricks.net",
-      "x-hint": "",
+      "x-hint": "Your Databricks workspace hostname.",
     },
     http_path: {
       type: "string",
       title: "HTTP Path",
       description: "",
-      "x-placeholder": "",
+      "x-placeholder": "/sql/1.0/warehouses/abc123",
+      "x-hint": "The HTTP path to your SQL warehouse or cluster.",
     },
     token: {
       type: "string",
       title: "Access Token",
       description: "",
-      "x-placeholder": "Access Token",
+      "x-placeholder": "dapi...",
       "x-secret": true,
       "x-env-var-name": "DATABRICKS_TOKEN",
-      "x-visible-if": { auth_method: "token" },
+      "x-hint":
+        "A Databricks personal access token. This will be stored securely.",
     },
     catalog: {
       type: "string",
       title: "Catalog",
-      description: "Databricks catalog",
-      "x-placeholder": "",
+      description: "Unity Catalog catalog name",
+      "x-placeholder": "main",
     },
     schema: {
       type: "string",
       title: "Schema",
-      description: "Default schema",
-      "x-placeholder": "public",
+      description: "Default schema within the catalog",
+      "x-placeholder": "default",
     },
     sql: {
       type: "string",
       title: "SQL",
       description: "SQL query to run against your warehouse",
-      "x-placeholder": "Input SQL",
+      "x-placeholder": "SELECT * FROM my_table",
       "x-step": "explorer",
     },
     name: {
@@ -57,15 +59,5 @@ export const databricksSchema: MultiStepFormSchema = {
       "x-step": "explorer",
     },
   },
-  required: ["sql", "name"],
-  allOf: [
-    {
-      if: {
-        properties: { auth_method: { const: "token" } },
-      },
-      then: {
-        required: ["host", "http_path", "token"],
-      },
-    },
-  ],
+  required: ["host", "http_path", "token", "sql", "name"],
 };
