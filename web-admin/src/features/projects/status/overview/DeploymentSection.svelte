@@ -108,7 +108,7 @@
       </div>
     {/if}
 
-    {#if primaryBranch}
+    {#if isGithubConnected && primaryBranch}
       <div class="info-row">
         <span class="info-label">Branch</span>
         <span class="info-value">{primaryBranch}</span>
