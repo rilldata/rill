@@ -71,7 +71,7 @@ curl -X POST http://localhost:9009/v1/instances/default/api/my-api \
 ```
 
 :::note
-User attributes (`{{ .user.* }}`) are not available during local testing since no authentication token is provided. To test with user attributes locally, you can pass them as query parameters or in the POST body. To test in a production-like setup, deploy to Rill Cloud and use a service token with [custom attributes](/developers/build/custom-apis/security#custom-attributes-on-service-tokens).
+User attributes (`{{ .user.* }}`) are not available during local testing since no authentication token is provided. To test with user attributes, deploy to Rill Cloud and use a service token with [custom attributes](/developers/build/custom-apis/security#custom-attributes-on-service-tokens).
 :::
 
 ## Authentication
@@ -103,6 +103,10 @@ rill service create my-api-service \
 ```
 
 Custom attributes on the token are available in your API templates as `{{ .user.customer_id }}`. See [Security & Access Control](/developers/build/custom-apis/security) for details on how to use custom attributes to build multi-tenant APIs.
+
+:::note
+If you need short-lived tokens with custom attributes for end users, use the [ephemeral token feature](/developers/build/custom-apis/security#issuing-ephemeral-tokens) instead of creating a service token per user.
+:::
 
 :::tip Token Documentation
 For full guidance on token types, roles, and management:

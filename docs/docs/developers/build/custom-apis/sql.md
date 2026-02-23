@@ -120,16 +120,16 @@ Queries to external connectors execute directly on your data source and incur co
 To minimize costs: use `LIMIT` clauses, apply filters to reduce data scanned, and consider materializing frequently accessed queries as [models](/developers/build/models) in DuckDB.
 :::
 
-## When to use external connectors vs DuckDB
+## When to use external connectors vs your OLAP engine
 
-| Factor | DuckDB (default) | External connector |
+| Factor | OLAP engine (default) | External connector |
 |--------|-------------------|--------------------|
 | **Query speed** | Fast — data is local | Depends on source (network + query time) |
 | **Data freshness** | As of last refresh | Real-time from the source |
 | **Cost** | No additional cost | Per-query costs from your provider |
-| **Best for** | End-user facing APIs, high-volume | Internal tools, real-time access, ad-hoc queries |
+| **Best for** | Low-latency APIs, pre-modeled data | Real-time access, ad-hoc queries |
 
-**Use DuckDB** when you need fast, low-cost queries — especially for external customers or high-volume endpoints. Your data is already in Rill models and refreshes on a schedule.
+**Use your OLAP engine** when you need fast, low-cost queries against data already modeled in Rill. Your data refreshes on a schedule and is optimized for analytical queries.
 
 **Use external connectors** when you need real-time access to the latest data, your data lives in the source database, or you're building internal tools where query costs are acceptable.
 

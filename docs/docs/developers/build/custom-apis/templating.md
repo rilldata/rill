@@ -25,7 +25,7 @@ Every template has access to the following context:
 | `{{ .export }}` | `bool` | `true` when the API is being resolved for export (CSV, Excel, Parquet) |
 
 :::note
-When testing locally (`localhost:9009`), `.user` attributes are not available since no authentication is required. To test with user attributes locally, you can pass them as query parameters or use the POST body.
+When testing locally (`localhost:9009`), `.user` attributes are not available since no authentication is required. To test with user attributes, deploy to Rill Cloud and use a service token with [custom attributes](/developers/build/custom-apis/security#custom-attributes-on-service-tokens).
 :::
 
 ## Dynamic arguments
@@ -85,17 +85,8 @@ sql: |
 
 ### Custom attributes from service tokens
 
-When you create a [service token with custom attributes](/developers/build/custom-apis/security#custom-attributes-on-service-tokens), those attributes are available in templates:
+[Service tokens with custom attributes](/developers/build/custom-apis/security#custom-attributes-on-service-tokens) are available in templates as `{{ .user.<attribute> }}`:
 
-```bash
-# Create a service token with custom attributes
-rill service create acme-api \
-  --project my-project \
-  --project-role viewer \
-  --attributes '{"customer_id": "acme-corp", "region": "us-west"}'
-```
-
-Reference them in your API:
 ```yaml
 type: api
 sql: |
@@ -105,7 +96,7 @@ sql: |
     AND region = '{{ .user.region }}'
 ```
 
-See [Security & Access Control](/developers/build/custom-apis/security) for a full walkthrough of custom attributes.
+See [Security & Access Control](/developers/build/custom-apis/security) for creating tokens and a full multi-tenant walkthrough.
 
 ## Conditional logic
 
