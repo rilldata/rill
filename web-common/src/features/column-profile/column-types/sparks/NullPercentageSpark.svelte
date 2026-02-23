@@ -31,8 +31,9 @@
         style:font-size="{COLUMN_PROFILE_CONFIG.fontSize}px"
         class="ui-copy-number"
         class:text-gray-300={nullCount === 0}
-        >{singleDigitPercentage(percentage)}</span
       >
+        {singleDigitPercentage(percentage)}
+      </span>
     </BarAndLabel>
     <TooltipContent slot="tooltip-content">
       {#if nullCount > 0}

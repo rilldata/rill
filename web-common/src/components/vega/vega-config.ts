@@ -1,4 +1,4 @@
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { getSequentialColorsAsHex } from "@rilldata/web-common/features/themes/palette-store";
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
@@ -170,7 +170,7 @@ export const getRillTheme: (
     },
     range: {
       category: (() => {
-        const defaultColors = COMPARIONS_COLORS.map((color) =>
+        const defaultColors = COMPARISON_COLORS.map((color) =>
           color.startsWith("var(")
             ? resolveCSSVariable(color, isDarkMode)
             : color,

@@ -107,9 +107,9 @@ export function interceptTimeseriesResponse(
  * Gets the chart container element for timeseries
  */
 export function getChartContainer(page: Page) {
-  // The chart SVG has role="application" and contains path elements for the line
+  // The chart SVG has an aria-label and contains path elements for the line
   return page
-    .locator('svg[role="application"]')
+    .locator('svg[aria-label*="Measure Chart"]')
     .filter({ has: page.locator("path") })
     .first();
 }

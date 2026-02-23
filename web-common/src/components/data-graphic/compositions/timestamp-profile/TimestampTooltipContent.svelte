@@ -14,10 +14,9 @@
   } from "@rilldata/web-common/lib/formatters";
   import { isClipboardApiSupported } from "../../../../lib/actions/copy-to-clipboard";
   import TimestampSpark from "./TimestampSpark.svelte";
+  import type { TimestampDataPoint } from "@rilldata/web-common/features/column-profile/queries";
 
-  export let xAccessor: string;
-  export let yAccessor: string;
-  export let data;
+  export let data: TimestampDataPoint[];
   // FIXME: document meaning of these special looking numbers
   // e.g. something like width = y* CHAR_HEIGHT, height = CHAR_HEIGHT?
   export let width = 84;
@@ -78,17 +77,13 @@
       <div style:display="inline-grid">
         <TimestampSpark
           {data}
-          {xAccessor}
-          {yAccessor}
           {width}
           {height}
           left={0}
           right={0}
           top={0}
           bottom={0}
-          color="hsla(217,1%,99%, .5)"
-          zoomWindowColor="hsla(217, 70%, 60%, .6)"
-          zoomWindowBoundaryColor="hsla(217, 10%, 90%, .9)"
+          color="var(--color-teal-300)"
           {zoomWindowXMin}
           {zoomWindowXMax}
         />

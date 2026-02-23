@@ -48,6 +48,12 @@
   .ui-measure-bar-excluded {
     @apply bg-surface-overlay;
   }
+
+  .text-outline {
+    stroke: var(--surface-background);
+    stroke-width: 4px;
+    paint-order: stroke;
+  }
 }
 
 @layer base {

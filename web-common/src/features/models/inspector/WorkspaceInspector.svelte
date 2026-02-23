@@ -302,6 +302,6 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply transition duration-200 py-2 flex flex-col gap-y-2;
+    @apply py-2 flex flex-col gap-y-2;
   }
 </style>

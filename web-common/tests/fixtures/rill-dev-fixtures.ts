@@ -31,7 +31,15 @@ export const rillDev = base.extend<MyFixtures>({
   rillDevBrowserState: [undefined, { option: true }],
 
   rillDevPage: async (
-    { browser, project, projectDir, cliHomeDir, rillDevBrowserState },
+    {
+      browser,
+      project,
+      projectDir,
+      cliHomeDir,
+      rillDevBrowserState,
+      timezoneId,
+      locale,
+    },
     use,
   ) => {
     const TEST_PORT = await getOpenPort();
@@ -99,20 +107,18 @@ export const rillDev = base.extend<MyFixtures>({
       }
     });
 
-    const context = await browser.newContext(
-      rillDevBrowserState
-        ? {
-            storageState: rillDevBrowserState,
-          }
-        : {
-            storageState: { cookies: [], origins: [] },
-          },
-    );
+    const context = await browser.newContext({
+      storageState: rillDevBrowserState ?? { cookies: [], origins: [] },
+      ...(timezoneId ? { timezoneId } : {}),
+      ...(locale ? { locale } : {}),
+    });
     const page = await context.newPage();
 
     await page.goto(`http://localhost:${TEST_PORT}`);
 
-    // Seems to help with issues related to DOM elements not being ready
+    // Give the runtime time to reconcile initial resources. Tests that
+    // navigate directly to explore URLs (via page.goto) need the explore
+    // to exist before navigation.
     await page.waitForTimeout(1500);
 
     await use(page);

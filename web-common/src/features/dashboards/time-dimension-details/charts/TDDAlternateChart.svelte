@@ -9,6 +9,10 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import type {
+    TimeSeriesPoint,
+    DimensionSeriesData,
+  } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
   import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import {
@@ -30,8 +34,11 @@
   import { VegaSignalManager } from "./vega-signal-manager";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
 
-  export let totalsData: TimeSeriesDatum[];
-  export let dimensionData: DimensionDataItem[];
+  export let totalsData: TimeSeriesDatum[] | undefined = undefined;
+  export let dimensionData: DimensionDataItem[] | undefined = undefined;
+  /** MeasureChart native types — converted to TimeSeriesDatum/DimensionDataItem internally */
+  export let timeSeriesPoints: TimeSeriesPoint[] | undefined = undefined;
+  export let dimensionSeriesData: DimensionSeriesData[] | undefined = undefined;
   export let expandedMeasureName: string;
   export let chartType: TDDAlternateCharts;
   export let xMin: Date | undefined;
@@ -61,9 +68,49 @@
 
   $: themeMode = $current;
 
-  $: hasDimensionData = !!dimensionData?.length;
-  $: data = hasDimensionData ? reduceDimensionData(dimensionData) : totalsData;
-  $: selectedValues = hasDimensionData ? dimensionData.map((d) => d.value) : [];
+  // Convert MeasureChart types to TDD types when provided
+  $: effectiveTotalsData =
+    totalsData ??
+    (timeSeriesPoints
+      ? timeSeriesPoints.map(
+          (pt): TimeSeriesDatum => ({
+            ts: pt.ts.toJSDate(),
+            [expandedMeasureName]: pt.value ?? undefined,
+            [`comparison.${expandedMeasureName}`]:
+              pt.comparisonValue ?? undefined,
+            "comparison.ts": pt.comparisonTs?.toJSDate(),
+          }),
+        )
+      : []);
+
+  $: effectiveDimensionData =
+    dimensionData ??
+    dimensionSeriesData?.map(
+      (dim): DimensionDataItem => ({
+        value: dim.dimensionValue,
+        color: dim.color,
+        isFetching: dim.isFetching,
+        total: dim.total,
+        data: dim.data.map(
+          (pt): TimeSeriesDatum => ({
+            ts: pt.ts.toJSDate(),
+            [expandedMeasureName]: pt.value ?? undefined,
+            [`comparison.${expandedMeasureName}`]:
+              pt.comparisonValue ?? undefined,
+            "comparison.ts": pt.comparisonTs?.toJSDate(),
+          }),
+        ),
+      }),
+    ) ??
+    [];
+
+  $: hasDimensionData = !!effectiveDimensionData?.length;
+  $: data = hasDimensionData
+    ? reduceDimensionData(effectiveDimensionData)
+    : effectiveTotalsData;
+  $: selectedValues = hasDimensionData
+    ? effectiveDimensionData.map((d) => d.value)
+    : [];
   $: expandedMeasureLabel = $measureLabel(expandedMeasureName);
   $: measure = $getMeasureByName(expandedMeasureName);
   $: comparedDimensionLabel =
@@ -132,7 +179,7 @@
     timeGrain,
   );
 
-  function updateAdaptiveScrubRange(interval) {
+  const updateAdaptiveScrubRange = (() => {
     let rafId: number | null = null;
     let lastUpdateTime = 0;
     let currentInterval = 1000 / 60; // Start with 60fps
@@ -141,40 +188,40 @@
     const MAX_INTERVAL = 1000 / 30; // Min 30fps
     const ADJUSTMENT_FACTOR = 1.2; // Adjust interval based on performance
 
-    if (rafId) {
-      cancelAnimationFrame(rafId);
-    }
-
-    rafId = requestAnimationFrame((timestamp) => {
-      const elapsed = timestamp - lastUpdateTime;
-      if (elapsed >= currentInterval) {
-        onChartBrush(interval);
-        lastUpdateTime = timestamp;
-
-        // Adjust interval based on performance
-        if (elapsed > currentInterval * ADJUSTMENT_FACTOR) {
-          currentInterval = Math.min(
-            currentInterval * ADJUSTMENT_FACTOR,
-            MAX_INTERVAL,
-          );
-        } else {
-          currentInterval = Math.max(
-            currentInterval / ADJUSTMENT_FACTOR,
-            MIN_INTERVAL,
-          );
-        }
-      }
-      rafId = null;
-    });
-
     onDestroy(() => {
       if (rafId) {
         cancelAnimationFrame(rafId);
       }
     });
 
-    return updateAdaptiveScrubRange;
-  }
+    return (interval: { start: Date; end: Date }) => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+
+      rafId = requestAnimationFrame((timestamp) => {
+        const elapsed = timestamp - lastUpdateTime;
+        if (elapsed >= currentInterval) {
+          onChartBrush(interval);
+          lastUpdateTime = timestamp;
+
+          // Adjust interval based on performance
+          if (elapsed > currentInterval * ADJUSTMENT_FACTOR) {
+            currentInterval = Math.min(
+              currentInterval * ADJUSTMENT_FACTOR,
+              MAX_INTERVAL,
+            );
+          } else {
+            currentInterval = Math.max(
+              currentInterval / ADJUSTMENT_FACTOR,
+              MIN_INTERVAL,
+            );
+          }
+        }
+        rafId = null;
+      });
+    };
+  })();
 
   const signalListeners = {
     hover: (_name: string, value) => {
@@ -187,11 +234,11 @@
       const interval = resolveSignalIntervalField(value);
 
       // Update view to prevent race condition
-      viewVL.runAsync();
+      void viewVL.runAsync();
 
-      updateAdaptiveScrubRange(interval);
+      if (interval) updateAdaptiveScrubRange(interval);
     },
-    brush_end: (_name: string, value: boolean) => {
+    brush_end: (_name: string, value) => {
       const interval = resolveSignalIntervalField(value);
 
       if (interval) onChartBrushEnd(interval);

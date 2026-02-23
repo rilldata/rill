@@ -1,11 +1,14 @@
 <script lang="ts">
   import {
+    createLineGenerator,
+    createAreaGenerator,
+  } from "@rilldata/web-common/components/data-graphic/utils";
+  import {
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
     MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import type { ScaleLinear } from "d3-scale";
-  import { area, curveLinear, line } from "d3-shape";
   import type { ChartDataPoint } from "./types";
 
   export let data: ChartDataPoint[];
@@ -15,45 +18,31 @@
   export let strokeWidth = 4;
   export let fill: boolean | undefined;
 
-  $: curveFunction = curveLinear;
+  const gradientId = `chart-gradient-${Math.random().toString(36).slice(2, 11)}`;
 
-  $: lineFunction = line<ChartDataPoint>()
-    .defined(isDefined)
-    .x(indexAccessor)
-    .y(valueAccessor)
-    .curve(curveFunction);
+  $: lineFunction = createLineGenerator<ChartDataPoint>({
+    x: (d) => xScale(d.index),
+    y: (d) => yScale(d.value as number),
+    defined: (d) => d.value !== null && d.value !== undefined,
+  });
 
-  $: areaFunction = area<ChartDataPoint>()
-    .defined(isDefined)
-    .x(indexAccessor)
-    .y0(valueAccessor)
-    .y1(yScale.range()[0])
-    .curve(curveFunction);
+  $: areaFunction = createAreaGenerator<ChartDataPoint>({
+    x: (d) => xScale(d.index),
+    y0: yScale.range()[0],
+    y1: (d) => yScale(d.value as number),
+    defined: (d) => d.value !== null && d.value !== undefined,
+  });
 
   $: areaPath = areaFunction(data);
 
   $: path = lineFunction(data);
-
-  function isDefined(d: ChartDataPoint) {
-    return d.value !== null && d.value !== undefined;
-  }
-
-  function indexAccessor(d: ChartDataPoint) {
-    return xScale(d.index);
-  }
-
-  function valueAccessor(d: ChartDataPoint): number {
-    // We can safely assert this will be a number because we're using .defined()
-    // to filter out null/undefined values before this accessor is called
-    return yScale(d.value as number);
-  }
 </script>
 
 {#if fill}
-  <path d={areaPath} fill="url(#chart-gradient)" class="pointer-events-none" />
+  <path d={areaPath} fill="url(#{gradientId})" class="pointer-events-none" />
 
   <defs>
-    <linearGradient id="chart-gradient" x1="0" x2="0" y1="0" y2="1">
+    <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
       <stop
         offset="5%"
         stop-color={MainAreaColorGradientDark}

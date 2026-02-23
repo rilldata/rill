@@ -22,7 +22,6 @@ import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client
 import { derived, writable, type Readable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import type {
-  ChartInteractionColumns,
   HeaderData,
   HighlightedCell,
   TDDCellData,
@@ -474,13 +473,6 @@ export const useTimeDimensionDataStore =
 export const tableInteractionStore = writable<HighlightedCell>({
   dimensionValue: undefined,
   time: undefined,
-});
-
-export const chartInteractionColumn = writable<ChartInteractionColumns>({
-  yHover: undefined,
-  xHover: undefined,
-  scrubStart: undefined,
-  scrubEnd: undefined,
 });
 
 export const lastKnownPosition = writable<TablePosition>(undefined);
