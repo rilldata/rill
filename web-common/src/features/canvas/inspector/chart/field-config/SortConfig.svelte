@@ -5,9 +5,10 @@
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
   import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
-  import type {
-    ChartSortDirectionOptions,
-    FieldConfig,
+  import {
+    ChartSortType,
+    type ChartSortDirectionOptions,
+    type FieldConfig,
   } from "@rilldata/web-common/features/components/charts/types";
   import { List } from "lucide-svelte";
 
@@ -18,15 +19,17 @@
   let isCustomSortDropdownOpen = false;
 
   const sortOptions: { label: string; value: ChartSortDirectionOptions }[] = [
-    { label: "X-axis ascending", value: "x" },
-    { label: "X-axis descending", value: "-x" },
-    { label: "Y-axis ascending", value: "y" },
-    { label: "Y-axis descending", value: "-y" },
-    { label: "Color ascending", value: "color" },
-    { label: "Color descending", value: "-color" },
-    { label: "Measure ascending", value: "measure" },
-    { label: "Measure descending", value: "-measure" },
-    { label: "Custom", value: "custom" },
+    { label: "X-axis ascending", value: ChartSortType.X_ASC },
+    { label: "X-axis descending", value: ChartSortType.X_DESC },
+    { label: "Y-axis ascending", value: ChartSortType.Y_ASC },
+    { label: "Y-axis descending", value: ChartSortType.Y_DESC },
+    { label: "Y-axis delta ascending", value: ChartSortType.Y_DELTA_ASC },
+    { label: "Y-axis delta descending", value: ChartSortType.Y_DELTA_DESC },
+    { label: "Color ascending", value: ChartSortType.COLOR_ASC },
+    { label: "Color descending", value: ChartSortType.COLOR_DESC },
+    { label: "Measure ascending", value: ChartSortType.MEASURE_ASC },
+    { label: "Measure descending", value: ChartSortType.MEASURE_DESC },
+    { label: "Custom", value: ChartSortType.CUSTOM },
   ];
 
   $: sortOptionsForChart = sortOptions.filter((option) =>
@@ -36,8 +39,8 @@
   $: sortValue = fieldConfig.sort
     ? typeof fieldConfig.sort === "string"
       ? fieldConfig.sort
-      : "custom"
-    : (sortConfig?.defaultSort ?? "x");
+      : ChartSortType.CUSTOM
+    : (sortConfig?.defaultSort ?? ChartSortType.X_ASC);
 
   $: customSortDraggableItems = sortConfig?.customSortItems?.map((item) => ({
     id: sanitizeItemId(item),
@@ -59,9 +62,8 @@
     onChange("sort", reorderedItems);
   }
 
-  function handleSortChange(e: CustomEvent<string>) {
-    const newSortValue = e.detail;
-    if (newSortValue === "custom") {
+  function handleSortChange(newSortValue: string) {
+    if (newSortValue === ChartSortType.CUSTOM) {
       onChange("sort", sortConfig?.customSortItems);
     } else {
       onChange("sort", newSortValue);
@@ -79,9 +81,9 @@
         width={190}
         options={sortOptionsForChart}
         value={sortValue}
-        on:change={handleSortChange}
+        onChange={handleSortChange}
       />
-      {#if sortValue === "custom"}
+      {#if sortValue === ChartSortType.CUSTOM}
         <Popover.Root bind:open={isCustomSortDropdownOpen}>
           <Popover.Trigger>
             <IconButton rounded active={isCustomSortDropdownOpen}>
@@ -98,13 +100,13 @@
               minHeight="auto"
               maxHeight="300px"
             >
-              <div slot="empty" class="px-2 py-2 text-xs text-gray-500">
+              <div slot="empty" class="px-2 py-2 text-xs text-fg-secondary">
                 No sort item found
               </div>
               <div slot="item" let:item class="flex items-center gap-x-1">
                 <DragHandle
                   size="16px"
-                  className="text-gray-400 pointer-events-none"
+                  className="text-fg-secondary pointer-events-none"
                 />
                 <span class="text-xs truncate">{item.value}</span>
               </div>

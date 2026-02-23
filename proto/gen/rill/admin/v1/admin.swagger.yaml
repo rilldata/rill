@@ -455,7 +455,7 @@ paths:
           type: string
       x-visibility: public
     patch:
-      summary: UpdateOrganization deletes an organizations
+      summary: UpdateOrganization updates an organization
       operationId: AdminService_UpdateOrganization
       responses:
         "200":
@@ -934,50 +934,9 @@ paths:
           in: path
           required: true
           type: string
-  /v1/orgs/{org}/project/{project}/usergroups:
-    get:
-      summary: ListProjectMemberUsergroups lists the project's user groups
-      operationId: AdminService_ListProjectMemberUsergroups
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListProjectMemberUsergroupsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: org
-          in: path
-          required: true
-          type: string
-        - name: project
-          in: path
-          required: true
-          type: string
-        - name: role
-          description: Optionally filter by role
-          in: query
-          required: false
-          type: string
-        - name: includeCounts
-          description: Optionally include counts
-          in: query
-          required: false
-          type: boolean
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
   /v1/orgs/{org}/projects:
     get:
-      summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
+      summary: ListProjectsForOrganization lists all the projects currently available for a given organization.
       operationId: AdminService_ListProjectsForOrganization
       responses:
         "200":
@@ -1135,7 +1094,7 @@ paths:
           type: boolean
       x-visibility: public
     delete:
-      summary: DeleteProject deletes an project
+      summary: DeleteProject deletes a project
       operationId: AdminService_DeleteProject
       responses:
         "200":
@@ -1693,6 +1652,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/members:
     get:
       summary: ListProjectMemberUsers lists all the project members
@@ -1733,6 +1693,7 @@ paths:
           in: query
           required: false
           type: boolean
+      x-visibility: public
     post:
       summary: AddProjectMemberUser adds a member to the project
       operationId: AdminService_AddProjectMemberUser
@@ -1771,6 +1732,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}:
     get:
       summary: GetProjectMemberUser gets the member details
@@ -1797,6 +1759,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     delete:
       summary: RemoveProjectMemberUser removes member from the project
       operationId: AdminService_RemoveProjectMemberUser
@@ -1822,6 +1785,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     put:
       summary: SetProjectMemberUserRole sets the role for the member
       operationId: AdminService_SetProjectMemberUserRole
@@ -1862,6 +1826,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
     get:
       summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
@@ -2284,11 +2249,13 @@ paths:
               resourceName:
                 type: string
                 description: Name of the resource to grant access to.
-              filter:
-                $ref: '#/definitions/v1Expression'
+              metricsViewFilters:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
                 description: |-
-                  Optional filter to apply as a row filter in queries.
-                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+                  Optional metrics view to filter mapping to apply as row filters in queries.
+                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
               fields:
                 type: array
                 items:
@@ -2308,6 +2275,48 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
                 description: list of resources to grant access to.
+  /v1/orgs/{org}/projects/{project}/usergroups:
+    get:
+      summary: ListProjectMemberUsergroups lists the user groups assigned to a project
+      operationId: AdminService_ListProjectMemberUsergroups
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberUsergroupsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
+          type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles:
     delete:
       summary: RemoveProjectMemberUsergroup revokes the project-level role for the user group
@@ -2334,8 +2343,9 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     post:
-      summary: AddProjectMemberUsergroupRole adds the role for the user group
+      summary: AddProjectMemberUsergroup adds a user group to the project with a role
       operationId: AdminService_AddProjectMemberUsergroup
       responses:
         "200":
@@ -2374,6 +2384,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
     put:
       summary: SetProjectMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetProjectMemberUsergroupRole
@@ -2414,6 +2425,7 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -2842,7 +2854,7 @@ paths:
             type: object
   /v1/orgs/{org}/usergroups:
     get:
-      summary: ListOrganizationMemberUsergroups lists the org's user groups
+      summary: ListOrganizationMemberUsergroups lists the organization's user groups
       operationId: AdminService_ListOrganizationMemberUsergroups
       responses:
         "200":
@@ -2877,6 +2889,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
     post:
       summary: CreateUsergroup creates a user group in the organization
       operationId: AdminService_CreateUsergroup
@@ -2902,6 +2915,7 @@ paths:
             properties:
               name:
                 type: string
+      x-visibility: public
   /v1/orgs/{org}/usergroups-for-user:
     get:
       summary: ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
@@ -2935,7 +2949,7 @@ paths:
           type: string
   /v1/orgs/{org}/usergroups/{usergroup}:
     get:
-      summary: GetUsergroups returns the user group details
+      summary: GetUsergroup returns the user group details
       operationId: AdminService_GetUsergroup
       responses:
         "200":
@@ -2964,6 +2978,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
     delete:
       summary: DeleteUsergroup deletes the user group from the organization
       operationId: AdminService_DeleteUsergroup
@@ -2985,14 +3000,15 @@ paths:
           in: path
           required: true
           type: string
-    post:
-      summary: RenameUsergroup renames the user group
-      operationId: AdminService_RenameUsergroup
+      x-visibility: public
+    patch:
+      summary: UpdateUsergroup updates a user group's name and/or description
+      operationId: AdminService_UpdateUsergroup
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RenameUsergroupResponse'
+            $ref: '#/definitions/v1UpdateUsergroupResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3012,37 +3028,11 @@ paths:
           schema:
             type: object
             properties:
-              name:
+              newName:
                 type: string
-    put:
-      summary: EditUsergroup renames the user group
-      operationId: AdminService_EditUsergroup
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1EditUsergroupResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: org
-          in: path
-          required: true
-          type: string
-        - name: usergroup
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
               description:
                 type: string
+      x-visibility: public
   /v1/orgs/{org}/usergroups/{usergroup}/members:
     get:
       summary: ListUsergroupMemberUsers lists all the user group members
@@ -3074,6 +3064,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
   /v1/orgs/{org}/usergroups/{usergroup}/members/{email}:
     delete:
       summary: RemoveUsergroupMemberUser removes member from the user group
@@ -3100,6 +3091,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     put:
       summary: AddUsergroupMemberUser adds a member to the user group
       operationId: AdminService_AddUsergroupMemberUser
@@ -3130,6 +3122,7 @@ paths:
           required: true
           schema:
             type: object
+      x-visibility: public
   /v1/orgs/{org}/usergroups/{usergroup}/role:
     delete:
       summary: RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
@@ -4399,6 +4392,31 @@ paths:
           required: false
           type: string
 definitions:
+  GetAlertMetaResponseURLs:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      editUrl:
+        type: string
+      unsubscribeUrl:
+        type: string
+  GetReportMetaResponseDeliveryMeta:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
+      unsubscribeUrl:
+        type: string
+      userId:
+        type: string
+      userAttrs:
+        type: object
+        title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -4459,6 +4477,7 @@ definitions:
       - OPERATION_NIN
       - OPERATION_LIKE
       - OPERATION_NLIKE
+      - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
   v1AddOrganizationMemberUserResponse:
     type: object
@@ -4947,8 +4966,6 @@ definitions:
     type: object
   v1EditReportResponse:
     type: object
-  v1EditUsergroupResponse:
-    type: object
   v1ExportFormat:
     type: string
     enum:
@@ -4983,18 +5000,9 @@ definitions:
       recipientUrls:
         type: object
         additionalProperties:
-          $ref: '#/definitions/v1GetAlertMetaResponseURLs'
+          $ref: '#/definitions/GetAlertMetaResponseURLs'
       queryForAttributes:
         type: object
-  v1GetAlertMetaResponseURLs:
-    type: object
-    properties:
-      openUrl:
-        type: string
-      editUrl:
-        type: string
-      unsubscribeUrl:
-        type: string
   v1GetAlertYAMLResponse:
     type: object
     properties:
@@ -5087,6 +5095,9 @@ definitions:
       usesArchive:
         type: boolean
         description: Whether the deployment is git based or archive based.
+      duckdbConnectorConfig:
+        type: object
+        title: Duckdb connector config for the deployment
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
@@ -5241,11 +5252,15 @@ definitions:
       gitBranch:
         type: string
         description: The branch to use for the deployment.
-      gitEditBranch:
+      editable:
+        type: boolean
+        description: Whether editing is allowed. Set to true for dev deployments.
+      primaryBranch:
         type: string
-        description: |-
-          A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-          This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+        description: Primary branch of the project.
+      managedGitRepo:
+        type: boolean
+        description: Whether the git repo is managed by Rill.
       archiveDownloadUrl:
         type: string
         description: Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
@@ -5259,21 +5274,10 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      recipientUrls:
+      deliveryMeta:
         type: object
         additionalProperties:
-          $ref: '#/definitions/v1GetReportMetaResponseURLs'
-  v1GetReportMetaResponseURLs:
-    type: object
-    properties:
-      openUrl:
-        type: string
-      exportUrl:
-        type: string
-      editUrl:
-        type: string
-      unsubscribeUrl:
-        type: string
+          $ref: '#/definitions/GetReportMetaResponseDeliveryMeta'
   v1GetServiceResponse:
     type: object
     properties:
@@ -5648,8 +5652,10 @@ definitions:
         type: string
       resourceName:
         type: string
-      filter:
-        $ref: '#/definitions/v1Expression'
+      metricsViewFilters:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
       fields:
         type: array
         items:
@@ -6142,8 +6148,6 @@ definitions:
     type: object
   v1RemoveWhitelistedDomainResponse:
     type: object
-  v1RenameUsergroupResponse:
-    type: object
   v1RenewBillingSubscriptionResponse:
     type: object
     properties:
@@ -6162,10 +6166,16 @@ definitions:
         type: string
       intervalDuration:
         type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
       queryName:
         type: string
+        title: use resolver/resolver_properties instead
       queryArgsJson:
         type: string
+        title: use resolver/resolver_properties instead
       exportLimit:
         type: string
         format: uint64
@@ -6204,13 +6214,9 @@ definitions:
         type: string
         title: |-
           web_open_mode is used to determine how to create or disable open link for the report
-          - send "recipient" for older reports (old behaviour)
-          - send "creator" for reports that should be opened with creators permissions
+          - send "recipient" for reports that should be opened with recipient's permissions - requires login
+          - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
           - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-          - send "filtered" for reports that should be opened with creators permissions but with locked filters
-      filter:
-        $ref: '#/definitions/v1Expression'
-        title: use with OPEN_MODE_FILTERED
   v1RequestProjectAccessResponse:
     type: object
   v1ResourceName:
@@ -6621,6 +6627,11 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1UpdateUsergroupResponse:
+    type: object
+    properties:
+      usergroup:
+        $ref: '#/definitions/v1Usergroup'
   v1User:
     type: object
     properties:
@@ -6634,6 +6645,8 @@ definitions:
         type: string
       quotas:
         $ref: '#/definitions/v1UserQuotas'
+      pylonEmailHash:
+        type: string
       createdOn:
         type: string
         format: date-time

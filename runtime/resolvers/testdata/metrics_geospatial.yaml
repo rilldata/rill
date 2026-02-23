@@ -1,0 +1,148 @@
+connectors:
+  - clickhouse
+project_files:
+  clickhouse_data.yaml:
+    type: model
+    connector: clickhouse
+    output: clickhouse
+    sql: |
+      select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country, '(55.6761, 12.5683)'::Point as coordinates, '[[(55.4761, 12.3683), (55.4761, 12.7683), (55.8761, 12.7683), (55.8761, 12.3683)], [(55.4762, 12.3684), (55.4762, 12.7683), (55.8759, 12.7683), (55.8759, 12.3684)]]'::Polygon as area, 1 as val union all
+      select parseDateTimeBestEffort('2024-01-15T00:00:00Z') as time, 'US' as country, '(37.7749, -122.4194)'::Point as coordinates, '[[(37.5749, -122.6194), (37.5749, -122.2194), (37.9749, -122.2194), (37.9749, -122.6194)]]'::Polygon as area, 2 as val union all
+      select parseDateTimeBestEffort('2024-02-01T00:00:00Z') as time, 'US' as country, '(37.7749, -122.4194)'::Point as coordinates, '[[(37.5749, -122.6194), (37.5749, -122.2194), (37.9749, -122.2194), (37.9749, -122.6194)]]'::Polygon as area, 3 as val union all
+      select parseDateTimeBestEffort('2024-02-15T00:00:00Z') as time, 'US' as country, '(37.7749, -122.4194)'::Point as coordinates, '[[(37.5749, -122.6194), (37.5749, -122.2194), (37.9749, -122.2194), (37.9749, -122.6194)]]'::Polygon as area, 4 as val union all
+      select parseDateTimeBestEffort('2024-03-01T00:00:00Z') as time, 'DK' as country, '(55.6761, 12.5683)'::Point as coordinates, '[[(55.4761, 12.3683), (55.4761, 12.7683), (55.8761, 12.7683), (55.8761, 12.3683)], [(55.4762, 12.3684), (55.4762, 12.7683), (55.8759, 12.7683), (55.8759, 12.3684)]]'::Polygon as area, 5 as val
+  clickhouse_metrics.yaml:
+    type: metrics_view
+    model: clickhouse_data
+    timeseries: time
+    dimensions:
+      - column: country
+      - column: coordinates
+        type: geo
+      - column: area
+        type: geo
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+  duckdb_data.yaml:
+    type: model
+    connector: duckdb
+    output: duckdb
+    sql: |
+      select '2024-01-01T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 'POINT(55.6761 12.5683)'::GEOMETRY::POINT_2D as coordinates, 'POLYGON((55.4761 12.3683, 55.4761 12.7683, 55.8761 12.7683, 55.8761 12.3683),(55.4762 12.3684, 55.4762 12.7683, 55.8759 12.7683, 55.8759 12.3684))'::GEOMETRY::POLYGON_2D as area, 1 as val union all
+      select '2024-01-15T00:00:00Z'::TIMESTAMP as time, 'US' as country, 'POINT(37.7749 -122.4194)'::GEOMETRY::POINT_2D as coordinates, 'POLYGON((37.5749 -122.6194, 37.5749 -122.2194, 37.9749 -122.2194, 37.9749 -122.6194))'::GEOMETRY::POLYGON_2D as area, 2 as val union all
+      select '2024-02-01T00:00:00Z'::TIMESTAMP as time, 'US' as country, 'POINT(37.7749 -122.4194)'::GEOMETRY::POINT_2D as coordinates, 'POLYGON((37.5749 -122.6194, 37.5749 -122.2194, 37.9749 -122.2194, 37.9749 -122.6194))'::GEOMETRY::POLYGON_2D as area, 3 as val union all
+      select '2024-02-15T00:00:00Z'::TIMESTAMP as time, 'US' as country, 'POINT(37.7749 -122.4194)'::GEOMETRY::POINT_2D as coordinates, 'POLYGON((37.5749 -122.6194, 37.5749 -122.2194, 37.9749 -122.2194, 37.9749 -122.6194))'::GEOMETRY::POLYGON_2D as area, 4 as val union all
+      select '2024-03-01T00:00:00Z'::TIMESTAMP as time, 'DK' as country, 'POINT(55.6761 12.5683)'::GEOMETRY::POINT_2D as coordinates, 'POLYGON((55.4761 12.3683, 55.4761 12.7683, 55.8761 12.7683, 55.8761 12.3683),(55.4762 12.3684, 55.4762 12.7683, 55.8759 12.7683, 55.8759 12.3684))'::GEOMETRY::POLYGON_2D as area, 5 as val
+  duckdb_metrics.yaml:
+    type: metrics_view
+    model: duckdb_data
+    timeseries: time
+    dimensions:
+      - column: country
+      - column: coordinates
+        type: geo
+      - column: area
+        type: geo
+    measures:
+      - name: count
+        expression: count(*)
+      - name: sum
+        expression: sum(val)
+tests:
+  - name: duckdb_geospatial
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: country
+        - name: coordinates
+        - name: area
+      measures:
+        - name: sum
+    result:
+      - area:
+          - - - 55.4761
+              - 12.3683
+            - - 55.4761
+              - 12.7683
+            - - 55.8761
+              - 12.7683
+            - - 55.8761
+              - 12.3683
+          - - - 55.4762
+              - 12.3684
+            - - 55.4762
+              - 12.7683
+            - - 55.8759
+              - 12.7683
+            - - 55.8759
+              - 12.3684
+        coordinates:
+          - 55.6761
+          - 12.5683
+        country: DK
+        sum: 6
+      - area:
+          - - - 37.5749
+              - -122.6194
+            - - 37.5749
+              - -122.2194
+            - - 37.9749
+              - -122.2194
+            - - 37.9749
+              - -122.6194
+        coordinates:
+          - 37.7749
+          - -122.4194
+        country: US
+        sum: 9
+  - name: clickhouse_geospatial
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+        - name: coordinates
+        - name: area
+      measures:
+        - name: sum
+    result:
+      - area:
+          - - - 55.4761
+              - 12.3683
+            - - 55.4761
+              - 12.7683
+            - - 55.8761
+              - 12.7683
+            - - 55.8761
+              - 12.3683
+          - - - 55.4762
+              - 12.3684
+            - - 55.4762
+              - 12.7683
+            - - 55.8759
+              - 12.7683
+            - - 55.8759
+              - 12.3684
+        coordinates:
+          - 55.6761
+          - 12.5683
+        country: DK
+        sum: 6
+      - area:
+          - - - 37.5749
+              - -122.6194
+            - - 37.5749
+              - -122.2194
+            - - 37.9749
+              - -122.2194
+            - - 37.9749
+              - -122.6194
+        coordinates:
+          - 37.7749
+          - -122.4194
+        country: US
+        sum: 9

@@ -42,7 +42,7 @@ driver: duckdb
 	require.NoError(t, err)
 	defer release()
 
-	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -113,7 +113,7 @@ func TestGenerateMetricsViewWithAI(t *testing.T) {
 	testmode.Expensive(t)
 
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 		Files: map[string]string{
 			"ad_bids.sql": `SELECT now() AS time, 'DA' AS country, 3.141 as price`,
 		},
@@ -126,7 +126,7 @@ func TestGenerateMetricsViewWithAI(t *testing.T) {
 	require.NoError(t, err)
 	defer release()
 
-	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	tt := []struct {

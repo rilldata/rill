@@ -273,6 +273,21 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 	return nil
 }
 
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, release, err := c.acquireDB()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	ddl, err := db.DDL(ctx, table.Database, table.DatabaseSchema, table.Name)
+	if err != nil {
+		return c.checkErr(err)
+	}
+	table.DDL = ddl
+	return nil
+}
+
 func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 	var res []*drivers.OlapTable
 
@@ -378,6 +393,10 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_JSON
 	case "CHAR":
 		t.Code = runtimev1.Type_CODE_STRING
+	case "POINT_2D":
+		t.Code = runtimev1.Type_CODE_POINT
+	case "POLYGON_2D":
+		t.Code = runtimev1.Type_CODE_POLYGON
 	case "NULL":
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 	default:
@@ -389,6 +408,16 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	}
 
 	// Handle complex types
+
+	// NOTE: We need to detect 'POINT_2D' and 'POLYGON_2D' types here as they are inconveniently returned as STRUCTs from the driver
+	if dbt == "STRUCT(\"x\" DOUBLE, \"y\" DOUBLE)" {
+		t.Code = runtimev1.Type_CODE_POINT
+		return t, nil
+	}
+	if dbt == "STRUCT(\"x\" DOUBLE, \"y\" DOUBLE)[][]" {
+		t.Code = runtimev1.Type_CODE_POLYGON
+		return t, nil
+	}
 
 	// Handle arrays. They can have the format "type[]" or "type[N]"
 	openBracket := strings.LastIndex(dbt, "[")

@@ -20,7 +20,7 @@ You can see a few different example projects by visiting our [example github rep
 
 :::tip
 
-For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/deploy-dashboard/github-101).
+For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/developers/deploy/deploy-dashboard/github-101).
 
 :::
 
@@ -35,6 +35,7 @@ For more information about using Git or cloning projects locally, please see our
 - [Canvas Dashboard YAML](canvas-dashboards.md)
 - [Explore Dashboard YAML](explore-dashboards.md)
 - [Alert YAML](alerts.md)
+- [Report YAML](reports.md)
 - [API YAML](apis.md)
 - [Theme YAML](themes.md)
 - [Component YAML](component.md)

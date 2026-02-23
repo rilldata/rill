@@ -27,7 +27,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Postgres",
 	Description: "Connect to Postgres.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/postgres",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/postgres",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -294,8 +294,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsFileStore implements drivers.Connection.

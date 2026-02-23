@@ -23,7 +23,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "StarRocks",
 	Description: "Connect to StarRocks.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/starrocks",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/starrocks",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -322,8 +322,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 // StarRocks is a read-only OLAP connector, model management is not supported.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // initDB initializes the database connection.

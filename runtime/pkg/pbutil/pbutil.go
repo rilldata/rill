@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers/clickhouse"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/clickhouseutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -27,6 +27,15 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 	// In addition to the extra supported types, we also override handling for
 	// maps and lists since we need to use valToPB on nested fields.
 	case map[string]any:
+		// We need to handle DuckDB geometry points returned with this type
+		if t != nil && t.Code == runtimev1.Type_CODE_POINT {
+			st, err := structpb.NewList([]any{v["x"], v["y"]})
+			if err != nil {
+				return nil, err
+			}
+			return structpb.NewListValue(st), nil
+		}
+		// Generic case
 		var t2 *runtimev1.StructType
 		if t != nil {
 			t2 = t.StructType
@@ -37,6 +46,31 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		}
 		return structpb.NewStructValue(v2), nil
 	case []any:
+		// We need to handle DuckDB geometry polygons returned with this type
+		if t != nil && t.Code == runtimev1.Type_CODE_POLYGON {
+			outer := make([]any, len(v))
+			for i, v2 := range v {
+				v2, ok := v2.([]any)
+				if !ok {
+					continue
+				}
+				inner := make([]any, len(v2))
+				for j, v3 := range v2 {
+					v3, ok := v3.(map[string]any)
+					if !ok {
+						continue
+					}
+					inner[j] = []any{v3["x"], v3["y"]}
+				}
+				outer[i] = inner
+			}
+			st, err := structpb.NewList(outer)
+			if err != nil {
+				return nil, err
+			}
+			return structpb.NewListValue(st), nil
+		}
+		// Generic case
 		v2, err := ToListValue(v, t)
 		if err != nil {
 			return nil, err
@@ -138,7 +172,7 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			case runtimev1.Type_CODE_INTERVAL:
 				// ClickHouse currently returns INTERVALs as strings.
 				// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.
-				v2, ok := clickhouse.ParseIntervalToMillis(v)
+				v2, ok := clickhouseutil.ParseIntervalToMillis(v)
 				if ok {
 					return structpb.NewNumberValue(float64(v2)), nil
 				}
@@ -203,6 +237,20 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewStringValue(v.String()), nil
 	case orb.Point:
 		st, err := structpb.NewList([]any{v[0], v[1]})
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewListValue(st), nil
+	case orb.Polygon:
+		outer := make([]any, len(v))
+		for i, v2 := range v {
+			inner := make([]any, len(v2))
+			for j, v3 := range v2 {
+				inner[j] = []any{v3[0], v3[1]}
+			}
+			outer[i] = inner
+		}
+		st, err := structpb.NewList(outer)
 		if err != nil {
 			return nil, err
 		}

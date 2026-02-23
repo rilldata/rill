@@ -77,7 +77,7 @@
 
   $: resource = resourceQuery ? $resourceQuery?.data : undefined;
 
-  $: errorMessage = !validSpec
+  $: reconcileErrorMessage = !validSpec
     ? reconcileError || resource?.meta?.reconcileError
     : undefined;
 
@@ -85,6 +85,7 @@
     fetchedCanvas,
     isReconciling,
     existingStore,
+    instanceId,
   );
 
   $: ready = !!resolvedStore;
@@ -146,6 +147,7 @@
     fetchedCanvas: V1ResolveCanvasResponse | undefined,
     isReconciling: boolean,
     existingStore: CanvasStore | undefined,
+    instanceId: string,
   ) {
     if (fetchedCanvas && !isReconciling) {
       const metricsViews: Record<string, V1MetricsView | undefined> = {};
@@ -178,4 +180,4 @@
   <title>{canvasTitle || `${canvasName} - Rill`}</title>
 </svelte:head>
 
-<slot {ready} {errorMessage} {isLoading} {isReconciling} />
+<slot {ready} {reconcileErrorMessage} {isLoading} {isReconciling} />

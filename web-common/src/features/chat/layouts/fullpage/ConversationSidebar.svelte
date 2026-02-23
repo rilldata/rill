@@ -23,7 +23,9 @@
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
 
-  $: conversations = $listConversationsQuery.data?.conversations ?? [];
+  $: conversations = ($listConversationsQuery.data?.conversations ?? []).filter(
+    (c) => c.userAgent !== "rill/report",
+  );
   $: isLoading = $listConversationsQuery.isLoading;
   $: isError = $listConversationsQuery.isError;
 
@@ -124,7 +126,7 @@
 <style lang="postcss">
   .conversation-sidebar {
     @apply flex flex-col shrink-0 min-h-0 overflow-hidden;
-    @apply bg-surface border-r border-border;
+    @apply bg-surface-base border-r border-border;
     @apply transition-[width] duration-200 ease-in-out;
     width: 280px;
   }
@@ -172,7 +174,7 @@
   }
 
   .conversation-item:hover {
-    @apply bg-muted;
+    @apply bg-surface-muted;
   }
 
   .conversation-item.active {
@@ -180,11 +182,11 @@
   }
 
   .conversation-title {
-    @apply text-xs text-gray-700 truncate;
+    @apply text-xs text-fg-primary truncate;
   }
 
   .no-conversations {
-    @apply py-6 px-4 text-center text-gray-500 text-xs;
+    @apply py-6 px-4 text-center text-fg-secondary text-xs;
   }
 
   /* Responsive behavior */

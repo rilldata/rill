@@ -69,6 +69,8 @@ type Instance struct {
 	AIInstructions string `db:"ai_instructions"`
 	// FrontendURL is the URL of the web interface.
 	FrontendURL string `db:"frontend_url"`
+	// Theme is the name of the theme resource to use for AI-generated charts.
+	Theme string `db:"theme"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.
@@ -113,6 +115,10 @@ type InstanceConfig struct {
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
+	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
+	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
+	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
+	AIMaxQueryLimit int64 `mapstructure:"rill.ai.max_query_limit"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -172,8 +178,11 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
+		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
+		AIDefaultQueryLimit:                  25,
+		AIMaxQueryLimit:                      250,
 	}
 
 	// Resolve variables

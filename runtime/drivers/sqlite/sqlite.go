@@ -84,7 +84,7 @@ func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{
 		DisplayName: "SQLite",
 		Description: "Import data from SQLite into DuckDB.",
-		DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/sqlite",
+		DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/sqlite",
 		// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 		SourceProperties: []*drivers.PropertySpec{
 			{
@@ -207,8 +207,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsFileStore implements drivers.Connection.

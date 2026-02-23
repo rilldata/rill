@@ -38,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/duckdb",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/duckdb",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -76,6 +76,14 @@ var spec = drivers.Spec{
 			Description: "Query to run on DuckDB.",
 			Placeholder: "select * from table;",
 		},
+		{
+			Key:         "create_secrets_from_connectors",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Create secrets from connectors",
+			Description: "Comma-separated connector names to create temporary secrets before executing the SQL.",
+			NoPrompt:    true,
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -83,7 +91,7 @@ var spec = drivers.Spec{
 var motherduckSpec = drivers.Spec{
 	DisplayName: "MotherDuck",
 	Description: "MotherDuck SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/motherduck",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -129,6 +137,14 @@ var motherduckSpec = drivers.Spec{
 			DisplayName: "SQL",
 			Description: "Query to extract data from MotherDuck.",
 			Placeholder: "select * from table;",
+		},
+		{
+			Key:         "create_secrets_from_connectors",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Create secrets from connectors",
+			Description: "Comma-separated connector names to create temporary secrets before executing the SQL.",
+			NoPrompt:    true,
 		},
 	},
 	ImplementsOLAP: true,
@@ -430,17 +446,19 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 				return &selfToFileExecutor{c}, nil
 			}
 		}
+		if _, ok := opts.OutputHandle.AsObjectStore(); ok {
+			return &selfToObjectStoreExecutor{c}, nil
+		}
 	}
 	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	if c.config.Mode != modeReadWrite {
-		c.logger.Warn("Model execution is disabled. To enable modeling on this DuckDB database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
-		return nil, false
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
 	}
-	return c, true
+	return c, nil
 }
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
@@ -510,11 +528,13 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"INSTALL 'icu'",
 		"INSTALL 'parquet'",
 		"INSTALL 'httpfs'",
+		"INSTALL 'spatial'",
 		"LOAD 'json'",
 		"LOAD 'sqlite'",
 		"LOAD 'icu'",
 		"LOAD 'parquet'",
 		"LOAD 'httpfs'",
+		"LOAD 'spatial'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
 	)

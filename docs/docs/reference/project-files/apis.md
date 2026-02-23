@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: API YAML
-sidebar_position: 38
+sidebar_position: 39
 ---
 
 Custom APIs allow you to create endpoints that can be called to retrieve or manipulate data.
@@ -26,7 +26,7 @@ _[object]_ - OpenAPI specification for the API endpoint
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/build/metrics-view/security) for resources 
+_[object]_ - Defines [security rules and access control policies](/developers/build/metrics-view/security) for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 

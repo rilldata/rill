@@ -4,7 +4,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
+  import { sourceIngestionTracker } from "@rilldata/web-common/features/sources/sources-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -64,11 +64,11 @@
       : null;
 
   function close() {
-    sourceImportedPath.set(null);
+    sourceIngestionTracker.dismiss();
   }
 
   async function goToSource() {
-    await goto(`/files${$sourceImportedPath ?? ""}`);
+    await goto(`/files${sourcePath ?? ""}`);
     close();
   }
 
@@ -87,7 +87,7 @@
     <AlertDialog.Title>Source imported successfully</AlertDialog.Title>
 
     <AlertDialog.Description>
-      <span class="font-mono text-slate-800 break-all">{sourceName}</span> has been
+      <span class="font-mono text-fg-primary break-all">{sourceName}</span> has been
       ingested. What would you like to do next?
     </AlertDialog.Description>
 

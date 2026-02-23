@@ -10,12 +10,14 @@
 </script>
 
 <div class="flex flex-col gap-y-4">
-  <span class="text-gray-500 text-base font-normal leading-normal">
+  <span class="text-fg-secondary text-base font-normal leading-normal">
     Check out your projects below.
   </span>
 
   {#if $projs.data && $projs.data.projects?.length === 0}
-    <p class="text-gray-500 text-xs">This organization has no projects yet.</p>
+    <p class="text-fg-secondary text-xs">
+      This organization has no projects yet.
+    </p>
   {:else if $projs.data && $projs.data.projects?.length > 0}
     <ol class="flex gap-6 flex-wrap">
       {#each $projs.data.projects as proj}

@@ -8,7 +8,7 @@ export function getFilePathFromPagePath(path: string): string {
 
   switch (entityType) {
     case "source":
-      return `/files/sources/${entityName}.yaml`;
+      return `/files/models/${entityName}.yaml`;
     case "model":
       return `/files/models/${entityName}.sql`;
     case "dashboard":
@@ -26,7 +26,7 @@ export function getFilePathFromNameAndType(
     case EntityType.Connector:
       return `/connectors/${name}.yaml`;
     case EntityType.Table:
-      return `/sources/${name}.yaml`;
+      return `/models/${name}.yaml`;
     case EntityType.Model:
       return `/models/${name}.sql`;
     case EntityType.MetricsDefinition:
@@ -49,7 +49,7 @@ export function getFileAPIPathFromNameAndType(
     case EntityType.Connector:
       return `connectors/${name}.yaml`;
     case EntityType.Table:
-      return `sources/${name}.yaml`;
+      return `models/${name}.yaml`;
     case EntityType.Model:
       return `models/${name}.sql`;
     case EntityType.MetricsDefinition:
@@ -115,7 +115,7 @@ export function removeLeadingSlash(path: string): string {
 }
 
 // Add a leading slash if it doesn't exist.
-// Temporary, we should eventually make sure this is added in all places
+// While all files returned by Repo APIs have this already, AI interactions might not always have it.
 export function addLeadingSlash(path: string): string {
   if (path.startsWith("/")) return path;
   return "/" + path;
@@ -135,6 +135,7 @@ export const ResourceShortNameToResourceKind: Record<string, ResourceKind> = {
   alert: ResourceKind.Alert,
   api: ResourceKind.API,
   component: ResourceKind.Component,
+  connector: ResourceKind.Connector,
   canvas: ResourceKind.Canvas,
   metrics_view: ResourceKind.MetricsView,
   metricsview: ResourceKind.MetricsView,

@@ -26,7 +26,7 @@ func TestConversations(t *testing.T) {
 
 	// Setup test runtime and server with an LLM configured.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 		Files: map[string]string{
 			"models/orders.yaml": `
 type: model
@@ -57,7 +57,7 @@ measures:
 	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
 	// Create test server
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	// Create test context with claims (to test conversation listings, which filter by user ID)
@@ -302,9 +302,9 @@ func TestAgentChoiceAndContext(t *testing.T) {
 
 	// Setup test runtime and server with an LLM configured.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
+		AIConnector: "openai",
 	})
-	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	// Ask a question for the analyst agent

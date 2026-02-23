@@ -26,7 +26,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "BigQuery",
 	Description: "Import data from BigQuery.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/bigquery",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/bigquery",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "project_id",
@@ -207,8 +207,8 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {

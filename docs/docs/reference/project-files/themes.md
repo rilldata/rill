@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Theme YAML
-sidebar_position: 39
+sidebar_position: 40
 ---
 
 In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
@@ -80,17 +80,15 @@ type: theme
 light:
     primary: "#14B8A6" # Teal
     secondary: "#10B981" # Emerald
-    variables:
-        color-sequential-1: "hsl(180deg 80% 95%)"
-        color-sequential-5: "hsl(180deg 80% 50%)"
-        color-sequential-9: "hsl(180deg 80% 25%)"
-        color-qualitative-1: "hsl(156deg 56% 52%)"
-        color-qualitative-2: "hsl(27deg 100% 65%)"
+    color-sequential-1: "hsl(180deg 80% 95%)"
+    color-sequential-5: "hsl(180deg 80% 50%)"
+    color-sequential-9: "hsl(180deg 80% 25%)"
+    color-qualitative-1: "hsl(156deg 56% 52%)"
+    color-qualitative-2: "hsl(27deg 100% 65%)"
 dark:
     primary: "2DD4BF"
     secondary: "34D399"
-    variables:
-        color-sequential-1: "hsl(180deg 40% 30%)"
-        color-sequential-5: "hsl(180deg 50% 50%)"
-        color-sequential-9: "hsl(180deg 60% 70%)"
+    color-sequential-1: "hsl(180deg 40% 30%)"
+    color-sequential-5: "hsl(180deg 50% 50%)"
+    color-sequential-9: "hsl(180deg 60% 70%)"
 ```

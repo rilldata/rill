@@ -361,17 +361,46 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			})
 		}
 
-		attr = mdl.Attributes
-		if mdl.FilterJSON != "" {
-			expr := &runtimev1.Expression{}
-			err := protojson.Unmarshal([]byte(mdl.FilterJSON), expr)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
-			}
+		if len(mdl.Resources) == 0 {
+			// If no resources are specified, deny all access.
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Allow: false,
+					},
+				},
+			})
+		}
 
+		attr = mdl.Attributes
+		for mv, filter := range mdl.MetricsViewFilterJSONs {
+			expr := &runtimev1.Expression{}
+			err := protojson.Unmarshal([]byte(filter), expr)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view %q filter: %s", mv, err.Error())
+			}
+			if mv == "" {
+				return nil, status.Errorf(codes.Internal, "empty metrics view name in metrics view filter")
+			}
+			if mv == "*" { // backwards compatibility: apply to all MVs
+				rules = append(rules, &runtimev1.SecurityRule{
+					Rule: &runtimev1.SecurityRule_RowFilter{
+						RowFilter: &runtimev1.SecurityRuleRowFilter{
+							Expression: expr,
+						},
+					},
+				})
+				continue
+			}
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_RowFilter{
 					RowFilter: &runtimev1.SecurityRuleRowFilter{
+						ConditionResources: []*runtimev1.ResourceName{
+							{
+								Kind: runtime.ResourceKindMetricsView,
+								Name: mv,
+							},
+						},
 						Expression: expr,
 					},
 				},
@@ -403,7 +432,12 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		runtime.UseAI,
 	}
 	if permissions.ManageProject {
-		instancePermissions = append(instancePermissions, runtime.EditTrigger, runtime.ReadResolvers)
+		instancePermissions = append(
+			instancePermissions,
+			runtime.ReadInstance,
+			runtime.ReadResolvers,
+			runtime.EditTrigger,
+		)
 	}
 
 	var systemPermissions []runtime.Permission

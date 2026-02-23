@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
@@ -10,6 +9,8 @@
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
+  import { DatabaseIcon } from "lucide-svelte";
 
   async function openShowAddSourceModal() {
     addSourceModal.open();
@@ -27,23 +28,28 @@
     <span
       class="bg-gradient-to-r from-primary-900 to-primary-800 text-transparent bg-clip-text opacity-75"
     >
-      Welcome to Rill
+      Let’s get started!
     </span>
   </RadixH1>
   <div class="flex flex-col gap-y-2">
-    <Subheading twColor="text-slate-600">
-      Build fast operational dashboards that your team will actually use.
+    <Subheading twColor="text-fg-secondary">
+      Connect your data to build fast operational dashboards that your team will
+      actually use.
     </Subheading>
   </div>
-  <button
-    class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-500"
-    on:click={openShowAddSourceModal}
-  >
-    <div
-      class="flex flex-row gap-x-1 items-center text-sm font-medium text-white"
+  <div class="flex flex-row gap-x-2">
+    <button
+      class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-500"
+      on:click={openShowAddSourceModal}
     >
-      <Add className="text-white" />
-      Connect your data
-    </div>
-  </button>
+      <div
+        class="flex flex-row gap-x-1 items-center text-sm font-medium text-white"
+      >
+        <DatabaseIcon size="14px" />
+        Connect your data
+      </div>
+    </button>
+
+    <GenerateSampleData type="init" />
+  </div>
 </section>

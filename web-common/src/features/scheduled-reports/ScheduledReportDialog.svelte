@@ -99,11 +99,19 @@
   $: queryName =
     props.mode === "create"
       ? getQueryNameFromQuery(props.query)
-      : props.reportSpec.queryName;
+      : ((props.reportSpec.resolverProperties?.query_name as
+          | string
+          | undefined) ?? props.reportSpec.queryName);
   $: aggregationRequest = (
     props.mode === "create"
       ? props.query.metricsViewAggregationRequest
-      : JSON.parse(props.reportSpec.queryArgsJson || "{}")
+      : JSON.parse(
+          (props.reportSpec.resolverProperties?.query_args_json as
+            | string
+            | undefined) ??
+            props.reportSpec.queryArgsJson ??
+            "{}",
+        )
   ) as V1MetricsViewAggregationRequest;
 
   $: ({ filters, timeControls } =

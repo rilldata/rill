@@ -351,11 +351,17 @@ func (u *URLs) ReportExport(org, project, report, token string) string {
 
 // ReportUnsubscribe returns the URL for unsubscribing from the report.
 func (u *URLs) ReportUnsubscribe(org, project, report, token, email string) string {
-	queryParams := map[string]string{"token": token}
+	queryParams := map[string]string{
+		"org":     org,
+		"project": project,
+		"token":   token,
+	}
 	if email != "" {
 		queryParams["email"] = email
 	}
-	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "unsubscribe"), queryParams)
+	// We always fetch org and project under `/<org>/<project>` path prefix, so here we use a separate path for unsubscribe reports.
+	// Unsub token only has access to unsub and not for org or project data.
+	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), "-", "unsubscribe", "reports", report), queryParams)
 }
 
 // ReportEdit returns the URL for editing a report in the frontend.

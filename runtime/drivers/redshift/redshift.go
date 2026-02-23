@@ -29,7 +29,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Amazon Redshift",
 	Description: "Connect to Amazon Redshift database.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/redshift",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/redshift",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "aws_access_key_id",
@@ -214,8 +214,8 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {

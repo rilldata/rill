@@ -5,6 +5,7 @@ import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
 export function convertURLSearchParamsToExploreState(
   searchParams: URLSearchParams,
@@ -12,16 +13,23 @@ export function convertURLSearchParamsToExploreState(
   exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
-  const errors: Error[] = [];
+  let errors: Error[] = [];
   const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
     searchParams,
     metricsView,
     exploreSpec,
     defaultExplorePreset,
   );
+
   errors.push(...errorsFromPreset);
   const { partialExploreState, errors: errorsFromEntity } =
     convertPresetToExploreState(metricsView, exploreSpec, preset);
   errors.push(...errorsFromEntity);
+
+  if (searchParams.has(ExploreStateURLParams.IgnoreErrors)) {
+    // Ignore all errors. TODO: better handling in the future
+    errors = [];
+  }
+
   return { partialExploreState, errors };
 }

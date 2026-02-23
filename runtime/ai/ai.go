@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	goruntime "runtime"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"sync"
@@ -49,19 +50,28 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &RouterAgent{Runtime: rt})
 	RegisterTool(r, &AnalystAgent{Runtime: rt})
 	RegisterTool(r, &DeveloperAgent{Runtime: rt})
+	RegisterTool(r, &FeedbackAgent{Runtime: rt})
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
+	RegisterTool(r, &GetCanvas{Runtime: rt})
 	RegisterTool(r, &QueryMetricsViewSummary{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
 	RegisterTool(r, &CreateChart{Runtime: rt})
 
-	RegisterTool(r, &DevelopModel{Runtime: rt})
-	RegisterTool(r, &DevelopMetricsView{Runtime: rt})
+	RegisterTool(r, &DevelopFile{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
 	RegisterTool(r, &SearchFiles{Runtime: rt})
 	RegisterTool(r, &ReadFile{Runtime: rt})
 	RegisterTool(r, &WriteFile{Runtime: rt})
+	RegisterTool(r, &ProjectStatus{Runtime: rt})
+	RegisterTool(r, &QuerySQL{Runtime: rt})
+	RegisterTool(r, &ListTables{Runtime: rt})
+	RegisterTool(r, &ShowTable{Runtime: rt})
+	RegisterTool(r, &ListBuckets{Runtime: rt})
+	RegisterTool(r, &ListBucketObjects{Runtime: rt})
+
+	RegisterTool(r, &Navigate{})
 
 	return r
 }
@@ -1071,7 +1081,7 @@ func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out,
 	})
 }
 
-const llmRequestTimeout = 60 * time.Second
+const llmRequestTimeout = 3 * time.Minute
 
 // CompleteOptions provides options for Session.Complete.
 type CompleteOptions struct {
@@ -1242,7 +1252,10 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 
 			// Handle LLM completion error
 			if err != nil {
-				return nil, fmt.Errorf("completion failed: %w", err)
+				if errors.Is(err, llmCtx.Err()) && errors.Is(err, context.DeadlineExceeded) {
+					return nil, fmt.Errorf("LLM request timed out after %s: %w", llmRequestTimeout, err)
+				}
+				return nil, fmt.Errorf("completion failed: %w (stack: %s)", err, string(debug.Stack()))
 			}
 
 			// Break the tool call loop if no tool calls were requested.
@@ -1379,6 +1392,16 @@ func (s *Session) UnmarshalMessageContent(m *Message) (any, error) {
 	default:
 		return m.Content, nil
 	}
+}
+
+// MustUnmarshalMessageContent is like UnmarshalMessageContent but panics on error.
+// This should only be used in tests.
+func (s *Session) MustUnmarshalMessageContent(m *Message) any {
+	res, err := s.UnmarshalMessageContent(m)
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
 
 // NewCompletionMessage converts the message to an aiv1.CompletionMessage

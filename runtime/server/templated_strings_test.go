@@ -65,7 +65,7 @@ measures:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
 
-	server, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	tt := []struct {
@@ -240,7 +240,7 @@ measures:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
-	server, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 
 	tt := []struct {

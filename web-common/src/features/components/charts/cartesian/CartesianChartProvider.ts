@@ -1,15 +1,19 @@
-import type {
-  ChartDataQuery,
-  ChartDomainValues,
-  ChartFieldsMap,
-  ChartSortDirection,
-  FieldConfig,
+import {
+  ChartSortType,
+  type ChartDataQuery,
+  type ChartDomainValues,
+  type ChartFieldsMap,
+  type ChartSortDirection,
+  type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import {
   isFieldConfig,
   isMultiFieldConfig,
 } from "@rilldata/web-common/features/components/charts/util";
-import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import {
+  ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaPreviousSuffix,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -19,7 +23,7 @@ import {
   type V1Expression,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewAggregationSort,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
@@ -32,6 +36,7 @@ import {
 } from "svelte/store";
 import {
   getFilterWithNullHandling,
+  isSortByDelta,
   vegaSortToAggregationSort,
 } from "../query-util";
 
@@ -50,7 +55,7 @@ export type CartesianChartDefaultOptions = {
 
 const DEFAULT_NOMINAL_LIMIT = 20;
 const DEFAULT_SPLIT_LIMIT = 10;
-const DEFAULT_SORT = "-y" as ChartSortDirection;
+const DEFAULT_SORT = ChartSortType.Y_DESC as ChartSortDirection;
 
 export class CartesianChartProvider {
   private spec: Readable<CartesianChartSpec>;
@@ -88,6 +93,62 @@ export class CartesianChartProvider {
     return undefined;
   }
 
+  /**
+   * Resolves the x-axis sort for the aggregation query.
+   * For multi-measure charts, uses the first measure for y-based sorts.
+   * Delegates to vegaSortToAggregationSort which handles y_delta -> y
+   * fallback when comparison is not active.
+   */
+  private resolveXAxisSort(
+    config: CartesianChartSpec,
+    isMultiMeasure: boolean,
+    isComparisonActive: boolean,
+  ) {
+    if (config.x?.type !== "nominal" || !config.x?.field) {
+      return undefined;
+    }
+
+    if (isMultiMeasure) {
+      const sort = config.x?.sort;
+      const sortIsDelta = isSortByDelta(sort);
+      if (
+        sort === ChartSortType.Y_ASC ||
+        sort === ChartSortType.Y_DESC ||
+        sortIsDelta
+      ) {
+        // Use first measure for y-based sorts
+        const firstMeasure = config.y?.fields?.[0];
+        if (!firstMeasure) return undefined;
+
+        const isDesc =
+          sort === ChartSortType.Y_DESC || sort === ChartSortType.Y_DELTA_DESC;
+        return {
+          name:
+            sortIsDelta && isComparisonActive
+              ? firstMeasure + ComparisonDeltaAbsoluteSuffix
+              : firstMeasure,
+          desc: isDesc,
+        };
+      } else if (
+        sort === ChartSortType.X_ASC ||
+        sort === ChartSortType.X_DESC
+      ) {
+        return {
+          name: config.x.field,
+          desc: sort === ChartSortType.X_DESC,
+        };
+      }
+      return undefined;
+    }
+
+    return vegaSortToAggregationSort(
+      "x",
+      config,
+      this.defaultSort,
+      isComparisonActive,
+    );
+  }
+
   createChartDataQuery(
     runtime: Writable<Runtime>,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
@@ -113,36 +174,17 @@ export class CartesianChartProvider {
       }
     }
 
-    let xAxisSort: V1MetricsViewAggregationSort | undefined;
     let limit: number | undefined;
     let hasColorDimension = false;
     let colorDimensionName = "";
     let colorLimit: number | undefined;
 
     const dimensionName = config.x?.field;
+    const rawSort = config.x?.sort;
+    const sortIsDelta = isSortByDelta(rawSort);
 
     if (config.x?.type === "nominal" && dimensionName) {
       limit = config.x.limit ?? 100;
-      if (isMultiMeasure) {
-        const sort = config.x?.sort;
-        if (sort === "y" || sort === "-y") {
-          // Use first measure for y-based sorts
-          const firstMeasure = config.y?.fields?.[0];
-          if (firstMeasure) {
-            xAxisSort = {
-              name: firstMeasure,
-              desc: sort === "-y",
-            };
-          }
-        } else if (sort === "x" || sort === "-x") {
-          xAxisSort = {
-            name: dimensionName,
-            desc: sort === "-x",
-          };
-        }
-      } else {
-        xAxisSort = vegaSortToAggregationSort("x", config, this.defaultSort);
-      }
       dimensions = [{ name: dimensionName }];
     } else if (config.x?.type === "temporal" && dimensionName) {
       dimensions = [{ name: dimensionName }];
@@ -159,7 +201,13 @@ export class CartesianChartProvider {
     const topNXQueryOptionsStore = derived(
       [runtime, timeAndFilterStore],
       ([$runtime, $timeAndFilterStore]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+        const {
+          timeRange,
+          where,
+          hasTimeSeries,
+          comparisonTimeRange,
+          showTimeComparison,
+        } = $timeAndFilterStore;
         const instanceId = $runtime.instanceId;
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
@@ -169,15 +217,52 @@ export class CartesianChartProvider {
 
         const topNWhere = getFilterWithNullHandling(where, config.x);
 
+        const isComparisonActive =
+          showTimeComparison &&
+          !!comparisonTimeRange?.start &&
+          !!comparisonTimeRange?.end;
+
+        const xAxisSort = this.resolveXAxisSort(
+          config,
+          isMultiMeasure,
+          isComparisonActive,
+        );
+
+        // For delta sort with active comparison, add delta computed measure
+        let topNMeasures = measures;
+        let topNComparisonTimeRange: V1TimeRange | undefined = undefined;
+
+        if (sortIsDelta && isComparisonActive) {
+          const sortMeasureName = isMultiMeasure
+            ? config.y?.fields?.[0]
+            : config.y?.field;
+
+          if (sortMeasureName) {
+            const deltaFieldName =
+              sortMeasureName + ComparisonDeltaAbsoluteSuffix;
+            topNMeasures = [
+              ...measures,
+              {
+                name: deltaFieldName,
+                comparisonDelta: {
+                  measure: sortMeasureName,
+                },
+              },
+            ];
+            topNComparisonTimeRange = comparisonTimeRange;
+          }
+        }
+
         return getQueryServiceMetricsViewAggregationQueryOptions(
           instanceId,
           config.metrics_view,
           {
-            measures,
+            measures: topNMeasures,
             dimensions: [{ name: dimensionName }],
             sort: xAxisSort ? [xAxisSort] : undefined,
             where: topNWhere,
             timeRange: hasTimeSeries ? timeRange : undefined,
+            comparisonTimeRange: topNComparisonTimeRange,
             limit: limit?.toString(),
           },
           {
@@ -308,7 +393,7 @@ export class CartesianChartProvider {
           Array.from(measuresSet)
             .map((measureName) => {
               if (showTimeComparison && comparisonTimeRange?.start) {
-                return [
+                const result: V1MetricsViewAggregationMeasure[] = [
                   { name: measureName },
                   {
                     name: measureName + ComparisonDeltaPreviousSuffix,
@@ -317,6 +402,7 @@ export class CartesianChartProvider {
                     },
                   },
                 ];
+                return result;
               }
               return { name: measureName };
             })
@@ -328,7 +414,6 @@ export class CartesianChartProvider {
           {
             measures: measuresWithComparison,
             dimensions,
-            sort: xAxisSort ? [xAxisSort] : undefined,
             where: combinedWhere,
             timeRange,
             comparisonTimeRange:
