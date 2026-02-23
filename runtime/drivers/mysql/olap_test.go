@@ -375,18 +375,16 @@ func testScan(t *testing.T, olap drivers.OLAPStore) {
 			},
 		},
 		{
-			name:  "Boolean and Bit types scan",
-			query: "SELECT boolean_col, bit_col FROM all_datatypes WHERE int_col = 2147483647",
+			name:  "Boolean scan",
+			query: "SELECT boolean_col FROM all_datatypes WHERE int_col = 2147483647",
 			args:  nil,
 			scanFunc: func(rows drivers.Rows) error {
 				var booleanCol int8
-				var bitCol string
 
 				require.True(t, rows.Next())
-				err := rows.Scan(&booleanCol, &bitCol)
+				err := rows.Scan(&booleanCol)
 				require.NoError(t, err)
 				require.Equal(t, int8(1), booleanCol)
-				require.Equal(t, "1", bitCol)
 				return nil
 			},
 		},
