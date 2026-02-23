@@ -11,23 +11,18 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { mapParseErrorsToLines } from "../metrics-views/errors";
 
   export let fileArtifact: FileArtifact;
 
   $: ({ instanceId } = $runtime);
-  $: ({
-    hasUnsavedChanges,
-    autoSave,
-    path: filePath,
-    remoteContent,
-    fileName,
-  } = fileArtifact);
+  $: ({ hasUnsavedChanges, autoSave, path: filePath, fileName } = fileArtifact);
 
-  $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
-  $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: ({ data: resource } = $resourceQuery);
+
+  // Parse error for the editor gutter and banner
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient, instanceId);
+  $: parseError = $parseErrorQuery;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -41,8 +36,6 @@
 
   $: workspace = workspaces.get(filePath);
   $: selectedView = workspace.view;
-
-  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
 </script>
 
 <WorkspaceContainer>
@@ -65,7 +58,7 @@
   <div slot="body" class="size-full overflow-hidden flex flex-col">
     <div class="flex-1 min-h-0 overflow-hidden">
       {#if $selectedView === "code"}
-        <ThemeEditor bind:autoSave={$autoSave} {fileArtifact} {errors} />
+        <ThemeEditor bind:autoSave={$autoSave} {fileArtifact} {parseError} />
       {:else}
         <VisualTheme {filePath} />
       {/if}
