@@ -88,6 +88,10 @@ export function isPublicAlertPage(page: Page): boolean {
   );
 }
 
+export function isEditPage(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]/[project]/-/edit");
+}
+
 export function isProjectRequestAccessPage(page: Page): boolean {
   return !!page.route.id?.startsWith(
     "/[organization]/[project]/-/request-access",

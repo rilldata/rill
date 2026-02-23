@@ -46,6 +46,7 @@
     type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
   import {
+    isEditPage,
     isProjectPage,
     isPublicAlertPage,
     isPublicReportPage,
@@ -121,6 +122,7 @@
   $: branchPrefix = branchPathPrefix(activeBranch);
 
   $: onProjectPage = isProjectPage($page);
+  $: onEditPage = isEditPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onPublicReportOrAlertPage =
     isPublicReportPage($page) || isPublicAlertPage($page);
@@ -283,7 +285,10 @@
     body={error.response.data?.message}
   />
 {:else if projectData}
-  {#if isProjectAvailable && effectiveHost != null && effectiveInstanceId}
+  {#if onEditPage}
+    <!-- Edit session manages its own runtime; skip RuntimeProvider to avoid conflicts -->
+    <slot />
+  {:else if isProjectAvailable && effectiveHost != null && effectiveInstanceId}
     {#key `${effectiveHost}::${effectiveInstanceId}`}
       <RuntimeProvider
         host={effectiveHost}
