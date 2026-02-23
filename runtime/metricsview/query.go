@@ -258,19 +258,19 @@ type Subquery struct {
 type Operator string
 
 const (
-	OperatorUnspecified      Operator = ""
-	OperatorEq               Operator = "eq"
-	OperatorNeq              Operator = "neq"
-	OperatorLt               Operator = "lt"
-	OperatorLte              Operator = "lte"
-	OperatorGt               Operator = "gt"
-	OperatorGte              Operator = "gte"
-	OperatorIn               Operator = "in"
-	OperatorNin              Operator = "nin"
-	OperatorIlike            Operator = "ilike"
-	OperatorNilike           Operator = "nilike"
-	OperatorOr               Operator = "or"
-	OperatorAnd              Operator = "and"
+	OperatorUnspecified Operator = ""
+	OperatorEq          Operator = "eq"
+	OperatorNeq         Operator = "neq"
+	OperatorLt          Operator = "lt"
+	OperatorLte         Operator = "lte"
+	OperatorGt          Operator = "gt"
+	OperatorGte         Operator = "gte"
+	OperatorIn          Operator = "in"
+	OperatorNin         Operator = "nin"
+	OperatorIlike       Operator = "ilike"
+	OperatorNilike      Operator = "nilike"
+	OperatorOr          Operator = "or"
+	OperatorAnd         Operator = "and"
 	OperatorCast        Operator = "cast"
 )
 
