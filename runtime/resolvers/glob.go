@@ -198,15 +198,6 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, err
 	}
 
-	if len(entries) > 0 && entries[0].IsDir {
-		if r.props.Partition == globPartitionTypeUnspecified {
-			r.props.Partition = globPartitionTypeDirectory
-		}
-		if r.props.Partition == globPartitionTypeFile {
-			return nil, fmt.Errorf("glob is getting directory but glob type is %q", r.props.Partition)
-		}
-	}
-
 	var rows []map[string]any
 	switch r.props.Partition {
 	case globPartitionTypeUnspecified, globPartitionTypeFile:
@@ -242,19 +233,21 @@ func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, 
 func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []map[string]any {
 	rows := make([]map[string]any, 0, len(entries))
 	for _, entry := range entries {
+		p := path.Dir(entry.Path)
 		if entry.IsDir {
-			continue
+			// removing the tralling '/'
+			p = path.Dir(entry.Path)
 		}
 
 		uri := &globutil.URL{
 			Scheme: r.bucketURI.Scheme,
 			Host:   r.bucketURI.Host,
-			Path:   entry.Path,
+			Path:   p,
 		}
 
 		rows = append(rows, map[string]any{
 			"uri":        uri.String(),
-			"path":       entry.Path,
+			"path":       uri.Path,
 			"updated_on": entry.UpdatedOn,
 		})
 	}

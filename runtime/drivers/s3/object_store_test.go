@@ -14,7 +14,7 @@ import (
 )
 
 func TestObjectStore(t *testing.T) {
-	// testmode.Expensive(t)
+	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "s3")
 	conn, err := drivers.Open("s3", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
