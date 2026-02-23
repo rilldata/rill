@@ -8,46 +8,28 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
-// systemSchemas are Oracle built-in schemas excluded from browsing.
-var systemSchemas = []string{
-	"SYS", "SYSTEM", "DBSNMP", "APPQOSSYS", "DBSFWUSER", "REMOTE_SCHEDULER_AGENT",
-	"DGPDB_INT", "GGSYS", "ANONYMOUS", "CTXSYS", "DVSYS", "DVF", "GSMADMIN_INTERNAL",
-	"MDSYS", "OLAPSYS", "LBACSYS", "XDB", "WMSYS", "ORDPLUGINS", "ORDSYS", "SI_INFORMTN_SCHEMA",
-	"ORDDATA", "OJVMSYS", "ORACLE_OCM", "OUTLN", "XS$NULL", "AUDSYS",
-}
-
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
-	q := `
-	SELECT username
-	FROM all_users
-	WHERE username NOT IN (`
-	args := []any{}
-	for i, s := range systemSchemas {
-		if i > 0 {
-			q += ", "
-		}
-		q += fmt.Sprintf(":%d", i+1)
-		args = append(args, s)
-	}
-	q += ")"
-
-	nextParam := len(systemSchemas) + 1
+	// Query schemas that actually contain tables or views accessible to the current user,
+	// rather than listing all users and trying to exclude system accounts.
+	q := `SELECT owner FROM (
+		SELECT DISTINCT owner FROM all_tables
+		UNION
+		SELECT DISTINCT owner FROM all_views
+	) t`
+	var args []any
+	nextParam := 1
 	if pageToken != "" {
 		var startAfter string
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
-		q += fmt.Sprintf(" AND username > :%d", nextParam)
+		q += fmt.Sprintf(" WHERE owner > :%d", nextParam)
 		args = append(args, startAfter)
-		nextParam++
 	}
-	q += fmt.Sprintf(`
-	ORDER BY username
-	FETCH FIRST :%d ROWS ONLY
-	`, nextParam)
-	args = append(args, limit+1)
+	// Oracle does not support bind variables in FETCH FIRST; inline the limit value directly.
+	q += fmt.Sprintf(` ORDER BY owner FETCH FIRST %d ROWS ONLY`, limit+1)
 
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -104,10 +86,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		}
 		outerQ += fmt.Sprintf(" WHERE table_name > :%d", nextParam)
 		args = append(args, startAfter)
-		nextParam++
 	}
-	outerQ += fmt.Sprintf(` ORDER BY table_name FETCH FIRST :%d ROWS ONLY`, nextParam)
-	args = append(args, limit+1)
+	// Oracle does not support bind variables in FETCH FIRST; inline the limit value directly.
+	outerQ += fmt.Sprintf(` ORDER BY table_name FETCH FIRST %d ROWS ONLY`, limit+1)
 
 	db, err := c.getDB(ctx)
 	if err != nil {
