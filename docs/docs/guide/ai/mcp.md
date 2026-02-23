@@ -65,8 +65,14 @@ This ensures **trustworthy, governed analytics** while empowering users to **sel
 
 To use the Rill MCP server, you'll need:
 
-- An **MCP client** 
+- An **MCP client** (Claude Desktop, ChatGPT, Cursor, Windsurf, etc.)
 - A **running Rill project** (locally or hosted on Rill Cloud)
+
+For client-specific setup, refer to:
+- [Claude Desktop](https://modelcontextprotocol.io/quickstart/user)
+- [ChatGPT](https://platform.openai.com/docs/guides/tools-remote-mcp)
+- [Cursor](https://docs.cursor.com/context/model-context-protocol)
+- [Windsurf](https://docs.windsurf.com/windsurf/cascade/mcp)
 
 ## Connect using OAuth (Recommended)
 
@@ -260,6 +266,36 @@ Using all the above concepts, you can ask the Rill MCP server questions like:
 - In the *previous quarter*, compared to the current ongoing quarter, what are the __trends for customer access__?
 - In the *last 7 days*, how many __auction requests were there from mobile vs desktop__?
 
+
+## Customizing Your AI Agent
+
+LLMs can sometimes try to do too much — like generating web apps to visualize data when a simple answer would suffice. You can guide your AI assistant's behavior by providing context and instructions.
+
+For best results, check out our video series on [Conversational BI with Claude and Rill](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKjSeetRNHbdI4GzmVn-XbBT):
+
+<div style={{
+  position: "relative",
+  width: "100%",
+  paddingTop: "56.25%",
+  borderRadius: "15px",
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/3xBCOY6rnsM?si=uvhUe11-at9c5bUh"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px",
+    }}
+  ></iframe>
+</div>
+<br/>
 
 ## Conclusion
 While [Explore dashboards](/guide/dashboards/explore) are a great way to slice and dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation. The Rill MCP server enables this through external AI assistants like Claude Desktop. Since Rill MCP is built on top of your existing metrics, you can be confident that the returned data will be correct.

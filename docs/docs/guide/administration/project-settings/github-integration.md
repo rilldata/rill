@@ -37,7 +37,7 @@ By default, Rill Cloud deploys from the `main` branch of your connected reposito
 
 ### Via Rill Cloud UI
 
-If you have already [setup your connection to GitHub](/developers/deploy/deploy-dashboard/#syncing-your-github-repository), you can edit the branch from the project settings:
+If you have already [setup your connection to GitHub](/developers/deploy/deploy-to-cloud#connect-github-to-an-existing-project), you can edit the branch from the project settings:
 
 ![Main Branch](/img/manage/project-management/main-branch.png)
 
