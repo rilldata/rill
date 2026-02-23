@@ -16,7 +16,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		schema_name
 	FROM information_schema.schemata
 	WHERE schema_name NOT IN ('guest', 'INFORMATION_SCHEMA', 'sys')
-		AND schema_name NOT LIKE 'db_%'
+		AND schema_name NOT LIKE 'db[_]%'
 	`
 	args := []any{}
 	if pageToken != "" {
