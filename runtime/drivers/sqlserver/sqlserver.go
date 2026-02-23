@@ -9,13 +9,14 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/microsoft/go-mssqldb" // SQL Server driver for database/sql
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
+
+	_ "github.com/microsoft/go-mssqldb" // SQL Server driver for database/sql
 )
 
 func init() {
