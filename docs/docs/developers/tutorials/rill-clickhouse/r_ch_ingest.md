@@ -50,14 +50,14 @@ output:
   materialize: true
 ```
 
-In order to use this method you will need to set your credentials in .env. If the .env does not already exist (it will be created by default if you have created a source), you can create a .env file in the rill directory by running `touch .env` and this should now be visible in Rill Developer.
+In order to use this method you will need to set your credentials in `.env`. If the .env does not already exist (it will be created by default if you have created a source), you can create a .env file in the rill directory by running `touch .env` and this should now be visible in Rill Developer.
 
 ```
-connector.clickhouse.host="localhost"
-connector.clickhouse.port=9000
-connector.snowflake.dsn=""
-connector.s3.aws_access_key_id=""
-connector.s3.aws_secret_access_key=""
+CLICKHOUSE_HOST="localhost"
+CLICKHOUSE_PORT=9000
+SNOWFLAKE_DSN=""
+AWS_ACCESS_KEY_ID=""
+AWS_SECRET_ACCESS_KEY=""
 ```
 :::note
 If you already set up ClickHouse via the .env file, you will just need to add your snowflake and s3 credentials.
@@ -93,7 +93,7 @@ output:
 You'll need to ensure that your provided `google_application_credentials` have all the required permissions on both [BigQuery](https://cloud.google.com/bigquery/docs/access-control) and [GCS](https://cloud.google.com/storage/docs/access-control/iam-roles). Ensure that your .env has the following:
 
 ```
-connector.clickhouse.host="localhost"
-connector.clickhouse.port=9000
-google_application_credentials=""
+CLICKHOUSE_HOST="localhost"
+CLICKHOUSE_PORT=9000
+GOOGLE_APPLICATION_CREDENTIALS=""
 ```

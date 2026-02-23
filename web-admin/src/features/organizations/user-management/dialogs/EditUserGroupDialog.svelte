@@ -6,7 +6,7 @@
     createAdminServiceListOrganizationMemberUsers,
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveUsergroupMemberUser,
-    createAdminServiceRenameUsergroup,
+    createAdminServiceUpdateUsergroup,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
@@ -95,7 +95,7 @@
   const queryClient = useQueryClient();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
-  const renameUserGroup = createAdminServiceRenameUsergroup();
+  const updateUserGroup = createAdminServiceUpdateUsergroup();
 
   function handleRemove(email: string) {
     selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
@@ -105,11 +105,11 @@
 
   async function handleRename(groupName: string, newName: string) {
     try {
-      await $renameUserGroup.mutateAsync({
+      await $updateUserGroup.mutateAsync({
         org: organization,
         usergroup: groupName,
         data: {
-          name: newName,
+          newName: newName,
         },
       });
 

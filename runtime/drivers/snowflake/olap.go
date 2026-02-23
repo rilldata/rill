@@ -3,6 +3,7 @@ package snowflake
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -95,6 +96,31 @@ func (c *connection) All(ctx context.Context, like string, pageSize uint32, page
 
 // LoadPhysicalSize implements drivers.OLAPInformationSchema.
 func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// LoadDDL implements drivers.OLAPInformationSchema.
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	// HACK: Since All and Lookup don't always return the correct casing, we uppercase the table name here as that's usually necessary in Snowflake.
+	// This is a workaround until we return correct casing from All and Lookup.
+	fqn := drivers.DialectSnowflake.EscapeTable(strings.ToUpper(table.Database), strings.ToUpper(table.DatabaseSchema), strings.ToUpper(table.Name))
+
+	objectType := "TABLE"
+	if table.View {
+		objectType = "VIEW"
+	}
+
+	var ddl string
+	err = db.QueryRowContext(ctx, fmt.Sprintf("SELECT GET_DDL('%s', ?)", objectType), fqn).Scan(&ddl)
+	if err != nil {
+		return err
+	}
+	table.DDL = ddl
 	return nil
 }
 

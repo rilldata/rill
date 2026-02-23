@@ -66,6 +66,11 @@ export type JSONSchemaField = {
    * Group fields under tab options for enum-driven tab layouts.
    */
   "x-tab-group"?: Record<string, string[]>;
+  /**
+   * Explicit environment variable name for secret fields.
+   * When set, this name is used instead of computing it from driver + property key.
+   */
+  "x-env-var-name"?: string;
   // Allow custom keywords such as errorMessage or future x-extensions.
   [key: string]: unknown;
 };

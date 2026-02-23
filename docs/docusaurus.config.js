@@ -212,18 +212,19 @@ const config = {
           {
             type: "html",
             position: "right",
-            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
           },
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link github-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer"><img src="/icons/Github.svg" alt="" width="20" height="20" class="github-icon" /><span class="github-link-text">GitHub</span></a>',
           },
-
           {
             type: "search",
             position: "right"
           },
+
+
         ],
       },
       footer: {
@@ -300,7 +301,7 @@ const config = {
           },
           {
             from: '/example-projects',
-            to: '/#examples',
+            to: '/developers/tutorials/',
           },
           {
             from: '/integration/embedding',
