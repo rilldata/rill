@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/starrocks/teststarrocks"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -41,9 +43,7 @@ func openFlightSQLConn(tb testing.TB, info teststarrocks.StarRocksInfo) (drivers
 }
 
 func TestStarRocksOLAP(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
+	testmode.Expensive(t)
 
 	// Start a single StarRocks container shared by both transports
 	info := teststarrocks.StartWithDataFull(t)
