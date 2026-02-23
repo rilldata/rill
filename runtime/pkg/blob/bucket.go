@@ -127,7 +127,8 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 					return nil, "", fmt.Errorf("blob: entry with key < startAfter (%q)", startAfter)
 				}
 				if obj.Key == startAfter {
-				continue
+					continue
+				}
 			}
 
 			fileLevel := fileutil.PathLevel(obj.Key, delimiter)
