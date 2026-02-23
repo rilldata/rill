@@ -17,12 +17,13 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
-	_ "github.com/sijms/go-ora/v2" // Oracle database driver for testcontainer init
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azurite"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	_ "github.com/sijms/go-ora/v2" // Oracle database driver for testcontainer init
 )
 
 // AcquireConnector acquires a test connector by name.
