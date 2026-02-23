@@ -297,10 +297,10 @@ service RuntimeService {
     };
   }
 
-  // GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
-  rpc GetAIToolCall(GetAIToolCallRequest) returns (GetAIToolCallResponse) {
+  // GetAIMessage returns a message in a conversaion.
+  rpc GetAIMessage(GetAIMessageRequest) returns (GetAIMessageResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/call/{call_id}"
+      get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/messages/{message_id}"
     };
   }
 
@@ -1231,17 +1231,16 @@ message CompleteStreamingResponse {
   Message message = 2;
 }
 
-// Request message for RuntimeService.GetAIToolCall
-message GetAIToolCallRequest {
+// Request message for RuntimeService.GetAIMessage
+message GetAIMessageRequest {
   string instance_id = 1;
   string conversation_id = 2;
-  string call_id = 3;
+  string message_id = 3;
 }
 
-// Response message for RuntimeService.GetAIToolCall
-message GetAIToolCallResponse {
-  // MetricsResolverQuery as JSON
-  google.protobuf.Struct query = 1;
+// Response message for RuntimeService.GetAIMessage
+message GetAIMessageResponse {
+  Message message = 1;
 }
 
 // **********

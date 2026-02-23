@@ -266,7 +266,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Generate an open URL for the query
-	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), session.id, session.ParentID)
+	openURL, err := t.generateOpenURL(ctx, session.InstanceID(), session.ID(), session.ParentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate open URL: %w", err)
 	}
@@ -306,7 +306,7 @@ func (t *QueryMetricsView) generateOpenURL(ctx context.Context, instanceID, sess
 		return "", fmt.Errorf("failed to parse frontend URL %q: %w", instance.FrontendURL, err)
 	}
 
-	openURL.Path, err = url.JoinPath(openURL.Path, "-", "ai", sessionID, "call", callID)
+	openURL.Path, err = url.JoinPath(openURL.Path, "-", "ai", sessionID, "message", callID, "-", "open")
 	if err != nil {
 		return "", fmt.Errorf("failed to join path: %w", err)
 	}

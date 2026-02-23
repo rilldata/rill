@@ -13191,22 +13191,22 @@ var _ interface {
 	ErrorName() string
 } = CompleteStreamingResponseValidationError{}
 
-// Validate checks the field values on GetAIToolCallRequest with the rules
+// Validate checks the field values on GetAIMessageRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetAIToolCallRequest) Validate() error {
+func (m *GetAIMessageRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetAIToolCallRequest with the rules
+// ValidateAll checks the field values on GetAIMessageRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetAIToolCallRequestMultiError, or nil if none found.
-func (m *GetAIToolCallRequest) ValidateAll() error {
+// GetAIMessageRequestMultiError, or nil if none found.
+func (m *GetAIMessageRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetAIToolCallRequest) validate(all bool) error {
+func (m *GetAIMessageRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -13217,22 +13217,22 @@ func (m *GetAIToolCallRequest) validate(all bool) error {
 
 	// no validation rules for ConversationId
 
-	// no validation rules for CallId
+	// no validation rules for MessageId
 
 	if len(errors) > 0 {
-		return GetAIToolCallRequestMultiError(errors)
+		return GetAIMessageRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetAIToolCallRequestMultiError is an error wrapping multiple validation
-// errors returned by GetAIToolCallRequest.ValidateAll() if the designated
+// GetAIMessageRequestMultiError is an error wrapping multiple validation
+// errors returned by GetAIMessageRequest.ValidateAll() if the designated
 // constraints aren't met.
-type GetAIToolCallRequestMultiError []error
+type GetAIMessageRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetAIToolCallRequestMultiError) Error() string {
+func (m GetAIMessageRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -13241,11 +13241,11 @@ func (m GetAIToolCallRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetAIToolCallRequestMultiError) AllErrors() []error { return m }
+func (m GetAIMessageRequestMultiError) AllErrors() []error { return m }
 
-// GetAIToolCallRequestValidationError is the validation error returned by
-// GetAIToolCallRequest.Validate if the designated constraints aren't met.
-type GetAIToolCallRequestValidationError struct {
+// GetAIMessageRequestValidationError is the validation error returned by
+// GetAIMessageRequest.Validate if the designated constraints aren't met.
+type GetAIMessageRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -13253,24 +13253,24 @@ type GetAIToolCallRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetAIToolCallRequestValidationError) Field() string { return e.field }
+func (e GetAIMessageRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetAIToolCallRequestValidationError) Reason() string { return e.reason }
+func (e GetAIMessageRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetAIToolCallRequestValidationError) Cause() error { return e.cause }
+func (e GetAIMessageRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetAIToolCallRequestValidationError) Key() bool { return e.key }
+func (e GetAIMessageRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetAIToolCallRequestValidationError) ErrorName() string {
-	return "GetAIToolCallRequestValidationError"
+func (e GetAIMessageRequestValidationError) ErrorName() string {
+	return "GetAIMessageRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetAIToolCallRequestValidationError) Error() string {
+func (e GetAIMessageRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -13282,14 +13282,14 @@ func (e GetAIToolCallRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetAIToolCallRequest.%s: %s%s",
+		"invalid %sGetAIMessageRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetAIToolCallRequestValidationError{}
+var _ error = GetAIMessageRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -13297,24 +13297,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetAIToolCallRequestValidationError{}
+} = GetAIMessageRequestValidationError{}
 
-// Validate checks the field values on GetAIToolCallResponse with the rules
+// Validate checks the field values on GetAIMessageResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetAIToolCallResponse) Validate() error {
+func (m *GetAIMessageResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetAIToolCallResponse with the rules
+// ValidateAll checks the field values on GetAIMessageResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetAIToolCallResponseMultiError, or nil if none found.
-func (m *GetAIToolCallResponse) ValidateAll() error {
+// GetAIMessageResponseMultiError, or nil if none found.
+func (m *GetAIMessageResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetAIToolCallResponse) validate(all bool) error {
+func (m *GetAIMessageResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -13322,28 +13322,28 @@ func (m *GetAIToolCallResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetQuery()).(type) {
+		switch v := interface{}(m.GetMessage()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetAIToolCallResponseValidationError{
-					field:  "Query",
+				errors = append(errors, GetAIMessageResponseValidationError{
+					field:  "Message",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GetAIToolCallResponseValidationError{
-					field:  "Query",
+				errors = append(errors, GetAIMessageResponseValidationError{
+					field:  "Message",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetQuery()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetMessage()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GetAIToolCallResponseValidationError{
-				field:  "Query",
+			return GetAIMessageResponseValidationError{
+				field:  "Message",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -13351,19 +13351,19 @@ func (m *GetAIToolCallResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetAIToolCallResponseMultiError(errors)
+		return GetAIMessageResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetAIToolCallResponseMultiError is an error wrapping multiple validation
-// errors returned by GetAIToolCallResponse.ValidateAll() if the designated
+// GetAIMessageResponseMultiError is an error wrapping multiple validation
+// errors returned by GetAIMessageResponse.ValidateAll() if the designated
 // constraints aren't met.
-type GetAIToolCallResponseMultiError []error
+type GetAIMessageResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetAIToolCallResponseMultiError) Error() string {
+func (m GetAIMessageResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -13372,11 +13372,11 @@ func (m GetAIToolCallResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetAIToolCallResponseMultiError) AllErrors() []error { return m }
+func (m GetAIMessageResponseMultiError) AllErrors() []error { return m }
 
-// GetAIToolCallResponseValidationError is the validation error returned by
-// GetAIToolCallResponse.Validate if the designated constraints aren't met.
-type GetAIToolCallResponseValidationError struct {
+// GetAIMessageResponseValidationError is the validation error returned by
+// GetAIMessageResponse.Validate if the designated constraints aren't met.
+type GetAIMessageResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -13384,24 +13384,24 @@ type GetAIToolCallResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetAIToolCallResponseValidationError) Field() string { return e.field }
+func (e GetAIMessageResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetAIToolCallResponseValidationError) Reason() string { return e.reason }
+func (e GetAIMessageResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetAIToolCallResponseValidationError) Cause() error { return e.cause }
+func (e GetAIMessageResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetAIToolCallResponseValidationError) Key() bool { return e.key }
+func (e GetAIMessageResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetAIToolCallResponseValidationError) ErrorName() string {
-	return "GetAIToolCallResponseValidationError"
+func (e GetAIMessageResponseValidationError) ErrorName() string {
+	return "GetAIMessageResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetAIToolCallResponseValidationError) Error() string {
+func (e GetAIMessageResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -13413,14 +13413,14 @@ func (e GetAIToolCallResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetAIToolCallResponse.%s: %s%s",
+		"invalid %sGetAIMessageResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetAIToolCallResponseValidationError{}
+var _ error = GetAIMessageResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -13428,7 +13428,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetAIToolCallResponseValidationError{}
+} = GetAIMessageResponseValidationError{}
 
 // Validate checks the field values on IssueDevJWTRequest with the rules
 // defined in the proto definition for this message. If any rules are

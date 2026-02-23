@@ -73,22 +73,23 @@ describe("mapMetricsResolverQueryToUrlParams", () => {
 
     {
       title: "Tool call based citation url with missing call",
-      url: "http://localhost:3000/-/ai/sess/call/missing_call",
-      expectedUrl: "http://localhost:3000/-/ai/sess/call/missing_call",
+      url: "http://localhost:3000/-/ai/sess/message/missing_call/-/open",
+      expectedUrl:
+        "http://localhost:3000/-/ai/sess/message/missing_call/-/open",
     },
     {
       title: "Tool call based citation url with wrong call",
-      url: "http://localhost:3000/-/ai/sess/call/agent_call",
-      expectedUrl: "http://localhost:3000/-/ai/sess/call/agent_call",
+      url: "http://localhost:3000/-/ai/sess/message/agent_call/-/open",
+      expectedUrl: "http://localhost:3000/-/ai/sess/message/agent_call/-/open",
     },
     {
       title: "Tool call based citation url with result",
-      url: "http://localhost:3000/-/ai/sess/call/query_res",
-      expectedUrl: "http://localhost:3000/-/ai/sess/call/query_res",
+      url: "http://localhost:3000/-/ai/sess/message/query_res/-/open",
+      expectedUrl: "http://localhost:3000/-/ai/sess/message/query_res/-/open",
     },
     {
       title: "Tool call based citation url with the correct call",
-      url: "http://localhost:3000/-/ai/sess/call/query_call",
+      url: "http://localhost:3000/-/ai/sess/message/query_call/-/open",
       expectedUrl:
         "http://localhost:3000/explore/AdBids_explore?view=explore&measures=impressions&dims=publisher&expand_dim=publisher",
     },

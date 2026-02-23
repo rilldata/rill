@@ -46,7 +46,7 @@ explore:
 	require.NoError(t, err)
 	require.NotEmpty(t, res.Schema)
 	require.NotEmpty(t, res.Data)
-	require.Equal(t, res.OpenURL, fmt.Sprintf("https://ui.rilldata.com/test-org/test-project/-/ai/%s/call/%s", s.ID(), toolRes.Call.ID))
+	require.Equal(t, res.OpenURL, fmt.Sprintf("https://ui.rilldata.com/test-org/test-project/-/ai/%s/message/%s/-/open", s.ID(), toolRes.Call.ID))
 }
 
 func TestMetricsViewQueryLimit(t *testing.T) {

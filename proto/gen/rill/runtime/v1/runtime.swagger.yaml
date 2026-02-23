@@ -548,34 +548,6 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/ai/conversations/{conversationId}/call/{callId}:
-    get:
-      summary: GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
-      operationId: RuntimeService_GetAIToolCall
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetAIToolCallResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: conversationId
-          in: path
-          required: true
-          type: string
-        - name: callId
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
     post:
       summary: |-
@@ -606,6 +578,34 @@ paths:
           schema:
             type: object
             title: Request message for RuntimeService.ForkConversation
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/messages/{messageId}:
+    get:
+      summary: GetAIMessage returns a message in a conversaion.
+      operationId: RuntimeService_GetAIMessage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAIMessageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: messageId
+          in: path
+          required: true
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
@@ -5353,13 +5353,12 @@ definitions:
         type: string
       resolverProperties:
         type: object
-  v1GetAIToolCallResponse:
+  v1GetAIMessageResponse:
     type: object
     properties:
-      query:
-        type: object
-        title: MetricsResolverQuery as JSON
-    title: Response message for RuntimeService.GetAIToolCall
+      message:
+        $ref: '#/definitions/v1Message'
+    title: Response message for RuntimeService.GetAIMessage
   v1GetConversationResponse:
     type: object
     properties:

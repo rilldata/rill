@@ -22,7 +22,7 @@ import {
 
 const LEGACY_DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
 const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
-  /\/-\/ai\/[^/]+\/call\/([^/]+)\/?$/;
+  /\/-\/ai\/[^/]+\/message\/([^/]+)\/-\/open\/?$/;
 
 /**
  * Creates a store that contains a mapper function that maps a metrics resolver query to url with explore params.

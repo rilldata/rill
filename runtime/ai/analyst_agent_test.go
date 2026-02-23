@@ -2,7 +2,6 @@ package ai_test
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 	"time"
 
@@ -66,8 +65,6 @@ measures:
 	require.Equal(t, ai.AnalystAgentName, res.Agent)
 	require.Equal(t, "United States", res.Response)
 }
-
-var citationUrlExtractRegex = regexp.MustCompile(`\(\[[^]]+]\(([^)]+)\)\)`)
 
 func TestAnalystOpenRTB(t *testing.T) {
 	// Setup runtime instance with the OpenRTB dataset
@@ -167,10 +164,8 @@ func TestAnalystOpenRTB(t *testing.T) {
 		var agentRes ai.AnalystAgentResult
 		err = mapstructureutil.WeakDecode(rawRes, &agentRes)
 		require.NoError(t, err)
-		citationUrlMatches := citationUrlExtractRegex.FindStringSubmatch(agentRes.Response)
-		require.Len(t, citationUrlMatches, 2)
-		expectedCitationUrl := fmt.Sprintf(`https://ui.rilldata.com/-/dashboards/bids_metrics/-/ai/%s/call/%s`, s.ID(), calls[2].ID)
-		require.Equal(t, expectedCitationUrl, citationUrlMatches[1])
+		expectedCitationUrl := fmt.Sprintf(`https://ui.rilldata.com/-/dashboards/bids_metrics/-/ai/%s/message/%s/-/open`, s.ID(), calls[2].ID)
+		require.Contains(t, agentRes.Response, expectedCitationUrl)
 	})
 
 	t.Run("CanvasContext", func(t *testing.T) {

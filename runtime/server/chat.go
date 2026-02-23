@@ -15,9 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -519,7 +517,7 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	serveSSEUntilClose(w, events)
 }
 
-func (s *Server) GetAIToolCall(ctx context.Context, req *runtimev1.GetAIToolCallRequest) (*runtimev1.GetAIToolCallResponse, error) {
+func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRequest) (*runtimev1.GetAIMessageResponse, error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
 
 	if !claims.Can(runtime.UseAI) {
@@ -535,36 +533,18 @@ func (s *Server) GetAIToolCall(ctx context.Context, req *runtimev1.GetAIToolCall
 		return nil, status.Errorf(codes.NotFound, "failed to find the conversation: %q", req.ConversationId)
 	}
 
-	callMsg, ok := session.Message(ai.FilterByID(req.CallId))
+	msg, ok := session.Message(ai.FilterByID(req.MessageId))
 	if !ok {
-		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.CallId)
+		return nil, status.Errorf(codes.NotFound, "failed to find the call: %q", req.MessageId)
 	}
 
-	// Suggest adding after the FilterByID lookup:
-	if callMsg.Tool != ai.QueryMetricsViewName {
-		return nil, status.Errorf(codes.InvalidArgument, "call %q is not a query_metrics_view call", req.CallId)
-	}
-	if callMsg.Type != ai.MessageTypeCall {
-		return nil, status.Errorf(codes.InvalidArgument, "message %q is not a tool call", req.CallId)
-	}
-
-	rawReq, err := session.UnmarshalMessageContent(callMsg)
+	pbMsg, err := messageToPB(session, msg)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to unmarshal message content: %v", err)
-	}
-	var queryRes ai.QueryMetricsViewArgs
-	err = mapstructureutil.WeakDecode(rawReq, &queryRes)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to decode message content: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to convert message to protobuf: %v", err)
 	}
 
-	queryPb, err := pbutil.ToStruct(queryRes, nil)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert query metrics view args to protobuf: %v", err)
-	}
-
-	return &runtimev1.GetAIToolCallResponse{
-		Query: queryPb,
+	return &runtimev1.GetAIMessageResponse{
+		Message: pbMsg,
 	}, nil
 }
 

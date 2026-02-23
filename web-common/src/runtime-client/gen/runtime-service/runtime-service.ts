@@ -84,7 +84,7 @@ import type {
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
   V1GenerateResolverResponse,
-  V1GetAIToolCallResponse,
+  V1GetAIMessageResponse,
   V1GetConversationResponse,
   V1GetExploreResponse,
   V1GetFileResponse,
@@ -1417,118 +1417,6 @@ export function createRuntimeServiceGetConversation<
 }
 
 /**
- * @summary GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
- */
-export const runtimeServiceGetAIToolCall = (
-  instanceId: string,
-  conversationId: string,
-  callId: string,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1GetAIToolCallResponse>({
-    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/call/${callId}`,
-    method: "GET",
-    signal,
-  });
-};
-
-export const getRuntimeServiceGetAIToolCallQueryKey = (
-  instanceId: string,
-  conversationId: string,
-  callId: string,
-) => {
-  return [
-    `/v1/instances/${instanceId}/ai/conversations/${conversationId}/call/${callId}`,
-  ] as const;
-};
-
-export const getRuntimeServiceGetAIToolCallQueryOptions = <
-  TData = Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
-  TError = ErrorType<RpcStatus>,
->(
-  instanceId: string,
-  conversationId: string,
-  callId: string,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
-        TError,
-        TData
-      >
-    >;
-  },
-) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getRuntimeServiceGetAIToolCallQueryKey(instanceId, conversationId, callId);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>
-  > = ({ signal }) =>
-    runtimeServiceGetAIToolCall(instanceId, conversationId, callId, signal);
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!(instanceId && conversationId && callId),
-    ...queryOptions,
-  } as CreateQueryOptions<
-    Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type RuntimeServiceGetAIToolCallQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>
->;
-export type RuntimeServiceGetAIToolCallQueryError = ErrorType<RpcStatus>;
-
-/**
- * @summary GetAIToolCall Resolves an AI tool call to its query arguments. Returns the query_metrics_view arguments for the given tool call, enabling the frontend to build a dashboard URL.
- */
-
-export function createRuntimeServiceGetAIToolCall<
-  TData = Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
-  TError = ErrorType<RpcStatus>,
->(
-  instanceId: string,
-  conversationId: string,
-  callId: string,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof runtimeServiceGetAIToolCall>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getRuntimeServiceGetAIToolCallQueryOptions(
-    instanceId,
-    conversationId,
-    callId,
-    options,
-  );
-
-  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-/**
  * @summary ForkConversation creates a new conversation by copying messages from an existing one.
 If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
  */
@@ -1639,6 +1527,122 @@ export const createRuntimeServiceForkConversation = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetAIMessage returns a message in a conversaion.
+ */
+export const runtimeServiceGetAIMessage = (
+  instanceId: string,
+  conversationId: string,
+  messageId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetAIMessageResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/messages/${messageId}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetAIMessageQueryKey = (
+  instanceId: string,
+  conversationId: string,
+  messageId: string,
+) => {
+  return [
+    `/v1/instances/${instanceId}/ai/conversations/${conversationId}/messages/${messageId}`,
+  ] as const;
+};
+
+export const getRuntimeServiceGetAIMessageQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetAIMessage>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  conversationId: string,
+  messageId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGetAIMessage>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetAIMessageQueryKey(
+      instanceId,
+      conversationId,
+      messageId,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetAIMessage>>
+  > = ({ signal }) =>
+    runtimeServiceGetAIMessage(instanceId, conversationId, messageId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && conversationId && messageId),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceGetAIMessage>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceGetAIMessageQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetAIMessage>>
+>;
+export type RuntimeServiceGetAIMessageQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GetAIMessage returns a message in a conversaion.
+ */
+
+export function createRuntimeServiceGetAIMessage<
+  TData = Awaited<ReturnType<typeof runtimeServiceGetAIMessage>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  conversationId: string,
+  messageId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceGetAIMessage>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceGetAIMessageQueryOptions(
+    instanceId,
+    conversationId,
+    messageId,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary ShareConversation enables sharing of the conversation by adding metadata.
  */
