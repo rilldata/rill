@@ -128,7 +128,7 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 			return nil, fmt.Errorf("must set `dsn` for models that transfer data from `sqlserver` to `duckdb`")
 		}
 		m.PreExec = fmt.Sprintf("INSTALL 'mssql' FROM community; LOAD 'mssql'; ATTACH %s AS %s (TYPE mssql, READ_ONLY)", safeSQLString(dsn), safeDBName)
-		m.SQL = fmt.Sprintf("SELECT * FROM mssql_query(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
+		m.SQL = fmt.Sprintf("SELECT * FROM mssql_scan(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
 	default:
 		return nil, fmt.Errorf("internal error: unsupported external database: %s", inputHandle.Driver())
 	}

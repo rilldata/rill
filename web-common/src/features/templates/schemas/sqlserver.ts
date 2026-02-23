@@ -15,14 +15,7 @@ export const sqlserverSchema: MultiStepFormSchema = {
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-ui-only": true,
       "x-tab-group": {
-        parameters: [
-          "host",
-          "port",
-          "database",
-          "user",
-          "password",
-          "encrypt",
-        ],
+        parameters: ["host", "port", "database", "user", "password", "encrypt"],
         dsn: ["dsn"],
       },
     },

@@ -15,7 +15,7 @@ import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
 import Postgres from "../../../components/icons/connectors/Postgres.svelte";
 import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
 import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
-import SQLServer from "../../../components/icons/connectors/MicrosoftSQLServer.svg";
+import SQLServer from "../../../components/icons/connectors/MicrosoftSQLServer.svelte";
 import SQLite from "../../../components/icons/connectors/SQLite.svelte";
 import StarRocks from "../../../components/icons/connectors/StarRocks.svelte";
 
