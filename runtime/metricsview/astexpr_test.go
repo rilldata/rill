@@ -27,15 +27,16 @@ func TestArrayContainsCondition(t *testing.T) {
 	tests := []struct {
 		name     string
 		dialect  drivers.Dialect
+		dims     []Dimension
 		where    *Expression
 		wantSQL  string
 		wantArgs []any
 	}{
 		{
-			name:    "duckdb: arraycontains on unnest dim with multiple values",
+			name:    "duckdb: in on unnest dim uses list_has_any",
 			dialect: drivers.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayContains,
+				Operator: OperatorIn,
 				Expressions: []*Expression{
 					{Name: "tags"},
 					{Value: []any{"a", "b", "c"}},
@@ -45,10 +46,23 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{"a", "b", "c"},
 		},
 		{
-			name:    "duckdb: arraycontains on unnest dim with empty list",
+			name:    "duckdb: nin on unnest dim uses NOT list_has_any",
 			dialect: drivers.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayContains,
+				Operator: OperatorNin,
+				Expressions: []*Expression{
+					{Name: "tags"},
+					{Value: []any{"a", "b"}},
+				},
+			}},
+			wantSQL:  `(NOT list_has_any(("tags"), [?,?]))`,
+			wantArgs: []any{"a", "b"},
+		},
+		{
+			name:    "duckdb: in on unnest dim with empty list",
+			dialect: drivers.DialectDuckDB,
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorIn,
 				Expressions: []*Expression{
 					{Name: "tags"},
 					{Value: []any{}},
@@ -58,10 +72,10 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: nil,
 		},
 		{
-			name:    "duckdb: arraynotcontains on unnest dim with empty list",
+			name:    "duckdb: nin on unnest dim with empty list",
 			dialect: drivers.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayNotContains,
+				Operator: OperatorNin,
 				Expressions: []*Expression{
 					{Name: "tags"},
 					{Value: []any{}},
@@ -71,10 +85,10 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: nil,
 		},
 		{
-			name:    "duckdb: arraycontains with null value in list",
+			name:    "duckdb: in on unnest dim with null value in list",
 			dialect: drivers.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayContains,
+				Operator: OperatorIn,
 				Expressions: []*Expression{
 					{Name: "tags"},
 					{Value: []any{"a", nil, "b"}},
@@ -84,10 +98,10 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{"a", nil, "b"},
 		},
 		{
-			name:    "clickhouse: arraycontains on unnest dim",
+			name:    "clickhouse: in on unnest dim uses hasAny",
 			dialect: drivers.DialectClickHouse,
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayContains,
+				Operator: OperatorIn,
 				Expressions: []*Expression{
 					{Name: "tags"},
 					{Value: []any{"a", "b"}},
@@ -97,10 +111,10 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{"a", "b"},
 		},
 		{
-			name:    "clickhouse: arraynotcontains on unnest dim",
+			name:    "clickhouse: nin on unnest dim uses NOT hasAny",
 			dialect: drivers.DialectClickHouse,
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayNotContains,
+				Operator: OperatorNin,
 				Expressions: []*Expression{
 					{Name: "tags"},
 					{Value: []any{"a", "b"}},
@@ -110,10 +124,10 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{"a", "b"},
 		},
 		{
-			name:    "clickhouse: arraycontains with null values",
+			name:    "clickhouse: in on unnest dim with null values",
 			dialect: drivers.DialectClickHouse,
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayContains,
+				Operator: OperatorIn,
 				Expressions: []*Expression{
 					{Name: "tags"},
 					{Value: []any{nil, "a"}},
@@ -123,10 +137,10 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{nil, "a"},
 		},
 		{
-			name:    "duckdb: arraycontains on non-unnest dim falls back to normal IN",
+			name:    "duckdb: in on non-unnest dim uses normal IN",
 			dialect: drivers.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayContains,
+				Operator: OperatorIn,
 				Expressions: []*Expression{
 					{Name: "city"},
 					{Value: []any{"NYC", "LA"}},
@@ -136,10 +150,10 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{"NYC", "LA"},
 		},
 		{
-			name:    "duckdb: arraynotcontains on non-unnest dim falls back to normal NIN",
+			name:    "duckdb: nin on non-unnest dim uses normal NOT IN",
 			dialect: drivers.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayNotContains,
+				Operator: OperatorNin,
 				Expressions: []*Expression{
 					{Name: "city"},
 					{Value: []any{"NYC"}},
@@ -149,13 +163,13 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{"NYC"},
 		},
 		{
-			name:    "duckdb: arraycontains nested in AND expression",
+			name:    "duckdb: in on unnest dim nested in AND",
 			dialect: drivers.DialectDuckDB,
 			where: &Expression{Condition: &Condition{
 				Operator: OperatorAnd,
 				Expressions: []*Expression{
 					{Condition: &Condition{
-						Operator: OperatorArrayContains,
+						Operator: OperatorIn,
 						Expressions: []*Expression{
 							{Name: "tags"},
 							{Value: []any{"a", "b"}},
@@ -174,10 +188,11 @@ func TestArrayContainsCondition(t *testing.T) {
 			wantArgs: []any{"a", "b", "NYC"},
 		},
 		{
-			name:    "duckdb: arraycontains on unnest dim already in select falls back to normal IN",
+			name:    "duckdb: in on unnest dim already in select falls back to normal IN",
 			dialect: drivers.DialectDuckDB,
+			dims:    []Dimension{{Name: "tags"}},
 			where: &Expression{Condition: &Condition{
-				Operator: OperatorArrayContains,
+				Operator: OperatorIn,
 				Expressions: []*Expression{
 					{Name: "tags"},
 					{Value: []any{"a", "b"}},
@@ -192,15 +207,9 @@ func TestArrayContainsCondition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Determine if "tags" should be in query dimensions (for the "already in select" test case)
-			var dims []Dimension
-			if tt.name == "duckdb: arraycontains on unnest dim already in select falls back to normal IN" {
-				dims = []Dimension{{Name: "tags"}}
-			}
-
 			qry := &Query{
 				MetricsView: "test",
-				Dimensions:  dims,
+				Dimensions:  tt.dims,
 				Measures:    []Measure{{Name: "count"}},
 				Where:       tt.where,
 			}

@@ -424,6 +424,10 @@ func (d Dialect) UnnestSQLSuffix(tbl string) string {
 	return fmt.Sprintf(", %s", tbl)
 }
 
+func (d Dialect) RequiresArrayContainsForInOperator() bool {
+	return d == DialectDuckDB || d == DialectClickHouse
+}
+
 func (d Dialect) GetArrayContainsFunction() string {
 	if d == DialectDuckDB {
 		return "list_has_any"

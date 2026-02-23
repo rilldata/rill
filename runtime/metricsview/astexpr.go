@@ -201,8 +201,8 @@ func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner stri
 }
 
 func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
-	// Backwards compatibility: For IN and NIN (and their array variants), the right hand side may be a flattened list of values, not a single list.
-	if op == OperatorIn || op == OperatorNin || op == OperatorArrayContains || op == OperatorArrayNotContains {
+	// Backwards compatibility: For IN and NIN, the right hand side may be a flattened list of values, not a single list.
+	if op == OperatorIn || op == OperatorNin {
 		if len(exprs) == 2 {
 			rhs := exprs[1]
 			typ := reflect.TypeOf(rhs.Value)
@@ -255,13 +255,6 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 		// If not unnested, write the expression as-is or if its a lookup rewrite as per dialect
 		if !unnest {
-			// For ArrayContains/ArrayNotContains on an already-unnested dim (in SELECT), fall back to normal IN/NIN
-			if op == OperatorArrayContains {
-				op = OperatorIn
-			} else if op == OperatorArrayNotContains {
-				op = OperatorNin
-			}
-
 			if lookup != nil {
 				b.writeString(fmt.Sprintf("%s IN ", lookup.keyExpr))
 				b.writeByte('(')
@@ -282,9 +275,10 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
 
-		// For ArrayContains/ArrayNotContains on an unnest dim, use array-contains functions directly
-		if op == OperatorArrayContains || op == OperatorArrayNotContains {
-			return b.writeArrayContainsCondition(leftExpr, right, op == OperatorArrayNotContains)
+		// For IN/NIN on unnest dimensions backed by DuckDB or ClickHouse, use native array-contains
+		// functions (list_has_any / hasAny). This avoids double-counting when a row's array contains multiple matching values.
+		if (op == OperatorIn || op == OperatorNin) && b.ast.Dialect.RequiresArrayContainsForInOperator() {
+			return b.writeArrayContainsCondition(leftExpr, right, op == OperatorNin)
 		}
 
 		// Generate unnest join
@@ -364,10 +358,6 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 	case OperatorIn:
 		return b.writeInCondition(left, right, leftOverride, false)
 	case OperatorNin:
-		return b.writeInCondition(left, right, leftOverride, true)
-	case OperatorArrayContains:
-		return b.writeInCondition(left, right, leftOverride, false)
-	case OperatorArrayNotContains:
 		return b.writeInCondition(left, right, leftOverride, true)
 	default:
 		return fmt.Errorf("invalid binary condition operator %q", op)
