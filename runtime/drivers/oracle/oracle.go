@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 
-	_ "github.com/sijms/go-ora/v2"
+	_ "github.com/sijms/go-ora/v2" // Oracle database driver
 )
 
 func init() {

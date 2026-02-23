@@ -21,8 +21,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const rowGroupBufferSize = int64(datasize.MB) * 64
-const recordBatchSize = 10000
+const (
+	rowGroupBufferSize = int64(datasize.MB) * 64
+	recordBatchSize    = 10000
+)
 
 var _ drivers.Warehouse = (*connection)(nil)
 
@@ -38,7 +40,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		return nil, err
 	}
 
-	rows, err := db.QueryContext(ctx, srcProps.SQL)
+	rows, err := db.QueryContext(ctx, srcProps.SQL) //nolint:rowserrcheck // rows.Err() is checked in readBatch via the iterator
 	if err != nil {
 		return nil, fmt.Errorf("oracle query failed: %w", err)
 	}
@@ -119,10 +121,7 @@ func (f *warehouseIterator) Next(ctx context.Context) ([]string, error) {
 		return nil, fmt.Errorf("failed to get column types: %w", err)
 	}
 
-	arrowSchema, err := sqlColTypesToArrowSchema(colTypes)
-	if err != nil {
-		return nil, err
-	}
+	arrowSchema := sqlColTypesToArrowSchema(colTypes)
 
 	// Create parquet file
 	fw, err := os.CreateTemp(f.tempDir, "temp*.parquet")
@@ -188,7 +187,7 @@ func (f *warehouseIterator) Next(ctx context.Context) ([]string, error) {
 }
 
 // sqlColTypesToArrowSchema converts database/sql column types to an Arrow schema.
-func sqlColTypesToArrowSchema(colTypes []*sql.ColumnType) (*arrow.Schema, error) {
+func sqlColTypesToArrowSchema(colTypes []*sql.ColumnType) *arrow.Schema {
 	fields := make([]arrow.Field, len(colTypes))
 	for i, ct := range colTypes {
 		nullable, ok := ct.Nullable()
@@ -201,7 +200,7 @@ func sqlColTypesToArrowSchema(colTypes []*sql.ColumnType) (*arrow.Schema, error)
 			Nullable: nullable,
 		}
 	}
-	return arrow.NewSchema(fields, nil), nil
+	return arrow.NewSchema(fields, nil)
 }
 
 func oracleTypeToArrow(dbType string) arrow.DataType {
@@ -249,8 +248,8 @@ func makeWarehouseScanDest(colTypes []*sql.ColumnType) []any {
 	return dest
 }
 
-// readBatch reads up to recordBatchSize rows and returns an Arrow record.
-func readBatch(ctx context.Context, rows *sql.Rows, colTypes []*sql.ColumnType, schema *arrow.Schema, alloc memory.Allocator, scanDest []any) (arrow.Record, int, error) {
+// readBatch reads up to recordBatchSize rows and returns an Arrow record batch.
+func readBatch(ctx context.Context, rows *sql.Rows, colTypes []*sql.ColumnType, schema *arrow.Schema, alloc memory.Allocator, scanDest []any) (arrow.RecordBatch, int, error) {
 	builder := array.NewRecordBuilder(alloc, schema)
 	defer builder.Release()
 
@@ -279,7 +278,7 @@ func readBatch(ctx context.Context, rows *sql.Rows, colTypes []*sql.ColumnType, 
 		return nil, 0, nil
 	}
 
-	rec := builder.NewRecord()
+	rec := builder.NewRecordBatch()
 	return rec, n, nil
 }
 
