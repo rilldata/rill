@@ -245,6 +245,7 @@
       large
       autofocus={false}
       showBorderOnFocus={false}
+      retainValueOnMount
     />
 
     <DropdownMenu.Root bind:open={filterDropdownOpen}>

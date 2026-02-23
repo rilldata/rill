@@ -172,7 +172,7 @@
       <span class="min-[1200px]:hidden">Connect</span>
     </Button>
   </Dialog.Trigger>
-  <Dialog.Content class="translate-y-[-200px]">
+  <Dialog.Content class="top-[calc(50%-200px)]">
     <Dialog.Header>
       <div class="flex flex-row gap-x-2 items-center">
         <Github size="40px" />
