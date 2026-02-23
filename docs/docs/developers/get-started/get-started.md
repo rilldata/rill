@@ -57,31 +57,6 @@ Rill is designed to fit into your existing stack. Embed interactive dashboards d
   { name: "URL Parameters", description: "Reference for all dashboard URL parameters", link: "/developers/integrate/url-parameters" },
 ]} />
 
-<div className="tile-icon-grid">
-<TileIcon
-  header="Connect Data Sources"
-  content="Connect to your data sources and start ingesting data into Rill for analysis."
-  link="/developers/build/connectors"
-  icon={<img src="/img/get-started/connect.svg" alt="Connect" style={{ width: 24, height: 24 }} />}
-/>
-<TileIcon
-  header="Prepare Your Data"
-  content="Transform and prepare your data with Rill's powerful ETL capabilities."
-  link="/developers/build/models"
-  icon={<img src="/img/get-started/model.svg" alt="Model" style={{ width: 24, height: 24 }} />}
-/>
-<TileIcon
-  header="Create a Metrics Layer"
-  content="Build a metrics layer to define key business metrics and KPIs."
-  link="/developers/build/metrics-view"
-  icon={<img src="/img/get-started/metrics.svg" alt="Metrics" style={{ width: 24, height: 24 }} />}
-/>
-<TileIcon
-  header="Embed a Dashboard"
-  content="Embed Rill dashboards into your applications and workflows."
-  link="/developers/embed/dashboards"
-  icon={<img src="/img/get-started/embed.svg" alt="Embed" style={{ width: 24, height: 24 }} />}
-/>
 ## Join the Community
 
 Rill is open source — browse the code on [GitHub](https://github.com/rilldata/rill) or join the community on [Discord](https://discord.gg/2ubRfjC7Rh). If you're a customer, reach out directly via your dedicated Slack channel or contact support.
