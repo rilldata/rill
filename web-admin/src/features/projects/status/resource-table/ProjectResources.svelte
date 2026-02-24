@@ -1,13 +1,10 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
     createRuntimeServiceCreateTrigger,
     createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReconcileStatus,
-    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -25,78 +22,52 @@
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { useResources } from "../selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
+  import { filterResources } from "./utils";
+  import {
+    createUrlFilterSync,
+    parseArrayParam,
+    parseStringParam,
+  } from "../url-filter-sync";
   import { onMount } from "svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  // Reactively track URL search params (updates on back/forward navigation)
-  $: kindParam = $page.url.searchParams.get("kind");
-  $: statusParam = $page.url.searchParams.get("status");
-  $: qParam = $page.url.searchParams.get("q");
+  const filterSync = createUrlFilterSync([
+    { key: "kind", type: "array" },
+    { key: "status", type: "array" },
+    { key: "q", type: "string" },
+  ]);
+  filterSync.init($page.url);
 
   let isConfirmDialogOpen = false;
   let filterDropdownOpen = false;
   let statusDropdownOpen = false;
-  let searchText = $page.url.searchParams.get("q") ?? "";
-  let selectedTypes: string[] = (() => {
-    const k = $page.url.searchParams.get("kind");
-    return k ? k.split(",").filter(Boolean) : [];
-  })();
-  let selectedStatuses: string[] = (() => {
-    const s = $page.url.searchParams.get("status");
-    return s ? s.split(",").filter(Boolean) : [];
-  })();
+  let searchText = parseStringParam($page.url.searchParams.get("q"));
+  let selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+  let selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
   let mounted = false;
-  let lastSyncedSearch = $page.url.search;
 
   // Sync URL → local state on external navigation (back/forward)
-  $: if (mounted && $page.url.search !== lastSyncedSearch) {
-    lastSyncedSearch = $page.url.search;
-    selectedTypes = kindParam ? kindParam.split(",").filter(Boolean) : [];
-    selectedStatuses = statusParam
-      ? statusParam.split(",").filter(Boolean)
-      : [];
-    searchText = qParam ?? "";
+  $: if (mounted && filterSync.hasExternalNavigation($page.url)) {
+    filterSync.markSynced($page.url);
+    selectedTypes = parseArrayParam($page.url.searchParams.get("kind"));
+    selectedStatuses = parseArrayParam($page.url.searchParams.get("status"));
+    searchText = parseStringParam($page.url.searchParams.get("q"));
   }
 
-  // Sync filter state to URL params
+  // Sync filter state → URL
   $: if (mounted) {
-    syncFiltersToUrl(selectedTypes, selectedStatuses, searchText);
+    filterSync.syncToUrl({
+      kind: selectedTypes,
+      status: selectedStatuses,
+      q: searchText,
+    });
   }
 
   onMount(() => {
     mounted = true;
   });
-
-  function syncFiltersToUrl(
-    types: string[],
-    statuses: string[],
-    search: string,
-  ) {
-    const url = new URL($page.url);
-    if (types.length > 0) {
-      url.searchParams.set("kind", types.join(","));
-    } else {
-      url.searchParams.delete("kind");
-    }
-    if (statuses.length > 0) {
-      url.searchParams.set("status", statuses.join(","));
-    } else {
-      url.searchParams.delete("status");
-    }
-    if (search) {
-      url.searchParams.set("q", search);
-    } else {
-      url.searchParams.delete("q");
-    }
-    lastSyncedSearch = url.search;
-    void goto(url.pathname + url.search, {
-      replaceState: true,
-      noScroll: true,
-      keepFocus: true,
-    });
-  }
 
   type StatusFilter = { label: string; value: string };
   const statusFilters: StatusFilter[] = [
@@ -149,39 +120,6 @@
     selectedStatuses,
   );
 
-  function getResourceStatus(r: V1Resource): string {
-    if (r.meta?.reconcileError) return "error";
-    const status = r.meta?.reconcileStatus;
-    if (
-      status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-      status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING
-    )
-      return "warn";
-    return "ok";
-  }
-
-  function filterResources(
-    resources: V1Resource[] | undefined,
-    types: string[],
-    search: string,
-    statuses: string[],
-  ): V1Resource[] {
-    if (!resources) return [];
-
-    return resources.filter((r) => {
-      const kind = r.meta?.name?.kind;
-      const name = r.meta?.name?.name ?? "";
-
-      const matchesType = types.length === 0 || types.includes(kind ?? "");
-      const matchesSearch =
-        !search || name.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus =
-        statuses.length === 0 || statuses.includes(getResourceStatus(r));
-
-      return matchesType && matchesSearch && matchesStatus;
-    });
-  }
-
   function toggleType(type: string) {
     if (selectedTypes.includes(type)) {
       selectedTypes = selectedTypes.filter((t) => t !== type);
@@ -226,27 +164,39 @@
     <h2 class="text-lg font-medium">Resources</h2>
   </div>
 
-  <!-- Filter and Search Controls -->
-  <div class="flex items-center gap-x-3">
+  <!-- Search, Filter, and Action Controls -->
+  <div class="flex flex-row gap-x-4">
+    <Search
+      bind:value={searchText}
+      placeholder="Search"
+      large
+      autofocus={false}
+      showBorderOnFocus={false}
+    />
+
     <DropdownMenu.Root bind:open={filterDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {#if selectedTypes.length === 0}
-              All types
-            {:else if selectedTypes.length === 1}
-              {prettyResourceKind(selectedTypes[0])}
-            {:else}
-              {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length -
-                1} other{selectedTypes.length > 2 ? "s" : ""}
-            {/if}
-            {#if filterDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
+      <DropdownMenu.Trigger
+        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {filterDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {#if selectedTypes.length === 0}
+            All types
+          {:else if selectedTypes.length === 1}
+            {prettyResourceKind(selectedTypes[0])}
+          {:else}
+            {prettyResourceKind(selectedTypes[0])}, +{selectedTypes.length - 1} other{selectedTypes.length >
+            2
+              ? "s"
+              : ""}
+          {/if}
+        </span>
+        {#if filterDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="w-48">
         {#each filterableTypes as type}
@@ -261,28 +211,29 @@
     </DropdownMenu.Root>
 
     <DropdownMenu.Root bind:open={statusDropdownOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <Button builders={[builder]} type="tertiary">
-          <span class="flex items-center gap-x-1.5">
-            {#if selectedStatuses.length === 0}
-              All statuses
-            {:else if selectedStatuses.length === 1}
-              {statusFilters.find((s) => s.value === selectedStatuses[0])
-                ?.label ?? selectedStatuses[0]}
-            {:else}
-              {statusFilters.find((s) => s.value === selectedStatuses[0])
-                ?.label}, +{selectedStatuses.length - 1} other{selectedStatuses.length >
-              2
-                ? "s"
-                : ""}
-            {/if}
-            {#if statusDropdownOpen}
-              <CaretUpIcon size="12px" />
-            {:else}
-              <CaretDownIcon size="12px" />
-            {/if}
-          </span>
-        </Button>
+      <DropdownMenu.Trigger
+        class="min-w-fit flex flex-row gap-1 items-center rounded-sm border bg-input {statusDropdownOpen
+          ? 'bg-gray-200'
+          : 'hover:bg-surface-hover'} px-2 py-1"
+      >
+        <span class="text-fg-secondary font-medium">
+          {#if selectedStatuses.length === 0}
+            All statuses
+          {:else if selectedStatuses.length === 1}
+            {statusFilters.find((s) => s.value === selectedStatuses[0])
+              ?.label ?? selectedStatuses[0]}
+          {:else}
+            {statusFilters.find((s) => s.value === selectedStatuses[0])?.label},
+            +{selectedStatuses.length - 1} other{selectedStatuses.length > 2
+              ? "s"
+              : ""}
+          {/if}
+        </span>
+        {#if statusDropdownOpen}
+          <CaretUpIcon size="12px" />
+        {:else}
+          <CaretDownIcon size="12px" />
+        {/if}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" class="w-48">
         {#each statusFilters as status}
@@ -305,19 +256,9 @@
       </button>
     {/if}
 
-    <!-- Spacer -->
-    <div class="flex-1" />
-
-    <div class="w-64">
-      <Search
-        bind:value={searchText}
-        placeholder="Search by name..."
-        autofocus={false}
-      />
-    </div>
-
     <Button
       type="secondary"
+      large
       onClick={() => {
         isConfirmDialogOpen = true;
       }}

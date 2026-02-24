@@ -4,6 +4,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useResources } from "../selectors";
   import { countByKind, pluralizeKind } from "./overview-utils";
+  import OverviewCard from "./OverviewCard.svelte";
 
   $: ({ instanceId } = $runtime);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
@@ -13,15 +14,13 @@
   $: resourceCounts = countByKind(allResources);
 </script>
 
-{#if resourceCounts.length > 0}
-  <section class="section">
-    <div class="section-header">
-      <h3 class="section-title">Resources</h3>
-      <a href="{basePage}/resources" class="view-all">View all</a>
-    </div>
-    <div class="resource-chips">
+<OverviewCard title="Resources" viewAllHref="{basePage}/resources">
+  {#if $resources.isLoading}
+    <p class="text-sm text-fg-secondary">Loading resources...</p>
+  {:else if resourceCounts.length > 0}
+    <div class="chips">
       {#each resourceCounts as { kind, label, count } (kind)}
-        <a href="{basePage}/resources?kind={kind}" class="resource-chip">
+        <a href="{basePage}/resources?kind={kind}" class="chip">
           {#if resourceIconMapping[kind]}
             <svelte:component this={resourceIconMapping[kind]} size="12px" />
           {/if}
@@ -30,32 +29,19 @@
         </a>
       {/each}
     </div>
-  </section>
-{/if}
+  {:else}
+    <p class="text-sm text-fg-secondary">No resources found.</p>
+  {/if}
+</OverviewCard>
 
 <style lang="postcss">
-  .section {
-    @apply border border-border rounded-lg p-5;
-  }
-  .section-header {
-    @apply flex items-center justify-between mb-4;
-  }
-  .section-title {
-    @apply text-sm font-semibold text-fg-primary uppercase tracking-wide;
-  }
-  .view-all {
-    @apply text-xs text-primary-500 no-underline;
-  }
-  .view-all:hover {
-    @apply text-primary-600;
-  }
-  .resource-chips {
+  .chips {
     @apply flex flex-wrap gap-2;
   }
-  .resource-chip {
+  .chip {
     @apply flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border border-border bg-surface-subtle no-underline text-inherit;
   }
-  .resource-chip:hover {
+  .chip:hover {
     @apply border-primary-500 text-primary-600;
   }
 </style>

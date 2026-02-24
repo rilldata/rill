@@ -78,7 +78,7 @@ Rill offers flexible connection strategies to fit different data architectures a
   />
   
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-StarRocks.png" alt="StarRocks" className="starrocks-icon"/>}
+    icon={<img src="/img/build/connectors/icons/Logo-StarRocks.svg" alt="StarRocks" className="starrocks-icon"/>}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
     link="/developers/build/connectors/olap/starrocks"
     linkLabel="Learn more"
@@ -139,6 +139,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 ### MySQL
 ### PostgreSQL
 ### SQLite
+### Supabase
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -164,6 +165,14 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     link="/developers/build/connectors/data-source/sqlite"
     linkLabel="Learn more"
     referenceLink="sqlite"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Supabase.svg" alt="Supabase" className="duckdb-icon"/>}
+    header="Supabase"
+    content="Connect to Supabase's managed PostgreSQL databases with SSL support and standard connection methods."
+    link="/developers/build/connectors/data-source/supabase"
+    linkLabel="Learn more"
+    referenceLink="supabase"
   />
 </div>
 

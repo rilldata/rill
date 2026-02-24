@@ -276,6 +276,12 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
 
+		// For IN/NIN on unnest dimensions backed by DuckDB or ClickHouse, use native array-contains
+		// functions (list_has_any / hasAny). This avoids double-counting when a row's array contains multiple matching values.
+		if (op == OperatorIn || op == OperatorNin) && b.ast.Dialect.RequiresArrayContainsForInOperator() {
+			return b.writeArrayContainsCondition(leftExpr, right, op == OperatorNin)
+		}
+
 		// Generate unnest join
 		unnestTableAlias := b.ast.GenerateIdentifier()
 		unnestFrom, tupleStyle, auto, err := b.ast.Dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
@@ -642,6 +648,45 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		b.writeString(" IS NULL")
 	}
 
+	b.writeByte(')')
+
+	return nil
+}
+
+func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, right *Expression, not bool) error {
+	vals, ok := right.Value.([]any)
+	if !ok {
+		return fmt.Errorf("the right value must be a list of values for an array IN condition")
+	}
+
+	if len(vals) == 0 {
+		if not {
+			b.writeString("TRUE")
+		} else {
+			b.writeString("FALSE")
+		}
+		return nil
+	}
+
+	b.writeByte('(')
+	if not {
+		b.writeString("NOT ")
+	}
+
+	b.writeString(b.ast.Dialect.GetArrayContainsFunction())
+	b.writeByte('(')
+	b.writeParenthesizedString(leftExpr)
+	b.writeString(", [")
+	// not handling NULL values separately as clickhouse hasAny function takes care of it however, duckdb ignores null values in the list_has_any function, but there is no reliable way to make it work,
+	// but even using leftExpr IS NULL does not solve the issue as it checks for null array rather than null values in the array.
+	for i, val := range vals {
+		if i > 0 {
+			b.writeByte(',')
+		}
+		b.writeString("?")
+		b.args = append(b.args, val)
+	}
+	b.writeString("])")
 	b.writeByte(')')
 
 	return nil
