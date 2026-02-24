@@ -2,13 +2,15 @@
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import DatabaseEntry from "./DatabaseEntry.svelte";
   import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
-  export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
+
+  const client = useRuntimeClient();
 
   $: connectorName = connector?.name as string;
   $: hasError = !!connector?.errorMessage;
@@ -16,7 +18,7 @@
   $: queryEnabled = !hasError;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
-    instanceId,
+    client.instanceId,
     connectorName,
     undefined,
     queryEnabled,
@@ -43,7 +45,7 @@
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
-          <DatabaseEntry {instanceId} {connector} {database} {store} />
+          <DatabaseEntry {connector} {database} {store} />
         {/each}
       </ol>
     {/if}

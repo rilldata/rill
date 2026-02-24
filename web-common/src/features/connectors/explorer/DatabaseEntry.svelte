@@ -4,21 +4,23 @@
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import DatabaseSchemaEntry from "./DatabaseSchemaEntry.svelte";
   import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
-  export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let store: ConnectorExplorerStore;
+
+  const client = useRuntimeClient();
 
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName, database);
   $: expanded = $expandedStore;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
-    instanceId,
+    client.instanceId,
     connectorName,
     database,
   );
@@ -60,7 +62,6 @@
         {:else}
           {#each data as schema (schema)}
             <DatabaseSchemaEntry
-              {instanceId}
               {connector}
               {database}
               {store}
