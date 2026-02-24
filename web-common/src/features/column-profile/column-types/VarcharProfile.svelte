@@ -1,7 +1,7 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -30,10 +30,10 @@
   let active = false;
   let topKLimit = 15;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
   $: nulls = getNullPercentage(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -43,7 +43,7 @@
   );
 
   $: columnCardinality = getCountDistinct(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,
@@ -53,7 +53,7 @@
   );
 
   $: topK = getTopK(
-    instanceId,
+    client,
     connector,
     database,
     databaseSchema,

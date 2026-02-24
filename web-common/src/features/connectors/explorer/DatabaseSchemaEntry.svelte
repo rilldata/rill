@@ -25,7 +25,7 @@
   $: expanded = $expandedStore;
 
   $: tablesQuery = useInfiniteListTables(
-    client.instanceId,
+    client,
     connectorName,
     database,
     databaseSchema,

@@ -20,7 +20,7 @@
   $: expanded = $expandedStore;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
-    client.instanceId,
+    client,
     connectorName,
     database,
   );

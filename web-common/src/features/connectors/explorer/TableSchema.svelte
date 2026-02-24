@@ -12,7 +12,7 @@
   const client = useRuntimeClient();
 
   $: newTableQuery = useGetTable(
-    client.instanceId,
+    client,
     connector,
     database,
     databaseSchema,
