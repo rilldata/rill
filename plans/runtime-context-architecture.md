@@ -7,7 +7,7 @@ Rill's frontend uses a global mutable Svelte store (`runtime`) to hold connectio
 **Key design decisions:**
 - **`RuntimeClient` class** — encapsulates transport, JWT lifecycle, and service clients. Each `RuntimeProvider` creates its own instance and sets it in Svelte context. Not a singleton; scoped to the provider subtree.
 - JWT reactivity via **mutable ref inside the class** — transport interceptor reads `this.currentJwt`, updated by the provider when props change. No re-mounting needed.
-- No singleton manager — **Svelte context IS the registry**; nesting providers gives multi-runtime
+- **Svelte context is primary; lightweight registry supplements** — `useRuntimeClient()` for components, `runtimeRegistry` for `.ts` modules and edge cases. Both support multi-runtime.
 - Code generator built early — 62+ Orval-generated functions are too many to hand-write
 - Global store removed ASAP — bridge exists only during migration, not as a permanent pattern
 
@@ -21,7 +21,7 @@ Branch off Brian's `bgh/connectrpc-poc`, keeping:
 - `@connectrpc/connect`, `@connectrpc/connect-web` dependencies in `web-common/package.json`
 
 Discard:
-- `ProjectProvider.svelte`, `project-manager.ts` (replaced by Svelte context)
+- `ProjectProvider.svelte`, `project-manager.ts` (replaced by `RuntimeProvider` + `runtimeRegistry`)
 - `connectrpc.ts` (replaced by code generator output)
 - All consumer-side changes (Leaderboard, timeseries-data-store, etc.)
 
@@ -31,6 +31,7 @@ v2/
   runtime-client.ts     # RuntimeClient class
   context.ts            # useRuntimeClient() — reads from getContext()
   RuntimeProvider.svelte # Creates RuntimeClient, sets context
+  registry.ts           # runtimeRegistry — module-level RuntimeClient lookup
   gen/                  # Code generator output (Phase 2)
 ```
 
@@ -135,6 +136,7 @@ export class RuntimeClient {
   import { useQueryClient } from "@tanstack/svelte-query";
   import { RuntimeClient } from "./runtime-client";
   import { RUNTIME_CONTEXT_KEY } from "./context";
+  import { runtimeRegistry } from "./registry";
   import { invalidateRuntimeQueries } from "../invalidation";
   import { runtime } from "../runtime-store"; // BRIDGE (temporary)
 
@@ -148,6 +150,7 @@ export class RuntimeClient {
   // Created once. If host/instanceId change, parent's {#key} re-mounts us.
   const client = new RuntimeClient({ host, instanceId, jwt, authContext });
   setContext(RUNTIME_CONTEXT_KEY, client);
+  runtimeRegistry.register(client);
 
   // JWT-only changes (common: 15-min refresh, View As with same host)
   $: {
@@ -158,11 +161,44 @@ export class RuntimeClient {
   // BRIDGE (temporary): also set global store for unmigrated Orval consumers
   $: runtime.setRuntime(queryClient, host, instanceId, jwt, authContext);
 
-  onDestroy(() => client.dispose());
+  onDestroy(() => {
+    runtimeRegistry.unregister(client);
+    client.dispose();
+  });
 </script>
 
 {#if host && instanceId}<slot />{/if}
 ```
+
+### `runtimeRegistry` — module-level lookup
+
+`.ts` utility functions (query option factories, chat context singletons, SSE clients) need access to `RuntimeClient` but run outside any component tree. The primary mechanism is **parameter threading**: these functions accept `client: RuntimeClient` as their first parameter, and component callers pass `useRuntimeClient()`. For edge cases where `RuntimeClient` can't be threaded from a component (SSE clients, test harnesses), a lightweight registry provides module-level lookup.
+
+```typescript
+// web-common/src/runtime-client/v2/registry.ts
+const registry = new Map<string, RuntimeClient>();
+
+function registryKey(client: RuntimeClient): string {
+  return `${client.host}::${client.instanceId}`;
+}
+
+export const runtimeRegistry = {
+  register(client: RuntimeClient) {
+    registry.set(registryKey(client), client);
+  },
+  unregister(client: RuntimeClient) {
+    registry.delete(registryKey(client));
+  },
+  get(host: string, instanceId: string): RuntimeClient | undefined {
+    return registry.get(`${host}::${instanceId}`);
+  },
+  getAll(): RuntimeClient[] {
+    return Array.from(registry.values());
+  },
+};
+```
+
+Keyed by `host::instanceId` — unique per `RuntimeProvider`. Supports multiple runtimes per project (cloud editing) and multiple projects on the same page. `RuntimeProvider` registers on mount and unregisters on destroy (see above).
 
 ### Wire into layouts
 
@@ -362,6 +398,49 @@ Migrate all ~100 consumer files from Orval imports + `$runtime` to v2 imports + 
 + const query = createQueryServiceFoo(client, params);
 ```
 
+### `.ts` module migration (by dependency order)
+
+`.ts` utility functions that use `derived([runtime, ...])` need `RuntimeClient` threaded through their call chains. Migrate bottom-up (leaves first) so that each function's callees are already migrated.
+
+**Leaf query option factories** — add `client: RuntimeClient` as first parameter, remove `runtime` from `derived()`:
+
+| Function | File |
+|----------|------|
+| `getExploreValidSpecQueryOptions()` | `explores/selectors.ts` |
+| `getMetricsViewTimeRangeFromExploreQueryOptions()` | `dashboards/selectors.ts` |
+| `getValidMetricsViewsQueryOptions()` | `dashboards/selectors.ts` |
+| `getCanvasQueryOptions()` | `canvas/selector.ts` |
+| `getClientFilteredResourcesQueryOptions()` | `entity-management/resource-selectors.ts` |
+| `getLatestConversationQueryOptions()` | `chat/core/utils.ts` |
+
+**Intermediate callers** — same pattern, pass `client` through:
+
+| Function | File |
+|----------|------|
+| `createStableTimeControlStoreFromName()` | `dashboards/time-controls/time-control-store.ts` |
+| `getActiveMetricsViewNameStore()` | `dashboards/nav-utils.ts` |
+| `createRillDefaultExploreUrlParamsV2()` | `dashboards/url-state/` |
+| `createUrlForExploreYAMLDefaultState()` | `dashboards/stores/` |
+| `getTimeControlsStateFromNameStore()` | `dashboards/stores/utils.ts` |
+| `createExploreBookmarkLegacyDataTransformer()` | `web-admin/` |
+
+**Module-level singletons** — convert to factory functions accepting `RuntimeClient`:
+
+| Before | After | File |
+|--------|-------|------|
+| `dashboardChatConfig` | `createDashboardChatConfig(client)` | `dashboards/chat-context.ts` |
+| `canvasChatConfig` | `createCanvasChatConfig(client)` | `canvas/chat-context.ts` |
+| `getInlineChatContextMetadata()` | `getInlineChatContextMetadata(client)` | `chat/core/context/metadata.ts` |
+| `getMetricsViewPickerOptions()` | `getMetricsViewPickerOptions(client)` | `chat/core/context/picker/` |
+
+Component callers pass `useRuntimeClient()`:
+```svelte
+const client = useRuntimeClient();
+$: chatConfig = kind === ResourceKind.Explore
+  ? createDashboardChatConfig(client)
+  : createCanvasChatConfig(client);
+```
+
 ### Critical migration: `state-managers.ts`
 
 `web-common/src/features/dashboards/state-managers/state-managers.ts` threads `runtime: Writable<Runtime>` through the dashboard state system. Replace with `client: RuntimeClient` in the `StateManagers` interface and all downstream consumers.
@@ -381,13 +460,20 @@ Migrate all ~100 consumer files from Orval imports + `$runtime` to v2 imports + 
 
 ### SSE / streaming migration
 
-These consumers currently read JWT from the global `runtime` store. Migrate them to accept `RuntimeClient` (or its `getJwt()` method):
+These consumers currently read JWT from the global `runtime` store. Migrate them to accept `RuntimeClient` (or its `getJwt()` method). Where `RuntimeClient` can't be threaded directly (e.g. long-lived managers created at module scope), use `runtimeRegistry.get(host, instanceId)` to look it up.
+
 - `sse-fetch-client.ts`: change `start()` to accept `getJwt: () => string | undefined` instead of reading `get(runtime).jwt`
 - `StreamingQueryBatch.ts`: accept `RuntimeClient` in constructor; use `client.instanceId`, `client.getJwt()`
 - `FileAndResourceWatcher.svelte`: pass `client.getJwt` as the JWT getter
 - `file-and-resource-watcher.ts`: accept `instanceId` as constructor parameter
 
 **Validation per batch:** `npm run check`, `npm run test -w web-common` after each batch. Full e2e after batches 4 and 8.
+
+### Edge cases
+
+- **`$page` store is global.** Functions that derive explore/canvas name from `$page.params` (e.g. `getExploreNameStore()`) only work for single-dashboard pages. In multi-runtime scenarios, the resource name must be passed explicitly. This is a pre-existing limitation.
+- **`queryClient` is global.** Multiple runtimes share it. Query keys include `instanceId`, so different runtimes produce different cache entries. Per-runtime `QueryClient` is a potential future optimization (deferred).
+- **Svelte 5 compatibility.** Parameter threading and the registry are pure TypeScript — no `getContext()` tricks or dual-mode hooks. `useRuntimeClient()` uses `getContext()` only in component init, which works in both Svelte 4 and 5.
 
 ---
 
@@ -430,6 +516,8 @@ Once the bridge is in place and all consumers use v2 hooks, there's an optional 
 Responses to comments on the original design doc (PR #8590):
 
 **Brian's comment (ProjectProvider vs RuntimeProvider):** We use `RuntimeProvider` because the abstraction is the data plane connection, not the project. Multiple edit sessions create multiple runtimes for the same project. However, we adopt Brian's key ideas: the `RuntimeClient` class (encapsulating transport, JWT, and service clients), the dual return pattern (`create()` + `options`), and the ConnectRPC proto gen pipeline from his branch.
+
+**Brian's concern about `.ts` module access:** Addressed by two mechanisms: (1) parameter threading — `.ts` functions accept `client: RuntimeClient` as first parameter, component callers pass `useRuntimeClient()`; (2) a lightweight `runtimeRegistry` (Phase 1) for edge cases where `RuntimeClient` can't be threaded from a component. This is multi-runtime-safe because the registry is keyed by `host::instanceId`, not by project — supporting cloud editing (two runtimes, same project) and multi-project pages. A dual-mode hook (trying `getContext()` with fallback) was considered and rejected: `getContext()` returns `undefined` outside component init in Svelte 4 and throws in Svelte 5, making it unreliable for `.ts` modules.
 
 **Aditya: "Is there a library for [the code generator] already?"** — No. `connect-query-es` only supports React. Brian also noted this gap ([connectrpc/connect-query-es#324](https://github.com/connectrpc/connect-query-es/issues/324)). We build a custom generator (~300-500 lines).
 
