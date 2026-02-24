@@ -28,7 +28,7 @@
         .min(10, "Please provide more detail (at least 10 characters)"),
     }),
   );
-  const initialValues = { prompt: "" };
+  const initialValues = { prompt: "Generate a model with mock data for: " };
   const superFormInstance = superForm(defaults(initialValues, schema), {
     SPA: true,
     validators: schema,
@@ -89,14 +89,16 @@
             <span>Generate sample data</span>
           </Dialog.Title>
           <Dialog.Description>
-            <div>What is the business context or domain of your data?</div>
+            <div>
+              Complete the prompt below to describe the data you'd like to
+              generate.
+            </div>
           </Dialog.Description>
         </Dialog.Header>
         <textarea
           class="prompt-input"
           bind:value={$form.prompt}
           class:empty={$form.prompt.length === 0}
-          placeholder={`E.g. "e-commerce transactions"`}
           on:keydown={handleKeydown}
         />
         <div class="absolute right-3 bottom-8">
