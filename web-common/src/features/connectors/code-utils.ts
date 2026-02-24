@@ -576,8 +576,17 @@ export async function createYamlModelFromTable(
 
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
+  const devSelectStatement = driverName === "sqlserver"
+    ? `select TOP 10000 * from ${sufficientlyQualifiedTableName}`
+    : selectStatement;
+  const devLimitSuffix =
+    driverName === "oracle"
+      ? " FETCH FIRST 10000 ROWS ONLY"
+      : driverName === "sqlserver"
+        ? ""
+        : " limit 10000";
   const devSection = shouldIncludeDevSection
-    ? `\n\ndev:\n  sql: ${selectStatement} limit 10000`
+    ? `\n\ndev:\n  sql: ${devSelectStatement}${devLimitSuffix}`
     : "";
 
   const yamlContent = yamlModelTemplate(driverName)
@@ -661,12 +670,27 @@ export async function createSqlModelFromTable(
   // Create model
   const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
-  const selectStatement = isNonStandardIdentifier(
+  const qualifiedName = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,
   )
-    ? `select * from "${sufficientlyQualifiedTableName}"`
-    : `select * from ${sufficientlyQualifiedTableName}`;
-  const devLimit = "{{ if dev }} limit 100000 {{ end}}";
+    ? `"${sufficientlyQualifiedTableName}"`
+    : sufficientlyQualifiedTableName;
+
+  // SQL Server uses TOP N after SELECT; embed Go template inline.
+  // Oracle uses FETCH FIRST N ROWS ONLY appended after the query.
+  // Others use standard LIMIT.
+  let selectStatement: string;
+  let devLimit: string;
+  if (driverName === "sqlserver") {
+    selectStatement = `select {{ if dev }}TOP 100000 {{ end }}* from ${qualifiedName}`;
+    devLimit = "";
+  } else if (driverName === "oracle") {
+    selectStatement = `select * from ${qualifiedName}`;
+    devLimit = "{{ if dev }} FETCH FIRST 100000 ROWS ONLY {{ end}}";
+  } else {
+    selectStatement = `select * from ${qualifiedName}`;
+    devLimit = "{{ if dev }} limit 100000 {{ end}}";
+  }
 
   let modelSQL = `${topComments}\n`;
 
@@ -676,7 +700,7 @@ export async function createSqlModelFromTable(
 
   modelSQL += `\n${selectStatement}`;
 
-  if (addDevLimit) {
+  if (addDevLimit && devLimit) {
     modelSQL += `\n${devLimit}`;
   }
 
