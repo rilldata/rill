@@ -28,6 +28,7 @@
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
 
+  export let instanceId: string;
   export let filters: Filters;
   export let timeControls: TimeControls;
   export let readOnly = false;
@@ -205,6 +206,7 @@
 
     const { interval, grain } = await deriveInterval(
       name,
+      instanceId,
       metricsViewName,
       $selectedTimezone,
       timeDimension,

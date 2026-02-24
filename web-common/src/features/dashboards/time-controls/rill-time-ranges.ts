@@ -1,7 +1,5 @@
 import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { get } from "svelte/store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   getQueryServiceMetricsViewTimeRangesQueryKey,
   queryServiceMetricsViewTimeRanges,
@@ -10,6 +8,7 @@ import {
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export async function resolveTimeRanges(
+  instanceId: string,
   exploreSpec: V1ExploreSpec,
   timeRanges: (DashboardTimeControls | undefined)[],
   timeZone: string | undefined,
@@ -40,7 +39,6 @@ export async function resolveTimeRanges(
 
   if (rillTimes.length === 0) return timeRangesToReturn;
 
-  const instanceId = get(runtime).instanceId;
   const metricsViewName = exploreSpec.metricsView!;
 
   try {
