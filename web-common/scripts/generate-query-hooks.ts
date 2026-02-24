@@ -282,7 +282,7 @@ function generateServiceFile(service: ServiceDef): string {
       `  return client.${serviceClientProp}.${m.methodKey}(`,
       `    ${m.inputType}.fromJson(stripUndefined(${requestSpread}) as unknown as JsonValue),`,
       `    { signal: options?.signal },`,
-      `  ).then(r => r.toJson() as unknown as ${responseType});`,
+      `  ).then(r => r.toJson({ emitDefaultValues: true }) as unknown as ${responseType});`,
       `}`,
       ``,
     );
@@ -366,7 +366,7 @@ function generateServiceFile(service: ServiceDef): string {
       `): Promise<${responseType}> {`,
       `  return client.${serviceClientProp}.${m.methodKey}(`,
       `    ${m.inputType}.fromJson(stripUndefined(${requestSpread}) as unknown as JsonValue),`,
-      `  ).then(r => r.toJson() as unknown as ${responseType});`,
+      `  ).then(r => r.toJson({ emitDefaultValues: true }) as unknown as ${responseType});`,
       `}`,
       ``,
     );

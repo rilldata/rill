@@ -139,7 +139,9 @@ export function runtimeServicePing(
       PingRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1PingResponse);
+    .then(
+      (r) => r.toJson({ emitDefaultValues: true }) as unknown as V1PingResponse,
+    );
 }
 
 export function getRuntimeServicePingQueryKey(
@@ -198,7 +200,10 @@ export function runtimeServiceHealth(
       HealthRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1HealthResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1HealthResponse,
+    );
 }
 
 export function getRuntimeServiceHealthQueryKey(
@@ -262,7 +267,12 @@ export function runtimeServiceInstanceHealth(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1InstanceHealthResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1InstanceHealthResponse,
+    );
 }
 
 export function getRuntimeServiceInstanceHealthQueryKey(
@@ -337,7 +347,12 @@ export function runtimeServiceListInstances(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListInstancesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListInstancesResponse,
+    );
 }
 
 export function getRuntimeServiceListInstancesQueryKey(
@@ -415,7 +430,12 @@ export function runtimeServiceGetInstance(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1GetInstanceResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GetInstanceResponse,
+    );
 }
 
 export function getRuntimeServiceGetInstanceQueryKey(
@@ -486,7 +506,10 @@ export function runtimeServiceListFiles(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListFilesResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1ListFilesResponse,
+    );
 }
 
 export function getRuntimeServiceListFilesQueryKey(
@@ -557,7 +580,10 @@ export function runtimeServiceGetFile(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1GetFileResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1GetFileResponse,
+    );
 }
 
 export function getRuntimeServiceGetFileQueryKey(
@@ -620,7 +646,12 @@ export function runtimeServiceListExamples(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListExamplesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListExamplesResponse,
+    );
 }
 
 export function getRuntimeServiceListExamplesQueryKey(
@@ -693,7 +724,12 @@ export function runtimeServiceQueryResolver(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1QueryResolverResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1QueryResolverResponse,
+    );
 }
 
 export function getRuntimeServiceQueryResolverQueryKey(
@@ -771,7 +807,10 @@ export function runtimeServiceGetLogs(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1GetLogsResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1GetLogsResponse,
+    );
 }
 
 export function getRuntimeServiceGetLogsQueryKey(
@@ -837,7 +876,12 @@ export function runtimeServiceListResources(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListResourcesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListResourcesResponse,
+    );
 }
 
 export function getRuntimeServiceListResourcesQueryKey(
@@ -915,7 +959,12 @@ export function runtimeServiceGetResource(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1GetResourceResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GetResourceResponse,
+    );
 }
 
 export function getRuntimeServiceGetResourceQueryKey(
@@ -986,7 +1035,12 @@ export function runtimeServiceGetExplore(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1GetExploreResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GetExploreResponse,
+    );
 }
 
 export function getRuntimeServiceGetExploreQueryKey(
@@ -1057,7 +1111,12 @@ export function runtimeServiceGetModelPartitions(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1GetModelPartitionsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GetModelPartitionsResponse,
+    );
 }
 
 export function getRuntimeServiceGetModelPartitionsQueryKey(
@@ -1136,7 +1195,12 @@ export function runtimeServiceListConnectorDrivers(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListConnectorDriversResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListConnectorDriversResponse,
+    );
 }
 
 export function getRuntimeServiceListConnectorDriversQueryKey(
@@ -1218,7 +1282,12 @@ export function runtimeServiceAnalyzeConnectors(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1AnalyzeConnectorsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1AnalyzeConnectorsResponse,
+    );
 }
 
 export function getRuntimeServiceAnalyzeConnectorsQueryKey(
@@ -1300,7 +1369,12 @@ export function runtimeServiceListNotifierConnectors(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListNotifierConnectorsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListNotifierConnectorsResponse,
+    );
 }
 
 export function getRuntimeServiceListNotifierConnectorsQueryKey(
@@ -1383,7 +1457,12 @@ export function runtimeServiceListConversations(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListConversationsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListConversationsResponse,
+    );
 }
 
 export function getRuntimeServiceListConversationsQueryKey(
@@ -1465,7 +1544,12 @@ export function runtimeServiceGetConversation(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1GetConversationResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GetConversationResponse,
+    );
 }
 
 export function getRuntimeServiceGetConversationQueryKey(
@@ -1547,7 +1631,10 @@ export function runtimeServiceListTools(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListToolsResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1ListToolsResponse,
+    );
 }
 
 export function getRuntimeServiceListToolsQueryKey(
@@ -1615,7 +1702,12 @@ export function runtimeServiceIssueDevJWT(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1IssueDevJWTResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1IssueDevJWTResponse,
+    );
 }
 
 export function getRuntimeServiceIssueDevJWTQueryKey(
@@ -1686,7 +1778,12 @@ export function runtimeServiceAnalyzeVariables(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1AnalyzeVariablesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1AnalyzeVariablesResponse,
+    );
 }
 
 export function getRuntimeServiceAnalyzeVariablesQueryKey(
@@ -1768,7 +1865,12 @@ export function runtimeServiceListGitCommits(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListGitCommitsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListGitCommitsResponse,
+    );
 }
 
 export function getRuntimeServiceListGitCommitsQueryKey(
@@ -1846,7 +1948,12 @@ export function runtimeServiceListGitBranches(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListGitBranchesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListGitBranchesResponse,
+    );
 }
 
 export function getRuntimeServiceListGitBranchesQueryKey(
@@ -1926,7 +2033,12 @@ export function runtimeServiceCreateInstance(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1CreateInstanceResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1CreateInstanceResponse,
+    );
 }
 
 export function getRuntimeServiceCreateInstanceMutationOptions(
@@ -1987,7 +2099,12 @@ export function runtimeServiceEditInstance(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1EditInstanceResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1EditInstanceResponse,
+    );
 }
 
 export function getRuntimeServiceEditInstanceMutationOptions(
@@ -2048,7 +2165,12 @@ export function runtimeServiceDeleteInstance(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1DeleteInstanceResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1DeleteInstanceResponse,
+    );
 }
 
 export function getRuntimeServiceDeleteInstanceMutationOptions(
@@ -2109,7 +2231,12 @@ export function runtimeServiceReloadConfig(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1ReloadConfigResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ReloadConfigResponse,
+    );
 }
 
 export function getRuntimeServiceReloadConfigMutationOptions(
@@ -2170,7 +2297,10 @@ export function runtimeServicePutFile(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1PutFileResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1PutFileResponse,
+    );
 }
 
 export function getRuntimeServicePutFileMutationOptions(
@@ -2231,7 +2361,12 @@ export function runtimeServiceCreateDirectory(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1CreateDirectoryResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1CreateDirectoryResponse,
+    );
 }
 
 export function getRuntimeServiceCreateDirectoryMutationOptions(
@@ -2292,7 +2427,12 @@ export function runtimeServiceDeleteFile(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1DeleteFileResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1DeleteFileResponse,
+    );
 }
 
 export function getRuntimeServiceDeleteFileMutationOptions(
@@ -2353,7 +2493,12 @@ export function runtimeServiceRenameFile(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1RenameFileResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1RenameFileResponse,
+    );
 }
 
 export function getRuntimeServiceRenameFileMutationOptions(
@@ -2414,7 +2559,12 @@ export function runtimeServiceUnpackExample(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1UnpackExampleResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1UnpackExampleResponse,
+    );
 }
 
 export function getRuntimeServiceUnpackExampleMutationOptions(
@@ -2475,7 +2625,12 @@ export function runtimeServiceUnpackEmpty(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1UnpackEmptyResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1UnpackEmptyResponse,
+    );
 }
 
 export function getRuntimeServiceUnpackEmptyMutationOptions(
@@ -2536,7 +2691,12 @@ export function runtimeServiceGenerateMetricsViewFile(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GenerateMetricsViewFileResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GenerateMetricsViewFileResponse,
+    );
 }
 
 export function getRuntimeServiceGenerateMetricsViewFileMutationOptions(
@@ -2596,7 +2756,12 @@ export function runtimeServiceGenerateCanvasFile(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GenerateCanvasFileResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GenerateCanvasFileResponse,
+    );
 }
 
 export function getRuntimeServiceGenerateCanvasFileMutationOptions(
@@ -2657,7 +2822,12 @@ export function runtimeServiceGenerateResolver(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GenerateResolverResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GenerateResolverResponse,
+    );
 }
 
 export function getRuntimeServiceGenerateResolverMutationOptions(
@@ -2718,7 +2888,12 @@ export function runtimeServiceGenerateRenderer(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GenerateRendererResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GenerateRendererResponse,
+    );
 }
 
 export function getRuntimeServiceGenerateRendererMutationOptions(
@@ -2779,7 +2954,12 @@ export function runtimeServiceCreateTrigger(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1CreateTriggerResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1CreateTriggerResponse,
+    );
 }
 
 export function getRuntimeServiceCreateTriggerMutationOptions(
@@ -2840,7 +3020,12 @@ export function runtimeServiceShareConversation(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1ShareConversationResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ShareConversationResponse,
+    );
 }
 
 export function getRuntimeServiceShareConversationMutationOptions(
@@ -2901,7 +3086,12 @@ export function runtimeServiceForkConversation(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1ForkConversationResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ForkConversationResponse,
+    );
 }
 
 export function getRuntimeServiceForkConversationMutationOptions(
@@ -2962,7 +3152,10 @@ export function runtimeServiceComplete(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1CompleteResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1CompleteResponse,
+    );
 }
 
 export function getRuntimeServiceCompleteMutationOptions(
@@ -3023,7 +3216,10 @@ export function runtimeServiceGitStatus(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GitStatusResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1GitStatusResponse,
+    );
 }
 
 export function getRuntimeServiceGitStatusMutationOptions(
@@ -3084,7 +3280,10 @@ export function runtimeServiceGitCommit(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GitCommitResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1GitCommitResponse,
+    );
 }
 
 export function getRuntimeServiceGitCommitMutationOptions(
@@ -3145,7 +3344,12 @@ export function runtimeServiceRestoreGitCommit(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1RestoreGitCommitResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1RestoreGitCommitResponse,
+    );
 }
 
 export function getRuntimeServiceRestoreGitCommitMutationOptions(
@@ -3206,7 +3410,12 @@ export function runtimeServiceGitMergeToBranch(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GitMergeToBranchResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GitMergeToBranchResponse,
+    );
 }
 
 export function getRuntimeServiceGitMergeToBranchMutationOptions(
@@ -3267,7 +3476,12 @@ export function runtimeServiceGitSwitchBranch(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GitSwitchBranchResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1GitSwitchBranchResponse,
+    );
 }
 
 export function getRuntimeServiceGitSwitchBranchMutationOptions(
@@ -3328,7 +3542,10 @@ export function runtimeServiceGitPull(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GitPullResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1GitPullResponse,
+    );
 }
 
 export function getRuntimeServiceGitPullMutationOptions(
@@ -3389,7 +3606,10 @@ export function runtimeServiceGitPush(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1GitPushResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1GitPushResponse,
+    );
 }
 
 export function getRuntimeServiceGitPushMutationOptions(

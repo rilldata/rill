@@ -58,7 +58,12 @@ export function connectorServiceListBuckets(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListBucketsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListBucketsResponse,
+    );
 }
 
 export function getConnectorServiceListBucketsQueryKey(
@@ -136,7 +141,12 @@ export function connectorServiceListObjects(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListObjectsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListObjectsResponse,
+    );
 }
 
 export function getConnectorServiceListObjectsQueryKey(
@@ -214,7 +224,12 @@ export function connectorServiceOLAPListTables(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1OLAPListTablesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1OLAPListTablesResponse,
+    );
 }
 
 export function getConnectorServiceOLAPListTablesQueryKey(
@@ -292,7 +307,12 @@ export function connectorServiceOLAPGetTable(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1OLAPGetTableResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1OLAPGetTableResponse,
+    );
 }
 
 export function getConnectorServiceOLAPGetTableQueryKey(
@@ -370,7 +390,12 @@ export function connectorServiceListDatabaseSchemas(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListDatabaseSchemasResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListDatabaseSchemasResponse,
+    );
 }
 
 export function getConnectorServiceListDatabaseSchemasQueryKey(
@@ -452,7 +477,12 @@ export function connectorServiceListTables(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ListTablesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ListTablesResponse,
+    );
 }
 
 export function getConnectorServiceListTablesQueryKey(
@@ -523,7 +553,10 @@ export function connectorServiceGetTable(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1GetTableResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1GetTableResponse,
+    );
 }
 
 export function getConnectorServiceGetTableQueryKey(

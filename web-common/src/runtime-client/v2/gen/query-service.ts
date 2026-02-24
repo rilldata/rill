@@ -125,7 +125,12 @@ export function queryServiceMetricsViewAggregation(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewAggregationResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewAggregationResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewAggregationQueryKey(
@@ -208,7 +213,12 @@ export function queryServiceMetricsViewToplist(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewToplistResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewToplistResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewToplistQueryKey(
@@ -290,7 +300,12 @@ export function queryServiceMetricsViewComparison(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewComparisonResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewComparisonResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewComparisonQueryKey(
@@ -373,7 +388,12 @@ export function queryServiceMetricsViewTimeSeries(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewTimeSeriesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewTimeSeriesResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewTimeSeriesQueryKey(
@@ -456,7 +476,12 @@ export function queryServiceMetricsViewTotals(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewTotalsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewTotalsResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewTotalsQueryKey(
@@ -538,7 +563,12 @@ export function queryServiceMetricsViewRows(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewRowsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewRowsResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewRowsQueryKey(
@@ -620,7 +650,12 @@ export function queryServiceMetricsViewTimeRange(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewTimeRangeResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewTimeRangeResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewTimeRangeQueryKey(
@@ -702,7 +737,12 @@ export function queryServiceMetricsViewSchema(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewSchemaResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewSchemaResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewSchemaQueryKey(
@@ -784,7 +824,12 @@ export function queryServiceMetricsViewSearch(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewSearchResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewSearchResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewSearchQueryKey(
@@ -866,7 +911,12 @@ export function queryServiceMetricsViewTimeRanges(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewTimeRangesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewTimeRangesResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewTimeRangesQueryKey(
@@ -949,7 +999,12 @@ export function queryServiceMetricsViewAnnotations(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1MetricsViewAnnotationsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1MetricsViewAnnotationsResponse,
+    );
 }
 
 export function getQueryServiceMetricsViewAnnotationsQueryKey(
@@ -1036,7 +1091,10 @@ export function queryServiceConvertExpressionToMetricsSQL(
       { signal: options?.signal },
     )
     .then(
-      (r) => r.toJson() as unknown as V1ConvertExpressionToMetricsSQLResponse,
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ConvertExpressionToMetricsSQLResponse,
     );
 }
 
@@ -1131,7 +1189,12 @@ export function queryServiceResolveCanvas(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ResolveCanvasResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ResolveCanvasResponse,
+    );
 }
 
 export function getQueryServiceResolveCanvasQueryKey(
@@ -1204,7 +1267,12 @@ export function queryServiceResolveComponent(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ResolveComponentResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ResolveComponentResponse,
+    );
 }
 
 export function getQueryServiceResolveComponentQueryKey(
@@ -1286,7 +1354,12 @@ export function queryServiceResolveTemplatedString(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ResolveTemplatedStringResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ResolveTemplatedStringResponse,
+    );
 }
 
 export function getQueryServiceResolveTemplatedStringQueryKey(
@@ -1369,7 +1442,12 @@ export function queryServiceColumnRollupInterval(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ColumnRollupIntervalResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnRollupIntervalResponse,
+    );
 }
 
 export function getQueryServiceColumnRollupIntervalQueryKey(
@@ -1451,7 +1529,12 @@ export function queryServiceColumnTopK(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ColumnTopKResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnTopKResponse,
+    );
 }
 
 export function getQueryServiceColumnTopKQueryKey(
@@ -1522,7 +1605,12 @@ export function queryServiceColumnNullCount(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ColumnNullCountResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnNullCountResponse,
+    );
 }
 
 export function getQueryServiceColumnNullCountQueryKey(
@@ -1605,7 +1693,10 @@ export function queryServiceColumnDescriptiveStatistics(
       { signal: options?.signal },
     )
     .then(
-      (r) => r.toJson() as unknown as V1ColumnDescriptiveStatisticsResponse,
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnDescriptiveStatisticsResponse,
     );
 }
 
@@ -1691,7 +1782,12 @@ export function queryServiceColumnTimeGrain(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ColumnTimeGrainResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnTimeGrainResponse,
+    );
 }
 
 export function getQueryServiceColumnTimeGrainQueryKey(
@@ -1773,7 +1869,12 @@ export function queryServiceColumnNumericHistogram(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ColumnNumericHistogramResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnNumericHistogramResponse,
+    );
 }
 
 export function getQueryServiceColumnNumericHistogramQueryKey(
@@ -1856,7 +1957,12 @@ export function queryServiceColumnRugHistogram(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ColumnRugHistogramResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnRugHistogramResponse,
+    );
 }
 
 export function getQueryServiceColumnRugHistogramQueryKey(
@@ -1938,7 +2044,12 @@ export function queryServiceColumnTimeRange(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ColumnTimeRangeResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnTimeRangeResponse,
+    );
 }
 
 export function getQueryServiceColumnTimeRangeQueryKey(
@@ -2020,7 +2131,12 @@ export function queryServiceColumnCardinality(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ColumnCardinalityResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnCardinalityResponse,
+    );
 }
 
 export function getQueryServiceColumnCardinalityQueryKey(
@@ -2102,7 +2218,12 @@ export function queryServiceColumnTimeSeries(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1ColumnTimeSeriesResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ColumnTimeSeriesResponse,
+    );
 }
 
 export function getQueryServiceColumnTimeSeriesQueryKey(
@@ -2184,7 +2305,12 @@ export function queryServiceTableCardinality(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1TableCardinalityResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1TableCardinalityResponse,
+    );
 }
 
 export function getQueryServiceTableCardinalityQueryKey(
@@ -2266,7 +2392,12 @@ export function queryServiceTableColumns(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1TableColumnsResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1TableColumnsResponse,
+    );
 }
 
 export function getQueryServiceTableColumnsQueryKey(
@@ -2337,7 +2468,10 @@ export function queryServiceTableRows(
       ),
       { signal: options?.signal },
     )
-    .then((r) => r.toJson() as unknown as V1TableRowsResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1TableRowsResponse,
+    );
 }
 
 export function getQueryServiceTableRowsQueryKey(
@@ -2403,7 +2537,10 @@ export function queryServiceQuery(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1QueryResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1QueryResponse,
+    );
 }
 
 export function getQueryServiceQueryMutationOptions(
@@ -2461,7 +2598,10 @@ export function queryServiceExport(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1ExportResponse);
+    .then(
+      (r) =>
+        r.toJson({ emitDefaultValues: true }) as unknown as V1ExportResponse,
+    );
 }
 
 export function getQueryServiceExportMutationOptions(
@@ -2519,7 +2659,12 @@ export function queryServiceExportReport(
         }) as unknown as JsonValue,
       ),
     )
-    .then((r) => r.toJson() as unknown as V1ExportReportResponse);
+    .then(
+      (r) =>
+        r.toJson({
+          emitDefaultValues: true,
+        }) as unknown as V1ExportReportResponse,
+    );
 }
 
 export function getQueryServiceExportReportMutationOptions(
