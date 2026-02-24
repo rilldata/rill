@@ -223,9 +223,6 @@ function fromLegacyStateUrlParam(
   defaultExplorePreset: V1ExplorePreset,
 ) {
   try {
-    legacyState = legacyState.includes("%")
-      ? decodeURIComponent(legacyState)
-      : legacyState;
     const legacyDashboardState = DashboardState.fromBinary(
       base64ToProto(legacyState),
     );

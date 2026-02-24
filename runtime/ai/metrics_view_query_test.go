@@ -1,6 +1,7 @@
 package ai_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/ai"
@@ -37,7 +38,7 @@ explore:
 
 	// Query the metrics view and check it returns a valid OpenURL
 	var res *ai.QueryMetricsViewResult
-	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, ai.QueryMetricsViewArgs{
+	toolRes, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, ai.QueryMetricsViewArgs{
 		"metrics_view": "test_metrics",
 		"dimensions":   []map[string]any{{"name": "country"}},
 		"measures":     []map[string]any{{"name": "total_revenue"}},
@@ -45,8 +46,7 @@ explore:
 	require.NoError(t, err)
 	require.NotEmpty(t, res.Schema)
 	require.NotEmpty(t, res.Data)
-	require.Contains(t, res.OpenURL, "https://ui.rilldata.com/test-org/test-project")
-	require.Contains(t, res.OpenURL, "/-/open-query?query=")
+	require.Equal(t, res.OpenURL, fmt.Sprintf("https://ui.rilldata.com/test-org/test-project/-/ai/%s/message/%s/-/open", s.ID(), toolRes.Call.ID))
 }
 
 func TestMetricsViewQueryLimit(t *testing.T) {
