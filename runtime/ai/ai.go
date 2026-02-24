@@ -64,6 +64,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &SearchFiles{Runtime: rt})
 	RegisterTool(r, &ReadFile{Runtime: rt})
 	RegisterTool(r, &WriteFile{Runtime: rt})
+	RegisterTool(r, &RestoreChanges{Runtime: rt})
 	RegisterTool(r, &ProjectStatus{Runtime: rt})
 	RegisterTool(r, &QuerySQL{Runtime: rt})
 	RegisterTool(r, &ListTables{Runtime: rt})

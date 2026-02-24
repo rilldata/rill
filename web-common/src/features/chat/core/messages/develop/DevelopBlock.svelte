@@ -1,0 +1,115 @@
+<script lang="ts">
+  import { builderActions, getAttrs } from "bits-ui";
+  import * as Collapsible from "../../../../../components/collapsible";
+  import { type DevelopBlock } from "@rilldata/web-common/features/chat/core/messages/develop/develop-block.ts";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
+  import { PenIcon } from "lucide-svelte";
+  import FileDiffBlock from "@rilldata/web-common/features/chat/core/messages/file-diff/FileDiffBlock.svelte";
+  import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
+  import { ToolName } from "@rilldata/web-common/features/chat/core/types.ts";
+
+  export let block: DevelopBlock;
+  export let conversation: Conversation;
+
+  let isExpanded = true; // Make this expanded by default
+
+  let restoring = false;
+  $: canRestore = block.checkpointCommitHash && block.firstWriteCall;
+
+  async function restoreChanges() {
+    if (!block.firstWriteCall) return;
+    restoring = true;
+    try {
+      await conversation.adhocToolCall(ToolName.RESTORE_CHANGES, {
+        restoreChangesContext: {
+          revertTillWriteCallId: block.firstWriteCall.id,
+        },
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      restoring = false;
+    }
+  }
+</script>
+
+<Collapsible.Root bind:open={isExpanded} class="w-full max-w-full self-start">
+  <Collapsible.Trigger asChild let:builder>
+    <div class="flex flex-row items-center">
+      <button
+        class="develop-header"
+        {...getAttrs([builder])}
+        use:builderActions={{ builders: [builder] }}
+      >
+        <div class="develop-icon">
+          {#if isExpanded}
+            <CaretDownIcon size="14" />
+          {:else}
+            <PenIcon size="14px" />
+          {/if}
+        </div>
+        <div class="develop-title">
+          Made {block.diffs.length} change(s)
+        </div>
+      </button>
+      {#if block.restored}
+        <div class="text-xs text-gray-500">Restored</div>
+      {:else if canRestore}
+        <Button
+          onClick={restoreChanges}
+          noStroke
+          loading={restoring}
+          disabled={restoring}
+        >
+          Restore
+        </Button>
+      {/if}
+    </div>
+  </Collapsible.Trigger>
+
+  <Collapsible.Content class="w-full max-w-full">
+    <div class="develop-content">
+      {#each block.diffs as diff}
+        <FileDiffBlock block={diff} />
+      {/each}
+    </div>
+  </Collapsible.Content>
+</Collapsible.Root>
+
+<style lang="postcss">
+  .develop-header {
+    @apply w-full flex items-center gap-1.5 py-1;
+    @apply bg-transparent border-none cursor-pointer;
+    @apply text-xs text-gray-500 transition-colors;
+  }
+
+  .develop-header:hover {
+    @apply text-gray-600;
+  }
+
+  .develop-icon {
+    @apply flex items-center;
+  }
+
+  .develop-title {
+    @apply flex-1 text-left font-normal;
+  }
+
+  .develop-content {
+    @apply flex flex-col gap-y-2 py-1 text-xs leading-relaxed break-words;
+  }
+
+  .develop-content :global(*) {
+    @apply text-gray-500;
+  }
+
+  .develop-content :global(strong),
+  .develop-content :global(b) {
+    @apply text-gray-600 font-semibold;
+  }
+
+  .develop-content :global(a) {
+    @apply text-gray-600 underline;
+  }
+</style>

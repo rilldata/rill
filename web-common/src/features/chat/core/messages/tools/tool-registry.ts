@@ -22,6 +22,10 @@ import {
   type SimpleToolCall,
 } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils.ts";
+import {
+  createRestoreChangesBlock,
+  type RestoreChangesBlock,
+} from "@rilldata/web-common/features/chat/core/messages/restore/restore-block.ts";
 
 // =============================================================================
 // RENDER MODES
@@ -29,24 +33,35 @@ import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer
 
 /**
  * How a tool call renders in the UI:
- * - "inline": Shown as a collapsible tool call in thinking blocks
+ * - "grouped": Grouped in a collapsible block in certain tools
  * - "block": Renders as a standalone block with its own header (chart, diff, etc.)
  * - "hidden": Not shown (internal orchestration agents)
  */
-export type ToolRenderMode = "inline" | "block" | "hidden";
+export type ToolRenderMode = "grouped" | "block" | "hidden";
+
+export enum ToolGroupTypes {
+  Thinking = "thinking",
+  Develop = "develop",
+}
 
 // =============================================================================
 // TOOL CONFIGURATION
 // =============================================================================
 
 /** Block types that can be created by tools */
-export type ToolBlockType = ChartBlock | FileDiffBlock | SimpleToolCall;
+export type ToolBlockType =
+  | ChartBlock
+  | FileDiffBlock
+  | SimpleToolCall
+  | RestoreChangesBlock;
 
 /**
  * Configuration for a tool's rendering behavior.
  */
 export interface ToolConfig {
   renderMode: ToolRenderMode;
+  groups?: ToolGroupTypes[];
+
   /**
    * For block tools: factory function to create the block.
    * Receives the tool call message and its result message (if available).
@@ -54,6 +69,7 @@ export interface ToolConfig {
   createBlock?: (
     callMessage: V1Message,
     resultMessage: V1Message | undefined,
+    allMessages: V1Message[],
   ) => ToolBlockType | null;
 
   /** Used to process any UI action or side effects from tool calls. */
@@ -69,7 +85,8 @@ export interface ToolConfig {
  * Most tools render inline within thinking blocks.
  */
 const DEFAULT_TOOL_CONFIG: ToolConfig = {
-  renderMode: "inline",
+  renderMode: "grouped",
+  groups: [ToolGroupTypes.Thinking],
 };
 
 /**
@@ -94,10 +111,16 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createChartBlock,
   },
   [ToolName.WRITE_FILE]: {
-    renderMode: "block",
+    renderMode: "grouped",
+    groups: [ToolGroupTypes.Thinking, ToolGroupTypes.Develop],
     createBlock: createFileDiffBlock,
     onResult: handleWriteFilesToolResult,
   },
+  [ToolName.RESTORE_CHANGES]: {
+    renderMode: "block",
+    createBlock: createRestoreChangesBlock,
+  },
+
   // Feedback agent: hidden - the AI text response handles acknowledgment
   [ToolName.FEEDBACK_AGENT]: {
     renderMode: "hidden",

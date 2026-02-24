@@ -268,15 +268,47 @@ export class Conversation {
 
     try {
       await this.startStreaming({
-        feedbackAgentContext: {
-          targetMessageId,
-          sentiment,
-          categories: categories ?? [],
-          comment,
+        tool: ToolName.FEEDBACK_AGENT,
+        context: {
+          feedbackAgentContext: {
+            targetMessageId,
+            sentiment,
+            categories: categories ?? [],
+            comment,
+          },
         },
       });
     } catch (error) {
       console.error("[Conversation] Feedback submission error:", {
+        error,
+        conversationId: this.conversationId,
+      });
+      this.streamError.set(this.formatTransportError(error as Error));
+    } finally {
+      this.isStreaming.set(false);
+    }
+  }
+
+  public async adhocToolCall(
+    tool: ToolName,
+    context: RuntimeServiceCompleteBody,
+  ) {
+    // Prevent concurrent operations
+    if (get(this.isStreaming)) {
+      this.streamError.set("Please wait for the current operation to complete");
+      return;
+    }
+
+    this.streamError.set(null);
+    this.isStreaming.set(true);
+
+    try {
+      await this.startStreaming({
+        tool,
+        context,
+      });
+    } catch (error) {
+      console.error("[Conversation] Tool call error:", {
         error,
         conversationId: this.conversationId,
       });
@@ -324,12 +356,7 @@ export class Conversation {
   private async startStreaming(request: {
     prompt?: string;
     context?: RuntimeServiceCompleteBody;
-    feedbackAgentContext?: {
-      targetMessageId: string;
-      sentiment: FeedbackSentiment;
-      categories: FeedbackCategory[];
-      comment?: string;
-    };
+    tool?: ToolName;
   }): Promise<void> {
     this.ensureSSEClient();
     this.sseClient!.stop();
@@ -343,10 +370,7 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt: request.prompt,
-      agent: request.feedbackAgentContext
-        ? ToolName.FEEDBACK_AGENT
-        : this.agent,
-      feedbackAgentContext: request.feedbackAgentContext,
+      agent: request.tool ?? this.agent,
       ...request.context,
     };
 
@@ -559,6 +583,7 @@ export class Conversation {
       tool: ToolName.ROUTER_AGENT,
       contentType: MessageContentType.JSON,
       contentData: JSON.stringify({ prompt }),
+      content: [{ text: prompt }],
       createdOn: new Date().toISOString(),
       updatedOn: new Date().toISOString(),
     };

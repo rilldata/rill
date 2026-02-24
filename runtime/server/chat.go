@@ -211,8 +211,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	}
 
 	// Validate request - either prompt or feedback context must be provided
-	if req.Prompt == "" && req.FeedbackAgentContext == nil {
-		return nil, status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
+	if req.Prompt == "" && req.FeedbackAgentContext == nil && req.RestoreChangesContext == nil {
+		return nil, status.Error(codes.InvalidArgument, "prompt, feedback_agent_context, or restore_changes_context must be provided")
 	}
 
 	// Setup user agent
@@ -266,8 +266,9 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	var developerAgentArgs *ai.DeveloperAgentArgs
 	if req.DeveloperAgentContext != nil {
 		developerAgentArgs = &ai.DeveloperAgentArgs{
-			InitProject:     req.DeveloperAgentContext.InitProject,
-			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
+			InitProject:             req.DeveloperAgentContext.InitProject,
+			CurrentFilePath:         req.DeveloperAgentContext.CurrentFilePath,
+			EnableCheckpointCommits: req.DeveloperAgentContext.EnableCheckpointCommits,
 		}
 	}
 	var feedbackAgentArgs *ai.FeedbackAgentArgs
@@ -279,6 +280,12 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 			Comment:         req.FeedbackAgentContext.Comment,
 		}
 	}
+	var restoreChangesArgs *ai.RestoreChangesArgs
+	if req.RestoreChangesContext != nil {
+		restoreChangesArgs = &ai.RestoreChangesArgs{
+			RevertTillWriteCallID: req.RestoreChangesContext.RevertTillWriteCallId,
+		}
+	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
@@ -288,6 +295,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 		AnalystAgentArgs:   analystAgentArgs,
 		DeveloperAgentArgs: developerAgentArgs,
 		FeedbackAgentArgs:  feedbackAgentArgs,
+		RestoreChangesArgs: restoreChangesArgs,
 	})
 	if err != nil && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
@@ -322,8 +330,8 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	}
 
 	// Validate request - either prompt or feedback context must be provided
-	if req.Prompt == "" && req.FeedbackAgentContext == nil {
-		return status.Error(codes.InvalidArgument, "prompt or feedback_agent_context must be provided")
+	if req.Prompt == "" && req.FeedbackAgentContext == nil && req.RestoreChangesContext == nil {
+		return status.Error(codes.InvalidArgument, "prompt, feedback_agent_context, or restore_changes_context must be provided")
 	}
 
 	// Setup user agent
@@ -405,8 +413,9 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	var developerAgentArgs *ai.DeveloperAgentArgs
 	if req.DeveloperAgentContext != nil {
 		developerAgentArgs = &ai.DeveloperAgentArgs{
-			InitProject:     req.DeveloperAgentContext.InitProject,
-			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
+			InitProject:             req.DeveloperAgentContext.InitProject,
+			CurrentFilePath:         req.DeveloperAgentContext.CurrentFilePath,
+			EnableCheckpointCommits: req.DeveloperAgentContext.EnableCheckpointCommits,
 		}
 	}
 	var feedbackAgentArgs *ai.FeedbackAgentArgs
@@ -418,6 +427,12 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 			Comment:         req.FeedbackAgentContext.Comment,
 		}
 	}
+	var restoreChangesArgs *ai.RestoreChangesArgs
+	if req.RestoreChangesContext != nil {
+		restoreChangesArgs = &ai.RestoreChangesArgs{
+			RevertTillWriteCallID: req.RestoreChangesContext.RevertTillWriteCallId,
+		}
+	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
@@ -427,6 +442,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		AnalystAgentArgs:   analystAgentArgs,
 		DeveloperAgentArgs: developerAgentArgs,
 		FeedbackAgentArgs:  feedbackAgentArgs,
+		RestoreChangesArgs: restoreChangesArgs,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.

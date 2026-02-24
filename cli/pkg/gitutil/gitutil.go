@@ -365,3 +365,24 @@ func InferRepoRootAndSubpath(path string) (string, string, error) {
 	}
 	return repoRoot, subPath, nil
 }
+
+func MaybeInitGit(path string) error {
+	_, gitPath, err := InferRepoRootAndSubpath(path)
+	if err != nil && !errors.Is(err, ErrNotAGitRepository) {
+		return err
+	}
+	if gitPath != "" {
+		return nil
+	}
+
+	_, err = git.PlainInitWithOptions(path, &git.PlainInitOptions{
+		InitOptions: git.InitOptions{
+			DefaultBranch: plumbing.NewBranchReferenceName("main"),
+		},
+		Bare: false,
+	})
+	if err != nil && !errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		return err
+	}
+	return nil
+}

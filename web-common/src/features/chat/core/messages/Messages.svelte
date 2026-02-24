@@ -10,12 +10,13 @@
   import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
-  import FileDiffBlock from "./file-diff/FileDiffBlock.svelte";
   import AssistantMessage from "./text/AssistantMessage.svelte";
   import UserMessage from "./text/UserMessage.svelte";
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
   import WorkingBlock from "./working/WorkingBlock.svelte";
   import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
+  import DevelopBlock from "@rilldata/web-common/features/chat/core/messages/develop/DevelopBlock.svelte";
+  import RestoreChangesBlock from "@rilldata/web-common/features/chat/core/messages/restore/RestoreChangesBlock.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -141,8 +142,10 @@
         <WorkingBlock />
       {:else if block.type === "chart"}
         <ChartBlock {block} {tools} />
-      {:else if block.type === "file-diff"}
-        <FileDiffBlock {block} {tools} />
+      {:else if block.type === "develop"}
+        <DevelopBlock {block} conversation={currentConversation} />
+      {:else if block.type === "restore-changes"}
+        <RestoreChangesBlock {block} />
       {:else if block.type === "simple-tool-call-block"}
         <SimpleToolCallBlock {block} {tools} />
       {/if}
