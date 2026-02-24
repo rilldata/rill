@@ -99,12 +99,25 @@ import {
   TableRowsRequest,
 } from "../../../proto/gen/rill/runtime/v1/queries_pb";
 
-/** Strip undefined values — proto fromJson rejects them */
+/** Deep-strip undefined values — proto fromJson rejects them */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripUndefined(obj: Record<string, any>): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== undefined),
-  );
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        item && typeof item === "object" && !Array.isArray(item)
+          ? stripUndefined(item)
+          : item,
+      );
+    } else if (value && typeof value === "object" && !(value instanceof Date)) {
+      result[key] = stripUndefined(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
 }
 
 /**
