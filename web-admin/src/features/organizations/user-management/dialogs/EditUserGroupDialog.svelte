@@ -42,20 +42,11 @@
 
   // ── Members state ──────────────────────────────────────────────────
   let memberSearchInput = "";
-  let debouncedMemberSearch = "";
-  let memberDebounceTimer: ReturnType<typeof setTimeout> | undefined;
   let memberSearchFocused = false;
   let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingMemberAdditions: string[] = [];
   let pendingMemberRemovals: string[] = [];
   let membersInitialized = false;
-
-  $: {
-    if (memberDebounceTimer) clearTimeout(memberDebounceTimer);
-    memberDebounceTimer = setTimeout(() => {
-      debouncedMemberSearch = memberSearchInput;
-    }, 300);
-  }
 
   // ── Projects state ─────────────────────────────────────────────────
   type ProjectWithRole = { name: string; role: ProjectUserRoles };
@@ -77,17 +68,17 @@
   );
   $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
 
+  // Load all org members once; filter client-side to avoid re-creating the
+  // query on every keystroke (which would reset isLoading each time).
   $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
     organization,
-    debouncedMemberSearch
-      ? { pageSize: 50, searchPattern: `${debouncedMemberSearch}%` }
-      : { pageSize: 50 },
+    { pageSize: 100 },
   );
 
-  $: allOrganizationUsers = $organizationUsersQuery.data?.members ?? [];
-
   // Members available to add: org members not already in the group, filtered by search.
-  $: filteredMemberOptions = allOrganizationUsers.filter(
+  $: filteredMemberOptions = (
+    $organizationUsersQuery.data?.members ?? []
+  ).filter(
     (u) =>
       !selectedUsers.some((s) => s.userEmail === u.userEmail) &&
       (!memberSearchInput ||
