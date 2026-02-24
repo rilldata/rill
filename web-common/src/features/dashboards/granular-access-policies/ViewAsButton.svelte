@@ -8,7 +8,7 @@
   import Check from "../../../components/icons/Check.svelte";
   import EyeIcon from "../../../components/icons/EyeIcon.svelte";
   import Spacer from "../../../components/icons/Spacer.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -18,7 +18,8 @@
   let viewAsMenuOpen = false;
   let open = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+  const { instanceId } = client;
 
   $: mockUsers = useMockUsers(instanceId);
 </script>

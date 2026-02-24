@@ -6,7 +6,7 @@
     useDimensionSearchResults,
   } from "@rilldata/web-common/features/dashboards/dimension-search/useDimensionSearchResults";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -26,7 +26,8 @@
     validSpecStore,
   } = getStateManagers();
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+  const { instanceId } = client;
 
   let results: ReturnType<typeof useDimensionSearchResults>;
   $: if (

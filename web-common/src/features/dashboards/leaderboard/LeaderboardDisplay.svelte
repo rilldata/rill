@@ -5,7 +5,7 @@
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
@@ -43,9 +43,10 @@
     dashboardStore,
   } = StateManagers;
 
-  let parentElement: HTMLDivElement;
+  const client = useRuntimeClient();
+  const { instanceId } = client;
 
-  $: ({ instanceId } = $runtime);
+  let parentElement: HTMLDivElement;
 
   // Reset column widths when the measure changes
   $: if ($leaderboardSortByMeasureName) {
@@ -98,7 +99,7 @@
               {parentElement}
               {timeControlsReady}
               selectedValues={selectedDimensionValues(
-                $runtime.instanceId,
+                client.instanceId,
                 [metricsViewName],
                 $dashboardStore.whereFilter,
                 dimension.name,

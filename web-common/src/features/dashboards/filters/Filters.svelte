@@ -48,7 +48,7 @@
   import Metadata from "../time-controls/super-pill/components/Metadata.svelte";
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   const { rillTime } = featureFlags;
 
@@ -101,7 +101,8 @@
 
   let showDefaultItem = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+  const { instanceId } = client;
 
   $: timeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName);
 
