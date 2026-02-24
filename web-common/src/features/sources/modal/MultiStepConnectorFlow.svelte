@@ -3,6 +3,7 @@
 
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
+  import OlapExplorerStep from "./OlapExplorerStep.svelte";
   import { connectorStepStore, setAuthMethod } from "./connectorStepStore";
   import {
     findRadioEnumKey,
@@ -42,6 +43,14 @@
   export let isSubmitDisabled = true;
   export let formId = baseFormId;
   export let shouldShowSkipLink = false;
+
+  /** Selected table from the OLAP explorer step (bound by parent for generate action). */
+  export let olapSelectedTable: {
+    connector: string;
+    database: string;
+    databaseSchema: string;
+    table: string;
+  } | null = null;
 
   const selectedAuthMethodStore = {
     subscribe: (run: (value: string) => void) =>
@@ -165,23 +174,32 @@
     return selectedAuthMethod;
   })();
 
+  // True when the explorer step renders the OLAP table browser (not a SQL form).
+  $: isOlapExplorerStep =
+    stepState.step === "explorer" && activeSchema?.["x-category"] === "olap";
+
   // CTA and disable state for multi-step connectors.
-  $: isSubmitDisabled = isMultiStepConnectorDisabled(
-    activeSchema,
-    $form,
-    $paramsErrors,
-    stepState.step,
-  );
+  $: isSubmitDisabled = isOlapExplorerStep
+    ? !olapSelectedTable
+    : isMultiStepConnectorDisabled(
+        activeSchema,
+        $form,
+        $paramsErrors,
+        stepState.step,
+      );
   $: schemaButtonLabels = getSchemaButtonLabels(activeSchema, $form);
-  $: primaryButtonLabel = formManager.getPrimaryButtonLabel({
-    isConnectorForm: formManager.isConnectorForm,
-    step: stepState.step,
-    submitting,
-    schemaButtonLabels,
-    selectedAuthMethod: activeAuthMethod ?? selectedAuthMethod,
-  });
-  $: primaryLoadingCopy =
-    stepState.step === "source" || stepState.step === "explorer"
+  $: primaryButtonLabel = isOlapExplorerStep
+    ? "Generate Metrics with AI"
+    : formManager.getPrimaryButtonLabel({
+        isConnectorForm: formManager.isConnectorForm,
+        step: stepState.step,
+        submitting,
+        schemaButtonLabels,
+        selectedAuthMethod: activeAuthMethod ?? selectedAuthMethod,
+      });
+  $: primaryLoadingCopy = isOlapExplorerStep
+    ? "Generating..."
+    : stepState.step === "source" || stepState.step === "explorer"
       ? "Importing data..."
       : schemaButtonLabels?.loading
         ? schemaButtonLabels.loading
@@ -193,18 +211,26 @@
     stepState.step === "connector" && formManager.isMultiStepConnector;
 </script>
 
-<AddDataFormSection
-  id={baseFormId}
-  enhance={paramsEnhance}
-  onSubmit={paramsSubmit}
->
-  <JSONSchemaFormRenderer
-    schema={activeSchema}
-    step={stepState.step}
-    {form}
-    errors={$paramsErrors}
-    {onStringInputChange}
-    {handleFileUpload}
-    iconMap={ICONS}
+{#if isOlapExplorerStep}
+  <OlapExplorerStep
+    {connector}
+    connectorInstanceName={stepState.connectorInstanceName}
+    bind:selectedTable={olapSelectedTable}
   />
-</AddDataFormSection>
+{:else}
+  <AddDataFormSection
+    id={baseFormId}
+    enhance={paramsEnhance}
+    onSubmit={paramsSubmit}
+  >
+    <JSONSchemaFormRenderer
+      schema={activeSchema}
+      step={stepState.step}
+      {form}
+      errors={$paramsErrors}
+      {onStringInputChange}
+      {handleFileUpload}
+      iconMap={ICONS}
+    />
+  </AddDataFormSection>
+{/if}

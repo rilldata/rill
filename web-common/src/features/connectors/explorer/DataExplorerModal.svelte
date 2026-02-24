@@ -2,6 +2,7 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import { Wand2, Search } from "lucide-svelte";
+  import { onDestroy } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
     createRuntimeServiceAnalyzeConnectors,
@@ -15,7 +16,10 @@
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { connectorIconMapping } from "../connector-icon-mapping";
-  import { getConnectorIconKey } from "../connectors-utils";
+  import {
+    getConnectorIconKey,
+    getEffectiveDriverName,
+  } from "../connectors-utils";
   import { FORM_HEIGHT_DEFAULT } from "../../sources/modal/connector-schemas";
 
   const { ai } = featureFlags;
@@ -24,14 +28,12 @@
 
   let selectedConnector: V1AnalyzedConnector | null = null;
 
-  $: driverName = initialConnector?.driver?.name ?? null;
+  $: driverName = initialConnector
+    ? getEffectiveDriverName(initialConnector)
+    : null;
 
   function isMatchingConnector(c: V1AnalyzedConnector): boolean {
-    if (driverName === "motherduck") {
-      const path = c.config?.path;
-      return typeof path === "string" && path.startsWith("md:");
-    }
-    return c?.driver?.name === driverName;
+    return getEffectiveDriverName(c) === driverName;
   }
 
   $: connectorsQuery = createRuntimeServiceAnalyzeConnectors(instanceId, {
@@ -59,7 +61,7 @@
     }
   }
 
-  let selectedTable: {
+  let lastToggledTable: {
     connector: string;
     database: string;
     databaseSchema: string;
@@ -79,6 +81,8 @@
     }, 200);
   }
 
+  onDestroy(() => clearTimeout(searchTimeout));
+
   $: updateSearch(searchInput);
 
   const selectionStore = new ConnectorExplorerStore(
@@ -91,7 +95,7 @@
     },
     (connectorName, database, schema, table) => {
       if (table) {
-        selectedTable = {
+        lastToggledTable = {
           connector: connectorName,
           database: database ?? "",
           databaseSchema: schema ?? "",
@@ -101,10 +105,16 @@
     },
   );
 
+  // Derive selectedTable from the store's selectedKey so that deselecting
+  // a table (selectedKey becomes null) also clears selectedTable.
+  $: selectionStoreState = selectionStore.store;
+  $: storeSelectedKey = $selectionStoreState.selectedKey;
+  $: selectedTable = storeSelectedKey ? lastToggledTable : null;
+
   function handleClose() {
     clearTimeout(searchTimeout);
     dataExplorerStore.close();
-    selectedTable = null;
+    lastToggledTable = null;
     selectedConnector = null;
     isGenerating = false;
     generateError = null;
@@ -116,7 +126,7 @@
 
   function handleSelectConnector(connector: V1AnalyzedConnector) {
     selectedConnector = connector;
-    selectedTable = null;
+    lastToggledTable = null;
     searchInput = "";
     searchQuery = "";
     selectionStore.clearSelection();

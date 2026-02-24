@@ -250,7 +250,6 @@ export class AddDataFormManager {
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
     setShowSaveAnyway?: (value: boolean) => void;
-    onOpenDataExplorer?: () => void;
   }) {
     const {
       onClose,
@@ -258,7 +257,6 @@ export class AddDataFormManager {
       getSelectedAuthMethod,
       setParamsError,
       setShowSaveAnyway,
-      onOpenDataExplorer,
     } = args;
     const connector = this.connector;
     const schema = getConnectorSchema(this.schemaName);
@@ -365,8 +363,6 @@ export class AddDataFormManager {
             submitValues,
             isPublicAuth,
             isMultiStep,
-            onClose,
-            onOpenDataExplorer,
           });
         } else if (this.formType === "source") {
           // Single-step source form
@@ -392,7 +388,6 @@ export class AddDataFormManager {
   /**
    * Submit the connector step: test the connection (or skip for public auth),
    * persist connector config, then advance to the source/explorer step.
-   * For OLAP connectors, opens the DataExplorer modal instead of the explorer step.
    */
   private async submitConnectorStepAndAdvance(args: {
     queryClient: QueryClient;
@@ -400,20 +395,10 @@ export class AddDataFormManager {
     submitValues: FormData;
     isPublicAuth: boolean;
     isMultiStep: boolean;
-    onClose: () => void;
-    onOpenDataExplorer?: () => void;
   }) {
-    const {
-      queryClient,
-      values,
-      submitValues,
-      isPublicAuth,
-      isMultiStep,
-      onClose,
-      onOpenDataExplorer,
-    } = args;
+    const { queryClient, values, submitValues, isPublicAuth, isMultiStep } =
+      args;
     const nextStep = isMultiStep ? "source" : "explorer";
-    const isOlapConnector = this.connector.implementsOlap ?? false;
 
     if (isPublicAuth) {
       // Public auth skips the connection test
@@ -434,13 +419,6 @@ export class AddDataFormManager {
       );
       setConnectorConfig(connectorValues);
       setConnectorInstanceName(connectorInstanceName);
-    }
-
-    // For OLAP connectors, open DataExplorer instead of explorer step
-    if (isOlapConnector && nextStep === "explorer" && onOpenDataExplorer) {
-      onClose();
-      onOpenDataExplorer();
-      return;
     }
 
     setStep(nextStep);

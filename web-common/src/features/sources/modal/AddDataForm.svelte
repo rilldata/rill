@@ -28,7 +28,13 @@
   } from "../../templates/schema-utils";
   import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { ICONS } from "./icons";
-  import { dataExplorerStore } from "../../connectors/explorer/data-explorer-store";
+  import { generateMetricsFromTable } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { featureFlags } from "../../feature-flags";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { Wand2 } from "lucide-svelte";
+
+  const { ai } = featureFlags;
 
   export let connector: V1ConnectorDriver;
   export let schemaName: string;
@@ -91,6 +97,21 @@
   let shouldShowSkipLink = false;
   let primaryButtonLabel = "";
   let primaryLoadingCopy = "";
+
+  // OLAP explorer step state
+  let olapSelectedTable: {
+    connector: string;
+    database: string;
+    databaseSchema: string;
+    table: string;
+  } | null = null;
+  let isOlapGenerating = false;
+  let olapGenerateError: string | null = null;
+
+  $: isOlapExplorerStep =
+    isStepFlowConnector &&
+    stepState.step === "explorer" &&
+    connectorSchema?.["x-category"] === "olap";
 
   $: stepState = $connectorStepStore;
 
@@ -213,7 +234,7 @@
     saveAnyway = false;
   }
 
-  $: isSubmitting = submitting;
+  $: isSubmitting = submitting || isOlapGenerating;
 
   async function handleSaveAnyway() {
     // Save Anyway should only work for connector forms
@@ -238,6 +259,32 @@
     saveAnyway = false;
   }
 
+  async function handleGenerateMetrics() {
+    if (!olapSelectedTable) return;
+
+    olapGenerateError = null;
+    isOlapGenerating = true;
+    try {
+      await generateMetricsFromTable(
+        $runtime.instanceId,
+        olapSelectedTable.connector,
+        olapSelectedTable.database,
+        olapSelectedTable.databaseSchema,
+        olapSelectedTable.table,
+        false,
+        true,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.Modal,
+      );
+      onClose();
+    } catch (error) {
+      console.error("Failed to generate metrics:", error);
+      olapGenerateError = "Failed to generate metrics. Please try again.";
+    } finally {
+      isOlapGenerating = false;
+    }
+  }
+
   // Re-compute preview when existingEnvBlob is loaded (changes from null to string)
   $: yamlPreview = formManager.computeYamlPreview({
     stepState,
@@ -259,13 +306,6 @@
     },
     setShowSaveAnyway: (value: boolean) => {
       showSaveAnyway = value;
-    },
-    onOpenDataExplorer: () => {
-      // Open the DataExplorer with the connector's driver info
-      dataExplorerStore.open({
-        name: "", // Will be populated by the modal's query
-        driver: connector,
-      });
     },
   });
 
@@ -291,7 +331,9 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
+      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto {isOlapExplorerStep
+        ? ''
+        : 'p-6'}"
     >
       {#if isStepFlowConnector}
         <MultiStepConnectorFlow
@@ -311,6 +353,7 @@
           bind:primaryLoadingCopy={multiStepLoadingCopy}
           bind:formId={multiStepFormId}
           bind:shouldShowSkipLink
+          bind:olapSelectedTable
         />
       {:else if connectorSchema}
         <AddDataFormSection
@@ -360,56 +403,81 @@
           </Button>
         {/if}
 
-        <Button
-          disabled={submitting || isSubmitDisabled}
-          loading={submitting}
-          loadingCopy={primaryLoadingCopy}
-          form={formId}
-          submitForm
-          type="primary"
-        >
-          {primaryButtonLabel}
-        </Button>
+        {#if olapGenerateError}
+          <span class="text-sm text-destructive self-center"
+            >{olapGenerateError}</span
+          >
+        {/if}
+
+        {#if isOlapExplorerStep}
+          <Button
+            disabled={!olapSelectedTable || isOlapGenerating}
+            loading={isOlapGenerating}
+            loadingCopy={primaryLoadingCopy}
+            onClick={handleGenerateMetrics}
+            type="primary"
+          >
+            <span class="flex items-center gap-1.5">
+              {#if $ai}
+                <Wand2 size="14" />
+              {/if}
+              Generate Metrics{#if $ai}{" "}with AI{/if}
+            </span>
+          </Button>
+        {:else}
+          <Button
+            disabled={submitting || isSubmitDisabled}
+            loading={submitting}
+            loadingCopy={primaryLoadingCopy}
+            form={formId}
+            submitForm
+            type="primary"
+          >
+            {primaryButtonLabel}
+          </Button>
+        {/if}
       </div>
     </div>
   </div>
 
-  <!-- RIGHT SIDE PANEL -->
-  <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
-  >
-    <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
-      {#if paramsError}
-        <SubmissionError
-          message={paramsError ?? ""}
-          details={paramsErrorDetails ?? ""}
+  <!-- RIGHT SIDE PANEL (hidden on OLAP explorer step where the table browser fills the width) -->
+  {#if !isOlapExplorerStep}
+    <div
+      class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
+    >
+      <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
+        {#if paramsError}
+          <SubmissionError
+            message={paramsError ?? ""}
+            details={paramsErrorDetails ?? ""}
+          />
+        {/if}
+
+        <YamlPreview
+          title={isStepFlowConnector
+            ? stepState.step === "connector"
+              ? "Connector preview"
+              : "Model preview"
+            : isSourceForm
+              ? "Model preview"
+              : "Connector preview"}
+          yaml={yamlPreview}
         />
-      {/if}
 
-      <YamlPreview
-        title={isStepFlowConnector
-          ? stepState.step === "connector"
-            ? "Connector preview"
-            : "Model preview"
-          : isSourceForm
-            ? "Model preview"
-            : "Connector preview"}
-        yaml={yamlPreview}
-      />
+        {#if shouldShowSkipLink}
+          <div class="text-sm leading-normal font-medium text-muted-foreground">
+            Already connected? <button
+              type="button"
+              class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
+              on:click={() => formManager.handleSkip()}
+            >
+              Import your data
+            </button>
+          </div>
+        {/if}
+      </div>
 
-      {#if shouldShowSkipLink}
-        <div class="text-sm leading-normal font-medium text-muted-foreground">
-          Already connected? <button
-            type="button"
-            class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
-            on:click={() => formManager.handleSkip()}
-          >
-            Import your data
-          </button>
-        </div>
-      {/if}
+      <NeedHelpText {connector} />
     </div>
-
-    <NeedHelpText {connector} />
-  </div>
+  {/if}
 </div>
