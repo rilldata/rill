@@ -244,7 +244,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 	args["limit"] = limit
 	args["query_limits"] = map[string]any{
-		"require_time_range":  true,                   // enforce a time range
+		"require_time_range":  cfg.AIEnforceTimeRange,
 		"max_time_range_days": cfg.AIMaxTimeRangeDays, // enforce instance specific max days limit
 	}
 

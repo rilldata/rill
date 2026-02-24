@@ -8,7 +8,11 @@ import (
 
 // enforceQueryLimits checks that the query adheres to any limits specified in the QueryLimit. This should be called after time_range is resolved.
 func (e *Executor) enforceQueryLimits(qry *metricsview.Query) error {
-	if qry.QueryLimit.RequireTimeRange && qry.TimeRange.IsZero() {
+	if qry.QueryLimit == nil {
+		return nil
+	}
+
+	if qry.QueryLimit.RequireTimeRange && (qry.TimeRange == nil || qry.TimeRange.IsZero()) {
 		return fmt.Errorf("a valid time_range should be specified for the query")
 	}
 
