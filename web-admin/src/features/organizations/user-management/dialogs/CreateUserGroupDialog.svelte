@@ -435,9 +435,9 @@
           </label>
           <Dropdown.Root bind:open={roleDropdownOpen}>
             <Dropdown.Trigger
-              class="w-full flex flex-row gap-1 items-center rounded-sm outline-none border-none text-sm {roleDropdownOpen
-                ? 'bg-surface-active'
-                : 'hover:bg-surface-hover'} px-2 py-1"
+              class="w-full min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
+                ? 'bg-gray-200'
+                : 'hover:bg-surface-hover'}"
             >
               <span>{selectedRoleLabel}</span>
               {#if roleDropdownOpen}
