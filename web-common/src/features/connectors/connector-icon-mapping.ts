@@ -14,6 +14,7 @@ import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelt
 import SalesforceIcon from "../../components/icons/connectors/SalesforceIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
 import MicrosoftAzureBlobStorageIcon from "@rilldata/web-common/components/icons/connectors/MicrosoftAzureBlobStorageIcon.svelte";
+import SupabaseIcon from "../../components/icons/connectors/SupabaseIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -32,6 +33,7 @@ export const connectorIconMapping = {
   salesforce: SalesforceIcon,
   snowflake: SnowflakeIcon,
   starrocks: StarRocksIcon,
+  supabase: SupabaseIcon,
 };
 
 export const connectorLabelMapping = {

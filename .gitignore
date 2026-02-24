@@ -94,6 +94,7 @@ latest.txt
 .claude/CLAUDE.local.md
 .claude/settings.local.json
 .claude/**/*.local.md
+.claude/notes/
 .claude/plans/
 .claude/worktrees/
 

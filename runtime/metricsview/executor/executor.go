@@ -593,7 +593,7 @@ func (e *Executor) BindAnnotationsQuery(ctx context.Context, qry *metricsview.An
 		return err
 	}
 
-	err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+	err = e.ResolveTimeRange(ctx, qry.TimeRange, tz, nil)
 	if err != nil {
 		return err
 	}
@@ -811,7 +811,7 @@ func (e *Executor) executeAnnotationsQuery(ctx context.Context, qry *metricsview
 			return nil, err
 		}
 
-		err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+		err = e.ResolveTimeRange(ctx, qry.TimeRange, tz, nil)
 		if err != nil {
 			return nil, err
 		}

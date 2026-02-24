@@ -68,11 +68,11 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		return nil, err
 	}
 	if args.CurrentFilePath != "" {
-		_, err := s.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
+		_, _ = s.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
 			Path: args.CurrentFilePath,
 		})
-		if err != nil {
-			return nil, err
+		if ctx.Err() != nil { // Ignore tool error since the file may not exist
+			return nil, ctx.Err()
 		}
 	}
 
@@ -97,7 +97,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 			ShowTableName,
 			QuerySQLName,
 			DevelopFileName,
-			NavigateName,
+			// NavigateName,
 		},
 		MaxIterations: 20,
 		UnwrapCall:    true,
