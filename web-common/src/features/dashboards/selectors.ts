@@ -24,7 +24,7 @@ import {
   type V1MetricsViewTimeRangeResponse,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   createQuery,
   type CreateQueryOptions,
@@ -52,23 +52,19 @@ export function useMetricsView(
   );
 }
 
-export function getValidMetricsViewsQueryOptions() {
-  return derived(runtime, ({ instanceId }) => {
-    return getRuntimeServiceListResourcesQueryOptions(
-      instanceId,
-      {
-        kind: ResourceKind.MetricsView,
+export function getValidMetricsViewsQueryOptions(client: RuntimeClient) {
+  return getRuntimeServiceListResourcesQueryOptions(
+    client.instanceId,
+    {
+      kind: ResourceKind.MetricsView,
+    },
+    {
+      query: {
+        select: (data) =>
+          data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
       },
-      {
-        query: {
-          select: (data) =>
-            data?.resources?.filter(
-              (res) => !!res.metricsView?.state?.validSpec,
-            ),
-        },
-      },
-    );
-  });
+    },
+  );
 }
 
 export function useValidExplores(instanceId: string) {
@@ -152,32 +148,30 @@ export function useMetricsViewTimeRange(
 }
 
 export function getMetricsViewTimeRangeFromExploreQueryOptions(
+  client: RuntimeClient,
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecQueryOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(client, exploreNameStore),
     queryClient,
   );
 
-  return derived(
-    [runtime, validSpecQuery],
-    ([{ instanceId }, validSpecResp]) => {
-      const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
-      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
-      const metricsViewName = exploreSpec.metricsView ?? "";
+  return derived([validSpecQuery], ([validSpecResp]) => {
+    const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
+    const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
+    const metricsViewName = exploreSpec.metricsView ?? "";
 
-      return getQueryServiceMetricsViewTimeRangeQueryOptions(
-        instanceId,
-        metricsViewName,
-        {},
-        {
-          query: {
-            enabled: !!metricsViewSpec.timeDimension,
-          },
+    return getQueryServiceMetricsViewTimeRangeQueryOptions(
+      client.instanceId,
+      metricsViewName,
+      {},
+      {
+        query: {
+          enabled: !!metricsViewSpec.timeDimension,
         },
-      );
-    },
-  );
+      },
+    );
+  });
 }
 
 export function hasValidMetricsViewTimeRange(

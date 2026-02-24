@@ -1,7 +1,7 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { derived, get, type Readable } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 import {
   createQueryServiceResolveCanvas,
   type MetricsViewSpecDimension,
@@ -14,7 +14,7 @@ import {
   getClientFilteredResourcesQueryOptions,
   ResourceKind,
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 /**
  * Metadata used to map a value to a label.
@@ -34,9 +34,11 @@ export type MetricsViewMetadata = {
  * Creates a store that contains a map of metrics view names to their metadata.
  * Each metrics view metadata has a reference to its spec, and a map of for measure and dimension spec by their names.
  */
-export function getInlineChatContextMetadata(): Readable<InlineContextMetadata> {
+export function getInlineChatContextMetadata(
+  client: RuntimeClient,
+): Readable<InlineContextMetadata> {
   const metricsViewsQuery = createQuery(
-    getValidMetricsViewsQueryOptions(),
+    getValidMetricsViewsQueryOptions(client),
     queryClient,
   );
 
@@ -47,7 +49,7 @@ export function getInlineChatContextMetadata(): Readable<InlineContextMetadata> 
     queryClient,
   );
 
-  const instanceId = get(runtime).instanceId;
+  const instanceId = client.instanceId;
 
   return derived(
     [metricsViewsQuery, canvasResourcesQuery],

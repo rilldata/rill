@@ -7,6 +7,7 @@ import type { PickerItem } from "@rilldata/web-common/features/chat/core/context
 import { getCanvasesPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/canvases.ts";
 import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
 import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 /**
  * Creates a store that contains a list of options for each valid metrics view, canvases and sources/models.
@@ -17,14 +18,15 @@ import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/con
  * The list contains parents immediately followed by their children.
  */
 export function getPickerOptions(
+  client: RuntimeClient,
   uiState: ContextPickerUIState,
 ): Readable<PickerItem[]> {
   const isRillDev = !get(featureFlags.adminServer);
 
   return derived(
     [
-      getInlineChatContextMetadata(),
-      getMetricsViewPickerOptions(),
+      getInlineChatContextMetadata(client),
+      getMetricsViewPickerOptions(client),
       getCanvasesPickerOptions(uiState),
       isRillDev ? getModelsPickerOptions(uiState) : readable(null),
       uiState.expandedParentsStore,

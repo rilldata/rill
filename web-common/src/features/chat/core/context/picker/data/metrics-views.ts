@@ -1,6 +1,7 @@
 import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, type Readable } from "svelte/store";
 import { createQuery } from "@tanstack/svelte-query";
 import {
@@ -17,14 +18,16 @@ import { getLatestConversationQueryOptions } from "@rilldata/web-common/features
  * 1st level: metrics view context options
  * 2nd level: measures and dimensions options for each metrics view
  */
-export function getMetricsViewPickerOptions(): Readable<PickerItem[]> {
+export function getMetricsViewPickerOptions(
+  client: RuntimeClient,
+): Readable<PickerItem[]> {
   const metricsViewsQuery = createQuery(
-    getValidMetricsViewsQueryOptions(),
+    getValidMetricsViewsQueryOptions(client),
     queryClient,
   );
 
   const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
-  const activeMetricsViewStore = getActiveMetricsViewNameStore();
+  const activeMetricsViewStore = getActiveMetricsViewNameStore(client);
 
   return derived(
     [metricsViewsQuery, lastUsedMetricsViewStore, activeMetricsViewStore],
