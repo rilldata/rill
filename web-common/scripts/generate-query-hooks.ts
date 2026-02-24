@@ -28,7 +28,8 @@ interface ServiceDef {
     string,
     {
       name: string;
-      I: { typeName: string };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      I: { typeName: string; new (): any };
       O: { typeName: string };
       kind: MethodKind;
     }
@@ -45,6 +46,8 @@ interface MethodInfo {
   /** Response message type name (e.g. "MetricsViewAggregationResponse") */
   outputType: string;
   classification: MethodClassification;
+  /** Whether the request type has an instanceId field */
+  hasInstanceId: boolean;
 }
 
 // --- Helpers ---
@@ -102,12 +105,15 @@ function extractMethods(service: ServiceDef): MethodInfo[] {
     const classification = classifyMethod(serviceName, key);
     if (classification === "skip") continue;
 
+    const hasInstanceId = "instanceId" in new method.I();
+
     methods.push({
       methodKey: key,
       methodName: method.name,
       inputType: extractShortName(method.I.typeName),
       outputType: extractShortName(method.O.typeName),
       classification,
+      hasInstanceId,
     });
   }
 
@@ -171,13 +177,18 @@ function generateServiceFile(service: ServiceDef): string {
 
   // --- Query methods ---
   for (const m of queryMethods) {
-    const fnPrefix = `${serviceClientProp.charAt(0).toLowerCase() + serviceClientProp.slice(1)}${pascalCase(m.methodKey)}`;
-    // Use the same naming convention: serviceName + methodName (e.g. queryServiceMetricsViewAggregation)
-
     const fullName = `${serviceClientProp}${pascalCase(m.methodKey)}`;
     const keyFnName = `get${pascalCase(serviceClientProp)}${pascalCase(m.methodKey)}QueryKey`;
     const optsFnName = `get${pascalCase(serviceClientProp)}${pascalCase(m.methodKey)}QueryOptions`;
     const hookName = `create${pascalCase(serviceClientProp)}${pascalCase(m.methodKey)}`;
+
+    // Request type: omit instanceId when the proto message has it (client injects it)
+    const requestType = m.hasInstanceId
+      ? `Omit<PartialMessage<${m.inputType}>, "instanceId">`
+      : `PartialMessage<${m.inputType}>`;
+    const requestSpread = m.hasInstanceId
+      ? `{ instanceId: client.instanceId, ...request }`
+      : `request`;
 
     // Tier 1: Raw function
     lines.push(
@@ -186,11 +197,11 @@ function generateServiceFile(service: ServiceDef): string {
       ` */`,
       `export function ${fullName}(`,
       `  client: RuntimeClient,`,
-      `  request: PartialMessage<Omit<${m.inputType}, "instanceId">>,`,
+      `  request: ${requestType},`,
       `  options?: { signal?: AbortSignal },`,
       `): Promise<${m.outputType}> {`,
       `  return client.${serviceClientProp}.${m.methodKey}(`,
-      `    { instanceId: client.instanceId, ...request },`,
+      `    ${requestSpread},`,
       `    { signal: options?.signal },`,
       `  );`,
       `}`,
@@ -201,7 +212,7 @@ function generateServiceFile(service: ServiceDef): string {
     lines.push(
       `export function ${keyFnName}(`,
       `  instanceId: string,`,
-      `  request?: PartialMessage<Omit<${m.inputType}, "instanceId">>,`,
+      `  request?: ${requestType},`,
       `): QueryKey {`,
       `  return ["${serviceName}", "${m.methodKey}", instanceId, request ?? {}] as const;`,
       `}`,
@@ -212,7 +223,7 @@ function generateServiceFile(service: ServiceDef): string {
     lines.push(
       `export function ${optsFnName}(`,
       `  client: RuntimeClient,`,
-      `  request: PartialMessage<Omit<${m.inputType}, "instanceId">>,`,
+      `  request: ${requestType},`,
       `  options?: {`,
       `    query?: Partial<CreateQueryOptions<${m.outputType}>>;`,
       `  },`,
@@ -234,7 +245,7 @@ function generateServiceFile(service: ServiceDef): string {
     lines.push(
       `export function ${hookName}(`,
       `  client: RuntimeClient,`,
-      `  request: PartialMessage<Omit<${m.inputType}, "instanceId">>,`,
+      `  request: ${requestType},`,
       `  options?: {`,
       `    query?: Partial<CreateQueryOptions<${m.outputType}>>;`,
       `  },`,
@@ -253,6 +264,14 @@ function generateServiceFile(service: ServiceDef): string {
     const mutOptsFnName = `get${pascalCase(serviceClientProp)}${pascalCase(m.methodKey)}MutationOptions`;
     const mutHookName = `create${pascalCase(serviceClientProp)}${pascalCase(m.methodKey)}Mutation`;
 
+    // Request type: omit instanceId when the proto message has it
+    const requestType = m.hasInstanceId
+      ? `Omit<PartialMessage<${m.inputType}>, "instanceId">`
+      : `PartialMessage<${m.inputType}>`;
+    const requestSpread = m.hasInstanceId
+      ? `{ instanceId: client.instanceId, ...request }`
+      : `request`;
+
     // Raw function
     lines.push(
       `/**`,
@@ -260,10 +279,10 @@ function generateServiceFile(service: ServiceDef): string {
       ` */`,
       `export function ${fullName}(`,
       `  client: RuntimeClient,`,
-      `  request: PartialMessage<Omit<${m.inputType}, "instanceId">>,`,
+      `  request: ${requestType},`,
       `): Promise<${m.outputType}> {`,
       `  return client.${serviceClientProp}.${m.methodKey}(`,
-      `    { instanceId: client.instanceId, ...request },`,
+      `    ${requestSpread},`,
       `  );`,
       `}`,
       ``,
@@ -273,8 +292,8 @@ function generateServiceFile(service: ServiceDef): string {
     lines.push(
       `export function ${mutOptsFnName}(`,
       `  client: RuntimeClient,`,
-      `  options?: Partial<CreateMutationOptions<${m.outputType}, unknown, PartialMessage<Omit<${m.inputType}, "instanceId">>>>,`,
-      `): CreateMutationOptions<${m.outputType}, unknown, PartialMessage<Omit<${m.inputType}, "instanceId">>> {`,
+      `  options?: Partial<CreateMutationOptions<${m.outputType}, unknown, ${requestType}>>,`,
+      `): CreateMutationOptions<${m.outputType}, unknown, ${requestType}> {`,
       `  return {`,
       `    mutationFn: (request) => ${fullName}(client, request),`,
       `    ...options,`,
@@ -287,9 +306,9 @@ function generateServiceFile(service: ServiceDef): string {
     lines.push(
       `export function ${mutHookName}(`,
       `  client: RuntimeClient,`,
-      `  options?: Partial<CreateMutationOptions<${m.outputType}, unknown, PartialMessage<Omit<${m.inputType}, "instanceId">>>>,`,
+      `  options?: Partial<CreateMutationOptions<${m.outputType}, unknown, ${requestType}>>,`,
       `  queryClient?: QueryClient,`,
-      `): CreateMutationResult<${m.outputType}, unknown, PartialMessage<Omit<${m.inputType}, "instanceId">>> {`,
+      `): CreateMutationResult<${m.outputType}, unknown, ${requestType}> {`,
       `  const mutationOptions = ${mutOptsFnName}(client, options);`,
       `  return createMutation(mutationOptions, queryClient);`,
       `}`,

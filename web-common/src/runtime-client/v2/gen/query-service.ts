@@ -83,7 +83,7 @@ import {
  */
 export function queryServiceMetricsViewAggregation(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewAggregationRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewAggregationRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewAggregationResponse> {
   return client.queryService.metricsViewAggregation(
@@ -94,7 +94,7 @@ export function queryServiceMetricsViewAggregation(
 
 export function getQueryServiceMetricsViewAggregationQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewAggregationRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewAggregationRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -106,7 +106,7 @@ export function getQueryServiceMetricsViewAggregationQueryKey(
 
 export function getQueryServiceMetricsViewAggregationQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewAggregationRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewAggregationRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewAggregationResponse>>;
   },
@@ -127,7 +127,7 @@ export function getQueryServiceMetricsViewAggregationQueryOptions(
 
 export function createQueryServiceMetricsViewAggregation(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewAggregationRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewAggregationRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewAggregationResponse>>;
   },
@@ -146,7 +146,7 @@ export function createQueryServiceMetricsViewAggregation(
  */
 export function queryServiceMetricsViewToplist(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewToplistRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewToplistRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewToplistResponse> {
   return client.queryService.metricsViewToplist(
@@ -157,7 +157,7 @@ export function queryServiceMetricsViewToplist(
 
 export function getQueryServiceMetricsViewToplistQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewToplistRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewToplistRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -169,7 +169,7 @@ export function getQueryServiceMetricsViewToplistQueryKey(
 
 export function getQueryServiceMetricsViewToplistQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewToplistRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewToplistRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewToplistResponse>>;
   },
@@ -190,7 +190,7 @@ export function getQueryServiceMetricsViewToplistQueryOptions(
 
 export function createQueryServiceMetricsViewToplist(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewToplistRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewToplistRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewToplistResponse>>;
   },
@@ -209,7 +209,7 @@ export function createQueryServiceMetricsViewToplist(
  */
 export function queryServiceMetricsViewComparison(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewComparisonRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewComparisonRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewComparisonResponse> {
   return client.queryService.metricsViewComparison(
@@ -220,7 +220,7 @@ export function queryServiceMetricsViewComparison(
 
 export function getQueryServiceMetricsViewComparisonQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewComparisonRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewComparisonRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -232,7 +232,7 @@ export function getQueryServiceMetricsViewComparisonQueryKey(
 
 export function getQueryServiceMetricsViewComparisonQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewComparisonRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewComparisonRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewComparisonResponse>>;
   },
@@ -253,7 +253,7 @@ export function getQueryServiceMetricsViewComparisonQueryOptions(
 
 export function createQueryServiceMetricsViewComparison(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewComparisonRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewComparisonRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewComparisonResponse>>;
   },
@@ -272,7 +272,7 @@ export function createQueryServiceMetricsViewComparison(
  */
 export function queryServiceMetricsViewTimeSeries(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTimeSeriesRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTimeSeriesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewTimeSeriesResponse> {
   return client.queryService.metricsViewTimeSeries(
@@ -283,7 +283,7 @@ export function queryServiceMetricsViewTimeSeries(
 
 export function getQueryServiceMetricsViewTimeSeriesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewTimeSeriesRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewTimeSeriesRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -295,7 +295,7 @@ export function getQueryServiceMetricsViewTimeSeriesQueryKey(
 
 export function getQueryServiceMetricsViewTimeSeriesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTimeSeriesRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTimeSeriesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewTimeSeriesResponse>>;
   },
@@ -316,7 +316,7 @@ export function getQueryServiceMetricsViewTimeSeriesQueryOptions(
 
 export function createQueryServiceMetricsViewTimeSeries(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTimeSeriesRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTimeSeriesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewTimeSeriesResponse>>;
   },
@@ -335,7 +335,7 @@ export function createQueryServiceMetricsViewTimeSeries(
  */
 export function queryServiceMetricsViewTotals(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTotalsRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTotalsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewTotalsResponse> {
   return client.queryService.metricsViewTotals(
@@ -346,7 +346,7 @@ export function queryServiceMetricsViewTotals(
 
 export function getQueryServiceMetricsViewTotalsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewTotalsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewTotalsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -358,7 +358,7 @@ export function getQueryServiceMetricsViewTotalsQueryKey(
 
 export function getQueryServiceMetricsViewTotalsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTotalsRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTotalsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewTotalsResponse>>;
   },
@@ -379,7 +379,7 @@ export function getQueryServiceMetricsViewTotalsQueryOptions(
 
 export function createQueryServiceMetricsViewTotals(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTotalsRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTotalsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewTotalsResponse>>;
   },
@@ -398,7 +398,7 @@ export function createQueryServiceMetricsViewTotals(
  */
 export function queryServiceMetricsViewRows(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewRowsRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewRowsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewRowsResponse> {
   return client.queryService.metricsViewRows(
@@ -409,7 +409,7 @@ export function queryServiceMetricsViewRows(
 
 export function getQueryServiceMetricsViewRowsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewRowsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewRowsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -421,7 +421,7 @@ export function getQueryServiceMetricsViewRowsQueryKey(
 
 export function getQueryServiceMetricsViewRowsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewRowsRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewRowsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewRowsResponse>>;
   },
@@ -442,7 +442,7 @@ export function getQueryServiceMetricsViewRowsQueryOptions(
 
 export function createQueryServiceMetricsViewRows(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewRowsRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewRowsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewRowsResponse>>;
   },
@@ -461,7 +461,7 @@ export function createQueryServiceMetricsViewRows(
  */
 export function queryServiceMetricsViewTimeRange(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTimeRangeRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTimeRangeRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewTimeRangeResponse> {
   return client.queryService.metricsViewTimeRange(
@@ -472,7 +472,7 @@ export function queryServiceMetricsViewTimeRange(
 
 export function getQueryServiceMetricsViewTimeRangeQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewTimeRangeRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewTimeRangeRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -484,7 +484,7 @@ export function getQueryServiceMetricsViewTimeRangeQueryKey(
 
 export function getQueryServiceMetricsViewTimeRangeQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTimeRangeRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTimeRangeRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewTimeRangeResponse>>;
   },
@@ -505,7 +505,7 @@ export function getQueryServiceMetricsViewTimeRangeQueryOptions(
 
 export function createQueryServiceMetricsViewTimeRange(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTimeRangeRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTimeRangeRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewTimeRangeResponse>>;
   },
@@ -524,7 +524,7 @@ export function createQueryServiceMetricsViewTimeRange(
  */
 export function queryServiceMetricsViewSchema(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewSchemaRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewSchemaRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewSchemaResponse> {
   return client.queryService.metricsViewSchema(
@@ -535,7 +535,7 @@ export function queryServiceMetricsViewSchema(
 
 export function getQueryServiceMetricsViewSchemaQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewSchemaRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewSchemaRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -547,7 +547,7 @@ export function getQueryServiceMetricsViewSchemaQueryKey(
 
 export function getQueryServiceMetricsViewSchemaQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewSchemaRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewSchemaRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewSchemaResponse>>;
   },
@@ -568,7 +568,7 @@ export function getQueryServiceMetricsViewSchemaQueryOptions(
 
 export function createQueryServiceMetricsViewSchema(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewSchemaRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewSchemaRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewSchemaResponse>>;
   },
@@ -587,7 +587,7 @@ export function createQueryServiceMetricsViewSchema(
  */
 export function queryServiceMetricsViewSearch(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewSearchRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewSearchRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewSearchResponse> {
   return client.queryService.metricsViewSearch(
@@ -598,7 +598,7 @@ export function queryServiceMetricsViewSearch(
 
 export function getQueryServiceMetricsViewSearchQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewSearchRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewSearchRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -610,7 +610,7 @@ export function getQueryServiceMetricsViewSearchQueryKey(
 
 export function getQueryServiceMetricsViewSearchQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewSearchRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewSearchRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewSearchResponse>>;
   },
@@ -631,7 +631,7 @@ export function getQueryServiceMetricsViewSearchQueryOptions(
 
 export function createQueryServiceMetricsViewSearch(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewSearchRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewSearchRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewSearchResponse>>;
   },
@@ -650,7 +650,7 @@ export function createQueryServiceMetricsViewSearch(
  */
 export function queryServiceMetricsViewTimeRanges(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTimeRangesRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTimeRangesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewTimeRangesResponse> {
   return client.queryService.metricsViewTimeRanges(
@@ -661,7 +661,7 @@ export function queryServiceMetricsViewTimeRanges(
 
 export function getQueryServiceMetricsViewTimeRangesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewTimeRangesRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewTimeRangesRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -673,7 +673,7 @@ export function getQueryServiceMetricsViewTimeRangesQueryKey(
 
 export function getQueryServiceMetricsViewTimeRangesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTimeRangesRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTimeRangesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewTimeRangesResponse>>;
   },
@@ -694,7 +694,7 @@ export function getQueryServiceMetricsViewTimeRangesQueryOptions(
 
 export function createQueryServiceMetricsViewTimeRanges(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewTimeRangesRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewTimeRangesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewTimeRangesResponse>>;
   },
@@ -713,7 +713,7 @@ export function createQueryServiceMetricsViewTimeRanges(
  */
 export function queryServiceMetricsViewAnnotations(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewAnnotationsRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewAnnotationsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<MetricsViewAnnotationsResponse> {
   return client.queryService.metricsViewAnnotations(
@@ -724,7 +724,7 @@ export function queryServiceMetricsViewAnnotations(
 
 export function getQueryServiceMetricsViewAnnotationsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<MetricsViewAnnotationsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<MetricsViewAnnotationsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -736,7 +736,7 @@ export function getQueryServiceMetricsViewAnnotationsQueryKey(
 
 export function getQueryServiceMetricsViewAnnotationsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewAnnotationsRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewAnnotationsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewAnnotationsResponse>>;
   },
@@ -757,7 +757,7 @@ export function getQueryServiceMetricsViewAnnotationsQueryOptions(
 
 export function createQueryServiceMetricsViewAnnotations(
   client: RuntimeClient,
-  request: PartialMessage<Omit<MetricsViewAnnotationsRequest, "instanceId">>,
+  request: Omit<PartialMessage<MetricsViewAnnotationsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<MetricsViewAnnotationsResponse>>;
   },
@@ -776,8 +776,9 @@ export function createQueryServiceMetricsViewAnnotations(
  */
 export function queryServiceConvertExpressionToMetricsSQL(
   client: RuntimeClient,
-  request: PartialMessage<
-    Omit<ConvertExpressionToMetricsSQLRequest, "instanceId">
+  request: Omit<
+    PartialMessage<ConvertExpressionToMetricsSQLRequest>,
+    "instanceId"
   >,
   options?: { signal?: AbortSignal },
 ): Promise<ConvertExpressionToMetricsSQLResponse> {
@@ -789,8 +790,9 @@ export function queryServiceConvertExpressionToMetricsSQL(
 
 export function getQueryServiceConvertExpressionToMetricsSQLQueryKey(
   instanceId: string,
-  request?: PartialMessage<
-    Omit<ConvertExpressionToMetricsSQLRequest, "instanceId">
+  request?: Omit<
+    PartialMessage<ConvertExpressionToMetricsSQLRequest>,
+    "instanceId"
   >,
 ): QueryKey {
   return [
@@ -803,8 +805,9 @@ export function getQueryServiceConvertExpressionToMetricsSQLQueryKey(
 
 export function getQueryServiceConvertExpressionToMetricsSQLQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<
-    Omit<ConvertExpressionToMetricsSQLRequest, "instanceId">
+  request: Omit<
+    PartialMessage<ConvertExpressionToMetricsSQLRequest>,
+    "instanceId"
   >,
   options?: {
     query?: Partial<CreateQueryOptions<ConvertExpressionToMetricsSQLResponse>>;
@@ -829,8 +832,9 @@ export function getQueryServiceConvertExpressionToMetricsSQLQueryOptions(
 
 export function createQueryServiceConvertExpressionToMetricsSQL(
   client: RuntimeClient,
-  request: PartialMessage<
-    Omit<ConvertExpressionToMetricsSQLRequest, "instanceId">
+  request: Omit<
+    PartialMessage<ConvertExpressionToMetricsSQLRequest>,
+    "instanceId"
   >,
   options?: {
     query?: Partial<CreateQueryOptions<ConvertExpressionToMetricsSQLResponse>>;
@@ -850,7 +854,7 @@ export function createQueryServiceConvertExpressionToMetricsSQL(
  */
 export function queryServiceResolveCanvas(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ResolveCanvasRequest, "instanceId">>,
+  request: Omit<PartialMessage<ResolveCanvasRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ResolveCanvasResponse> {
   return client.queryService.resolveCanvas(
@@ -861,14 +865,14 @@ export function queryServiceResolveCanvas(
 
 export function getQueryServiceResolveCanvasQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ResolveCanvasRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ResolveCanvasRequest>, "instanceId">,
 ): QueryKey {
   return ["QueryService", "resolveCanvas", instanceId, request ?? {}] as const;
 }
 
 export function getQueryServiceResolveCanvasQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ResolveCanvasRequest, "instanceId">>,
+  request: Omit<PartialMessage<ResolveCanvasRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ResolveCanvasResponse>>;
   },
@@ -889,7 +893,7 @@ export function getQueryServiceResolveCanvasQueryOptions(
 
 export function createQueryServiceResolveCanvas(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ResolveCanvasRequest, "instanceId">>,
+  request: Omit<PartialMessage<ResolveCanvasRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ResolveCanvasResponse>>;
   },
@@ -908,7 +912,7 @@ export function createQueryServiceResolveCanvas(
  */
 export function queryServiceResolveComponent(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ResolveComponentRequest, "instanceId">>,
+  request: Omit<PartialMessage<ResolveComponentRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ResolveComponentResponse> {
   return client.queryService.resolveComponent(
@@ -919,7 +923,7 @@ export function queryServiceResolveComponent(
 
 export function getQueryServiceResolveComponentQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ResolveComponentRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ResolveComponentRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -931,7 +935,7 @@ export function getQueryServiceResolveComponentQueryKey(
 
 export function getQueryServiceResolveComponentQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ResolveComponentRequest, "instanceId">>,
+  request: Omit<PartialMessage<ResolveComponentRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ResolveComponentResponse>>;
   },
@@ -952,7 +956,7 @@ export function getQueryServiceResolveComponentQueryOptions(
 
 export function createQueryServiceResolveComponent(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ResolveComponentRequest, "instanceId">>,
+  request: Omit<PartialMessage<ResolveComponentRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ResolveComponentResponse>>;
   },
@@ -971,7 +975,7 @@ export function createQueryServiceResolveComponent(
  */
 export function queryServiceResolveTemplatedString(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ResolveTemplatedStringRequest, "instanceId">>,
+  request: Omit<PartialMessage<ResolveTemplatedStringRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ResolveTemplatedStringResponse> {
   return client.queryService.resolveTemplatedString(
@@ -982,7 +986,7 @@ export function queryServiceResolveTemplatedString(
 
 export function getQueryServiceResolveTemplatedStringQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ResolveTemplatedStringRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ResolveTemplatedStringRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -994,7 +998,7 @@ export function getQueryServiceResolveTemplatedStringQueryKey(
 
 export function getQueryServiceResolveTemplatedStringQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ResolveTemplatedStringRequest, "instanceId">>,
+  request: Omit<PartialMessage<ResolveTemplatedStringRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ResolveTemplatedStringResponse>>;
   },
@@ -1015,7 +1019,7 @@ export function getQueryServiceResolveTemplatedStringQueryOptions(
 
 export function createQueryServiceResolveTemplatedString(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ResolveTemplatedStringRequest, "instanceId">>,
+  request: Omit<PartialMessage<ResolveTemplatedStringRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ResolveTemplatedStringResponse>>;
   },
@@ -1034,7 +1038,7 @@ export function createQueryServiceResolveTemplatedString(
  */
 export function queryServiceColumnRollupInterval(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnRollupIntervalRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnRollupIntervalRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnRollupIntervalResponse> {
   return client.queryService.columnRollupInterval(
@@ -1045,7 +1049,7 @@ export function queryServiceColumnRollupInterval(
 
 export function getQueryServiceColumnRollupIntervalQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ColumnRollupIntervalRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ColumnRollupIntervalRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1057,7 +1061,7 @@ export function getQueryServiceColumnRollupIntervalQueryKey(
 
 export function getQueryServiceColumnRollupIntervalQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnRollupIntervalRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnRollupIntervalRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnRollupIntervalResponse>>;
   },
@@ -1078,7 +1082,7 @@ export function getQueryServiceColumnRollupIntervalQueryOptions(
 
 export function createQueryServiceColumnRollupInterval(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnRollupIntervalRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnRollupIntervalRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnRollupIntervalResponse>>;
   },
@@ -1097,7 +1101,7 @@ export function createQueryServiceColumnRollupInterval(
  */
 export function queryServiceColumnTopK(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTopKRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTopKRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnTopKResponse> {
   return client.queryService.columnTopK(
@@ -1108,14 +1112,14 @@ export function queryServiceColumnTopK(
 
 export function getQueryServiceColumnTopKQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ColumnTopKRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ColumnTopKRequest>, "instanceId">,
 ): QueryKey {
   return ["QueryService", "columnTopK", instanceId, request ?? {}] as const;
 }
 
 export function getQueryServiceColumnTopKQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTopKRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTopKRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnTopKResponse>>;
   },
@@ -1136,7 +1140,7 @@ export function getQueryServiceColumnTopKQueryOptions(
 
 export function createQueryServiceColumnTopK(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTopKRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTopKRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnTopKResponse>>;
   },
@@ -1155,7 +1159,7 @@ export function createQueryServiceColumnTopK(
  */
 export function queryServiceColumnNullCount(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnNullCountRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnNullCountRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnNullCountResponse> {
   return client.queryService.columnNullCount(
@@ -1166,7 +1170,7 @@ export function queryServiceColumnNullCount(
 
 export function getQueryServiceColumnNullCountQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ColumnNullCountRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ColumnNullCountRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1178,7 +1182,7 @@ export function getQueryServiceColumnNullCountQueryKey(
 
 export function getQueryServiceColumnNullCountQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnNullCountRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnNullCountRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnNullCountResponse>>;
   },
@@ -1199,7 +1203,7 @@ export function getQueryServiceColumnNullCountQueryOptions(
 
 export function createQueryServiceColumnNullCount(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnNullCountRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnNullCountRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnNullCountResponse>>;
   },
@@ -1218,8 +1222,9 @@ export function createQueryServiceColumnNullCount(
  */
 export function queryServiceColumnDescriptiveStatistics(
   client: RuntimeClient,
-  request: PartialMessage<
-    Omit<ColumnDescriptiveStatisticsRequest, "instanceId">
+  request: Omit<
+    PartialMessage<ColumnDescriptiveStatisticsRequest>,
+    "instanceId"
   >,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnDescriptiveStatisticsResponse> {
@@ -1231,8 +1236,9 @@ export function queryServiceColumnDescriptiveStatistics(
 
 export function getQueryServiceColumnDescriptiveStatisticsQueryKey(
   instanceId: string,
-  request?: PartialMessage<
-    Omit<ColumnDescriptiveStatisticsRequest, "instanceId">
+  request?: Omit<
+    PartialMessage<ColumnDescriptiveStatisticsRequest>,
+    "instanceId"
   >,
 ): QueryKey {
   return [
@@ -1245,8 +1251,9 @@ export function getQueryServiceColumnDescriptiveStatisticsQueryKey(
 
 export function getQueryServiceColumnDescriptiveStatisticsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<
-    Omit<ColumnDescriptiveStatisticsRequest, "instanceId">
+  request: Omit<
+    PartialMessage<ColumnDescriptiveStatisticsRequest>,
+    "instanceId"
   >,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnDescriptiveStatisticsResponse>>;
@@ -1271,8 +1278,9 @@ export function getQueryServiceColumnDescriptiveStatisticsQueryOptions(
 
 export function createQueryServiceColumnDescriptiveStatistics(
   client: RuntimeClient,
-  request: PartialMessage<
-    Omit<ColumnDescriptiveStatisticsRequest, "instanceId">
+  request: Omit<
+    PartialMessage<ColumnDescriptiveStatisticsRequest>,
+    "instanceId"
   >,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnDescriptiveStatisticsResponse>>;
@@ -1292,7 +1300,7 @@ export function createQueryServiceColumnDescriptiveStatistics(
  */
 export function queryServiceColumnTimeGrain(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTimeGrainRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTimeGrainRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnTimeGrainResponse> {
   return client.queryService.columnTimeGrain(
@@ -1303,7 +1311,7 @@ export function queryServiceColumnTimeGrain(
 
 export function getQueryServiceColumnTimeGrainQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ColumnTimeGrainRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ColumnTimeGrainRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1315,7 +1323,7 @@ export function getQueryServiceColumnTimeGrainQueryKey(
 
 export function getQueryServiceColumnTimeGrainQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTimeGrainRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTimeGrainRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnTimeGrainResponse>>;
   },
@@ -1336,7 +1344,7 @@ export function getQueryServiceColumnTimeGrainQueryOptions(
 
 export function createQueryServiceColumnTimeGrain(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTimeGrainRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTimeGrainRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnTimeGrainResponse>>;
   },
@@ -1355,7 +1363,7 @@ export function createQueryServiceColumnTimeGrain(
  */
 export function queryServiceColumnNumericHistogram(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnNumericHistogramRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnNumericHistogramRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnNumericHistogramResponse> {
   return client.queryService.columnNumericHistogram(
@@ -1366,7 +1374,7 @@ export function queryServiceColumnNumericHistogram(
 
 export function getQueryServiceColumnNumericHistogramQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ColumnNumericHistogramRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ColumnNumericHistogramRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1378,7 +1386,7 @@ export function getQueryServiceColumnNumericHistogramQueryKey(
 
 export function getQueryServiceColumnNumericHistogramQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnNumericHistogramRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnNumericHistogramRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnNumericHistogramResponse>>;
   },
@@ -1399,7 +1407,7 @@ export function getQueryServiceColumnNumericHistogramQueryOptions(
 
 export function createQueryServiceColumnNumericHistogram(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnNumericHistogramRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnNumericHistogramRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnNumericHistogramResponse>>;
   },
@@ -1418,7 +1426,7 @@ export function createQueryServiceColumnNumericHistogram(
  */
 export function queryServiceColumnRugHistogram(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnRugHistogramRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnRugHistogramRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnRugHistogramResponse> {
   return client.queryService.columnRugHistogram(
@@ -1429,7 +1437,7 @@ export function queryServiceColumnRugHistogram(
 
 export function getQueryServiceColumnRugHistogramQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ColumnRugHistogramRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ColumnRugHistogramRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1441,7 +1449,7 @@ export function getQueryServiceColumnRugHistogramQueryKey(
 
 export function getQueryServiceColumnRugHistogramQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnRugHistogramRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnRugHistogramRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnRugHistogramResponse>>;
   },
@@ -1462,7 +1470,7 @@ export function getQueryServiceColumnRugHistogramQueryOptions(
 
 export function createQueryServiceColumnRugHistogram(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnRugHistogramRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnRugHistogramRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnRugHistogramResponse>>;
   },
@@ -1481,7 +1489,7 @@ export function createQueryServiceColumnRugHistogram(
  */
 export function queryServiceColumnTimeRange(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTimeRangeRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTimeRangeRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnTimeRangeResponse> {
   return client.queryService.columnTimeRange(
@@ -1492,7 +1500,7 @@ export function queryServiceColumnTimeRange(
 
 export function getQueryServiceColumnTimeRangeQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ColumnTimeRangeRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ColumnTimeRangeRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1504,7 +1512,7 @@ export function getQueryServiceColumnTimeRangeQueryKey(
 
 export function getQueryServiceColumnTimeRangeQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTimeRangeRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTimeRangeRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnTimeRangeResponse>>;
   },
@@ -1525,7 +1533,7 @@ export function getQueryServiceColumnTimeRangeQueryOptions(
 
 export function createQueryServiceColumnTimeRange(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTimeRangeRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTimeRangeRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnTimeRangeResponse>>;
   },
@@ -1544,7 +1552,7 @@ export function createQueryServiceColumnTimeRange(
  */
 export function queryServiceColumnCardinality(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnCardinalityRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnCardinalityRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnCardinalityResponse> {
   return client.queryService.columnCardinality(
@@ -1555,7 +1563,7 @@ export function queryServiceColumnCardinality(
 
 export function getQueryServiceColumnCardinalityQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ColumnCardinalityRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ColumnCardinalityRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1567,7 +1575,7 @@ export function getQueryServiceColumnCardinalityQueryKey(
 
 export function getQueryServiceColumnCardinalityQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnCardinalityRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnCardinalityRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnCardinalityResponse>>;
   },
@@ -1588,7 +1596,7 @@ export function getQueryServiceColumnCardinalityQueryOptions(
 
 export function createQueryServiceColumnCardinality(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnCardinalityRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnCardinalityRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnCardinalityResponse>>;
   },
@@ -1607,7 +1615,7 @@ export function createQueryServiceColumnCardinality(
  */
 export function queryServiceColumnTimeSeries(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTimeSeriesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTimeSeriesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ColumnTimeSeriesResponse> {
   return client.queryService.columnTimeSeries(
@@ -1618,7 +1626,7 @@ export function queryServiceColumnTimeSeries(
 
 export function getQueryServiceColumnTimeSeriesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ColumnTimeSeriesRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ColumnTimeSeriesRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1630,7 +1638,7 @@ export function getQueryServiceColumnTimeSeriesQueryKey(
 
 export function getQueryServiceColumnTimeSeriesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTimeSeriesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTimeSeriesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnTimeSeriesResponse>>;
   },
@@ -1651,7 +1659,7 @@ export function getQueryServiceColumnTimeSeriesQueryOptions(
 
 export function createQueryServiceColumnTimeSeries(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ColumnTimeSeriesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ColumnTimeSeriesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ColumnTimeSeriesResponse>>;
   },
@@ -1670,7 +1678,7 @@ export function createQueryServiceColumnTimeSeries(
  */
 export function queryServiceTableCardinality(
   client: RuntimeClient,
-  request: PartialMessage<Omit<TableCardinalityRequest, "instanceId">>,
+  request: Omit<PartialMessage<TableCardinalityRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<TableCardinalityResponse> {
   return client.queryService.tableCardinality(
@@ -1681,7 +1689,7 @@ export function queryServiceTableCardinality(
 
 export function getQueryServiceTableCardinalityQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<TableCardinalityRequest, "instanceId">>,
+  request?: Omit<PartialMessage<TableCardinalityRequest>, "instanceId">,
 ): QueryKey {
   return [
     "QueryService",
@@ -1693,7 +1701,7 @@ export function getQueryServiceTableCardinalityQueryKey(
 
 export function getQueryServiceTableCardinalityQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<TableCardinalityRequest, "instanceId">>,
+  request: Omit<PartialMessage<TableCardinalityRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<TableCardinalityResponse>>;
   },
@@ -1714,7 +1722,7 @@ export function getQueryServiceTableCardinalityQueryOptions(
 
 export function createQueryServiceTableCardinality(
   client: RuntimeClient,
-  request: PartialMessage<Omit<TableCardinalityRequest, "instanceId">>,
+  request: Omit<PartialMessage<TableCardinalityRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<TableCardinalityResponse>>;
   },
@@ -1733,7 +1741,7 @@ export function createQueryServiceTableCardinality(
  */
 export function queryServiceTableColumns(
   client: RuntimeClient,
-  request: PartialMessage<Omit<TableColumnsRequest, "instanceId">>,
+  request: Omit<PartialMessage<TableColumnsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<TableColumnsResponse> {
   return client.queryService.tableColumns(
@@ -1744,14 +1752,14 @@ export function queryServiceTableColumns(
 
 export function getQueryServiceTableColumnsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<TableColumnsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<TableColumnsRequest>, "instanceId">,
 ): QueryKey {
   return ["QueryService", "tableColumns", instanceId, request ?? {}] as const;
 }
 
 export function getQueryServiceTableColumnsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<TableColumnsRequest, "instanceId">>,
+  request: Omit<PartialMessage<TableColumnsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<TableColumnsResponse>>;
   },
@@ -1772,7 +1780,7 @@ export function getQueryServiceTableColumnsQueryOptions(
 
 export function createQueryServiceTableColumns(
   client: RuntimeClient,
-  request: PartialMessage<Omit<TableColumnsRequest, "instanceId">>,
+  request: Omit<PartialMessage<TableColumnsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<TableColumnsResponse>>;
   },
@@ -1791,7 +1799,7 @@ export function createQueryServiceTableColumns(
  */
 export function queryServiceTableRows(
   client: RuntimeClient,
-  request: PartialMessage<Omit<TableRowsRequest, "instanceId">>,
+  request: Omit<PartialMessage<TableRowsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<TableRowsResponse> {
   return client.queryService.tableRows(
@@ -1802,14 +1810,14 @@ export function queryServiceTableRows(
 
 export function getQueryServiceTableRowsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<TableRowsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<TableRowsRequest>, "instanceId">,
 ): QueryKey {
   return ["QueryService", "tableRows", instanceId, request ?? {}] as const;
 }
 
 export function getQueryServiceTableRowsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<TableRowsRequest, "instanceId">>,
+  request: Omit<PartialMessage<TableRowsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<TableRowsResponse>>;
   },
@@ -1827,7 +1835,7 @@ export function getQueryServiceTableRowsQueryOptions(
 
 export function createQueryServiceTableRows(
   client: RuntimeClient,
-  request: PartialMessage<Omit<TableRowsRequest, "instanceId">>,
+  request: Omit<PartialMessage<TableRowsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<TableRowsResponse>>;
   },
@@ -1846,7 +1854,7 @@ export function createQueryServiceTableRows(
  */
 export function queryServiceQuery(
   client: RuntimeClient,
-  request: PartialMessage<Omit<QueryRequest, "instanceId">>,
+  request: Omit<PartialMessage<QueryRequest>, "instanceId">,
 ): Promise<QueryResponse> {
   return client.queryService.query({
     instanceId: client.instanceId,
@@ -1860,13 +1868,13 @@ export function getQueryServiceQueryMutationOptions(
     CreateMutationOptions<
       QueryResponse,
       unknown,
-      PartialMessage<Omit<QueryRequest, "instanceId">>
+      Omit<PartialMessage<QueryRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   QueryResponse,
   unknown,
-  PartialMessage<Omit<QueryRequest, "instanceId">>
+  Omit<PartialMessage<QueryRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => queryServiceQuery(client, request),
@@ -1880,14 +1888,14 @@ export function createQueryServiceQueryMutation(
     CreateMutationOptions<
       QueryResponse,
       unknown,
-      PartialMessage<Omit<QueryRequest, "instanceId">>
+      Omit<PartialMessage<QueryRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   QueryResponse,
   unknown,
-  PartialMessage<Omit<QueryRequest, "instanceId">>
+  Omit<PartialMessage<QueryRequest>, "instanceId">
 > {
   const mutationOptions = getQueryServiceQueryMutationOptions(client, options);
   return createMutation(mutationOptions, queryClient);
@@ -1898,7 +1906,7 @@ export function createQueryServiceQueryMutation(
  */
 export function queryServiceExport(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ExportRequest, "instanceId">>,
+  request: Omit<PartialMessage<ExportRequest>, "instanceId">,
 ): Promise<ExportResponse> {
   return client.queryService.export({
     instanceId: client.instanceId,
@@ -1912,13 +1920,13 @@ export function getQueryServiceExportMutationOptions(
     CreateMutationOptions<
       ExportResponse,
       unknown,
-      PartialMessage<Omit<ExportRequest, "instanceId">>
+      Omit<PartialMessage<ExportRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   ExportResponse,
   unknown,
-  PartialMessage<Omit<ExportRequest, "instanceId">>
+  Omit<PartialMessage<ExportRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => queryServiceExport(client, request),
@@ -1932,14 +1940,14 @@ export function createQueryServiceExportMutation(
     CreateMutationOptions<
       ExportResponse,
       unknown,
-      PartialMessage<Omit<ExportRequest, "instanceId">>
+      Omit<PartialMessage<ExportRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   ExportResponse,
   unknown,
-  PartialMessage<Omit<ExportRequest, "instanceId">>
+  Omit<PartialMessage<ExportRequest>, "instanceId">
 > {
   const mutationOptions = getQueryServiceExportMutationOptions(client, options);
   return createMutation(mutationOptions, queryClient);
@@ -1950,7 +1958,7 @@ export function createQueryServiceExportMutation(
  */
 export function queryServiceExportReport(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ExportReportRequest, "instanceId">>,
+  request: Omit<PartialMessage<ExportReportRequest>, "instanceId">,
 ): Promise<ExportReportResponse> {
   return client.queryService.exportReport({
     instanceId: client.instanceId,
@@ -1964,13 +1972,13 @@ export function getQueryServiceExportReportMutationOptions(
     CreateMutationOptions<
       ExportReportResponse,
       unknown,
-      PartialMessage<Omit<ExportReportRequest, "instanceId">>
+      Omit<PartialMessage<ExportReportRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   ExportReportResponse,
   unknown,
-  PartialMessage<Omit<ExportReportRequest, "instanceId">>
+  Omit<PartialMessage<ExportReportRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => queryServiceExportReport(client, request),
@@ -1984,14 +1992,14 @@ export function createQueryServiceExportReportMutation(
     CreateMutationOptions<
       ExportReportResponse,
       unknown,
-      PartialMessage<Omit<ExportReportRequest, "instanceId">>
+      Omit<PartialMessage<ExportReportRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   ExportReportResponse,
   unknown,
-  PartialMessage<Omit<ExportReportRequest, "instanceId">>
+  Omit<PartialMessage<ExportReportRequest>, "instanceId">
 > {
   const mutationOptions = getQueryServiceExportReportMutationOptions(
     client,
