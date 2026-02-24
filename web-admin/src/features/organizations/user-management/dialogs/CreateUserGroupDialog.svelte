@@ -435,9 +435,9 @@
           </label>
           <Dropdown.Root bind:open={roleDropdownOpen}>
             <Dropdown.Trigger
-              class="w-full min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
-                ? 'bg-gray-200'
-                : 'hover:bg-surface-hover'}"
+              class="flex flex-row gap-1 items-center rounded-sm outline-none border-none text-sm {roleDropdownOpen
+                ? 'bg-surface-active'
+                : 'hover:bg-surface-hover'} px-2 py-1"
             >
               <span>{selectedRoleLabel}</span>
               {#if roleDropdownOpen}
@@ -446,16 +446,20 @@
                 <CaretDownIcon size="12px" />
               {/if}
             </Dropdown.Trigger>
-            <Dropdown.Content align="start" class="w-full">
+            <Dropdown.Content align="start">
               {#each PROJECT_ROLES_OPTIONS as option}
-                <Dropdown.CheckboxItem
-                  checked={selectedRole === option.value}
-                  onCheckedChange={(checked) => {
-                    if (checked) selectedRole = option.value;
-                  }}
+                <Dropdown.Item
+                  class="font-normal flex flex-col items-start py-2 {selectedRole ===
+                  option.value
+                    ? 'bg-surface-active'
+                    : ''}"
+                  on:click={() => (selectedRole = option.value)}
                 >
-                  {option.label}
-                </Dropdown.CheckboxItem>
+                  <span class="font-medium">{option.label}</span>
+                  <span class="text-xs text-fg-secondary"
+                    >{option.description}</span
+                  >
+                </Dropdown.Item>
               {/each}
             </Dropdown.Content>
           </Dropdown.Root>

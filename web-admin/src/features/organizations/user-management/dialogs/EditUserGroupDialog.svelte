@@ -27,6 +27,10 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { capitalize } from "@rilldata/web-common/components/table/utils";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { PROJECT_ROLES_OPTIONS } from "@rilldata/web-admin/features/projects/constants";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
@@ -58,6 +62,7 @@
   let projectsLoading = false;
   let projectSearchInput = "";
   let projectSearchFocused = false;
+  let projectRoleDropdownOpen: Record<string, boolean> = {};
 
   // ── Org / queries ──────────────────────────────────────────────────
   $: organization = $page.params.organization;
@@ -420,19 +425,39 @@
                 {#each selectedProjects as project (project.name)}
                   <div class="flex items-center gap-2 px-3 py-2 bg-white">
                     <span class="flex-1 truncate text-sm">{project.name}</span>
-                    <select
-                      class="h-7 rounded-sm border border-gray-300 bg-white px-2 text-xs text-gray-700 cursor-pointer focus:outline-none focus:border-primary-500"
-                      value={project.role}
-                      on:change={(e) =>
-                        handleProjectRoleChange(
-                          project.name,
-                          e.currentTarget.value,
-                        )}
+                    <DropdownMenu.Root
+                      bind:open={projectRoleDropdownOpen[project.name]}
                     >
-                      {#each PROJECT_ROLES_OPTIONS as opt (opt.value)}
-                        <option value={opt.value}>{opt.label}</option>
-                      {/each}
-                    </select>
+                      <DropdownMenu.Trigger
+                        class="flex flex-row gap-1 items-center rounded-sm w-[72px] text-xs outline-none border-none {projectRoleDropdownOpen[project.name]
+                          ? 'bg-surface-active'
+                          : 'hover:bg-surface-hover'} px-2 py-1"
+                      >
+                        {capitalize(project.role)}
+                        {#if projectRoleDropdownOpen[project.name]}
+                          <CaretUpIcon size="12px" />
+                        {:else}
+                          <CaretDownIcon size="12px" />
+                        {/if}
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Content align="start" strategy="fixed">
+                        {#each PROJECT_ROLES_OPTIONS as opt (opt.value)}
+                          <DropdownMenu.Item
+                            class="font-normal flex flex-col items-start py-2 {project.role ===
+                            opt.value
+                              ? 'bg-surface-active'
+                              : ''}"
+                            on:click={() =>
+                              handleProjectRoleChange(project.name, opt.value)}
+                          >
+                            <span class="font-medium">{opt.label}</span>
+                            <span class="text-xs text-fg-secondary"
+                              >{opt.description}</span
+                            >
+                          </DropdownMenu.Item>
+                        {/each}
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Root>
                     <button
                       type="button"
                       class="text-gray-400 hover:text-red-500 text-xs leading-none p-1 rounded hover:bg-red-50"
@@ -452,19 +477,25 @@
               class:border-t={selectedProjects.length > 0}
               class:rounded-md={selectedProjects.length === 0}
             >
-              {#if projectSearchFocused && filteredProjectOptions.length > 0}
+              {#if projectSearchFocused}
                 <div
                   class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md"
                 >
-                  {#each filteredProjectOptions as name (name)}
-                    <button
-                      type="button"
-                      class="w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-gray-50"
-                      on:mousedown|preventDefault={() => handleProjectAdd(name)}
-                    >
-                      {name}
-                    </button>
-                  {/each}
+                  {#if filteredProjectOptions.length > 0}
+                    {#each filteredProjectOptions as name (name)}
+                      <button
+                        type="button"
+                        class="w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-gray-50"
+                        on:mousedown|preventDefault={() => handleProjectAdd(name)}
+                      >
+                        {name}
+                      </button>
+                    {/each}
+                  {:else}
+                    <div class="px-3 py-2 text-sm text-gray-400">
+                      No more projects found
+                    </div>
+                  {/if}
                 </div>
               {/if}
               <input
@@ -539,7 +570,7 @@
                   {/each}
                 {:else}
                   <div class="px-3 py-2 text-sm text-gray-400">
-                    No members found
+                    No more members found
                   </div>
                 {/if}
               </div>
