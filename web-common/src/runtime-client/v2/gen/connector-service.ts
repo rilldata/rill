@@ -32,6 +32,14 @@ import {
   OLAPListTablesRequest,
 } from "../../../proto/gen/rill/runtime/v1/connectors_pb";
 
+/** Strip undefined values — proto fromJson rejects them */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function stripUndefined(obj: Record<string, any>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  );
+}
+
 /**
  * Raw RPC call: ConnectorService.ListBuckets
  */
@@ -42,10 +50,12 @@ export function connectorServiceListBuckets(
 ): Promise<V1ListBucketsResponse> {
   return client.connectorService
     .listBuckets(
-      ListBucketsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListBucketsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListBucketsResponse);
@@ -118,10 +128,12 @@ export function connectorServiceListObjects(
 ): Promise<V1ListObjectsResponse> {
   return client.connectorService
     .listObjects(
-      ListObjectsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListObjectsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListObjectsResponse);
@@ -194,10 +206,12 @@ export function connectorServiceOLAPListTables(
 ): Promise<V1OLAPListTablesResponse> {
   return client.connectorService
     .oLAPListTables(
-      OLAPListTablesRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      OLAPListTablesRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1OLAPListTablesResponse);
@@ -270,10 +284,12 @@ export function connectorServiceOLAPGetTable(
 ): Promise<V1OLAPGetTableResponse> {
   return client.connectorService
     .oLAPGetTable(
-      OLAPGetTableRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      OLAPGetTableRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1OLAPGetTableResponse);
@@ -346,10 +362,12 @@ export function connectorServiceListDatabaseSchemas(
 ): Promise<V1ListDatabaseSchemasResponse> {
   return client.connectorService
     .listDatabaseSchemas(
-      ListDatabaseSchemasRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListDatabaseSchemasRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListDatabaseSchemasResponse);
@@ -426,10 +444,12 @@ export function connectorServiceListTables(
 ): Promise<V1ListTablesResponse> {
   return client.connectorService
     .listTables(
-      ListTablesRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListTablesRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListTablesResponse);
@@ -495,10 +515,12 @@ export function connectorServiceGetTable(
 ): Promise<V1GetTableResponse> {
   return client.connectorService
     .getTable(
-      GetTableRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GetTableRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1GetTableResponse);

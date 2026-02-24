@@ -237,6 +237,17 @@ function generateServiceFile(service: ServiceDef): string {
     `} from "${protoImportPath}";`,
   );
 
+  // Utility: strip undefined values before passing to proto fromJson
+  // (proto fromJson rejects undefined; Orval's HTTP client silently omitted them)
+  lines.push(
+    ``,
+    `/** Strip undefined values — proto fromJson rejects them */`,
+    `// eslint-disable-next-line @typescript-eslint/no-explicit-any`,
+    `function stripUndefined(obj: Record<string, any>): Record<string, unknown> {`,
+    `  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));`,
+    `}`,
+  );
+
   lines.push(``);
 
   // --- Query methods ---
@@ -269,7 +280,7 @@ function generateServiceFile(service: ServiceDef): string {
       `  options?: { signal?: AbortSignal },`,
       `): Promise<${responseType}> {`,
       `  return client.${serviceClientProp}.${m.methodKey}(`,
-      `    ${m.inputType}.fromJson(${requestSpread} as unknown as JsonValue),`,
+      `    ${m.inputType}.fromJson(stripUndefined(${requestSpread}) as unknown as JsonValue),`,
       `    { signal: options?.signal },`,
       `  ).then(r => r.toJson() as unknown as ${responseType});`,
       `}`,
@@ -354,7 +365,7 @@ function generateServiceFile(service: ServiceDef): string {
       `  request: ${requestType},`,
       `): Promise<${responseType}> {`,
       `  return client.${serviceClientProp}.${m.methodKey}(`,
-      `    ${m.inputType}.fromJson(${requestSpread} as unknown as JsonValue),`,
+      `    ${m.inputType}.fromJson(stripUndefined(${requestSpread}) as unknown as JsonValue),`,
       `  ).then(r => r.toJson() as unknown as ${responseType});`,
       `}`,
       ``,
