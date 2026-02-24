@@ -170,7 +170,7 @@
           filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
         };
 
-        return setCanvasStore(canvasName, instanceId, processed);
+        return setCanvasStore(canvasName, instanceId, processed, client);
       }
     }
 
