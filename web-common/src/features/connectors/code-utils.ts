@@ -576,9 +576,10 @@ export async function createYamlModelFromTable(
 
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
-  const devSelectStatement = driverName === "sqlserver"
-    ? `select TOP 10000 * from ${sufficientlyQualifiedTableName}`
-    : selectStatement;
+  const devSelectStatement =
+    driverName === "sqlserver"
+      ? `select TOP 10000 * from ${sufficientlyQualifiedTableName}`
+      : selectStatement;
   const devLimitSuffix =
     driverName === "oracle"
       ? " FETCH FIRST 10000 ROWS ONLY"
@@ -670,9 +671,7 @@ export async function createSqlModelFromTable(
   // Create model
   const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
   const connectorLine = `-- @connector: ${connector}`;
-  const qualifiedName = isNonStandardIdentifier(
-    sufficientlyQualifiedTableName,
-  )
+  const qualifiedName = isNonStandardIdentifier(sufficientlyQualifiedTableName)
     ? `"${sufficientlyQualifiedTableName}"`
     : sufficientlyQualifiedTableName;
 
