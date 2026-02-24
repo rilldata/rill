@@ -119,25 +119,22 @@ import {
  */
 export function runtimeServicePing(
   client: RuntimeClient,
-  request: PartialMessage<Omit<PingRequest, "instanceId">>,
+  request: PartialMessage<PingRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<PingResponse> {
-  return client.runtimeService.ping(
-    { instanceId: client.instanceId, ...request },
-    { signal: options?.signal },
-  );
+  return client.runtimeService.ping(request, { signal: options?.signal });
 }
 
 export function getRuntimeServicePingQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<PingRequest, "instanceId">>,
+  request?: PartialMessage<PingRequest>,
 ): QueryKey {
   return ["RuntimeService", "ping", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServicePingQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<PingRequest, "instanceId">>,
+  request: PartialMessage<PingRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<PingResponse>>;
   },
@@ -155,7 +152,7 @@ export function getRuntimeServicePingQueryOptions(
 
 export function createRuntimeServicePing(
   client: RuntimeClient,
-  request: PartialMessage<Omit<PingRequest, "instanceId">>,
+  request: PartialMessage<PingRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<PingResponse>>;
   },
@@ -174,25 +171,22 @@ export function createRuntimeServicePing(
  */
 export function runtimeServiceHealth(
   client: RuntimeClient,
-  request: PartialMessage<Omit<HealthRequest, "instanceId">>,
+  request: PartialMessage<HealthRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<HealthResponse> {
-  return client.runtimeService.health(
-    { instanceId: client.instanceId, ...request },
-    { signal: options?.signal },
-  );
+  return client.runtimeService.health(request, { signal: options?.signal });
 }
 
 export function getRuntimeServiceHealthQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<HealthRequest, "instanceId">>,
+  request?: PartialMessage<HealthRequest>,
 ): QueryKey {
   return ["RuntimeService", "health", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceHealthQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<HealthRequest, "instanceId">>,
+  request: PartialMessage<HealthRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<HealthResponse>>;
   },
@@ -210,7 +204,7 @@ export function getRuntimeServiceHealthQueryOptions(
 
 export function createRuntimeServiceHealth(
   client: RuntimeClient,
-  request: PartialMessage<Omit<HealthRequest, "instanceId">>,
+  request: PartialMessage<HealthRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<HealthResponse>>;
   },
@@ -229,7 +223,7 @@ export function createRuntimeServiceHealth(
  */
 export function runtimeServiceInstanceHealth(
   client: RuntimeClient,
-  request: PartialMessage<Omit<InstanceHealthRequest, "instanceId">>,
+  request: Omit<PartialMessage<InstanceHealthRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<InstanceHealthResponse> {
   return client.runtimeService.instanceHealth(
@@ -240,7 +234,7 @@ export function runtimeServiceInstanceHealth(
 
 export function getRuntimeServiceInstanceHealthQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<InstanceHealthRequest, "instanceId">>,
+  request?: Omit<PartialMessage<InstanceHealthRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -252,7 +246,7 @@ export function getRuntimeServiceInstanceHealthQueryKey(
 
 export function getRuntimeServiceInstanceHealthQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<InstanceHealthRequest, "instanceId">>,
+  request: Omit<PartialMessage<InstanceHealthRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<InstanceHealthResponse>>;
   },
@@ -273,7 +267,7 @@ export function getRuntimeServiceInstanceHealthQueryOptions(
 
 export function createRuntimeServiceInstanceHealth(
   client: RuntimeClient,
-  request: PartialMessage<Omit<InstanceHealthRequest, "instanceId">>,
+  request: Omit<PartialMessage<InstanceHealthRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<InstanceHealthResponse>>;
   },
@@ -292,18 +286,17 @@ export function createRuntimeServiceInstanceHealth(
  */
 export function runtimeServiceListInstances(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListInstancesRequest, "instanceId">>,
+  request: PartialMessage<ListInstancesRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<ListInstancesResponse> {
-  return client.runtimeService.listInstances(
-    { instanceId: client.instanceId, ...request },
-    { signal: options?.signal },
-  );
+  return client.runtimeService.listInstances(request, {
+    signal: options?.signal,
+  });
 }
 
 export function getRuntimeServiceListInstancesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListInstancesRequest, "instanceId">>,
+  request?: PartialMessage<ListInstancesRequest>,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -315,7 +308,7 @@ export function getRuntimeServiceListInstancesQueryKey(
 
 export function getRuntimeServiceListInstancesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListInstancesRequest, "instanceId">>,
+  request: PartialMessage<ListInstancesRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<ListInstancesResponse>>;
   },
@@ -336,7 +329,7 @@ export function getRuntimeServiceListInstancesQueryOptions(
 
 export function createRuntimeServiceListInstances(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListInstancesRequest, "instanceId">>,
+  request: PartialMessage<ListInstancesRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<ListInstancesResponse>>;
   },
@@ -355,7 +348,7 @@ export function createRuntimeServiceListInstances(
  */
 export function runtimeServiceGetInstance(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetInstanceRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<GetInstanceResponse> {
   return client.runtimeService.getInstance(
@@ -366,14 +359,14 @@ export function runtimeServiceGetInstance(
 
 export function getRuntimeServiceGetInstanceQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<GetInstanceRequest, "instanceId">>,
+  request?: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
 ): QueryKey {
   return ["RuntimeService", "getInstance", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceGetInstanceQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetInstanceRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetInstanceResponse>>;
   },
@@ -394,7 +387,7 @@ export function getRuntimeServiceGetInstanceQueryOptions(
 
 export function createRuntimeServiceGetInstance(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetInstanceRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetInstanceResponse>>;
   },
@@ -413,7 +406,7 @@ export function createRuntimeServiceGetInstance(
  */
 export function runtimeServiceListFiles(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListFilesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListFilesResponse> {
   return client.runtimeService.listFiles(
@@ -424,14 +417,14 @@ export function runtimeServiceListFiles(
 
 export function getRuntimeServiceListFilesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListFilesRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
 ): QueryKey {
   return ["RuntimeService", "listFiles", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceListFilesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListFilesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListFilesResponse>>;
   },
@@ -452,7 +445,7 @@ export function getRuntimeServiceListFilesQueryOptions(
 
 export function createRuntimeServiceListFiles(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListFilesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListFilesResponse>>;
   },
@@ -471,7 +464,7 @@ export function createRuntimeServiceListFiles(
  */
 export function runtimeServiceGetFile(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetFileRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetFileRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<GetFileResponse> {
   return client.runtimeService.getFile(
@@ -482,14 +475,14 @@ export function runtimeServiceGetFile(
 
 export function getRuntimeServiceGetFileQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<GetFileRequest, "instanceId">>,
+  request?: Omit<PartialMessage<GetFileRequest>, "instanceId">,
 ): QueryKey {
   return ["RuntimeService", "getFile", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceGetFileQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetFileRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetFileRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetFileResponse>>;
   },
@@ -507,7 +500,7 @@ export function getRuntimeServiceGetFileQueryOptions(
 
 export function createRuntimeServiceGetFile(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetFileRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetFileRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetFileResponse>>;
   },
@@ -526,25 +519,24 @@ export function createRuntimeServiceGetFile(
  */
 export function runtimeServiceListExamples(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListExamplesRequest, "instanceId">>,
+  request: PartialMessage<ListExamplesRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<ListExamplesResponse> {
-  return client.runtimeService.listExamples(
-    { instanceId: client.instanceId, ...request },
-    { signal: options?.signal },
-  );
+  return client.runtimeService.listExamples(request, {
+    signal: options?.signal,
+  });
 }
 
 export function getRuntimeServiceListExamplesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListExamplesRequest, "instanceId">>,
+  request?: PartialMessage<ListExamplesRequest>,
 ): QueryKey {
   return ["RuntimeService", "listExamples", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceListExamplesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListExamplesRequest, "instanceId">>,
+  request: PartialMessage<ListExamplesRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<ListExamplesResponse>>;
   },
@@ -565,7 +557,7 @@ export function getRuntimeServiceListExamplesQueryOptions(
 
 export function createRuntimeServiceListExamples(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListExamplesRequest, "instanceId">>,
+  request: PartialMessage<ListExamplesRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<ListExamplesResponse>>;
   },
@@ -584,7 +576,7 @@ export function createRuntimeServiceListExamples(
  */
 export function runtimeServiceQueryResolver(
   client: RuntimeClient,
-  request: PartialMessage<Omit<QueryResolverRequest, "instanceId">>,
+  request: Omit<PartialMessage<QueryResolverRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<QueryResolverResponse> {
   return client.runtimeService.queryResolver(
@@ -595,7 +587,7 @@ export function runtimeServiceQueryResolver(
 
 export function getRuntimeServiceQueryResolverQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<QueryResolverRequest, "instanceId">>,
+  request?: Omit<PartialMessage<QueryResolverRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -607,7 +599,7 @@ export function getRuntimeServiceQueryResolverQueryKey(
 
 export function getRuntimeServiceQueryResolverQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<QueryResolverRequest, "instanceId">>,
+  request: Omit<PartialMessage<QueryResolverRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<QueryResolverResponse>>;
   },
@@ -628,7 +620,7 @@ export function getRuntimeServiceQueryResolverQueryOptions(
 
 export function createRuntimeServiceQueryResolver(
   client: RuntimeClient,
-  request: PartialMessage<Omit<QueryResolverRequest, "instanceId">>,
+  request: Omit<PartialMessage<QueryResolverRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<QueryResolverResponse>>;
   },
@@ -647,7 +639,7 @@ export function createRuntimeServiceQueryResolver(
  */
 export function runtimeServiceGetLogs(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetLogsRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetLogsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<GetLogsResponse> {
   return client.runtimeService.getLogs(
@@ -658,14 +650,14 @@ export function runtimeServiceGetLogs(
 
 export function getRuntimeServiceGetLogsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<GetLogsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<GetLogsRequest>, "instanceId">,
 ): QueryKey {
   return ["RuntimeService", "getLogs", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceGetLogsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetLogsRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetLogsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetLogsResponse>>;
   },
@@ -683,7 +675,7 @@ export function getRuntimeServiceGetLogsQueryOptions(
 
 export function createRuntimeServiceGetLogs(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetLogsRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetLogsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetLogsResponse>>;
   },
@@ -702,7 +694,7 @@ export function createRuntimeServiceGetLogs(
  */
 export function runtimeServiceListResources(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListResourcesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListResourcesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListResourcesResponse> {
   return client.runtimeService.listResources(
@@ -713,7 +705,7 @@ export function runtimeServiceListResources(
 
 export function getRuntimeServiceListResourcesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListResourcesRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListResourcesRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -725,7 +717,7 @@ export function getRuntimeServiceListResourcesQueryKey(
 
 export function getRuntimeServiceListResourcesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListResourcesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListResourcesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListResourcesResponse>>;
   },
@@ -746,7 +738,7 @@ export function getRuntimeServiceListResourcesQueryOptions(
 
 export function createRuntimeServiceListResources(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListResourcesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListResourcesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListResourcesResponse>>;
   },
@@ -765,7 +757,7 @@ export function createRuntimeServiceListResources(
  */
 export function runtimeServiceGetResource(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetResourceRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetResourceRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<GetResourceResponse> {
   return client.runtimeService.getResource(
@@ -776,14 +768,14 @@ export function runtimeServiceGetResource(
 
 export function getRuntimeServiceGetResourceQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<GetResourceRequest, "instanceId">>,
+  request?: Omit<PartialMessage<GetResourceRequest>, "instanceId">,
 ): QueryKey {
   return ["RuntimeService", "getResource", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceGetResourceQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetResourceRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetResourceRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetResourceResponse>>;
   },
@@ -804,7 +796,7 @@ export function getRuntimeServiceGetResourceQueryOptions(
 
 export function createRuntimeServiceGetResource(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetResourceRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetResourceRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetResourceResponse>>;
   },
@@ -823,7 +815,7 @@ export function createRuntimeServiceGetResource(
  */
 export function runtimeServiceGetExplore(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetExploreRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetExploreRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<GetExploreResponse> {
   return client.runtimeService.getExplore(
@@ -834,14 +826,14 @@ export function runtimeServiceGetExplore(
 
 export function getRuntimeServiceGetExploreQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<GetExploreRequest, "instanceId">>,
+  request?: Omit<PartialMessage<GetExploreRequest>, "instanceId">,
 ): QueryKey {
   return ["RuntimeService", "getExplore", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceGetExploreQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetExploreRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetExploreRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetExploreResponse>>;
   },
@@ -862,7 +854,7 @@ export function getRuntimeServiceGetExploreQueryOptions(
 
 export function createRuntimeServiceGetExplore(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetExploreRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetExploreRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetExploreResponse>>;
   },
@@ -881,7 +873,7 @@ export function createRuntimeServiceGetExplore(
  */
 export function runtimeServiceGetModelPartitions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetModelPartitionsRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetModelPartitionsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<GetModelPartitionsResponse> {
   return client.runtimeService.getModelPartitions(
@@ -892,7 +884,7 @@ export function runtimeServiceGetModelPartitions(
 
 export function getRuntimeServiceGetModelPartitionsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<GetModelPartitionsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<GetModelPartitionsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -904,7 +896,7 @@ export function getRuntimeServiceGetModelPartitionsQueryKey(
 
 export function getRuntimeServiceGetModelPartitionsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetModelPartitionsRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetModelPartitionsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetModelPartitionsResponse>>;
   },
@@ -925,7 +917,7 @@ export function getRuntimeServiceGetModelPartitionsQueryOptions(
 
 export function createRuntimeServiceGetModelPartitions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetModelPartitionsRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetModelPartitionsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetModelPartitionsResponse>>;
   },
@@ -944,18 +936,17 @@ export function createRuntimeServiceGetModelPartitions(
  */
 export function runtimeServiceListConnectorDrivers(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListConnectorDriversRequest, "instanceId">>,
+  request: PartialMessage<ListConnectorDriversRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<ListConnectorDriversResponse> {
-  return client.runtimeService.listConnectorDrivers(
-    { instanceId: client.instanceId, ...request },
-    { signal: options?.signal },
-  );
+  return client.runtimeService.listConnectorDrivers(request, {
+    signal: options?.signal,
+  });
 }
 
 export function getRuntimeServiceListConnectorDriversQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListConnectorDriversRequest, "instanceId">>,
+  request?: PartialMessage<ListConnectorDriversRequest>,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -967,7 +958,7 @@ export function getRuntimeServiceListConnectorDriversQueryKey(
 
 export function getRuntimeServiceListConnectorDriversQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListConnectorDriversRequest, "instanceId">>,
+  request: PartialMessage<ListConnectorDriversRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<ListConnectorDriversResponse>>;
   },
@@ -988,7 +979,7 @@ export function getRuntimeServiceListConnectorDriversQueryOptions(
 
 export function createRuntimeServiceListConnectorDrivers(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListConnectorDriversRequest, "instanceId">>,
+  request: PartialMessage<ListConnectorDriversRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<ListConnectorDriversResponse>>;
   },
@@ -1007,7 +998,7 @@ export function createRuntimeServiceListConnectorDrivers(
  */
 export function runtimeServiceAnalyzeConnectors(
   client: RuntimeClient,
-  request: PartialMessage<Omit<AnalyzeConnectorsRequest, "instanceId">>,
+  request: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<AnalyzeConnectorsResponse> {
   return client.runtimeService.analyzeConnectors(
@@ -1018,7 +1009,7 @@ export function runtimeServiceAnalyzeConnectors(
 
 export function getRuntimeServiceAnalyzeConnectorsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<AnalyzeConnectorsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -1030,7 +1021,7 @@ export function getRuntimeServiceAnalyzeConnectorsQueryKey(
 
 export function getRuntimeServiceAnalyzeConnectorsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<AnalyzeConnectorsRequest, "instanceId">>,
+  request: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<AnalyzeConnectorsResponse>>;
   },
@@ -1051,7 +1042,7 @@ export function getRuntimeServiceAnalyzeConnectorsQueryOptions(
 
 export function createRuntimeServiceAnalyzeConnectors(
   client: RuntimeClient,
-  request: PartialMessage<Omit<AnalyzeConnectorsRequest, "instanceId">>,
+  request: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<AnalyzeConnectorsResponse>>;
   },
@@ -1070,7 +1061,7 @@ export function createRuntimeServiceAnalyzeConnectors(
  */
 export function runtimeServiceListNotifierConnectors(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListNotifierConnectorsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListNotifierConnectorsResponse> {
   return client.runtimeService.listNotifierConnectors(
@@ -1081,7 +1072,7 @@ export function runtimeServiceListNotifierConnectors(
 
 export function getRuntimeServiceListNotifierConnectorsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListNotifierConnectorsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -1093,7 +1084,7 @@ export function getRuntimeServiceListNotifierConnectorsQueryKey(
 
 export function getRuntimeServiceListNotifierConnectorsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListNotifierConnectorsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListNotifierConnectorsResponse>>;
   },
@@ -1114,7 +1105,7 @@ export function getRuntimeServiceListNotifierConnectorsQueryOptions(
 
 export function createRuntimeServiceListNotifierConnectors(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListNotifierConnectorsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListNotifierConnectorsResponse>>;
   },
@@ -1133,7 +1124,7 @@ export function createRuntimeServiceListNotifierConnectors(
  */
 export function runtimeServiceListConversations(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListConversationsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListConversationsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListConversationsResponse> {
   return client.runtimeService.listConversations(
@@ -1144,7 +1135,7 @@ export function runtimeServiceListConversations(
 
 export function getRuntimeServiceListConversationsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListConversationsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListConversationsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -1156,7 +1147,7 @@ export function getRuntimeServiceListConversationsQueryKey(
 
 export function getRuntimeServiceListConversationsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListConversationsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListConversationsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListConversationsResponse>>;
   },
@@ -1177,7 +1168,7 @@ export function getRuntimeServiceListConversationsQueryOptions(
 
 export function createRuntimeServiceListConversations(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListConversationsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListConversationsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListConversationsResponse>>;
   },
@@ -1196,7 +1187,7 @@ export function createRuntimeServiceListConversations(
  */
 export function runtimeServiceGetConversation(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetConversationRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetConversationRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<GetConversationResponse> {
   return client.runtimeService.getConversation(
@@ -1207,7 +1198,7 @@ export function runtimeServiceGetConversation(
 
 export function getRuntimeServiceGetConversationQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<GetConversationRequest, "instanceId">>,
+  request?: Omit<PartialMessage<GetConversationRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -1219,7 +1210,7 @@ export function getRuntimeServiceGetConversationQueryKey(
 
 export function getRuntimeServiceGetConversationQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetConversationRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetConversationRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetConversationResponse>>;
   },
@@ -1240,7 +1231,7 @@ export function getRuntimeServiceGetConversationQueryOptions(
 
 export function createRuntimeServiceGetConversation(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetConversationRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetConversationRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetConversationResponse>>;
   },
@@ -1259,7 +1250,7 @@ export function createRuntimeServiceGetConversation(
  */
 export function runtimeServiceListTools(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListToolsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListToolsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListToolsResponse> {
   return client.runtimeService.listTools(
@@ -1270,14 +1261,14 @@ export function runtimeServiceListTools(
 
 export function getRuntimeServiceListToolsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListToolsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListToolsRequest>, "instanceId">,
 ): QueryKey {
   return ["RuntimeService", "listTools", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceListToolsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListToolsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListToolsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListToolsResponse>>;
   },
@@ -1298,7 +1289,7 @@ export function getRuntimeServiceListToolsQueryOptions(
 
 export function createRuntimeServiceListTools(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListToolsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListToolsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListToolsResponse>>;
   },
@@ -1317,25 +1308,24 @@ export function createRuntimeServiceListTools(
  */
 export function runtimeServiceIssueDevJWT(
   client: RuntimeClient,
-  request: PartialMessage<Omit<IssueDevJWTRequest, "instanceId">>,
+  request: PartialMessage<IssueDevJWTRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<IssueDevJWTResponse> {
-  return client.runtimeService.issueDevJWT(
-    { instanceId: client.instanceId, ...request },
-    { signal: options?.signal },
-  );
+  return client.runtimeService.issueDevJWT(request, {
+    signal: options?.signal,
+  });
 }
 
 export function getRuntimeServiceIssueDevJWTQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<IssueDevJWTRequest, "instanceId">>,
+  request?: PartialMessage<IssueDevJWTRequest>,
 ): QueryKey {
   return ["RuntimeService", "issueDevJWT", instanceId, request ?? {}] as const;
 }
 
 export function getRuntimeServiceIssueDevJWTQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<IssueDevJWTRequest, "instanceId">>,
+  request: PartialMessage<IssueDevJWTRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<IssueDevJWTResponse>>;
   },
@@ -1356,7 +1346,7 @@ export function getRuntimeServiceIssueDevJWTQueryOptions(
 
 export function createRuntimeServiceIssueDevJWT(
   client: RuntimeClient,
-  request: PartialMessage<Omit<IssueDevJWTRequest, "instanceId">>,
+  request: PartialMessage<IssueDevJWTRequest>,
   options?: {
     query?: Partial<CreateQueryOptions<IssueDevJWTResponse>>;
   },
@@ -1375,7 +1365,7 @@ export function createRuntimeServiceIssueDevJWT(
  */
 export function runtimeServiceAnalyzeVariables(
   client: RuntimeClient,
-  request: PartialMessage<Omit<AnalyzeVariablesRequest, "instanceId">>,
+  request: Omit<PartialMessage<AnalyzeVariablesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<AnalyzeVariablesResponse> {
   return client.runtimeService.analyzeVariables(
@@ -1386,7 +1376,7 @@ export function runtimeServiceAnalyzeVariables(
 
 export function getRuntimeServiceAnalyzeVariablesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<AnalyzeVariablesRequest, "instanceId">>,
+  request?: Omit<PartialMessage<AnalyzeVariablesRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -1398,7 +1388,7 @@ export function getRuntimeServiceAnalyzeVariablesQueryKey(
 
 export function getRuntimeServiceAnalyzeVariablesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<AnalyzeVariablesRequest, "instanceId">>,
+  request: Omit<PartialMessage<AnalyzeVariablesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<AnalyzeVariablesResponse>>;
   },
@@ -1419,7 +1409,7 @@ export function getRuntimeServiceAnalyzeVariablesQueryOptions(
 
 export function createRuntimeServiceAnalyzeVariables(
   client: RuntimeClient,
-  request: PartialMessage<Omit<AnalyzeVariablesRequest, "instanceId">>,
+  request: Omit<PartialMessage<AnalyzeVariablesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<AnalyzeVariablesResponse>>;
   },
@@ -1438,7 +1428,7 @@ export function createRuntimeServiceAnalyzeVariables(
  */
 export function runtimeServiceListGitCommits(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListGitCommitsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListGitCommitsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListGitCommitsResponse> {
   return client.runtimeService.listGitCommits(
@@ -1449,7 +1439,7 @@ export function runtimeServiceListGitCommits(
 
 export function getRuntimeServiceListGitCommitsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListGitCommitsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListGitCommitsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -1461,7 +1451,7 @@ export function getRuntimeServiceListGitCommitsQueryKey(
 
 export function getRuntimeServiceListGitCommitsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListGitCommitsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListGitCommitsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListGitCommitsResponse>>;
   },
@@ -1482,7 +1472,7 @@ export function getRuntimeServiceListGitCommitsQueryOptions(
 
 export function createRuntimeServiceListGitCommits(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListGitCommitsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListGitCommitsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListGitCommitsResponse>>;
   },
@@ -1501,7 +1491,7 @@ export function createRuntimeServiceListGitCommits(
  */
 export function runtimeServiceListGitBranches(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListGitBranchesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListGitBranchesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListGitBranchesResponse> {
   return client.runtimeService.listGitBranches(
@@ -1512,7 +1502,7 @@ export function runtimeServiceListGitBranches(
 
 export function getRuntimeServiceListGitBranchesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListGitBranchesRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListGitBranchesRequest>, "instanceId">,
 ): QueryKey {
   return [
     "RuntimeService",
@@ -1524,7 +1514,7 @@ export function getRuntimeServiceListGitBranchesQueryKey(
 
 export function getRuntimeServiceListGitBranchesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListGitBranchesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListGitBranchesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListGitBranchesResponse>>;
   },
@@ -1545,7 +1535,7 @@ export function getRuntimeServiceListGitBranchesQueryOptions(
 
 export function createRuntimeServiceListGitBranches(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListGitBranchesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListGitBranchesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListGitBranchesResponse>>;
   },
@@ -1564,7 +1554,7 @@ export function createRuntimeServiceListGitBranches(
  */
 export function runtimeServiceCreateInstance(
   client: RuntimeClient,
-  request: PartialMessage<Omit<CreateInstanceRequest, "instanceId">>,
+  request: Omit<PartialMessage<CreateInstanceRequest>, "instanceId">,
 ): Promise<CreateInstanceResponse> {
   return client.runtimeService.createInstance({
     instanceId: client.instanceId,
@@ -1578,13 +1568,13 @@ export function getRuntimeServiceCreateInstanceMutationOptions(
     CreateMutationOptions<
       CreateInstanceResponse,
       unknown,
-      PartialMessage<Omit<CreateInstanceRequest, "instanceId">>
+      Omit<PartialMessage<CreateInstanceRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   CreateInstanceResponse,
   unknown,
-  PartialMessage<Omit<CreateInstanceRequest, "instanceId">>
+  Omit<PartialMessage<CreateInstanceRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceCreateInstance(client, request),
@@ -1598,14 +1588,14 @@ export function createRuntimeServiceCreateInstanceMutation(
     CreateMutationOptions<
       CreateInstanceResponse,
       unknown,
-      PartialMessage<Omit<CreateInstanceRequest, "instanceId">>
+      Omit<PartialMessage<CreateInstanceRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   CreateInstanceResponse,
   unknown,
-  PartialMessage<Omit<CreateInstanceRequest, "instanceId">>
+  Omit<PartialMessage<CreateInstanceRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCreateInstanceMutationOptions(
     client,
@@ -1619,7 +1609,7 @@ export function createRuntimeServiceCreateInstanceMutation(
  */
 export function runtimeServiceEditInstance(
   client: RuntimeClient,
-  request: PartialMessage<Omit<EditInstanceRequest, "instanceId">>,
+  request: Omit<PartialMessage<EditInstanceRequest>, "instanceId">,
 ): Promise<EditInstanceResponse> {
   return client.runtimeService.editInstance({
     instanceId: client.instanceId,
@@ -1633,13 +1623,13 @@ export function getRuntimeServiceEditInstanceMutationOptions(
     CreateMutationOptions<
       EditInstanceResponse,
       unknown,
-      PartialMessage<Omit<EditInstanceRequest, "instanceId">>
+      Omit<PartialMessage<EditInstanceRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   EditInstanceResponse,
   unknown,
-  PartialMessage<Omit<EditInstanceRequest, "instanceId">>
+  Omit<PartialMessage<EditInstanceRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceEditInstance(client, request),
@@ -1653,14 +1643,14 @@ export function createRuntimeServiceEditInstanceMutation(
     CreateMutationOptions<
       EditInstanceResponse,
       unknown,
-      PartialMessage<Omit<EditInstanceRequest, "instanceId">>
+      Omit<PartialMessage<EditInstanceRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   EditInstanceResponse,
   unknown,
-  PartialMessage<Omit<EditInstanceRequest, "instanceId">>
+  Omit<PartialMessage<EditInstanceRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceEditInstanceMutationOptions(
     client,
@@ -1674,7 +1664,7 @@ export function createRuntimeServiceEditInstanceMutation(
  */
 export function runtimeServiceDeleteInstance(
   client: RuntimeClient,
-  request: PartialMessage<Omit<DeleteInstanceRequest, "instanceId">>,
+  request: Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">,
 ): Promise<DeleteInstanceResponse> {
   return client.runtimeService.deleteInstance({
     instanceId: client.instanceId,
@@ -1688,13 +1678,13 @@ export function getRuntimeServiceDeleteInstanceMutationOptions(
     CreateMutationOptions<
       DeleteInstanceResponse,
       unknown,
-      PartialMessage<Omit<DeleteInstanceRequest, "instanceId">>
+      Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   DeleteInstanceResponse,
   unknown,
-  PartialMessage<Omit<DeleteInstanceRequest, "instanceId">>
+  Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceDeleteInstance(client, request),
@@ -1708,14 +1698,14 @@ export function createRuntimeServiceDeleteInstanceMutation(
     CreateMutationOptions<
       DeleteInstanceResponse,
       unknown,
-      PartialMessage<Omit<DeleteInstanceRequest, "instanceId">>
+      Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   DeleteInstanceResponse,
   unknown,
-  PartialMessage<Omit<DeleteInstanceRequest, "instanceId">>
+  Omit<PartialMessage<DeleteInstanceRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceDeleteInstanceMutationOptions(
     client,
@@ -1729,7 +1719,7 @@ export function createRuntimeServiceDeleteInstanceMutation(
  */
 export function runtimeServiceReloadConfig(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ReloadConfigRequest, "instanceId">>,
+  request: Omit<PartialMessage<ReloadConfigRequest>, "instanceId">,
 ): Promise<ReloadConfigResponse> {
   return client.runtimeService.reloadConfig({
     instanceId: client.instanceId,
@@ -1743,13 +1733,13 @@ export function getRuntimeServiceReloadConfigMutationOptions(
     CreateMutationOptions<
       ReloadConfigResponse,
       unknown,
-      PartialMessage<Omit<ReloadConfigRequest, "instanceId">>
+      Omit<PartialMessage<ReloadConfigRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   ReloadConfigResponse,
   unknown,
-  PartialMessage<Omit<ReloadConfigRequest, "instanceId">>
+  Omit<PartialMessage<ReloadConfigRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceReloadConfig(client, request),
@@ -1763,14 +1753,14 @@ export function createRuntimeServiceReloadConfigMutation(
     CreateMutationOptions<
       ReloadConfigResponse,
       unknown,
-      PartialMessage<Omit<ReloadConfigRequest, "instanceId">>
+      Omit<PartialMessage<ReloadConfigRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   ReloadConfigResponse,
   unknown,
-  PartialMessage<Omit<ReloadConfigRequest, "instanceId">>
+  Omit<PartialMessage<ReloadConfigRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceReloadConfigMutationOptions(
     client,
@@ -1784,7 +1774,7 @@ export function createRuntimeServiceReloadConfigMutation(
  */
 export function runtimeServicePutFile(
   client: RuntimeClient,
-  request: PartialMessage<Omit<PutFileRequest, "instanceId">>,
+  request: Omit<PartialMessage<PutFileRequest>, "instanceId">,
 ): Promise<PutFileResponse> {
   return client.runtimeService.putFile({
     instanceId: client.instanceId,
@@ -1798,13 +1788,13 @@ export function getRuntimeServicePutFileMutationOptions(
     CreateMutationOptions<
       PutFileResponse,
       unknown,
-      PartialMessage<Omit<PutFileRequest, "instanceId">>
+      Omit<PartialMessage<PutFileRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   PutFileResponse,
   unknown,
-  PartialMessage<Omit<PutFileRequest, "instanceId">>
+  Omit<PartialMessage<PutFileRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServicePutFile(client, request),
@@ -1818,14 +1808,14 @@ export function createRuntimeServicePutFileMutation(
     CreateMutationOptions<
       PutFileResponse,
       unknown,
-      PartialMessage<Omit<PutFileRequest, "instanceId">>
+      Omit<PartialMessage<PutFileRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   PutFileResponse,
   unknown,
-  PartialMessage<Omit<PutFileRequest, "instanceId">>
+  Omit<PartialMessage<PutFileRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServicePutFileMutationOptions(
     client,
@@ -1839,7 +1829,7 @@ export function createRuntimeServicePutFileMutation(
  */
 export function runtimeServiceCreateDirectory(
   client: RuntimeClient,
-  request: PartialMessage<Omit<CreateDirectoryRequest, "instanceId">>,
+  request: Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">,
 ): Promise<CreateDirectoryResponse> {
   return client.runtimeService.createDirectory({
     instanceId: client.instanceId,
@@ -1853,13 +1843,13 @@ export function getRuntimeServiceCreateDirectoryMutationOptions(
     CreateMutationOptions<
       CreateDirectoryResponse,
       unknown,
-      PartialMessage<Omit<CreateDirectoryRequest, "instanceId">>
+      Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   CreateDirectoryResponse,
   unknown,
-  PartialMessage<Omit<CreateDirectoryRequest, "instanceId">>
+  Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceCreateDirectory(client, request),
@@ -1873,14 +1863,14 @@ export function createRuntimeServiceCreateDirectoryMutation(
     CreateMutationOptions<
       CreateDirectoryResponse,
       unknown,
-      PartialMessage<Omit<CreateDirectoryRequest, "instanceId">>
+      Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   CreateDirectoryResponse,
   unknown,
-  PartialMessage<Omit<CreateDirectoryRequest, "instanceId">>
+  Omit<PartialMessage<CreateDirectoryRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCreateDirectoryMutationOptions(
     client,
@@ -1894,7 +1884,7 @@ export function createRuntimeServiceCreateDirectoryMutation(
  */
 export function runtimeServiceDeleteFile(
   client: RuntimeClient,
-  request: PartialMessage<Omit<DeleteFileRequest, "instanceId">>,
+  request: Omit<PartialMessage<DeleteFileRequest>, "instanceId">,
 ): Promise<DeleteFileResponse> {
   return client.runtimeService.deleteFile({
     instanceId: client.instanceId,
@@ -1908,13 +1898,13 @@ export function getRuntimeServiceDeleteFileMutationOptions(
     CreateMutationOptions<
       DeleteFileResponse,
       unknown,
-      PartialMessage<Omit<DeleteFileRequest, "instanceId">>
+      Omit<PartialMessage<DeleteFileRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   DeleteFileResponse,
   unknown,
-  PartialMessage<Omit<DeleteFileRequest, "instanceId">>
+  Omit<PartialMessage<DeleteFileRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceDeleteFile(client, request),
@@ -1928,14 +1918,14 @@ export function createRuntimeServiceDeleteFileMutation(
     CreateMutationOptions<
       DeleteFileResponse,
       unknown,
-      PartialMessage<Omit<DeleteFileRequest, "instanceId">>
+      Omit<PartialMessage<DeleteFileRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   DeleteFileResponse,
   unknown,
-  PartialMessage<Omit<DeleteFileRequest, "instanceId">>
+  Omit<PartialMessage<DeleteFileRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceDeleteFileMutationOptions(
     client,
@@ -1949,7 +1939,7 @@ export function createRuntimeServiceDeleteFileMutation(
  */
 export function runtimeServiceRenameFile(
   client: RuntimeClient,
-  request: PartialMessage<Omit<RenameFileRequest, "instanceId">>,
+  request: Omit<PartialMessage<RenameFileRequest>, "instanceId">,
 ): Promise<RenameFileResponse> {
   return client.runtimeService.renameFile({
     instanceId: client.instanceId,
@@ -1963,13 +1953,13 @@ export function getRuntimeServiceRenameFileMutationOptions(
     CreateMutationOptions<
       RenameFileResponse,
       unknown,
-      PartialMessage<Omit<RenameFileRequest, "instanceId">>
+      Omit<PartialMessage<RenameFileRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   RenameFileResponse,
   unknown,
-  PartialMessage<Omit<RenameFileRequest, "instanceId">>
+  Omit<PartialMessage<RenameFileRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceRenameFile(client, request),
@@ -1983,14 +1973,14 @@ export function createRuntimeServiceRenameFileMutation(
     CreateMutationOptions<
       RenameFileResponse,
       unknown,
-      PartialMessage<Omit<RenameFileRequest, "instanceId">>
+      Omit<PartialMessage<RenameFileRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   RenameFileResponse,
   unknown,
-  PartialMessage<Omit<RenameFileRequest, "instanceId">>
+  Omit<PartialMessage<RenameFileRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceRenameFileMutationOptions(
     client,
@@ -2004,7 +1994,7 @@ export function createRuntimeServiceRenameFileMutation(
  */
 export function runtimeServiceUnpackExample(
   client: RuntimeClient,
-  request: PartialMessage<Omit<UnpackExampleRequest, "instanceId">>,
+  request: Omit<PartialMessage<UnpackExampleRequest>, "instanceId">,
 ): Promise<UnpackExampleResponse> {
   return client.runtimeService.unpackExample({
     instanceId: client.instanceId,
@@ -2018,13 +2008,13 @@ export function getRuntimeServiceUnpackExampleMutationOptions(
     CreateMutationOptions<
       UnpackExampleResponse,
       unknown,
-      PartialMessage<Omit<UnpackExampleRequest, "instanceId">>
+      Omit<PartialMessage<UnpackExampleRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   UnpackExampleResponse,
   unknown,
-  PartialMessage<Omit<UnpackExampleRequest, "instanceId">>
+  Omit<PartialMessage<UnpackExampleRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceUnpackExample(client, request),
@@ -2038,14 +2028,14 @@ export function createRuntimeServiceUnpackExampleMutation(
     CreateMutationOptions<
       UnpackExampleResponse,
       unknown,
-      PartialMessage<Omit<UnpackExampleRequest, "instanceId">>
+      Omit<PartialMessage<UnpackExampleRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   UnpackExampleResponse,
   unknown,
-  PartialMessage<Omit<UnpackExampleRequest, "instanceId">>
+  Omit<PartialMessage<UnpackExampleRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceUnpackExampleMutationOptions(
     client,
@@ -2059,7 +2049,7 @@ export function createRuntimeServiceUnpackExampleMutation(
  */
 export function runtimeServiceUnpackEmpty(
   client: RuntimeClient,
-  request: PartialMessage<Omit<UnpackEmptyRequest, "instanceId">>,
+  request: Omit<PartialMessage<UnpackEmptyRequest>, "instanceId">,
 ): Promise<UnpackEmptyResponse> {
   return client.runtimeService.unpackEmpty({
     instanceId: client.instanceId,
@@ -2073,13 +2063,13 @@ export function getRuntimeServiceUnpackEmptyMutationOptions(
     CreateMutationOptions<
       UnpackEmptyResponse,
       unknown,
-      PartialMessage<Omit<UnpackEmptyRequest, "instanceId">>
+      Omit<PartialMessage<UnpackEmptyRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   UnpackEmptyResponse,
   unknown,
-  PartialMessage<Omit<UnpackEmptyRequest, "instanceId">>
+  Omit<PartialMessage<UnpackEmptyRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceUnpackEmpty(client, request),
@@ -2093,14 +2083,14 @@ export function createRuntimeServiceUnpackEmptyMutation(
     CreateMutationOptions<
       UnpackEmptyResponse,
       unknown,
-      PartialMessage<Omit<UnpackEmptyRequest, "instanceId">>
+      Omit<PartialMessage<UnpackEmptyRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   UnpackEmptyResponse,
   unknown,
-  PartialMessage<Omit<UnpackEmptyRequest, "instanceId">>
+  Omit<PartialMessage<UnpackEmptyRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceUnpackEmptyMutationOptions(
     client,
@@ -2114,7 +2104,7 @@ export function createRuntimeServiceUnpackEmptyMutation(
  */
 export function runtimeServiceGenerateMetricsViewFile(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GenerateMetricsViewFileRequest, "instanceId">>,
+  request: Omit<PartialMessage<GenerateMetricsViewFileRequest>, "instanceId">,
 ): Promise<GenerateMetricsViewFileResponse> {
   return client.runtimeService.generateMetricsViewFile({
     instanceId: client.instanceId,
@@ -2128,13 +2118,13 @@ export function getRuntimeServiceGenerateMetricsViewFileMutationOptions(
     CreateMutationOptions<
       GenerateMetricsViewFileResponse,
       unknown,
-      PartialMessage<Omit<GenerateMetricsViewFileRequest, "instanceId">>
+      Omit<PartialMessage<GenerateMetricsViewFileRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GenerateMetricsViewFileResponse,
   unknown,
-  PartialMessage<Omit<GenerateMetricsViewFileRequest, "instanceId">>
+  Omit<PartialMessage<GenerateMetricsViewFileRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) =>
@@ -2149,14 +2139,14 @@ export function createRuntimeServiceGenerateMetricsViewFileMutation(
     CreateMutationOptions<
       GenerateMetricsViewFileResponse,
       unknown,
-      PartialMessage<Omit<GenerateMetricsViewFileRequest, "instanceId">>
+      Omit<PartialMessage<GenerateMetricsViewFileRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GenerateMetricsViewFileResponse,
   unknown,
-  PartialMessage<Omit<GenerateMetricsViewFileRequest, "instanceId">>
+  Omit<PartialMessage<GenerateMetricsViewFileRequest>, "instanceId">
 > {
   const mutationOptions =
     getRuntimeServiceGenerateMetricsViewFileMutationOptions(client, options);
@@ -2168,7 +2158,7 @@ export function createRuntimeServiceGenerateMetricsViewFileMutation(
  */
 export function runtimeServiceGenerateCanvasFile(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GenerateCanvasFileRequest, "instanceId">>,
+  request: Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">,
 ): Promise<GenerateCanvasFileResponse> {
   return client.runtimeService.generateCanvasFile({
     instanceId: client.instanceId,
@@ -2182,13 +2172,13 @@ export function getRuntimeServiceGenerateCanvasFileMutationOptions(
     CreateMutationOptions<
       GenerateCanvasFileResponse,
       unknown,
-      PartialMessage<Omit<GenerateCanvasFileRequest, "instanceId">>
+      Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GenerateCanvasFileResponse,
   unknown,
-  PartialMessage<Omit<GenerateCanvasFileRequest, "instanceId">>
+  Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceGenerateCanvasFile(client, request),
@@ -2202,14 +2192,14 @@ export function createRuntimeServiceGenerateCanvasFileMutation(
     CreateMutationOptions<
       GenerateCanvasFileResponse,
       unknown,
-      PartialMessage<Omit<GenerateCanvasFileRequest, "instanceId">>
+      Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GenerateCanvasFileResponse,
   unknown,
-  PartialMessage<Omit<GenerateCanvasFileRequest, "instanceId">>
+  Omit<PartialMessage<GenerateCanvasFileRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGenerateCanvasFileMutationOptions(
     client,
@@ -2223,7 +2213,7 @@ export function createRuntimeServiceGenerateCanvasFileMutation(
  */
 export function runtimeServiceGenerateResolver(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GenerateResolverRequest, "instanceId">>,
+  request: Omit<PartialMessage<GenerateResolverRequest>, "instanceId">,
 ): Promise<GenerateResolverResponse> {
   return client.runtimeService.generateResolver({
     instanceId: client.instanceId,
@@ -2237,13 +2227,13 @@ export function getRuntimeServiceGenerateResolverMutationOptions(
     CreateMutationOptions<
       GenerateResolverResponse,
       unknown,
-      PartialMessage<Omit<GenerateResolverRequest, "instanceId">>
+      Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GenerateResolverResponse,
   unknown,
-  PartialMessage<Omit<GenerateResolverRequest, "instanceId">>
+  Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceGenerateResolver(client, request),
@@ -2257,14 +2247,14 @@ export function createRuntimeServiceGenerateResolverMutation(
     CreateMutationOptions<
       GenerateResolverResponse,
       unknown,
-      PartialMessage<Omit<GenerateResolverRequest, "instanceId">>
+      Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GenerateResolverResponse,
   unknown,
-  PartialMessage<Omit<GenerateResolverRequest, "instanceId">>
+  Omit<PartialMessage<GenerateResolverRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGenerateResolverMutationOptions(
     client,
@@ -2278,7 +2268,7 @@ export function createRuntimeServiceGenerateResolverMutation(
  */
 export function runtimeServiceGenerateRenderer(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GenerateRendererRequest, "instanceId">>,
+  request: Omit<PartialMessage<GenerateRendererRequest>, "instanceId">,
 ): Promise<GenerateRendererResponse> {
   return client.runtimeService.generateRenderer({
     instanceId: client.instanceId,
@@ -2292,13 +2282,13 @@ export function getRuntimeServiceGenerateRendererMutationOptions(
     CreateMutationOptions<
       GenerateRendererResponse,
       unknown,
-      PartialMessage<Omit<GenerateRendererRequest, "instanceId">>
+      Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GenerateRendererResponse,
   unknown,
-  PartialMessage<Omit<GenerateRendererRequest, "instanceId">>
+  Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceGenerateRenderer(client, request),
@@ -2312,14 +2302,14 @@ export function createRuntimeServiceGenerateRendererMutation(
     CreateMutationOptions<
       GenerateRendererResponse,
       unknown,
-      PartialMessage<Omit<GenerateRendererRequest, "instanceId">>
+      Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GenerateRendererResponse,
   unknown,
-  PartialMessage<Omit<GenerateRendererRequest, "instanceId">>
+  Omit<PartialMessage<GenerateRendererRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGenerateRendererMutationOptions(
     client,
@@ -2333,7 +2323,7 @@ export function createRuntimeServiceGenerateRendererMutation(
  */
 export function runtimeServiceCreateTrigger(
   client: RuntimeClient,
-  request: PartialMessage<Omit<CreateTriggerRequest, "instanceId">>,
+  request: Omit<PartialMessage<CreateTriggerRequest>, "instanceId">,
 ): Promise<CreateTriggerResponse> {
   return client.runtimeService.createTrigger({
     instanceId: client.instanceId,
@@ -2347,13 +2337,13 @@ export function getRuntimeServiceCreateTriggerMutationOptions(
     CreateMutationOptions<
       CreateTriggerResponse,
       unknown,
-      PartialMessage<Omit<CreateTriggerRequest, "instanceId">>
+      Omit<PartialMessage<CreateTriggerRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   CreateTriggerResponse,
   unknown,
-  PartialMessage<Omit<CreateTriggerRequest, "instanceId">>
+  Omit<PartialMessage<CreateTriggerRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceCreateTrigger(client, request),
@@ -2367,14 +2357,14 @@ export function createRuntimeServiceCreateTriggerMutation(
     CreateMutationOptions<
       CreateTriggerResponse,
       unknown,
-      PartialMessage<Omit<CreateTriggerRequest, "instanceId">>
+      Omit<PartialMessage<CreateTriggerRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   CreateTriggerResponse,
   unknown,
-  PartialMessage<Omit<CreateTriggerRequest, "instanceId">>
+  Omit<PartialMessage<CreateTriggerRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCreateTriggerMutationOptions(
     client,
@@ -2388,7 +2378,7 @@ export function createRuntimeServiceCreateTriggerMutation(
  */
 export function runtimeServiceShareConversation(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ShareConversationRequest, "instanceId">>,
+  request: Omit<PartialMessage<ShareConversationRequest>, "instanceId">,
 ): Promise<ShareConversationResponse> {
   return client.runtimeService.shareConversation({
     instanceId: client.instanceId,
@@ -2402,13 +2392,13 @@ export function getRuntimeServiceShareConversationMutationOptions(
     CreateMutationOptions<
       ShareConversationResponse,
       unknown,
-      PartialMessage<Omit<ShareConversationRequest, "instanceId">>
+      Omit<PartialMessage<ShareConversationRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   ShareConversationResponse,
   unknown,
-  PartialMessage<Omit<ShareConversationRequest, "instanceId">>
+  Omit<PartialMessage<ShareConversationRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceShareConversation(client, request),
@@ -2422,14 +2412,14 @@ export function createRuntimeServiceShareConversationMutation(
     CreateMutationOptions<
       ShareConversationResponse,
       unknown,
-      PartialMessage<Omit<ShareConversationRequest, "instanceId">>
+      Omit<PartialMessage<ShareConversationRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   ShareConversationResponse,
   unknown,
-  PartialMessage<Omit<ShareConversationRequest, "instanceId">>
+  Omit<PartialMessage<ShareConversationRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceShareConversationMutationOptions(
     client,
@@ -2443,7 +2433,7 @@ export function createRuntimeServiceShareConversationMutation(
  */
 export function runtimeServiceForkConversation(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ForkConversationRequest, "instanceId">>,
+  request: Omit<PartialMessage<ForkConversationRequest>, "instanceId">,
 ): Promise<ForkConversationResponse> {
   return client.runtimeService.forkConversation({
     instanceId: client.instanceId,
@@ -2457,13 +2447,13 @@ export function getRuntimeServiceForkConversationMutationOptions(
     CreateMutationOptions<
       ForkConversationResponse,
       unknown,
-      PartialMessage<Omit<ForkConversationRequest, "instanceId">>
+      Omit<PartialMessage<ForkConversationRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   ForkConversationResponse,
   unknown,
-  PartialMessage<Omit<ForkConversationRequest, "instanceId">>
+  Omit<PartialMessage<ForkConversationRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceForkConversation(client, request),
@@ -2477,14 +2467,14 @@ export function createRuntimeServiceForkConversationMutation(
     CreateMutationOptions<
       ForkConversationResponse,
       unknown,
-      PartialMessage<Omit<ForkConversationRequest, "instanceId">>
+      Omit<PartialMessage<ForkConversationRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   ForkConversationResponse,
   unknown,
-  PartialMessage<Omit<ForkConversationRequest, "instanceId">>
+  Omit<PartialMessage<ForkConversationRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceForkConversationMutationOptions(
     client,
@@ -2498,7 +2488,7 @@ export function createRuntimeServiceForkConversationMutation(
  */
 export function runtimeServiceComplete(
   client: RuntimeClient,
-  request: PartialMessage<Omit<CompleteRequest, "instanceId">>,
+  request: Omit<PartialMessage<CompleteRequest>, "instanceId">,
 ): Promise<CompleteResponse> {
   return client.runtimeService.complete({
     instanceId: client.instanceId,
@@ -2512,13 +2502,13 @@ export function getRuntimeServiceCompleteMutationOptions(
     CreateMutationOptions<
       CompleteResponse,
       unknown,
-      PartialMessage<Omit<CompleteRequest, "instanceId">>
+      Omit<PartialMessage<CompleteRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   CompleteResponse,
   unknown,
-  PartialMessage<Omit<CompleteRequest, "instanceId">>
+  Omit<PartialMessage<CompleteRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceComplete(client, request),
@@ -2532,14 +2522,14 @@ export function createRuntimeServiceCompleteMutation(
     CreateMutationOptions<
       CompleteResponse,
       unknown,
-      PartialMessage<Omit<CompleteRequest, "instanceId">>
+      Omit<PartialMessage<CompleteRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   CompleteResponse,
   unknown,
-  PartialMessage<Omit<CompleteRequest, "instanceId">>
+  Omit<PartialMessage<CompleteRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCompleteMutationOptions(
     client,
@@ -2553,7 +2543,7 @@ export function createRuntimeServiceCompleteMutation(
  */
 export function runtimeServiceGitStatus(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GitStatusRequest, "instanceId">>,
+  request: Omit<PartialMessage<GitStatusRequest>, "instanceId">,
 ): Promise<GitStatusResponse> {
   return client.runtimeService.gitStatus({
     instanceId: client.instanceId,
@@ -2567,13 +2557,13 @@ export function getRuntimeServiceGitStatusMutationOptions(
     CreateMutationOptions<
       GitStatusResponse,
       unknown,
-      PartialMessage<Omit<GitStatusRequest, "instanceId">>
+      Omit<PartialMessage<GitStatusRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GitStatusResponse,
   unknown,
-  PartialMessage<Omit<GitStatusRequest, "instanceId">>
+  Omit<PartialMessage<GitStatusRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceGitStatus(client, request),
@@ -2587,14 +2577,14 @@ export function createRuntimeServiceGitStatusMutation(
     CreateMutationOptions<
       GitStatusResponse,
       unknown,
-      PartialMessage<Omit<GitStatusRequest, "instanceId">>
+      Omit<PartialMessage<GitStatusRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GitStatusResponse,
   unknown,
-  PartialMessage<Omit<GitStatusRequest, "instanceId">>
+  Omit<PartialMessage<GitStatusRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGitStatusMutationOptions(
     client,
@@ -2608,7 +2598,7 @@ export function createRuntimeServiceGitStatusMutation(
  */
 export function runtimeServiceGitCommit(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GitCommitRequest, "instanceId">>,
+  request: Omit<PartialMessage<GitCommitRequest>, "instanceId">,
 ): Promise<GitCommitResponse> {
   return client.runtimeService.gitCommit({
     instanceId: client.instanceId,
@@ -2622,13 +2612,13 @@ export function getRuntimeServiceGitCommitMutationOptions(
     CreateMutationOptions<
       GitCommitResponse,
       unknown,
-      PartialMessage<Omit<GitCommitRequest, "instanceId">>
+      Omit<PartialMessage<GitCommitRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GitCommitResponse,
   unknown,
-  PartialMessage<Omit<GitCommitRequest, "instanceId">>
+  Omit<PartialMessage<GitCommitRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceGitCommit(client, request),
@@ -2642,14 +2632,14 @@ export function createRuntimeServiceGitCommitMutation(
     CreateMutationOptions<
       GitCommitResponse,
       unknown,
-      PartialMessage<Omit<GitCommitRequest, "instanceId">>
+      Omit<PartialMessage<GitCommitRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GitCommitResponse,
   unknown,
-  PartialMessage<Omit<GitCommitRequest, "instanceId">>
+  Omit<PartialMessage<GitCommitRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGitCommitMutationOptions(
     client,
@@ -2663,7 +2653,7 @@ export function createRuntimeServiceGitCommitMutation(
  */
 export function runtimeServiceRestoreGitCommit(
   client: RuntimeClient,
-  request: PartialMessage<Omit<RestoreGitCommitRequest, "instanceId">>,
+  request: Omit<PartialMessage<RestoreGitCommitRequest>, "instanceId">,
 ): Promise<RestoreGitCommitResponse> {
   return client.runtimeService.restoreGitCommit({
     instanceId: client.instanceId,
@@ -2677,13 +2667,13 @@ export function getRuntimeServiceRestoreGitCommitMutationOptions(
     CreateMutationOptions<
       RestoreGitCommitResponse,
       unknown,
-      PartialMessage<Omit<RestoreGitCommitRequest, "instanceId">>
+      Omit<PartialMessage<RestoreGitCommitRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   RestoreGitCommitResponse,
   unknown,
-  PartialMessage<Omit<RestoreGitCommitRequest, "instanceId">>
+  Omit<PartialMessage<RestoreGitCommitRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceRestoreGitCommit(client, request),
@@ -2697,14 +2687,14 @@ export function createRuntimeServiceRestoreGitCommitMutation(
     CreateMutationOptions<
       RestoreGitCommitResponse,
       unknown,
-      PartialMessage<Omit<RestoreGitCommitRequest, "instanceId">>
+      Omit<PartialMessage<RestoreGitCommitRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   RestoreGitCommitResponse,
   unknown,
-  PartialMessage<Omit<RestoreGitCommitRequest, "instanceId">>
+  Omit<PartialMessage<RestoreGitCommitRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceRestoreGitCommitMutationOptions(
     client,
@@ -2718,7 +2708,7 @@ export function createRuntimeServiceRestoreGitCommitMutation(
  */
 export function runtimeServiceGitMergeToBranch(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GitMergeToBranchRequest, "instanceId">>,
+  request: Omit<PartialMessage<GitMergeToBranchRequest>, "instanceId">,
 ): Promise<GitMergeToBranchResponse> {
   return client.runtimeService.gitMergeToBranch({
     instanceId: client.instanceId,
@@ -2732,13 +2722,13 @@ export function getRuntimeServiceGitMergeToBranchMutationOptions(
     CreateMutationOptions<
       GitMergeToBranchResponse,
       unknown,
-      PartialMessage<Omit<GitMergeToBranchRequest, "instanceId">>
+      Omit<PartialMessage<GitMergeToBranchRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GitMergeToBranchResponse,
   unknown,
-  PartialMessage<Omit<GitMergeToBranchRequest, "instanceId">>
+  Omit<PartialMessage<GitMergeToBranchRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceGitMergeToBranch(client, request),
@@ -2752,14 +2742,14 @@ export function createRuntimeServiceGitMergeToBranchMutation(
     CreateMutationOptions<
       GitMergeToBranchResponse,
       unknown,
-      PartialMessage<Omit<GitMergeToBranchRequest, "instanceId">>
+      Omit<PartialMessage<GitMergeToBranchRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GitMergeToBranchResponse,
   unknown,
-  PartialMessage<Omit<GitMergeToBranchRequest, "instanceId">>
+  Omit<PartialMessage<GitMergeToBranchRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGitMergeToBranchMutationOptions(
     client,
@@ -2773,7 +2763,7 @@ export function createRuntimeServiceGitMergeToBranchMutation(
  */
 export function runtimeServiceGitSwitchBranch(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GitSwitchBranchRequest, "instanceId">>,
+  request: Omit<PartialMessage<GitSwitchBranchRequest>, "instanceId">,
 ): Promise<GitSwitchBranchResponse> {
   return client.runtimeService.gitSwitchBranch({
     instanceId: client.instanceId,
@@ -2787,13 +2777,13 @@ export function getRuntimeServiceGitSwitchBranchMutationOptions(
     CreateMutationOptions<
       GitSwitchBranchResponse,
       unknown,
-      PartialMessage<Omit<GitSwitchBranchRequest, "instanceId">>
+      Omit<PartialMessage<GitSwitchBranchRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GitSwitchBranchResponse,
   unknown,
-  PartialMessage<Omit<GitSwitchBranchRequest, "instanceId">>
+  Omit<PartialMessage<GitSwitchBranchRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceGitSwitchBranch(client, request),
@@ -2807,14 +2797,14 @@ export function createRuntimeServiceGitSwitchBranchMutation(
     CreateMutationOptions<
       GitSwitchBranchResponse,
       unknown,
-      PartialMessage<Omit<GitSwitchBranchRequest, "instanceId">>
+      Omit<PartialMessage<GitSwitchBranchRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GitSwitchBranchResponse,
   unknown,
-  PartialMessage<Omit<GitSwitchBranchRequest, "instanceId">>
+  Omit<PartialMessage<GitSwitchBranchRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGitSwitchBranchMutationOptions(
     client,
@@ -2828,7 +2818,7 @@ export function createRuntimeServiceGitSwitchBranchMutation(
  */
 export function runtimeServiceGitPull(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GitPullRequest, "instanceId">>,
+  request: Omit<PartialMessage<GitPullRequest>, "instanceId">,
 ): Promise<GitPullResponse> {
   return client.runtimeService.gitPull({
     instanceId: client.instanceId,
@@ -2842,13 +2832,13 @@ export function getRuntimeServiceGitPullMutationOptions(
     CreateMutationOptions<
       GitPullResponse,
       unknown,
-      PartialMessage<Omit<GitPullRequest, "instanceId">>
+      Omit<PartialMessage<GitPullRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GitPullResponse,
   unknown,
-  PartialMessage<Omit<GitPullRequest, "instanceId">>
+  Omit<PartialMessage<GitPullRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceGitPull(client, request),
@@ -2862,14 +2852,14 @@ export function createRuntimeServiceGitPullMutation(
     CreateMutationOptions<
       GitPullResponse,
       unknown,
-      PartialMessage<Omit<GitPullRequest, "instanceId">>
+      Omit<PartialMessage<GitPullRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GitPullResponse,
   unknown,
-  PartialMessage<Omit<GitPullRequest, "instanceId">>
+  Omit<PartialMessage<GitPullRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGitPullMutationOptions(
     client,
@@ -2883,7 +2873,7 @@ export function createRuntimeServiceGitPullMutation(
  */
 export function runtimeServiceGitPush(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GitPushRequest, "instanceId">>,
+  request: Omit<PartialMessage<GitPushRequest>, "instanceId">,
 ): Promise<GitPushResponse> {
   return client.runtimeService.gitPush({
     instanceId: client.instanceId,
@@ -2897,13 +2887,13 @@ export function getRuntimeServiceGitPushMutationOptions(
     CreateMutationOptions<
       GitPushResponse,
       unknown,
-      PartialMessage<Omit<GitPushRequest, "instanceId">>
+      Omit<PartialMessage<GitPushRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
   GitPushResponse,
   unknown,
-  PartialMessage<Omit<GitPushRequest, "instanceId">>
+  Omit<PartialMessage<GitPushRequest>, "instanceId">
 > {
   return {
     mutationFn: (request) => runtimeServiceGitPush(client, request),
@@ -2917,14 +2907,14 @@ export function createRuntimeServiceGitPushMutation(
     CreateMutationOptions<
       GitPushResponse,
       unknown,
-      PartialMessage<Omit<GitPushRequest, "instanceId">>
+      Omit<PartialMessage<GitPushRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
   GitPushResponse,
   unknown,
-  PartialMessage<Omit<GitPushRequest, "instanceId">>
+  Omit<PartialMessage<GitPushRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceGitPushMutationOptions(
     client,

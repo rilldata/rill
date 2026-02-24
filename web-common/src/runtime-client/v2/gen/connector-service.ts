@@ -35,7 +35,7 @@ import {
  */
 export function connectorServiceListBuckets(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListBucketsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListBucketsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListBucketsResponse> {
   return client.connectorService.listBuckets(
@@ -46,7 +46,7 @@ export function connectorServiceListBuckets(
 
 export function getConnectorServiceListBucketsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListBucketsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListBucketsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "ConnectorService",
@@ -58,7 +58,7 @@ export function getConnectorServiceListBucketsQueryKey(
 
 export function getConnectorServiceListBucketsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListBucketsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListBucketsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListBucketsResponse>>;
   },
@@ -79,7 +79,7 @@ export function getConnectorServiceListBucketsQueryOptions(
 
 export function createConnectorServiceListBuckets(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListBucketsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListBucketsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListBucketsResponse>>;
   },
@@ -98,7 +98,7 @@ export function createConnectorServiceListBuckets(
  */
 export function connectorServiceListObjects(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListObjectsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListObjectsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListObjectsResponse> {
   return client.connectorService.listObjects(
@@ -109,7 +109,7 @@ export function connectorServiceListObjects(
 
 export function getConnectorServiceListObjectsQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListObjectsRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListObjectsRequest>, "instanceId">,
 ): QueryKey {
   return [
     "ConnectorService",
@@ -121,7 +121,7 @@ export function getConnectorServiceListObjectsQueryKey(
 
 export function getConnectorServiceListObjectsQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListObjectsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListObjectsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListObjectsResponse>>;
   },
@@ -142,7 +142,7 @@ export function getConnectorServiceListObjectsQueryOptions(
 
 export function createConnectorServiceListObjects(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListObjectsRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListObjectsRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListObjectsResponse>>;
   },
@@ -161,7 +161,7 @@ export function createConnectorServiceListObjects(
  */
 export function connectorServiceOLAPListTables(
   client: RuntimeClient,
-  request: PartialMessage<Omit<OLAPListTablesRequest, "instanceId">>,
+  request: Omit<PartialMessage<OLAPListTablesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<OLAPListTablesResponse> {
   return client.connectorService.oLAPListTables(
@@ -172,7 +172,7 @@ export function connectorServiceOLAPListTables(
 
 export function getConnectorServiceOLAPListTablesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<OLAPListTablesRequest, "instanceId">>,
+  request?: Omit<PartialMessage<OLAPListTablesRequest>, "instanceId">,
 ): QueryKey {
   return [
     "ConnectorService",
@@ -184,7 +184,7 @@ export function getConnectorServiceOLAPListTablesQueryKey(
 
 export function getConnectorServiceOLAPListTablesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<OLAPListTablesRequest, "instanceId">>,
+  request: Omit<PartialMessage<OLAPListTablesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<OLAPListTablesResponse>>;
   },
@@ -205,7 +205,7 @@ export function getConnectorServiceOLAPListTablesQueryOptions(
 
 export function createConnectorServiceOLAPListTables(
   client: RuntimeClient,
-  request: PartialMessage<Omit<OLAPListTablesRequest, "instanceId">>,
+  request: Omit<PartialMessage<OLAPListTablesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<OLAPListTablesResponse>>;
   },
@@ -224,7 +224,7 @@ export function createConnectorServiceOLAPListTables(
  */
 export function connectorServiceOLAPGetTable(
   client: RuntimeClient,
-  request: PartialMessage<Omit<OLAPGetTableRequest, "instanceId">>,
+  request: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<OLAPGetTableResponse> {
   return client.connectorService.oLAPGetTable(
@@ -235,7 +235,7 @@ export function connectorServiceOLAPGetTable(
 
 export function getConnectorServiceOLAPGetTableQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<OLAPGetTableRequest, "instanceId">>,
+  request?: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
 ): QueryKey {
   return [
     "ConnectorService",
@@ -247,7 +247,7 @@ export function getConnectorServiceOLAPGetTableQueryKey(
 
 export function getConnectorServiceOLAPGetTableQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<OLAPGetTableRequest, "instanceId">>,
+  request: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<OLAPGetTableResponse>>;
   },
@@ -268,7 +268,7 @@ export function getConnectorServiceOLAPGetTableQueryOptions(
 
 export function createConnectorServiceOLAPGetTable(
   client: RuntimeClient,
-  request: PartialMessage<Omit<OLAPGetTableRequest, "instanceId">>,
+  request: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<OLAPGetTableResponse>>;
   },
@@ -287,7 +287,7 @@ export function createConnectorServiceOLAPGetTable(
  */
 export function connectorServiceListDatabaseSchemas(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListDatabaseSchemasRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListDatabaseSchemasRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListDatabaseSchemasResponse> {
   return client.connectorService.listDatabaseSchemas(
@@ -298,7 +298,7 @@ export function connectorServiceListDatabaseSchemas(
 
 export function getConnectorServiceListDatabaseSchemasQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListDatabaseSchemasRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListDatabaseSchemasRequest>, "instanceId">,
 ): QueryKey {
   return [
     "ConnectorService",
@@ -310,7 +310,7 @@ export function getConnectorServiceListDatabaseSchemasQueryKey(
 
 export function getConnectorServiceListDatabaseSchemasQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListDatabaseSchemasRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListDatabaseSchemasRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListDatabaseSchemasResponse>>;
   },
@@ -331,7 +331,7 @@ export function getConnectorServiceListDatabaseSchemasQueryOptions(
 
 export function createConnectorServiceListDatabaseSchemas(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListDatabaseSchemasRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListDatabaseSchemasRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListDatabaseSchemasResponse>>;
   },
@@ -350,7 +350,7 @@ export function createConnectorServiceListDatabaseSchemas(
  */
 export function connectorServiceListTables(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListTablesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListTablesRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<ListTablesResponse> {
   return client.connectorService.listTables(
@@ -361,14 +361,14 @@ export function connectorServiceListTables(
 
 export function getConnectorServiceListTablesQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<ListTablesRequest, "instanceId">>,
+  request?: Omit<PartialMessage<ListTablesRequest>, "instanceId">,
 ): QueryKey {
   return ["ConnectorService", "listTables", instanceId, request ?? {}] as const;
 }
 
 export function getConnectorServiceListTablesQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListTablesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListTablesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListTablesResponse>>;
   },
@@ -389,7 +389,7 @@ export function getConnectorServiceListTablesQueryOptions(
 
 export function createConnectorServiceListTables(
   client: RuntimeClient,
-  request: PartialMessage<Omit<ListTablesRequest, "instanceId">>,
+  request: Omit<PartialMessage<ListTablesRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<ListTablesResponse>>;
   },
@@ -408,7 +408,7 @@ export function createConnectorServiceListTables(
  */
 export function connectorServiceGetTable(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetTableRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetTableRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
 ): Promise<GetTableResponse> {
   return client.connectorService.getTable(
@@ -419,14 +419,14 @@ export function connectorServiceGetTable(
 
 export function getConnectorServiceGetTableQueryKey(
   instanceId: string,
-  request?: PartialMessage<Omit<GetTableRequest, "instanceId">>,
+  request?: Omit<PartialMessage<GetTableRequest>, "instanceId">,
 ): QueryKey {
   return ["ConnectorService", "getTable", instanceId, request ?? {}] as const;
 }
 
 export function getConnectorServiceGetTableQueryOptions(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetTableRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetTableRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetTableResponse>>;
   },
@@ -447,7 +447,7 @@ export function getConnectorServiceGetTableQueryOptions(
 
 export function createConnectorServiceGetTable(
   client: RuntimeClient,
-  request: PartialMessage<Omit<GetTableRequest, "instanceId">>,
+  request: Omit<PartialMessage<GetTableRequest>, "instanceId">,
   options?: {
     query?: Partial<CreateQueryOptions<GetTableResponse>>;
   },
