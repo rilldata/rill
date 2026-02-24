@@ -61,6 +61,7 @@ service LocalService {
 
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {}
+
 }
 
 message PingRequest {}
@@ -239,3 +240,4 @@ message GetProjectResponse {
   admin.v1.Project project = 1;
   admin.v1.ProjectPermissions project_permissions = 4;
 }
+

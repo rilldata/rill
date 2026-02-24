@@ -765,6 +765,64 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/env/pull:
+    post:
+      summary: PullEnv pulls environment variables from cloud to local .env file
+      operationId: RuntimeService_PullEnv
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PullEnvResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              environment:
+                type: string
+                description: 'Environment to pull from: "dev" or "prod". Defaults to "dev".'
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/env/push:
+    post:
+      summary: PushEnv pushes local environment variables to cloud
+      operationId: RuntimeService_PushEnv
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PushEnvResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              environment:
+                type: string
+                description: 'Environment to push to: "dev", "prod", or empty for both.'
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files:
     get:
       summary: |-
@@ -7005,6 +7063,27 @@ definitions:
         format: date-time
       watching:
         type: boolean
+  v1PullEnvResponse:
+    type: object
+    properties:
+      variablesCount:
+        type: integer
+        format: int32
+        title: Number of variables pulled from cloud
+      modified:
+        type: boolean
+        title: Whether the .env file was modified
+  v1PushEnvResponse:
+    type: object
+    properties:
+      addedCount:
+        type: integer
+        format: int32
+        title: Number of variables added
+      changedCount:
+        type: integer
+        format: int32
+        title: Number of variables changed
   v1PutFileResponse:
     type: object
     properties:

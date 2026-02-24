@@ -55,6 +55,8 @@ import type {
   RuntimeServiceListGitCommitsParams,
   RuntimeServiceListInstancesParams,
   RuntimeServiceListResourcesParams,
+  RuntimeServicePullEnvBody,
+  RuntimeServicePushEnvBody,
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
   RuntimeServiceReloadConfigBody,
@@ -112,6 +114,8 @@ import type {
   V1ListResourcesResponse,
   V1ListToolsResponse,
   V1PingResponse,
+  V1PullEnvResponse,
+  V1PushEnvResponse,
   V1PutFileResponse,
   V1QueryResolverResponse,
   V1ReloadConfigResponse,
@@ -1934,6 +1938,178 @@ export function createRuntimeServiceListNotifierConnectors<
   return query;
 }
 
+/**
+ * @summary PullEnv pulls environment variables from cloud to local .env file
+ */
+export const runtimeServicePullEnv = (
+  instanceId: string,
+  runtimeServicePullEnvBody: RuntimeServicePullEnvBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1PullEnvResponse>({
+    url: `/v1/instances/${instanceId}/env/pull`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServicePullEnvBody,
+    signal,
+  });
+};
+
+export const getRuntimeServicePullEnvMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServicePullEnv>>,
+    TError,
+    { instanceId: string; data: RuntimeServicePullEnvBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServicePullEnv>>,
+  TError,
+  { instanceId: string; data: RuntimeServicePullEnvBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServicePullEnv"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServicePullEnv>>,
+    { instanceId: string; data: RuntimeServicePullEnvBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServicePullEnv(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServicePullEnvMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServicePullEnv>>
+>;
+export type RuntimeServicePullEnvMutationBody = RuntimeServicePullEnvBody;
+export type RuntimeServicePullEnvMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary PullEnv pulls environment variables from cloud to local .env file
+ */
+export const createRuntimeServicePullEnv = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServicePullEnv>>,
+      TError,
+      { instanceId: string; data: RuntimeServicePullEnvBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServicePullEnv>>,
+  TError,
+  { instanceId: string; data: RuntimeServicePullEnvBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServicePullEnvMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary PushEnv pushes local environment variables to cloud
+ */
+export const runtimeServicePushEnv = (
+  instanceId: string,
+  runtimeServicePushEnvBody: RuntimeServicePushEnvBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1PushEnvResponse>({
+    url: `/v1/instances/${instanceId}/env/push`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServicePushEnvBody,
+    signal,
+  });
+};
+
+export const getRuntimeServicePushEnvMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServicePushEnv>>,
+    TError,
+    { instanceId: string; data: RuntimeServicePushEnvBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServicePushEnv>>,
+  TError,
+  { instanceId: string; data: RuntimeServicePushEnvBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServicePushEnv"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServicePushEnv>>,
+    { instanceId: string; data: RuntimeServicePushEnvBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServicePushEnv(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServicePushEnvMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServicePushEnv>>
+>;
+export type RuntimeServicePushEnvMutationBody = RuntimeServicePushEnvBody;
+export type RuntimeServicePushEnvMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary PushEnv pushes local environment variables to cloud
+ */
+export const createRuntimeServicePushEnv = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServicePushEnv>>,
+      TError,
+      { instanceId: string; data: RuntimeServicePushEnvBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServicePushEnv>>,
+  TError,
+  { instanceId: string; data: RuntimeServicePushEnvBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServicePushEnvMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary ListFiles lists all the files matching a glob in a repo.
 The files are sorted by their full path.

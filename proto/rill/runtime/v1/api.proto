@@ -381,6 +381,24 @@ service RuntimeService {
       body: "*"
     };
   }
+
+  // Env APIs
+
+  // PullEnv pulls environment variables from cloud to local .env file
+  rpc PullEnv(PullEnvRequest) returns (PullEnvResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/env/pull",
+      body: "*"
+    };
+  }
+
+  // PushEnv pushes local environment variables to cloud
+  rpc PushEnv(PushEnvRequest) returns (PushEnvResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/env/push",
+      body: "*"
+    };
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -1374,3 +1392,29 @@ message GitPushRequest {
 }
 
 message GitPushResponse {}
+
+message PullEnvRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Environment to pull from: "dev" or "prod". Defaults to "dev".
+  string environment = 2;
+}
+
+message PullEnvResponse {
+  // Number of variables pulled from cloud
+  int32 variables_count = 1;
+  // Whether the .env file was modified
+  bool modified = 2;
+}
+
+message PushEnvRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Environment to push to: "dev", "prod", or empty for both.
+  string environment = 2;
+}
+
+message PushEnvResponse {
+  // Number of variables added
+  int32 added_count = 1;
+  // Number of variables changed
+  int32 changed_count = 2;
+}
