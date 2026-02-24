@@ -44,11 +44,14 @@ const createRuntimeStore = () => {
       update((current) => {
         // Don't update the store if the values have not changed
         // (especially, don't update the JWT `receivedAt`)
+        const jwtUnchanged = jwt
+          ? jwt === current.jwt?.token &&
+            authContext === current.jwt?.authContext
+          : !current.jwt;
         if (
           host === current.host &&
           instanceId === current.instanceId &&
-          jwt === current.jwt?.token &&
-          authContext === current.jwt?.authContext
+          jwtUnchanged
         ) {
           return current;
         }
