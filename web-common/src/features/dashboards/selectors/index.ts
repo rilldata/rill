@@ -1,22 +1,20 @@
-import {
-  type V1MetricsViewTimeRangeResponse,
-  createQueryServiceMetricsViewTimeRange,
-} from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewTimeRangeResponse } from "@rilldata/web-common/runtime-client";
+import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
 export function createTimeRangeSummary(
   ctx: StateManagers,
-): CreateQueryResult<V1MetricsViewTimeRangeResponse, HTTPError> {
+): CreateQueryResult<V1MetricsViewTimeRangeResponse, Error> {
   return derived(
-    [ctx.runtime, ctx.metricsViewName, ctx.validSpecStore],
-    ([runtime, metricsViewName, validSpec], set) =>
+    [ctx.metricsViewName, ctx.validSpecStore],
+    ([metricsViewName, validSpec], set) =>
       createQueryServiceMetricsViewTimeRange(
-        runtime.instanceId,
-        metricsViewName,
-        {},
+        ctx.runtimeClient,
+        {
+          metricsViewName,
+        },
         {
           query: {
             enabled:
