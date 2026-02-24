@@ -28,6 +28,8 @@ type Query struct {
 	TimeZone            string      `json:"time_zone" mapstructure:"time_zone"`
 	UseDisplayNames     bool        `json:"use_display_names" mapstructure:"use_display_names"`
 	Rows                bool        `json:"rows" mapstructure:"rows"`
+
+	QueryLimit *QueryLimits `json:"-" mapstructure:"query_limits"`
 }
 
 type Dimension struct {
@@ -58,6 +60,12 @@ type MeasureCompute struct {
 	PercentOfTotal  *MeasureComputePercentOfTotal  `json:"percent_of_total,omitempty" mapstructure:"percent_of_total"`
 	URI             *MeasureComputeURI             `json:"uri,omitempty" mapstructure:"uri"`
 	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time,omitempty" mapstructure:"comparison_time"`
+}
+
+// QueryLimits represents limits that should be applied to a query, such as requiring a time range or limiting the maximum time range for interactive queries. These are not part of the Query json itself because they are not intrinsic to the query, but rather are constraints that may be applied to the query before execution.
+type QueryLimits struct {
+	RequireTimeRange bool `json:"-" mapstructure:"require_time_range"`
+	MaxTimeRangeDays int  `json:"-" mapstructure:"max_time_range_days"`
 }
 
 func (q *Query) AsMap() (map[string]any, error) {

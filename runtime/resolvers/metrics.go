@@ -34,7 +34,6 @@ type metricsResolver struct {
 type metricsResolverArgs struct {
 	Priority      int        `mapstructure:"priority"`
 	ExecutionTime *time.Time `mapstructure:"execution_time"`
-	aiQuery       bool       `mapstructure:"ai_query"` // If true, the resolver will pass on this information to executor so that it can apply instance specific ai limits
 }
 
 func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -82,7 +81,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		userAttrs = opts.Claims.UserAttributes
 	}
 
-	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, args.aiQuery, security, args.Priority, userAttrs)
+	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}

@@ -78,7 +78,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := executor.New(ctx, rt, instanceID, q.MetricsView, q.Streaming, false, q.ResolvedMVSecurity, priority, nil)
+	e, err := executor.New(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, priority, nil)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	}
 	qry.Rows = true
 
-	e, err := executor.New(ctx, rt, instanceID, q.MetricsView, q.Streaming, false, q.ResolvedMVSecurity, opts.Priority, nil)
+	e, err := executor.New(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, opts.Priority, nil)
 	if err != nil {
 		return err
 	}

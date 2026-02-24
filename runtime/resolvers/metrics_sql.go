@@ -104,7 +104,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 			if opts.Claims != nil {
 				userAttrs = opts.Claims.UserAttributes
 			}
-			e, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv.GetMetricsView().State.ValidSpec, false, false, sec, sqlArgs.Priority, userAttrs)
+			e, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv.GetMetricsView().State.ValidSpec, false, sec, sqlArgs.Priority, userAttrs)
 			if err != nil {
 				return metricsview.TimestampsResult{}, err
 			}

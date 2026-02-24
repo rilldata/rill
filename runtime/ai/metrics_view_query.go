@@ -42,8 +42,8 @@ Request:
 - 'time_range' is inclusive of start time, exclusive of end time
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
-- Prefer using absolute 'start' and 'end' times in 'time_range' and 'comparison_time_range' if available. 
-  Otherwise, use 'expression' for relative time ranges, when specifying 'expression' make sure no other time range fields other than 'time_dimension' should be set as its not supported.
+- Prefer using absolute 'start' and 'end' time range parameters in 'time_range' and 'comparison_time_range' if available. 
+  Otherwise, use 'time_range.expression' for relative time ranges, when specifying 'time_range.expression' make sure no other time range fields other than 'time_range.time_dimension' is set as its not supported.
   Relative durations are evaluated against the execution time for scheduled insight mode or latest data for ad-hoc analysis.
 
 Response:
@@ -243,6 +243,10 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		isSystemLimit = true
 	}
 	args["limit"] = limit
+	args["query_limits"] = map[string]any{
+		"require_time_range":  true,                   // enforce a time range
+		"max_time_range_days": cfg.AIMaxTimeRangeDays, // enforce instance specific max days limit
+	}
 
 	// Apply a timeout to prevent runaway queries
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)

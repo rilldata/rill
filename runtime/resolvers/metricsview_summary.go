@@ -79,7 +79,7 @@ func newMetricsSummaryResolver(ctx context.Context, opts *runtime.ResolverOption
 		userAttrs = opts.Claims.UserAttributes
 	}
 
-	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, false, security, args.Priority, userAttrs)
+	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}

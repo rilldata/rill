@@ -291,7 +291,7 @@ func (r *aiResolver) resolveTimeRange(ctx context.Context, tr *metricsview.TimeR
 			return fmt.Errorf("failed to resolve metrics view %q: %w", r.metricsView, err)
 		}
 		// create executor to resolve relative time ranges
-		e, err := executor.New(ctx, r.runtime, r.instanceID, mv.ValidSpec, mv.Streaming, true, security, 10, r.claims.UserAttributes)
+		e, err := executor.New(ctx, r.runtime, r.instanceID, mv.ValidSpec, mv.Streaming, security, 10, r.claims.UserAttributes)
 		if err != nil {
 			return fmt.Errorf("failed to create executor: %w", err)
 		}

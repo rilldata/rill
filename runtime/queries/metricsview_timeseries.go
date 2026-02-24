@@ -119,7 +119,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		userAttrs = q.SecurityClaims.UserAttributes
 	}
 
-	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, false, security, priority, userAttrs)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, userAttrs)
 	if err != nil {
 		return err
 	}
