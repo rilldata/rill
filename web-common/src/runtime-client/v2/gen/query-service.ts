@@ -99,6 +99,14 @@ import {
   TableRowsRequest,
 } from "../../../proto/gen/rill/runtime/v1/queries_pb";
 
+/** Strip undefined values — proto fromJson rejects them */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function stripUndefined(obj: Record<string, any>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  );
+}
+
 /**
  * Raw RPC call: QueryService.MetricsViewAggregation
  */
@@ -109,10 +117,12 @@ export function queryServiceMetricsViewAggregation(
 ): Promise<V1MetricsViewAggregationResponse> {
   return client.queryService
     .metricsViewAggregation(
-      MetricsViewAggregationRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewAggregationRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewAggregationResponse);
@@ -190,10 +200,12 @@ export function queryServiceMetricsViewToplist(
 ): Promise<V1MetricsViewToplistResponse> {
   return client.queryService
     .metricsViewToplist(
-      MetricsViewToplistRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewToplistRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewToplistResponse);
@@ -270,10 +282,12 @@ export function queryServiceMetricsViewComparison(
 ): Promise<V1MetricsViewComparisonResponse> {
   return client.queryService
     .metricsViewComparison(
-      MetricsViewComparisonRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewComparisonRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewComparisonResponse);
@@ -351,10 +365,12 @@ export function queryServiceMetricsViewTimeSeries(
 ): Promise<V1MetricsViewTimeSeriesResponse> {
   return client.queryService
     .metricsViewTimeSeries(
-      MetricsViewTimeSeriesRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewTimeSeriesRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewTimeSeriesResponse);
@@ -432,10 +448,12 @@ export function queryServiceMetricsViewTotals(
 ): Promise<V1MetricsViewTotalsResponse> {
   return client.queryService
     .metricsViewTotals(
-      MetricsViewTotalsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewTotalsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewTotalsResponse);
@@ -512,10 +530,12 @@ export function queryServiceMetricsViewRows(
 ): Promise<V1MetricsViewRowsResponse> {
   return client.queryService
     .metricsViewRows(
-      MetricsViewRowsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewRowsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewRowsResponse);
@@ -592,10 +612,12 @@ export function queryServiceMetricsViewTimeRange(
 ): Promise<V1MetricsViewTimeRangeResponse> {
   return client.queryService
     .metricsViewTimeRange(
-      MetricsViewTimeRangeRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewTimeRangeRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewTimeRangeResponse);
@@ -672,10 +694,12 @@ export function queryServiceMetricsViewSchema(
 ): Promise<V1MetricsViewSchemaResponse> {
   return client.queryService
     .metricsViewSchema(
-      MetricsViewSchemaRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewSchemaRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewSchemaResponse);
@@ -752,10 +776,12 @@ export function queryServiceMetricsViewSearch(
 ): Promise<V1MetricsViewSearchResponse> {
   return client.queryService
     .metricsViewSearch(
-      MetricsViewSearchRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewSearchRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewSearchResponse);
@@ -832,10 +858,12 @@ export function queryServiceMetricsViewTimeRanges(
 ): Promise<V1MetricsViewTimeRangesResponse> {
   return client.queryService
     .metricsViewTimeRanges(
-      MetricsViewTimeRangesRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewTimeRangesRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewTimeRangesResponse);
@@ -913,10 +941,12 @@ export function queryServiceMetricsViewAnnotations(
 ): Promise<V1MetricsViewAnnotationsResponse> {
   return client.queryService
     .metricsViewAnnotations(
-      MetricsViewAnnotationsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      MetricsViewAnnotationsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1MetricsViewAnnotationsResponse);
@@ -997,10 +1027,12 @@ export function queryServiceConvertExpressionToMetricsSQL(
 ): Promise<V1ConvertExpressionToMetricsSQLResponse> {
   return client.queryService
     .convertExpressionToMetricsSQL(
-      ConvertExpressionToMetricsSQLRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ConvertExpressionToMetricsSQLRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then(
@@ -1091,10 +1123,12 @@ export function queryServiceResolveCanvas(
 ): Promise<V1ResolveCanvasResponse> {
   return client.queryService
     .resolveCanvas(
-      ResolveCanvasRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ResolveCanvasRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ResolveCanvasResponse);
@@ -1162,10 +1196,12 @@ export function queryServiceResolveComponent(
 ): Promise<V1ResolveComponentResponse> {
   return client.queryService
     .resolveComponent(
-      ResolveComponentRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ResolveComponentRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ResolveComponentResponse);
@@ -1242,10 +1278,12 @@ export function queryServiceResolveTemplatedString(
 ): Promise<V1ResolveTemplatedStringResponse> {
   return client.queryService
     .resolveTemplatedString(
-      ResolveTemplatedStringRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ResolveTemplatedStringRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ResolveTemplatedStringResponse);
@@ -1323,10 +1361,12 @@ export function queryServiceColumnRollupInterval(
 ): Promise<V1ColumnRollupIntervalResponse> {
   return client.queryService
     .columnRollupInterval(
-      ColumnRollupIntervalRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnRollupIntervalRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ColumnRollupIntervalResponse);
@@ -1403,10 +1443,12 @@ export function queryServiceColumnTopK(
 ): Promise<V1ColumnTopKResponse> {
   return client.queryService
     .columnTopK(
-      ColumnTopKRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnTopKRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ColumnTopKResponse);
@@ -1472,10 +1514,12 @@ export function queryServiceColumnNullCount(
 ): Promise<V1ColumnNullCountResponse> {
   return client.queryService
     .columnNullCount(
-      ColumnNullCountRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnNullCountRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ColumnNullCountResponse);
@@ -1552,10 +1596,12 @@ export function queryServiceColumnDescriptiveStatistics(
 ): Promise<V1ColumnDescriptiveStatisticsResponse> {
   return client.queryService
     .columnDescriptiveStatistics(
-      ColumnDescriptiveStatisticsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnDescriptiveStatisticsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then(
@@ -1637,10 +1683,12 @@ export function queryServiceColumnTimeGrain(
 ): Promise<V1ColumnTimeGrainResponse> {
   return client.queryService
     .columnTimeGrain(
-      ColumnTimeGrainRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnTimeGrainRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ColumnTimeGrainResponse);
@@ -1717,10 +1765,12 @@ export function queryServiceColumnNumericHistogram(
 ): Promise<V1ColumnNumericHistogramResponse> {
   return client.queryService
     .columnNumericHistogram(
-      ColumnNumericHistogramRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnNumericHistogramRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ColumnNumericHistogramResponse);
@@ -1798,10 +1848,12 @@ export function queryServiceColumnRugHistogram(
 ): Promise<V1ColumnRugHistogramResponse> {
   return client.queryService
     .columnRugHistogram(
-      ColumnRugHistogramRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnRugHistogramRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ColumnRugHistogramResponse);
@@ -1878,10 +1930,12 @@ export function queryServiceColumnTimeRange(
 ): Promise<V1ColumnTimeRangeResponse> {
   return client.queryService
     .columnTimeRange(
-      ColumnTimeRangeRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnTimeRangeRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ColumnTimeRangeResponse);
@@ -1958,10 +2012,12 @@ export function queryServiceColumnCardinality(
 ): Promise<V1ColumnCardinalityResponse> {
   return client.queryService
     .columnCardinality(
-      ColumnCardinalityRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnCardinalityRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ColumnCardinalityResponse);
@@ -2038,10 +2094,12 @@ export function queryServiceColumnTimeSeries(
 ): Promise<V1ColumnTimeSeriesResponse> {
   return client.queryService
     .columnTimeSeries(
-      ColumnTimeSeriesRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ColumnTimeSeriesRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ColumnTimeSeriesResponse);
@@ -2118,10 +2176,12 @@ export function queryServiceTableCardinality(
 ): Promise<V1TableCardinalityResponse> {
   return client.queryService
     .tableCardinality(
-      TableCardinalityRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      TableCardinalityRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1TableCardinalityResponse);
@@ -2198,10 +2258,12 @@ export function queryServiceTableColumns(
 ): Promise<V1TableColumnsResponse> {
   return client.queryService
     .tableColumns(
-      TableColumnsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      TableColumnsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1TableColumnsResponse);
@@ -2267,10 +2329,12 @@ export function queryServiceTableRows(
 ): Promise<V1TableRowsResponse> {
   return client.queryService
     .tableRows(
-      TableRowsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      TableRowsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1TableRowsResponse);
@@ -2332,10 +2396,12 @@ export function queryServiceQuery(
 ): Promise<V1QueryResponse> {
   return client.queryService
     .query(
-      QueryRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      QueryRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1QueryResponse);
 }
@@ -2388,10 +2454,12 @@ export function queryServiceExport(
 ): Promise<V1ExportResponse> {
   return client.queryService
     .export(
-      ExportRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ExportRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1ExportResponse);
 }
@@ -2444,10 +2512,12 @@ export function queryServiceExportReport(
 ): Promise<V1ExportReportResponse> {
   return client.queryService
     .exportReport(
-      ExportReportRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ExportReportRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1ExportReportResponse);
 }

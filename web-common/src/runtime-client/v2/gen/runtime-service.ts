@@ -118,6 +118,14 @@ import {
   UnpackExampleRequest,
 } from "../../../proto/gen/rill/runtime/v1/api_pb";
 
+/** Strip undefined values — proto fromJson rejects them */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function stripUndefined(obj: Record<string, any>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  );
+}
+
 /**
  * Raw RPC call: RuntimeService.Ping
  */
@@ -127,9 +135,10 @@ export function runtimeServicePing(
   options?: { signal?: AbortSignal },
 ): Promise<V1PingResponse> {
   return client.runtimeService
-    .ping(PingRequest.fromJson(request as unknown as JsonValue), {
-      signal: options?.signal,
-    })
+    .ping(
+      PingRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
+      { signal: options?.signal },
+    )
     .then((r) => r.toJson() as unknown as V1PingResponse);
 }
 
@@ -185,9 +194,10 @@ export function runtimeServiceHealth(
   options?: { signal?: AbortSignal },
 ): Promise<V1HealthResponse> {
   return client.runtimeService
-    .health(HealthRequest.fromJson(request as unknown as JsonValue), {
-      signal: options?.signal,
-    })
+    .health(
+      HealthRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
+      { signal: options?.signal },
+    )
     .then((r) => r.toJson() as unknown as V1HealthResponse);
 }
 
@@ -244,10 +254,12 @@ export function runtimeServiceInstanceHealth(
 ): Promise<V1InstanceHealthResponse> {
   return client.runtimeService
     .instanceHealth(
-      InstanceHealthRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      InstanceHealthRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1InstanceHealthResponse);
@@ -320,7 +332,9 @@ export function runtimeServiceListInstances(
 ): Promise<V1ListInstancesResponse> {
   return client.runtimeService
     .listInstances(
-      ListInstancesRequest.fromJson(request as unknown as JsonValue),
+      ListInstancesRequest.fromJson(
+        stripUndefined(request) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListInstancesResponse);
@@ -393,10 +407,12 @@ export function runtimeServiceGetInstance(
 ): Promise<V1GetInstanceResponse> {
   return client.runtimeService
     .getInstance(
-      GetInstanceRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GetInstanceRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1GetInstanceResponse);
@@ -462,10 +478,12 @@ export function runtimeServiceListFiles(
 ): Promise<V1ListFilesResponse> {
   return client.runtimeService
     .listFiles(
-      ListFilesRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListFilesRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListFilesResponse);
@@ -531,10 +549,12 @@ export function runtimeServiceGetFile(
 ): Promise<V1GetFileResponse> {
   return client.runtimeService
     .getFile(
-      GetFileRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GetFileRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1GetFileResponse);
@@ -595,7 +615,9 @@ export function runtimeServiceListExamples(
 ): Promise<V1ListExamplesResponse> {
   return client.runtimeService
     .listExamples(
-      ListExamplesRequest.fromJson(request as unknown as JsonValue),
+      ListExamplesRequest.fromJson(
+        stripUndefined(request) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListExamplesResponse);
@@ -663,10 +685,12 @@ export function runtimeServiceQueryResolver(
 ): Promise<V1QueryResolverResponse> {
   return client.runtimeService
     .queryResolver(
-      QueryResolverRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      QueryResolverRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1QueryResolverResponse);
@@ -739,10 +763,12 @@ export function runtimeServiceGetLogs(
 ): Promise<V1GetLogsResponse> {
   return client.runtimeService
     .getLogs(
-      GetLogsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GetLogsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1GetLogsResponse);
@@ -803,10 +829,12 @@ export function runtimeServiceListResources(
 ): Promise<V1ListResourcesResponse> {
   return client.runtimeService
     .listResources(
-      ListResourcesRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListResourcesRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListResourcesResponse);
@@ -879,10 +907,12 @@ export function runtimeServiceGetResource(
 ): Promise<V1GetResourceResponse> {
   return client.runtimeService
     .getResource(
-      GetResourceRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GetResourceRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1GetResourceResponse);
@@ -948,10 +978,12 @@ export function runtimeServiceGetExplore(
 ): Promise<V1GetExploreResponse> {
   return client.runtimeService
     .getExplore(
-      GetExploreRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GetExploreRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1GetExploreResponse);
@@ -1017,10 +1049,12 @@ export function runtimeServiceGetModelPartitions(
 ): Promise<V1GetModelPartitionsResponse> {
   return client.runtimeService
     .getModelPartitions(
-      GetModelPartitionsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GetModelPartitionsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1GetModelPartitionsResponse);
@@ -1097,7 +1131,9 @@ export function runtimeServiceListConnectorDrivers(
 ): Promise<V1ListConnectorDriversResponse> {
   return client.runtimeService
     .listConnectorDrivers(
-      ListConnectorDriversRequest.fromJson(request as unknown as JsonValue),
+      ListConnectorDriversRequest.fromJson(
+        stripUndefined(request) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListConnectorDriversResponse);
@@ -1174,10 +1210,12 @@ export function runtimeServiceAnalyzeConnectors(
 ): Promise<V1AnalyzeConnectorsResponse> {
   return client.runtimeService
     .analyzeConnectors(
-      AnalyzeConnectorsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      AnalyzeConnectorsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1AnalyzeConnectorsResponse);
@@ -1254,10 +1292,12 @@ export function runtimeServiceListNotifierConnectors(
 ): Promise<V1ListNotifierConnectorsResponse> {
   return client.runtimeService
     .listNotifierConnectors(
-      ListNotifierConnectorsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListNotifierConnectorsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListNotifierConnectorsResponse);
@@ -1335,10 +1375,12 @@ export function runtimeServiceListConversations(
 ): Promise<V1ListConversationsResponse> {
   return client.runtimeService
     .listConversations(
-      ListConversationsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListConversationsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListConversationsResponse);
@@ -1415,10 +1457,12 @@ export function runtimeServiceGetConversation(
 ): Promise<V1GetConversationResponse> {
   return client.runtimeService
     .getConversation(
-      GetConversationRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GetConversationRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1GetConversationResponse);
@@ -1495,10 +1539,12 @@ export function runtimeServiceListTools(
 ): Promise<V1ListToolsResponse> {
   return client.runtimeService
     .listTools(
-      ListToolsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListToolsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListToolsResponse);
@@ -1563,9 +1609,12 @@ export function runtimeServiceIssueDevJWT(
   options?: { signal?: AbortSignal },
 ): Promise<V1IssueDevJWTResponse> {
   return client.runtimeService
-    .issueDevJWT(IssueDevJWTRequest.fromJson(request as unknown as JsonValue), {
-      signal: options?.signal,
-    })
+    .issueDevJWT(
+      IssueDevJWTRequest.fromJson(
+        stripUndefined(request) as unknown as JsonValue,
+      ),
+      { signal: options?.signal },
+    )
     .then((r) => r.toJson() as unknown as V1IssueDevJWTResponse);
 }
 
@@ -1629,10 +1678,12 @@ export function runtimeServiceAnalyzeVariables(
 ): Promise<V1AnalyzeVariablesResponse> {
   return client.runtimeService
     .analyzeVariables(
-      AnalyzeVariablesRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      AnalyzeVariablesRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1AnalyzeVariablesResponse);
@@ -1709,10 +1760,12 @@ export function runtimeServiceListGitCommits(
 ): Promise<V1ListGitCommitsResponse> {
   return client.runtimeService
     .listGitCommits(
-      ListGitCommitsRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListGitCommitsRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListGitCommitsResponse);
@@ -1785,10 +1838,12 @@ export function runtimeServiceListGitBranches(
 ): Promise<V1ListGitBranchesResponse> {
   return client.runtimeService
     .listGitBranches(
-      ListGitBranchesRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ListGitBranchesRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
       { signal: options?.signal },
     )
     .then((r) => r.toJson() as unknown as V1ListGitBranchesResponse);
@@ -1864,10 +1919,12 @@ export function runtimeServiceCreateInstance(
 ): Promise<V1CreateInstanceResponse> {
   return client.runtimeService
     .createInstance(
-      CreateInstanceRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      CreateInstanceRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1CreateInstanceResponse);
 }
@@ -1923,10 +1980,12 @@ export function runtimeServiceEditInstance(
 ): Promise<V1EditInstanceResponse> {
   return client.runtimeService
     .editInstance(
-      EditInstanceRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      EditInstanceRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1EditInstanceResponse);
 }
@@ -1982,10 +2041,12 @@ export function runtimeServiceDeleteInstance(
 ): Promise<V1DeleteInstanceResponse> {
   return client.runtimeService
     .deleteInstance(
-      DeleteInstanceRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      DeleteInstanceRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1DeleteInstanceResponse);
 }
@@ -2041,10 +2102,12 @@ export function runtimeServiceReloadConfig(
 ): Promise<V1ReloadConfigResponse> {
   return client.runtimeService
     .reloadConfig(
-      ReloadConfigRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ReloadConfigRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1ReloadConfigResponse);
 }
@@ -2100,10 +2163,12 @@ export function runtimeServicePutFile(
 ): Promise<V1PutFileResponse> {
   return client.runtimeService
     .putFile(
-      PutFileRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      PutFileRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1PutFileResponse);
 }
@@ -2159,10 +2224,12 @@ export function runtimeServiceCreateDirectory(
 ): Promise<V1CreateDirectoryResponse> {
   return client.runtimeService
     .createDirectory(
-      CreateDirectoryRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      CreateDirectoryRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1CreateDirectoryResponse);
 }
@@ -2218,10 +2285,12 @@ export function runtimeServiceDeleteFile(
 ): Promise<V1DeleteFileResponse> {
   return client.runtimeService
     .deleteFile(
-      DeleteFileRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      DeleteFileRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1DeleteFileResponse);
 }
@@ -2277,10 +2346,12 @@ export function runtimeServiceRenameFile(
 ): Promise<V1RenameFileResponse> {
   return client.runtimeService
     .renameFile(
-      RenameFileRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      RenameFileRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1RenameFileResponse);
 }
@@ -2336,10 +2407,12 @@ export function runtimeServiceUnpackExample(
 ): Promise<V1UnpackExampleResponse> {
   return client.runtimeService
     .unpackExample(
-      UnpackExampleRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      UnpackExampleRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1UnpackExampleResponse);
 }
@@ -2395,10 +2468,12 @@ export function runtimeServiceUnpackEmpty(
 ): Promise<V1UnpackEmptyResponse> {
   return client.runtimeService
     .unpackEmpty(
-      UnpackEmptyRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      UnpackEmptyRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1UnpackEmptyResponse);
 }
@@ -2454,10 +2529,12 @@ export function runtimeServiceGenerateMetricsViewFile(
 ): Promise<V1GenerateMetricsViewFileResponse> {
   return client.runtimeService
     .generateMetricsViewFile(
-      GenerateMetricsViewFileRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GenerateMetricsViewFileRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GenerateMetricsViewFileResponse);
 }
@@ -2512,10 +2589,12 @@ export function runtimeServiceGenerateCanvasFile(
 ): Promise<V1GenerateCanvasFileResponse> {
   return client.runtimeService
     .generateCanvasFile(
-      GenerateCanvasFileRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GenerateCanvasFileRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GenerateCanvasFileResponse);
 }
@@ -2571,10 +2650,12 @@ export function runtimeServiceGenerateResolver(
 ): Promise<V1GenerateResolverResponse> {
   return client.runtimeService
     .generateResolver(
-      GenerateResolverRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GenerateResolverRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GenerateResolverResponse);
 }
@@ -2630,10 +2711,12 @@ export function runtimeServiceGenerateRenderer(
 ): Promise<V1GenerateRendererResponse> {
   return client.runtimeService
     .generateRenderer(
-      GenerateRendererRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GenerateRendererRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GenerateRendererResponse);
 }
@@ -2689,10 +2772,12 @@ export function runtimeServiceCreateTrigger(
 ): Promise<V1CreateTriggerResponse> {
   return client.runtimeService
     .createTrigger(
-      CreateTriggerRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      CreateTriggerRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1CreateTriggerResponse);
 }
@@ -2748,10 +2833,12 @@ export function runtimeServiceShareConversation(
 ): Promise<V1ShareConversationResponse> {
   return client.runtimeService
     .shareConversation(
-      ShareConversationRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ShareConversationRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1ShareConversationResponse);
 }
@@ -2807,10 +2894,12 @@ export function runtimeServiceForkConversation(
 ): Promise<V1ForkConversationResponse> {
   return client.runtimeService
     .forkConversation(
-      ForkConversationRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      ForkConversationRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1ForkConversationResponse);
 }
@@ -2866,10 +2955,12 @@ export function runtimeServiceComplete(
 ): Promise<V1CompleteResponse> {
   return client.runtimeService
     .complete(
-      CompleteRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      CompleteRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1CompleteResponse);
 }
@@ -2925,10 +3016,12 @@ export function runtimeServiceGitStatus(
 ): Promise<V1GitStatusResponse> {
   return client.runtimeService
     .gitStatus(
-      GitStatusRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GitStatusRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GitStatusResponse);
 }
@@ -2984,10 +3077,12 @@ export function runtimeServiceGitCommit(
 ): Promise<V1GitCommitResponse> {
   return client.runtimeService
     .gitCommit(
-      GitCommitRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GitCommitRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GitCommitResponse);
 }
@@ -3043,10 +3138,12 @@ export function runtimeServiceRestoreGitCommit(
 ): Promise<V1RestoreGitCommitResponse> {
   return client.runtimeService
     .restoreGitCommit(
-      RestoreGitCommitRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      RestoreGitCommitRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1RestoreGitCommitResponse);
 }
@@ -3102,10 +3199,12 @@ export function runtimeServiceGitMergeToBranch(
 ): Promise<V1GitMergeToBranchResponse> {
   return client.runtimeService
     .gitMergeToBranch(
-      GitMergeToBranchRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GitMergeToBranchRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GitMergeToBranchResponse);
 }
@@ -3161,10 +3260,12 @@ export function runtimeServiceGitSwitchBranch(
 ): Promise<V1GitSwitchBranchResponse> {
   return client.runtimeService
     .gitSwitchBranch(
-      GitSwitchBranchRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GitSwitchBranchRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GitSwitchBranchResponse);
 }
@@ -3220,10 +3321,12 @@ export function runtimeServiceGitPull(
 ): Promise<V1GitPullResponse> {
   return client.runtimeService
     .gitPull(
-      GitPullRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GitPullRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GitPullResponse);
 }
@@ -3279,10 +3382,12 @@ export function runtimeServiceGitPush(
 ): Promise<V1GitPushResponse> {
   return client.runtimeService
     .gitPush(
-      GitPushRequest.fromJson({
-        instanceId: client.instanceId,
-        ...request,
-      } as unknown as JsonValue),
+      GitPushRequest.fromJson(
+        stripUndefined({
+          instanceId: client.instanceId,
+          ...request,
+        }) as unknown as JsonValue,
+      ),
     )
     .then((r) => r.toJson() as unknown as V1GitPushResponse);
 }
