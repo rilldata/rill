@@ -66,5 +66,6 @@ proto.generate:
 		scripts/convert-openapi-v2-to-v3/convert.go --force --public-only \
 		proto/gen/rill/admin/v1/admin.swagger.yaml proto/gen/rill/admin/v1/public.openapi.yaml
 	npm run generate:runtime-client -w web-common
+	npm run generate:query-hooks -w web-common
 	npm run generate:client -w web-admin
 	
