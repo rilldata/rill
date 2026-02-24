@@ -130,13 +130,17 @@ export function getQueryServiceMetricsViewAggregationQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewAggregationQueryOptions(
+export function getQueryServiceMetricsViewAggregationQueryOptions<
+  TData = V1MetricsViewAggregationResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewAggregationRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewAggregationResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewAggregationResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewAggregationResponse> & {
+): CreateQueryOptions<V1MetricsViewAggregationResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceMetricsViewAggregationQueryKey(
@@ -151,17 +155,23 @@ export function getQueryServiceMetricsViewAggregationQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewAggregationResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewAggregation(
+export function createQueryServiceMetricsViewAggregation<
+  TData = V1MetricsViewAggregationResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewAggregationRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewAggregationResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewAggregationResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
     client,
     request,
@@ -201,13 +211,19 @@ export function getQueryServiceMetricsViewToplistQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewToplistQueryOptions(
+export function getQueryServiceMetricsViewToplistQueryOptions<
+  TData = V1MetricsViewToplistResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewToplistRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewToplistResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewToplistResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewToplistResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1MetricsViewToplistResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceMetricsViewToplistQueryKey(
     client.instanceId,
     request,
@@ -219,17 +235,23 @@ export function getQueryServiceMetricsViewToplistQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewToplistResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewToplist(
+export function createQueryServiceMetricsViewToplist<
+  TData = V1MetricsViewToplistResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewToplistRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewToplistResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewToplistResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewToplistResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewToplistQueryOptions(
     client,
     request,
@@ -269,13 +291,17 @@ export function getQueryServiceMetricsViewComparisonQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewComparisonQueryOptions(
+export function getQueryServiceMetricsViewComparisonQueryOptions<
+  TData = V1MetricsViewComparisonResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewComparisonRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewComparisonResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewComparisonResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewComparisonResponse> & {
+): CreateQueryOptions<V1MetricsViewComparisonResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceMetricsViewComparisonQueryKey(
@@ -290,17 +316,23 @@ export function getQueryServiceMetricsViewComparisonQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewComparisonResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewComparison(
+export function createQueryServiceMetricsViewComparison<
+  TData = V1MetricsViewComparisonResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewComparisonRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewComparisonResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewComparisonResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewComparisonResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewComparisonQueryOptions(
     client,
     request,
@@ -340,13 +372,17 @@ export function getQueryServiceMetricsViewTimeSeriesQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewTimeSeriesQueryOptions(
+export function getQueryServiceMetricsViewTimeSeriesQueryOptions<
+  TData = V1MetricsViewTimeSeriesResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewTimeSeriesRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewTimeSeriesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewTimeSeriesResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewTimeSeriesResponse> & {
+): CreateQueryOptions<V1MetricsViewTimeSeriesResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceMetricsViewTimeSeriesQueryKey(
@@ -361,17 +397,23 @@ export function getQueryServiceMetricsViewTimeSeriesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewTimeSeriesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewTimeSeries(
+export function createQueryServiceMetricsViewTimeSeries<
+  TData = V1MetricsViewTimeSeriesResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewTimeSeriesRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewTimeSeriesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewTimeSeriesResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewTimeSeriesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewTimeSeriesQueryOptions(
     client,
     request,
@@ -411,13 +453,19 @@ export function getQueryServiceMetricsViewTotalsQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewTotalsQueryOptions(
+export function getQueryServiceMetricsViewTotalsQueryOptions<
+  TData = V1MetricsViewTotalsResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewTotalsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewTotalsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewTotalsResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewTotalsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1MetricsViewTotalsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceMetricsViewTotalsQueryKey(
     client.instanceId,
     request,
@@ -429,17 +477,23 @@ export function getQueryServiceMetricsViewTotalsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewTotalsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewTotals(
+export function createQueryServiceMetricsViewTotals<
+  TData = V1MetricsViewTotalsResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewTotalsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewTotalsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewTotalsResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewTotalsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewTotalsQueryOptions(
     client,
     request,
@@ -479,13 +533,19 @@ export function getQueryServiceMetricsViewRowsQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewRowsQueryOptions(
+export function getQueryServiceMetricsViewRowsQueryOptions<
+  TData = V1MetricsViewRowsResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewRowsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewRowsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewRowsResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewRowsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1MetricsViewRowsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceMetricsViewRowsQueryKey(
     client.instanceId,
     request,
@@ -497,17 +557,23 @@ export function getQueryServiceMetricsViewRowsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewRowsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewRows(
+export function createQueryServiceMetricsViewRows<
+  TData = V1MetricsViewRowsResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1MetricsViewRowsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewRowsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewRowsResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewRowsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewRowsQueryOptions(
     client,
     request,
@@ -547,13 +613,19 @@ export function getQueryServiceMetricsViewTimeRangeQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewTimeRangeQueryOptions(
+export function getQueryServiceMetricsViewTimeRangeQueryOptions<
+  TData = V1MetricsViewTimeRangeResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewTimeRangeRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewTimeRangeResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewTimeRangeResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewTimeRangeResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1MetricsViewTimeRangeResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceMetricsViewTimeRangeQueryKey(
     client.instanceId,
     request,
@@ -565,17 +637,23 @@ export function getQueryServiceMetricsViewTimeRangeQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewTimeRangeResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewTimeRange(
+export function createQueryServiceMetricsViewTimeRange<
+  TData = V1MetricsViewTimeRangeResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewTimeRangeRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewTimeRangeResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewTimeRangeResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewTimeRangeQueryOptions(
     client,
     request,
@@ -615,13 +693,19 @@ export function getQueryServiceMetricsViewSchemaQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewSchemaQueryOptions(
+export function getQueryServiceMetricsViewSchemaQueryOptions<
+  TData = V1MetricsViewSchemaResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewSchemaRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewSchemaResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewSchemaResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewSchemaResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1MetricsViewSchemaResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceMetricsViewSchemaQueryKey(
     client.instanceId,
     request,
@@ -633,17 +717,23 @@ export function getQueryServiceMetricsViewSchemaQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewSchemaResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewSchema(
+export function createQueryServiceMetricsViewSchema<
+  TData = V1MetricsViewSchemaResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewSchemaRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewSchemaResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewSchemaResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewSchemaResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewSchemaQueryOptions(
     client,
     request,
@@ -683,13 +773,19 @@ export function getQueryServiceMetricsViewSearchQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewSearchQueryOptions(
+export function getQueryServiceMetricsViewSearchQueryOptions<
+  TData = V1MetricsViewSearchResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewSearchRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewSearchResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewSearchResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewSearchResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1MetricsViewSearchResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceMetricsViewSearchQueryKey(
     client.instanceId,
     request,
@@ -701,17 +797,23 @@ export function getQueryServiceMetricsViewSearchQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewSearchResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewSearch(
+export function createQueryServiceMetricsViewSearch<
+  TData = V1MetricsViewSearchResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewSearchRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewSearchResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewSearchResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewSearchResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewSearchQueryOptions(
     client,
     request,
@@ -751,13 +853,17 @@ export function getQueryServiceMetricsViewTimeRangesQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewTimeRangesQueryOptions(
+export function getQueryServiceMetricsViewTimeRangesQueryOptions<
+  TData = V1MetricsViewTimeRangesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewTimeRangesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewTimeRangesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewTimeRangesResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewTimeRangesResponse> & {
+): CreateQueryOptions<V1MetricsViewTimeRangesResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceMetricsViewTimeRangesQueryKey(
@@ -772,17 +878,23 @@ export function getQueryServiceMetricsViewTimeRangesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewTimeRangesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewTimeRanges(
+export function createQueryServiceMetricsViewTimeRanges<
+  TData = V1MetricsViewTimeRangesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewTimeRangesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewTimeRangesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewTimeRangesResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewTimeRangesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewTimeRangesQueryOptions(
     client,
     request,
@@ -822,13 +934,17 @@ export function getQueryServiceMetricsViewAnnotationsQueryKey(
   ] as const;
 }
 
-export function getQueryServiceMetricsViewAnnotationsQueryOptions(
+export function getQueryServiceMetricsViewAnnotationsQueryOptions<
+  TData = V1MetricsViewAnnotationsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewAnnotationsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewAnnotationsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewAnnotationsResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1MetricsViewAnnotationsResponse> & {
+): CreateQueryOptions<V1MetricsViewAnnotationsResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceMetricsViewAnnotationsQueryKey(
@@ -843,17 +959,23 @@ export function getQueryServiceMetricsViewAnnotationsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1MetricsViewAnnotationsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceMetricsViewAnnotations(
+export function createQueryServiceMetricsViewAnnotations<
+  TData = V1MetricsViewAnnotationsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<MetricsViewAnnotationsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1MetricsViewAnnotationsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewAnnotationsResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewAnnotationsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceMetricsViewAnnotationsQueryOptions(
     client,
     request,
@@ -901,7 +1023,9 @@ export function getQueryServiceConvertExpressionToMetricsSQLQueryKey(
   ] as const;
 }
 
-export function getQueryServiceConvertExpressionToMetricsSQLQueryOptions(
+export function getQueryServiceConvertExpressionToMetricsSQLQueryOptions<
+  TData = V1ConvertExpressionToMetricsSQLResponse,
+>(
   client: RuntimeClient,
   request: Omit<
     PartialMessage<ConvertExpressionToMetricsSQLRequest>,
@@ -909,10 +1033,10 @@ export function getQueryServiceConvertExpressionToMetricsSQLQueryOptions(
   >,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ConvertExpressionToMetricsSQLResponse>
+      CreateQueryOptions<V1ConvertExpressionToMetricsSQLResponse, Error, TData>
     >;
   },
-): CreateQueryOptions<V1ConvertExpressionToMetricsSQLResponse> & {
+): CreateQueryOptions<V1ConvertExpressionToMetricsSQLResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceConvertExpressionToMetricsSQLQueryKey(
@@ -927,10 +1051,16 @@ export function getQueryServiceConvertExpressionToMetricsSQLQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  };
+  } as CreateQueryOptions<
+    V1ConvertExpressionToMetricsSQLResponse,
+    Error,
+    TData
+  > & { queryKey: QueryKey };
 }
 
-export function createQueryServiceConvertExpressionToMetricsSQL(
+export function createQueryServiceConvertExpressionToMetricsSQL<
+  TData = V1ConvertExpressionToMetricsSQLResponse,
+>(
   client: RuntimeClient,
   request: Omit<
     PartialMessage<ConvertExpressionToMetricsSQLRequest>,
@@ -938,11 +1068,11 @@ export function createQueryServiceConvertExpressionToMetricsSQL(
   >,
   options?: {
     query?: Partial<
-      CreateQueryOptions<V1ConvertExpressionToMetricsSQLResponse>
+      CreateQueryOptions<V1ConvertExpressionToMetricsSQLResponse, Error, TData>
     >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ConvertExpressionToMetricsSQLResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceConvertExpressionToMetricsSQLQueryOptions(
     client,
     request,
@@ -977,13 +1107,17 @@ export function getQueryServiceResolveCanvasQueryKey(
   return ["QueryService", "resolveCanvas", instanceId, request ?? {}] as const;
 }
 
-export function getQueryServiceResolveCanvasQueryOptions(
+export function getQueryServiceResolveCanvasQueryOptions<
+  TData = V1ResolveCanvasResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ResolveCanvasRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ResolveCanvasResponse>>;
+    query?: Partial<CreateQueryOptions<V1ResolveCanvasResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ResolveCanvasResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ResolveCanvasResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceResolveCanvasQueryKey(
     client.instanceId,
     request,
@@ -995,17 +1129,21 @@ export function getQueryServiceResolveCanvasQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ResolveCanvasResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceResolveCanvas(
+export function createQueryServiceResolveCanvas<
+  TData = V1ResolveCanvasResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ResolveCanvasRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ResolveCanvasResponse>>;
+    query?: Partial<CreateQueryOptions<V1ResolveCanvasResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ResolveCanvasResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceResolveCanvasQueryOptions(
     client,
     request,
@@ -1045,13 +1183,19 @@ export function getQueryServiceResolveComponentQueryKey(
   ] as const;
 }
 
-export function getQueryServiceResolveComponentQueryOptions(
+export function getQueryServiceResolveComponentQueryOptions<
+  TData = V1ResolveComponentResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ResolveComponentRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ResolveComponentResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ResolveComponentResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ResolveComponentResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ResolveComponentResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceResolveComponentQueryKey(
     client.instanceId,
     request,
@@ -1063,17 +1207,23 @@ export function getQueryServiceResolveComponentQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ResolveComponentResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceResolveComponent(
+export function createQueryServiceResolveComponent<
+  TData = V1ResolveComponentResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ResolveComponentRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ResolveComponentResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ResolveComponentResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ResolveComponentResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceResolveComponentQueryOptions(
     client,
     request,
@@ -1113,13 +1263,17 @@ export function getQueryServiceResolveTemplatedStringQueryKey(
   ] as const;
 }
 
-export function getQueryServiceResolveTemplatedStringQueryOptions(
+export function getQueryServiceResolveTemplatedStringQueryOptions<
+  TData = V1ResolveTemplatedStringResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ResolveTemplatedStringRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ResolveTemplatedStringResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ResolveTemplatedStringResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ResolveTemplatedStringResponse> & {
+): CreateQueryOptions<V1ResolveTemplatedStringResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceResolveTemplatedStringQueryKey(
@@ -1134,17 +1288,23 @@ export function getQueryServiceResolveTemplatedStringQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ResolveTemplatedStringResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceResolveTemplatedString(
+export function createQueryServiceResolveTemplatedString<
+  TData = V1ResolveTemplatedStringResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ResolveTemplatedStringRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ResolveTemplatedStringResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ResolveTemplatedStringResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ResolveTemplatedStringResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceResolveTemplatedStringQueryOptions(
     client,
     request,
@@ -1184,13 +1344,19 @@ export function getQueryServiceColumnRollupIntervalQueryKey(
   ] as const;
 }
 
-export function getQueryServiceColumnRollupIntervalQueryOptions(
+export function getQueryServiceColumnRollupIntervalQueryOptions<
+  TData = V1ColumnRollupIntervalResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnRollupIntervalRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnRollupIntervalResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnRollupIntervalResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ColumnRollupIntervalResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ColumnRollupIntervalResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceColumnRollupIntervalQueryKey(
     client.instanceId,
     request,
@@ -1202,17 +1368,23 @@ export function getQueryServiceColumnRollupIntervalQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ColumnRollupIntervalResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnRollupInterval(
+export function createQueryServiceColumnRollupInterval<
+  TData = V1ColumnRollupIntervalResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnRollupIntervalRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnRollupIntervalResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnRollupIntervalResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnRollupIntervalResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnRollupIntervalQueryOptions(
     client,
     request,
@@ -1247,13 +1419,17 @@ export function getQueryServiceColumnTopKQueryKey(
   return ["QueryService", "columnTopK", instanceId, request ?? {}] as const;
 }
 
-export function getQueryServiceColumnTopKQueryOptions(
+export function getQueryServiceColumnTopKQueryOptions<
+  TData = V1ColumnTopKResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnTopKRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnTopKResponse>>;
+    query?: Partial<CreateQueryOptions<V1ColumnTopKResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ColumnTopKResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ColumnTopKResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceColumnTopKQueryKey(
     client.instanceId,
     request,
@@ -1265,17 +1441,19 @@ export function getQueryServiceColumnTopKQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ColumnTopKResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnTopK(
+export function createQueryServiceColumnTopK<TData = V1ColumnTopKResponse>(
   client: RuntimeClient,
   request: Omit<V1ColumnTopKRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnTopKResponse>>;
+    query?: Partial<CreateQueryOptions<V1ColumnTopKResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnTopKResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnTopKQueryOptions(
     client,
     request,
@@ -1315,13 +1493,19 @@ export function getQueryServiceColumnNullCountQueryKey(
   ] as const;
 }
 
-export function getQueryServiceColumnNullCountQueryOptions(
+export function getQueryServiceColumnNullCountQueryOptions<
+  TData = V1ColumnNullCountResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnNullCountRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnNullCountResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnNullCountResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ColumnNullCountResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ColumnNullCountResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceColumnNullCountQueryKey(
     client.instanceId,
     request,
@@ -1333,17 +1517,23 @@ export function getQueryServiceColumnNullCountQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ColumnNullCountResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnNullCount(
+export function createQueryServiceColumnNullCount<
+  TData = V1ColumnNullCountResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnNullCountRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnNullCountResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnNullCountResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnNullCountResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnNullCountQueryOptions(
     client,
     request,
@@ -1385,13 +1575,17 @@ export function getQueryServiceColumnDescriptiveStatisticsQueryKey(
   ] as const;
 }
 
-export function getQueryServiceColumnDescriptiveStatisticsQueryOptions(
+export function getQueryServiceColumnDescriptiveStatisticsQueryOptions<
+  TData = V1ColumnDescriptiveStatisticsResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnDescriptiveStatisticsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnDescriptiveStatisticsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnDescriptiveStatisticsResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ColumnDescriptiveStatisticsResponse> & {
+): CreateQueryOptions<V1ColumnDescriptiveStatisticsResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnDescriptiveStatisticsQueryKey(
@@ -1406,17 +1600,25 @@ export function getQueryServiceColumnDescriptiveStatisticsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  };
+  } as CreateQueryOptions<
+    V1ColumnDescriptiveStatisticsResponse,
+    Error,
+    TData
+  > & { queryKey: QueryKey };
 }
 
-export function createQueryServiceColumnDescriptiveStatistics(
+export function createQueryServiceColumnDescriptiveStatistics<
+  TData = V1ColumnDescriptiveStatisticsResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnDescriptiveStatisticsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnDescriptiveStatisticsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnDescriptiveStatisticsResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnDescriptiveStatisticsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnDescriptiveStatisticsQueryOptions(
     client,
     request,
@@ -1456,13 +1658,19 @@ export function getQueryServiceColumnTimeGrainQueryKey(
   ] as const;
 }
 
-export function getQueryServiceColumnTimeGrainQueryOptions(
+export function getQueryServiceColumnTimeGrainQueryOptions<
+  TData = V1ColumnTimeGrainResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnTimeGrainRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnTimeGrainResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnTimeGrainResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ColumnTimeGrainResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ColumnTimeGrainResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceColumnTimeGrainQueryKey(
     client.instanceId,
     request,
@@ -1474,17 +1682,23 @@ export function getQueryServiceColumnTimeGrainQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ColumnTimeGrainResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnTimeGrain(
+export function createQueryServiceColumnTimeGrain<
+  TData = V1ColumnTimeGrainResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnTimeGrainRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnTimeGrainResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnTimeGrainResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnTimeGrainResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnTimeGrainQueryOptions(
     client,
     request,
@@ -1524,13 +1738,17 @@ export function getQueryServiceColumnNumericHistogramQueryKey(
   ] as const;
 }
 
-export function getQueryServiceColumnNumericHistogramQueryOptions(
+export function getQueryServiceColumnNumericHistogramQueryOptions<
+  TData = V1ColumnNumericHistogramResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnNumericHistogramRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnNumericHistogramResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnNumericHistogramResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ColumnNumericHistogramResponse> & {
+): CreateQueryOptions<V1ColumnNumericHistogramResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getQueryServiceColumnNumericHistogramQueryKey(
@@ -1545,17 +1763,23 @@ export function getQueryServiceColumnNumericHistogramQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ColumnNumericHistogramResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnNumericHistogram(
+export function createQueryServiceColumnNumericHistogram<
+  TData = V1ColumnNumericHistogramResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnNumericHistogramRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnNumericHistogramResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnNumericHistogramResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnNumericHistogramResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnNumericHistogramQueryOptions(
     client,
     request,
@@ -1595,13 +1819,19 @@ export function getQueryServiceColumnRugHistogramQueryKey(
   ] as const;
 }
 
-export function getQueryServiceColumnRugHistogramQueryOptions(
+export function getQueryServiceColumnRugHistogramQueryOptions<
+  TData = V1ColumnRugHistogramResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnRugHistogramRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnRugHistogramResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnRugHistogramResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ColumnRugHistogramResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ColumnRugHistogramResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceColumnRugHistogramQueryKey(
     client.instanceId,
     request,
@@ -1613,17 +1843,23 @@ export function getQueryServiceColumnRugHistogramQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ColumnRugHistogramResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnRugHistogram(
+export function createQueryServiceColumnRugHistogram<
+  TData = V1ColumnRugHistogramResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnRugHistogramRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnRugHistogramResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnRugHistogramResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnRugHistogramResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnRugHistogramQueryOptions(
     client,
     request,
@@ -1663,13 +1899,19 @@ export function getQueryServiceColumnTimeRangeQueryKey(
   ] as const;
 }
 
-export function getQueryServiceColumnTimeRangeQueryOptions(
+export function getQueryServiceColumnTimeRangeQueryOptions<
+  TData = V1ColumnTimeRangeResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnTimeRangeRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnTimeRangeResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnTimeRangeResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ColumnTimeRangeResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ColumnTimeRangeResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceColumnTimeRangeQueryKey(
     client.instanceId,
     request,
@@ -1681,17 +1923,23 @@ export function getQueryServiceColumnTimeRangeQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ColumnTimeRangeResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnTimeRange(
+export function createQueryServiceColumnTimeRange<
+  TData = V1ColumnTimeRangeResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnTimeRangeRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnTimeRangeResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnTimeRangeResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnTimeRangeResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnTimeRangeQueryOptions(
     client,
     request,
@@ -1731,13 +1979,19 @@ export function getQueryServiceColumnCardinalityQueryKey(
   ] as const;
 }
 
-export function getQueryServiceColumnCardinalityQueryOptions(
+export function getQueryServiceColumnCardinalityQueryOptions<
+  TData = V1ColumnCardinalityResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnCardinalityRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnCardinalityResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnCardinalityResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ColumnCardinalityResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ColumnCardinalityResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceColumnCardinalityQueryKey(
     client.instanceId,
     request,
@@ -1749,17 +2003,23 @@ export function getQueryServiceColumnCardinalityQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ColumnCardinalityResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnCardinality(
+export function createQueryServiceColumnCardinality<
+  TData = V1ColumnCardinalityResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnCardinalityRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnCardinalityResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnCardinalityResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnCardinalityResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnCardinalityQueryOptions(
     client,
     request,
@@ -1799,13 +2059,19 @@ export function getQueryServiceColumnTimeSeriesQueryKey(
   ] as const;
 }
 
-export function getQueryServiceColumnTimeSeriesQueryOptions(
+export function getQueryServiceColumnTimeSeriesQueryOptions<
+  TData = V1ColumnTimeSeriesResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnTimeSeriesRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnTimeSeriesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnTimeSeriesResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ColumnTimeSeriesResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ColumnTimeSeriesResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceColumnTimeSeriesQueryKey(
     client.instanceId,
     request,
@@ -1817,17 +2083,23 @@ export function getQueryServiceColumnTimeSeriesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ColumnTimeSeriesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceColumnTimeSeries(
+export function createQueryServiceColumnTimeSeries<
+  TData = V1ColumnTimeSeriesResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1ColumnTimeSeriesRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ColumnTimeSeriesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ColumnTimeSeriesResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ColumnTimeSeriesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceColumnTimeSeriesQueryOptions(
     client,
     request,
@@ -1867,13 +2139,19 @@ export function getQueryServiceTableCardinalityQueryKey(
   ] as const;
 }
 
-export function getQueryServiceTableCardinalityQueryOptions(
+export function getQueryServiceTableCardinalityQueryOptions<
+  TData = V1TableCardinalityResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1TableCardinalityRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1TableCardinalityResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1TableCardinalityResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1TableCardinalityResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1TableCardinalityResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceTableCardinalityQueryKey(
     client.instanceId,
     request,
@@ -1885,17 +2163,23 @@ export function getQueryServiceTableCardinalityQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1TableCardinalityResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceTableCardinality(
+export function createQueryServiceTableCardinality<
+  TData = V1TableCardinalityResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1TableCardinalityRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1TableCardinalityResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1TableCardinalityResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1TableCardinalityResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceTableCardinalityQueryOptions(
     client,
     request,
@@ -1930,13 +2214,17 @@ export function getQueryServiceTableColumnsQueryKey(
   return ["QueryService", "tableColumns", instanceId, request ?? {}] as const;
 }
 
-export function getQueryServiceTableColumnsQueryOptions(
+export function getQueryServiceTableColumnsQueryOptions<
+  TData = V1TableColumnsResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1TableColumnsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1TableColumnsResponse>>;
+    query?: Partial<CreateQueryOptions<V1TableColumnsResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1TableColumnsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1TableColumnsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceTableColumnsQueryKey(
     client.instanceId,
     request,
@@ -1948,17 +2236,19 @@ export function getQueryServiceTableColumnsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1TableColumnsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceTableColumns(
+export function createQueryServiceTableColumns<TData = V1TableColumnsResponse>(
   client: RuntimeClient,
   request: Omit<V1TableColumnsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1TableColumnsResponse>>;
+    query?: Partial<CreateQueryOptions<V1TableColumnsResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1TableColumnsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceTableColumnsQueryOptions(
     client,
     request,
@@ -1993,13 +2283,17 @@ export function getQueryServiceTableRowsQueryKey(
   return ["QueryService", "tableRows", instanceId, request ?? {}] as const;
 }
 
-export function getQueryServiceTableRowsQueryOptions(
+export function getQueryServiceTableRowsQueryOptions<
+  TData = V1TableRowsResponse,
+>(
   client: RuntimeClient,
   request: Omit<V1TableRowsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1TableRowsResponse>>;
+    query?: Partial<CreateQueryOptions<V1TableRowsResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1TableRowsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1TableRowsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getQueryServiceTableRowsQueryKey(client.instanceId, request);
   const queryFn: QueryFunction<V1TableRowsResponse> = ({ signal }) =>
     queryServiceTableRows(client, request, { signal });
@@ -2008,17 +2302,19 @@ export function getQueryServiceTableRowsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1TableRowsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createQueryServiceTableRows(
+export function createQueryServiceTableRows<TData = V1TableRowsResponse>(
   client: RuntimeClient,
   request: Omit<V1TableRowsRequest, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1TableRowsResponse>>;
+    query?: Partial<CreateQueryOptions<V1TableRowsResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1TableRowsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getQueryServiceTableRowsQueryOptions(
     client,
     request,

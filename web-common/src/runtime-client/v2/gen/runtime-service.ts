@@ -140,13 +140,13 @@ export function getRuntimeServicePingQueryKey(
   return ["RuntimeService", "ping", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServicePingQueryOptions(
+export function getRuntimeServicePingQueryOptions<TData = V1PingResponse>(
   client: RuntimeClient,
   request: PartialMessage<PingRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1PingResponse>>;
+    query?: Partial<CreateQueryOptions<V1PingResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1PingResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1PingResponse, Error, TData> & { queryKey: QueryKey } {
   const queryKey = getRuntimeServicePingQueryKey(client.instanceId, request);
   const queryFn: QueryFunction<V1PingResponse> = ({ signal }) =>
     runtimeServicePing(client, request, { signal });
@@ -155,17 +155,19 @@ export function getRuntimeServicePingQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1PingResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServicePing(
+export function createRuntimeServicePing<TData = V1PingResponse>(
   client: RuntimeClient,
   request: PartialMessage<PingRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1PingResponse>>;
+    query?: Partial<CreateQueryOptions<V1PingResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1PingResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServicePingQueryOptions(
     client,
     request,
@@ -196,13 +198,13 @@ export function getRuntimeServiceHealthQueryKey(
   return ["RuntimeService", "health", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceHealthQueryOptions(
+export function getRuntimeServiceHealthQueryOptions<TData = V1HealthResponse>(
   client: RuntimeClient,
   request: PartialMessage<HealthRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1HealthResponse>>;
+    query?: Partial<CreateQueryOptions<V1HealthResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1HealthResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1HealthResponse, Error, TData> & { queryKey: QueryKey } {
   const queryKey = getRuntimeServiceHealthQueryKey(client.instanceId, request);
   const queryFn: QueryFunction<V1HealthResponse> = ({ signal }) =>
     runtimeServiceHealth(client, request, { signal });
@@ -211,17 +213,19 @@ export function getRuntimeServiceHealthQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1HealthResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceHealth(
+export function createRuntimeServiceHealth<TData = V1HealthResponse>(
   client: RuntimeClient,
   request: PartialMessage<HealthRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1HealthResponse>>;
+    query?: Partial<CreateQueryOptions<V1HealthResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1HealthResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceHealthQueryOptions(
     client,
     request,
@@ -261,13 +265,17 @@ export function getRuntimeServiceInstanceHealthQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceInstanceHealthQueryOptions(
+export function getRuntimeServiceInstanceHealthQueryOptions<
+  TData = V1InstanceHealthResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<InstanceHealthRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1InstanceHealthResponse>>;
+    query?: Partial<CreateQueryOptions<V1InstanceHealthResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1InstanceHealthResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1InstanceHealthResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceInstanceHealthQueryKey(
     client.instanceId,
     request,
@@ -279,17 +287,21 @@ export function getRuntimeServiceInstanceHealthQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1InstanceHealthResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceInstanceHealth(
+export function createRuntimeServiceInstanceHealth<
+  TData = V1InstanceHealthResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<InstanceHealthRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1InstanceHealthResponse>>;
+    query?: Partial<CreateQueryOptions<V1InstanceHealthResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1InstanceHealthResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceInstanceHealthQueryOptions(
     client,
     request,
@@ -326,13 +338,17 @@ export function getRuntimeServiceListInstancesQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceListInstancesQueryOptions(
+export function getRuntimeServiceListInstancesQueryOptions<
+  TData = V1ListInstancesResponse,
+>(
   client: RuntimeClient,
   request: PartialMessage<ListInstancesRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListInstancesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListInstancesResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ListInstancesResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListInstancesResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceListInstancesQueryKey(
     client.instanceId,
     request,
@@ -344,17 +360,21 @@ export function getRuntimeServiceListInstancesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListInstancesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListInstances(
+export function createRuntimeServiceListInstances<
+  TData = V1ListInstancesResponse,
+>(
   client: RuntimeClient,
   request: PartialMessage<ListInstancesRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListInstancesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListInstancesResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListInstancesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListInstancesQueryOptions(
     client,
     request,
@@ -389,13 +409,17 @@ export function getRuntimeServiceGetInstanceQueryKey(
   return ["RuntimeService", "getInstance", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceGetInstanceQueryOptions(
+export function getRuntimeServiceGetInstanceQueryOptions<
+  TData = V1GetInstanceResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetInstanceResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetInstanceResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1GetInstanceResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1GetInstanceResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceGetInstanceQueryKey(
     client.instanceId,
     request,
@@ -407,17 +431,19 @@ export function getRuntimeServiceGetInstanceQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1GetInstanceResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceGetInstance(
+export function createRuntimeServiceGetInstance<TData = V1GetInstanceResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetInstanceRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetInstanceResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetInstanceResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1GetInstanceResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceGetInstanceQueryOptions(
     client,
     request,
@@ -452,13 +478,17 @@ export function getRuntimeServiceListFilesQueryKey(
   return ["RuntimeService", "listFiles", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceListFilesQueryOptions(
+export function getRuntimeServiceListFilesQueryOptions<
+  TData = V1ListFilesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListFilesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListFilesResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ListFilesResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListFilesResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceListFilesQueryKey(
     client.instanceId,
     request,
@@ -470,17 +500,19 @@ export function getRuntimeServiceListFilesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListFilesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListFiles(
+export function createRuntimeServiceListFiles<TData = V1ListFilesResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListFilesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListFilesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListFilesResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListFilesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListFilesQueryOptions(
     client,
     request,
@@ -515,13 +547,15 @@ export function getRuntimeServiceGetFileQueryKey(
   return ["RuntimeService", "getFile", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceGetFileQueryOptions(
+export function getRuntimeServiceGetFileQueryOptions<TData = V1GetFileResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetFileRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetFileResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetFileResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1GetFileResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1GetFileResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceGetFileQueryKey(client.instanceId, request);
   const queryFn: QueryFunction<V1GetFileResponse> = ({ signal }) =>
     runtimeServiceGetFile(client, request, { signal });
@@ -530,17 +564,19 @@ export function getRuntimeServiceGetFileQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1GetFileResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceGetFile(
+export function createRuntimeServiceGetFile<TData = V1GetFileResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetFileRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetFileResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetFileResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1GetFileResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceGetFileQueryOptions(
     client,
     request,
@@ -572,13 +608,17 @@ export function getRuntimeServiceListExamplesQueryKey(
   return ["RuntimeService", "listExamples", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceListExamplesQueryOptions(
+export function getRuntimeServiceListExamplesQueryOptions<
+  TData = V1ListExamplesResponse,
+>(
   client: RuntimeClient,
   request: PartialMessage<ListExamplesRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListExamplesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListExamplesResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ListExamplesResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListExamplesResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceListExamplesQueryKey(
     client.instanceId,
     request,
@@ -590,17 +630,21 @@ export function getRuntimeServiceListExamplesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListExamplesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListExamples(
+export function createRuntimeServiceListExamples<
+  TData = V1ListExamplesResponse,
+>(
   client: RuntimeClient,
   request: PartialMessage<ListExamplesRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListExamplesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListExamplesResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListExamplesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListExamplesQueryOptions(
     client,
     request,
@@ -640,13 +684,17 @@ export function getRuntimeServiceQueryResolverQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceQueryResolverQueryOptions(
+export function getRuntimeServiceQueryResolverQueryOptions<
+  TData = V1QueryResolverResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<QueryResolverRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1QueryResolverResponse>>;
+    query?: Partial<CreateQueryOptions<V1QueryResolverResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1QueryResolverResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1QueryResolverResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceQueryResolverQueryKey(
     client.instanceId,
     request,
@@ -658,17 +706,21 @@ export function getRuntimeServiceQueryResolverQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1QueryResolverResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceQueryResolver(
+export function createRuntimeServiceQueryResolver<
+  TData = V1QueryResolverResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<QueryResolverRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1QueryResolverResponse>>;
+    query?: Partial<CreateQueryOptions<V1QueryResolverResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1QueryResolverResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceQueryResolverQueryOptions(
     client,
     request,
@@ -703,13 +755,15 @@ export function getRuntimeServiceGetLogsQueryKey(
   return ["RuntimeService", "getLogs", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceGetLogsQueryOptions(
+export function getRuntimeServiceGetLogsQueryOptions<TData = V1GetLogsResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetLogsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetLogsResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetLogsResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1GetLogsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1GetLogsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceGetLogsQueryKey(client.instanceId, request);
   const queryFn: QueryFunction<V1GetLogsResponse> = ({ signal }) =>
     runtimeServiceGetLogs(client, request, { signal });
@@ -718,17 +772,19 @@ export function getRuntimeServiceGetLogsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1GetLogsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceGetLogs(
+export function createRuntimeServiceGetLogs<TData = V1GetLogsResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetLogsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetLogsResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetLogsResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1GetLogsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceGetLogsQueryOptions(
     client,
     request,
@@ -768,13 +824,17 @@ export function getRuntimeServiceListResourcesQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceListResourcesQueryOptions(
+export function getRuntimeServiceListResourcesQueryOptions<
+  TData = V1ListResourcesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListResourcesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListResourcesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListResourcesResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ListResourcesResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListResourcesResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceListResourcesQueryKey(
     client.instanceId,
     request,
@@ -786,17 +846,21 @@ export function getRuntimeServiceListResourcesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListResourcesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListResources(
+export function createRuntimeServiceListResources<
+  TData = V1ListResourcesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListResourcesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListResourcesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListResourcesResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListResourcesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListResourcesQueryOptions(
     client,
     request,
@@ -831,13 +895,17 @@ export function getRuntimeServiceGetResourceQueryKey(
   return ["RuntimeService", "getResource", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceGetResourceQueryOptions(
+export function getRuntimeServiceGetResourceQueryOptions<
+  TData = V1GetResourceResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetResourceRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetResourceResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetResourceResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1GetResourceResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1GetResourceResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceGetResourceQueryKey(
     client.instanceId,
     request,
@@ -849,17 +917,19 @@ export function getRuntimeServiceGetResourceQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1GetResourceResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceGetResource(
+export function createRuntimeServiceGetResource<TData = V1GetResourceResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetResourceRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetResourceResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetResourceResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1GetResourceResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceGetResourceQueryOptions(
     client,
     request,
@@ -894,13 +964,17 @@ export function getRuntimeServiceGetExploreQueryKey(
   return ["RuntimeService", "getExplore", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceGetExploreQueryOptions(
+export function getRuntimeServiceGetExploreQueryOptions<
+  TData = V1GetExploreResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetExploreRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetExploreResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetExploreResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1GetExploreResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1GetExploreResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceGetExploreQueryKey(
     client.instanceId,
     request,
@@ -912,17 +986,19 @@ export function getRuntimeServiceGetExploreQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1GetExploreResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceGetExplore(
+export function createRuntimeServiceGetExplore<TData = V1GetExploreResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetExploreRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetExploreResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetExploreResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1GetExploreResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceGetExploreQueryOptions(
     client,
     request,
@@ -962,13 +1038,19 @@ export function getRuntimeServiceGetModelPartitionsQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceGetModelPartitionsQueryOptions(
+export function getRuntimeServiceGetModelPartitionsQueryOptions<
+  TData = V1GetModelPartitionsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetModelPartitionsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetModelPartitionsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1GetModelPartitionsResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1GetModelPartitionsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1GetModelPartitionsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceGetModelPartitionsQueryKey(
     client.instanceId,
     request,
@@ -980,17 +1062,23 @@ export function getRuntimeServiceGetModelPartitionsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1GetModelPartitionsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceGetModelPartitions(
+export function createRuntimeServiceGetModelPartitions<
+  TData = V1GetModelPartitionsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetModelPartitionsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetModelPartitionsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1GetModelPartitionsResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1GetModelPartitionsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceGetModelPartitionsQueryOptions(
     client,
     request,
@@ -1027,13 +1115,19 @@ export function getRuntimeServiceListConnectorDriversQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceListConnectorDriversQueryOptions(
+export function getRuntimeServiceListConnectorDriversQueryOptions<
+  TData = V1ListConnectorDriversResponse,
+>(
   client: RuntimeClient,
   request: PartialMessage<ListConnectorDriversRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListConnectorDriversResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListConnectorDriversResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ListConnectorDriversResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListConnectorDriversResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceListConnectorDriversQueryKey(
     client.instanceId,
     request,
@@ -1045,17 +1139,23 @@ export function getRuntimeServiceListConnectorDriversQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListConnectorDriversResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListConnectorDrivers(
+export function createRuntimeServiceListConnectorDrivers<
+  TData = V1ListConnectorDriversResponse,
+>(
   client: RuntimeClient,
   request: PartialMessage<ListConnectorDriversRequest>,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListConnectorDriversResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListConnectorDriversResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListConnectorDriversResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListConnectorDriversQueryOptions(
     client,
     request,
@@ -1095,13 +1195,19 @@ export function getRuntimeServiceAnalyzeConnectorsQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceAnalyzeConnectorsQueryOptions(
+export function getRuntimeServiceAnalyzeConnectorsQueryOptions<
+  TData = V1AnalyzeConnectorsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1AnalyzeConnectorsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1AnalyzeConnectorsResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1AnalyzeConnectorsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1AnalyzeConnectorsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
     client.instanceId,
     request,
@@ -1113,17 +1219,23 @@ export function getRuntimeServiceAnalyzeConnectorsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1AnalyzeConnectorsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceAnalyzeConnectors(
+export function createRuntimeServiceAnalyzeConnectors<
+  TData = V1AnalyzeConnectorsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<AnalyzeConnectorsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1AnalyzeConnectorsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1AnalyzeConnectorsResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1AnalyzeConnectorsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceAnalyzeConnectorsQueryOptions(
     client,
     request,
@@ -1163,13 +1275,17 @@ export function getRuntimeServiceListNotifierConnectorsQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceListNotifierConnectorsQueryOptions(
+export function getRuntimeServiceListNotifierConnectorsQueryOptions<
+  TData = V1ListNotifierConnectorsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListNotifierConnectorsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListNotifierConnectorsResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ListNotifierConnectorsResponse> & {
+): CreateQueryOptions<V1ListNotifierConnectorsResponse, Error, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getRuntimeServiceListNotifierConnectorsQueryKey(
@@ -1184,17 +1300,23 @@ export function getRuntimeServiceListNotifierConnectorsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListNotifierConnectorsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListNotifierConnectors(
+export function createRuntimeServiceListNotifierConnectors<
+  TData = V1ListNotifierConnectorsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListNotifierConnectorsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListNotifierConnectorsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListNotifierConnectorsResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListNotifierConnectorsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListNotifierConnectorsQueryOptions(
     client,
     request,
@@ -1234,13 +1356,19 @@ export function getRuntimeServiceListConversationsQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceListConversationsQueryOptions(
+export function getRuntimeServiceListConversationsQueryOptions<
+  TData = V1ListConversationsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListConversationsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListConversationsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListConversationsResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ListConversationsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListConversationsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceListConversationsQueryKey(
     client.instanceId,
     request,
@@ -1252,17 +1380,23 @@ export function getRuntimeServiceListConversationsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListConversationsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListConversations(
+export function createRuntimeServiceListConversations<
+  TData = V1ListConversationsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListConversationsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListConversationsResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListConversationsResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListConversationsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListConversationsQueryOptions(
     client,
     request,
@@ -1302,13 +1436,19 @@ export function getRuntimeServiceGetConversationQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceGetConversationQueryOptions(
+export function getRuntimeServiceGetConversationQueryOptions<
+  TData = V1GetConversationResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetConversationRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetConversationResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1GetConversationResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1GetConversationResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1GetConversationResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceGetConversationQueryKey(
     client.instanceId,
     request,
@@ -1320,17 +1460,23 @@ export function getRuntimeServiceGetConversationQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1GetConversationResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceGetConversation(
+export function createRuntimeServiceGetConversation<
+  TData = V1GetConversationResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetConversationRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetConversationResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1GetConversationResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1GetConversationResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceGetConversationQueryOptions(
     client,
     request,
@@ -1365,13 +1511,17 @@ export function getRuntimeServiceListToolsQueryKey(
   return ["RuntimeService", "listTools", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceListToolsQueryOptions(
+export function getRuntimeServiceListToolsQueryOptions<
+  TData = V1ListToolsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListToolsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListToolsResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListToolsResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ListToolsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListToolsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceListToolsQueryKey(
     client.instanceId,
     request,
@@ -1383,17 +1533,19 @@ export function getRuntimeServiceListToolsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListToolsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListTools(
+export function createRuntimeServiceListTools<TData = V1ListToolsResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListToolsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListToolsResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListToolsResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListToolsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListToolsQueryOptions(
     client,
     request,
@@ -1424,13 +1576,17 @@ export function getRuntimeServiceIssueDevJWTQueryKey(
   return ["RuntimeService", "issueDevJWT", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceIssueDevJWTQueryOptions(
+export function getRuntimeServiceIssueDevJWTQueryOptions<
+  TData = V1IssueDevJWTResponse,
+>(
   client: RuntimeClient,
   request: V1IssueDevJWTRequest,
   options?: {
-    query?: Partial<CreateQueryOptions<V1IssueDevJWTResponse>>;
+    query?: Partial<CreateQueryOptions<V1IssueDevJWTResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1IssueDevJWTResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1IssueDevJWTResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceIssueDevJWTQueryKey(
     client.instanceId,
     request,
@@ -1442,17 +1598,19 @@ export function getRuntimeServiceIssueDevJWTQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1IssueDevJWTResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceIssueDevJWT(
+export function createRuntimeServiceIssueDevJWT<TData = V1IssueDevJWTResponse>(
   client: RuntimeClient,
   request: V1IssueDevJWTRequest,
   options?: {
-    query?: Partial<CreateQueryOptions<V1IssueDevJWTResponse>>;
+    query?: Partial<CreateQueryOptions<V1IssueDevJWTResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1IssueDevJWTResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceIssueDevJWTQueryOptions(
     client,
     request,
@@ -1492,13 +1650,19 @@ export function getRuntimeServiceAnalyzeVariablesQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceAnalyzeVariablesQueryOptions(
+export function getRuntimeServiceAnalyzeVariablesQueryOptions<
+  TData = V1AnalyzeVariablesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<AnalyzeVariablesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1AnalyzeVariablesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1AnalyzeVariablesResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1AnalyzeVariablesResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1AnalyzeVariablesResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceAnalyzeVariablesQueryKey(
     client.instanceId,
     request,
@@ -1510,17 +1674,23 @@ export function getRuntimeServiceAnalyzeVariablesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1AnalyzeVariablesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceAnalyzeVariables(
+export function createRuntimeServiceAnalyzeVariables<
+  TData = V1AnalyzeVariablesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<AnalyzeVariablesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1AnalyzeVariablesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1AnalyzeVariablesResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1AnalyzeVariablesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceAnalyzeVariablesQueryOptions(
     client,
     request,
@@ -1560,13 +1730,17 @@ export function getRuntimeServiceListGitCommitsQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceListGitCommitsQueryOptions(
+export function getRuntimeServiceListGitCommitsQueryOptions<
+  TData = V1ListGitCommitsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListGitCommitsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListGitCommitsResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListGitCommitsResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ListGitCommitsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListGitCommitsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceListGitCommitsQueryKey(
     client.instanceId,
     request,
@@ -1578,17 +1752,21 @@ export function getRuntimeServiceListGitCommitsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListGitCommitsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListGitCommits(
+export function createRuntimeServiceListGitCommits<
+  TData = V1ListGitCommitsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListGitCommitsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListGitCommitsResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListGitCommitsResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListGitCommitsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListGitCommitsQueryOptions(
     client,
     request,
@@ -1628,13 +1806,19 @@ export function getRuntimeServiceListGitBranchesQueryKey(
   ] as const;
 }
 
-export function getRuntimeServiceListGitBranchesQueryOptions(
+export function getRuntimeServiceListGitBranchesQueryOptions<
+  TData = V1ListGitBranchesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListGitBranchesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListGitBranchesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListGitBranchesResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ListGitBranchesResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListGitBranchesResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getRuntimeServiceListGitBranchesQueryKey(
     client.instanceId,
     request,
@@ -1646,17 +1830,23 @@ export function getRuntimeServiceListGitBranchesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListGitBranchesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createRuntimeServiceListGitBranches(
+export function createRuntimeServiceListGitBranches<
+  TData = V1ListGitBranchesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListGitBranchesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListGitBranchesResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListGitBranchesResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListGitBranchesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getRuntimeServiceListGitBranchesQueryOptions(
     client,
     request,
