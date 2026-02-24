@@ -465,7 +465,7 @@
             >
               {#if projectSearchFocused && filteredProjectOptions.length > 0}
                 <div
-                  class="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md"
+                  class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md"
                 >
                   {#each filteredProjectOptions as name (name)}
                     <button
@@ -528,23 +528,31 @@
             class:border-t={selectedUsers.length > 0}
             class:rounded-md={selectedUsers.length === 0}
           >
-            {#if memberSearchFocused && filteredMemberOptions.length > 0}
+            {#if memberSearchFocused}
               <div
-                class="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md"
+                class="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md"
               >
-                {#each filteredMemberOptions as user (user.userEmail)}
-                  <button
-                    type="button"
-                    class="w-full border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-gray-50"
-                    on:mousedown|preventDefault={() => handleMemberAdd(user)}
-                  >
-                    <AvatarListItem
-                      name={user.userName ?? ""}
-                      email={user.userEmail ?? ""}
-                      photoUrl={user.userPhotoUrl}
-                    />
-                  </button>
-                {/each}
+                {#if $organizationUsersQuery.isLoading}
+                  <div class="px-3 py-2 text-sm text-gray-400">Loading…</div>
+                {:else if filteredMemberOptions.length > 0}
+                  {#each filteredMemberOptions as user (user.userEmail)}
+                    <button
+                      type="button"
+                      class="w-full border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-gray-50"
+                      on:mousedown|preventDefault={() => handleMemberAdd(user)}
+                    >
+                      <AvatarListItem
+                        name={user.userName ?? ""}
+                        email={user.userEmail ?? ""}
+                        photoUrl={user.userPhotoUrl}
+                      />
+                    </button>
+                  {/each}
+                {:else}
+                  <div class="px-3 py-2 text-sm text-gray-400">
+                    No members found
+                  </div>
+                {/if}
               </div>
             {/if}
             <input
