@@ -1,0 +1,134 @@
+---
+title: Supabase
+description: Connect to data in Supabase
+sidebar_label: Supabase
+sidebar_position: 52
+---
+
+import { TwoStepFlowIntro, EnvPullTip, DevProdSeparation, DeployToCloud } from '@site/src/components/connector';
+
+## Overview
+
+[Supabase](https://supabase.com) is an open-source Firebase alternative built on top of PostgreSQL. It provides a fully managed Postgres database with additional features like authentication, real-time subscriptions, and storage. Since Supabase uses PostgreSQL under the hood, you can connect to it using standard PostgreSQL connection methods. Rill supports connecting to Supabase databases using either individual connection parameters or a [connection string/URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS).
+
+## Authentication Methods
+
+To connect to Supabase, you need your database connection credentials. You can find these in your Supabase project dashboard under **Settings > Database**.
+
+1. **Use Individual Parameters** (recommended for clarity)
+2. **Use Connection String/URI** (alternative format)
+
+<TwoStepFlowIntro
+  connector="Supabase"
+  step1Description="Set up your Supabase connector with database credentials"
+  step2Description="Define which table or query to execute"
+/>
+
+## Method 1: Individual Parameters (Recommended)
+
+Using individual parameters provides clear, readable configuration for your Supabase connection.
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **Supabase** as the data source type
+3. In the authentication step:
+   - Enter your host (e.g., `aws-0-us-east-1.pooler.supabase.com`)
+   - Enter the port (default: `5432`)
+   - Enter your database name (default: `postgres`)
+   - Enter your username (e.g., `postgres.[your-project-ref]`)
+   - Enter your password
+4. In the data model configuration step, enter your SQL query
+5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+### Manual Configuration
+
+If you prefer to configure manually:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/supabase.yaml`:
+
+```yaml
+type: connector
+driver: postgres
+
+host: "aws-0-us-east-1.pooler.supabase.com"
+port: "5432"
+user: "postgres.[your-project-ref]"
+password: "{{ .env.SUPABASE_PASSWORD }}"
+dbname: "postgres"
+sslmode: "require"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+SUPABASE_PASSWORD=your_password_here
+```
+
+<EnvPullTip />
+
+Then, [create your first model](#create-your-first-model).
+
+## Method 2: Connection String/URI
+
+You can also use a connection string or URI format to configure your Supabase connection. You can find your connection string in the Supabase dashboard under **Settings > Database > Connection string**.
+
+### Connection URI Format
+
+```bash
+postgresql://postgres.[your-project-ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+```
+
+### Manual Configuration
+
+**Step 1: Create connector configuration**
+
+Create `connectors/supabase.yaml`:
+
+```yaml
+type: connector
+driver: postgres
+
+dsn: "{{ .env.SUPABASE_DSN }}"
+```
+
+**Step 2: Add credentials to `.env`**
+
+```bash
+SUPABASE_DSN=postgresql://postgres.[your-project-ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres
+```
+
+Then, [create your first model](#create-your-first-model).
+
+## Create Your First Model
+
+Once your connector is configured using any method above, create a model to define what data to pull.
+
+Create `models/supabase_data.yaml`:
+
+```yaml
+type: model
+connector: supabase
+dev:
+  sql: SELECT * FROM my_table limit 10000
+
+sql: SELECT * FROM my_table
+```
+
+After creating the model, you can add additional [model settings](/developers/build/models/source-models) directly to the file.
+
+## Separating Dev and Prod Environments
+
+<DevProdSeparation />
+
+## Deploy to Rill Cloud
+
+<DeployToCloud
+  connector="Supabase"
+  connectorId="supabase"
+  credentialDescription="the Supabase database connection credentials"
+/>

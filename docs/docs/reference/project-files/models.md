@@ -57,7 +57,7 @@ _[string]_ - Raw SQL query to run against source _(required)_
 
 ### `pre_exec`
 
-_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
+_[string]_ - Refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable. 
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES)
@@ -65,7 +65,7 @@ pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=po
 
 ### `post_exec`
 
-_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
+_[string]_ - Refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable. 
 
 ```yaml
 post_exec: DETACH DATABASE IF EXISTS postgres_db
@@ -96,10 +96,6 @@ _[object]_ - Refers to the retry configuration for the model. (optional)
   - **`exponential_backoff`** - _[boolean]_ - Whether to use exponential backoff. 
 
   - **`if_error_matches`** - _[array of string]_ - The error messages to match. 
-
-The default `if_error_matches` values are:
-`".*OvercommitTracker.*"`, `".*Bad Gateway.*"`, `".*Timeout.*"`, and `".*Connection refused.*"`.
-Setting `retry.if_error_matches` overrides this default list (it does not merge with it).
 
 ```yaml
 retry:
@@ -161,6 +157,44 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
+  - **option 6** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
+
+    - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
+
+      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used. 
+
+      - **`time_range`** - _[object]_ - Time range for the analysis period 
+
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month) 
+
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday) 
+
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+
+        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month') 
+
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis 
+
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period 
+
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week) 
+
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+
+        - **`expression`** - _[string]_ - Rill time expression for comparison period 
+
+      - **`context`** - _[object]_ - Context to constrain the AI analysis 
+
+        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze 
+
+        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis 
+
+        - **`measures`** - _[array of string]_ - List of measures to include in analysis 
+
 ```yaml
 state:
     sql: SELECT MAX(date) as max_date
@@ -202,6 +236,44 @@ _[oneOf]_ - Refers to the how your data is partitioned, cannot be used with stat
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state. 
 
+  - **option 6** - _[object]_ - Uses AI to generate insights and analysis from metrics data. Only available for reports.
+
+    - **`ai`** - _[object]_ - AI resolver configuration for generating automated insights _(required)_
+
+      - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used. 
+
+      - **`time_range`** - _[object]_ - Time range for the analysis period 
+
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month) 
+
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday) 
+
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+
+        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month') 
+
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis 
+
+        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period 
+
+        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week) 
+
+        - **`start`** - _[string]_ - Start timestamp in ISO 8601 format 
+
+        - **`end`** - _[string]_ - End timestamp in ISO 8601 format 
+
+        - **`expression`** - _[string]_ - Rill time expression for comparison period 
+
+      - **`context`** - _[object]_ - Context to constrain the AI analysis 
+
+        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze 
+
+        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis 
+
+        - **`measures`** - _[array of string]_ - List of measures to include in analysis 
+
 ```yaml
 partitions:
     glob: gcs://my_bucket/y=*/m=*/d=*/*.parquet
@@ -211,6 +283,32 @@ partitions:
 partitions:
     connector: duckdb
     sql: SELECT range AS num FROM range(0,10)
+```
+
+### `tests`
+
+_[array of object]_ - Define data quality tests for the model. Each test must have a `name` and either an `assert` expression or a `sql` query. An `assert` test passes when no rows violate the condition. A `sql` test passes when the query returns zero rows. 
+
+  - **`name`** - _[string]_ - A unique name for the test. _(required)_
+
+  - **`assert`** - _[string]_ - A SQL boolean expression applied to each row of the model. The test passes if no rows violate the condition (i.e., all rows satisfy `assert`). Cannot be combined with `sql`. 
+
+  - **`sql`** - _[string]_ - A SQL query that returns rows representing test failures. The test passes if the query returns zero rows. Cannot be combined with `assert`. 
+
+  - **`connector`** - _[string]_ - The connector to use when executing the test query. Defaults to the model's connector. 
+
+```yaml
+tests:
+    - name: assert_positive_revenue
+      assert: revenue >= 0
+    - name: no_null_ids
+      assert: id IS NOT NULL
+```
+
+```yaml
+tests:
+    - name: row_count_check
+      sql: SELECT 'fail' WHERE (SELECT COUNT(*) FROM my_model) = 0
 ```
 
 ### `materialize`
@@ -451,11 +549,11 @@ _[string]_ - Format of the data source (e.g., csv, json, parquet).
 
 ### `pre_exec`
 
-_[string]_ - refers to SQL queries to run before the main query, available for DuckDB-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable. 
+_[string]_ - refers to SQL queries to run before the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `pre_exec` queries are idempotent. Use `IF NOT EXISTS` statements when applicable. 
 
 ### `post_exec`
 
-_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
+_[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based and ClickHouse-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);

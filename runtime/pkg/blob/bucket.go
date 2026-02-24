@@ -103,6 +103,7 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 						s3Input.StartAfter = aws.String(startAfter)
 					}
 				}
+
 				// Handle Azure Blob Storage
 				var azOpts *container.ListBlobsHierarchyOptions
 				if as(&azOpts) {
@@ -194,13 +195,14 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 			if !ok {
 				continue
 			}
-
 			entries = append(entries, drivers.ObjectStoreEntry{
 				Path:      obj.Key,
 				IsDir:     obj.IsDir,
 				Size:      obj.Size,
 				UpdatedOn: obj.ModTime,
 			})
+
+			// Stop if we've collected enough entries
 			if len(entries) == validPageSize {
 				break
 			}

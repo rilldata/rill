@@ -21,9 +21,9 @@ func TestObjectStore(t *testing.T) {
 	objectStore, ok := conn.AsObjectStore()
 	require.True(t, ok)
 	bucket := "integration-test"
-	t.Run("testListObjectsForGlobPagination/pageSize=1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
-	t.Run("testListObjectsForGlobPagination/pageSize=2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
-	t.Run("testListObjectsForGlobPagination/pageSize=3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
+	t.Run("testListObjectsForGlobPagination_pageSize1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListObjectsForGlobPagination_pageSize2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListObjectsForGlobPagination_pageSize3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
 	t.Run("testMatchDirectoriesFromGlobTest", func(t *testing.T) { testMatchDirectoriesFromGlobTest(t, objectStore, bucket) })
 	t.Run("testMatchFilesWithLeafWildcardGlobTest", func(t *testing.T) { testMatchFilesWithLeafWildcardGlobTest(t, objectStore, bucket) })
 	t.Run("testMatchFilesWithDoubleStarGlobTest", func(t *testing.T) { testMatchFilesWithDoubleStarGlobTest(t, objectStore, bucket) })

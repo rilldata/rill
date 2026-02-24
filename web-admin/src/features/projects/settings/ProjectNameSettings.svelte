@@ -125,7 +125,7 @@
       errors={$errors?.name}
       id="name"
       label="Name"
-      description={`Your project URL will be https://ui.rilldata.com/${organization}/${sanitizeSlug($form.name)}, to comply with our naming rules.`}
+      description={`Your project will be available at https://ui.rilldata.com/${organization}/${sanitizeSlug($form.name)}.`}
       textClass="text-sm"
       alwaysShowError
       additionalClass="max-w-[520px]"

@@ -252,6 +252,10 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	return tables[0], nil
 }
 
+func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) error {
+	return nil // Not implemented
+}
+
 func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
 	q := `SELECT
     		datasource,
