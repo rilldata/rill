@@ -2,12 +2,34 @@ import type { Query } from "@tanstack/query-core";
 import { ResourceKind } from "../features/entity-management/resource-selectors";
 
 export function isRuntimeQuery(query: Query): boolean {
-  const [apiPath] = query.queryKey as string[];
-  return apiPath.startsWith("/v1/instances/");
+  const key = query.queryKey;
+  // New format: [ServiceName, methodName, instanceId, request]
+  const svc = key[0];
+  if (
+    svc === "QueryService" ||
+    svc === "RuntimeService" ||
+    svc === "ConnectorService"
+  ) {
+    return true;
+  }
+  // Old format: ["/v1/instances/..."]
+  return typeof svc === "string" && svc.startsWith("/v1/instances/");
 }
 
 export function isGetResourceMetricsViewQuery(query: Query): boolean {
-  const [apiPath, queryParams] = query.queryKey; // Renamed for clarity
+  const key = query.queryKey;
+  // New format: ["RuntimeService", "getResource", instanceId, { "name.kind": ... }]
+  if (key[0] === "RuntimeService" && key[1] === "getResource") {
+    const request = key[3];
+    return (
+      typeof request === "object" &&
+      request !== null &&
+      (request as Record<string, unknown>)["name.kind"] ===
+        ResourceKind.MetricsView
+    );
+  }
+  // Old format
+  const [apiPath, queryParams] = key;
   if (
     typeof apiPath !== "string" ||
     typeof queryParams !== "object" ||
@@ -16,7 +38,8 @@ export function isGetResourceMetricsViewQuery(query: Query): boolean {
     return false;
   return (
     apiPath.startsWith("/v1/instances/") &&
-    queryParams["name.kind"] === ResourceKind.MetricsView
+    (queryParams as Record<string, unknown>)["name.kind"] ===
+      ResourceKind.MetricsView
   );
 }
 
@@ -42,6 +65,35 @@ export enum QueryRequestType {
   TableRows = "rows",
 }
 
+// New format method names that correspond to profiling queries
+const profilingMethods = new Set([
+  "columnRollupInterval",
+  "columnTopK",
+  "columnNullCount",
+  "columnDescriptiveStatistics",
+  "columnTimeGrain",
+  "columnNumericHistogram",
+  "columnRugHistogram",
+  "columnTimeRange",
+  "columnCardinality",
+  "columnTimeSeries",
+  "tableCardinality",
+  "tableColumns",
+  "tableRows",
+]);
+
+const tableProfilingMethods = new Set([
+  "tableCardinality",
+  "tableColumns",
+  "tableRows",
+]);
+
+/** Extract the table name from a new-format profiling query's request object */
+function getTableNameFromRequest(request: unknown): string | undefined {
+  if (typeof request !== "object" || request === null) return undefined;
+  return (request as Record<string, unknown>).tableName as string | undefined;
+}
+
 const TableProfilingQuery: Partial<Record<QueryRequestType, boolean>> = {
   [QueryRequestType.TableCardinality]: true,
   [QueryRequestType.TableColumns]: true,
@@ -58,7 +110,33 @@ function isOlapQuery(queryHash: string, name: string) {
   );
 }
 
+function isNewFormatOlapQuery(query: Query, name: string): boolean {
+  const key = query.queryKey;
+  if (
+    key[0] === "ConnectorService" &&
+    (key[1] === "oLAPGetTable" || key[1] === "oLAPListTables")
+  ) {
+    const request = key[3];
+    return (
+      typeof request === "object" &&
+      request !== null &&
+      (request as Record<string, unknown>).table === name
+    );
+  }
+  return false;
+}
+
 export function isProfilingQuery(query: Query, name: string): boolean {
+  // New format
+  if (
+    query.queryKey[0] === "QueryService" &&
+    profilingMethods.has(query.queryKey[1] as string)
+  ) {
+    const tableName = getTableNameFromRequest(query.queryKey[3]);
+    return tableName === name;
+  }
+  if (isNewFormatOlapQuery(query, name)) return true;
+  // Old format
   const queryExtractorMatch = ProfilingQueryExtractor.exec(query.queryHash);
   if (!queryExtractorMatch) return isOlapQuery(query.queryHash, name);
 
@@ -67,6 +145,16 @@ export function isProfilingQuery(query: Query, name: string): boolean {
 }
 
 export function isTableProfilingQuery(query: Query, name: string): boolean {
+  // New format
+  if (
+    query.queryKey[0] === "QueryService" &&
+    tableProfilingMethods.has(query.queryKey[1] as string)
+  ) {
+    const tableName = getTableNameFromRequest(query.queryKey[3]);
+    return tableName === name;
+  }
+  if (isNewFormatOlapQuery(query, name)) return true;
+  // Old format
   const queryExtractorMatch = ProfilingQueryExtractor.exec(query.queryHash);
   if (!queryExtractorMatch) return isOlapQuery(query.queryHash, name);
 
@@ -75,6 +163,16 @@ export function isTableProfilingQuery(query: Query, name: string): boolean {
 }
 
 export function isColumnProfilingQuery(query: Query, name: string) {
+  // New format
+  if (
+    query.queryKey[0] === "QueryService" &&
+    profilingMethods.has(query.queryKey[1] as string) &&
+    !tableProfilingMethods.has(query.queryKey[1] as string)
+  ) {
+    const tableName = getTableNameFromRequest(query.queryKey[3]);
+    return tableName === name;
+  }
+  // Old format
   const queryExtractorMatch = ProfilingQueryExtractor.exec(query.queryHash);
   if (!queryExtractorMatch) return false;
 
