@@ -1,7 +1,7 @@
 ---
 title: Deploy to Rill Cloud
 sidebar_label: Deploy to Rill Cloud
-sidebar_position: 00
+sidebar_position: 15
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
@@ -9,9 +9,14 @@ import ThemedImage from '@theme/ThemedImage';
 
 Once you've built your dashboards locally, deploying to Rill Cloud lets you share them with your team, set up [alerts and scheduled reports](/guide/dashboards/explore), [embed dashboards](/developers/integrate/embedding) in other apps, and collaborate with others.
 
+There are two ways to deploy:
+
+- **Direct upload** — Uploads a snapshot of your project files to Rill Cloud. Quick to set up; you push updates manually. Good for solo work or getting started fast.
+- **GitHub-connected** — Links a GitHub repo to your Rill Cloud project. Changes pushed to GitHub deploy automatically. Best for teams and production workflows.
+
 ## Deploy without GitHub
 
-The fastest way to get started. You can always [connect GitHub later](#connect-github-to-an-existing-project).
+The fastest way to get started. This uploads a snapshot of your local project files to Rill Cloud. Your project won't update automatically — run the deploy command again or click **Update** whenever you want to push new changes. You can always [connect GitHub later](#connect-github-to-an-existing-project).
 
 ### From the UI
 
@@ -94,17 +99,7 @@ You must run `rill project connect-github` from the root of your Git repository,
 
 ## Connect GitHub to an existing project
 
-Already deployed without GitHub? You can add it anytime:
-
-1. Go to the **Status** page in Rill Cloud
-2. Click **Connect to GitHub**
-3. Create a new repo or pick an existing one
-
-<img src='/img/deploy/existing-project/install-rill-cloud.png' class='rounded-gif' />
-
-:::note Need admin help?
-The Rill Cloud GitHub app needs permission to read and write to your repository. If you're not a GitHub org admin, you may need to ask them to approve the app first.
-:::
+Already deployed without GitHub? You can add it anytime from the UI or CLI. Follow the steps in [Deploy with GitHub](#deploy-with-github) above — the process is the same whether you're deploying for the first time or connecting an existing project.
 
 ## Something not working?
 

@@ -152,7 +152,7 @@ rill token issue
 ```
 
 :::tip Learn more about user tokens
-For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/guide/administration/access-tokens/user-tokens.
+For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/guide/administration/access-tokens/user-tokens).
 :::
 
 ### Configure Claude Desktop
