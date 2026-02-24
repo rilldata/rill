@@ -1,37 +1,40 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
-  import { createRuntimeServiceAnalyzeConnectors } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { createRuntimeServiceAnalyzeConnectors } from "../../../runtime-client/v2/gen";
   import ConnectorEntry from "./ConnectorEntry.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let store: ConnectorExplorerStore;
   export let olapOnly: boolean = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
 
-  $: connectors = createRuntimeServiceAnalyzeConnectors(instanceId, {
-    query: {
-      // Retry transient 500s during runtime resets (e.g. project initialization)
-      retry: (failureCount, error) =>
-        !!error?.response?.status &&
-        error.response.status >= 500 &&
-        failureCount < 3,
-      retryDelay: 1000,
-      // sort alphabetically
-      select: (data) => {
-        if (!data?.connectors) return;
+  $: connectors = createRuntimeServiceAnalyzeConnectors(
+    client,
+    {},
+    {
+      query: {
+        // Retry transient errors during runtime resets (e.g. project initialization)
+        retry: (failureCount) => failureCount < 3,
+        retryDelay: 1000,
+        // sort alphabetically
+        select: (data) => {
+          if (!data?.connectors) return;
 
-        const filtered = (
-          olapOnly
-            ? data.connectors.filter((c) => c?.driver?.implementsOlap)
-            : data.connectors
-        ).sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
-        return { connectors: filtered };
+          const filtered = (
+            olapOnly
+              ? data.connectors.filter((c) => c?.driver?.implementsOlap)
+              : data.connectors
+          ).sort((a, b) =>
+            (a?.name as string).localeCompare(b?.name as string),
+          );
+          return { connectors: filtered };
+        },
       },
     },
-  });
+  );
   $: ({ data, error } = $connectors);
 </script>
 
