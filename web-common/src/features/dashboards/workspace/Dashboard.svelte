@@ -12,7 +12,7 @@
   import { readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { activeDashboardTheme } from "../../themes/active-dashboard-theme";
   import { createResolvedThemeStore } from "../../themes/selectors";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -52,7 +52,8 @@
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+  const { instanceId } = client;
 
   $: ({ whereFilter, dimensionThresholdFilters, selectedTimeDimension } =
     $dashboardStore);

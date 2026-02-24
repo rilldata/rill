@@ -21,7 +21,7 @@
   import DimensionFilterFooter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
   import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { fly } from "svelte/transition";
   import {
     useAllSearchResultsCount,
@@ -67,7 +67,8 @@
       : [];
   let curPinned = filterData.pinned;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+  const { instanceId } = client;
 
   $: ({
     name,

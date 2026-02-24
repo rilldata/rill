@@ -40,7 +40,7 @@
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DateTime } from "luxon";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
@@ -95,7 +95,8 @@
   } = $timeControlsStore);
 
   $: activeTimeGrain = selectedTimeRange?.interval;
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+  const { instanceId } = client;
 
   let scrubStart;
   let scrubEnd;
