@@ -409,7 +409,8 @@
               </Dropdown.Trigger>
               <Dropdown.Content
                 align="start"
-                class="w-full max-h-60 overflow-y-auto"
+                sameWidth
+                class="max-h-60 overflow-y-auto"
               >
                 {#each projects as p (p.id)}
                   <Dropdown.CheckboxItem
@@ -446,7 +447,7 @@
                 <CaretDownIcon size="12px" />
               {/if}
             </Dropdown.Trigger>
-            <Dropdown.Content align="start" class="w-full">
+            <Dropdown.Content align="start" sameWidth>
               {#each PROJECT_ROLES_OPTIONS as option}
                 <Dropdown.Item
                   class="font-normal flex flex-col items-start py-2 {selectedRole ===
