@@ -51,7 +51,7 @@ export class DashboardStateSync {
   }
 
   public constructor(
-    instanceId: string,
+    private readonly instanceId: string,
     metricsViewName: string,
     private readonly exploreName: string,
     private readonly extraPrefix: string | undefined,
@@ -150,6 +150,7 @@ export class DashboardStateSync {
         initExploreState.selectedTimeRange,
         // initExploreState.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
+        this.instanceId,
         exploreSpec,
         [
           initExploreState.selectedTimeRange,
@@ -245,6 +246,7 @@ export class DashboardStateSync {
         partialExplore.selectedTimeRange,
         // partialExplore.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
+        this.instanceId,
         exploreSpec,
         [
           partialExplore.selectedTimeRange,

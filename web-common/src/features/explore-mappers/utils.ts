@@ -102,6 +102,7 @@ export async function fillTimeRange(
   // Resolve time range overriding ref to `executionTime` and set to custom.
   // This keeps the time range consistent regardless of when the link is opened.
   [exploreState.selectedTimeRange] = await resolveTimeRanges(
+    get(runtime).instanceId,
     exploreSpec,
     [exploreState.selectedTimeRange],
     exploreState.selectedTimezone,
