@@ -5,11 +5,20 @@
     connectorLabelMapping,
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
 
+  export let startConnectorSelection: (name: string | null) => void;
+
   const PrimaryConnectors = ["clickhouse", "motherduck", "s3", "snowflake"];
   const SecondaryConnectors = ["bigquery", "redshift", "azure"];
+
+  function selectConnector(e: MouseEvent, connector: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    startConnectorSelection(connector);
+  }
 </script>
 
-<div class="container">
+<button class="container" on:click={() => startConnectorSelection(null)}>
   <div class="header">
     <DatabaseIcon />
     <span>Connect your data</span>
@@ -19,23 +28,29 @@
     {#each PrimaryConnectors as connector (connector)}
       {@const icon = connectorIconMapping[connector]}
       {@const label = connectorLabelMapping[connector] ?? connector}
-      <div class="primary-connector-entry">
-        <svelte:component this={icon} size="24px" />
+      <button
+        class="primary-connector-entry"
+        on:click={(e) => selectConnector(e, connector)}
+      >
+        <svelte:component this={icon} />
         <span>{label}</span>
-      </div>
+      </button>
     {/each}
   </div>
 
   <div class="secondary-connectors">
     {#each SecondaryConnectors as connector (connector)}
       {@const icon = connectorIconMapping[connector]}
-      <div class="secondary-connector-entry">
+      <button
+        class="secondary-connector-entry"
+        on:click={(e) => selectConnector(e, connector)}
+      >
         <svelte:component this={icon} size="24px" />
-      </div>
+      </button>
     {/each}
     <span>more</span>
   </div>
-</div>
+</button>
 
 <style lang="postcss">
   .container {
@@ -65,7 +80,9 @@
   .primary-connector-entry {
     @apply flex flex-row gap-2 items-center p-2 w-40;
     @apply text-sm bg-surface-overlay rounded-md border;
-    @apply hover:border-accent-primary-action hover:shadow-lg cursor-pointer;
+  }
+  .primary-connector-entry:hover {
+    @apply border-accent-primary-action shadow-lg cursor-pointer;
   }
 
   .secondary-connectors {

@@ -1,9 +1,6 @@
 <script lang="ts">
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
-  import Card from "../../components/card/Card.svelte";
-  import CardDescription from "../../components/card/CardDescription.svelte";
-  import CardTitle from "../../components/card/CardTitle.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -17,10 +14,8 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
-  import {
-    connectorIconMapping,
-    connectorLabelMapping,
-  } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
+  import { Button } from "@rilldata/web-common/components/button";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -71,39 +66,27 @@
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     {#each EXAMPLES as example (example.name)}
       {@const icon = connectorIconMapping[example.connector]}
-      {@const label =
-        connectorLabelMapping[example.connector] ?? example.connector}
-      <Card
-        redirect
-        imageUrl={example.image}
-        disabled={!!selectedProjectName}
-        isLoading={selectedProjectName === example.name}
-        on:click={async () => {
-          await unpackProject(example);
-        }}
-      >
-        <div class="absolute top-[160px] w-full pl-3">
-          <div class="flex flex-row w-fit items-center gap-x-1">
-            {#if icon}
-              <svelte:component this={icon} />
-            {/if}
-            <span class="italic text-slate-600">{label}</span>
-          </div>
-        </div>
-        <CardTitle className="w-full pl-3">{example.title}</CardTitle>
-        <CardDescription className="w-full text-left pl-3">
-          {example.description}
-        </CardDescription>
-      </Card>
+      <button on:click={() => unpackProject(example)}>
+        {#if icon}
+          <svelte:component this={icon} />
+        {/if}
+        <span>{example.title}</span>
+      </button>
     {/each}
 
-    <Card
-      disabled={!!selectedProjectName}
-      isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
-      on:click={() => unpackProject()}
-    >
-      <AddCircleOutline size="2em" className="text-fg-secondary" />
-      <CardTitle position="middle">Start with an empty project</CardTitle>
-    </Card>
+    <button on:click={() => unpackProject()}>
+      <AddCircleOutline size="2em" />
+      <span>Start with an empty project</span>
+    </button>
   </div>
 </section>
+
+<style lang="postcss">
+  button {
+    @apply flex flex-row items-center justify-center gap-2 px-4 py-2;
+    @apply text-sm bg-surface-overlay rounded-md border text-fg-secondary;
+  }
+  button:hover {
+    @apply border-accent-primary-action shadow-lg cursor-pointer;
+  }
+</style>
