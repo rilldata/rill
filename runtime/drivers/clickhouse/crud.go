@@ -659,12 +659,19 @@ func (c *Connection) getTablePartitions(ctx context.Context, name string) ([]str
 	if c.config.Cluster == "" {
 		tbl = "system.parts"
 	} else {
-		tbl = fmt.Sprint("cluster(", safeSQLString(c.config.Cluster), ", system.parts)")
+		// just query all replicas in case data is not fully replicated across the cluster
+		tbl = fmt.Sprint("clusterAllReplicas(", safeSQLString(c.config.Cluster), ", system.parts)")
 		name = localTableName(name)
 	}
+	var args []any
+	if c.config.Database == "" {
+		args = []any{nil, name}
+	} else {
+		args = []any{c.config.Database, name}
+	}
 	res, err := c.Query(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT DISTINCT partition FROM %s WHERE table = ?", tbl),
-		Args:     []any{name},
+		Query:    fmt.Sprintf("SELECT DISTINCT partition FROM %s WHERE database = coalesce(?, currentDatabase()) AND table = ?", tbl),
+		Args:     args,
 		Priority: 1,
 	})
 	if err != nil {

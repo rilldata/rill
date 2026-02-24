@@ -1,5 +1,5 @@
 ---
-id: embed-iframe-api
+id: iframe-api
 title: Embed Iframe API
 description: Communicate with your embedded dashboards.
 sidebar_label: Embed Iframe API
@@ -34,7 +34,7 @@ const iframe = document.getElementById("my-iframe");
 
 window.addEventListener("message", (event) => {
   const { id, result, error, method, params } = event.data;
-  
+
   // notifications
   if (method === "ready") {
     console.log("Iframe is ready");
@@ -66,7 +66,7 @@ window.addEventListener("message", (event) => {
 
 ## Supported Methods
 
-These methods are called **from the parent** and handled **by the iframe**.  
+These methods are called **from the parent** and handled **by the iframe**.
 Note: if including an `id`, the server will respond. If you do not need a response, you can omit the `id` property.
 
 ### `setState(state)`

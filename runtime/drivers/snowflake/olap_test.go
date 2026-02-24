@@ -158,7 +158,7 @@ func TestLoadDDL(t *testing.T) {
 	testmode.Expensive(t)
 	_, olap := acquireTestSnowflake(t)
 
-	table, err := olap.InformationSchema().Lookup(t.Context(), "", "", "all_datatypes")
+	table, err := olap.InformationSchema().Lookup(t.Context(), "integration_test", "public", "all_datatypes")
 	require.NoError(t, err)
 	err = olap.InformationSchema().LoadDDL(t.Context(), table)
 	require.NoError(t, err)
