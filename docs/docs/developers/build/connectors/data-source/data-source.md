@@ -109,7 +109,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Connect to Microsoft SQL Server databases with support for encryption and various authentication methods."
     link="/developers/build/connectors/data-source/sqlserver"
     linkLabel="Learn more"
-    referenceLink="sqlserver"
+    referenceLink="sql-server"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-SQLite.svg" alt="SQLite" />}

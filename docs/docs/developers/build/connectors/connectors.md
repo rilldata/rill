@@ -164,7 +164,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     content="Connect to Microsoft SQL Server databases with support for encryption and various authentication methods."
     link="/developers/build/connectors/data-source/sqlserver"
     linkLabel="Learn more"
-    referenceLink="sqlserver"
+    referenceLink="sql-server"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-SQLite.svg" alt="SQLite" />}
