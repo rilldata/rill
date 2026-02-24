@@ -10,6 +10,7 @@
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -21,7 +22,6 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      numberFormat: { measureFormatters, activeMeasureFormatter },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
@@ -67,6 +67,15 @@
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0);
+
+  // Use compact big-number formatting for displayed values and deltas.
+  // Tooltips remain unchanged because we only pass formatted strings here.
+  $: bigNumberFormatters = Object.fromEntries(
+    $leaderboardMeasures.map((m) => [
+      m.name,
+      createMeasureValueFormatter(m, "big-number"),
+    ]),
+  );
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -106,9 +115,7 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatters={$leaderboardMeasures.length > 1
-                ? $measureFormatters
-                : { [$leaderboardSortByMeasureName]: $activeMeasureFormatter }}
+              formatters={bigNumberFormatters}
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
