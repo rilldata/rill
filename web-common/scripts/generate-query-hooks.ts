@@ -287,15 +287,15 @@ function generateServiceFile(service: ServiceDef): string {
       ``,
     );
 
-    // Tier 3: Query options
+    // Tier 3: Query options (generic TData for select support)
     lines.push(
-      `export function ${optsFnName}(`,
+      `export function ${optsFnName}<TData = ${responseType}>(`,
       `  client: RuntimeClient,`,
       `  request: ${requestType},`,
       `  options?: {`,
-      `    query?: Partial<CreateQueryOptions<${responseType}>>;`,
+      `    query?: Partial<CreateQueryOptions<${responseType}, Error, TData>>;`,
       `  },`,
-      `): CreateQueryOptions<${responseType}> & { queryKey: QueryKey } {`,
+      `): CreateQueryOptions<${responseType}, Error, TData> & { queryKey: QueryKey } {`,
       `  const queryKey = ${keyFnName}(client.instanceId, request);`,
       `  const queryFn: QueryFunction<${responseType}> = ({ signal }) =>`,
       `    ${fullName}(client, request, { signal });`,
@@ -304,21 +304,21 @@ function generateServiceFile(service: ServiceDef): string {
       `    queryFn,`,
       `    enabled: !!client.instanceId,`,
       `    ...options?.query,`,
-      `  };`,
+      `  } as CreateQueryOptions<${responseType}, Error, TData> & { queryKey: QueryKey };`,
       `}`,
       ``,
     );
 
-    // Tier 4: Convenience hook
+    // Tier 4: Convenience hook (generic TData for select support)
     lines.push(
-      `export function ${hookName}(`,
+      `export function ${hookName}<TData = ${responseType}>(`,
       `  client: RuntimeClient,`,
       `  request: ${requestType},`,
       `  options?: {`,
-      `    query?: Partial<CreateQueryOptions<${responseType}>>;`,
+      `    query?: Partial<CreateQueryOptions<${responseType}, Error, TData>>;`,
       `  },`,
       `  queryClient?: QueryClient,`,
-      `): CreateQueryResult<${responseType}> {`,
+      `): CreateQueryResult<TData, Error> {`,
       `  const queryOptions = ${optsFnName}(client, request, options);`,
       `  return createQuery(queryOptions, queryClient);`,
       `}`,

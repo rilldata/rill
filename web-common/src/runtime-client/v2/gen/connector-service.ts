@@ -63,13 +63,17 @@ export function getConnectorServiceListBucketsQueryKey(
   ] as const;
 }
 
-export function getConnectorServiceListBucketsQueryOptions(
+export function getConnectorServiceListBucketsQueryOptions<
+  TData = V1ListBucketsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListBucketsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListBucketsResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListBucketsResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ListBucketsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListBucketsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getConnectorServiceListBucketsQueryKey(
     client.instanceId,
     request,
@@ -81,17 +85,21 @@ export function getConnectorServiceListBucketsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListBucketsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createConnectorServiceListBuckets(
+export function createConnectorServiceListBuckets<
+  TData = V1ListBucketsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListBucketsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListBucketsResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListBucketsResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListBucketsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getConnectorServiceListBucketsQueryOptions(
     client,
     request,
@@ -131,13 +139,17 @@ export function getConnectorServiceListObjectsQueryKey(
   ] as const;
 }
 
-export function getConnectorServiceListObjectsQueryOptions(
+export function getConnectorServiceListObjectsQueryOptions<
+  TData = V1ListObjectsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListObjectsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListObjectsResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListObjectsResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ListObjectsResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListObjectsResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getConnectorServiceListObjectsQueryKey(
     client.instanceId,
     request,
@@ -149,17 +161,21 @@ export function getConnectorServiceListObjectsQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListObjectsResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createConnectorServiceListObjects(
+export function createConnectorServiceListObjects<
+  TData = V1ListObjectsResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListObjectsRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListObjectsResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListObjectsResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListObjectsResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getConnectorServiceListObjectsQueryOptions(
     client,
     request,
@@ -199,13 +215,17 @@ export function getConnectorServiceOLAPListTablesQueryKey(
   ] as const;
 }
 
-export function getConnectorServiceOLAPListTablesQueryOptions(
+export function getConnectorServiceOLAPListTablesQueryOptions<
+  TData = V1OLAPListTablesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<OLAPListTablesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1OLAPListTablesResponse>>;
+    query?: Partial<CreateQueryOptions<V1OLAPListTablesResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1OLAPListTablesResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1OLAPListTablesResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getConnectorServiceOLAPListTablesQueryKey(
     client.instanceId,
     request,
@@ -217,17 +237,21 @@ export function getConnectorServiceOLAPListTablesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1OLAPListTablesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createConnectorServiceOLAPListTables(
+export function createConnectorServiceOLAPListTables<
+  TData = V1OLAPListTablesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<OLAPListTablesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1OLAPListTablesResponse>>;
+    query?: Partial<CreateQueryOptions<V1OLAPListTablesResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1OLAPListTablesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getConnectorServiceOLAPListTablesQueryOptions(
     client,
     request,
@@ -267,13 +291,17 @@ export function getConnectorServiceOLAPGetTableQueryKey(
   ] as const;
 }
 
-export function getConnectorServiceOLAPGetTableQueryOptions(
+export function getConnectorServiceOLAPGetTableQueryOptions<
+  TData = V1OLAPGetTableResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1OLAPGetTableResponse>>;
+    query?: Partial<CreateQueryOptions<V1OLAPGetTableResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1OLAPGetTableResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1OLAPGetTableResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getConnectorServiceOLAPGetTableQueryKey(
     client.instanceId,
     request,
@@ -285,17 +313,21 @@ export function getConnectorServiceOLAPGetTableQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1OLAPGetTableResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createConnectorServiceOLAPGetTable(
+export function createConnectorServiceOLAPGetTable<
+  TData = V1OLAPGetTableResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<OLAPGetTableRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1OLAPGetTableResponse>>;
+    query?: Partial<CreateQueryOptions<V1OLAPGetTableResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1OLAPGetTableResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getConnectorServiceOLAPGetTableQueryOptions(
     client,
     request,
@@ -335,13 +367,19 @@ export function getConnectorServiceListDatabaseSchemasQueryKey(
   ] as const;
 }
 
-export function getConnectorServiceListDatabaseSchemasQueryOptions(
+export function getConnectorServiceListDatabaseSchemasQueryOptions<
+  TData = V1ListDatabaseSchemasResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListDatabaseSchemasRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListDatabaseSchemasResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListDatabaseSchemasResponse, Error, TData>
+    >;
   },
-): CreateQueryOptions<V1ListDatabaseSchemasResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListDatabaseSchemasResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getConnectorServiceListDatabaseSchemasQueryKey(
     client.instanceId,
     request,
@@ -353,17 +391,23 @@ export function getConnectorServiceListDatabaseSchemasQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListDatabaseSchemasResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createConnectorServiceListDatabaseSchemas(
+export function createConnectorServiceListDatabaseSchemas<
+  TData = V1ListDatabaseSchemasResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListDatabaseSchemasRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListDatabaseSchemasResponse>>;
+    query?: Partial<
+      CreateQueryOptions<V1ListDatabaseSchemasResponse, Error, TData>
+    >;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListDatabaseSchemasResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getConnectorServiceListDatabaseSchemasQueryOptions(
     client,
     request,
@@ -398,13 +442,17 @@ export function getConnectorServiceListTablesQueryKey(
   return ["ConnectorService", "listTables", instanceId, request ?? {}] as const;
 }
 
-export function getConnectorServiceListTablesQueryOptions(
+export function getConnectorServiceListTablesQueryOptions<
+  TData = V1ListTablesResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListTablesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListTablesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListTablesResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1ListTablesResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1ListTablesResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getConnectorServiceListTablesQueryKey(
     client.instanceId,
     request,
@@ -416,17 +464,19 @@ export function getConnectorServiceListTablesQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1ListTablesResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createConnectorServiceListTables(
+export function createConnectorServiceListTables<TData = V1ListTablesResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<ListTablesRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1ListTablesResponse>>;
+    query?: Partial<CreateQueryOptions<V1ListTablesResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1ListTablesResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getConnectorServiceListTablesQueryOptions(
     client,
     request,
@@ -461,13 +511,17 @@ export function getConnectorServiceGetTableQueryKey(
   return ["ConnectorService", "getTable", instanceId, request ?? {}] as const;
 }
 
-export function getConnectorServiceGetTableQueryOptions(
+export function getConnectorServiceGetTableQueryOptions<
+  TData = V1GetTableResponse,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetTableRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetTableResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetTableResponse, Error, TData>>;
   },
-): CreateQueryOptions<V1GetTableResponse> & { queryKey: QueryKey } {
+): CreateQueryOptions<V1GetTableResponse, Error, TData> & {
+  queryKey: QueryKey;
+} {
   const queryKey = getConnectorServiceGetTableQueryKey(
     client.instanceId,
     request,
@@ -479,17 +533,19 @@ export function getConnectorServiceGetTableQueryOptions(
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
+  } as CreateQueryOptions<V1GetTableResponse, Error, TData> & {
+    queryKey: QueryKey;
   };
 }
 
-export function createConnectorServiceGetTable(
+export function createConnectorServiceGetTable<TData = V1GetTableResponse>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GetTableRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<V1GetTableResponse>>;
+    query?: Partial<CreateQueryOptions<V1GetTableResponse, Error, TData>>;
   },
   queryClient?: QueryClient,
-): CreateQueryResult<V1GetTableResponse> {
+): CreateQueryResult<TData, Error> {
   const queryOptions = getConnectorServiceGetTableQueryOptions(
     client,
     request,
