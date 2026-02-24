@@ -6,6 +6,7 @@
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
     "generate:runtime-client": "svelte-kit sync && orval --config ./orval.config.ts",
+    "generate:query-hooks": "tsx scripts/generate-query-hooks.ts",
     "generate:sveltekit": "svelte-kit sync",
     "generate:template-schema": "ts-json-schema-generator --path 'src/features/canvas/components/types.ts' --type TemplateSpec -o ../runtime/parser/data/component-template-v1.json",
     "test": "vitest run",
