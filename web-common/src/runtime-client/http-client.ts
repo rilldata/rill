@@ -3,7 +3,11 @@ import type {
   HTTPError,
 } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { get } from "svelte/store";
-import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "./constants";
+import {
+  RUNTIME_ACCESS_TOKEN_DEFAULT_TTL,
+  JWT_EXPIRY_WARNING_WINDOW,
+  CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL,
+} from "./constants";
 import { HttpRequestQueue } from "./http-request-queue/HttpRequestQueue";
 import { type JWT, runtime } from "./runtime-store";
 
@@ -40,9 +44,6 @@ export const httpClient = async <T>(
 
   return (await httpRequestQueue.add(interceptedConfig)) as Promise<T>;
 };
-
-const JWT_EXPIRY_WARNING_WINDOW = 2 * 1000; // Extra time to ensure that the JWT is not expired when it ultimately reaches the server
-const CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL = 50; // Interval to recheck JWT freshness in milliseconds
 
 /**
  * If the JWT has expired, or is close to expiring, wait for a fresh one.
