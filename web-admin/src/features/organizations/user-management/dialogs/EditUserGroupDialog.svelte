@@ -429,7 +429,7 @@
                       bind:open={projectRoleDropdownOpen[project.name]}
                     >
                       <DropdownMenu.Trigger
-                        class="flex flex-row gap-1 items-center rounded-sm text-xs outline-none border-none {projectRoleDropdownOpen[project.name]
+                        class="flex flex-row gap-1 items-center rounded-sm min-w-[110px] text-xs outline-none border-none {projectRoleDropdownOpen[project.name]
                           ? 'bg-surface-active'
                           : 'hover:bg-surface-hover'} px-2 py-1"
                       >

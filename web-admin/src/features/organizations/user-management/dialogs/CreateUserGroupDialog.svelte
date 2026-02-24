@@ -446,7 +446,7 @@
                 <CaretDownIcon size="12px" />
               {/if}
             </Dropdown.Trigger>
-            <Dropdown.Content align="start">
+            <Dropdown.Content align="start" class="w-full">
               {#each PROJECT_ROLES_OPTIONS as option}
                 <Dropdown.Item
                   class="font-normal flex flex-col items-start py-2 {selectedRole ===
