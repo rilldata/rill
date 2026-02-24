@@ -244,14 +244,14 @@ The following tools are typically available for project development:
 - `project_status` for checking resource names and their current status (idle, running, error)
 - `query_sql` for running SQL against a connector; use `SELECT` statements with `LIMIT` clauses and low timeouts, and be mindful of performance or making too many queries
 - `query_metrics_view` for querying a metrics view; useful for answering data questions and validating dashboard behavior
-- `list_tables` and `get_table` for accessing the information schema of a database connector
+- `list_tables` and `show_table` for accessing the information schema of a database connector
 - `list_buckets` and `list_bucket_files` for exploring files in object stores like S3 or GCS; to preview file contents, load one file into a table using a model and query it with `query_sql`
 
 {% if .external %}
 
 ### What to do when tools are not available
 
-You may be running in an external editor that does not have Rill's MCP server connected. In this case, you will need to approach your work differently because you can't run tool calls like `list_tables` or `project_status`. Instead:
+You may be running in an external editor that does not have Rill's development MCP server on `localhost:9009` connected. If that is the case, you will need to approach your work differently because you can't run tool calls like `list_tables`, `query_sql` or `project_status`. Instead:
 1. Use the `rill validate` CLI command to validate the project and get the status of different resources.
 2. Before editing a resource, load the specific instruction file for its resource type (if available).
 3. Be more bold in making changes, and rely on `rill validate` or user feedback to inform you of issues.

@@ -5,72 +5,51 @@ sidebar_label: OpenAI
 sidebar_position: 30
 ---
 
-
-[OpenAI](https://openai.com/) provides powerful AI services including language models, embeddings, and other machine learning capabilities. Rill supports connecting to OpenAI services using your own API key and configuration parameters to enable AI-powered conversations and data analysis features. 
+[OpenAI](https://openai.com/) provides powerful AI services including language models, embeddings, and other machine learning capabilities. Rill supports connecting to OpenAI services using your own API key and configuration parameters to enable AI-powered conversations and data analysis features.
 
 ## API Key
 
-Rill will use your configured OpenAI API Connector if available, or fall back to our internal key if no custom configuration is provided. You can configure your API key in your project's `.env` file and referencing the [credentials in a connector YAML](/reference/project-files/connectors#openai).
+Rill will use your configured OpenAI connector if available, or fall back to its built-in LLM service if no custom configuration is provided. Once configured, your API key will be used for AI features in both Rill Developer and Rill Cloud, including the AI Agent builder. You can configure your API key in your project's `.env` file and reference the [credentials in a connector YAML](/reference/project-files/connectors#openai).
 
 ### OpenAI API Key
 
-To configure OpenAI access, you'll need to obtain an API key from your OpenAI account and configure it in your project.
+To configure OpenAI access, you'll need to obtain an API key and configure it in your project.
 
-1. **Obtain your OpenAI API key:**
-   - Sign in to your [OpenAI account](https://platform.openai.com/)
-   - Navigate to the [API Keys section](https://platform.openai.com/api-keys)
-   - Create a new API key or use an existing one
+1. **Obtain your OpenAI API key** from the [OpenAI Platform](https://platform.openai.com/api-keys).
 
-2. **Configure the API key in your project:**
+2. **Create the connector YAML:**
 
-   For seamless deployment to Rill Cloud, you can configure this directly in your connector YAML:
+   Create `connectors/openai.yaml` in your project:
 
    ```yaml
    type: connector
    driver: openai
    api_key: "{{ .env.OPENAI_API_KEY }}"
    ```
-:::tip Security Best Practice
 
-Never commit your OpenAI API key directly to your connector YAML files or version control. Always use environment variables with the `{{ .env.OPENAI_API_KEY }}` syntax to keep sensitive credentials secure.
-
-:::
 3. **Set up environment variable:**
-   
-   Configure the API key in your `.env` file:
+
+   If configuring manually, ensure your project's `.env` file contains the key before starting Rill:
 
    ```env
    OPENAI_API_KEY=sk-...
    ```
+   
+4. **Configure OpenAI as the default AI connector:**
 
-You have now configured OpenAI access for your Rill project. Rill will use these credentials to authenticate with OpenAI services when AI-powered features are utilized.
+   Add the following to your `rill.yaml` to use OpenAI as the AI provider for your project:
 
-:::tip Cloud Credentials Management
+   ```yaml
+   ai_connector: openai
+   ```
+For details on managing credentials across environments, see [Configure Local Credentials](/developers/build/connectors/credentials).
 
-If your project has already been deployed to Rill Cloud with configured credentials, you can use `rill env pull` to [retrieve and sync these cloud credentials](/developers/build/connectors/credentials/#rill-env-pull) to your local `.env` file. Note that this operation will overwrite any existing local credentials for this source.
+## Configuration Options
 
-:::
+For additional configuration options (model, base URL, API type, etc.), see the [OpenAI connector reference](/reference/project-files/connectors#openai).
 
 ## Deploy to Rill Cloud
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide OpenAI API credentials used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#openai) for more information.
+Rill requires you to explicitly provide an OpenAI API key to use the OpenAI connector. See the [connector reference](/reference/project-files/connectors#openai) for details.
 
-If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
-```
-rill env push
-```
-
-## Usage
-
-Once configured, OpenAI integration enables various AI-powered features in Rill:
-
-- **Natural Language Queries**: Ask questions about your data using everyday conversational language on the dashboard or project level.
-- **Data Insights**: Get AI-generated insights and recommendations
-- **Intelligent Suggestions**: Receive suggestions for dashboard improvements and data exploration
-
-:::tip Don't see the AI Chat?
-
-If you don't see AI-powered chat features in your Rill interface, [contact us](/contact) for the latest information on embedded chat capabilities and availability.
-
-:::
-
+For details on pushing and pulling credentials between environments, see [Configure Local Credentials](/developers/build/connectors/credentials#rill-env-push).

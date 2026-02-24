@@ -4,20 +4,20 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/starrocks/teststarrocks"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestStarRocksOLAP(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
+	testmode.Expensive(t)
 
 	dsn := teststarrocks.StartWithData(t)
 
@@ -142,6 +142,10 @@ func TestStarRocksOLAP(t *testing.T) {
 	// High-precision DECIMAL test (DECIMAL32, DECIMAL64, DECIMAL128)
 	t.Run("DecimalPrecision", func(t *testing.T) {
 		testDecimalPrecision(t, olap)
+	})
+
+	t.Run("LoadDDL", func(t *testing.T) {
+		testLoadDDL(t, conn)
 	})
 }
 
@@ -301,16 +305,19 @@ func testDateTimeTypes(t *testing.T, olap drivers.OLAPStore) {
 	err = res.MapScan(row)
 	require.NoError(t, err)
 
-	// DATE - should be string (StarRocks returns as string via MySQL protocol)
+	// DATE - should be string (StarRocks returns DATE as string via MySQL protocol)
 	dateVal, ok := row["date_col"].(string)
 	require.True(t, ok, "expected string type for DATE, got %T", row["date_col"])
 	require.Contains(t, dateVal, "2024-01-15")
 
-	// DATETIME - should be string (MySQL driver returns as string without parseTime=true)
-	datetimeVal, ok := row["datetime_col"].(string)
-	require.True(t, ok, "expected string type for DATETIME, got %T", row["datetime_col"])
-	require.Contains(t, datetimeVal, "2024-01-15")
-	require.Contains(t, datetimeVal, "10:30:00")
+	// DATETIME - returned as time.Time because parseTime=true is set in DSN
+	datetimeVal, ok := row["datetime_col"].(time.Time)
+	require.True(t, ok, "expected time.Time type for DATETIME, got %T", row["datetime_col"])
+	require.Equal(t, 2024, datetimeVal.Year())
+	require.Equal(t, time.January, datetimeVal.Month())
+	require.Equal(t, 15, datetimeVal.Day())
+	require.Equal(t, 10, datetimeVal.Hour())
+	require.Equal(t, 30, datetimeVal.Minute())
 }
 
 func testStringTypes(t *testing.T, olap drivers.OLAPStore) {
@@ -1297,6 +1304,19 @@ func testAllTypesOutput(t *testing.T, olap drivers.OLAPStore) {
 	}
 
 	t.Log("================================================================================")
+}
+
+func testLoadDDL(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("default")
+	ctx := context.Background()
+
+	// Test DDL for the all_types table
+	table, err := olap.InformationSchema().Lookup(ctx, "", "test_db", "all_types")
+	require.NoError(t, err)
+	err = olap.InformationSchema().LoadDDL(ctx, table)
+	require.NoError(t, err)
+	require.Contains(t, table.DDL, "CREATE TABLE")
+	require.Contains(t, table.DDL, "all_types")
 }
 
 // formatValue formats a value for display, truncating long strings

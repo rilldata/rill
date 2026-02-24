@@ -71,8 +71,7 @@ const (
 	AdminService_ListUsergroupsForOrganizationAndUser_FullMethodName   = "/rill.admin.v1.AdminService/ListUsergroupsForOrganizationAndUser"
 	AdminService_CreateUsergroup_FullMethodName                        = "/rill.admin.v1.AdminService/CreateUsergroup"
 	AdminService_GetUsergroup_FullMethodName                           = "/rill.admin.v1.AdminService/GetUsergroup"
-	AdminService_RenameUsergroup_FullMethodName                        = "/rill.admin.v1.AdminService/RenameUsergroup"
-	AdminService_EditUsergroup_FullMethodName                          = "/rill.admin.v1.AdminService/EditUsergroup"
+	AdminService_UpdateUsergroup_FullMethodName                        = "/rill.admin.v1.AdminService/UpdateUsergroup"
 	AdminService_ListOrganizationMemberUsergroups_FullMethodName       = "/rill.admin.v1.AdminService/ListOrganizationMemberUsergroups"
 	AdminService_ListProjectMemberUsergroups_FullMethodName            = "/rill.admin.v1.AdminService/ListProjectMemberUsergroups"
 	AdminService_DeleteUsergroup_FullMethodName                        = "/rill.admin.v1.AdminService/DeleteUsergroup"
@@ -196,9 +195,9 @@ type AdminServiceClient interface {
 	CreateOrganization(ctx context.Context, in *CreateOrganizationRequest, opts ...grpc.CallOption) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organization
 	DeleteOrganization(ctx context.Context, in *DeleteOrganizationRequest, opts ...grpc.CallOption) (*DeleteOrganizationResponse, error)
-	// UpdateOrganization deletes an organizations
+	// UpdateOrganization updates an organization
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
-	// ListProjectsForOrganization lists all the projects currently available for given organizations.
+	// ListProjectsForOrganization lists all the projects currently available for a given organization.
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
@@ -216,7 +215,7 @@ type AdminServiceClient interface {
 	SearchProjectNames(ctx context.Context, in *SearchProjectNamesRequest, opts ...grpc.CallOption) (*SearchProjectNamesResponse, error)
 	// CreateProject creates a new project
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
-	// DeleteProject deletes an project
+	// DeleteProject deletes a project
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
@@ -295,15 +294,13 @@ type AdminServiceClient interface {
 	ListUsergroupsForOrganizationAndUser(ctx context.Context, in *ListUsergroupsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListUsergroupsForOrganizationAndUserResponse, error)
 	// CreateUsergroup creates a user group in the organization
 	CreateUsergroup(ctx context.Context, in *CreateUsergroupRequest, opts ...grpc.CallOption) (*CreateUsergroupResponse, error)
-	// GetUsergroups returns the user group details
+	// GetUsergroup returns the user group details
 	GetUsergroup(ctx context.Context, in *GetUsergroupRequest, opts ...grpc.CallOption) (*GetUsergroupResponse, error)
-	// RenameUsergroup renames the user group
-	RenameUsergroup(ctx context.Context, in *RenameUsergroupRequest, opts ...grpc.CallOption) (*RenameUsergroupResponse, error)
-	// EditUsergroup renames the user group
-	EditUsergroup(ctx context.Context, in *EditUsergroupRequest, opts ...grpc.CallOption) (*EditUsergroupResponse, error)
-	// ListOrganizationMemberUsergroups lists the org's user groups
+	// UpdateUsergroup updates a user group's name and/or description
+	UpdateUsergroup(ctx context.Context, in *UpdateUsergroupRequest, opts ...grpc.CallOption) (*UpdateUsergroupResponse, error)
+	// ListOrganizationMemberUsergroups lists the organization's user groups
 	ListOrganizationMemberUsergroups(ctx context.Context, in *ListOrganizationMemberUsergroupsRequest, opts ...grpc.CallOption) (*ListOrganizationMemberUsergroupsResponse, error)
-	// ListProjectMemberUsergroups lists the project's user groups
+	// ListProjectMemberUsergroups lists the user groups assigned to a project
 	ListProjectMemberUsergroups(ctx context.Context, in *ListProjectMemberUsergroupsRequest, opts ...grpc.CallOption) (*ListProjectMemberUsergroupsResponse, error)
 	// DeleteUsergroup deletes the user group from the organization
 	DeleteUsergroup(ctx context.Context, in *DeleteUsergroupRequest, opts ...grpc.CallOption) (*DeleteUsergroupResponse, error)
@@ -313,7 +310,7 @@ type AdminServiceClient interface {
 	SetOrganizationMemberUsergroupRole(ctx context.Context, in *SetOrganizationMemberUsergroupRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUsergroupRoleResponse, error)
 	// RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
 	RemoveOrganizationMemberUsergroup(ctx context.Context, in *RemoveOrganizationMemberUsergroupRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberUsergroupResponse, error)
-	// AddProjectMemberUsergroupRole adds the role for the user group
+	// AddProjectMemberUsergroup adds a user group to the project with a role
 	AddProjectMemberUsergroup(ctx context.Context, in *AddProjectMemberUsergroupRequest, opts ...grpc.CallOption) (*AddProjectMemberUsergroupResponse, error)
 	// SetProjectMemberUsergroupRole sets the role for the user group
 	SetProjectMemberUsergroupRole(ctx context.Context, in *SetProjectMemberUsergroupRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberUsergroupRoleResponse, error)
@@ -1045,20 +1042,10 @@ func (c *adminServiceClient) GetUsergroup(ctx context.Context, in *GetUsergroupR
 	return out, nil
 }
 
-func (c *adminServiceClient) RenameUsergroup(ctx context.Context, in *RenameUsergroupRequest, opts ...grpc.CallOption) (*RenameUsergroupResponse, error) {
+func (c *adminServiceClient) UpdateUsergroup(ctx context.Context, in *UpdateUsergroupRequest, opts ...grpc.CallOption) (*UpdateUsergroupResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RenameUsergroupResponse)
-	err := c.cc.Invoke(ctx, AdminService_RenameUsergroup_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) EditUsergroup(ctx context.Context, in *EditUsergroupRequest, opts ...grpc.CallOption) (*EditUsergroupResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EditUsergroupResponse)
-	err := c.cc.Invoke(ctx, AdminService_EditUsergroup_FullMethodName, in, out, cOpts...)
+	out := new(UpdateUsergroupResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateUsergroup_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2113,9 +2100,9 @@ type AdminServiceServer interface {
 	CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organization
 	DeleteOrganization(context.Context, *DeleteOrganizationRequest) (*DeleteOrganizationResponse, error)
-	// UpdateOrganization deletes an organizations
+	// UpdateOrganization updates an organization
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
-	// ListProjectsForOrganization lists all the projects currently available for given organizations.
+	// ListProjectsForOrganization lists all the projects currently available for a given organization.
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
@@ -2133,7 +2120,7 @@ type AdminServiceServer interface {
 	SearchProjectNames(context.Context, *SearchProjectNamesRequest) (*SearchProjectNamesResponse, error)
 	// CreateProject creates a new project
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
-	// DeleteProject deletes an project
+	// DeleteProject deletes a project
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
@@ -2212,15 +2199,13 @@ type AdminServiceServer interface {
 	ListUsergroupsForOrganizationAndUser(context.Context, *ListUsergroupsForOrganizationAndUserRequest) (*ListUsergroupsForOrganizationAndUserResponse, error)
 	// CreateUsergroup creates a user group in the organization
 	CreateUsergroup(context.Context, *CreateUsergroupRequest) (*CreateUsergroupResponse, error)
-	// GetUsergroups returns the user group details
+	// GetUsergroup returns the user group details
 	GetUsergroup(context.Context, *GetUsergroupRequest) (*GetUsergroupResponse, error)
-	// RenameUsergroup renames the user group
-	RenameUsergroup(context.Context, *RenameUsergroupRequest) (*RenameUsergroupResponse, error)
-	// EditUsergroup renames the user group
-	EditUsergroup(context.Context, *EditUsergroupRequest) (*EditUsergroupResponse, error)
-	// ListOrganizationMemberUsergroups lists the org's user groups
+	// UpdateUsergroup updates a user group's name and/or description
+	UpdateUsergroup(context.Context, *UpdateUsergroupRequest) (*UpdateUsergroupResponse, error)
+	// ListOrganizationMemberUsergroups lists the organization's user groups
 	ListOrganizationMemberUsergroups(context.Context, *ListOrganizationMemberUsergroupsRequest) (*ListOrganizationMemberUsergroupsResponse, error)
-	// ListProjectMemberUsergroups lists the project's user groups
+	// ListProjectMemberUsergroups lists the user groups assigned to a project
 	ListProjectMemberUsergroups(context.Context, *ListProjectMemberUsergroupsRequest) (*ListProjectMemberUsergroupsResponse, error)
 	// DeleteUsergroup deletes the user group from the organization
 	DeleteUsergroup(context.Context, *DeleteUsergroupRequest) (*DeleteUsergroupResponse, error)
@@ -2230,7 +2215,7 @@ type AdminServiceServer interface {
 	SetOrganizationMemberUsergroupRole(context.Context, *SetOrganizationMemberUsergroupRoleRequest) (*SetOrganizationMemberUsergroupRoleResponse, error)
 	// RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
 	RemoveOrganizationMemberUsergroup(context.Context, *RemoveOrganizationMemberUsergroupRequest) (*RemoveOrganizationMemberUsergroupResponse, error)
-	// AddProjectMemberUsergroupRole adds the role for the user group
+	// AddProjectMemberUsergroup adds a user group to the project with a role
 	AddProjectMemberUsergroup(context.Context, *AddProjectMemberUsergroupRequest) (*AddProjectMemberUsergroupResponse, error)
 	// SetProjectMemberUsergroupRole sets the role for the user group
 	SetProjectMemberUsergroupRole(context.Context, *SetProjectMemberUsergroupRoleRequest) (*SetProjectMemberUsergroupRoleResponse, error)
@@ -2598,11 +2583,8 @@ func (UnimplementedAdminServiceServer) CreateUsergroup(context.Context, *CreateU
 func (UnimplementedAdminServiceServer) GetUsergroup(context.Context, *GetUsergroupRequest) (*GetUsergroupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsergroup not implemented")
 }
-func (UnimplementedAdminServiceServer) RenameUsergroup(context.Context, *RenameUsergroupRequest) (*RenameUsergroupResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RenameUsergroup not implemented")
-}
-func (UnimplementedAdminServiceServer) EditUsergroup(context.Context, *EditUsergroupRequest) (*EditUsergroupResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EditUsergroup not implemented")
+func (UnimplementedAdminServiceServer) UpdateUsergroup(context.Context, *UpdateUsergroupRequest) (*UpdateUsergroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUsergroup not implemented")
 }
 func (UnimplementedAdminServiceServer) ListOrganizationMemberUsergroups(context.Context, *ListOrganizationMemberUsergroupsRequest) (*ListOrganizationMemberUsergroupsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationMemberUsergroups not implemented")
@@ -3870,38 +3852,20 @@ func _AdminService_GetUsergroup_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_RenameUsergroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RenameUsergroupRequest)
+func _AdminService_UpdateUsergroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUsergroupRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).RenameUsergroup(ctx, in)
+		return srv.(AdminServiceServer).UpdateUsergroup(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_RenameUsergroup_FullMethodName,
+		FullMethod: AdminService_UpdateUsergroup_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).RenameUsergroup(ctx, req.(*RenameUsergroupRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_EditUsergroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EditUsergroupRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).EditUsergroup(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_EditUsergroup_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).EditUsergroup(ctx, req.(*EditUsergroupRequest))
+		return srv.(AdminServiceServer).UpdateUsergroup(ctx, req.(*UpdateUsergroupRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5976,12 +5940,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetUsergroup_Handler,
 		},
 		{
-			MethodName: "RenameUsergroup",
-			Handler:    _AdminService_RenameUsergroup_Handler,
-		},
-		{
-			MethodName: "EditUsergroup",
-			Handler:    _AdminService_EditUsergroup_Handler,
+			MethodName: "UpdateUsergroup",
+			Handler:    _AdminService_UpdateUsergroup_Handler,
 		},
 		{
 			MethodName: "ListOrganizationMemberUsergroups",

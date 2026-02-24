@@ -1,7 +1,7 @@
 ---
 note: GENERATED. DO NOT EDIT.
 title: Project YAML
-sidebar_position: 41
+sidebar_position: 42
 ---
 
 The `rill.yaml` file contains metadata about your project.
