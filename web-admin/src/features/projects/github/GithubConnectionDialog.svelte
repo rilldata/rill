@@ -209,7 +209,6 @@
           options={$githubUserOrgs.data ?? []}
           optionsLoading={$githubUserOrgs.isFetching}
           sameWidth
-          portal="body"
           enableSearch
           onAddNew={() => githubAccessManager.reselectOrgOrRepos(false)}
           addNewLabel="+ Connect other orgs"
@@ -224,19 +223,30 @@
         />
       {:else}
         <Select
+          bind:value={$form.org}
+          id="org"
+          label="Repository org"
+          placeholder="Select organization"
+          options={$githubUserOrgs.data ?? []}
+          optionsLoading={$githubUserOrgs.isFetching}
+          sameWidth
+          enableSearch
+          onAddNew={() => githubAccessManager.reselectOrgOrRepos(false)}
+          addNewLabel="+ Connect other orgs"
+        />
+        <!-- <Select
           bind:value={$form.repo}
           id="name"
           label="Repository"
           placeholder="Select repository"
           sameWidth
-          portal="body"
           options={$githubUserRepos.data?.repoOptions ?? []}
           optionsLoading={$githubUserRepos.isFetching}
           enableSearch
           onChange={(newRepo) => onSelectedRepoChange(newRepo)}
           onAddNew={() => githubAccessManager.reselectOrgOrRepos(true)}
           addNewLabel="+ Connect other repos"
-        />
+        /> -->
 
         <Collapsible.Root bind:open={advancedOpened}>
           <Collapsible.Trigger asChild let:builder>
