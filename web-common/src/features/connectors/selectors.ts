@@ -112,7 +112,7 @@ export function useListDatabaseSchemas(
   database?: string,
   enabled: boolean = true,
 ) {
-  const query = createConnectorServiceListDatabaseSchemas(
+  return createConnectorServiceListDatabaseSchemas(
     client,
     {
       connector,
@@ -120,42 +120,35 @@ export function useListDatabaseSchemas(
     {
       query: {
         enabled: !!client.instanceId && !!connector && enabled,
+        select: (data) => {
+          const allSchemas = data.databaseSchemas ?? [];
+
+          if (database !== undefined) {
+            const hasEmptyDatabases = allSchemas.every((s) => !s.database);
+            return hasEmptyDatabases
+              ? [database]
+              : allSchemas
+                  .filter((s) => s.database === database)
+                  .map((s) => s.databaseSchema ?? "");
+          }
+
+          // Derive databases (top-level)
+          const hasEmptyDatabases = allSchemas.every(
+            (schema) => !schema.database,
+          );
+          return hasEmptyDatabases
+            ? Array.from(
+                new Set(
+                  allSchemas.map((schema) => schema.databaseSchema ?? ""),
+                ),
+              )
+            : Array.from(
+                new Set(allSchemas.map((schema) => schema.database ?? "")),
+              ).filter(Boolean);
+        },
       },
     },
   );
-
-  return derived(query, ($q) => {
-    const allSchemas = $q?.data?.databaseSchemas ?? [];
-
-    let data: string[] | undefined;
-    if ($q?.data) {
-      if (database !== undefined) {
-        const hasEmptyDatabases = allSchemas.every((s) => !s.database);
-        data = hasEmptyDatabases
-          ? [database]
-          : allSchemas
-              .filter((s) => s.database === database)
-              .map((s) => s.databaseSchema ?? "");
-      } else {
-        const hasEmptyDatabases = allSchemas.every(
-          (schema) => !schema.database,
-        );
-        data = hasEmptyDatabases
-          ? Array.from(
-              new Set(allSchemas.map((schema) => schema.databaseSchema ?? "")),
-            )
-          : Array.from(
-              new Set(allSchemas.map((schema) => schema.database ?? "")),
-            ).filter(Boolean);
-      }
-    }
-
-    return {
-      data,
-      error: $q?.error,
-      isLoading: $q?.isLoading,
-    };
-  });
 }
 
 /**
