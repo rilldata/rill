@@ -140,6 +140,10 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 	acquired = true
 
+	// Enrich context with query origin data for the QueryLogSpanProcessor.
+	// This must happen after connection acquisition so queue duration is known.
+	ctx = observability.WithQueueDuration(ctx, acquiredTime.Sub(start).Milliseconds())
+
 	// NOTE: We can't just "defer release()" because release() will block until rows.Close() is called.
 	// We must be careful to make sure release() is called on all code paths.
 

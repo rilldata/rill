@@ -1443,6 +1443,8 @@ export interface V1MetricsViewAggregationRequest {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 }
 
 export type V1MetricsViewAggregationResponseDataItem = {
@@ -1452,6 +1454,8 @@ export type V1MetricsViewAggregationResponseDataItem = {
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1461,6 +1465,8 @@ export interface V1MetricsViewAggregationSort {
 
 export interface V1MetricsViewAnnotationsResponse {
   rows?: V1MetricsViewAnnotationsResponseAnnotation[];
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 /**
@@ -1535,10 +1541,14 @@ export interface V1MetricsViewComparisonRequest {
   priority?: number;
   exact?: boolean;
   filter?: V1MetricsViewFilter;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 }
 
 export interface V1MetricsViewComparisonResponse {
   rows?: V1MetricsViewComparisonRow[];
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1MetricsViewComparisonRow {
@@ -1597,6 +1607,8 @@ export interface V1MetricsViewRowsRequest {
   timeZone?: string;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: unknown };
@@ -1604,14 +1616,20 @@ export type V1MetricsViewRowsResponseDataItem = { [key: string]: unknown };
 export interface V1MetricsViewRowsResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewRowsResponseDataItem[];
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1MetricsViewSchemaResponse {
   schema?: V1StructType;
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1MetricsViewSearchResponse {
   results?: MetricsViewSearchResponseSearchResult[];
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1MetricsViewSort {
@@ -1696,6 +1714,8 @@ This may be empty if the metrics view is based on an externally managed table. *
 
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1MetricsViewTimeRangesResponse {
@@ -1705,6 +1725,8 @@ export interface V1MetricsViewTimeRangesResponse {
   /** The same values as resolved_time_ranges for backwards compatibility.
 Deprecated: use resolved_time_ranges instead. */
   timeRanges?: V1TimeRange[];
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1MetricsViewTimeSeriesRequest {
@@ -1724,11 +1746,15 @@ export interface V1MetricsViewTimeSeriesRequest {
   priority?: number;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1MetricsViewToplistRequest {
@@ -1747,6 +1773,8 @@ export interface V1MetricsViewToplistRequest {
   havingSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 }
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: unknown };
@@ -1754,6 +1782,8 @@ export type V1MetricsViewToplistResponseDataItem = { [key: string]: unknown };
 export interface V1MetricsViewToplistResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewToplistResponseDataItem[];
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1MetricsViewTotalsRequest {
@@ -1768,6 +1798,8 @@ export interface V1MetricsViewTotalsRequest {
   priority?: number;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: unknown };
@@ -1775,6 +1807,8 @@ export type V1MetricsViewTotalsResponseData = { [key: string]: unknown };
 export interface V1MetricsViewTotalsResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewTotalsResponseData;
+  /** Traces of SQL queries executed. Only populated if trace was set to true in the request. */
+  traces?: V1QueryTrace[];
 }
 
 export interface V1Migration {
@@ -2107,6 +2141,17 @@ export interface V1QueryResult {
   tableCardinalityResponse?: V1TableCardinalityResponse;
   tableColumnsResponse?: V1TableColumnsResponse;
   tableRowsResponse?: V1TableRowsResponse;
+}
+
+/**
+ * QueryTrace contains information about a single SQL query executed during a request.
+ */
+export interface V1QueryTrace {
+  sql?: string;
+  durationMs?: string;
+  queueDurationMs?: string;
+  failed?: boolean;
+  error?: string;
 }
 
 export type V1ReconcileStatus =
@@ -2984,6 +3029,8 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewAnnotationsBody = {
@@ -2994,6 +3041,8 @@ export type QueryServiceMetricsViewAnnotationsBody = {
   timeZone?: string;
   limit?: string;
   offset?: string;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {
@@ -3015,6 +3064,8 @@ export type QueryServiceMetricsViewComparisonBody = {
   priority?: number;
   exact?: boolean;
   filter?: V1MetricsViewFilter;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewRowsBody = {
@@ -3029,10 +3080,16 @@ export type QueryServiceMetricsViewRowsBody = {
   timeZone?: string;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewSchemaParams = {
   priority?: number;
+  /**
+   * Optional. If true, the response will include traces of SQL queries executed.
+   */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewSearchBody = {
@@ -3043,11 +3100,15 @@ export type QueryServiceMetricsViewSearchBody = {
   having?: V1Expression;
   limit?: number;
   priority?: number;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
   timeDimension?: string;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewTimeRangesBody = {
@@ -3061,6 +3122,8 @@ export type QueryServiceMetricsViewTimeRangesBody = {
   timeDimension?: string;
   /** Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided. */
   executionTime?: string;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
@@ -3078,6 +3141,8 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   priority?: number;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewToplistBody = {
@@ -3094,6 +3159,8 @@ export type QueryServiceMetricsViewToplistBody = {
   havingSql?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceMetricsViewTotalsBody = {
@@ -3106,6 +3173,8 @@ export type QueryServiceMetricsViewTotalsBody = {
   priority?: number;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  /** Optional. If true, the response will include traces of SQL queries executed. */
+  trace?: boolean;
 };
 
 export type QueryServiceColumnNullCountParams = {

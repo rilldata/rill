@@ -2943,6 +2943,115 @@ var _ interface {
 	ErrorName() string
 } = QueryResultValidationError{}
 
+// Validate checks the field values on QueryTrace with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *QueryTrace) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on QueryTrace with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in QueryTraceMultiError, or
+// nil if none found.
+func (m *QueryTrace) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *QueryTrace) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Sql
+
+	// no validation rules for DurationMs
+
+	// no validation rules for QueueDurationMs
+
+	// no validation rules for Failed
+
+	// no validation rules for Error
+
+	if len(errors) > 0 {
+		return QueryTraceMultiError(errors)
+	}
+
+	return nil
+}
+
+// QueryTraceMultiError is an error wrapping multiple validation errors
+// returned by QueryTrace.ValidateAll() if the designated constraints aren't met.
+type QueryTraceMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m QueryTraceMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m QueryTraceMultiError) AllErrors() []error { return m }
+
+// QueryTraceValidationError is the validation error returned by
+// QueryTrace.Validate if the designated constraints aren't met.
+type QueryTraceValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e QueryTraceValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e QueryTraceValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e QueryTraceValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e QueryTraceValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e QueryTraceValidationError) ErrorName() string { return "QueryTraceValidationError" }
+
+// Error satisfies the builtin error interface
+func (e QueryTraceValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sQueryTrace.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = QueryTraceValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = QueryTraceValidationError{}
+
 // Validate checks the field values on MetricsViewAggregationRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -3351,6 +3460,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 
 	// no validation rules for Rows
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewAggregationRequestMultiError(errors)
 	}
@@ -3509,6 +3620,40 @@ func (m *MetricsViewAggregationResponse) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return MetricsViewAggregationResponseValidationError{
 					field:  fmt.Sprintf("Data[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -5480,6 +5625,8 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewToplistRequestMultiError(errors)
 	}
@@ -5642,6 +5789,40 @@ func (m *MetricsViewToplistResponse) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return MetricsViewToplistResponseValidationError{
 					field:  fmt.Sprintf("Data[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewToplistResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewToplistResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewToplistResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -6104,6 +6285,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewComparisonRequestMultiError(errors)
 	}
@@ -6233,6 +6416,40 @@ func (m *MetricsViewComparisonResponse) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return MetricsViewComparisonResponseValidationError{
 					field:  fmt.Sprintf("Rows[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewComparisonResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewComparisonResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewComparisonResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -7318,6 +7535,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewTimeSeriesRequestMultiError(errors)
 	}
@@ -7485,6 +7704,40 @@ func (m *MetricsViewTimeSeriesResponse) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return MetricsViewTimeSeriesResponseValidationError{
 					field:  fmt.Sprintf("Data[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTimeSeriesResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTimeSeriesResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTimeSeriesResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -7742,6 +7995,8 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewTotalsRequestMultiError(errors)
 	}
@@ -7905,6 +8160,40 @@ func (m *MetricsViewTotalsResponse) validate(all bool) error {
 				cause:  err,
 			}
 		}
+	}
+
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTotalsResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTotalsResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTotalsResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	}
 
 	if len(errors) > 0 {
@@ -8202,6 +8491,8 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewRowsRequestMultiError(errors)
 	}
@@ -8364,6 +8655,40 @@ func (m *MetricsViewRowsResponse) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return MetricsViewRowsResponseValidationError{
 					field:  fmt.Sprintf("Data[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewRowsResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewRowsResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewRowsResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -9004,6 +9329,8 @@ func (m *MetricsViewTimeRangeRequest) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewTimeRangeRequestMultiError(errors)
 	}
@@ -9136,6 +9463,40 @@ func (m *MetricsViewTimeRangeResponse) validate(all bool) error {
 		}
 	}
 
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTimeRangeResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTimeRangeResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTimeRangeResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewTimeRangeResponseMultiError(errors)
 	}
@@ -9253,6 +9614,8 @@ func (m *MetricsViewSchemaRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Priority
+
+	// no validation rules for Trace
 
 	if len(errors) > 0 {
 		return MetricsViewSchemaRequestMultiError(errors)
@@ -9383,6 +9746,40 @@ func (m *MetricsViewSchemaResponse) validate(all bool) error {
 				cause:  err,
 			}
 		}
+	}
+
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSchemaResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSchemaResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSchemaResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	}
 
 	if len(errors) > 0 {
@@ -9602,6 +9999,8 @@ func (m *MetricsViewSearchRequest) validate(all bool) error {
 
 	// no validation rules for Priority
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewSearchRequestMultiError(errors)
 	}
@@ -9738,6 +10137,40 @@ func (m *MetricsViewSearchResponse) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSearchResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSearchResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSearchResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSearchResponseMultiError(errors)
 	}
@@ -9858,6 +10291,8 @@ func (m *MetricsViewTimeRangesRequest) validate(all bool) error {
 	// no validation rules for TimeZone
 
 	// no validation rules for TimeDimension
+
+	// no validation rules for Trace
 
 	if m.ExecutionTime != nil {
 
@@ -10084,6 +10519,40 @@ func (m *MetricsViewTimeRangesResponse) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return MetricsViewTimeRangesResponseValidationError{
 					field:  fmt.Sprintf("TimeRanges[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTimeRangesResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -10433,6 +10902,8 @@ func (m *MetricsViewAnnotationsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Trace
+
 	if len(errors) > 0 {
 		return MetricsViewAnnotationsRequestMultiError(errors)
 	}
@@ -10562,6 +11033,40 @@ func (m *MetricsViewAnnotationsResponse) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return MetricsViewAnnotationsResponseValidationError{
 					field:  fmt.Sprintf("Rows[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetTraces() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAnnotationsResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAnnotationsResponseValidationError{
+						field:  fmt.Sprintf("Traces[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAnnotationsResponseValidationError{
+					field:  fmt.Sprintf("Traces[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}

@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"github.com/rilldata/rill/runtime/pkg/querytrace"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -77,11 +78,18 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		FillMissing:         req.FillMissing,
 		Rows:                req.Rows,
 	}
+	var collector *querytrace.Collector
+	if req.Trace {
+		collector = &querytrace.Collector{}
+		ctx = querytrace.WithCollector(ctx, collector)
+	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
-
+	if collector != nil {
+		q.Result.Traces = collector.ToProto()
+	}
 	return q.Result, nil
 }
 
@@ -128,11 +136,18 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		Filter:          req.Filter,
 		SecurityClaims:  claims,
 	}
+	var collector *querytrace.Collector
+	if req.Trace {
+		collector = &querytrace.Collector{}
+		ctx = querytrace.WithCollector(ctx, collector)
+	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
-
+	if collector != nil {
+		q.Result.Traces = collector.ToProto()
+	}
 	return q.Result, nil
 }
 
@@ -193,11 +208,18 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		Filter:              req.Filter,
 		SecurityClaims:      claims,
 	}
+	var collector *querytrace.Collector
+	if req.Trace {
+		collector = &querytrace.Collector{}
+		ctx = querytrace.WithCollector(ctx, collector)
+	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
-
+	if collector != nil {
+		q.Result.Traces = collector.ToProto()
+	}
 	return q.Result, nil
 }
 
@@ -237,9 +259,17 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		SecurityClaims:  claims,
 		TimeDimension:   req.TimeDimension,
 	}
+	var collector *querytrace.Collector
+	if req.Trace {
+		collector = &querytrace.Collector{}
+		ctx = querytrace.WithCollector(ctx, collector)
+	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
+	}
+	if collector != nil {
+		q.Result.Traces = collector.ToProto()
 	}
 	return q.Result, nil
 }
@@ -275,9 +305,17 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		SecurityClaims:  claims,
 		TimeDimension:   req.TimeDimension,
 	}
+	var collector *querytrace.Collector
+	if req.Trace {
+		collector = &querytrace.Collector{}
+		ctx = querytrace.WithCollector(ctx, collector)
+	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
+	}
+	if collector != nil {
+		q.Result.Traces = collector.ToProto()
 	}
 	return q.Result, nil
 }
@@ -328,11 +366,18 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		Filter:             req.Filter,
 		TimeDimension:      req.TimeDimension,
 	}
+	var collector *querytrace.Collector
+	if req.Trace {
+		collector = &querytrace.Collector{}
+		ctx = querytrace.WithCollector(ctx, collector)
+	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
-
+	if collector != nil {
+		q.Result.Traces = collector.ToProto()
+	}
 	return q.Result, nil
 }
 
@@ -386,11 +431,18 @@ func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsVi
 		MetricsViewName: req.MetricsViewName,
 		SecurityClaims:  claims,
 	}
+	var collector *querytrace.Collector
+	if req.Trace {
+		collector = &querytrace.Collector{}
+		ctx = querytrace.WithCollector(ctx, collector)
+	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
-
+	if collector != nil {
+		q.Result.Traces = collector.ToProto()
+	}
 	return q.Result, nil
 }
 
@@ -424,11 +476,18 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		Limit:           &limit,
 		SecurityClaims:  claims,
 	}
+	var collector *querytrace.Collector
+	if req.Trace {
+		collector = &querytrace.Collector{}
+		ctx = querytrace.WithCollector(ctx, collector)
+	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
-
+	if collector != nil {
+		q.Result.Traces = collector.ToProto()
+	}
 	return q.Result, nil
 }
 

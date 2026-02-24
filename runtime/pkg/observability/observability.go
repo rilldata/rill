@@ -97,6 +97,10 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 		otel.SetMeterProvider(meterProvider)
 	}
 
+	// Initialize query log span processor.
+	// Registered on the global TracerProvider to capture sql.conn.query spans created by otelsql.
+	queryLogProcessor := NewQueryLogSpanProcessor()
+
 	// Create global traces exporter
 	var tracerProvider *trace.TracerProvider
 	switch opts.TracesExporter {
@@ -110,6 +114,7 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 		tracerProvider = trace.NewTracerProvider(
 			trace.WithSampler(trace.AlwaysSample()),
 			trace.WithResource(res),
+			trace.WithSpanProcessor(queryLogProcessor),
 			trace.WithSpanProcessor(bsp),
 		)
 	case FileBasedExporter:
@@ -121,10 +126,17 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 		tracerProvider = trace.NewTracerProvider(
 			trace.WithSampler(trace.AlwaysSample()),
 			trace.WithResource(res),
+			trace.WithSpanProcessor(queryLogProcessor),
 			trace.WithSpanProcessor(bsp),
 		)
 	case NoopExporter:
-		// Nothing to do
+		// Create a TracerProvider with just the query log processor so that
+		// otelsql spans are captured for query logs even without a downstream exporter.
+		tracerProvider = trace.NewTracerProvider(
+			trace.WithSampler(trace.AlwaysSample()),
+			trace.WithResource(res),
+			trace.WithSpanProcessor(queryLogProcessor),
+		)
 	default:
 		panic(fmt.Errorf("unexpected traces exporter %q", opts.TracesExporter))
 	}
