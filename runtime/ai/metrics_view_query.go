@@ -39,6 +39,15 @@ The JSON schema defines all available parameters. Key considerations:
 
 Request:
 - Include 'limit' and 'sort' parameters to optimize performance. Keep the limit as low as realistically possible for your task (ideally below 100 rows). Regardless of whether you include a limit, the server will truncate large results (and return a warning if it does).
+- When filtering on a dimension value, choose the approach based on confidence:
+  - Phrase exactly matches a known value (e.g., from prior context or the summary), use 'eq'.
+  - Phrase closely matches the known value (e.g., "United States"), use 'ilike' with '%united states%'.
+  - If the user's input may be an abbreviation, missing punctuation, or a typo (e.g., "drmarty" for "Dr. Marty Pets"),
+    first issue a discovery query: include only the dimension, filter with 2-4 'ilike' patterns derived by breaking
+    the input into substrings and plausible spellings (e.g., '%dr%mart%', '%marty%'), and limit to 20.
+    From the results, apply semantic judgment to select only the values that plausibly refer to the same entity
+    as the user's input — not just any value that shares a substring. Then issue a second query with an exact
+    'in' filter using those values.
 - 'time_range' is inclusive of start time, exclusive of end time
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)

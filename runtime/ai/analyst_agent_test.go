@@ -208,6 +208,55 @@ func TestAnalystOpenRTB(t *testing.T) {
 	})
 }
 
+// TestAnalystFuzzyDimensionMatching reproduces issue where the AI fails to
+// match a user's fuzzy query (e.g. "royalcanin") to the correct dimension values (e.g. "Royal Canin" and "Royal Canin Pro").
+func TestAnalystFuzzyDimensionMatching(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AIConnector: "openai",
+		Files: map[string]string{
+			"models/calls.yaml": `
+type: model
+materialize: true
+sql: |
+  SELECT 'Blue' AS brand, 90 AS call_count
+  UNION ALL
+  SELECT 'Purina' AS brand, 55 AS call_count
+  UNION ALL
+  SELECT 'Royal Canin Pro' AS brand, 120 AS call_count
+  UNION ALL
+  SELECT 'Royal Canin' AS brand, 180 AS call_count
+  UNION ALL
+  SELECT 'Canin' AS brand, 210 AS call_count
+  UNION ALL
+  SELECT 'Royal' AS brand, 60 AS call_count
+  UNION ALL
+  SELECT 'The royal Canin' AS brand, 60 AS call_count
+  UNION ALL
+  SELECT 'Wellness' AS brand, 85 AS call_count
+`,
+			"metrics/calls.yaml": `
+type: metrics_view
+model: calls
+dimensions:
+- column: brand
+measures:
+- name: total_calls
+  expression: SUM(call_count)
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	s := newEval(t, rt, instanceID)
+
+	var res *ai.AnalystAgentResult
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, &res, ai.AnalystAgentArgs{
+		Prompt: "How many total calls came from royalcanin customers? Answer with the number and nothing else.",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "360", res.Response)
+}
+
 func parseTestTime(tst *testing.T, t string) time.Time {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)
