@@ -163,7 +163,7 @@
   <h2 class="text-lg font-medium">Resources</h2>
 
   <!-- Search, Filter, and Action Controls -->
-  <div class="flex flex-row items-center gap-x-2 min-h-9">
+  <div class="flex flex-row items-center gap-x-4 min-h-9">
     <div class="flex-1 min-w-0 min-h-9">
       <Search
         bind:value={searchText}

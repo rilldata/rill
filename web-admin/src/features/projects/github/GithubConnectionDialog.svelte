@@ -184,6 +184,7 @@
       onValueChange={(value) => {
         if (value) activeTab = value;
         resetMutations();
+        reset();
       }}
       class="mt-1"
     >
@@ -243,6 +244,7 @@
             errors={$errors?.branch}
             id="branch"
             label="Branch"
+            placeholder="main"
             capitalizeLabel={false}
           />
 
@@ -251,6 +253,7 @@
             errors={$errors?.subpath}
             id="subpath"
             label="Subpath"
+            placeholder="/"
             capitalizeLabel={false}
             optional
           />
