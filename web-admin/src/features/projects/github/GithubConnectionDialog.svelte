@@ -188,9 +188,9 @@
       class="mt-1"
     >
       <UnderlineTabsList>
-        <UnderlineTabsTrigger value="new">New repo</UnderlineTabsTrigger>
+        <UnderlineTabsTrigger value="new">Create repository</UnderlineTabsTrigger>
         <UnderlineTabsTrigger value="existing">
-          Existing repo
+          Existing repository
         </UnderlineTabsTrigger>
       </UnderlineTabsList>
 
