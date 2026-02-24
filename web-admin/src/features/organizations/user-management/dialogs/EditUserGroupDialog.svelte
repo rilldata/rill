@@ -429,7 +429,7 @@
                       bind:open={projectRoleDropdownOpen[project.name]}
                     >
                       <DropdownMenu.Trigger
-                        class="flex flex-row gap-1 items-center rounded-sm min-w-[110px] text-xs outline-none border-none {projectRoleDropdownOpen[project.name]
+                        class="flex flex-row gap-1 items-center rounded-sm text-xs outline-none border-none {projectRoleDropdownOpen[project.name]
                           ? 'bg-surface-active'
                           : 'hover:bg-surface-hover'} px-2 py-1"
                       >
@@ -440,7 +440,7 @@
                           <CaretDownIcon size="12px" />
                         {/if}
                       </DropdownMenu.Trigger>
-                      <DropdownMenu.Content align="start" strategy="fixed">
+                      <DropdownMenu.Content align="start" strategy="fixed" class="min-w-[200px]">
                         {#each PROJECT_ROLES_OPTIONS as opt (opt.value)}
                           <DropdownMenu.Item
                             class="font-normal flex flex-col items-start py-2 {project.role ===

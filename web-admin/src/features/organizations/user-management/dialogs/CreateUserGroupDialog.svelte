@@ -394,7 +394,7 @@
               closeOnItemClick={false}
             >
               <Dropdown.Trigger
-                class="w-full min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
+                class="min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {projectDropdownOpen
                   ? 'bg-gray-200'
                   : 'hover:bg-surface-hover'}"
               >
@@ -436,7 +436,7 @@
           </label>
           <Dropdown.Root bind:open={roleDropdownOpen}>
             <Dropdown.Trigger
-              class="w-full min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
+              class="min-h-[36px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-surface-background text-sm px-3 {roleDropdownOpen
                 ? 'bg-gray-200'
                 : 'hover:bg-surface-hover'}"
             >
