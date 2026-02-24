@@ -4,7 +4,7 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import CanvasFilterButton from "@rilldata/web-common/features/dashboards/filters/CanvasFilterButton.svelte";
   import type { FilterState } from "../../stores/filter-state";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -17,9 +17,11 @@
   export let excludedDimensions: Set<string>;
   export let updateLocalFilterString: (newFilterString: string) => void;
 
+  const runtimeClient = useRuntimeClient();
+
   let localFiltersEnabledOverride = false;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: ({
     canvasEntity: {

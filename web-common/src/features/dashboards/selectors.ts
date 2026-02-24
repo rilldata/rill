@@ -15,7 +15,6 @@ import {
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceListResources,
-  getQueryServiceMetricsViewSchemaQueryOptions,
   getQueryServiceMetricsViewTimeRangeQueryOptions,
   getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
@@ -77,23 +76,6 @@ export function useValidExplores(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.Explore, (data) =>
     data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
   );
-}
-
-export function getValidDashboardsQueryOptions() {
-  return derived(runtime, ({ instanceId }) => {
-    return getRuntimeServiceListResourcesQueryOptions(
-      instanceId,
-      {
-        kind: ResourceKind.Explore,
-      },
-      {
-        query: {
-          select: (data) =>
-            data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
-        },
-      },
-    );
-  });
 }
 
 export function useValidCanvases(instanceId: string) {
@@ -229,33 +211,6 @@ export function hasValidMetricsViewTimeRange(
   return derived(
     fullTimeRangeQuery,
     (fullTimeRange) => !fullTimeRange.isPending && !fullTimeRange.isError,
-  );
-}
-
-export function getMetricsViewSchemaOptions(
-  exploreNameStore: Readable<string>,
-) {
-  const validSpecQuery = createQuery(
-    getExploreValidSpecQueryOptions(exploreNameStore),
-  );
-
-  return derived(
-    [runtime, validSpecQuery],
-    ([{ instanceId }, validSpecResp]) => {
-      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
-      const metricsViewName = exploreSpec.metricsView ?? "";
-
-      return getQueryServiceMetricsViewSchemaQueryOptions(
-        instanceId,
-        metricsViewName,
-        {},
-        {
-          query: {
-            enabled: Boolean(metricsViewName),
-          },
-        },
-      );
-    },
   );
 }
 

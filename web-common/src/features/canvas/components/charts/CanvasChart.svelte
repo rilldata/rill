@@ -6,7 +6,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { derived } from "svelte/store";
   import type { CanvasChartSpec } from ".";
   import type { BaseChart } from "./BaseChart";
@@ -15,13 +15,15 @@
 
   export let component: BaseChart<CanvasChartSpec>;
 
+  const runtimeClient = useRuntimeClient();
+
   // Theme mode (light/dark) - separate from which theme is selected
   $: isThemeModeDark = derived(
     themeControl,
     ($themeControl) => $themeControl === "dark",
   );
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: ({
     specStore,

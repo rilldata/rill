@@ -6,7 +6,7 @@
     type V1CanvasRow,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
   import { get, writable } from "svelte/store";
   import { parseDocument } from "yaml";
@@ -40,6 +40,8 @@
   export let canvasName: string;
   export let openSidebar: () => void;
 
+  const runtimeClient = useRuntimeClient();
+
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
   let offset = { x: 0, y: 0 };
@@ -66,7 +68,7 @@
 
   $: layoutRows = $_rows;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: components = $componentsStore;
 

@@ -13,7 +13,7 @@
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import {
     getDimensionColumnWidth,
@@ -23,13 +23,15 @@
 
   export let component: LeaderboardComponent;
 
+  const runtimeClient = useRuntimeClient();
+
   let metricsViewName: string;
   let leaderboardMeasureNames: string[] = [];
   let dimensionNames: string[] = [];
   let numRows = 7;
   let leaderboardWrapperWidth = 0;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: ({
     specStore,
