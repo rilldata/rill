@@ -23,12 +23,12 @@ import { createLinkError } from "@rilldata/web-common/features/explore-mappers/e
 import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mappers/types.ts";
 
 export async function openQuery({
-  url,
+  query,
   organization,
   project,
   runtime,
 }: {
-  url: URL;
+  query: MetricsResolverQuery;
   runtime: Runtime;
   organization?: string;
   project?: string;
@@ -36,22 +36,6 @@ export async function openQuery({
   let exploreURL: string;
 
   try {
-    const queryParams = url.searchParams;
-
-    // Get the JSON-encoded query parameters
-    const queryJSON = queryParams.get("query");
-    if (!queryJSON) {
-      throw new Error("query parameter is required");
-    }
-
-    // Parse and validate the query with proper type safety
-    let query: MetricsResolverQuery;
-    try {
-      query = JSON.parse(queryJSON) as MetricsResolverQuery;
-    } catch (e) {
-      throw new Error(`Invalid query: ${e.message}`);
-    }
-
     // Extract metrics view name (now type-safe)
     const metricsViewName = query.metrics_view;
     if (!metricsViewName) {

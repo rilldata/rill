@@ -1,6 +1,8 @@
 package ai_test
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -71,6 +73,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		AIConnector: "openai",
 		Files:       files,
+		FrontendURL: "https://ui.rilldata.com/-/dashboards/bids_metrics",
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
 
@@ -150,12 +153,20 @@ func TestAnalystOpenRTB(t *testing.T) {
 		// Assert that the time range is sent using the context
 		require.Equal(t, parseTestTime(t, "2023-09-11T00:00:00Z"), qry.TimeRange.Start)
 		require.Equal(t, parseTestTime(t, "2023-09-14T00:00:00Z"), qry.TimeRange.End)
-		// Assert that the filter is sent using the context
-		require.NotNil(t, qry.Where)
-		require.NotNil(t, qry.Where.Condition)
-		require.Len(t, qry.Where.Condition.Expressions, 2)
-		require.Equal(t, "device_os", qry.Where.Condition.Expressions[0].Name)
-		require.Equal(t, "Android", qry.Where.Condition.Expressions[1].Value)
+
+		// Assert that the filter is sent using the context.
+		// Checking using the SQL representation since the LLM's use of nesting in the expression is unstable.
+		exprSQL, err := metricsview.ExpressionToSQL(qry.Where)
+		require.NoError(t, err)
+		require.Equal(t, "device_os = 'Android'", strings.Trim(exprSQL, "()"))
+
+		rawRes, err := s.UnmarshalMessageContent(res.Result)
+		require.NoError(t, err)
+		var agentRes ai.AnalystAgentResult
+		err = mapstructureutil.WeakDecode(rawRes, &agentRes)
+		require.NoError(t, err)
+		expectedCitationUrl := fmt.Sprintf(`https://ui.rilldata.com/-/dashboards/bids_metrics/-/ai/%s/message/%s/-/open`, s.ID(), calls[2].ID)
+		require.Contains(t, agentRes.Response, expectedCitationUrl)
 	})
 
 	t.Run("CanvasContext", func(t *testing.T) {

@@ -580,6 +580,34 @@ paths:
             title: Request message for RuntimeService.ForkConversation
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/messages/{messageId}:
+    get:
+      summary: GetAIMessage returns a message in a conversaion.
+      operationId: RuntimeService_GetAIMessage
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAIMessageResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: messageId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
     post:
       summary: ShareConversation enables sharing of the conversation by adding metadata.
@@ -5325,6 +5353,12 @@ definitions:
         type: string
       resolverProperties:
         type: object
+  v1GetAIMessageResponse:
+    type: object
+    properties:
+      message:
+        $ref: '#/definitions/v1Message'
+    title: Response message for RuntimeService.GetAIMessage
   v1GetConversationResponse:
     type: object
     properties:
