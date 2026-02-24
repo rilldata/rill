@@ -211,6 +211,7 @@ describe("Report rows and columns", () => {
       it(testCase.title, async () => {
         await runTest(testCase, (exploreState, timeControlState) =>
           getDimensionTableAggregationRequestForTime({
+            instanceId: "",
             metricsViewName: AD_BIDS_METRICS_NAME,
             exploreState,
             timeRange: {
@@ -369,6 +370,7 @@ describe("Report rows and columns", () => {
           testCase,
           (exploreState, timeControlState) =>
             getTDDAggregationRequest({
+              instanceId: "",
               metricsViewName: AD_BIDS_METRICS_NAME,
               exploreState,
               timeControlState,
@@ -504,6 +506,7 @@ describe("Report rows and columns", () => {
           testCase,
           (exploreState, timeControlState) =>
             getPivotAggregationRequest({
+              instanceId: "",
               metricsViewName: AD_BIDS_METRICS_NAME,
               timeDimension:
                 AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME.timeDimension!,
