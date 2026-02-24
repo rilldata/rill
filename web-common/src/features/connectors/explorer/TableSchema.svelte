@@ -2,16 +2,17 @@
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import { useGetTable } from "../selectors";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
 
   export let connector: string;
   export let database: string = ""; // The backend interprets an empty string as the default database
   export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
   export let table: string;
 
-  $: ({ instanceId } = $runtime);
+  const client = useRuntimeClient();
+
   $: newTableQuery = useGetTable(
-    instanceId,
+    client.instanceId,
     connector,
     database,
     databaseSchema,
