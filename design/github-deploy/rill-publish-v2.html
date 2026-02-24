@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rill — Metrics Editor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design tokens (from Figma) ── */
+    :root {
+      --accent:        #5655ff;
+      --accent-dim:    #dde4ff;
+      --accent-dark:   #3125ae;
+      --accent-hover:  #4544e0;
+      --fg-primary:    #0a0a0a;
+      --fg-secondary:  #404040;
+      --fg-muted:      #737373;
+      --border:        #e5e5e5;
+      --bg:            #ffffff;
+      --surface:       #f5f8fc;
+      --surface-hover: #f0f4fa;
+      --red:           #ef4444;
+      --green:         #16a34a;
+      --green-bg:      rgba(22,163,74,0.08);
+      --green-border:  rgba(22,163,74,0.2);
+      --amber:         #b45309;
+      --amber-bg:      rgba(180,83,9,0.08);
+      --r-xs: 2px;
+      --r-sm: 4px;
+      --r-md: 8px;
+      --r-lg: 12px;
+      --shadow-xs: 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--fg-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Shell ── */
+    .shell { display: flex; flex-direction: column; height: 100vh; }
+
+    /* ─────────────────────────────────
+       TOP NAV
+    ───────────────────────────────── */
+    .topnav {
+      height: 48px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 16px; gap: 10px;
+      flex-shrink: 0; position: relative; z-index: 60;
+    }
+
+    .rill-logo {
+      display: flex; align-items: center; gap: 6px;
+      flex-shrink: 0;
+    }
+    .logo-sq {
+      width: 24px; height: 24px;
+      background: var(--accent);
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-sq svg { display: block; }
+
+    .nav-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+
+    .nav-breadcrumb {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 13px; color: var(--fg-muted);
+      flex: 1;
+    }
+    .nav-breadcrumb .crumb-link { color: var(--fg-muted); cursor: pointer; }
+    .nav-breadcrumb .crumb-link:hover { color: var(--accent); }
+    .nav-breadcrumb .crumb-cur { color: var(--fg-primary); font-weight: 500; }
+    .nav-breadcrumb svg { flex-shrink: 0; color: var(--border); }
+
+    .nav-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 12px;
+      border-radius: var(--r-xs);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; border: 1px solid transparent;
+      font-family: inherit; transition: all 0.12s;
+      white-space: nowrap; line-height: 1;
+    }
+    .btn svg { flex-shrink: 0; }
+    .btn-primary   { background: var(--accent);  color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-outline   { background: var(--bg); color: var(--accent); border-color: var(--accent); box-shadow: var(--shadow-xs); }
+    .btn-outline:hover { background: var(--accent-dim); }
+    .btn-ghost     { background: transparent; color: var(--fg-muted); border-color: transparent; }
+    .btn-ghost:hover { background: var(--surface); color: var(--fg-primary); }
+    .btn-success   { background: var(--green); color: #fff; border-color: var(--green); }
+    .btn-success:hover { background: #15803d; border-color: #15803d; }
+    .btn-sm        { height: 24px; padding: 0 8px; font-size: 12px; }
+    .btn:disabled  { opacity: 0.5; cursor: not-allowed; }
+
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      flex-shrink: 0; cursor: pointer;
+    }
+
+    /* ─────────────────────────────────
+       VERSION DROPDOWN
+    ───────────────────────────────── */
+    .version-trigger {
+      display: flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xs);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      color: var(--fg-primary);
+      box-shadow: var(--shadow-xs);
+      transition: border-color 0.12s;
+    }
+    .version-trigger:hover { border-color: var(--accent); }
+    .version-trigger .vt-label { color: var(--fg-muted); font-size: 11px; font-weight: 400; }
+
+    .version-panel {
+      position: absolute;
+      top: calc(100% + 4px); right: 0;
+      width: 300px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-lg);
+      z-index: 200;
+      display: none;
+      overflow: hidden;
+    }
+    .version-panel.open { display: block; animation: panelIn .15s ease; }
+    @keyframes panelIn {
+      from { opacity:0; transform:translateY(-4px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .vp-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .vp-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--fg-muted); }
+
+    /* Version list */
+    .vp-list { max-height: 240px; overflow-y: auto; }
+
+    /* ─────────────────────────────────
+       PUBLISH DROPDOWN
+    ───────────────────────────────── */
+    .publish-panel {
+      position: absolute;
+      top: calc(100% + 4px); right: 0;
+      width: 300px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-lg);
+      z-index: 200;
+      display: none;
+      overflow: hidden;
+    }
+    .publish-panel.open { display: block; animation: panelIn .15s ease; }
+
+    .pp-header {
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pp-title {
+      font-size: 13px; font-weight: 600; color: var(--fg-primary);
+      margin-bottom: 2px;
+    }
+    .pp-sub {
+      font-size: 12px; color: var(--fg-muted);
+    }
+
+    .pp-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 13px; color: var(--fg-secondary);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .pp-row:hover { background: var(--surface-hover); color: var(--accent); }
+    .pp-row svg { color: var(--fg-muted); flex-shrink: 0; }
+    .pp-row:hover svg { color: var(--accent); }
+    .pp-row-label { flex: 1; }
+
+    .pp-footer {
+      display: flex; gap: 8px;
+      padding: 10px 14px;
+    }
+    .pp-footer .btn { flex: 1; justify-content: center; }
+
+    .version-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: background 0.1s;
+      border-bottom: 1px solid var(--border);
+    }
+    .version-row:last-child { border-bottom: none; }
+    .version-row:hover { background: var(--surface-hover); }
+    .version-row.current { background: rgba(86,85,255,0.04); }
+
+    .vr-badge {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 22px;
+      border-radius: var(--r-sm);
+      font-size: 11px; font-weight: 700;
+      flex-shrink: 0; font-family: 'SF Mono', monospace;
+    }
+    .vr-badge.current { background: var(--accent-dim); color: var(--accent-dark); }
+    .vr-badge.past    { background: var(--surface); color: var(--fg-muted); border: 1px solid var(--border); }
+    .vr-badge.prod    { background: rgba(22,163,74,0.1); color: var(--green); }
+
+    .vr-info { flex: 1; min-width: 0; }
+    .vr-name { font-size: 13px; font-weight: 500; color: var(--fg-primary); }
+    .vr-meta { font-size: 11px; color: var(--fg-muted); }
+
+    .vr-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+    .vr-restore {
+      display: none;
+      height: 22px; padding: 0 8px;
+      background: var(--bg); color: var(--accent);
+      border: 1px solid var(--accent); border-radius: var(--r-xs);
+      font-size: 11px; font-weight: 500; cursor: pointer; font-family: inherit;
+      transition: background 0.1s;
+    }
+    .version-row:hover .vr-restore { display: block; }
+    .vr-restore:hover { background: var(--accent-dim); }
+
+    .vr-tag {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 1px 6px; border-radius: 10px;
+      font-size: 10px; font-weight: 600;
+    }
+    .vr-tag.live { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+    .vr-tag.current { background: var(--accent-dim); color: var(--accent-dark); border: 1px solid rgba(86,85,255,0.2); }
+
+    /* ─────────────────────────────────
+       SECOND HEADER (file path) — NO preview button
+    ───────────────────────────────── */
+    .filebar {
+      height: 40px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 16px; gap: 8px;
+      flex-shrink: 0;
+      font-size: 12px; color: var(--fg-muted);
+    }
+    .filebar svg { flex-shrink: 0; }
+    .fb-sep { color: var(--border); margin: 0 2px; }
+    .fb-crumb {
+      display: flex; align-items: center; gap: 4px;
+      cursor: pointer; border-radius: var(--r-sm);
+      padding: 2px 4px; transition: background 0.1s;
+    }
+    .fb-crumb:hover { background: var(--surface-hover); color: var(--fg-primary); }
+    .fb-crumb.active { color: var(--fg-primary); font-weight: 500; }
+
+    /* Unsaved indicator */
+    .unsaved-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--amber); flex-shrink: 0;
+      animation: blink 2s ease infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ─────────────────────────────────
+       BODY LAYOUT
+    ───────────────────────────────── */
+    .body { display: flex; flex: 1; overflow: hidden; }
+
+    /* ─────────────────────────────────
+       PROJECT NAV SIDEBAR (view mode)
+    ───────────────────────────────── */
+    .project-sidebar {
+      width: 220px;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      display: none; /* shown only in view mode */
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .shell.mode-view .sidebar         { display: none; }
+    .shell.mode-view .project-sidebar { display: flex; }
+
+    .ps-project-header {
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ps-project-name {
+      font-size: 13px; font-weight: 600; color: var(--fg-primary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+    .ps-project-meta {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--fg-muted);
+    }
+    .ps-live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); flex-shrink: 0;
+    }
+
+    .ps-nav { flex: 1; padding: 6px 0; overflow-y: auto; }
+
+    .ps-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px;
+      cursor: pointer; font-size: 13px;
+      color: var(--fg-secondary);
+      border-radius: 0;
+      transition: background 0.1s, color 0.1s;
+      position: relative;
+    }
+    .ps-item:hover { background: var(--surface-hover); color: var(--fg-primary); }
+    .ps-item.active {
+      background: rgba(86,85,255,0.07);
+      color: var(--accent-dark); font-weight: 500;
+    }
+    .ps-item.active::before {
+      content: '';
+      position: absolute; left: 0; top: 4px; bottom: 4px;
+      width: 3px; background: var(--accent); border-radius: 0 3px 3px 0;
+    }
+    .ps-item svg { flex-shrink: 0; opacity: 0.7; }
+    .ps-item.active svg { opacity: 1; color: var(--accent); }
+    .ps-item .ps-badge {
+      margin-left: auto;
+      font-size: 10px; font-weight: 600;
+      background: var(--accent); color: #fff;
+      padding: 1px 5px; border-radius: 8px;
+    }
+
+    .ps-sep {
+      height: 1px; background: var(--border); margin: 6px 16px;
+    }
+    .ps-section-label {
+      padding: 8px 16px 4px;
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.7px; color: var(--fg-muted);
+    }
+
+    /* Admin item — hidden until admin mode on */
+    .ps-admin-item { display: none; }
+    .ps-admin-item.visible { display: flex; }
+    .ps-item.admin-item { color: var(--fg-muted); }
+    .ps-item.admin-item:hover { color: var(--fg-primary); }
+    .ps-item.admin-item.active { color: #7c3aed; background: rgba(124,58,237,0.07); }
+    .ps-item.admin-item.active::before { background: #7c3aed; }
+    .ps-item.admin-item svg { color: #7c3aed; }
+
+    /* Admin toggle in sidebar footer */
+    .ps-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--fg-muted);
+    }
+    .ps-toggle {
+      position: relative;
+      width: 28px; height: 16px; flex-shrink: 0;
+      cursor: pointer;
+    }
+    .ps-toggle input { display: none; }
+    .ps-toggle-track {
+      position: absolute; inset: 0;
+      background: var(--border); border-radius: 8px;
+      transition: background 0.15s;
+    }
+    .ps-toggle input:checked + .ps-toggle-track { background: #7c3aed; }
+    .ps-toggle-thumb {
+      position: absolute; top: 2px; left: 2px;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #fff; transition: transform 0.15s;
+      pointer-events: none;
+    }
+    .ps-toggle input:checked ~ .ps-toggle-thumb { transform: translateX(12px); }
+
+    /* ── Left sidebar (edit mode) ── */
+    .sidebar {
+      width: 240px; background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      font-size: 12px; flex-shrink: 0; overflow-y: auto;
+    }
+    .sb-add {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px; margin: 8px;
+      border: 1px dashed var(--border); border-radius: var(--r-sm);
+      color: var(--fg-muted); cursor: pointer; font-size: 12px;
+      transition: all 0.1s;
+    }
+    .sb-add:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    .sb-sep { height: 1px; background: var(--border); margin: 4px 0; }
+    .sb-label {
+      padding: 8px 12px 4px;
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.7px; color: var(--fg-muted);
+    }
+    .sb-item {
+      display: flex; align-items: center; gap: 7px;
+      padding: 5px 12px; cursor: pointer;
+      color: var(--fg-secondary); transition: background 0.1s;
+      border-radius: 0;
+    }
+    .sb-item:hover { background: var(--surface-hover); }
+    .sb-item.active { background: var(--accent-dim); color: var(--accent-dark); font-weight: 500; }
+    .sb-item svg { flex-shrink: 0; opacity: 0.65; }
+    .sb-item.active svg { opacity: 1; }
+    .sb-item .sb-icon-yaml { font-size: 10px; font-weight: 700; color: var(--accent); font-family: monospace; width: 14px; text-align: center; }
+    .sb-explorer { padding: 4px 0 8px; }
+    .sb-explorer-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 3px 12px 3px 16px; cursor: pointer;
+      font-size: 11px; color: var(--fg-muted);
+      transition: background 0.1s;
+    }
+    .sb-explorer-item:hover { background: var(--surface-hover); color: var(--fg-primary); }
+    .sb-explorer-item.file-active { background: rgba(86,85,255,0.06); color: var(--accent-dark); font-weight: 500; }
+
+    /* ── Main editor area ── */
+    .main { flex: 1; display: flex; overflow: hidden; }
+
+    /* Metrics table */
+    .metrics-area {
+      flex: 1; overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+
+    .ma-toolbar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .ma-search {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      background: var(--bg); font-size: 12px; color: var(--fg-muted);
+      flex: 1; max-width: 260px;
+    }
+    .ma-search input {
+      border: none; outline: none; background: none; font-size: 12px;
+      font-family: inherit; color: var(--fg-primary); width: 100%;
+    }
+    .ma-search input::placeholder { color: var(--fg-muted); }
+
+    .selection-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 10px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(86,85,255,0.2);
+      border-radius: var(--r-sm);
+      font-size: 12px; font-weight: 500; color: var(--accent-dark);
+    }
+    .selection-bar button {
+      background: none; border: none; cursor: pointer;
+      color: var(--accent-dark); font-family: inherit;
+      font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 3px;
+    }
+
+    .section-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px 6px;
+      font-size: 13px; font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      sticky: top; position: sticky; top: 0; z-index: 1;
+    }
+    .section-head .toggle-icon { cursor: pointer; color: var(--fg-muted); }
+    .section-head .count { font-size: 11px; font-weight: 400; color: var(--fg-muted); }
+    .section-head .add-btn {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 3px;
+      padding: 2px 8px; height: 22px;
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 11px; font-weight: 500; cursor: pointer; font-family: inherit;
+      color: var(--fg-secondary); transition: all 0.1s;
+    }
+    .section-head .add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+    /* Table */
+    .metrics-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .metrics-table th {
+      padding: 7px 12px; text-align: left;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--fg-muted);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 36px;
+    }
+    .metrics-table td {
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .metrics-table tr:hover td { background: var(--surface-hover); }
+    .metrics-table tr.row-selected td { background: rgba(86,85,255,0.04); }
+    .metrics-table .cb { width: 32px; }
+    .metrics-table input[type="checkbox"] { accent-color: var(--accent); }
+
+    .pill-tag {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 500;
+      background: var(--accent-dim); color: var(--accent-dark);
+      border: 1px solid rgba(86,85,255,0.2);
+    }
+    .code-cell { font-family: 'SF Mono', Consolas, monospace; color: var(--fg-secondary); }
+    .dash-cell { color: var(--fg-muted); }
+
+    /* ── Right panel ── */
+    .right-panel {
+      width: 280px; border-left: 1px solid var(--border);
+      background: var(--bg); display: flex; flex-direction: column;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .rp-header {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .rp-body { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; }
+    .rp-field { display: flex; flex-direction: column; gap: 4px; }
+    .rp-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.6px; color: var(--fg-muted);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .rp-input {
+      width: 100%; padding: 6px 8px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      font-size: 13px; font-family: inherit; color: var(--fg-primary);
+      outline: none; transition: border-color 0.12s, box-shadow 0.12s;
+    }
+    .rp-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(86,85,255,0.1); }
+    .rp-input.changed { border-color: var(--amber); }
+    .rp-chip-row { display: flex; gap: 5px; flex-wrap: wrap; }
+    .rp-chip {
+      padding: 4px 10px; border: 1px solid var(--border);
+      border-radius: var(--r-sm); font-size: 12px; cursor: pointer;
+      background: var(--bg); color: var(--fg-secondary); transition: all 0.1s;
+    }
+    .rp-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-dark); font-weight: 500; }
+
+    .rp-footer {
+      padding: 10px 14px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    /* ── Toast ── */
+    .toasts {
+      position: fixed; bottom: 20px; right: 20px;
+      z-index: 500; display: flex; flex-direction: column; gap: 8px;
+    }
+    .toast-msg {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 14px;
+      background: var(--fg-primary); color: #fff;
+      border-radius: var(--r-md); font-size: 13px;
+      box-shadow: var(--shadow-md);
+      animation: toastIn .18s ease;
+    }
+    .toast-msg.green { background: var(--green); }
+    @keyframes toastIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Restore banner */
+    .restore-banner {
+      display: none;
+      align-items: center; gap: 10px;
+      padding: 8px 16px;
+      background: rgba(180,83,9,0.06);
+      border-bottom: 2px solid var(--amber);
+      font-size: 12px; flex-shrink: 0;
+    }
+    .restore-banner.visible { display: flex; }
+    .restore-banner strong { color: var(--amber); }
+
+    /* Published state in header */
+    .publish-live-tag {
+      display: none;
+      align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 600;
+      background: var(--green-bg); color: var(--green);
+      border: 1px solid var(--green-border);
+    }
+    .publish-live-tag.visible { display: inline-flex; }
+
+    /* ─────────────────────────────────
+       VIEW MODE vs EDIT MODE
+    ───────────────────────────────── */
+
+    /* View-mode nav (hidden in edit mode) */
+    .viewnav {
+      display: none;
+      height: 48px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      padding: 0 16px; gap: 10px;
+      flex-shrink: 0; position: relative; z-index: 60;
+    }
+
+    /* When shell has mode-view class */
+    .shell.mode-view .topnav    { display: none; }
+    .shell.mode-view .viewnav   { display: flex; }
+    .shell.mode-view .filebar   { display: none; }
+    .shell.mode-view .restore-banner { display: none !important; }
+    .shell.mode-view .right-panel    { display: none; }
+    .shell.mode-view .metrics-table .cb   { display: none; }
+    .shell.mode-view .section-head .add-btn { display: none; }
+    .shell.mode-view #selection-bar  { display: none !important; }
+    .shell.mode-view .metrics-table tr:hover td { background: inherit; cursor: default; }
+
+    /* Draft badge in editor nav */
+    .draft-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 600;
+      background: rgba(180,83,9,0.08);
+      color: var(--amber);
+      border: 1px solid rgba(180,83,9,0.2);
+      flex-shrink: 0;
+    }
+
+    /* ─────────────────────────────────
+       MODAL (GitHub connect)
+    ───────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 400;
+      display: none; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; animation: fadeIn .15s ease; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    .modal-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-lg);
+      width: 460px;
+      max-width: calc(100vw - 32px);
+      overflow: hidden;
+      animation: slideUp .18s ease;
+    }
+    @keyframes slideUp { from{transform:translateY(8px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 15px; font-weight: 600; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--fg-muted); display: flex; align-items: center;
+      border-radius: var(--r-sm); padding: 4px;
+      transition: background 0.1s;
+    }
+    .modal-close:hover { background: var(--surface); color: var(--fg-primary); }
+
+    .modal-body { padding: 20px; }
+    .modal-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+
+    /* GitHub connect states */
+    .gh-connect-state { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; padding: 8px 0 4px; }
+    .gh-icon-wrap {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--fg-primary);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gh-connect-title { font-size: 16px; font-weight: 600; }
+    .gh-connect-sub { font-size: 13px; color: var(--fg-muted); max-width: 300px; line-height: 1.6; }
+    .btn-github {
+      display: inline-flex; align-items: center; gap: 8px;
+      height: 36px; padding: 0 20px;
+      background: var(--fg-primary); color: #fff;
+      border: none; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;
+      transition: opacity 0.12s;
+    }
+    .btn-github:hover { opacity: 0.85; }
+
+    /* Connected badge */
+    .gh-connected-badge {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: var(--r-sm);
+      margin-bottom: 16px;
+    }
+    .gh-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--fg-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .gh-connected-info { flex: 1; min-width: 0; }
+    .gh-username { font-size: 13px; font-weight: 600; }
+    .gh-connected-label { font-size: 11px; color: var(--green); }
+    .gh-disconnect {
+      font-size: 11px; color: var(--fg-muted); background: none; border: none;
+      cursor: pointer; font-family: inherit; padding: 0;
+      text-decoration: underline;
+    }
+    .gh-disconnect:hover { color: var(--red); }
+
+    /* Repo selector */
+    .gh-section-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.6px; color: var(--fg-muted);
+      margin-bottom: 8px;
+    }
+    .gh-search {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 10px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      background: var(--bg); margin-bottom: 6px;
+    }
+    .gh-search input {
+      border: none; outline: none; background: none;
+      font-size: 13px; font-family: inherit; color: var(--fg-primary); width: 100%;
+    }
+    .gh-search input::placeholder { color: var(--fg-muted); }
+
+    .repo-list { border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; margin-bottom: 10px; }
+    .repo-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .repo-item:last-child { border-bottom: none; }
+    .repo-item:hover { background: var(--surface-hover); }
+    .repo-item.selected { background: rgba(86,85,255,0.04); }
+    .repo-radio {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: border-color 0.1s;
+    }
+    .repo-item.selected .repo-radio { border-color: var(--accent); }
+    .repo-radio-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); display: none;
+    }
+    .repo-item.selected .repo-radio-dot { display: block; }
+    .repo-info { flex: 1; min-width: 0; }
+    .repo-name { font-size: 13px; font-weight: 500; color: var(--fg-primary); }
+    .repo-meta { font-size: 11px; color: var(--fg-muted); }
+    .repo-badge {
+      font-size: 10px; padding: 1px 6px; border-radius: 10px;
+      border: 1px solid var(--border); color: var(--fg-muted);
+    }
+
+    .gh-new-repo-form {
+      display: none;
+      flex-direction: column; gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      margin-bottom: 10px;
+    }
+    .gh-new-repo-form.visible { display: flex; }
+    .gh-input {
+      width: 100%; padding: 7px 10px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      font-size: 13px; font-family: inherit; outline: none;
+    }
+    .gh-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(86,85,255,0.1); }
+
+    .visibility-row { display: flex; gap: 8px; }
+    .vis-opt {
+      flex: 1; display: flex; align-items: center; gap: 6px;
+      padding: 7px 10px; border: 1px solid var(--border);
+      border-radius: var(--r-sm); cursor: pointer; font-size: 12px;
+      transition: all 0.1s;
+    }
+    .vis-opt.active { border-color: var(--accent); background: rgba(86,85,255,0.04); color: var(--accent-dark); }
+
+    .gh-manage-link {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--fg-muted); cursor: pointer;
+      padding: 8px 0;
+    }
+    .gh-manage-link:hover { color: var(--accent); }
+
+    /* ─────────────────────────────────
+       PREVIEW MODE — full-screen frame
+    ───────────────────────────────── */
+    .preview-banner {
+      display: none;
+      align-items: center; gap: 12px;
+      height: 48px; padding: 0 16px;
+      background: #18181b;
+      flex-shrink: 0; position: relative; z-index: 60;
+    }
+    .shell.mode-preview .preview-banner { display: flex; }
+    .shell.mode-preview .topnav         { display: none; }
+    .shell.mode-preview .viewnav        { display: none; }
+    .shell.mode-preview .filebar        { display: none; }
+    .shell.mode-preview .restore-banner { display: none !important; }
+    .shell.mode-preview .right-panel    { display: none; }
+    .shell.mode-preview .sidebar        { display: none; }
+    .shell.mode-preview .project-sidebar { display: flex; }
+    .shell.mode-preview .metrics-table .cb       { display: none; }
+    .shell.mode-preview .section-head .add-btn   { display: none; }
+    .shell.mode-preview #selection-bar           { display: none !important; }
+    .shell.mode-preview .metrics-table tr:hover td { background: inherit; cursor: default; }
+
+    .preview-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      background: rgba(255,255,255,0.1);
+      font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7);
+      letter-spacing: 0.4px; flex-shrink: 0;
+    }
+    .preview-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #f59e0b; flex-shrink: 0;
+    }
+    .preview-project-name {
+      font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9);
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .preview-actions-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    .btn-preview-ghost {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 12px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--r-xs);
+      font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.8);
+      cursor: pointer; font-family: inherit; transition: all 0.12s;
+      white-space: nowrap;
+    }
+    .btn-preview-ghost:hover { background: rgba(255,255,255,0.14); color: #fff; }
+    .btn-preview-accent {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 28px; padding: 0 14px;
+      background: var(--accent); color: #fff;
+      border: 1px solid var(--accent);
+      border-radius: var(--r-xs);
+      font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+      transition: background 0.12s;
+    }
+    .btn-preview-accent:hover { background: var(--accent-hover); }
+
+    /* Share link popover (reused for preview share + project share) */
+    .share-popover {
+      position: absolute;
+      top: calc(100% + 6px); right: 0;
+      width: 320px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-lg);
+      z-index: 300;
+      display: none;
+      overflow: hidden;
+    }
+    .share-popover.open { display: block; animation: panelIn .15s ease; }
+    .sp-header {
+      padding: 11px 14px 9px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sp-title { font-size: 13px; font-weight: 600; color: var(--fg-primary); margin-bottom: 2px; }
+    .sp-sub   { font-size: 11px; color: var(--fg-muted); }
+    .sp-url-row {
+      display: flex; align-items: center; gap: 6px;
+      margin: 10px 14px 4px;
+      padding: 7px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 12px; font-family: 'SF Mono', Consolas, monospace;
+      color: var(--fg-secondary);
+    }
+    .sp-url-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sp-copy-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--fg-muted); display: flex; align-items: center;
+      padding: 3px; border-radius: var(--r-sm); flex-shrink: 0;
+      transition: all 0.1s;
+    }
+    .sp-copy-btn:hover { background: var(--border); color: var(--fg-primary); }
+    .sp-copy-btn.copied svg { stroke: var(--green); }
+    .sp-expiry {
+      display: flex; align-items: center; gap: 5px;
+      padding: 0 14px 10px;
+      font-size: 11px; color: var(--fg-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell" id="shell">
+
+  <!-- ── VIEW MODE NAV (shown after publishing) ── -->
+  <nav class="viewnav">
+    <div class="rill-logo">
+      <div class="logo-sq">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+    </div>
+    <div class="nav-sep"></div>
+    <div class="nav-breadcrumb">
+      <span class="crumb-link">Draft</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="crumb-cur">rill currency exchange draft</span>
+    </div>
+    <div class="nav-right">
+      <span class="publish-live-tag visible" style="display:inline-flex;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Live
+      </span>
+      <span id="view-published-meta" style="font-size:12px;color:var(--fg-muted);"></span>
+
+      <!-- Share project button + popover -->
+      <div style="position:relative;">
+        <button class="btn btn-ghost" id="share-project-btn" onclick="toggleShareProjectPopover()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </button>
+        <div class="share-popover" id="share-project-popover">
+          <div class="sp-header">
+            <div class="sp-title">Share project</div>
+            <div class="sp-sub">Anyone with this link can view the live project</div>
+          </div>
+          <div class="sp-url-row">
+            <span class="sp-url-text" id="share-project-url">ui.rilldata.com/project/—</span>
+            <button class="sp-copy-btn" id="share-project-copy" onclick="copyShareProjectLink()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+          <div class="sp-expiry">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Public link · no expiry
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-outline" id="edit-project-btn" onclick="createDraft(this)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit project
+      </button>
+      <div class="avatar">HC</div>
+    </div>
+  </nav>
+
+  <!-- ── PREVIEW BANNER (shown in preview mode) ── -->
+  <div class="preview-banner" id="preview-banner">
+    <button class="btn-preview-ghost" onclick="exitPreviewMode()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to edit
+    </button>
+    <div style="width:1px;height:20px;background:rgba(255,255,255,0.15);flex-shrink:0;"></div>
+    <div class="preview-badge">
+      <div class="preview-badge-dot"></div>
+      Preview
+    </div>
+    <span class="preview-project-name">rill currency exchange draft</span>
+    <div class="preview-actions-right">
+      <!-- Share preview link -->
+      <div style="position:relative;">
+        <button class="btn-preview-ghost" id="share-preview-btn" onclick="toggleSharePreviewPopover()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share preview
+        </button>
+        <div class="share-popover" id="share-preview-popover">
+          <div class="sp-header">
+            <div class="sp-title">Share preview link</div>
+            <div class="sp-sub">Anyone with this link can view this preview</div>
+          </div>
+          <div class="sp-url-row">
+            <span class="sp-url-text" id="preview-url-text">—</span>
+            <button class="sp-copy-btn" id="preview-copy-btn" onclick="copyPreviewLink()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+          <div class="sp-expiry">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Expires in 7 days · anyone with the link can view
+          </div>
+        </div>
+      </div>
+      <button class="btn-preview-accent" onclick="publishFromPreview()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.76.7-1.96-.09-2.71a2.5 2.5 0 0 0-2.91-.29z"/><path d="M18 8c.5-1 .5-2 .5-3 0 0-1 0-3 .5L6 15l3 3 9-10z"/></svg>
+        Publish
+      </button>
+    </div>
+  </div>
+
+  <!-- ── TOP NAV (edit mode) ── -->
+  <nav class="topnav">
+    <!-- Logo -->
+    <div class="rill-logo">
+      <div class="logo-sq">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+    </div>
+
+    <div class="nav-sep"></div>
+
+    <!-- Draft badge -->
+    <span class="draft-badge">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Draft
+    </span>
+
+    <!-- Breadcrumb -->
+    <div class="nav-breadcrumb">
+      <span class="crumb-link" id="draft-origin-crumb" style="display:none;cursor:pointer;" onclick="goToLiveProject()">rill currency exchange</span>
+      <svg id="draft-origin-sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="crumb-cur" id="draft-name-crumb">rill currency exchange draft</span>
+    </div>
+
+    <!-- Right actions -->
+    <div class="nav-right">
+
+      <!-- Live tag (hidden until published) -->
+      <span class="publish-live-tag" id="live-tag">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Live
+      </span>
+
+      <!-- Version picker -->
+      <div style="position:relative;">
+        <button class="version-trigger" id="version-trigger" onclick="toggleVersionPanel()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span id="trigger-label">Latest</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+
+        <!-- Version history panel -->
+        <div class="version-panel" id="version-panel">
+          <div class="vp-header">
+            <span class="vp-title">Version history</span>
+            <button class="btn btn-ghost btn-sm" onclick="toggleVersionPanel()" style="height:20px;padding:0 6px;font-size:11px;">Close</button>
+          </div>
+          <div class="vp-list" id="version-list">
+            <!-- injected by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Save button -->
+      <button class="btn btn-outline" id="save-btn" onclick="doSave()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save
+      </button>
+
+      <!-- Publish button → opens publish dropdown -->
+      <div style="position:relative;">
+        <button class="btn btn-primary" id="header-publish-btn" onclick="togglePublishPanel()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.76.7-1.96-.09-2.71a2.5 2.5 0 0 0-2.91-.29z"/><path d="M18 8c.5-1 .5-2 .5-3 0 0-1 0-3 .5L6 15l3 3 9-10z"/></svg>
+          Publish
+        </button>
+
+        <!-- Publish confirmation dropdown -->
+        <div class="publish-panel" id="publish-panel">
+          <!-- Header -->
+          <div class="pp-header">
+            <div class="pp-title">Production deployment</div>
+            <div class="pp-sub" id="pp-sub">Publish version 1 to your organization</div>
+          </div>
+
+          <!-- Version history row (GitHub deployments) -->
+          <div class="pp-row" onclick="openGithubHistory()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="pp-row-label">Version history</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+
+          <!-- Connect to GitHub row -->
+          <div class="pp-row" onclick="openGithubModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            <span class="pp-row-label">Connect to Github</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+
+          <!-- Preview + Publish buttons -->
+          <div class="pp-footer">
+            <button class="btn btn-outline" onclick="doPreview()">Preview</button>
+            <button class="btn btn-primary" id="pp-publish-btn" onclick="doPublish()">Publish</button>
+          </div>
+        </div>
+
+        <!-- GitHub deployment history panel -->
+        <div class="publish-panel" id="github-history-panel" style="width:340px;">
+          <div class="pp-header" style="display:flex;align-items:center;gap:8px;padding:10px 14px;">
+            <button onclick="backToPublishPanel()" style="background:none;border:none;cursor:pointer;color:var(--fg-muted);display:flex;align-items:center;gap:4px;font-size:12px;font-family:inherit;padding:0;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              Back
+            </button>
+            <div style="flex:1;">
+              <div class="pp-title">GitHub deployment history</div>
+              <div class="pp-sub">Published versions pushed to origin</div>
+            </div>
+          </div>
+          <div id="github-history-list" style="max-height:280px;overflow-y:auto;">
+            <!-- injected by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="avatar">HC</div>
+    </div>
+  </nav>
+
+  <!-- ── FILE BAR — no Preview button ── -->
+  <div class="filebar">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    <span class="fb-crumb">3 sources</span>
+    <span class="fb-sep">›</span>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    <span class="fb-crumb">2 models</span>
+    <span class="fb-sep">›</span>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    <span class="fb-crumb active">company-metrics.yaml</span>
+    <span class="fb-sep">›</span>
+    <span class="fb-crumb"># site-traffic.yaml</span>
+    <span class="fb-sep">›</span>
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+    <!-- unsaved indicator -->
+    <div class="unsaved-dot" id="unsaved-dot" style="display:none;" title="Unsaved changes"></div>
+  </div>
+
+  <!-- ── RESTORE BANNER (shown when viewing old version) ── -->
+  <div class="restore-banner" id="restore-banner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.54"/></svg>
+    <span>Viewing <strong id="restore-version-label">v2</strong> — read-only snapshot.</span>
+    <button class="btn btn-ghost btn-sm" style="color:#b45309;border-color:#b45309;" onclick="restoreCurrent()">
+      Restore this version
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="exitRestore()" style="margin-left:auto;">
+      Back to current
+    </button>
+  </div>
+
+  <!-- ── BODY ── -->
+  <div class="body">
+
+    <!-- ── Project nav sidebar (view mode) ── -->
+    <aside class="project-sidebar">
+      <div class="ps-project-header">
+        <div class="ps-project-name">rill currency exchange</div>
+        <div class="ps-project-meta">
+          <div class="ps-live-dot"></div>
+          Live · published just now
+        </div>
+      </div>
+
+      <nav class="ps-nav">
+        <div class="ps-item active" onclick="setProjectNav(this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Overview
+        </div>
+        <div class="ps-item" onclick="setProjectNav(this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l3 3"/><path d="M18 2l4 4-4 4"/><path d="M22 2l-4 4"/></svg>
+          Ask AI
+          <span class="ps-badge">New</span>
+        </div>
+        <div class="ps-item" onclick="setProjectNav(this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Dashboards
+        </div>
+        <div class="ps-item" onclick="setProjectNav(this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Metrics
+        </div>
+        <div class="ps-item" onclick="setProjectNav(this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+          Reports
+        </div>
+        <div class="ps-item" onclick="setProjectNav(this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Alerts
+        </div>
+
+        <!-- Admin section — hidden until toggled on -->
+        <div class="ps-sep ps-admin-item" id="ps-admin-sep"></div>
+        <div class="ps-section-label ps-admin-item" id="ps-admin-label">Admin</div>
+        <div class="ps-item admin-item ps-admin-item" id="ps-admin-nav" onclick="setProjectNav(this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Admin space
+        </div>
+      </nav>
+
+      <!-- Footer: admin toggle -->
+      <div class="ps-footer">
+        <label class="ps-toggle">
+          <input type="checkbox" id="admin-toggle" onchange="toggleAdminNav(this.checked)">
+          <div class="ps-toggle-track"></div>
+          <div class="ps-toggle-thumb"></div>
+        </label>
+        <span>Admin view</span>
+      </div>
+    </aside>
+
+    <!-- Left sidebar (edit mode) -->
+    <aside class="sidebar">
+      <div class="sb-add">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add
+      </div>
+      <div class="sb-sep"></div>
+
+      <div class="sb-label">Dashboards</div>
+      <div class="sb-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        canvas-dashboard.yaml
+      </div>
+      <div class="sb-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        explore-dashboard.yaml
+      </div>
+
+      <div class="sb-sep"></div>
+      <div class="sb-label">Metrics</div>
+      <div class="sb-item active">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Metrics_margin.yaml
+      </div>
+
+      <div class="sb-sep"></div>
+      <div class="sb-label">Models</div>
+      <div class="sb-item">
+        <span class="sb-icon-yaml">{ }</span>
+        model.sql
+      </div>
+      <div class="sb-item">
+        <span class="sb-icon-yaml">{ }</span>
+        model_1.sql
+      </div>
+
+      <div class="sb-sep"></div>
+      <div class="sb-label">Sources</div>
+      <div class="sb-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        connector-name
+      </div>
+      <div class="sb-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        connector-name
+      </div>
+
+      <div class="sb-sep"></div>
+      <div class="sb-label">Data explorer</div>
+      <div class="sb-explorer">
+        <div class="sb-explorer-item">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg>
+          DuckDB
+        </div>
+        <div class="sb-explorer-item">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          folder-name
+        </div>
+        <div class="sb-explorer-item file-active">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          file-name
+        </div>
+        <div class="sb-explorer-item">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          file-name
+        </div>
+        <div class="sb-explorer-item">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          file-name
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── Metrics editor ── -->
+    <div class="main">
+      <div class="metrics-area">
+
+        <!-- Toolbar -->
+        <div class="ma-toolbar">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5655ff" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span style="font-size:14px;font-weight:600;margin-left:4px;">company-metrics.yaml</span>
+          </div>
+
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <div class="ma-search">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input placeholder="Search" id="search-input">
+            </div>
+
+            <!-- Selection toolbar — shows when rows checked -->
+            <div class="selection-bar" id="selection-bar" style="display:none;">
+              <span id="sel-count">1</span> items selected
+              <button onclick="clearSelection()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+              <div style="width:1px;height:14px;background:rgba(86,85,255,0.2);"></div>
+              <button onclick="toast('Tag dialog would open')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                Add to tag
+              </button>
+              <button onclick="toast('Rows deleted','red')" style="color:#ef4444;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MEASURES section -->
+        <div class="section-head">
+          <svg class="toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          Measures <span class="count">3</span>
+          <button class="add-btn" onclick="toast('Add measure dialog would open')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add
+          </button>
+        </div>
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th class="cb"><input type="checkbox" id="sel-all-m" onchange="toggleAll('m',this.checked)"></th>
+              <th>Name</th>
+              <th>Display name</th>
+              <th>SQL expression</th>
+              <th>Format</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="measures-body">
+            <tr data-row="m1" onclick="selectRow(this)">
+              <td class="cb"><input type="checkbox" class="row-cb" data-group="m" onchange="onCbChange()"></td>
+              <td class="code-cell">avg_bid_floor</td>
+              <td><span class="pill-tag">Avg Bid Floor</span></td>
+              <td class="code-cell">SUM(bid_floo…</td>
+              <td>Currency (USD)</td>
+              <td class="dash-cell">—</td>
+            </tr>
+            <tr data-row="m2" onclick="selectRow(this)">
+              <td class="cb"><input type="checkbox" class="row-cb" data-group="m" onchange="onCbChange()"></td>
+              <td class="code-cell">sum_bid_price</td>
+              <td><span class="pill-tag">Sum of Bid Price</span></td>
+              <td class="code-cell">SUM(bid_pric…</td>
+              <td>Humanize</td>
+              <td class="dash-cell">—</td>
+            </tr>
+            <tr data-row="m3" class="row-selected" onclick="selectRow(this)">
+              <td class="cb"><input type="checkbox" class="row-cb" data-group="m" checked onchange="onCbChange()"></td>
+              <td class="code-cell">records</td>
+              <td><span class="pill-tag">Total records</span></td>
+              <td class="code-cell">COUNT(*)</td>
+              <td>Humanize</td>
+              <td class="dash-cell">—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- DIMENSIONS section -->
+        <div class="section-head" style="margin-top:4px;">
+          <svg class="toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          Dimensions <span class="count">6</span>
+          <button class="add-btn" onclick="toast('Add dimension dialog would open')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add
+          </button>
+        </div>
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th class="cb"><input type="checkbox" id="sel-all-d" onchange="toggleAll('d',this.checked)"></th>
+              <th>Name</th>
+              <th>Display name</th>
+              <th>Tags</th>
+              <th>SQL expression</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="dims-body">
+            <tr onclick="selectRow(this)">
+              <td class="cb"><input type="checkbox" class="row-cb" data-group="d" onchange="onCbChange()"></td>
+              <td class="code-cell">customer</td>
+              <td><span class="pill-tag">Customer</span></td>
+              <td class="code-cell">Sku_description</td>
+              <td class="code-cell">—</td>
+              <td class="dash-cell">—</td>
+            </tr>
+            <tr onclick="selectRow(this)">
+              <td class="cb"><input type="checkbox" class="row-cb" data-group="d" onchange="onCbChange()"></td>
+              <td class="code-cell">plan_name</td>
+              <td><span class="pill-tag">Plan Name</span></td>
+              <td class="code-cell">Sku_description</td>
+              <td class="code-cell">—</td>
+              <td class="dash-cell">—</td>
+            </tr>
+            <tr onclick="selectRow(this)">
+              <td class="cb"><input type="checkbox" class="row-cb" data-group="d" onchange="onCbChange()"></td>
+              <td class="code-cell">plan_name</td>
+              <td><span class="pill-tag">Plan Name</span></td>
+              <td class="code-cell">Sku_description</td>
+              <td class="code-cell">—</td>
+              <td class="dash-cell">—</td>
+            </tr>
+            <tr onclick="selectRow(this)">
+              <td class="cb"><input type="checkbox" class="row-cb" data-group="d" onchange="onCbChange()"></td>
+              <td class="code-cell">plan_name</td>
+              <td><span class="pill-tag">Plan Name</span></td>
+              <td class="code-cell">Sku_description</td>
+              <td style="font-size:11px;color:var(--fg-muted);">+ Add tag</td>
+              <td class="code-cell">Sku_description</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── Right panel ── -->
+      <div class="right-panel">
+        <div class="rp-header">
+          Edit field
+          <span style="font-size:11px;color:var(--fg-muted);font-weight:400;">records</span>
+        </div>
+        <div class="rp-body">
+          <div class="rp-field">
+            <label class="rp-label">
+              Name
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </label>
+            <input class="rp-input" id="rp-name" value="sum_bid_request" oninput="markUnsaved()">
+          </div>
+          <div class="rp-field">
+            <label class="rp-label">
+              Display name
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </label>
+            <input class="rp-input" id="rp-display" value="Sum Bid Requests" oninput="markUnsaved()">
+          </div>
+          <div class="rp-field">
+            <label class="rp-label">Format</label>
+            <div class="rp-chip-row">
+              <div class="rp-chip active" onclick="setChip(this)">Simple</div>
+              <div class="rp-chip" onclick="setChip(this)">d3-format</div>
+            </div>
+            <div style="margin-top:6px;">
+              <select class="rp-input" style="appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 8px center;padding-right:28px;cursor:pointer;" onchange="markUnsaved()">
+                <option>Humanize</option>
+                <option>Currency (USD)</option>
+                <option>Percentage</option>
+                <option>Number</option>
+              </select>
+            </div>
+          </div>
+          <div class="rp-field">
+            <label class="rp-label">SQL expression</label>
+            <input class="rp-input" style="font-family:monospace;font-size:12px;" value="COUNT(*)" oninput="markUnsaved()">
+          </div>
+          <div class="rp-field">
+            <label class="rp-label">Description</label>
+            <textarea class="rp-input" rows="3" placeholder="Optional description…" oninput="markUnsaved()" style="resize:vertical;"></textarea>
+          </div>
+        </div>
+        <div class="rp-footer">
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.3);" onclick="toast('Row deleted','red')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            Delete
+          </button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="toast('Changes cancelled')">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="doSaveChanges()">Save changes</button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /main -->
+  </div><!-- /body -->
+</div><!-- /shell -->
+
+<!-- ── GitHub Connect Modal ── -->
+<div class="modal-overlay" id="github-modal" onclick="handleModalOverlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="gh-modal-title">Connect to GitHub</span>
+      <button class="modal-close" onclick="closeGithubModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="gh-modal-body">
+
+      <!-- STATE: Not connected -->
+      <div id="gh-state-disconnected">
+        <div class="gh-connect-state">
+          <div class="gh-icon-wrap">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+          </div>
+          <div>
+            <div class="gh-connect-title">Connect your GitHub account</div>
+            <div class="gh-connect-sub" style="margin-top:6px;">Link your GitHub account to push your Rill project to a repository and enable deployment history.</div>
+          </div>
+          <button class="btn-github" onclick="simulateGithubConnect()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            Continue with GitHub
+          </button>
+          <div style="font-size:11px;color:var(--fg-muted);">You'll be redirected to GitHub to authorize access.</div>
+        </div>
+      </div>
+
+      <!-- STATE: Connecting (loading) -->
+      <div id="gh-state-connecting" style="display:none;">
+        <div class="gh-connect-state" style="padding:24px 0;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="animation:spin .8s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          <div style="font-size:14px;color:var(--fg-muted);">Connecting to GitHub…</div>
+        </div>
+      </div>
+
+      <!-- STATE: Connected — repo selection -->
+      <div id="gh-state-connected" style="display:none;">
+
+        <!-- Connected badge -->
+        <div class="gh-connected-badge">
+          <div class="gh-avatar">DH</div>
+          <div class="gh-connected-info">
+            <div class="gh-username">diana-huang</div>
+            <div class="gh-connected-label">Connected to GitHub</div>
+          </div>
+          <button class="gh-disconnect" onclick="disconnectGithub()">Disconnect</button>
+        </div>
+
+        <!-- Tabs: Select repo / Create new / Manage -->
+        <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-bottom:14px;">
+          <button class="gh-tab active" id="gh-tab-select" onclick="switchGhTab('select')" style="flex:1;padding:7px;font-size:12px;font-weight:500;background:var(--accent-dim);color:var(--accent-dark);border:none;cursor:pointer;font-family:inherit;border-right:1px solid var(--border);">Select repo</button>
+          <button class="gh-tab" id="gh-tab-create" onclick="switchGhTab('create')" style="flex:1;padding:7px;font-size:12px;font-weight:500;background:var(--bg);color:var(--fg-secondary);border:none;cursor:pointer;font-family:inherit;border-right:1px solid var(--border);">Create new</button>
+          <button class="gh-tab" id="gh-tab-manage" onclick="switchGhTab('manage')" style="flex:1;padding:7px;font-size:12px;font-weight:500;background:var(--bg);color:var(--fg-secondary);border:none;cursor:pointer;font-family:inherit;">Manage</button>
+        </div>
+
+        <!-- Tab: Select existing repo -->
+        <div id="gh-panel-select">
+          <div class="gh-search">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input placeholder="Search repositories…" oninput="filterRepos(this.value)" id="repo-search-input">
+          </div>
+          <div class="repo-list" id="repo-list">
+            <!-- injected by JS -->
+          </div>
+        </div>
+
+        <!-- Tab: Create new repo -->
+        <div id="gh-panel-create" style="display:none;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div>
+              <div class="gh-section-label">Repository name</div>
+              <input class="gh-input" id="new-repo-name" placeholder="e.g. rill-currency-exchange" value="rill-currency-exchange">
+            </div>
+            <div>
+              <div class="gh-section-label">Description (optional)</div>
+              <input class="gh-input" id="new-repo-desc" placeholder="A short description…">
+            </div>
+            <div>
+              <div class="gh-section-label">Visibility</div>
+              <div class="visibility-row">
+                <div class="vis-opt active" id="vis-private" onclick="setVisibility('private')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Private
+                </div>
+                <div class="vis-opt" id="vis-public" onclick="setVisibility('public')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  Public
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Manage -->
+        <div id="gh-panel-manage" style="display:none;">
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <div class="gh-manage-link" onclick="toast('Opening GitHub repository settings…')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+              Open repository on GitHub
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </div>
+            <div class="gh-manage-link" onclick="toast('Opening branch settings…')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+              Manage branches &amp; permissions
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="gh-manage-link" onclick="toast('Opening deploy keys settings…')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              Deploy keys
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="gh-manage-link" onclick="disconnectGithub()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span style="color:var(--red);">Disconnect GitHub account</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /modal-body -->
+
+    <div class="modal-footer" id="gh-modal-footer">
+      <button class="btn btn-ghost" onclick="closeGithubModal()">Cancel</button>
+      <button class="btn btn-primary" id="gh-confirm-btn" onclick="confirmGithubRepo()">Connect repository</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+  /* ── State ── */
+  let versions = [
+    { n: 1, label: 'v1', time: 'Initial setup', author: 'diana-sync', live: false, created: Date.now() - 86400000*3 }
+  ];
+  let currentVersion = 1;   // which local version user is viewing
+  let latestVersion  = 1;   // highest saved local version
+  let liveVersion    = null; // which local version is published
+  let hasUnsaved     = false;
+  let viewingOld     = false;
+
+  // GitHub deployment history — only versions that have been published
+  let deployments = [];
+
+  /* ── Version panel ── */
+  function toggleVersionPanel() {
+    const p = document.getElementById('version-panel');
+    const wasOpen = p.classList.contains('open');
+    closeAllPanels();
+    if (!wasOpen) {
+      p.classList.add('open');
+      renderVersionList();
+      setTimeout(() => document.addEventListener('click', closeVersionPanel, { once: true }), 10);
+    }
+  }
+
+  function closeVersionPanel(e) {
+    const panel = document.getElementById('version-panel');
+    const trigger = document.getElementById('version-trigger');
+    if (!panel.contains(e.target) && !trigger.contains(e.target)) {
+      panel.classList.remove('open');
+    }
+  }
+
+  /* ── Publish panel ── */
+  function togglePublishPanel() {
+    const p = document.getElementById('publish-panel');
+    const wasOpen = p.classList.contains('open');
+    closeAllPanels();
+    if (!wasOpen) {
+      // Update subtitle with current version number
+      document.getElementById('pp-sub').textContent = `Publish version ${latestVersion} to your organization`;
+      p.classList.add('open');
+      setTimeout(() => document.addEventListener('click', closePublishPanel, { once: true }), 10);
+    }
+  }
+
+  function closePublishPanel(e) {
+    const panel = document.getElementById('publish-panel');
+    const btn = document.getElementById('header-publish-btn');
+    if (!panel.contains(e.target) && !btn.contains(e.target)) {
+      panel.classList.remove('open');
+    }
+  }
+
+  function closeAllPanels() {
+    ['version-panel','publish-panel','github-history-panel',
+     'share-preview-popover','share-project-popover'].forEach(id => {
+      document.getElementById(id)?.classList.remove('open');
+    });
+  }
+
+  function openGithubHistory() {
+    document.getElementById('publish-panel').classList.remove('open');
+    renderDeploymentList();
+    document.getElementById('github-history-panel').classList.add('open');
+  }
+
+  function backToPublishPanel() {
+    document.getElementById('github-history-panel').classList.remove('open');
+    document.getElementById('pp-sub').textContent = `Publish version ${latestVersion} to your organization`;
+    document.getElementById('publish-panel').classList.add('open');
+  }
+
+  function renderDeploymentList() {
+    const list = document.getElementById('github-history-list');
+    if (deployments.length === 0) {
+      list.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--fg-muted);font-size:12px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto 8px;opacity:0.4"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.76.7-1.96-.09-2.71a2.5 2.5 0 0 0-2.91-.29z"/><path d="M18 8c.5-1 .5-2 .5-3 0 0-1 0-3 .5L6 15l3 3 9-10z"/></svg>
+        No deployments yet.<br>Publish your first version to get started.
+      </div>`;
+      return;
+    }
+    list.innerHTML = '';
+    [...deployments].reverse().forEach((d, i) => {
+      const isLatest = i === 0;
+      const row = document.createElement('div');
+      row.className = 'version-row' + (isLatest ? ' current' : '');
+      row.innerHTML = `
+        <div class="vr-badge ${isLatest ? 'prod' : 'past'}" style="font-size:10px;width:32px;">#${d.n}</div>
+        <div class="vr-info">
+          <div class="vr-name">${d.localLabel} <span style="font-weight:400;color:var(--fg-muted);">· ${d.message}</span></div>
+          <div class="vr-meta">${relTime(d.created)} · ${d.author}</div>
+        </div>
+        <div class="vr-actions">
+          ${isLatest ? `<span class="vr-tag live">live</span>` : `<button class="vr-restore" onclick="doRollback(${d.n}, event)">Rollback</button>`}
+        </div>`;
+      list.appendChild(row);
+    });
+  }
+
+  function doRollback(n, e) {
+    e?.stopPropagation();
+    const d = deployments.find(x => x.n === n);
+    if (!d) return;
+    // Add a new deployment entry for the rollback
+    const num = deployments.length + 1;
+    deployments.push({
+      n: num,
+      localLabel: d.localLabel,
+      message: `Rollback to #${n}`,
+      author: 'diana-sync',
+      created: Date.now()
+    });
+    renderDeploymentList();
+    toast(`Rolled back to deployment #${n}`, 'green');
+  }
+
+  function doPreview() {
+    closeAllPanels();
+    toast('Opening preview… (dev.rilldata.com/preview)');
+  }
+
+  function renderVersionList() {
+    const list = document.getElementById('version-list');
+    list.innerHTML = '';
+    // newest first
+    [...versions].reverse().forEach(v => {
+      const isCurrent = v.n === latestVersion && !viewingOld;
+      const isLive = v.n === liveVersion;
+      const isViewing = v.n === currentVersion;
+      const d = new Date(v.created);
+      const rel = relTime(v.created);
+
+      const row = document.createElement('div');
+      row.className = 'version-row' + (isViewing && !viewingOld ? ' current' : '') + (viewingOld && isViewing ? ' current' : '');
+      row.innerHTML = `
+        <div class="vr-badge ${isCurrent ? 'current' : (isLive ? 'prod' : 'past')}">${v.label}</div>
+        <div class="vr-info">
+          <div class="vr-name">${v.time}${isCurrent && !viewingOld ? ' <span style="font-weight:400;color:var(--fg-muted);">(current)</span>' : ''}</div>
+          <div class="vr-meta">${rel} · ${v.author}</div>
+        </div>
+        <div class="vr-actions">
+          ${isLive ? `<span class="vr-tag live">live</span>` : ''}
+          ${isCurrent && !viewingOld ? `<span class="vr-tag current">editing</span>` : ''}
+          ${!isCurrent || viewingOld ? `<button class="vr-restore" onclick="viewVersion(${v.n},event)">${viewingOld && isViewing ? 'Restore' : 'View'}</button>` : ''}
+        </div>`;
+      list.appendChild(row);
+    });
+  }
+
+  function viewVersion(n, e) {
+    e?.stopPropagation();
+    const v = versions.find(x => x.n === n);
+    if (!v) return;
+
+    currentVersion = n;
+    viewingOld = (n !== latestVersion);
+
+    // Show restore banner
+    if (viewingOld) {
+      document.getElementById('restore-banner').classList.add('visible');
+      document.getElementById('restore-version-label').textContent = v.label;
+      // Grey out the editor
+      document.querySelector('.metrics-area').style.opacity = '0.55';
+      document.querySelector('.metrics-area').style.pointerEvents = 'none';
+      document.querySelector('.right-panel').style.opacity = '0.55';
+      document.querySelector('.right-panel').style.pointerEvents = 'none';
+    }
+
+    updateTrigger();
+    renderVersionList();
+    document.getElementById('version-panel').classList.remove('open');
+    toast(`Viewing ${v.label}`);
+  }
+
+  function restoreCurrent() {
+    const v = versions.find(x => x.n === currentVersion);
+    if (!v) return;
+    // Create new version from this one
+    latestVersion++;
+    versions.push({
+      n: latestVersion,
+      label: `v${latestVersion}`,
+      time: `Restored from ${v.label}`,
+      author: 'diana-sync',
+      live: false,
+      created: Date.now()
+    });
+    currentVersion = latestVersion;
+    viewingOld = false;
+    exitRestore();
+    updateTrigger();
+    toast(`Restored ${v.label} as v${latestVersion}`, 'green');
+  }
+
+  function exitRestore() {
+    viewingOld = false;
+    currentVersion = latestVersion;
+    document.getElementById('restore-banner').classList.remove('visible');
+    document.querySelector('.metrics-area').style.opacity = '';
+    document.querySelector('.metrics-area').style.pointerEvents = '';
+    document.querySelector('.right-panel').style.opacity = '';
+    document.querySelector('.right-panel').style.pointerEvents = '';
+    updateTrigger();
+    renderVersionList();
+  }
+
+  /* ── Save ── */
+  function doSave() {
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Saving…`;
+
+    setTimeout(() => {
+      latestVersion++;
+      currentVersion = latestVersion;
+      hasUnsaved = false;
+
+      const ts = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      versions.push({
+        n: latestVersion,
+        label: `v${latestVersion}`,
+        time: ts,
+        author: 'diana-sync',
+        live: false,
+        created: Date.now()
+      });
+
+      updateTrigger();
+      document.getElementById('unsaved-dot').style.display = 'none';
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save`;
+      toast(`Saved as v${latestVersion}`, 'green');
+    }, 800);
+  }
+
+  function doSaveChanges() {
+    markUnsaved();
+    doSave();
+  }
+
+  function markUnsaved() {
+    if (!hasUnsaved) {
+      hasUnsaved = true;
+      document.getElementById('unsaved-dot').style.display = 'block';
+    }
+  }
+
+  /* ── Publish ── */
+  function doPublish() {
+    if (hasUnsaved) {
+      toast('Save your changes first before publishing.');
+      return;
+    }
+
+    const ppBtn = document.getElementById('pp-publish-btn');
+    const headerBtn = document.getElementById('header-publish-btn');
+    ppBtn.disabled = true;
+    ppBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Publishing…`;
+
+    setTimeout(() => {
+      liveVersion = latestVersion;
+      versions.find(v => v.n === liveVersion).live = true;
+
+      // Record GitHub deployment
+      const deployNum = deployments.length + 1;
+      const localV = versions.find(v => v.n === liveVersion);
+      deployments.push({
+        n: deployNum,
+        localLabel: localV.label,
+        message: localV.time,
+        author: 'diana-sync',
+        created: Date.now()
+      });
+
+      // Update publish panel button to show published state
+      ppBtn.disabled = false;
+      ppBtn.className = 'btn btn-success';
+      ppBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published`;
+
+      // Update header Publish button — keep it openable so user can see deployment history
+      headerBtn.className = 'btn btn-success';
+      headerBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published`;
+
+      // Show live tag in edit nav
+      document.getElementById('live-tag').classList.add('visible');
+
+      closeAllPanels();
+      renderVersionList();
+      toast(`v${liveVersion} is now live`, 'green');
+
+      // Transition to view mode after a short delay
+      setTimeout(() => enterViewMode(), 900);
+    }, 1000);
+  }
+
+  function updateTrigger() {
+    if (viewingOld) {
+      const v = versions.find(x => x.n === currentVersion);
+      document.getElementById('trigger-label').textContent = v ? v.label : 'Latest';
+    } else {
+      document.getElementById('trigger-label').textContent = 'Latest';
+    }
+  }
+
+  /* ── Table interactions ── */
+  function selectRow(row) {
+    document.querySelectorAll('tr.row-selected').forEach(r => r.classList.remove('row-selected'));
+    row.classList.add('row-selected');
+  }
+
+  function toggleAll(group, checked) {
+    document.querySelectorAll(`.row-cb[data-group="${group}"]`).forEach(cb => cb.checked = checked);
+    onCbChange();
+  }
+
+  function onCbChange() {
+    const total = document.querySelectorAll('.row-cb:checked').length;
+    const bar = document.getElementById('selection-bar');
+    bar.style.display = total > 0 ? 'flex' : 'none';
+    document.getElementById('sel-count').textContent = total;
+  }
+
+  function clearSelection() {
+    document.querySelectorAll('.row-cb').forEach(cb => cb.checked = false);
+    onCbChange();
+  }
+
+  function setChip(el) {
+    el.closest('.rp-chip-row').querySelectorAll('.rp-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    markUnsaved();
+  }
+
+  /* ── Toast ── */
+  function toast(msg, type = '') {
+    const wrap = document.getElementById('toasts');
+    const el = document.createElement('div');
+    el.className = 'toast-msg' + (type === 'green' ? ' green' : type === 'red' ? ' red' : '');
+    el.style.background = type === 'red' ? '#ef4444' : type === 'green' ? 'var(--green)' : 'var(--fg-primary)';
+    el.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ${msg}`;
+    wrap.appendChild(el);
+    setTimeout(() => { el.style.transition='opacity .2s'; el.style.opacity='0'; setTimeout(()=>el.remove(),200); }, 3000);
+  }
+
+  /* ── Helpers ── */
+  function relTime(ts) {
+    const diff = Date.now() - ts;
+    if (diff < 60000)   return 'just now';
+    if (diff < 3600000) return Math.floor(diff/60000) + ' min ago';
+    if (diff < 86400000)return Math.floor(diff/3600000) + 'h ago';
+    return Math.floor(diff/86400000) + 'd ago';
+  }
+
+  /* ─────────────────────────────────
+     PROJECT NAV SIDEBAR
+  ───────────────────────────────── */
+  function setProjectNav(el) {
+    document.querySelectorAll('.ps-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function toggleAdminNav(on) {
+    document.querySelectorAll('.ps-admin-item').forEach(el => {
+      el.classList.toggle('visible', on);
+    });
+    if (!on) {
+      // If admin nav was active, fall back to Overview
+      const adminNav = document.getElementById('ps-admin-nav');
+      if (adminNav?.classList.contains('active')) {
+        adminNav.classList.remove('active');
+        document.querySelector('.ps-item')?.classList.add('active');
+      }
+    }
+  }
+
+  /* ─────────────────────────────────
+     PUBLISHED VIEW vs DRAFT EDITOR
+  ───────────────────────────────── */
+
+  function enterViewMode() {
+    document.getElementById('shell').classList.add('mode-view');
+    document.getElementById('shell').classList.remove('mode-preview');
+    const localV = versions.find(v => v.n === liveVersion);
+    document.getElementById('view-published-meta').textContent =
+      localV ? `${localV.label} · just now` : '';
+  }
+
+  // "Edit project" on the live project page → creates a draft copy
+  function createDraft(btn) {
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Creating draft…`;
+
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+      // Switch to draft editor
+      document.getElementById('shell').classList.remove('mode-view');
+      // Show the "draft of X" breadcrumb origin
+      document.getElementById('draft-origin-crumb').style.display = '';
+      document.getElementById('draft-origin-sep').style.display = '';
+      document.getElementById('draft-name-crumb').textContent = 'rill currency exchange (draft copy)';
+      toast('Draft copy created — editing your draft', 'green');
+    }, 1200);
+  }
+
+  // Breadcrumb link back to the live project
+  function goToLiveProject() {
+    enterViewMode();
+  }
+
+  /* ─────────────────────────────────
+     PREVIEW MODE
+  ───────────────────────────────── */
+  let previewUrl = null;
+
+  function doPreview() {
+    closeAllPanels();
+    if (!previewUrl) {
+      const token = Math.random().toString(36).slice(2, 10);
+      previewUrl = `ui.rilldata.com/preview/${token}`;
+    }
+    document.getElementById('preview-url-text').textContent = previewUrl;
+    document.getElementById('shell').classList.add('mode-preview');
+    document.getElementById('shell').classList.remove('mode-view');
+  }
+
+  function exitPreviewMode() {
+    document.getElementById('shell').classList.remove('mode-preview');
+    document.getElementById('share-preview-popover').classList.remove('open');
+  }
+
+  function publishFromPreview() {
+    exitPreviewMode();
+    // Trigger the publish flow
+    const ppBtn = document.getElementById('pp-publish-btn');
+    const headerBtn = document.getElementById('header-publish-btn');
+    if (hasUnsaved) { toast('Save your changes first before publishing.'); return; }
+
+    headerBtn.disabled = true;
+    headerBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Publishing…`;
+
+    setTimeout(() => {
+      liveVersion = latestVersion;
+      versions.find(v => v.n === liveVersion).live = true;
+      const deployNum = deployments.length + 1;
+      const localV = versions.find(v => v.n === liveVersion);
+      deployments.push({ n: deployNum, localLabel: localV.label, message: localV.time, author: 'diana-sync', created: Date.now() });
+
+      ppBtn.className = 'btn btn-success';
+      ppBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published`;
+      headerBtn.disabled = false;
+      headerBtn.className = 'btn btn-success';
+      headerBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published`;
+      document.getElementById('live-tag').classList.add('visible');
+      renderVersionList();
+      toast(`v${liveVersion} is now live`, 'green');
+      setTimeout(() => enterViewMode(), 900);
+    }, 1000);
+  }
+
+  function toggleSharePreviewPopover() {
+    const pop = document.getElementById('share-preview-popover');
+    const wasOpen = pop.classList.contains('open');
+    pop.classList.toggle('open', !wasOpen);
+    if (!wasOpen) {
+      setTimeout(() => document.addEventListener('click', function handler(e) {
+        if (!pop.contains(e.target) && !document.getElementById('share-preview-btn').contains(e.target)) {
+          pop.classList.remove('open');
+          document.removeEventListener('click', handler);
+        }
+      }), 10);
+    }
+  }
+
+  function copyPreviewLink() {
+    if (!previewUrl) return;
+    navigator.clipboard.writeText('https://' + previewUrl).catch(() => {});
+    const btn = document.getElementById('preview-copy-btn');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+    toast('Preview link copied', 'green');
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+    }, 2000);
+  }
+
+  /* Share project (view mode) */
+  function toggleShareProjectPopover() {
+    const pop = document.getElementById('share-project-popover');
+    const wasOpen = pop.classList.contains('open');
+    closeAllPanels();
+    pop.classList.toggle('open', !wasOpen);
+    if (!wasOpen) {
+      // Set live project URL
+      const token = Math.random().toString(36).slice(2, 8);
+      document.getElementById('share-project-url').textContent = `ui.rilldata.com/p/${token}`;
+      setTimeout(() => document.addEventListener('click', function handler(e) {
+        if (!pop.contains(e.target) && !document.getElementById('share-project-btn').contains(e.target)) {
+          pop.classList.remove('open');
+          document.removeEventListener('click', handler);
+        }
+      }), 10);
+    }
+  }
+
+  function copyShareProjectLink() {
+    const url = document.getElementById('share-project-url').textContent;
+    navigator.clipboard.writeText('https://' + url).catch(() => {});
+    const btn = document.getElementById('share-project-copy');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+    toast('Project link copied', 'green');
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+    }, 2000);
+  }
+
+  /* ─────────────────────────────────
+     GITHUB CONNECT MODAL
+  ───────────────────────────────── */
+  let githubConnected = false;
+  let selectedRepo = 'rill-currency-exchange';
+  const sampleRepos = [
+    { name: 'rill-currency-exchange', desc: 'Currency exchange metrics', branch: 'main', private: true, current: true },
+    { name: 'rill-ad-revenue-dashboard', desc: 'Ad revenue analytics', branch: 'main', private: true, current: false },
+    { name: 'company-metrics-v2', desc: 'Core business metrics', branch: 'main', private: false, current: false },
+    { name: 'rill-demos', desc: 'Demo projects', branch: 'main', private: false, current: false },
+  ];
+
+  function openGithubModal() {
+    closeAllPanels();
+    document.getElementById('github-modal').classList.add('open');
+    if (githubConnected) {
+      showGhState('connected');
+      renderRepoList('');
+    } else {
+      showGhState('disconnected');
+    }
+  }
+
+  function closeGithubModal() {
+    document.getElementById('github-modal').classList.remove('open');
+  }
+
+  function handleModalOverlayClick(e) {
+    if (e.target === document.getElementById('github-modal')) closeGithubModal();
+  }
+
+  function showGhState(state) {
+    ['disconnected','connecting','connected'].forEach(s => {
+      document.getElementById(`gh-state-${s}`).style.display = s === state ? '' : 'none';
+    });
+    const footer = document.getElementById('gh-modal-footer');
+    const title  = document.getElementById('gh-modal-title');
+    if (state === 'disconnected') {
+      footer.style.display = 'none';
+      title.textContent = 'Connect to GitHub';
+    } else if (state === 'connecting') {
+      footer.style.display = 'none';
+      title.textContent = 'Connect to GitHub';
+    } else {
+      footer.style.display = 'flex';
+      title.textContent = 'GitHub repository';
+      document.getElementById('gh-confirm-btn').textContent = 'Save';
+    }
+  }
+
+  function simulateGithubConnect() {
+    showGhState('connecting');
+    setTimeout(() => {
+      githubConnected = true;
+      showGhState('connected');
+      switchGhTab('select');
+      renderRepoList('');
+    }, 1400);
+  }
+
+  function disconnectGithub() {
+    githubConnected = false;
+    closeGithubModal();
+    // Update the Connect to Github row label
+    toast('GitHub account disconnected.');
+  }
+
+  function switchGhTab(tab) {
+    ['select','create','manage'].forEach(t => {
+      const panel = document.getElementById(`gh-panel-${t}`);
+      const btn   = document.getElementById(`gh-tab-${t}`);
+      if (!panel || !btn) return;
+      const active = t === tab;
+      panel.style.display = active ? '' : 'none';
+      btn.style.background = active ? 'var(--accent-dim)' : 'var(--bg)';
+      btn.style.color      = active ? 'var(--accent-dark)' : 'var(--fg-secondary)';
+      btn.style.fontWeight = active ? '600' : '500';
+    });
+    const footer = document.getElementById('gh-modal-footer');
+    const confirmBtn = document.getElementById('gh-confirm-btn');
+    if (tab === 'manage') {
+      footer.style.display = 'none';
+    } else {
+      footer.style.display = 'flex';
+      confirmBtn.textContent = tab === 'create' ? 'Create &amp; connect' : 'Save';
+    }
+  }
+
+  function renderRepoList(filter) {
+    const list = document.getElementById('repo-list');
+    if (!list) return;
+    list.innerHTML = '';
+    sampleRepos.filter(r => r.name.includes(filter.toLowerCase())).forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'repo-item' + (r.name === selectedRepo ? ' selected' : '');
+      row.onclick = () => selectRepo(r.name);
+      row.innerHTML = `
+        <div class="repo-radio"><div class="repo-radio-dot"></div></div>
+        <div class="repo-info">
+          <div class="repo-name">${r.name} ${r.current ? '<span style="font-size:10px;color:var(--accent);font-weight:600;">· linked</span>' : ''}</div>
+          <div class="repo-meta">${r.desc} · ${r.branch}</div>
+        </div>
+        <span class="repo-badge">${r.private ? 'Private' : 'Public'}</span>`;
+      list.appendChild(row);
+    });
+  }
+
+  function selectRepo(name) {
+    selectedRepo = name;
+    renderRepoList(document.getElementById('repo-search-input')?.value || '');
+  }
+
+  function filterRepos(val) {
+    renderRepoList(val);
+  }
+
+  function setVisibility(v) {
+    document.getElementById('vis-private').classList.toggle('active', v === 'private');
+    document.getElementById('vis-public').classList.toggle('active', v === 'public');
+  }
+
+  function confirmGithubRepo() {
+    const activeTab = ['select','create'].find(t => document.getElementById(`gh-panel-${t}`)?.style.display !== 'none');
+    if (activeTab === 'create') {
+      const name = document.getElementById('new-repo-name').value.trim();
+      if (!name) { toast('Enter a repository name.'); return; }
+      sampleRepos.unshift({ name, desc: document.getElementById('new-repo-desc').value, branch: 'main', private: true, current: true });
+      selectedRepo = name;
+      toast(`Repository "${name}" created and connected.`, 'green');
+    } else {
+      toast(`Connected to "${selectedRepo}".`, 'green');
+    }
+    closeGithubModal();
+  }
+
+  /* Wire up "Connect to Github" rows */
+  document.querySelectorAll('[data-open-github]').forEach(el => {
+    el.addEventListener('click', openGithubModal);
+  });
+
+  /* Spin keyframe */
+  document.head.insertAdjacentHTML('beforeend', '<style>@keyframes spin{to{transform:rotate(360deg)}}</style>');
+
+  /* Init */
+  updateTrigger();
+</script>
+</body>
+</html>
