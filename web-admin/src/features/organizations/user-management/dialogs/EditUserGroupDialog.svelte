@@ -63,6 +63,8 @@
   let projectSearchInput = "";
   let projectSearchFocused = false;
   let projectRoleDropdownOpen: Record<string, boolean> = {};
+  let projectSearchInputEl: HTMLInputElement;
+  let memberSearchInputEl: HTMLInputElement;
 
   // ── Org / queries ──────────────────────────────────────────────────
   $: organization = $page.params.organization;
@@ -182,6 +184,7 @@
         (e) => e !== user.userEmail,
       );
       memberSearchInput = "";
+      memberSearchInputEl?.blur();
     }
   }
 
@@ -193,6 +196,7 @@
         { name, role: ProjectUserRoles.Viewer },
       ];
       projectSearchInput = "";
+      projectSearchInputEl?.blur();
     }
   }
 
@@ -498,6 +502,7 @@
               {/if}
               <input
                 type="text"
+                bind:this={projectSearchInputEl}
                 bind:value={projectSearchInput}
                 on:focus={() => (projectSearchFocused = true)}
                 on:blur={() =>
@@ -575,6 +580,7 @@
             {/if}
             <input
               type="text"
+              bind:this={memberSearchInputEl}
               bind:value={memberSearchInput}
               on:focus={() => (memberSearchFocused = true)}
               on:blur={() =>
