@@ -226,7 +226,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 	}
 
 	// Compute a hard limit to prevent large results that bloat the context
-	// ideally can be moved to executor.enforceAILimits to keep all ai limitations in one place, but then we cannot return the warning message in the result as easily
+	// ideally can be moved to executor.enforceQueryLimits, but then we cannot return the warning message in the result as easily
 	var limit int64
 	var isSystemLimit bool
 	if v, ok := args["limit"]; ok { // Hackily extracting the query's 'limit' to avoid parsing the entire query outside of the resolver
