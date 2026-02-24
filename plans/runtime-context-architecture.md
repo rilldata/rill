@@ -187,7 +187,7 @@ export class RuntimeClient {
 
 `web-common/src/features/feature-flags.ts` is a module-level singleton that subscribes to the global `runtime` store. In the new architecture, feature flags are **per-RuntimeClient** (they're fetched from the instance's API, so different runtimes may have different flags).
 
-During the bridge period, `featureFlags` continues to use the global store. During consumer migration (Phase 4), it becomes a `RuntimeClient` property:
+During the bridge period, `featureFlags` continues to use the global store. During consumer migration (Phase 5), it becomes a `RuntimeClient` property:
 ```typescript
 class RuntimeClient {
   readonly featureFlags: FeatureFlagStore;
@@ -305,7 +305,65 @@ Before migrating consumers, update cache invalidation to support both old (URL-p
 
 ---
 
-## Phase 4: Consumer Migration
+## Phase 4: JSON Bridge
+
+The v2 code generator from Phase 2 produces hooks typed with proto message classes (`MetricsViewAggregationRequest`, `ColumnCardinalityResponse`). Proto `oneof` fields use discriminated unions (`{ case: "ident", value: "foo" }`), while the existing Orval types use flat optional fields (`{ ident?: string }`). This type mismatch affects `Expression` (~60 files) and `Resource` (~19 files). If consumers must change their type usage during migration, the scope expands significantly and the global store can't be removed until all oneof usages are ported.
+
+The protobuf canonical JSON format uses flat keys for oneofs — the same format Orval uses. Proto message classes provide `fromJson()` and `toJson()` methods that convert between the two formats losslessly. The JSON bridge modifies the code generator so hooks accept and return Orval-compatible types (`V1MetricsViewAggregationRequest`, `V1ColumnCardinalityResponse`), converting to/from proto internally via these methods.
+
+### How the bridge works
+
+```
+Consumer passes:    { where: { ident: "foo" } }    ← V1Expression (flat oneof)
+fromJson converts:  proto Expression               ← { case: "ident", value: "foo" }
+  (RPC call uses proto internally)
+toJson converts:    response back to flat JSON
+Consumer receives:  { resource: { meta: ... } }    ← V1Resource (flat oneof)
+```
+
+### Generator changes
+
+**Request types:** Replace `PartialMessage<ProtoType>` with the Orval type `V1{ProtoType}` where available. Not all proto request types have V1 Orval counterparts; GET endpoints use URL params rather than JSON bodies, so Orval doesn't generate a `V1` request type for them. For those, the generator falls back to `PartialMessage<ProtoType>`, which is compatible since GET requests have no oneofs.
+
+**Response types:** Replace proto type with `V1{ProtoType}`. All response types have Orval counterparts.
+
+**Tier 1 raw function (after bridge):**
+
+```typescript
+export function queryServiceMetricsViewAggregation(
+  client: RuntimeClient,
+  request: Omit<V1MetricsViewAggregationRequest, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<V1MetricsViewAggregationResponse> {
+  return client.queryService.metricsViewAggregation(
+    MetricsViewAggregationRequest.fromJson(
+      { instanceId: client.instanceId, ...request } as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  ).then(r => r.toJson() as unknown as V1MetricsViewAggregationResponse);
+}
+```
+
+**Imports:** Each generated file adds a type-only import for Orval types from `../../gen/index.schemas` and a `JsonValue` import from `@bufbuild/protobuf`. Proto type value imports are retained (needed for `fromJson` calls).
+
+**Tiers 2-4:** Type parameters in `CreateQueryOptions<>`, `CreateQueryResult<>`, `QueryFunction<>`, `CreateMutationOptions<>`, and `CreateMutationResult<>` all switch to Orval output types.
+
+### Orval type availability
+
+The generator reads the Orval schemas file at generation time to determine which V1 types exist:
+
+- **Responses:** 100% have V1 counterparts. Always use V1 types.
+- **Requests:** ~25% have V1 counterparts (POST endpoints with JSON bodies). Use V1 when available; fall back to `PartialMessage<ProtoType>` for GET requests. This fallback is safe because GET requests have no oneofs.
+
+### Why this matters
+
+Without the bridge, the global `runtime` store can't be removed until ALL consumers are migrated to proto types — including the ~60 files using `V1Expression`. With the bridge, consumers switch to v2 hooks while keeping their existing Orval types (`V1Expression`, `V1Resource`, etc.). The global store can be removed as soon as all import paths are updated, independent of type migration.
+
+**Validation:** `tsx scripts/generate-query-hooks.ts` succeeds, `npm run check` passes, `npm run test -w web-common` passes.
+
+---
+
+## Phase 5: Consumer Migration
 
 Migrate all ~100 consumer files from Orval imports + `$runtime` to v2 imports + `useRuntimeClient()`.
 
@@ -320,6 +378,7 @@ Migrate all ~100 consumer files from Orval imports + `$runtime` to v2 imports + 
 
 - $: query = createQueryServiceFoo($runtime.instanceId, param, body, opts);
 + $: query = createQueryServiceFoo(client, { param, ...body }, opts);
+  // Types stay the same — V1Expression, V1Resource, etc. (JSON bridge handles conversion)
 ```
 
 **.ts query factories** (accept `RuntimeClient` instead of `instanceId: string`):
@@ -367,7 +426,7 @@ These consumers currently read JWT from the global `runtime` store. Migrate them
 
 ---
 
-## Phase 5: Remove Bridge + Cleanup
+## Phase 6: Remove Bridge + Cleanup
 
 Once all consumers are migrated:
 
@@ -395,6 +454,12 @@ Once all consumers are migrated:
 
 ---
 
+## Phase 7: Native Proto Types (optional)
+
+Once the bridge is in place and all consumers use v2 hooks, there's an optional future phase to remove the JSON bridge and use proto types natively. This would replace `V1Expression` with proto `Expression` (discriminated union `{ case: "ident", value: "foo" }`), `V1Resource` with proto `Resource`, and so on across ~80 files. The JSON bridge adds minimal overhead (serialization of typical API payloads is sub-millisecond), so this phase is entirely optional and can be deferred indefinitely.
+
+---
+
 ## Addressing Previous Feedback
 
 Responses to comments on the original design doc (PR #8590):
@@ -413,9 +478,9 @@ Responses to comments on the original design doc (PR #8590):
 
 ## PR Strategy
 
-- **PR 1 (infrastructure):** Phases 1-3. RuntimeProvider, code generator, invalidation updates, bridge. Proves the pattern end-to-end without touching consumers.
+- **PR 1 (infrastructure):** Phases 1-4. RuntimeProvider, code generator, invalidation updates, JSON bridge. Proves the pattern end-to-end without touching consumers.
 - **PR 2 (migration: charts + canvas):** Batches 1-3 — chart providers, canvas components, connectors, column profile. Leaf components, low coupling.
 - **PR 3 (migration: dashboard core):** Batches 4-5 — `state-managers.ts`, dashboard selectors, time controls, pivot, leaderboard, time-series, totals. The hardest batch (threading `RuntimeClient` through the state manager system).
 - **PR 4 (migration: features):** Batches 6-7 — chat, alerts, scheduled reports, file management, workspaces.
 - **PR 5 (migration: app shells + SSE):** Batches 8-10 — web-admin routes/features, web-local routes, SSE clients, `StreamingQueryBatch`.
-- **PR 6 (cleanup):** Phase 5. Remove bridge, delete Orval/global store, move `v2/` to primary path.
+- **PR 6 (cleanup):** Phase 6. Remove bridge, delete Orval/global store, move `v2/` to primary path.
