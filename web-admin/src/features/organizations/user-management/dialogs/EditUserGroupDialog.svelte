@@ -77,13 +77,11 @@
   );
   $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
 
-  // Always load members when dialog is open so the list appears without typing.
   $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
     organization,
     debouncedMemberSearch
       ? { pageSize: 50, searchPattern: `${debouncedMemberSearch}%` }
       : { pageSize: 50 },
-    { query: { enabled: open } },
   );
 
   $: allOrganizationUsers = $organizationUsersQuery.data?.members ?? [];
