@@ -1,0 +1,108 @@
+<script lang="ts">
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import {
+    RefreshCcwIcon,
+    LayoutGridIcon,
+    AlertCircleIcon,
+    CodeIcon,
+    ScrollTextIcon,
+  } from "lucide-svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { getAvailableModelActions } from "./model-actions";
+
+  export let resource: V1Resource | undefined;
+  export let isDropdownOpen: boolean;
+  export let onDropdownOpenChange: (isOpen: boolean) => void;
+  export let onModelInfoClick: (resource: V1Resource) => void;
+  export let onViewPartitionsClick: (resource: V1Resource) => void;
+  export let onRefreshErroredClick: (resource: V1Resource) => void;
+  export let onIncrementalRefreshClick: (resource: V1Resource) => void;
+  export let onFullRefreshClick: (resource: V1Resource) => void;
+  export let onViewLogsClick: (name: string) => void;
+
+  $: actions = getAvailableModelActions(resource);
+  $: isPartitioned = actions.includes("viewPartitions");
+  $: isIncremental = actions.includes("incrementalRefresh");
+  $: hasErroredPartitions = actions.includes("refreshErrored");
+</script>
+
+{#if resource}
+  <DropdownMenu.Root open={isDropdownOpen} onOpenChange={onDropdownOpenChange}>
+    <DropdownMenu.Trigger class="flex-none">
+      <IconButton rounded active={isDropdownOpen} size={20}>
+        <ThreeDot size="16px" />
+      </IconButton>
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start">
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={() => onModelInfoClick(resource)}
+      >
+        <div class="flex items-center">
+          <CodeIcon size="12px" />
+          <span class="ml-2">Describe</span>
+        </div>
+      </DropdownMenu.Item>
+
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={() => onViewLogsClick(resource.meta?.name?.name ?? "")}
+      >
+        <div class="flex items-center">
+          <ScrollTextIcon size="12px" />
+          <span class="ml-2">View Logs</span>
+        </div>
+      </DropdownMenu.Item>
+
+      {#if isPartitioned}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={() => onViewPartitionsClick(resource)}
+        >
+          <div class="flex items-center">
+            <LayoutGridIcon size="12px" />
+            <span class="ml-2">View Partitions</span>
+          </div>
+        </DropdownMenu.Item>
+      {/if}
+
+      {#if hasErroredPartitions}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={() => onRefreshErroredClick(resource)}
+        >
+          <div class="flex items-center">
+            <AlertCircleIcon size="12px" />
+            <span class="ml-2">Refresh Errored Partitions</span>
+          </div>
+        </DropdownMenu.Item>
+      {/if}
+
+      <DropdownMenu.Separator />
+
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={() => onFullRefreshClick(resource)}
+      >
+        <div class="flex items-center">
+          <RefreshCcwIcon size="12px" />
+          <span class="ml-2">Full Refresh</span>
+        </div>
+      </DropdownMenu.Item>
+
+      {#if isIncremental}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={() => onIncrementalRefreshClick(resource)}
+        >
+          <div class="flex items-center">
+            <RefreshCcwIcon size="12px" />
+            <span class="ml-2">Incremental Refresh</span>
+          </div>
+        </DropdownMenu.Item>
+      {/if}
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
+{/if}

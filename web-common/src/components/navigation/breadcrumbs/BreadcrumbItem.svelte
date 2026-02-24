@@ -6,6 +6,7 @@
   import type { PathOption, PathOptions } from "./types";
   import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
 
   export let pathOptions: PathOptions;
   export let current: string;
@@ -99,10 +100,13 @@
           class="min-w-44 max-h-96 overflow-y-auto"
         >
           {#each options as [id, option] (id)}
-            {@const selected = id === current.toLowerCase()}
+            {@const isSelected = id === current.toLowerCase()}
+            {@const icon = option.resourceKind
+              ? resourceIconMapping[option.resourceKind]
+              : undefined}
             <DropdownMenu.CheckboxItem
               class="cursor-pointer"
-              checked={selected}
+              checked={isSelected}
               checkSize={"h-3 w-3"}
               href={linkMaker(
                 currentPath,
@@ -118,7 +122,12 @@
                 }
               }}
             >
-              <span class="text-xs text-fg-secondary flex-grow">
+              <span
+                class="text-xs text-fg-secondary flex-grow flex items-center gap-x-1.5"
+              >
+                {#if icon}
+                  <svelte:component this={icon} size="12px" />
+                {/if}
                 {option.label}
               </span>
             </DropdownMenu.CheckboxItem>

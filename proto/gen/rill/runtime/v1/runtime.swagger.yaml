@@ -699,10 +699,16 @@ paths:
           required: true
           type: string
         - name: path
+          description: Lists objects within a folder-like level (using path prefix and delimiter). Cannot be used if `glob` is passed.
           in: query
           required: false
           type: string
         - name: delimiter
+          in: query
+          required: false
+          type: string
+        - name: glob
+          description: Lists objects matching the glob pattern. Cannot be used if `path` or `delimiter` is passed.
           in: query
           required: false
           type: string
@@ -7220,8 +7226,14 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
+      resolver:
+        type: string
+        title: Generic resolver configuration (preferred for new reports)
+      resolverProperties:
+        type: object
       queryName:
         type: string
+        title: Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
       queryArgsJson:
         type: string
       exportLimit:

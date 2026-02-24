@@ -209,6 +209,35 @@
   }
 }
 
+/* GitHub icon link - desktop: icon only, mobile: icon + text */
+.navbar .github-icon-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem;
+  border-radius: 0.375rem;
+
+  .github-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
+
+  .github-link-text {
+    display: none;
+  }
+}
+
+/* Mobile hamburger: hide icon, show text */
+@media (max-width: 996px) {
+  .navbar .github-icon-link .github-icon {
+    display: none;
+  }
+
+  .navbar .github-icon-link .github-link-text {
+    display: inline;
+  }
+}
+
 /* =========================
    DocSearch Button Styles
    ========================= */
@@ -317,6 +346,10 @@
     }
   }
 
+  .github-icon-link .github-icon {
+    filter: invert(1);
+  }
+
   .DocSearch-Button {
     border: 0.5px solid rgba(255, 255, 255, 0.2);
   }
@@ -414,6 +447,14 @@
       font-weight: 600;
       background: none;
     }
+  }
+
+  .navbar-sidebar__item .github-icon-link .github-icon {
+    display: none;
+  }
+
+  .navbar-sidebar__item .github-icon-link .github-link-text {
+    display: inline;
   }
 
   /* Consistent spacing */
