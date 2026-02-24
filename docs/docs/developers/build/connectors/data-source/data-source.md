@@ -83,6 +83,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 ## Databases
 ### MySQL
 ### PostgreSQL
+### SQL Server
 ### SQLite
 
 <div className="connector-icon-grid">
@@ -101,6 +102,14 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     link="/developers/build/connectors/data-source/postgres"
     linkLabel="Learn more"
     referenceLink="postgresql"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-SQLServer.svg" alt="SQL Server"  className="large-icon"/>}
+    header="SQL Server"
+    content="Connect to Microsoft SQL Server databases with support for encryption and various authentication methods."
+    link="/developers/build/connectors/data-source/sqlserver"
+    linkLabel="Learn more"
+    referenceLink="sqlserver"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-SQLite.svg" alt="SQLite" />}
