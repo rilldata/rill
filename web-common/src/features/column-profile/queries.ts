@@ -334,27 +334,24 @@ export function getNumericHistogram(
   enabled = true,
   active = false,
 ) {
-  return derived(
-    createQueryServiceColumnNumericHistogram(
-      client,
-      {
-        tableName: objectName,
-        connector,
-        database,
-        databaseSchema,
-        columnName,
-        histogramMethod,
-        priority: getPriorityForColumn("numeric-histogram", active),
-      },
-      {
-        query: {
-          enabled,
+  return createQueryServiceColumnNumericHistogram(
+    client,
+    {
+      tableName: objectName,
+      connector,
+      database,
+      databaseSchema,
+      columnName,
+      histogramMethod,
+      priority: getPriorityForColumn("numeric-histogram", active),
+    },
+    {
+      query: {
+        select(query) {
+          return query?.numericSummary?.numericHistogramBins?.bins;
         },
+        enabled,
       },
-    ),
-    ($query) => ({
-      data: $query?.data?.numericSummary?.numericHistogramBins?.bins,
-      isFetching: $query?.isFetching,
-    }),
+    },
   );
 }
