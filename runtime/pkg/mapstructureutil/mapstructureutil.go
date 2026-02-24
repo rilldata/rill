@@ -1,8 +1,6 @@
 package mapstructureutil
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -67,19 +65,4 @@ func DecodeWithWarnings(input, output any) ([]string, error) {
 	}
 
 	return md.Unused, nil
-}
-
-// FormatPropertyWarnings formats unused keys into warning messages.
-func FormatPropertyWarnings(context string, unused []string) []string {
-	if len(unused) == 0 {
-		return nil
-	}
-	var sb strings.Builder
-	for i, key := range unused {
-		if i > 0 {
-			sb.WriteString(", ")
-		}
-		fmt.Fprintf(&sb, "%q", key)
-	}
-	return []string{fmt.Sprintf("%s: unsupported properties: %s", context, sb.String())}
 }

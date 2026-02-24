@@ -218,15 +218,15 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 			Partitions *DataYAML `yaml:"partitions"`
 		}{}
 		// extract partitions field from the original YAML to validate it
-		tmp := make(map[string]any)
+		tmpMap := make(map[string]any)
 		if node.YAML == nil {
 			node.YAML = &yaml.Node{}
 		}
-		err := node.YAML.Decode(tmp)
+		err := node.YAML.Decode(tmpMap)
 		if err != nil {
 			return err
 		}
-		if partitionsData, ok := tmp["partitions"]; ok {
+		if partitionsData, ok := tmpMap["partitions"]; ok {
 			partitionsBytes, err := yaml.Marshal(map[string]any{"partitions": partitionsData})
 			if err != nil {
 				return fmt.Errorf(`failed to marshal "partitions" for validation: %w`, err)

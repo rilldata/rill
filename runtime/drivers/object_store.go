@@ -64,6 +64,11 @@ type ObjectStoreModelInputProperties struct {
 	DuckDB map[string]any `mapstructure:"duckdb"` // Deprecated: use DuckDB directly
 }
 
+func (p *ObjectStoreModelInputProperties) Decode(props map[string]any) error {
+	_, err := p.DecodeWithWarnings(props)
+	return err
+}
+
 // DecodeWithWarnings is like Decode but also returns any unused keys from the input.
 func (p *ObjectStoreModelInputProperties) DecodeWithWarnings(props map[string]any) ([]string, error) {
 	unused, err := mapstructureutil.WeakDecodeWithWarnings(props, p)

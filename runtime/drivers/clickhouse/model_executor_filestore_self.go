@@ -52,7 +52,10 @@ func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 
 	// Parse the input and output properties
 	inputProps := &fileStoreInputProps{}
-	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputHandle.Config(), inputProps)
+	if err := mapstructure.WeakDecode(opts.InputHandle.Config(), inputProps); err != nil {
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	unused, err := mapstructureutil.WeakDecodeWithWarnings(opts.InputProperties, inputProps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
