@@ -9,13 +9,13 @@ import {
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type V1Expression,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
+import type {
+  V1Expression,
+  V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationMeasure,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { getQueryServiceMetricsViewAggregationQueryOptions } from "@rilldata/web-common/runtime-client/v2/gen";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
@@ -68,7 +68,7 @@ export class HeatmapChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    client: RuntimeClient,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
     const config = get(this.spec);
@@ -81,10 +81,9 @@ export class HeatmapChartProvider {
 
     // Create top level options store for X axis
     const xAxisQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      timeAndFilterStore,
+      ($timeAndFilterStore) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
-        const instanceId = $runtime.instanceId;
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.x?.field &&
@@ -105,9 +104,9 @@ export class HeatmapChartProvider {
         );
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions: [{ name: config.x?.field }],
             sort: xAxisSort ? [xAxisSort] : undefined,
@@ -126,8 +125,8 @@ export class HeatmapChartProvider {
 
     // Create top level options store for Y axis
     const yAxisQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      timeAndFilterStore,
+      ($timeAndFilterStore) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
@@ -149,9 +148,9 @@ export class HeatmapChartProvider {
         );
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions: [{ name: config.y?.field }],
             sort: yAxisSort ? [yAxisSort] : undefined,
@@ -172,8 +171,8 @@ export class HeatmapChartProvider {
     const yAxisQuery = createQuery(yAxisQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, xAxisQuery, yAxisQuery],
-      ([$runtime, $timeAndFilterStore, $xAxisQuery, $yAxisQuery]) => {
+      [timeAndFilterStore, xAxisQuery, yAxisQuery],
+      ([$timeAndFilterStore, $xAxisQuery, $yAxisQuery]) => {
         const { timeRange, where, timeGrain, hasTimeSeries } =
           $timeAndFilterStore;
         const xTopNData = $xAxisQuery?.data?.data;
@@ -253,9 +252,9 @@ export class HeatmapChartProvider {
         }
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
-          config.metrics_view,
+          client,
           {
+            metricsView: config.metrics_view,
             measures,
             dimensions,
             sort:
