@@ -97,7 +97,7 @@ export function compileSourceYAML(
   const limitClause =
     driverName === "oracle" ? "FETCH FIRST 10000 ROWS ONLY" : "limit 10000";
   const devSection =
-    connector.implementsWarehouse &&
+    (connector.implementsWarehouse || connector.implementsSqlStore) &&
     connector.name !== "redshift" &&
     typeof formValues.sql === "string" &&
     formValues.sql.trim()
