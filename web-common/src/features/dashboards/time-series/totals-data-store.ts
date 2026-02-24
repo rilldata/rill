@@ -7,11 +7,8 @@ import {
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  createQueryServiceMetricsViewAggregation,
-  type V1MetricsViewAggregationResponse,
-} from "@rilldata/web-common/runtime-client";
-import { type HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { V1MetricsViewAggregationResponse } from "@rilldata/web-common/runtime-client";
+import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
@@ -19,19 +16,14 @@ export function createTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, Error> {
   return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      useTimeControlStore(ctx),
-      ctx.dashboardStore,
-    ],
-    ([runtime, metricsViewName, timeControls, dashboard], set) =>
+    [ctx.metricsViewName, useTimeControlStore(ctx), ctx.dashboardStore],
+    ([metricsViewName, timeControls, dashboard], set) =>
       createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
-        metricsViewName,
+        ctx.runtimeClient,
         {
+          metricsView: metricsViewName,
           measures: measures.map((measure) => ({ name: measure })),
           where: sanitiseExpression(
             mergeDimensionAndMeasureFilters(
@@ -65,15 +57,10 @@ export function createUnfilteredTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
   dimensionName: string,
-): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, Error> {
   return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      useTimeControlStore(ctx),
-      ctx.dashboardStore,
-    ],
-    ([runtime, metricsViewName, timeControls, dashboard], set) => {
+    [ctx.metricsViewName, useTimeControlStore(ctx), ctx.dashboardStore],
+    ([metricsViewName, timeControls, dashboard], set) => {
       const filter = sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           dashboard.whereFilter,
@@ -88,9 +75,9 @@ export function createUnfilteredTotalsForMeasure(
       );
 
       createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
-        metricsViewName,
+        ctx.runtimeClient,
         {
+          metricsView: metricsViewName,
           measures: measures.map((measure) => ({ name: measure })),
           where: updatedFilter,
           timeRange: {
