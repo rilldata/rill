@@ -3,6 +3,7 @@
   import { marked } from "marked";
   import { createQuery } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { MarkdownCanvasComponent } from "./";
   import {
     getPositionClasses,
@@ -12,6 +13,8 @@
   } from "./util";
 
   export let component: MarkdownCanvasComponent;
+
+  const runtimeClient = useRuntimeClient();
 
   $: specStore = component?.specStore;
   $: spec = specStore ? $specStore : undefined;
@@ -25,7 +28,10 @@
     ? ($parentSpecStore?.data?.metricsViews ?? {})
     : {};
 
-  const queryOptionsStore = getResolveTemplatedStringQueryOptions(component);
+  const queryOptionsStore = getResolveTemplatedStringQueryOptions(
+    component,
+    runtimeClient.instanceId,
+  );
   $: resolveQuery = createQuery(queryOptionsStore, queryClient);
 
   // Store the last successfully resolved content to prevent flashing during refetches

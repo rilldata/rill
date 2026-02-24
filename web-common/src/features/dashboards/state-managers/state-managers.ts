@@ -5,8 +5,6 @@ import {
   type V1ExplorePreset,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
@@ -37,7 +35,6 @@ import {
 } from "../leaderboard-context-column";
 
 export type StateManagers = {
-  runtime: Writable<Runtime>;
   runtimeClient: RuntimeClient;
   metricsViewName: Writable<string>;
   exploreName: Writable<string>;
@@ -167,7 +164,6 @@ export function createStateManagers({
   );
 
   return {
-    runtime: runtime,
     runtimeClient,
     metricsViewName: metricsViewNameStore,
     exploreName: exploreNameStore,

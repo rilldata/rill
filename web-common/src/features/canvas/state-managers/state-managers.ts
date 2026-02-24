@@ -1,14 +1,10 @@
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { type Writable } from "svelte/store";
 import { CanvasEntity } from "../stores/canvas-entity";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { CanvasResponse } from "../selector";
 
 export type CanvasStore = {
-  runtime: Writable<Runtime>;
   runtimeClient: RuntimeClient;
   canvasEntity: CanvasEntity;
   queryClient: QueryClient;
@@ -73,7 +69,6 @@ export function setCanvasStore(
 
   const canvasEntity = new CanvasEntity(canvasName, instanceId, response);
   const store: CanvasStore = {
-    runtime: runtime,
     runtimeClient: runtimeClient!,
     canvasEntity,
     queryClient,
