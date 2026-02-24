@@ -7,6 +7,7 @@ import { getValidComparisonOption } from "@rilldata/web-common/features/dashboar
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -47,13 +48,14 @@ export function getExploreStateFromYAMLConfig(
 }
 
 export function createUrlForExploreYAMLDefaultState(
+  client: RuntimeClient,
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecQueryOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(client, exploreNameStore),
   );
   const timeRangeQuery = createQuery(
-    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
+    getMetricsViewTimeRangeFromExploreQueryOptions(client, exploreNameStore),
   );
 
   return derived(

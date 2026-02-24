@@ -6,6 +6,7 @@
   import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/picker/InlineContextPicker.svelte";
   import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   type InlineContextReadonlyProps = {
     mode: "readonly";
@@ -25,7 +26,8 @@
   let open = false;
   let tooltipOpen = false;
 
-  const contextMetadataStore = getInlineChatContextMetadata();
+  const runtimeClient = useRuntimeClient();
+  const contextMetadataStore = getInlineChatContextMetadata(runtimeClient);
 
   $: typeConfig = selectedChatContext.type
     ? InlineContextConfig[selectedChatContext.type]
