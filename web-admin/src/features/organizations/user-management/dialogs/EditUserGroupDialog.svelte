@@ -18,7 +18,6 @@
   } from "@rilldata/web-admin/client";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
   import {
     Dialog,
     DialogContent,
@@ -45,6 +44,7 @@
   let memberSearchInput = "";
   let debouncedMemberSearch = "";
   let memberDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let memberSearchFocused = false;
   let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingMemberAdditions: string[] = [];
   let pendingMemberRemovals: string[] = [];
@@ -66,6 +66,7 @@
   let projectsInitialized = false;
   let projectsLoading = false;
   let projectSearchInput = "";
+  let projectSearchFocused = false;
 
   // ── Org / queries ──────────────────────────────────────────────────
   $: organization = $page.params.organization;
@@ -76,23 +77,25 @@
   );
   $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
 
+  // Always load members when dialog is open so the list appears without typing.
   $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
     organization,
     debouncedMemberSearch
       ? { pageSize: 50, searchPattern: `${debouncedMemberSearch}%` }
       : { pageSize: 50 },
-    { query: { enabled: debouncedMemberSearch.length > 0 } },
+    { query: { enabled: open } },
   );
 
-  $: availableMemberOptions =
-    ($organizationUsersQuery.data?.members?.filter(
-      (u): u is typeof u & { userEmail: string; userName: string } =>
-        Boolean(u.userEmail) &&
-        Boolean(u.userName) &&
-        !selectedUsers.some((s) => s.userEmail === u.userEmail),
-    ) ?? []).map((u) => ({ value: u.userEmail, label: u.userName }));
-
   $: allOrganizationUsers = $organizationUsersQuery.data?.members ?? [];
+
+  // Members available to add: org members not already in the group, filtered by search.
+  $: filteredMemberOptions = allOrganizationUsers.filter(
+    (u) =>
+      !selectedUsers.some((s) => s.userEmail === u.userEmail) &&
+      (!memberSearchInput ||
+        u.userName?.toLowerCase().includes(memberSearchInput.toLowerCase()) ||
+        u.userEmail?.toLowerCase().includes(memberSearchInput.toLowerCase())),
+  );
 
   $: if (userGroupMembersUsers.length > 0 && !membersInitialized) {
     selectedUsers = [...userGroupMembersUsers];
@@ -146,14 +149,13 @@
     }
   }
 
-  $: availableProjectOptions = allOrgProjectNames
-    .filter(
-      (name) =>
-        !selectedProjects.some((p) => p.name === name) &&
-        (!projectSearchInput ||
-          name.toLowerCase().includes(projectSearchInput.toLowerCase())),
-    )
-    .map((name) => ({ value: name, label: name }));
+  // Projects available to add: not already added, filtered by search.
+  $: filteredProjectOptions = allOrgProjectNames.filter(
+    (name) =>
+      !selectedProjects.some((p) => p.name === name) &&
+      (!projectSearchInput ||
+        name.toLowerCase().includes(projectSearchInput.toLowerCase())),
+  );
 
   // ── Mutations ──────────────────────────────────────────────────────
   const queryClient = useQueryClient();
@@ -175,13 +177,18 @@
     pendingMemberAdditions = pendingMemberAdditions.filter((e) => e !== email);
   }
 
-  function handleMemberAdd(email: string) {
-    const user = allOrganizationUsers.find((u) => u.userEmail === email);
-    if (user && !selectedUsers.some((s) => s.userEmail === email)) {
+  function handleMemberAdd(user: V1OrganizationMemberUser) {
+    if (!selectedUsers.some((s) => s.userEmail === user.userEmail)) {
       selectedUsers = [...selectedUsers, user];
-      pendingMemberAdditions = [...pendingMemberAdditions, email];
-      pendingMemberRemovals = pendingMemberRemovals.filter((e) => e !== email);
+      pendingMemberAdditions = [
+        ...pendingMemberAdditions,
+        user.userEmail ?? "",
+      ];
+      pendingMemberRemovals = pendingMemberRemovals.filter(
+        (e) => e !== user.userEmail,
+      );
       memberSearchInput = "";
+      memberSearchFocused = false;
     }
   }
 
@@ -193,6 +200,7 @@
         { name, role: ProjectUserRoles.Viewer },
       ];
       projectSearchInput = "";
+      projectSearchFocused = false;
     }
   }
 
@@ -351,20 +359,13 @@
     },
   );
 
-  function getMemberMetadata(email: string) {
-    const user =
-      selectedUsers.find((u) => u.userEmail === email) ||
-      allOrganizationUsers.find((u) => u.userEmail === email);
-    return user
-      ? { name: user.userName ?? "", photoUrl: user.userPhotoUrl ?? undefined }
-      : undefined;
-  }
-
   // ── Close / reset ──────────────────────────────────────────────────
   function handleClose() {
     open = false;
     memberSearchInput = "";
+    memberSearchFocused = false;
     projectSearchInput = "";
+    projectSearchFocused = false;
     selectedUsers = [];
     pendingMemberAdditions = [];
     pendingMemberRemovals = [];
@@ -428,7 +429,7 @@
             {#if selectedProjects.length > 0}
               <div class="max-h-40 overflow-y-auto divide-y divide-gray-100">
                 {#each selectedProjects as project (project.name)}
-                  <div class="flex items-center gap-2 px-3 py-2">
+                  <div class="flex items-center gap-2 px-3 py-2 bg-white">
                     <span class="flex-1 truncate text-sm">{project.name}</span>
                     <select
                       class="h-7 rounded-sm border border-gray-300 bg-white px-2 text-xs text-gray-700 cursor-pointer focus:outline-none focus:border-primary-500"
@@ -455,19 +456,36 @@
                 {/each}
               </div>
             {/if}
+
+            <!-- Inline project search -->
             <div
-              class="border-t border-gray-200 bg-gray-50"
-              class:border-t-0={selectedProjects.length === 0}
+              class="relative border-gray-200 bg-gray-50 rounded-b-md"
+              class:border-t={selectedProjects.length > 0}
+              class:rounded-md={selectedProjects.length === 0}
             >
-              <Combobox
-                bind:searchValue={projectSearchInput}
-                options={availableProjectOptions}
+              {#if projectSearchFocused && filteredProjectOptions.length > 0}
+                <div
+                  class="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md"
+                >
+                  {#each filteredProjectOptions as name (name)}
+                    <button
+                      type="button"
+                      class="w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-gray-50"
+                      on:mousedown|preventDefault={() => handleProjectAdd(name)}
+                    >
+                      {name}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+              <input
+                type="text"
+                bind:value={projectSearchInput}
+                on:focus={() => (projectSearchFocused = true)}
+                on:blur={() =>
+                  setTimeout(() => (projectSearchFocused = false), 150)}
                 placeholder="Search projects…"
-                enableClientFiltering={false}
-                selectedValues={[]}
-                onSelectedChange={(values) => {
-                  if (values?.length) handleProjectAdd(values[0].value);
-                }}
+                class="w-full bg-transparent px-3 py-2 text-sm focus:outline-none placeholder:text-gray-400"
               />
             </div>
           {/if}
@@ -481,7 +499,7 @@
           {#if selectedUsers.length > 0}
             <div class="max-h-40 overflow-y-auto divide-y divide-gray-100">
               {#each selectedUsers as user (user.userEmail)}
-                <div class="flex items-center gap-2 px-3 py-2">
+                <div class="flex items-center gap-2 px-3 py-2 bg-white">
                   <div class="flex-1 min-w-0">
                     <AvatarListItem
                       name={user.userName ?? ""}
@@ -493,7 +511,7 @@
                   </div>
                   <button
                     type="button"
-                    class="text-gray-400 hover:text-red-500 text-xs leading-none p-1 rounded hover:bg-red-50 shrink-0"
+                    class="shrink-0 text-gray-400 hover:text-red-500 text-xs leading-none p-1 rounded hover:bg-red-50"
                     on:click={() => handleMemberRemove(user.userEmail ?? "")}
                     aria-label="Remove {user.userName ?? ''}"
                   >
@@ -503,20 +521,40 @@
               {/each}
             </div>
           {/if}
+
+          <!-- Inline member search -->
           <div
-            class="border-t border-gray-200 bg-gray-50"
-            class:border-t-0={selectedUsers.length === 0}
+            class="relative border-gray-200 bg-gray-50 rounded-b-md"
+            class:border-t={selectedUsers.length > 0}
+            class:rounded-md={selectedUsers.length === 0}
           >
-            <Combobox
-              bind:searchValue={memberSearchInput}
-              options={availableMemberOptions}
+            {#if memberSearchFocused && filteredMemberOptions.length > 0}
+              <div
+                class="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md"
+              >
+                {#each filteredMemberOptions as user (user.userEmail)}
+                  <button
+                    type="button"
+                    class="w-full border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-gray-50"
+                    on:mousedown|preventDefault={() => handleMemberAdd(user)}
+                  >
+                    <AvatarListItem
+                      name={user.userName ?? ""}
+                      email={user.userEmail ?? ""}
+                      photoUrl={user.userPhotoUrl}
+                    />
+                  </button>
+                {/each}
+              </div>
+            {/if}
+            <input
+              type="text"
+              bind:value={memberSearchInput}
+              on:focus={() => (memberSearchFocused = true)}
+              on:blur={() =>
+                setTimeout(() => (memberSearchFocused = false), 150)}
               placeholder="Search members…"
-              getMetadata={getMemberMetadata}
-              enableClientFiltering={false}
-              selectedValues={[]}
-              onSelectedChange={(values) => {
-                if (values?.length) handleMemberAdd(values[0].value);
-              }}
+              class="w-full bg-transparent px-3 py-2 text-sm focus:outline-none placeholder:text-gray-400"
             />
           </div>
         </div>
