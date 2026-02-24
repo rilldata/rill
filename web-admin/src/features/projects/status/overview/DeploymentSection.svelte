@@ -44,7 +44,8 @@
 
   // Runtime
   $: runtimeVersionQuery = useRuntimeVersion();
-  $: version = $runtimeVersionQuery.data?.version ?? "";
+  $: version =
+    $runtimeVersionQuery.data?.version?.split(" ")[0] ?? "";
 
   // Connectors — sensitive: true is needed to read projectConnectors (OLAP/AI connector types)
   $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
