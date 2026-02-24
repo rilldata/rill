@@ -22,6 +22,7 @@
   } from "@rilldata/web-common/metrics/initMetrics";
   import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
@@ -77,20 +78,24 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <FileAndResourceWatcher {host} {instanceId}>
-    <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
-      {#if data.initialized}
-        <BannerCenter />
-        <RepresentingUserBanner />
-        <ApplicationHeader {mode} />
-        {#if $deploy}
-          <RemoteProjectManager />
+  <RuntimeProvider {host} {instanceId}>
+    <FileAndResourceWatcher {host} {instanceId}>
+      <div
+        class="body h-screen w-screen overflow-hidden absolute flex flex-col"
+      >
+        {#if data.initialized}
+          <BannerCenter />
+          <RepresentingUserBanner />
+          <ApplicationHeader {mode} />
+          {#if $deploy}
+            <RemoteProjectManager />
+          {/if}
         {/if}
-      {/if}
 
-      <slot />
-    </div>
-  </FileAndResourceWatcher>
+        <slot />
+      </div>
+    </FileAndResourceWatcher>
+  </RuntimeProvider>
 </QueryClientProvider>
 
 {#if $overlay !== null}

@@ -50,10 +50,10 @@
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime-client";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
@@ -154,6 +154,20 @@
         : "user"
   ) as AuthContext;
 
+  // Derive effective runtime connection props
+  $: effectiveHost =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.runtimeHost
+      : projectData?.deployment?.runtimeHost;
+  $: effectiveInstanceId =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.instanceId
+      : projectData?.deployment?.runtimeInstanceId;
+  $: effectiveJwt =
+    mockedUserId && mockedUserDeploymentCredentials
+      ? mockedUserDeploymentCredentials.accessToken
+      : projectData?.jwt;
+
   // Load telemetry client with relevant context
   $: if (project && $user.data?.user?.id) {
     metricsService?.loadCloudFields({
@@ -165,15 +179,6 @@
     });
   }
 </script>
-
-{#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
-  <ProjectTabs
-    projectPermissions={projectData.projectPermissions}
-    {organization}
-    {pathname}
-    {project}
-  />
-{/if}
 
 {#if error}
   <ErrorPage
@@ -196,19 +201,23 @@
         : "There was an error deploying your project. Please contact support."}
     />
   {:else if isProjectAvailable}
-    <RuntimeProvider
-      instanceId={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.instanceId
-        : projectData.deployment.runtimeInstanceId}
-      host={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.runtimeHost
-        : projectData.deployment.runtimeHost}
-      jwt={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.accessToken
-        : projectData.jwt}
-      {authContext}
-    >
-      <slot />
-    </RuntimeProvider>
+    {#key `${effectiveHost}::${effectiveInstanceId}`}
+      <RuntimeProvider
+        host={effectiveHost}
+        instanceId={effectiveInstanceId}
+        jwt={effectiveJwt}
+        {authContext}
+      >
+        {#if onProjectPage && deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+          <ProjectTabs
+            projectPermissions={projectData.projectPermissions}
+            {organization}
+            {pathname}
+            {project}
+          />
+        {/if}
+        <slot />
+      </RuntimeProvider>
+    {/key}
   {/if}
 {/if}

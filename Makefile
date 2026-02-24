@@ -56,6 +56,7 @@ proto.generate:
 	cd proto && buf generate --exclude-path rill/ui
 	cd proto && buf generate --template buf.gen.openapi-admin.yaml --path rill/admin
 	cd proto && buf generate --template buf.gen.openapi-runtime.yaml --path rill/runtime
+	cd proto && buf generate --template buf.gen.runtime.yaml --path rill/runtime
 	cd proto && buf generate --template buf.gen.local.yaml --path rill/local
 	cd proto && buf generate --template buf.gen.ui.yaml
 	go run -ldflags="-X main.Version=$(shell git describe --tags $(shell git rev-list --tags --max-count=1))" \
