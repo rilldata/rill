@@ -12,12 +12,20 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
 	// Query schemas that actually contain tables or views accessible to the current user,
-	// rather than listing all users and trying to exclude system accounts.
+	// excluding known Oracle system/internal schemas.
 	q := `SELECT owner FROM (
 		SELECT DISTINCT owner FROM all_tables
 		UNION
 		SELECT DISTINCT owner FROM all_views
-	) t`
+	) t WHERE owner NOT IN (
+		'ANONYMOUS','APPQOSSYS','AUDSYS','CTXSYS','DBSFWUSER','DBSNMP',
+		'DGPDB_INT','DIP','DVSYS','GGSYS','GSMADMIN_INTERNAL','GSMCATUSER',
+		'GSMROOTUSER','GSMUSER','LBACSYS','MDDATA','MDSYS','OJVMSYS',
+		'OLAPSYS','ORACLE_OCM','ORDDATA','ORDPLUGINS','ORDSYS','OUTLN',
+		'REMOTE_SCHEDULER_AGENT','SI_INFORMTN_SCHEMA','SYS','SYS$UMF',
+		'SYSBACKUP','SYSDG','SYSKM','SYSRAC','SYSTEM','VECSYS',
+		'WMSYS','XDB','XS$NULL'
+	)`
 	var args []any
 	nextParam := 1
 	if pageToken != "" {
@@ -25,7 +33,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
-		q += fmt.Sprintf(" WHERE owner > :%d", nextParam)
+		q += fmt.Sprintf(" AND owner > :%d", nextParam)
 		args = append(args, startAfter)
 	}
 	// Oracle does not support bind variables in FETCH FIRST; inline the limit value directly.
