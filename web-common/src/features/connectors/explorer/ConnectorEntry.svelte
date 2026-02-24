@@ -65,7 +65,7 @@
       </button>
 
       {#if expanded}
-        <DatabaseExplorer instanceId={client.instanceId} {connector} {store} />
+        <DatabaseExplorer {connector} {store} />
       {/if}
     </li>
   {/if}
