@@ -1,5 +1,11 @@
 import { convertTimestampPreview } from "@rilldata/web-common/lib/convertTimestampPreview";
 import {
+  QueryServiceColumnNumericHistogramHistogramMethod,
+  type V1ProfileColumn,
+  type V1TableColumnsResponse,
+} from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import {
   createQueryServiceColumnCardinality,
   createQueryServiceColumnNullCount,
   createQueryServiceColumnNumericHistogram,
@@ -8,10 +14,7 @@ import {
   createQueryServiceColumnTimeSeries,
   createQueryServiceColumnTopK,
   createQueryServiceTableCardinality,
-  QueryServiceColumnNumericHistogramHistogramMethod,
-  type V1ProfileColumn,
-  type V1TableColumnsResponse,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/v2/gen";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
 import {
@@ -32,7 +35,7 @@ export type ColumnSummary = V1ProfileColumn & {
 
 /** for each entry in a profile column results, return the null count and the column cardinality */
 export function getSummaries(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -45,9 +48,9 @@ export function getSummaries(
         [
           writable(column),
           createQueryServiceColumnNullCount(
-            instanceId,
-            objectName,
+            client,
             {
+              tableName: objectName,
               connector,
               database,
               databaseSchema,
@@ -61,9 +64,9 @@ export function getSummaries(
             },
           ),
           createQueryServiceColumnCardinality(
-            instanceId,
-            objectName,
+            client,
             {
+              tableName: objectName,
               connector,
               database,
               databaseSchema,
@@ -98,7 +101,7 @@ export function getSummaries(
 }
 
 export function getNullPercentage(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -107,9 +110,9 @@ export function getNullPercentage(
   enabled = true,
 ) {
   const nullQuery = createQueryServiceColumnNullCount(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -122,9 +125,9 @@ export function getNullPercentage(
     },
   );
   const totalRowsQuery = createQueryServiceTableCardinality(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -149,7 +152,7 @@ export function getNullPercentage(
 }
 
 export function getCountDistinct(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -158,9 +161,8 @@ export function getCountDistinct(
   enabled = true,
 ) {
   const cardinalityQuery = createQueryServiceColumnCardinality(
-    instanceId,
-    objectName,
-    { connector, database, databaseSchema, columnName },
+    client,
+    { tableName: objectName, connector, database, databaseSchema, columnName },
     {
       query: {
         enabled,
@@ -169,9 +171,8 @@ export function getCountDistinct(
   );
 
   const totalRowsQuery = createQueryServiceTableCardinality(
-    instanceId,
-    objectName,
-    { connector, database, databaseSchema },
+    client,
+    { tableName: objectName, connector, database, databaseSchema },
     {
       query: {
         enabled,
@@ -196,7 +197,7 @@ export function getCountDistinct(
 }
 
 export function getTopK(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -206,9 +207,9 @@ export function getTopK(
   active = false,
 ) {
   const topKQuery = createQueryServiceColumnTopK(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -229,7 +230,7 @@ export function getTopK(
 }
 
 export function getTimeSeriesAndSpark(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -239,10 +240,9 @@ export function getTimeSeriesAndSpark(
   active = false,
 ) {
   const query = createQueryServiceColumnTimeSeries(
-    instanceId,
-    objectName,
-    // FIXME: convert pixel back to number once the API
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -260,9 +260,9 @@ export function getTimeSeriesAndSpark(
     },
   );
   const estimatedInterval = createQueryServiceColumnRollupInterval(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -277,9 +277,9 @@ export function getTimeSeriesAndSpark(
   );
 
   const smallestTimeGrain = createQueryServiceColumnTimeGrain(
-    instanceId,
-    objectName,
+    client,
     {
+      tableName: objectName,
       connector,
       database,
       databaseSchema,
@@ -324,7 +324,7 @@ export function getTimeSeriesAndSpark(
 }
 
 export function getNumericHistogram(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -334,24 +334,27 @@ export function getNumericHistogram(
   enabled = true,
   active = false,
 ) {
-  return createQueryServiceColumnNumericHistogram(
-    instanceId,
-    objectName,
-    {
-      connector,
-      database,
-      databaseSchema,
-      columnName,
-      histogramMethod,
-      priority: getPriorityForColumn("numeric-histogram", active),
-    },
-    {
-      query: {
-        select(query) {
-          return query?.numericSummary?.numericHistogramBins?.bins;
-        },
-        enabled,
+  return derived(
+    createQueryServiceColumnNumericHistogram(
+      client,
+      {
+        tableName: objectName,
+        connector,
+        database,
+        databaseSchema,
+        columnName,
+        histogramMethod,
+        priority: getPriorityForColumn("numeric-histogram", active),
       },
-    },
+      {
+        query: {
+          enabled,
+        },
+      },
+    ),
+    ($query) => ({
+      data: $query?.data?.numericSummary?.numericHistogramBins?.bins,
+      isFetching: $query?.isFetching,
+    }),
   );
 }

@@ -52,7 +52,7 @@
   });
 
   $: nestedColumnProfileQuery = getSummaries(
-    client.instanceId,
+    client,
     connector,
     database,
     databaseSchema,

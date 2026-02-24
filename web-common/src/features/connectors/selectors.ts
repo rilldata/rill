@@ -3,15 +3,18 @@ import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
   type V1TableInfo,
-  createConnectorServiceListDatabaseSchemas,
-  createConnectorServiceGetTable,
   createRuntimeServiceGetInstance,
   type V1GetResourceResponse,
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
   type RpcStatus,
 } from "../../runtime-client";
-import { connectorServiceListTables } from "../../runtime-client/gen/connector-service/connector-service";
+import type { RuntimeClient } from "../../runtime-client/v2";
+import {
+  createConnectorServiceListDatabaseSchemas,
+  createConnectorServiceGetTable,
+  connectorServiceListTables,
+} from "../../runtime-client/v2/gen";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
@@ -104,55 +107,62 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
  * The backend returns all schemas across databases; filtering is applied client-side.
  */
 export function useListDatabaseSchemas(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database?: string,
   enabled: boolean = true,
 ) {
-  return createConnectorServiceListDatabaseSchemas(
+  const query = createConnectorServiceListDatabaseSchemas(
+    client,
     {
-      instanceId,
       connector,
     },
     {
       query: {
-        enabled: !!instanceId && !!connector && enabled,
-        select: (data) => {
-          const allSchemas = data.databaseSchemas ?? [];
-
-          if (database !== undefined) {
-            const hasEmptyDatabases = allSchemas.every((s) => !s.database);
-            return hasEmptyDatabases
-              ? [database]
-              : allSchemas
-                  .filter((s) => s.database === database)
-                  .map((s) => s.databaseSchema ?? "");
-          }
-
-          // Derive databases (top-level)
-          const hasEmptyDatabases = allSchemas.every(
-            (schema) => !schema.database,
-          );
-          return hasEmptyDatabases
-            ? Array.from(
-                new Set(
-                  allSchemas.map((schema) => schema.databaseSchema ?? ""),
-                ),
-              )
-            : Array.from(
-                new Set(allSchemas.map((schema) => schema.database ?? "")),
-              ).filter(Boolean);
-        },
+        enabled: !!client.instanceId && !!connector && enabled,
       },
     },
   );
+
+  return derived(query, ($q) => {
+    const allSchemas = $q?.data?.databaseSchemas ?? [];
+
+    let data: string[] | undefined;
+    if ($q?.data) {
+      if (database !== undefined) {
+        const hasEmptyDatabases = allSchemas.every((s) => !s.database);
+        data = hasEmptyDatabases
+          ? [database]
+          : allSchemas
+              .filter((s) => s.database === database)
+              .map((s) => s.databaseSchema ?? "");
+      } else {
+        const hasEmptyDatabases = allSchemas.every(
+          (schema) => !schema.database,
+        );
+        data = hasEmptyDatabases
+          ? Array.from(
+              new Set(allSchemas.map((schema) => schema.databaseSchema ?? "")),
+            )
+          : Array.from(
+              new Set(allSchemas.map((schema) => schema.database ?? "")),
+            ).filter(Boolean);
+      }
+    }
+
+    return {
+      data,
+      error: $q?.error,
+      isLoading: $q?.isLoading,
+    };
+  });
 }
 
 /**
  * Infinite tables loader using pageToken cursor
  */
 export function useInfiniteListTables(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -162,11 +172,17 @@ export function useInfiniteListTables(
   return createInfiniteQuery({
     queryKey: [
       "/v1/connectors/tables",
-      { instanceId, connector, database, databaseSchema, pageSize },
+      {
+        instanceId: client.instanceId,
+        connector,
+        database,
+        databaseSchema,
+        pageSize,
+      },
     ],
     enabled:
       enabled &&
-      !!instanceId &&
+      !!client.instanceId &&
       !!connector &&
       (!!database || database === "") &&
       databaseSchema !== undefined,
@@ -175,15 +191,15 @@ export function useInfiniteListTables(
       lastPage?.nextPageToken || undefined,
     queryFn: ({ pageParam, signal }) =>
       connectorServiceListTables(
+        client,
         {
-          instanceId,
           connector,
           database,
           databaseSchema,
           pageSize,
           pageToken: pageParam,
         },
-        signal,
+        { signal },
       ),
     select: (data: any) => ({
       tables: data.pages.flatMap(
@@ -202,15 +218,15 @@ export function useInfiniteListTables(
  * Called when a table is selected/expanded
  */
 export function useGetTable(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
   table: string,
 ) {
   return createConnectorServiceGetTable(
+    client,
     {
-      instanceId,
       connector,
       database,
       databaseSchema,
@@ -219,7 +235,7 @@ export function useGetTable(
     {
       query: {
         enabled:
-          !!instanceId &&
+          !!client.instanceId &&
           !!connector &&
           !!table &&
           database !== undefined &&

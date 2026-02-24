@@ -18,7 +18,7 @@
   $: queryEnabled = !hasError;
 
   $: databaseSchemasQuery = useListDatabaseSchemas(
-    client.instanceId,
+    client,
     connectorName,
     undefined,
     queryEnabled,
