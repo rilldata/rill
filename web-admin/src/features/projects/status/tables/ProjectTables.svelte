@@ -116,7 +116,7 @@
 
   type TypeOption = { label: string; value: "all" | "table" | "view" };
   const typeOptions: TypeOption[] = [
-    { label: "All", value: "all" },
+    { label: "All Types", value: "all" },
     { label: "Table", value: "table" },
     { label: "View", value: "view" },
   ];
@@ -263,7 +263,7 @@
           searchText = "";
         }}
       >
-        Clear filters
+        Clear
       </button>
     {/if}
   </div>

@@ -282,7 +282,7 @@
         class="shrink-0 text-sm text-primary-500 hover:text-primary-600 whitespace-nowrap"
         on:click={clearFilters}
       >
-        Clear filters
+        Clear
       </button>
     {/if}
   </div>
