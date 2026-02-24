@@ -182,7 +182,6 @@
         (e) => e !== user.userEmail,
       );
       memberSearchInput = "";
-      memberSearchFocused = false;
     }
   }
 
@@ -194,7 +193,6 @@
         { name, role: ProjectUserRoles.Viewer },
       ];
       projectSearchInput = "";
-      projectSearchFocused = false;
     }
   }
 
