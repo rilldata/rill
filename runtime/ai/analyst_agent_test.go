@@ -350,8 +350,16 @@ func requireValidChartSpec(t *testing.T, s *ai.Session, chartCall *ai.Message, v
 	rawArgs, err := s.UnmarshalMessageContent(chartCall)
 	require.NoError(t, err)
 
-	args, ok := rawArgs.(map[string]any)
-	require.True(t, ok, "expected map[string]any, got %T", rawArgs)
+	// CreateChartArgs is a named type (map[string]any), so try both type assertions
+	var args map[string]any
+	switch v := rawArgs.(type) {
+	case ai.CreateChartArgs:
+		args = map[string]any(v)
+	case map[string]any:
+		args = v
+	default:
+		require.Fail(t, "expected CreateChartArgs or map[string]any, got %T", rawArgs)
+	}
 
 	chartType, ok := args["chart_type"].(string)
 	require.True(t, ok, "chart_type must be a string")
