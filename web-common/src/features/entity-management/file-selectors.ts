@@ -1,11 +1,9 @@
-import {
-  runtimeServiceListFiles,
-  type V1ListFilesResponse,
-} from "@rilldata/web-common/runtime-client";
+import type { V1ListFilesResponse } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   createRuntimeServiceListFiles,
   getRuntimeServiceListFilesQueryKey,
+  runtimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { QueryClient } from "@tanstack/svelte-query";
 
@@ -60,7 +58,7 @@ export function useFileNamesInDirectory(
 
 export async function getFileNamesInDirectory(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
   directoryPath: string,
 ) {
   // Ensure the directory path starts with a slash
@@ -71,9 +69,8 @@ export async function getFileNamesInDirectory(
   // Fetch all files in the project
   // (For now, we fetch all files at once, rather than individual requests for each directory.)
   const allFiles = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
-    queryFn: ({ signal }) =>
-      runtimeServiceListFiles(instanceId, undefined, signal),
+    queryKey: getRuntimeServiceListFilesQueryKey(client.instanceId, undefined),
+    queryFn: ({ signal }) => runtimeServiceListFiles(client, {}, { signal }),
   });
 
   // Get the file names in the given directory

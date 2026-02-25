@@ -7,7 +7,6 @@ import {
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  queryServiceConvertExpressionToMetricsSQL,
   V1ExploreComparisonMode,
   type V1CanvasPreset,
   type V1CanvasSpec,
@@ -48,6 +47,7 @@ import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -400,7 +400,7 @@ export class CanvasEntity {
             parsed.where,
           ],
           queryFn: () =>
-            queryServiceConvertExpressionToMetricsSQL(this.instanceId, {
+            queryServiceConvertExpressionToMetricsSQL(this.client, {
               expression: parsed.where,
             }),
         });

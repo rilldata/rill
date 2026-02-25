@@ -9,13 +9,13 @@
   import { filterOutSomeAdvancedAggregationMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import {
-    createQueryServiceMetricsViewAggregation,
-    type MetricsViewSpecDimension,
-    type V1Expression,
-    type V1MetricsViewAggregationMeasure,
-    type V1TimeRange,
+  import type {
+    MetricsViewSpecDimension,
+    V1Expression,
+    V1MetricsViewAggregationMeasure,
+    V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
@@ -65,12 +65,11 @@
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   $: ({ name: dimensionName = "" } = dimension);
 
   $: selectedValues = selectedDimensionValues(
-    client.instanceId,
+    client,
     [metricsViewName],
     $dashboardStore.whereFilter,
     dimensionName,
@@ -109,9 +108,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: filteredMeasures.filter(
         (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
       ),
@@ -158,9 +157,9 @@
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
       measures: filteredMeasures,
       timeRange,

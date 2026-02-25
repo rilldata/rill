@@ -9,10 +9,9 @@
     V1MetricsViewAggregationMeasure,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    createQueryServiceMetricsViewAggregation,
-    V1Operation,
-  } from "@rilldata/web-common/runtime-client";
+  import { V1Operation } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
   import {
     getComparisonRequestMeasures,
@@ -48,7 +47,6 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let selectedValues: ReturnType<typeof selectedDimensionValues>;
-  export let instanceId: string;
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let leaderboardSortByMeasureName: string;
@@ -67,6 +65,9 @@
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
   export let visible = false;
+
+  const client = useRuntimeClient();
+
   export let formatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
@@ -165,9 +166,9 @@
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
       measures,
       timeRange,
@@ -185,9 +186,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: leaderboardMeasureNames.map((name) => ({ name })),
       where,
       timeRange,
@@ -223,9 +224,9 @@
 
   $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
   $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
       where: sanitiseExpression(
         createAndExpression(

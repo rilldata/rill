@@ -2,12 +2,10 @@ import {
   ResourceKind,
   useClientFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  type V1ProfileColumn,
-  createQueryServiceTableColumns,
-  createRuntimeServiceGetFile,
-} from "@rilldata/web-common/runtime-client";
+import type { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import { createQueryServiceTableColumns } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { type Readable, derived } from "svelte/store";
 import { parse } from "yaml";
@@ -28,9 +26,9 @@ export function useSources(client: RuntimeClient) {
   );
 }
 
-export function useSourceFromYaml(instanceId: string, filePath: string) {
+export function useSourceFromYaml(client: RuntimeClient, filePath: string) {
   return createRuntimeServiceGetFile(
-    instanceId,
+    client,
     { path: filePath },
     {
       query: {
@@ -43,9 +41,12 @@ export function useSourceFromYaml(instanceId: string, filePath: string) {
 /**
  * This client-side YAML parsing is a rudimentary hack to check if the source is a local file.
  */
-export function useIsLocalFileConnector(instanceId: string, filePath: string) {
+export function useIsLocalFileConnector(
+  client: RuntimeClient,
+  filePath: string,
+) {
   return createRuntimeServiceGetFile(
-    instanceId,
+    client,
     { path: filePath },
     {
       query: {
@@ -85,7 +86,7 @@ export function useAllSourceColumns(
       allSources.data.map((r) =>
         createTableColumnsWithName(
           queryClient,
-          client.instanceId,
+          client,
           r.source?.state?.connector ?? "",
           "",
           "",
@@ -105,16 +106,16 @@ export function useAllSourceColumns(
  */
 export function createTableColumnsWithName(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
   tableName: string,
 ) {
   return createQueryServiceTableColumns(
-    instanceId,
-    tableName,
+    client,
     {
+      tableName,
       connector,
       database,
       databaseSchema,

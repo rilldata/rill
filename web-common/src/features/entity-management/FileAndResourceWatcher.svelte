@@ -20,6 +20,7 @@
 
   $: fileAndResourceWatcher.setInstanceId(instanceId);
 
+  $: fileAndResourceWatcher.setClient(runtimeClient);
   $: watcherEndpoint = `${host}/v1/instances/${instanceId}/sse?events=file,resource`;
 
   $: fileAndResourceWatcher.watch(watcherEndpoint);

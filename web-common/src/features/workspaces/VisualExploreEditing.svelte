@@ -19,10 +19,9 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import {
-    createRuntimeServiceGetInstance,
-    type V1Explore,
-  } from "@rilldata/web-common/runtime-client";
+  import type { V1Explore } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
@@ -169,8 +168,8 @@
     .filter((string) => !string.endsWith("--theme"));
 
   $: defaultThemeQuery = createRuntimeServiceGetInstance(
-    runtimeClient.instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => data?.instance?.theme,

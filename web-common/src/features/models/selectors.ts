@@ -40,7 +40,7 @@ export function useAllModelColumns(
       allModels.data.map((r) =>
         createTableColumnsWithName(
           queryClient,
-          client.instanceId,
+          client,
           r.model?.state?.resultConnector ?? "",
           "",
           "",

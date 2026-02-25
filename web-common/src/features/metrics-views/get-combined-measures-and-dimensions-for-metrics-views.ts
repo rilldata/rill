@@ -1,10 +1,10 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-import {
-  getRuntimeServiceGetResourceQueryOptions,
-  type MetricsViewSpecDimension,
-  type MetricsViewSpecMeasure,
+import type {
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import { createQueries } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
@@ -16,9 +16,8 @@ export function getCombinedMeasuresAndDimensionsForMetricsViews(
     metricsViewNamesStore,
     (metricsViewNames) =>
       metricsViewNames.map((metricsViewName) =>
-        getRuntimeServiceGetResourceQueryOptions(client.instanceId, {
-          "name.kind": ResourceKind.MetricsView,
-          "name.name": metricsViewName,
+        getRuntimeServiceGetResourceQueryOptions(client, {
+          name: { kind: ResourceKind.MetricsView, name: metricsViewName },
         }),
       ),
   );

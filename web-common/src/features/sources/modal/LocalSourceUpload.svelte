@@ -31,7 +31,7 @@
 
   async function handleUpload(files: Array<File>) {
     const uploadedFiles = uploadTableFiles(files, instanceId, false);
-    const initialized = await isProjectInitialized(instanceId);
+    const initialized = await isProjectInitialized(runtimeClient);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project

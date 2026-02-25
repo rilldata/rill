@@ -3,10 +3,8 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
-  import {
-    createQueryServiceMetricsViewRows,
-    type V1Expression,
-  } from "@rilldata/web-common/runtime-client";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewRows } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { writable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -20,7 +18,6 @@
   export let timeRange: TimeRangeString;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   const SAMPLE_SIZE = 10000;
   const FALLBACK_SAMPLE_SIZE = 1000;
@@ -33,9 +30,9 @@
   $: timeDimension = $exploreState?.selectedTimeDimension;
 
   $: tableQuery = createQueryServiceMetricsViewRows(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsViewName,
       limit: $limit,
       where: filters,
       timeStart: timeRange.start,

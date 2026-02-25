@@ -5,10 +5,11 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
-  type V1ListFilesResponse,
-} from "@rilldata/web-common/runtime-client/index.js";
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import type { V1ListFilesResponse } from "@rilldata/web-common/runtime-client/index.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
-import { LOCAL_INSTANCE_ID } from "../lib/local-runtime-config";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/local-runtime-config";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
@@ -18,10 +19,15 @@ export async function load({ url, depends, untrack }) {
 
   const instanceId = LOCAL_INSTANCE_ID;
 
+  const client = new RuntimeClient({
+    host: LOCAL_HOST,
+    instanceId,
+  });
+
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
     queryFn: ({ signal }) => {
-      return runtimeServiceListFiles(instanceId, undefined, signal);
+      return runtimeServiceListFiles(client, {}, { signal });
     },
   });
 
@@ -40,7 +46,7 @@ export async function load({ url, depends, untrack }) {
   });
 
   if (!initialized) {
-    initialized = await handleUninitializedProject(instanceId);
+    initialized = await handleUninitializedProject(client);
   } else if (redirectPath) {
     throw redirect(303, redirectPath);
   }

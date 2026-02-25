@@ -68,7 +68,6 @@
   let curPinned = filterData.pinned;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   $: ({
     name,
@@ -105,24 +104,19 @@
       (curMode === DimensionFilterMode.InList &&
         searchedBulkValues.length > 0));
 
-  $: searchResultsQuery = useDimensionSearch(
-    instanceId,
-    metricsViewNames,
-    name,
-    {
-      mode: curMode,
-      values:
-        curMode === DimensionFilterMode.Select
-          ? selectedValues
-          : searchedBulkValues,
-      searchText: curSearchText,
-      timeStart,
-      timeEnd,
-      timeDimension,
-      enabled: enableSearchQuery,
-      metricsViewWheres: expressionMap,
-    },
-  );
+  $: searchResultsQuery = useDimensionSearch(client, metricsViewNames, name, {
+    mode: curMode,
+    values:
+      curMode === DimensionFilterMode.Select
+        ? selectedValues
+        : searchedBulkValues,
+    searchText: curSearchText,
+    timeStart,
+    timeEnd,
+    timeDimension,
+    enabled: enableSearchQuery,
+    metricsViewWheres: expressionMap,
+  });
   $: ({
     data: searchResults,
     error: errorFromSearchResults,
@@ -137,7 +131,7 @@
         searchedBulkValues.length > 0));
 
   $: allSearchResultsCountQuery = useAllSearchResultsCount(
-    instanceId,
+    client,
     metricsViewNames,
     name,
     {

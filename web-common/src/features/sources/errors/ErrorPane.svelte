@@ -12,7 +12,7 @@
   $: ({ instanceId } = runtimeClient);
 
   // Parse Source YAML client-side
-  $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
+  $: sourceFromYaml = useSourceFromYaml(runtimeClient, filePath);
 
   // Try to extract the connector type
   $: connectorType = $sourceFromYaml.data?.type;

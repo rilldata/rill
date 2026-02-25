@@ -75,7 +75,7 @@
     openResourceGraphQuickView(sourceResource);
   }
 
-  $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
+  $: sourceFromYaml = useSourceFromYaml(runtimeClient, filePath);
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     runtimeClient,
@@ -158,7 +158,10 @@
     }
   };
 
-  $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
+  $: isLocalFileConnectorQuery = useIsLocalFileConnector(
+    runtimeClient,
+    filePath,
+  );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
   async function onReplaceSource() {

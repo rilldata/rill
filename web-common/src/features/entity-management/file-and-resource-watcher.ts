@@ -32,6 +32,7 @@ import { sourceIngestionTracker } from "../sources/sources-store";
 import { isLeafResource } from "./dag-utils";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { SSEConnectionManager } from "@rilldata/web-common/runtime-client/sse-connection-manager";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 const REFETCH_LIST_FILES_THROTTLE_MS = 100;
 
@@ -142,6 +143,12 @@ export class FileAndResourceWatcher {
 
   private get instanceId() {
     return this._instanceId;
+  }
+
+  private _client: RuntimeClient | null = null;
+
+  public setClient(client: RuntimeClient) {
+    this._client = client;
   }
 
   private invalidateAll() {
@@ -375,7 +382,8 @@ export class FileAndResourceWatcher {
               sourceIngestionTracker.isPending(filePath) &&
               res.resource.meta.specVersion === "1" && // First file version
               res.resource.meta.stateVersion === "2" && // First ingest is complete
-              (await isLeafResource(res.resource, this.instanceId)); // Protects against existing projects reconciling anew
+              this._client &&
+              (await isLeafResource(this._client, res.resource)); // Protects against existing projects reconciling anew
             if (isNewSource) {
               sourceIngestionTracker.trackIngested(filePath);
             }

@@ -5,12 +5,12 @@
  * and maintain consistency in ID generation and message content extraction.
  */
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import { type V1Message } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetConversationQueryOptions,
   getRuntimeServiceListConversationsQueryKey,
   getRuntimeServiceListConversationsQueryOptions,
-  type V1Message,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import { MessageContentType, ToolName } from "./types";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
@@ -82,7 +82,7 @@ export function invalidateConversationsList(instanceId: string) {
  */
 export function getLatestConversationQueryOptions(client: RuntimeClient) {
   const listConversationsQueryOptions =
-    getRuntimeServiceListConversationsQueryOptions(client.instanceId, {
+    getRuntimeServiceListConversationsQueryOptions(client, {
       // Filter to only show Rill client conversations, excluding MCP conversations
       userAgentPattern: "rill%",
     });
@@ -98,8 +98,8 @@ export function getLatestConversationQueryOptions(client: RuntimeClient) {
 
   return derived([lastConversationId], ([id]) => {
     return getRuntimeServiceGetConversationQueryOptions(
-      client.instanceId,
-      id ?? "",
+      client,
+      { conversationId: id ?? "" },
       {
         query: {
           enabled: !!id,

@@ -1,9 +1,9 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceListConversationsQueryOptions,
   type RpcStatus,
   type V1ListConversationsResponse,
 } from "@rilldata/web-common/runtime-client";
+import { getRuntimeServiceListConversationsQueryOptions } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
@@ -87,7 +87,7 @@ export class ConversationManager {
     RpcStatus
   > {
     return createQuery(
-      getRuntimeServiceListConversationsQueryOptions(this.instanceId, {
+      getRuntimeServiceListConversationsQueryOptions(this.client, {
         // Filter to only show Rill client conversations, excluding MCP conversations
         userAgentPattern: "rill%",
       }),

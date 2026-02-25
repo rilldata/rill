@@ -14,12 +14,12 @@
   import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createConnectorServiceOLAPListTables } from "@rilldata/web-common/runtime-client/v2/gen/connector-service";
+  import { createQueryServiceTableColumns } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import {
-    createConnectorServiceOLAPListTables,
-    createQueryServiceTableColumns,
     createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import {
     V1TimeGrain,
     type MetricsViewSpecDimension,
@@ -92,7 +92,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: instance = createRuntimeServiceGetInstance(runtimeClient.instanceId, {
+  $: instance = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
 
@@ -151,7 +151,8 @@
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
   $: hasNonDuckDBOLAPConnectorQuery = createRuntimeServiceAnalyzeConnectors(
-    runtimeClient.instanceId,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => {
@@ -192,9 +193,9 @@
     olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
-    runtimeClient.instanceId,
-    modelOrSourceOrTableName,
+    runtimeClient,
     {
+      tableName: modelOrSourceOrTableName,
       connector,
       database,
       databaseSchema,
@@ -271,8 +272,8 @@
   );
 
   $: tablesQuery = createConnectorServiceOLAPListTables(
+    runtimeClient,
     {
-      instanceId: runtimeClient.instanceId,
       connector,
     },
     {

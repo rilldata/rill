@@ -72,7 +72,7 @@ async function beforeSubmitForm(
   );
 
   // If project is uninitialized, initialize an empty project
-  const projectInitialized = await isProjectInitialized(instanceId);
+  const projectInitialized = await isProjectInitialized(client);
   if (!projectInitialized) {
     // Determine the OLAP engine based on the connector being added
     let olapEngine = "duckdb"; // Default for data sources

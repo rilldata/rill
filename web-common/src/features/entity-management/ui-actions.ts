@@ -31,7 +31,7 @@ export async function handleEntityRename(
   // Check if the new name is already in use
   const fileNamesInDirectory = await getFileNamesInDirectory(
     queryClient,
-    client.instanceId,
+    client,
     folder,
   );
   if (isDuplicateName(newName, existingName, fileNamesInDirectory)) {
