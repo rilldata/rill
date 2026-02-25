@@ -1,12 +1,11 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { writable } from "svelte/store";
-import {
-  createRuntimeServiceGetInstance,
-  getRuntimeServiceGetInstanceQueryKey,
-  type V1GetInstanceResponse,
-  type V1InstanceFeatureFlags,
+import type {
+  V1GetInstanceResponse,
+  V1InstanceFeatureFlags,
 } from "../runtime-client";
-import { runtime } from "../runtime-client/runtime-store";
+import { createRuntimeServiceGetInstance } from "../runtime-client/v2/gen/runtime-service";
+import type { RuntimeClient } from "../runtime-client/v2";
 
 class FeatureFlag {
   private _internal = false;
@@ -71,25 +70,20 @@ class FeatureFlags {
     this.ready = new Promise<void>((resolve) => {
       this._resolveReady = resolve;
     });
+  }
 
-    // Responsively update flags based on rill.yaml
-    // BRIDGE (temporary): subscribes to runtime store; will be replaced by
-    // RuntimeProvider calling setRuntimeClient() once per-runtime scoping lands
-    runtime.subscribe((runtime) => {
-      if (!runtime?.instanceId) return;
-
-      createRuntimeServiceGetInstance(
-        runtime.instanceId,
-        undefined,
-        {
-          query: {
-            select: (data) => data?.instance?.featureFlags,
-          },
+  setRuntimeClient(client: RuntimeClient) {
+    createRuntimeServiceGetInstance(
+      client,
+      {},
+      {
+        query: {
+          select: (data) => data?.instance?.featureFlags,
         },
-        queryClient,
-      ).subscribe((features) => {
-        if (features.data) this.updateFlags(features.data);
-      });
+      },
+      queryClient,
+    ).subscribe((features) => {
+      if (features.data) this.updateFlags(features.data);
     });
   }
 
