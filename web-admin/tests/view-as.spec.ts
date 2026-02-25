@@ -26,9 +26,7 @@ test.describe("View As", () => {
     await viewAsMenuItem.click();
 
     // Verify the View As popover content is visible
-    await expect(
-      adminPage.getByPlaceholder("Search for users"),
-    ).toBeVisible();
+    await expect(adminPage.getByPlaceholder("Search for users")).toBeVisible();
     await expect(
       adminPage.getByText("Test your security policies"),
     ).toBeVisible();
@@ -39,7 +37,9 @@ test.describe("View As", () => {
   }) => {
     // Navigate to dashboard
     await adminPage.goto(TEST_DASHBOARD_URL);
-    await expect(adminPage.getByText("Requests")).toBeVisible({ timeout: 15000 });
+    await expect(adminPage.getByText("Requests")).toBeVisible({
+      timeout: 15000,
+    });
 
     // Open the avatar menu
     await adminPage.getByRole("img", { name: "avatar" }).click();
@@ -52,9 +52,7 @@ test.describe("View As", () => {
     await viewAsMenuItem.click();
 
     // Verify the View As popover content is visible
-    await expect(
-      adminPage.getByPlaceholder("Search for users"),
-    ).toBeVisible();
+    await expect(adminPage.getByPlaceholder("Search for users")).toBeVisible();
   });
 
   test("Admin can select a user to view as", async ({ adminPage }) => {
@@ -69,9 +67,7 @@ test.describe("View As", () => {
     await adminPage.getByRole("menuitem", { name: "View as" }).click();
 
     // Wait for users to load
-    await expect(
-      adminPage.getByPlaceholder("Search for users"),
-    ).toBeVisible();
+    await expect(adminPage.getByPlaceholder("Search for users")).toBeVisible();
 
     // Select the first user in the list (the admin user itself)
     const userItems = adminPage.locator('[role="option"]');
@@ -81,12 +77,8 @@ test.describe("View As", () => {
     await firstUser.click();
 
     // Verify the View As chip is displayed
-    await expect(
-      adminPage.getByText(`Viewing as`),
-    ).toBeVisible();
-    await expect(
-      adminPage.getByText(userEmail?.trim() ?? ""),
-    ).toBeVisible();
+    await expect(adminPage.getByText(`Viewing as`)).toBeVisible();
+    await expect(adminPage.getByText(userEmail?.trim() ?? "")).toBeVisible();
   });
 
   test("View As state persists across page refresh", async ({ adminPage }) => {
@@ -99,9 +91,7 @@ test.describe("View As", () => {
     await adminPage.getByRole("menuitem", { name: "View as" }).click();
 
     // Wait for users to load and select the first one
-    await expect(
-      adminPage.getByPlaceholder("Search for users"),
-    ).toBeVisible();
+    await expect(adminPage.getByPlaceholder("Search for users")).toBeVisible();
     const userItems = adminPage.locator('[role="option"]');
     const firstUser = userItems.first();
     await expect(firstUser).toBeVisible({ timeout: 10000 });
@@ -117,9 +107,7 @@ test.describe("View As", () => {
     // Verify the View As state persists after refresh
     await expect(adminPage.getByLabel("Project title")).toBeVisible();
     await expect(adminPage.getByText("Viewing as")).toBeVisible();
-    await expect(
-      adminPage.getByText(userEmail?.trim() ?? ""),
-    ).toBeVisible();
+    await expect(adminPage.getByText(userEmail?.trim() ?? "")).toBeVisible();
   });
 
   test("View As state persists when navigating within the same project", async ({
@@ -134,9 +122,7 @@ test.describe("View As", () => {
     await adminPage.getByRole("menuitem", { name: "View as" }).click();
 
     // Wait for users to load and select the first one
-    await expect(
-      adminPage.getByPlaceholder("Search for users"),
-    ).toBeVisible();
+    await expect(adminPage.getByPlaceholder("Search for users")).toBeVisible();
     const userItems = adminPage.locator('[role="option"]');
     const firstUser = userItems.first();
     await expect(firstUser).toBeVisible({ timeout: 10000 });
@@ -148,13 +134,13 @@ test.describe("View As", () => {
 
     // Navigate to a dashboard within the same project
     await adminPage.goto(TEST_DASHBOARD_URL);
-    await expect(adminPage.getByText("Requests")).toBeVisible({ timeout: 15000 });
+    await expect(adminPage.getByText("Requests")).toBeVisible({
+      timeout: 15000,
+    });
 
     // Verify the View As state persists
     await expect(adminPage.getByText("Viewing as")).toBeVisible();
-    await expect(
-      adminPage.getByText(userEmail?.trim() ?? ""),
-    ).toBeVisible();
+    await expect(adminPage.getByText(userEmail?.trim() ?? "")).toBeVisible();
   });
 
   test("View As state clears when navigating to a different project", async ({
@@ -169,9 +155,7 @@ test.describe("View As", () => {
     await adminPage.getByRole("menuitem", { name: "View as" }).click();
 
     // Wait for users to load and select the first one
-    await expect(
-      adminPage.getByPlaceholder("Search for users"),
-    ).toBeVisible();
+    await expect(adminPage.getByPlaceholder("Search for users")).toBeVisible();
     const userItems = adminPage.locator('[role="option"]');
     const firstUser = userItems.first();
     await expect(firstUser).toBeVisible({ timeout: 10000 });
@@ -200,9 +184,7 @@ test.describe("View As", () => {
     await adminPage.getByRole("menuitem", { name: "View as" }).click();
 
     // Wait for users to load and select the first one
-    await expect(
-      adminPage.getByPlaceholder("Search for users"),
-    ).toBeVisible();
+    await expect(adminPage.getByPlaceholder("Search for users")).toBeVisible();
     const userItems = adminPage.locator('[role="option"]');
     const firstUser = userItems.first();
     await expect(firstUser).toBeVisible({ timeout: 10000 });
@@ -231,9 +213,7 @@ test.describe("View As", () => {
     await adminPage.getByRole("menuitem", { name: "View as" }).click();
 
     // Wait for users to load and select the first one
-    await expect(
-      adminPage.getByPlaceholder("Search for users"),
-    ).toBeVisible();
+    await expect(adminPage.getByPlaceholder("Search for users")).toBeVisible();
     const userItems = adminPage.locator('[role="option"]');
     const firstUser = userItems.first();
     await expect(firstUser).toBeVisible({ timeout: 10000 });
@@ -250,9 +230,7 @@ test.describe("View As", () => {
     await adminPage.getByText("Viewing as").click();
 
     // Verify the dropdown is open with user search
-    await expect(
-      adminPage.getByPlaceholder("Search for users"),
-    ).toBeVisible();
+    await expect(adminPage.getByPlaceholder("Search for users")).toBeVisible();
 
     // Get users list again - there might be different number of users now
     const newUserItems = adminPage.locator('[role="option"]');
