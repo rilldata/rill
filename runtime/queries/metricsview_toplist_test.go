@@ -21,19 +21,19 @@ func TestMetricsViewsToplistAgainstClickHouse(t *testing.T) {
 	dsn := testclickhouse.Start(t)
 	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
 	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", dsn)
-	t.Run("TestMetricsViewsToplist_measure_filters", func(t *testing.T) { TestMetricsViewsToplist_measure_filters(t) })
+	t.Run("testClickhouseMetricsViewsToplist_measure_filters", func(t *testing.T) { testClickhouseMetricsViewsToplist_measure_filters(t) })
 }
 
 func TestMetricsViewsToplistAgainstStarRocks(t *testing.T) {
 	testmode.Expensive(t)
 
 	rt, instanceID := testruntime.NewInstanceWithStarRocksProject(t)
-	t.Run("testMetricsViewsToplist_measure_filters", func(t *testing.T) {
-		testMetricsViewsToplist_measure_filters(t, rt, instanceID)
+	t.Run("testStarRocksMetricsViewsToplist_measure_filters", func(t *testing.T) {
+		testStarRocksMetricsViewsToplist_measure_filters(t, rt, instanceID)
 	})
 }
 
-func testMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
+func testStarRocksMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, instanceID string) {
 	ctr := &queries.ColumnTimeRange{
 		DatabaseSchema: "test_db",
 		TableName:      "ad_bids",
@@ -78,7 +78,7 @@ func testMetricsViewsToplist_measure_filters(t *testing.T, rt *runtime.Runtime, 
 	require.NotEmpty(t, q.Result)
 }
 
-func TestMetricsViewsToplist_measure_filters(t *testing.T) {
+func testClickhouseMetricsViewsToplist_measure_filters(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
