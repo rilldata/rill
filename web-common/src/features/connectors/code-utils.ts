@@ -1,12 +1,10 @@
 import { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
 import {
   type V1ConnectorDriver,
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
 } from "../../runtime-client";
-import { runtime } from "../../runtime-client/runtime-store";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -256,6 +254,7 @@ driver: ${driverName}`;
 }
 
 export async function updateDotEnvWithSecrets(
+  instanceId: string,
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
@@ -264,8 +263,6 @@ export async function updateDotEnvWithSecrets(
     schema?: { properties?: Record<string, { "x-env-var-name"?: string }> };
   },
 ): Promise<{ newBlob: string; originalBlob: string }> {
-  const instanceId = get(runtime).instanceId;
-
   // Invalidate the cache to ensure we get fresh .env content
   // This prevents overwriting credentials added by a previous step
   await queryClient.invalidateQueries({
@@ -495,11 +492,11 @@ export function makeEnvVarKey(
 }
 
 export async function updateRillYAMLWithOlapConnector(
+  instanceId: string,
   queryClient: QueryClient,
   newConnector: string,
 ): Promise<string> {
   // Get the existing rill.yaml file
-  const instanceId = get(runtime).instanceId;
   const file = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
       path: "rill.yaml",
@@ -530,14 +527,13 @@ export function replaceOlapConnectorInYAML(
 }
 
 export async function createYamlModelFromTable(
+  instanceId: string,
   queryClient: QueryClient,
   connector: string,
   database: string,
   databaseSchema: string,
   table: string,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
-
   // Get driver name for makeSufficientlyQualifiedTableName
   const analyzeConnectorsQueryKey =
     getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
@@ -601,6 +597,7 @@ export async function createYamlModelFromTable(
 }
 
 export async function createSqlModelFromTable(
+  instanceId: string,
   queryClient: QueryClient,
   connector: string,
   database: string,
@@ -608,8 +605,6 @@ export async function createSqlModelFromTable(
   table: string,
   addDevLimit: boolean = true,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
-
   // Get driver name
   const analyzeConnectorsQueryKey =
     getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);

@@ -6,7 +6,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { sourceIngestionTracker } from "@rilldata/web-common/features/sources/sources-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -24,12 +24,14 @@
 
   export let sourcePath: string | null;
 
+  const runtimeClient = useRuntimeClient();
+
   let fileArtifact: FileArtifact;
   let sourceQuery: CreateQueryResult<V1Resource, HTTPError>;
 
   $: sourceName = extractFileName(sourcePath ?? "");
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
@@ -43,6 +45,7 @@
     sourcePath !== null
       ? $generateCanvas
         ? useCreateMetricsViewWithCanvasAndExploreUIAction(
+            runtimeClient,
             instanceId,
             sinkConnector as string,
             "",
@@ -52,6 +55,7 @@
             MetricsEventSpace.Modal,
           )
         : useCreateMetricsViewFromTableUIAction(
+            runtimeClient,
             instanceId,
             sinkConnector as string,
             "",

@@ -1,7 +1,6 @@
 import { goto, invalidate } from "$app/navigation";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import type { QueryClient } from "@tanstack/query-core";
-import { get } from "svelte/store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import {
   BehaviourEventAction,
@@ -14,7 +13,6 @@ import {
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
-import { runtime } from "../../../runtime-client/runtime-store";
 import {
   compileConnectorYAML,
   updateDotEnvWithSecrets,
@@ -127,7 +125,11 @@ async function setOlapConnectorInRillYAML(
 ): Promise<void> {
   await runtimeServicePutFile(instanceId, {
     path: "rill.yaml",
-    blob: await updateRillYAMLWithOlapConnector(queryClient, newConnectorName),
+    blob: await updateRillYAMLWithOlapConnector(
+      instanceId,
+      queryClient,
+      newConnectorName,
+    ),
     create: true,
     createOnly: false,
   });
@@ -138,9 +140,9 @@ async function saveConnectorAnyway(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   newConnectorName: string,
-  instanceId?: string,
+  instanceId: string,
 ): Promise<void> {
-  const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
+  const resolvedInstanceId = instanceId;
   const schema = getConnectorSchema(connector.name ?? "");
   const schemaFields = schema
     ? getSchemaFieldMetaList(schema, { step: "connector" })
@@ -163,10 +165,16 @@ async function saveConnectorAnyway(
 
   // Update .env file with secrets (keep ordering consistent with Test and Connect)
   const { newBlob: newEnvBlob, originalBlob: envBlobForYaml } =
-    await updateDotEnvWithSecrets(queryClient, connector, formValues, {
-      secretKeys: schemaSecretKeys,
-      schema: schema ?? undefined,
-    });
+    await updateDotEnvWithSecrets(
+      resolvedInstanceId,
+      queryClient,
+      connector,
+      formValues,
+      {
+        secretKeys: schemaSecretKeys,
+        schema: schema ?? undefined,
+      },
+    );
 
   await runtimeServicePutFile(resolvedInstanceId, {
     path: ".env",
@@ -206,12 +214,12 @@ async function saveConnectorAnyway(
 }
 
 export async function submitAddConnectorForm(
+  instanceId: string,
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
 ): Promise<string> {
-  const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
   const schema = getConnectorSchema(connector.name ?? "");
   const schemaFields = schema
@@ -288,6 +296,7 @@ export async function submitAddConnectorForm(
       // Capture original .env and compute updated contents up front
       // Use originalBlob from updateDotEnvWithSecrets for consistent conflict detection
       const envResult = await updateDotEnvWithSecrets(
+        instanceId,
         queryClient,
         connector,
         formValues,
@@ -424,12 +433,12 @@ export async function submitAddConnectorForm(
 }
 
 export async function submitAddSourceForm(
+  instanceId: string,
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   connectorInstanceName?: string,
 ): Promise<void> {
-  const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
   const newSourceName = formValues.name as string;
 
@@ -476,6 +485,7 @@ export async function submitAddSourceForm(
   // Create or update the `.env` file
   const { newBlob: newEnvBlob, originalBlob: originalEnvBlob } =
     await updateDotEnvWithSecrets(
+      instanceId,
       queryClient,
       rewrittenConnector,
       rewrittenFormValues,

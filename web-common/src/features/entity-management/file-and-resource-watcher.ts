@@ -25,8 +25,6 @@ import {
   invalidateMetricsViewData,
   invalidateProfilingQueries,
 } from "@rilldata/web-common/runtime-client/invalidation";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
 import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
 import { sourceIngestionTracker } from "../sources/sources-store";
 import { isLeafResource } from "./dag-utils";
@@ -134,8 +132,14 @@ export class FileAndResourceWatcher {
     });
   }
 
+  private _instanceId = "";
+
+  public setInstanceId(instanceId: string) {
+    this._instanceId = instanceId;
+  }
+
   private get instanceId() {
-    return get(runtime).instanceId;
+    return this._instanceId;
   }
 
   private invalidateAll() {

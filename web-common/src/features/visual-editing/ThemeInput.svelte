@@ -4,13 +4,15 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     defaultPrimaryColors,
     defaultSecondaryColors,
   } from "../themes/color-config";
   import { useTheme } from "../themes/selectors";
   import { themeControl } from "../themes/theme-control";
+
+  const runtimeClient = useRuntimeClient();
 
   const DEFAULT_PRIMARY = `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`;
   const DEFAULT_SECONDARY = `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`;
@@ -30,7 +32,7 @@
 
   let lastPresetTheme: string | undefined = undefined;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: isPresetMode = theme === undefined || typeof theme === "string";
   $: embeddedTheme = typeof theme === "object" ? theme : undefined;

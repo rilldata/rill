@@ -13,7 +13,10 @@ import { get } from "svelte/store";
  * under this scenario, the catalog entry returns a 404, and it's required to enter the top-level
  * `Dashboard.svelte` component.
  */
-export function resetSelectedMockUserAfterNavigate(queryClient: QueryClient) {
+export function resetSelectedMockUserAfterNavigate(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
   beforeNavigate(({ to, from }) => {
     if (!to?.params || !from?.params) return;
 
@@ -21,7 +24,7 @@ export function resetSelectedMockUserAfterNavigate(queryClient: QueryClient) {
       from.params.name !== to.params.name &&
       get(selectedMockUserStore) !== null
     ) {
-      updateDevJWT(queryClient, null).catch(console.error);
+      updateDevJWT(queryClient, instanceId, null).catch(console.error);
     }
   });
 }

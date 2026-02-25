@@ -7,7 +7,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
   import { createCanvasDashboardFromMetricsView } from "./ai-generation/generateMetricsView";
@@ -16,9 +16,10 @@
 
   export let resource: V1Resource | undefined;
 
+  const runtimeClient = useRuntimeClient();
   const { ai, generateCanvas } = featureFlags;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
   $: dashboardsQuery = useGetExploresForMetricsView(
     instanceId,
     resource?.meta?.name?.name ?? "",
@@ -48,7 +49,12 @@
       disabled={!resource}
       onClick={async () => {
         if (resource)
-          await createAndPreviewExplore(queryClient, instanceId, resource);
+          await createAndPreviewExplore(
+            runtimeClient,
+            queryClient,
+            instanceId,
+            resource,
+          );
       }}
     >
       Generate Explore Dashboard{$ai ? " with AI" : ""}
@@ -91,7 +97,12 @@
         <DropdownMenu.Item
           on:click={async () => {
             if (resource)
-              await createAndPreviewExplore(queryClient, instanceId, resource);
+              await createAndPreviewExplore(
+                runtimeClient,
+                queryClient,
+                instanceId,
+                resource,
+              );
           }}
         >
           <Add />

@@ -4,6 +4,7 @@ import {
   type RpcStatus,
   type V1ListConversationsResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
 import { Conversation } from "./conversation";
@@ -51,8 +52,12 @@ export class ConversationManager {
   private conversationSelector: ConversationSelector;
   private readonly agent?: string;
 
+  public get instanceId(): string {
+    return this.client.instanceId;
+  }
+
   constructor(
-    public readonly instanceId: string,
+    private readonly client: RuntimeClient,
     options: ConversationManagerOptions,
   ) {
     this.agent = options.agent;
@@ -110,7 +115,7 @@ export class ConversationManager {
 
         // Otherwise, create a conversation instance and store it
         const conversation = new Conversation(
-          this.instanceId,
+          this.client,
           $conversationId,
           this.agent,
         );
@@ -159,7 +164,7 @@ export class ConversationManager {
   private createNewConversation() {
     this.newConversationUnsub?.();
     this.newConversation = new Conversation(
-      this.instanceId,
+      this.client,
       NEW_CONVERSATION_ID,
       this.agent,
     );
@@ -278,21 +283,21 @@ function getConversationManagerKey(instanceId: string, agent?: string): string {
 }
 
 /**
- * Get or create a ConversationManager instance for the given instanceId and agent
+ * Get or create a ConversationManager instance for the given client and agent
  *
- * @param instanceId - The project/instance identifier
+ * @param client - The RuntimeClient instance
  * @param options - Configuration options for the conversation manager instance
  * @returns The ConversationManager instance for this project and agent
  */
 export function getConversationManager(
-  instanceId: string,
+  client: RuntimeClient,
   options: ConversationManagerOptions,
 ): ConversationManager {
-  const key = getConversationManagerKey(instanceId, options.agent);
+  const key = getConversationManagerKey(client.instanceId, options.agent);
   if (!conversationManagerInstances.has(key)) {
     conversationManagerInstances.set(
       key,
-      new ConversationManager(instanceId, options),
+      new ConversationManager(client, options),
     );
   }
   return conversationManagerInstances.get(key)!;

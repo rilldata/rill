@@ -9,10 +9,11 @@
     getRuntimeServiceGetModelPartitionsQueryKey,
     type V1Resource,
   } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { addLeadingSlash } from "../../entity-management/entity-mappers";
   import { fileArtifacts } from "../../entity-management/file-artifacts";
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
@@ -75,7 +76,7 @@
     }, 2000);
   }
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
   $: isLoading = $triggerMutation.isPending;
 
   // If resource is passed as prop, use it directly; otherwise derive from URL params (web-local)

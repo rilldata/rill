@@ -59,7 +59,7 @@
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { X } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
@@ -69,9 +69,10 @@
   export let props: CreateAlertProps | EditAlertProps;
 
   const user = createAdminServiceGetCurrentUser();
+  const runtimeClient = useRuntimeClient();
 
   $: ({ organization, project, alert: alertName } = $page.params);
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   // Convenience variable to be used when other fields from props are not needed.
   // Typescript won't parse the object switch if this is used in conditionals, so some statements below don't use this.

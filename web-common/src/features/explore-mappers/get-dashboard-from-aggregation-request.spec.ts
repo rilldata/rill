@@ -340,6 +340,7 @@ async function runTest({
   forceOpenPivot: boolean;
 }) {
   const mapQueryStore = mapQueryToDashboard(
+    "default",
     {
       exploreName: AD_BIDS_EXPLORE_NAME,
       queryName: "MetricsViewAggregation",

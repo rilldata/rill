@@ -38,7 +38,7 @@ export function getMetricsResolverQueryToUrlMapperStore(
   data?: (url: URL) => string;
 }> {
   const resourcesQuery = createQuery(
-    getMetricsViewAndExploreSpecsQueryOptions(),
+    getMetricsViewAndExploreSpecsQueryOptions(conversation.runtimeClient),
     queryClient,
   );
   const conversationQuery = conversation.getConversationQuery();

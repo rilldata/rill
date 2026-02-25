@@ -27,8 +27,8 @@ export function getPickerOptions(
     [
       getInlineChatContextMetadata(client),
       getMetricsViewPickerOptions(client),
-      getCanvasesPickerOptions(uiState),
-      isRillDev ? getModelsPickerOptions(uiState) : readable(null),
+      getCanvasesPickerOptions(client, uiState),
+      isRillDev ? getModelsPickerOptions(client, uiState) : readable(null),
       uiState.expandedParentsStore,
     ],
     ([metadata, metricsViewOptions, canvasOptions, filesOption]) => {

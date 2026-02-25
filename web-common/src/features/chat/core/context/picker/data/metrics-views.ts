@@ -26,7 +26,7 @@ export function getMetricsViewPickerOptions(
     queryClient,
   );
 
-  const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
+  const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore(client);
   const activeMetricsViewStore = getActiveMetricsViewNameStore(client);
 
   return derived(
@@ -88,9 +88,9 @@ export function getMetricsViewPickerOptions(
 /**
  * Looks at the last conversation and returns the metrics view used in the last message or tool call.
  */
-function getLastUsedMetricsViewNameStore() {
+function getLastUsedMetricsViewNameStore(client: RuntimeClient) {
   const lastConversationQuery = createQuery(
-    getLatestConversationQueryOptions(),
+    getLatestConversationQueryOptions(client),
     queryClient,
   );
 

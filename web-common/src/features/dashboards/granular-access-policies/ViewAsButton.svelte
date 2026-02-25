@@ -45,7 +45,7 @@
         active={viewAsMenuOpen}
         removeTooltipText="Clear view"
         onRemove={() => {
-          updateDevJWT(queryClient, null);
+          updateDevJWT(queryClient, instanceId, null);
         }}
       >
         <div slot="body">
@@ -62,7 +62,7 @@
       {#each $mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
           on:click={() => {
-            updateDevJWT(queryClient, user);
+            updateDevJWT(queryClient, instanceId, user);
           }}
           class="flex gap-x-2 items-center"
         >

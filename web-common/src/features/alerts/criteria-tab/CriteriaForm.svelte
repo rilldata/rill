@@ -11,19 +11,19 @@
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { SuperForm } from "sveltekit-superforms/client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let timeControls: TimeControls;
   export let index: number;
 
+  const runtimeClient = useRuntimeClient();
+
   $: ({ form, errors, validate } = superFormInstance);
   $: ({ selectedComparisonTimeRange } = timeControls);
 
-  $: ({ instanceId } = $runtime);
-
   $: metricsView = useMetricsViewValidSpec(
-    instanceId,
+    runtimeClient.instanceId,
     $form["metricsViewName"],
   );
 

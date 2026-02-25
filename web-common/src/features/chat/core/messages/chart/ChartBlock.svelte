@@ -13,7 +13,7 @@
   import { Theme } from "@rilldata/web-common/features/themes/theme";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { readable } from "svelte/store";
   import type { V1Tool } from "../../../../../runtime-client";
   import ToolCall from "../tools/ToolCall.svelte";
@@ -22,11 +22,13 @@
   export let block: ChartBlock;
   export let tools: V1Tool[] | undefined = undefined;
 
+  const runtimeClient = useRuntimeClient();
+
   // Page params for chart
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: instanceId = $runtime.instanceId;
+  $: instanceId = runtimeClient.instanceId;
 
   // Cast chartSpec to any for property access (type comes from parsed JSON)
   $: chartSpec = block.chartSpec as any;

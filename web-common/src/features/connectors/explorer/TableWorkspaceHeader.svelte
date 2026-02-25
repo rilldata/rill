@@ -24,6 +24,7 @@
   const client = useRuntimeClient();
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+    client,
     client.instanceId,
     connector,
     database,

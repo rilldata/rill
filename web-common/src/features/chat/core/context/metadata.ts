@@ -43,7 +43,7 @@ export function getInlineChatContextMetadata(
   );
 
   const canvasResourcesQuery = createQuery(
-    getClientFilteredResourcesQueryOptions(ResourceKind.Canvas, (res) =>
+    getClientFilteredResourcesQueryOptions(client, ResourceKind.Canvas, (res) =>
       Boolean(res.canvas?.state?.validSpec),
     ),
     queryClient,

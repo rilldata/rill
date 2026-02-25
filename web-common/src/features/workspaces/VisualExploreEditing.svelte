@@ -23,7 +23,7 @@
     createRuntimeServiceGetInstance,
     type V1Explore,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
@@ -50,6 +50,7 @@
   export let autoSave: boolean;
   export let switchView: () => void;
 
+  const runtimeClient = useRuntimeClient();
   const StateManagers = getStateManagers();
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -65,7 +66,6 @@
 
   $: ({ selectedTimeRange, showTimeComparison } = $timeControlsStore);
 
-  $: ({ instanceId } = $runtime);
   $: ({ editorContent, path, updateEditorContent } = fileArtifact);
 
   $: exploreSpec = exploreResource?.state?.validSpec;
@@ -73,7 +73,7 @@
   $: parsedDocument = parseDocument($editorContent ?? "");
 
   $: metricsViewsQuery = useFilteredResources(
-    instanceId,
+    runtimeClient.instanceId,
     ResourceKind.MetricsView,
   );
 
@@ -162,14 +162,17 @@
   $: dimensionExpression =
     rawDimensions instanceof YAMLMap ? rawDimensions?.get("expr") : "";
 
-  $: themesQuery = useFilteredResources(instanceId, ResourceKind.Theme);
+  $: themesQuery = useFilteredResources(
+    runtimeClient.instanceId,
+    ResourceKind.Theme,
+  );
 
   $: themeNames = ($themesQuery?.data ?? [])
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
   $: defaultThemeQuery = createRuntimeServiceGetInstance(
-    instanceId,
+    runtimeClient.instanceId,
     undefined,
     {
       query: {

@@ -16,7 +16,7 @@
     createRuntimeServiceGetModelPartitionsInfinite,
   } from "../../../runtime-client";
 
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
   import TriggerPartition from "./TriggerPartition.svelte";
@@ -25,8 +25,10 @@
   export let whereErrored: boolean;
   export let wherePending: boolean;
 
+  const runtimeClient = useRuntimeClient();
+
   $: modelName = resource?.meta?.name?.name as string;
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   // ==========================
   // Infinite Query

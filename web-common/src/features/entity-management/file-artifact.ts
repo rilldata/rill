@@ -18,7 +18,7 @@ import {
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
 import {
   derived,
@@ -91,15 +91,17 @@ export class FileArtifact {
   }> = writable({ scroll: undefined, selection: undefined });
 
   private editorCallback: (content: string) => void = () => {};
+  private readonly client: RuntimeClient;
 
   // Last time the state of the resource `kind/name` was updated.
   // This is updated in watch-resources and is used there to avoid
   // unnecessary calls to GetResource API.
   lastStateUpdatedOn: string | undefined;
 
-  constructor(filePath: string) {
+  constructor(client: RuntimeClient, filePath: string) {
     const [folderName, fileName] = splitFolderAndFileName(filePath);
 
+    this.client = client;
     this.path = filePath;
     this.folderName = folderName;
     this.fileName = fileName;
@@ -119,7 +121,7 @@ export class FileArtifact {
   }
 
   fetchContent = async (invalidate = false) => {
-    const instanceId = get(runtime).instanceId;
+    const instanceId = this.client.instanceId;
     const queryParams = {
       path: this.path,
     };
@@ -222,7 +224,7 @@ export class FileArtifact {
   };
 
   private saveContent = async (blob: string) => {
-    const instanceId = get(runtime).instanceId;
+    const instanceId = this.client.instanceId;
 
     // Optimistically update the query
     queryClient.setQueryData(

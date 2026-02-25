@@ -11,11 +11,12 @@
     V1ExportFormat,
     type V1Query,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
-  import { runtime } from "../../runtime-client/runtime-store";
   import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+
+  const runtimeClient = useRuntimeClient();
 
   export let disabled: boolean = false;
   export let workspace = false;
@@ -46,7 +47,7 @@
   }) {
     const { format, includeHeader = false } = options;
     const result = await $exportDash.mutateAsync({
-      instanceId: get(runtime).instanceId,
+      instanceId: runtimeClient.instanceId,
       data: {
         query: exportQuery,
         format,
@@ -59,7 +60,7 @@
           }),
       },
     });
-    const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
+    const downloadUrl = `${runtimeClient.host}${result.downloadUrlPath}`;
     window.open(downloadUrl, "_self");
   }
 
