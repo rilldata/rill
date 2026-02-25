@@ -92,7 +92,7 @@ func TestContainer(t *testing.T) {
 			WaitingFor:   wait.ForHTTP("/status/health").WithPort("8081").WithStartupTimeout(time.Minute * 2),
 			Image:        "gcr.io/rilldata/druid-micro:25.0.0",
 			ExposedPorts: []string{"8081/tcp", "8082/tcp"},
-			Cmd:          []string{"./bin/start-micro-quickstart"},
+			Cmd:          []string{"./bin/start-micro-quickstart", "--help"},
 		},
 	})
 	require.NoError(t, err)
@@ -110,7 +110,7 @@ func TestContainer(t *testing.T) {
 	require.NoError(t, err)
 
 	dd := &driver{}
-	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.Must(zap.NewDevelopment()))
+	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL, "skip_version_check": true}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.Must(zap.NewDevelopment()))
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
