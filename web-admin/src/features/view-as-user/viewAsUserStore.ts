@@ -22,6 +22,9 @@ function createViewAsUserStore() {
     initForProject(org: string, project: string): void {
       if (!browser) return;
 
+      // Avoid redundant sessionStorage reads when scope hasn't changed
+      if (currentScope?.org === org && currentScope?.project === project) return;
+
       currentScope = { org, project };
       const key = getStorageKey(org, project);
 
