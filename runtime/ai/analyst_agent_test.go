@@ -218,6 +218,161 @@ func TestAnalystOpenRTB(t *testing.T) {
 	})
 }
 
+func TestAnalystCharts(t *testing.T) {
+	// Setup runtime instance with the OpenRTB dataset
+	n, files := testruntime.ProjectOpenRTB(t)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AIConnector: "openai",
+		Files:       files,
+		FrontendURL: "https://ui.rilldata.com/-/dashboards/bids_metrics",
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
+
+	t.Run("BasicBarChart", func(t *testing.T) {
+		s := newEval(t, rt, instanceID)
+
+		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
+			Prompt:  "Show me the top 10 advertisers by total bids as a bar chart. Use the bids_metrics dataset and the full available time range. Create a single chart and nothing else.",
+			Explore: "bids_metrics",
+		})
+		require.NoError(t, err)
+
+		chartCalls := findChartCalls(s, res.Call.ID)
+		require.GreaterOrEqual(t, len(chartCalls), 1, "expected at least one create_chart call")
+
+		spec := requireValidChartSpec(t, s, chartCalls[0], []string{"bar_chart"})
+		if x, ok := spec["x"].(map[string]any); ok {
+			if field, ok := x["field"].(string); ok {
+				require.Equal(t, "advertiser_name", field)
+			}
+		}
+		if y, ok := spec["y"].(map[string]any); ok {
+			if field, ok := y["field"].(string); ok {
+				require.Equal(t, "total_bids", field)
+			}
+		}
+	})
+
+	t.Run("TimeSeriesChart", func(t *testing.T) {
+		s := newEval(t, rt, instanceID)
+
+		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
+			Prompt:  "Show me the trend of total bids over time as a line chart. Use the bids_metrics dataset and the full available time range. Create a single chart and nothing else.",
+			Explore: "bids_metrics",
+		})
+		require.NoError(t, err)
+
+		chartCalls := findChartCalls(s, res.Call.ID)
+		require.GreaterOrEqual(t, len(chartCalls), 1, "expected at least one create_chart call")
+
+		spec := requireValidChartSpec(t, s, chartCalls[0], []string{"line_chart", "area_chart"})
+		if x, ok := spec["x"].(map[string]any); ok {
+			if field, ok := x["field"].(string); ok {
+				require.Equal(t, "__time", field)
+			}
+		}
+		_, hasTimeGrain := spec["time_grain"]
+		require.True(t, hasTimeGrain, "time series chart should have time_grain")
+	})
+
+	t.Run("ChartWithDashboardContext", func(t *testing.T) {
+		s := newEval(t, rt, instanceID)
+
+		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
+			Prompt:    "Show me total bids by device OS as a bar chart. Create a single chart and nothing else.",
+			Explore:   "bids_metrics",
+			TimeStart: parseTestTime(t, "2023-09-11T00:00:00Z"),
+			TimeEnd:   parseTestTime(t, "2023-09-14T00:00:00Z"),
+			Where: &metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorEq,
+					Expressions: []*metricsview.Expression{
+						{Name: "auction_type"},
+						{Value: "First Price"},
+					},
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		chartCalls := findChartCalls(s, res.Call.ID)
+		require.GreaterOrEqual(t, len(chartCalls), 1, "expected at least one create_chart call")
+
+		spec := requireValidChartSpec(t, s, chartCalls[0], nil)
+
+		// Verify time range honors the context
+		timeRange, ok := spec["time_range"].(map[string]any)
+		require.True(t, ok, "spec must contain time_range object")
+		start, ok := timeRange["start"].(string)
+		require.True(t, ok, "time_range.start must be a string")
+		require.Contains(t, start, "2023-09-11", "time_range.start should honor the provided context")
+		end, ok := timeRange["end"].(string)
+		require.True(t, ok, "time_range.end must be a string")
+		require.Contains(t, end, "2023-09-14", "time_range.end should honor the provided context")
+	})
+
+	t.Run("ChartsDisabled", func(t *testing.T) {
+		s := newEval(t, rt, instanceID)
+
+		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
+			Prompt:        "Show me the top advertisers by total bids. Create a chart if possible.",
+			Explore:       "bids_metrics",
+			DisableCharts: true,
+		})
+		require.NoError(t, err)
+
+		// Verify NO create_chart calls were made
+		chartCalls := findChartCalls(s, res.Call.ID)
+		require.Empty(t, chartCalls, "expected no create_chart calls when charts are disabled")
+
+		// Verify we still got a response
+		rawRes, err := s.UnmarshalMessageContent(res.Result)
+		require.NoError(t, err)
+		require.NotNil(t, rawRes)
+	})
+}
+
+// findChartCalls finds all create_chart tool calls among children of the given parent call.
+func findChartCalls(s *ai.Session, parentID string) []*ai.Message {
+	return s.Messages(
+		ai.FilterByParent(parentID),
+		ai.FilterByType(ai.MessageTypeCall),
+		ai.FilterByTool(ai.CreateChartName),
+	)
+}
+
+// requireValidChartSpec unmarshals a create_chart call message, validates the chart spec structure,
+// and returns the spec map for further assertions. If validChartTypes is non-empty, it asserts the
+// chart_type is one of the allowed values.
+func requireValidChartSpec(t *testing.T, s *ai.Session, chartCall *ai.Message, validChartTypes []string) map[string]any {
+	t.Helper()
+
+	rawArgs, err := s.UnmarshalMessageContent(chartCall)
+	require.NoError(t, err)
+
+	args, ok := rawArgs.(map[string]any)
+	require.True(t, ok, "expected map[string]any, got %T", rawArgs)
+
+	chartType, ok := args["chart_type"].(string)
+	require.True(t, ok, "chart_type must be a string")
+	require.NotEmpty(t, chartType)
+	if len(validChartTypes) > 0 {
+		require.Contains(t, validChartTypes, chartType, "chart_type %q not in expected types %v", chartType, validChartTypes)
+	}
+
+	spec, ok := args["spec"].(map[string]any)
+	require.True(t, ok, "spec must be an object")
+
+	metricsView, ok := spec["metrics_view"].(string)
+	require.True(t, ok, "spec.metrics_view must be a string")
+	require.NotEmpty(t, metricsView)
+
+	_, hasTimeRange := spec["time_range"]
+	require.True(t, hasTimeRange, "spec must contain time_range")
+
+	return spec
+}
+
 func parseTestTime(tst *testing.T, t string) time.Time {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)
