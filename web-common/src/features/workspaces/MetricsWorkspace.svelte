@@ -37,10 +37,7 @@
 
   $: metricsViewName = $resourceName?.name ?? getNameFromFile(filePath);
 
-  $: resourceQuery = fileArtifact.getResource(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: ({ data: resource } = $resourceQuery);
 
   $: isOldMetricsView = !$remoteContent?.includes("version: 1");
@@ -63,10 +60,7 @@
   $: selectedView = workspace.view;
 
   // Parse error for the editor gutter and banner
-  $: parseErrorQuery = fileArtifact.getParseError(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
   // Reconcile error resolved to root cause for the banner

@@ -12,8 +12,6 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
   const orgAndProjectNameStore = writable({ organization, project });
   $: orgAndProjectNameStore.set({ organization, project });
 
@@ -25,7 +23,7 @@
     canvasNameStore,
   );
 
-  $: canvasResponse = useCanvas(instanceId, canvasName);
+  $: canvasResponse = useCanvas(runtimeClient, canvasName);
 
   $: metricsViews = $canvasResponse.data?.metricsViews || {};
 

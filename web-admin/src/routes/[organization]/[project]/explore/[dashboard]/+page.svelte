@@ -78,7 +78,7 @@
 
   $: bookmarkExploreStateQuery = getHomeBookmarkExploreState(
     project?.id,
-    instanceId,
+    runtimeClient,
     metricsViewName,
     exploreName,
   );

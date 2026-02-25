@@ -42,21 +42,12 @@
   $: workspace = workspaces.get(filePath);
   $: tableVisible = workspace.table.visible;
 
-  $: allErrorsStore = fileArtifact.getAllErrors(
-    queryClient,
-    runtimeClient.instanceId,
-  );
-  $: hasErrors = fileArtifact.getHasErrors(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: allErrorsStore = fileArtifact.getAllErrors(queryClient);
+  $: hasErrors = fileArtifact.getHasErrors(queryClient);
 
   $: allErrors = $allErrorsStore;
 
-  $: resourceQuery = fileArtifact.getResource(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: resource = $resourceQuery.data;
   $: model = $resourceQuery.data?.model;
   $: connector = (model as V1Model)?.spec?.outputConnector as string;

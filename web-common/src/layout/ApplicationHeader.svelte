@@ -31,8 +31,6 @@
 
   export let mode: string;
 
-  $: ({ instanceId } = runtimeClient);
-
   $: ({
     params: { name: dashboardName },
     route,
@@ -44,9 +42,9 @@
   $: showDeployCTA = $deploy && !onDeployPage;
   $: showDeveloperChat = $developerChat && !onDeployPage;
 
-  $: exploresQuery = useValidExplores(instanceId);
-  $: canvasQuery = useValidCanvases(instanceId);
-  $: projectTitleQuery = useProjectTitle(instanceId);
+  $: exploresQuery = useValidExplores(runtimeClient);
+  $: canvasQuery = useValidCanvases(runtimeClient);
+  $: projectTitleQuery = useProjectTitle(runtimeClient.instanceId);
 
   $: projectTitle = $projectTitleQuery?.data ?? "Untitled Rill Project";
 

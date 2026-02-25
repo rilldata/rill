@@ -22,7 +22,7 @@
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver(instanceId);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
-  $: models = useModels(instanceId);
+  $: models = useModels(runtimeClient);
 
   const buttonClasses =
     "inline hover:font-semibold underline underline-offset-2";

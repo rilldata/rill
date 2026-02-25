@@ -13,7 +13,6 @@
   export let component: BaseCanvasComponent<ComponentWithMetricsView>;
   export let mode: "inline" | "dropdown-item" | "icon-button" = "inline";
 
-  $: ({ instanceId } = client);
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
@@ -21,7 +20,7 @@
   $: metricsViewName = $spec?.metrics_view;
 
   // Check if component can be linked to explore
-  $: exploreAvailability = useExploreAvailability(instanceId, metricsViewName);
+  $: exploreAvailability = useExploreAvailability(client, metricsViewName);
 
   $: context = derived(
     [exploreAvailability, component.timeAndFilterStore],

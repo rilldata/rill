@@ -147,7 +147,7 @@ export function useCreateMetricsViewFromTableUIAction(
       // Get the Metrics View to use as a base for the Explore
       const metricsViewResource = fileArtifacts
         .getFileArtifact(newMetricsViewFilePath)
-        .getResource(queryClient, instanceId);
+        .getResource(queryClient);
 
       await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
 
@@ -353,7 +353,7 @@ export async function createModelAndMetricsAndExplore(
     // Step 2: Wait for model to be ready
     const modelResource = fileArtifacts
       .getFileArtifact(`/models/${modelName}.yaml`)
-      .getResource(queryClient, instanceId);
+      .getResource(queryClient);
 
     await waitUntil(() => get(modelResource).data !== undefined, 10000);
 
@@ -420,7 +420,7 @@ export async function createModelAndMetricsAndExplore(
     // Step 4: Wait for metrics view to be ready
     const metricsViewResource = fileArtifacts
       .getFileArtifact(metricsViewFilePath)
-      .getResource(queryClient, instanceId);
+      .getResource(queryClient);
 
     await waitUntil(() => get(metricsViewResource).data !== undefined, 10000);
 
@@ -528,7 +528,7 @@ async function createMetricsViewFromTable(
   // Wait for Metrics View resource to be ready
   const metricsViewResource = fileArtifacts
     .getFileArtifact(newMetricsViewFilePath)
-    .getResource(queryClient, instanceId);
+    .getResource(queryClient);
 
   await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
 
@@ -559,7 +559,7 @@ export async function createExploreWithoutNavigation(
 
   // Wait until the Explore resource is ready
   const fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  const resource = fileArtifact.getResource(queryClient, instanceId);
+  const resource = fileArtifact.getResource(queryClient);
 
   await waitUntil(() => {
     return get(resource).data !== undefined;

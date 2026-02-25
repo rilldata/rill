@@ -31,7 +31,7 @@
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  $: metricsViewsQuery = useGetMetricsViewsForModel(instanceId, modelName);
+  $: metricsViewsQuery = useGetMetricsViewsForModel(runtimeClient, modelName);
 
   $: availableMetricsViews = $metricsViewsQuery.data ?? [];
 

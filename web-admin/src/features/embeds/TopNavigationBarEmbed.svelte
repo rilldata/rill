@@ -11,8 +11,11 @@
     V1Resource,
     V1ResourceName,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let instanceId: string;
+
+  const runtimeClient = useRuntimeClient();
   export let activeResource: V1ResourceName;
   export let navigationEnabled: boolean = true;
 
@@ -27,7 +30,7 @@
         activeResource?.kind === ResourceKind.MetricsView.toString()));
 
   // Dashboard breadcrumb
-  $: dashboardsQuery = useValidDashboards(instanceId);
+  $: dashboardsQuery = useValidDashboards(runtimeClient);
   $: ({ data: dashboards } = $dashboardsQuery);
   let currentResource: V1Resource;
   $: currentResource = dashboards?.find(

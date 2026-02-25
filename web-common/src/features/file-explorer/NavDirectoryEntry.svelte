@@ -41,7 +41,7 @@
   $: topLevelFolder = getTopLevelFolder(dir.path);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 
-  $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
+  $: hasErrors = getDirectoryHasErrors(queryClient, dir);
 
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
     instanceId,

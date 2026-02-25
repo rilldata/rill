@@ -32,8 +32,6 @@
 
   let lastPresetTheme: string | undefined = undefined;
 
-  $: ({ instanceId } = runtimeClient);
-
   $: isPresetMode = theme === undefined || typeof theme === "string";
   $: embeddedTheme = typeof theme === "object" ? theme : undefined;
 
@@ -42,9 +40,9 @@
 
   $: themeQuery =
     theme && typeof theme === "string"
-      ? useTheme(instanceId, theme)
+      ? useTheme(runtimeClient, theme)
       : !theme && projectDefaultTheme
-        ? useTheme(instanceId, projectDefaultTheme)
+        ? useTheme(runtimeClient, projectDefaultTheme)
         : undefined;
 
   $: fetchedTheme = $themeQuery?.data?.theme?.spec;

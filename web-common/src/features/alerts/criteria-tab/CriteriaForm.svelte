@@ -23,7 +23,7 @@
   $: ({ selectedComparisonTimeRange } = timeControls);
 
   $: metricsView = useMetricsViewValidSpec(
-    runtimeClient.instanceId,
+    runtimeClient,
     $form["metricsViewName"],
   );
 

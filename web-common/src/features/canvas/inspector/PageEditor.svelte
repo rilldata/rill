@@ -87,7 +87,7 @@
 
   $: title = stringGuard(rawTitle) || stringGuard(rawDisplayName);
 
-  $: themesQuery = useFilteredResources(client.instanceId, ResourceKind.Theme);
+  $: themesQuery = useFilteredResources(client, ResourceKind.Theme);
 
   $: themeNames = ($themesQuery?.data ?? [])
     .map((theme) => theme.meta?.name?.name ?? "")

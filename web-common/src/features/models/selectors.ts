@@ -3,6 +3,7 @@ import {
   useClientFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/query-core";
 import type { Readable } from "svelte/motion";
 import { derived } from "svelte/store";
@@ -11,9 +12,9 @@ import {
   type TableColumnsWithName,
 } from "../sources/selectors";
 
-export function useModels(instanceId: string) {
+export function useModels(client: RuntimeClient) {
   return useClientFilteredResources(
-    instanceId,
+    client,
     ResourceKind.Model,
     (res) =>
       res.meta?.name?.name === res.model?.state?.resultTable &&
@@ -21,15 +22,15 @@ export function useModels(instanceId: string) {
   );
 }
 
-export function useModel(instanceId: string, name: string) {
-  return useResource(instanceId, name, ResourceKind.Model);
+export function useModel(client: RuntimeClient, name: string) {
+  return useResource(client, name, ResourceKind.Model);
 }
 
 export function useAllModelColumns(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
 ): Readable<Array<TableColumnsWithName>> {
-  return derived([useModels(instanceId)], ([allModels], set) => {
+  return derived([useModels(client)], ([allModels], set) => {
     if (!allModels.data?.length) {
       set([]);
       return;
@@ -39,7 +40,7 @@ export function useAllModelColumns(
       allModels.data.map((r) =>
         createTableColumnsWithName(
           queryClient,
-          instanceId,
+          client.instanceId,
           r.model?.state?.resultConnector ?? "",
           "",
           "",

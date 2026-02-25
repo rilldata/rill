@@ -89,7 +89,7 @@
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     metricsViewName,
     undefined,
     queryClient,
@@ -118,13 +118,13 @@
   $: ({ filters, timeControls } =
     props.mode === "create"
       ? getNewAlertInitialFiltersFormValues(
-          instanceId,
+          runtimeClient,
           metricsViewName,
           exploreName,
           $exploreState!,
         )
       : getFiltersAndTimeControlsFromAggregationRequest(
-          instanceId,
+          runtimeClient,
           metricsViewName,
           exploreName,
           JSON.parse(

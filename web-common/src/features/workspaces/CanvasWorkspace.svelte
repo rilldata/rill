@@ -41,7 +41,7 @@
     saveState: { saving },
   } = fileArtifact);
 
-  $: resourceQuery = getResource(queryClient, runtimeClient.instanceId);
+  $: resourceQuery = getResource(queryClient);
 
   $: ({ data } = $resourceQuery);
 
@@ -54,10 +54,7 @@
   $: canvasName = getNameFromFile(filePath);
 
   // Parse error for the editor gutter and banner
-  $: parseErrorQuery = fileArtifact.getParseError(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
   // Reconcile error resolved to root cause for the banner

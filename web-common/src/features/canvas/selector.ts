@@ -11,6 +11,7 @@ import {
   type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type {
   CreateQueryOptions,
   CreateQueryResult,
@@ -23,10 +24,10 @@ import type {
  * 3. The first available metrics view
  */
 export function useDefaultMetrics(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName?: string,
 ) {
-  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) => {
+  return useFilteredResources(client, ResourceKind.MetricsView, (data) => {
     const validMetricsViews = data?.resources?.filter(
       (res) => !!res.metricsView?.state?.validSpec,
     );
@@ -87,7 +88,7 @@ export interface CanvasResponse {
 }
 
 export function useCanvas(
-  instanceId: string,
+  client: RuntimeClient,
   canvasName: string,
   queryOptions?: Partial<
     CreateQueryOptions<
@@ -99,7 +100,7 @@ export function useCanvas(
   queryClient?: QueryClient,
 ): CreateQueryResult<CanvasResponse, ErrorType<RpcStatus>> {
   return createQueryServiceResolveCanvas(
-    instanceId,
+    client.instanceId,
     canvasName,
     {},
     {
@@ -121,7 +122,7 @@ export function useCanvas(
           };
         },
 
-        enabled: !!canvasName && !!instanceId,
+        enabled: !!canvasName && !!client.instanceId,
         ...queryOptions,
       },
     },

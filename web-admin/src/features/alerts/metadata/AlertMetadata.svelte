@@ -54,7 +54,7 @@
   $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     $exploreName.data,
   );
 
@@ -93,7 +93,7 @@
       exploreProtoState: alertSpec?.annotations?.web_open_state,
     },
     {
-      instanceId,
+      client: runtimeClient,
       organization,
       project,
     },

@@ -23,7 +23,7 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  $: modelQuery = useModel(instanceId, modelName);
+  $: modelQuery = useModel(runtimeClient, modelName);
   $: connector = $modelQuery.data?.model?.spec?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===

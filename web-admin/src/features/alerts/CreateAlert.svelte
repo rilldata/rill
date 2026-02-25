@@ -26,7 +26,7 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  $: metricsView = useMetricsViewValidSpec(instanceId, $metricsViewName);
+  $: metricsView = useMetricsViewValidSpec(runtimeClient, $metricsViewName);
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
 
   let open = false;

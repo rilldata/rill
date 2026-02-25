@@ -20,10 +20,7 @@
   $: ({ form } = superFormInstance);
 
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
-  $: metricsView = useMetricsViewValidSpec(
-    runtimeClient.instanceId,
-    metricsViewName,
-  );
+  $: metricsView = useMetricsViewValidSpec(runtimeClient, metricsViewName);
 
   $: measureOptions =
     $metricsView.data?.measures

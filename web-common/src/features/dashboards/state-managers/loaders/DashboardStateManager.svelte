@@ -51,6 +51,7 @@
       exploreName,
       storageNamespacePrefix,
       dataLoader,
+      client,
     );
   }
 

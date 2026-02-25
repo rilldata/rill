@@ -4,9 +4,10 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   getRuntimeServiceListResourcesQueryOptions,
-  type RpcStatus,
   runtimeServiceGetResource,
   runtimeServiceListResources,
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import {
   type V1ExploreSpec,
   type V1GetResourceResponse,
   type V1ListResourcesResponse,
@@ -15,7 +16,6 @@ import {
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
-import type { ErrorType } from "../../runtime-client/http-client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
@@ -142,28 +142,19 @@ export function coerceResourceKind(res: V1Resource): ResourceKind | undefined {
 }
 
 export function useResource<T = V1Resource>(
-  instanceId: string,
+  client: RuntimeClient,
   name: string,
   kind: ResourceKind,
-  queryOptions?: Partial<
-    CreateQueryOptions<
-      V1GetResourceResponse,
-      ErrorType<RpcStatus>,
-      T // T is the return type of the `select` function
-    >
-  >,
+  queryOptions?: Partial<CreateQueryOptions<V1GetResourceResponse, Error, T>>,
   queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetResource(
-    instanceId,
-    {
-      "name.kind": kind,
-      "name.name": name,
-    },
+    client,
+    { name: { kind, name } },
     {
       query: {
         select: (data) => data?.resource as T,
-        enabled: !!instanceId && !!name && !!kind,
+        enabled: !!client.instanceId && !!name && !!kind,
         ...queryOptions,
       },
     },
@@ -177,28 +168,19 @@ export function useResource<T = V1Resource>(
  *  any `queryOptions`, not just `select` and `queryClient`.
  */
 export function useResourceV2<T = V1Resource>(
-  instanceId: string,
+  client: RuntimeClient,
   name: string,
   kind: ResourceKind,
-  queryOptions?: Partial<
-    CreateQueryOptions<
-      V1GetResourceResponse,
-      ErrorType<RpcStatus>,
-      T // T is the return type of the `select` function
-    >
-  >,
+  queryOptions?: Partial<CreateQueryOptions<V1GetResourceResponse, Error, T>>,
   queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetResource(
-    instanceId,
-    {
-      "name.kind": kind,
-      "name.name": name,
-    },
+    client,
+    { name: { kind, name } },
     {
       query: {
         select: (data) => data?.resource as T,
-        enabled: !!instanceId && !!name && !!kind,
+        enabled: !!client.instanceId && !!name && !!kind,
         ...queryOptions,
       },
     },
@@ -208,13 +190,13 @@ export function useResourceV2<T = V1Resource>(
 
 export function useProjectParser(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
   queryOptions?: Partial<
-    CreateQueryOptions<V1GetResourceResponse, ErrorType<RpcStatus>, V1Resource>
+    CreateQueryOptions<V1GetResourceResponse, Error, V1Resource>
   >,
 ) {
   return useResource(
-    instanceId,
+    client,
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
     queryOptions,
@@ -223,16 +205,14 @@ export function useProjectParser(
 }
 
 export function useFilteredResources<T = Array<V1Resource>>(
-  instanceId: string,
+  client: RuntimeClient,
   kind: ResourceKind,
   selector: (data: V1ListResourcesResponse) => T = (data) =>
     data.resources as T,
 ) {
   return createRuntimeServiceListResources(
-    instanceId,
-    {
-      kind: kind,
-    },
+    client,
+    { kind },
     {
       query: {
         select: selector,
@@ -247,18 +227,22 @@ export function useFilteredResources<T = Array<V1Resource>>(
  * This is to improve network requests since we need the full list all the time as well.
  */
 export function useClientFilteredResources(
-  instanceId: string,
+  client: RuntimeClient,
   kind: ResourceKind,
   filter: (res: V1Resource) => boolean = () => true,
 ) {
-  return createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      select: (data) =>
-        data.resources?.filter(
-          (res) => res.meta?.name?.kind === kind && filter(res),
-        ) ?? [],
+  return createRuntimeServiceListResources(
+    client,
+    {},
+    {
+      query: {
+        select: (data) =>
+          data.resources?.filter(
+            (res) => res.meta?.name?.kind === kind && filter(res),
+          ) ?? [],
+      },
     },
-  });
+  );
 }
 
 /**
@@ -270,8 +254,8 @@ export function getClientFilteredResourcesQueryOptions(
   filter: (res: V1Resource) => boolean = () => true,
 ) {
   return getRuntimeServiceListResourcesQueryOptions(
-    client.instanceId,
-    undefined,
+    client,
+    {},
     {
       query: {
         select: (data) =>
@@ -292,31 +276,26 @@ export function resourceIsLoading(resource?: V1Resource) {
 
 export async function fetchResource(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
   name: string,
   kind: ResourceKind,
 ) {
   const resp = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.name": name,
-      "name.kind": kind,
+    queryKey: getRuntimeServiceGetResourceQueryKey(client.instanceId, {
+      name: { name, kind },
     }),
-    queryFn: () =>
-      runtimeServiceGetResource(instanceId, {
-        "name.name": name,
-        "name.kind": kind,
-      }),
+    queryFn: () => runtimeServiceGetResource(client, { name: { name, kind } }),
   });
   return resp.resource;
 }
 
 export async function fetchResources(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
 ) {
   const resp = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
-    queryFn: () => runtimeServiceListResources(instanceId, {}),
+    queryKey: getRuntimeServiceListResourcesQueryKey(client.instanceId),
+    queryFn: () => runtimeServiceListResources(client, {}),
   });
   return resp.resources ?? [];
 }
@@ -325,8 +304,8 @@ export function getMetricsViewAndExploreSpecsQueryOptions(
   client: RuntimeClient,
 ) {
   return getRuntimeServiceListResourcesQueryOptions(
-    client.instanceId,
-    undefined,
+    client,
+    {},
     {
       query: {
         select: (data) => {

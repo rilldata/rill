@@ -65,7 +65,7 @@
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   $: metricsViewQuery = useFilteredResources(
-    instanceId,
+    runtimeClient,
     ResourceKind.MetricsView,
   );
 

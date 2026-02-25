@@ -9,9 +9,7 @@
 
   export let canvasName: string;
 
-  $: ({ instanceId } = client);
-
-  $: canvasQuery = useCanvas(instanceId, canvasName);
+  $: canvasQuery = useCanvas(client, canvasName);
   $: canvasFilePath = $canvasQuery.data?.filePath ?? "";
 
   const { dashboardChat, readOnly } = featureFlags;

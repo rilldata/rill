@@ -38,9 +38,7 @@
   }
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
-  $: metricsView = useMetricsView(instanceId, metricsViewName);
+  $: metricsView = useMetricsView(runtimeClient, metricsViewName);
   $: dimensionIdMap = getMapFromArray(
     $metricsView.data?.metricsView?.state?.validSpec?.dimensions ?? [],
     (dimension) => dimension.name,

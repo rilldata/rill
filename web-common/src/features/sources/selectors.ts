@@ -7,6 +7,7 @@ import {
   createQueryServiceTableColumns,
   createRuntimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { type Readable, derived } from "svelte/store";
 import { parse } from "yaml";
@@ -17,9 +18,9 @@ export type SourceFromYaml = {
   path?: string;
 };
 
-export function useSources(instanceId: string) {
+export function useSources(client: RuntimeClient) {
   return useClientFilteredResources(
-    instanceId,
+    client,
     ResourceKind.Model,
     (res) =>
       res.meta?.name?.name === res.model?.state?.resultTable &&
@@ -72,9 +73,9 @@ export type TableColumnsWithName = {
 
 export function useAllSourceColumns(
   queryClient: QueryClient,
-  instanceId: string,
+  client: RuntimeClient,
 ): Readable<Array<TableColumnsWithName>> {
-  return derived([useSources(instanceId)], ([allSources], set) => {
+  return derived([useSources(client)], ([allSources], set) => {
     if (!allSources.data?.length) {
       set([]);
       return;
@@ -84,7 +85,7 @@ export function useAllSourceColumns(
       allSources.data.map((r) =>
         createTableColumnsWithName(
           queryClient,
-          instanceId,
+          client.instanceId,
           r.source?.state?.connector ?? "",
           "",
           "",

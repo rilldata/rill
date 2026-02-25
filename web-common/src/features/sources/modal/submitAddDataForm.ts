@@ -368,7 +368,6 @@ export async function submitAddConnectorForm(
       // If the connector file has errors, rollback the changes
       const errorMessage = await fileArtifacts.checkFileErrors(
         queryClient,
-        instanceId,
         newConnectorFilePath,
       );
       if (errorMessage) {
@@ -529,7 +528,6 @@ export async function submitAddSourceForm(
   // If the model file has errors, rollback the changes
   const errorMessage = await fileArtifacts.checkFileErrors(
     queryClient,
-    instanceId,
     newSourceFilePath,
   );
   if (errorMessage) {

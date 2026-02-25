@@ -2,18 +2,19 @@ import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
 import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 
 export function useDashboardsLastUpdated(
-  instanceId: string,
+  client: RuntimeClient,
   organization: string,
   project: string,
 ) {
   return derived(
     [
-      useValidExplores(instanceId),
+      useValidExplores(client),
       createAdminServiceGetProject(organization, project),
     ],
     ([dashboardsResp, projResp]) => {

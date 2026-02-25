@@ -77,14 +77,11 @@ export function findDirectory(root: Directory, filePath: string) {
 
 export function getDirectoryHasErrors(
   queryClient: QueryClient,
-  instanceId: string,
   dir: Directory,
 ) {
   return derived(
     flattenDirectory(dir).map((filePath) =>
-      fileArtifacts
-        .getFileArtifact(filePath)
-        .getAllErrors(queryClient, instanceId),
+      fileArtifacts.getFileArtifact(filePath).getAllErrors(queryClient),
     ),
     (filesErrors) => filesErrors.some((fileErrors) => fileErrors.length > 0),
   );

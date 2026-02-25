@@ -49,11 +49,11 @@
 
   const { ai, generateCanvas } = featureFlags;
 
-  $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: sourceQuery = fileArtifact.getResource(queryClient);
   let source: V1Source | undefined;
   $: source = $sourceQuery.data?.source;
   $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
-  $: sourceHasError = fileArtifact.getHasErrors(queryClient, instanceId);
+  $: sourceHasError = fileArtifact.getHasErrors(queryClient);
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;

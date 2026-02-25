@@ -36,9 +36,9 @@
   $: projectData = $proj.data?.project;
   $: primaryBranch = projectData?.primaryBranch;
   // Last synced
-  $: githubLastSynced = useGithubLastSynced(instanceId);
+  $: githubLastSynced = useGithubLastSynced(runtimeClient);
   $: dashboardsLastUpdated = useDashboardsLastUpdated(
-    instanceId,
+    runtimeClient,
     organization,
     project,
   );

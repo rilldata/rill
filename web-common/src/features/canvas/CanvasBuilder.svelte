@@ -75,7 +75,10 @@
   $: canvasData = $specStore.data;
   $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
 
-  $: metricsViewQuery = useDefaultMetrics(instanceId, metricsViews?.[0]?.[0]);
+  $: metricsViewQuery = useDefaultMetrics(
+    runtimeClient,
+    metricsViews?.[0]?.[0],
+  );
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");

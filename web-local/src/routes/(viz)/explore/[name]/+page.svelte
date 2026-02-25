@@ -38,7 +38,7 @@
   ];
   $: exploreQuery = useExploreValidSpec(instanceId, exploreName);
   $: measures = $exploreQuery.data?.explore?.measures ?? [];
-  $: projectParserQuery = useProjectParser(queryClient, instanceId, {
+  $: projectParserQuery = useProjectParser(queryClient, runtimeClient, {
     enabled: $selectedMockUserStore?.admin,
   });
 

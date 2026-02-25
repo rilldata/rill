@@ -51,7 +51,7 @@
   $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;
 
   $: exploreIsValid = hasValidMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     $exploreName.data,
   );
 
@@ -85,7 +85,7 @@
       forceOpenPivot: true,
     },
     {
-      instanceId,
+      client: runtimeClient,
       organization,
       project,
     },

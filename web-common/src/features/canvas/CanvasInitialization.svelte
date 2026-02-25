@@ -39,12 +39,7 @@
 
   $: existingStore = getCanvasStoreUnguarded(canvasName, instanceId);
 
-  $: resourceQuery = useResource(
-    instanceId,
-    canvasName,
-    ResourceKind.Canvas,
-    {},
-  );
+  $: resourceQuery = useResource(client, canvasName, ResourceKind.Canvas, {});
 
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(

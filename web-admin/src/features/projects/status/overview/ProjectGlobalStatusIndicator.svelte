@@ -45,7 +45,7 @@
     isLoading: hasResourceErrorsLoading,
   } = $hasResourceErrorsQuery);
 
-  $: projectParserQuery = useProjectParser(queryClient, instanceId, {
+  $: projectParserQuery = useProjectParser(queryClient, runtimeClient, {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });

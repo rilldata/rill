@@ -17,7 +17,6 @@ import {
   createRuntimeServiceListResources,
   getQueryServiceMetricsViewTimeRangeQueryOptions,
   getRuntimeServiceListResourcesQueryOptions,
-  type RpcStatus,
   type V1Expression,
   type V1GetResourceResponse,
   type V1MetricsViewSpec,
@@ -33,19 +32,14 @@ import {
 } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
-import type { ErrorType } from "../../runtime-client/http-client";
 
 export function useMetricsView(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
-  queryOptions?: CreateQueryOptions<
-    V1GetResourceResponse,
-    ErrorType<RpcStatus>,
-    V1Resource
-  >,
+  queryOptions?: CreateQueryOptions<V1GetResourceResponse, Error, V1Resource>,
 ) {
   return useResource(
-    instanceId,
+    client,
     metricsViewName,
     ResourceKind.MetricsView,
     queryOptions,
@@ -67,22 +61,22 @@ export function getValidMetricsViewsQueryOptions(client: RuntimeClient) {
   );
 }
 
-export function useValidExplores(instanceId: string) {
+export function useValidExplores(client: RuntimeClient) {
   // This is used in cloud as well so do not use "useClientFilteredResources"
-  return useFilteredResources(instanceId, ResourceKind.Explore, (data) =>
+  return useFilteredResources(client, ResourceKind.Explore, (data) =>
     data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
   );
 }
 
-export function useValidCanvases(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Canvas, (data) =>
+export function useValidCanvases(client: RuntimeClient) {
+  return useFilteredResources(client, ResourceKind.Canvas, (data) =>
     data?.resources?.filter((res) => !!res.canvas?.state?.validSpec),
   );
 }
 
-export function useValidDashboards(instanceId: string) {
+export function useValidDashboards(client: RuntimeClient) {
   return createRuntimeServiceListResources(
-    instanceId,
+    client.instanceId,
     undefined, // TODO: it'd be nice if we could provide multiple kinds here
     {
       query: {
@@ -103,11 +97,11 @@ export function useValidDashboards(instanceId: string) {
  * Use {@link useDashboard} in the metrics view editor and other use cases.
  */
 export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
 ) => {
-  return useResource<T>(instanceId, metricsViewName, ResourceKind.MetricsView, {
+  return useResource<T>(client, metricsViewName, ResourceKind.MetricsView, {
     select: (data) =>
       selector
         ? selector(data.resource?.metricsView?.state?.validSpec ?? {})
@@ -116,7 +110,7 @@ export const useMetricsViewValidSpec = <T = V1MetricsViewSpec>(
 };
 
 export function useMetricsViewTimeRange(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   options?: {
     query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
@@ -126,12 +120,12 @@ export function useMetricsViewTimeRange(
   const { query: queryOptions } = options ?? {};
 
   const fullTimeRangeQueryOptionsStore = derived(
-    useMetricsViewValidSpec(instanceId, metricsViewName),
+    useMetricsViewValidSpec(client, metricsViewName),
     (validSpecResp) => {
       const metricsViewSpec = validSpecResp.data ?? {};
 
       return getQueryServiceMetricsViewTimeRangeQueryOptions(
-        instanceId,
+        client.instanceId,
         metricsViewName,
         {},
         {
@@ -175,18 +169,18 @@ export function getMetricsViewTimeRangeFromExploreQueryOptions(
 }
 
 export function hasValidMetricsViewTimeRange(
-  instanceId: string,
+  client: RuntimeClient,
   exploreName: string,
 ) {
   const fullTimeRangeQueryOptionsStore = derived(
-    useExploreValidSpec(instanceId, exploreName),
+    useExploreValidSpec(client.instanceId, exploreName),
     (validSpecResp) => {
       const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
       const exploreSpec = validSpecResp.data?.explore ?? {};
       const metricsViewName = exploreSpec.metricsView ?? "";
 
       return getQueryServiceMetricsViewTimeRangeQueryOptions(
-        instanceId,
+        client.instanceId,
         metricsViewName,
         {},
         {
@@ -240,11 +234,11 @@ export function additionalMeasures(
 }
 
 export const useGetMetricsViewsForModel = (
-  instanceId: string,
+  client: RuntimeClient,
   modelName: string,
 ) => {
   return useClientFilteredResources(
-    instanceId,
+    client,
     ResourceKind.MetricsView,
     (res) =>
       res.metricsView?.spec?.model === modelName ||
@@ -253,11 +247,11 @@ export const useGetMetricsViewsForModel = (
 };
 
 export const useGetExploresForMetricsView = (
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
 ) => {
   return useClientFilteredResources(
-    instanceId,
+    client,
     ResourceKind.Explore,
     (res) => res.explore?.spec?.metricsView === metricsViewName,
   );

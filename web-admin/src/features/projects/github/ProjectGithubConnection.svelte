@@ -24,9 +24,9 @@
   $: isGithubConnected = !!gitRemote;
   $: isManagedGit = !!managedGitId;
   $: repoName = getRepoNameFromGitRemote(gitRemote);
-  $: githubLastSynced = useGithubLastSynced(instanceId);
+  $: githubLastSynced = useGithubLastSynced(runtimeClient);
   $: dashboardsLastUpdated = useDashboardsLastUpdated(
-    instanceId,
+    runtimeClient,
     organization,
     project,
   );

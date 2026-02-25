@@ -21,8 +21,8 @@
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: ({ remoteContent } = fileArtifact);
-  $: parseError = fileArtifact.getParseError(queryClient, instanceId);
-  $: resource = fileArtifact.getResource(queryClient, instanceId);
+  $: parseError = fileArtifact.getParseError(queryClient);
+  $: resource = fileArtifact.getResource(queryClient);
   $: ({
     isLoading: isResourceLoading,
     error: resourceError,

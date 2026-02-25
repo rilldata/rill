@@ -89,7 +89,7 @@
   $: themeName = $defaultThemeQuery?.data;
 
   $: themeQuery = useResource(
-    instanceId,
+    runtimeClient,
     themeName!,
     ResourceKind.Theme,
     {
