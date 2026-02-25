@@ -274,7 +274,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 				Image:        "apachepinot/pinot:latest",
 				ExposedPorts: []string{"9000/tcp", "8000/tcp"},
 				Cmd:          []string{"QuickStart", "-type", "batch"},
-				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(3 * time.Minute),
+				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(4 * time.Minute),
 			},
 			Started: true,
 		})
