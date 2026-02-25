@@ -1,8 +1,8 @@
 import {
   queryServiceMetricsViewTimeRanges,
   queryServiceMetricsViewTimeRange,
-} from "@rilldata/web-common/runtime-client";
-import { LOCAL_INSTANCE_ID } from "./local-runtime-config";
+} from "@rilldata/web-common/runtime-client/v2/gen";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { Interval, DateTime, type DateTimeUnit } from "luxon";
 import { GrainAliasToOrder } from "@rilldata/web-common/lib/time/new-grains";
 
@@ -334,16 +334,12 @@ function generateFirstNPeriodTests(metadata: TimeMetadata, n: number = 3) {
   return tests;
 }
 
-export async function runTests(metricsViewName: string) {
-  const instanceId = LOCAL_INSTANCE_ID;
-
+export async function runTests(client: RuntimeClient, metricsViewName: string) {
   let failures = 1;
 
-  const okay = await queryServiceMetricsViewTimeRange(
-    instanceId,
+  const okay = await queryServiceMetricsViewTimeRange(client, {
     metricsViewName,
-    {},
-  );
+  });
 
   const { timeRangeSummary } = okay;
   if (
@@ -387,11 +383,10 @@ export async function runTests(metricsViewName: string) {
 
   const expressions = testCases.map((testCase) => testCase.syntax);
 
-  const response = await queryServiceMetricsViewTimeRanges(
-    instanceId,
+  const response = await queryServiceMetricsViewTimeRanges(client, {
     metricsViewName,
-    { expressions },
-  );
+    expressions,
+  });
 
   testCases.forEach(({ interval, log }, i) => {
     const apiFormat = {

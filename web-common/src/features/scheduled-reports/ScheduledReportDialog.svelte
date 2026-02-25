@@ -47,6 +47,8 @@
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
+  } from "../../runtime-client/v2/gen";
+  import {
     type V1MetricsViewAggregationRequest,
     type V1Query,
     type V1ReportSpec,

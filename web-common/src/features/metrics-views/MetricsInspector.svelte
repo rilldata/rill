@@ -1,8 +1,8 @@
 <script lang="ts">
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { createConnectorServiceOLAPGetTable } from "@rilldata/web-common/runtime-client/v2/gen/connector-service";
   import { useQueryClient } from "@tanstack/svelte-query";
   import SimpleMessage from "../../layout/inspector/SimpleMessage.svelte";
-  import { createConnectorServiceOLAPGetTable } from "../../runtime-client";
   import TableInspector from "../connectors/olap/TableInspector.svelte";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
@@ -31,8 +31,8 @@
   $: resourceReconcileError = resourceData?.meta?.reconcileError;
 
   $: tableQuery = createConnectorServiceOLAPGetTable(
+    runtimeClient,
     {
-      instanceId,
       connector,
       database,
       databaseSchema,

@@ -117,7 +117,7 @@
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createSqlModelFromTable(
-        instanceId,
+        runtimeClient,
         queryClient,
         connector,
         database,
@@ -151,7 +151,7 @@
         connector,
         filePath,
         $sourceQuery.data?.meta?.name?.name ?? "",
-        instanceId,
+        runtimeClient,
       );
     } catch {
       // no-op
@@ -162,7 +162,7 @@
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
   async function onReplaceSource() {
-    await replaceSourceWithUploadedFile(instanceId, filePath);
+    await replaceSourceWithUploadedFile(runtimeClient, filePath);
     overlay.set(null);
   }
 </script>

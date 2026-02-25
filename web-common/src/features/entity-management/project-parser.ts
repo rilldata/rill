@@ -1,15 +1,15 @@
 import { queryClient } from "../../lib/svelte-query/globalQueryClient";
-import {
-  getRuntimeServiceGetResourceQueryKey,
-  type V1GetResourceResponse,
-} from "../../runtime-client";
+import { getRuntimeServiceGetResourceQueryKey } from "../../runtime-client/v2/gen";
+import type { V1GetResourceResponse } from "../../runtime-client";
 import { ResourceKind, SingletonProjectParserName } from "./resource-selectors";
 
 export function getProjectParserVersion(instanceId: string) {
   const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
+      name: {
+        kind: ResourceKind.ProjectParser,
+        name: SingletonProjectParserName,
+      },
     }),
   );
 
@@ -29,8 +29,10 @@ export async function waitForProjectParserVersion(
   while (currentVersion < version) {
     const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
       getRuntimeServiceGetResourceQueryKey(instanceId, {
-        "name.kind": ResourceKind.ProjectParser,
-        "name.name": SingletonProjectParserName,
+        name: {
+          kind: ResourceKind.ProjectParser,
+          name: SingletonProjectParserName,
+        },
       }),
     );
 

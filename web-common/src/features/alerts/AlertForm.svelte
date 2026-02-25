@@ -55,11 +55,11 @@
   import { getFiltersAndTimeControlsFromAggregationRequest } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
-  } from "@rilldata/web-common/runtime-client";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { X } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import Button from "web-common/src/components/button/Button.svelte";
@@ -220,8 +220,7 @@
     if (!isCreateForm) {
       void queryClient.invalidateQueries({
         queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-          "name.name": alertName,
-          "name.kind": ResourceKind.Alert,
+          name: { name: alertName, kind: ResourceKind.Alert },
         }),
       });
     }

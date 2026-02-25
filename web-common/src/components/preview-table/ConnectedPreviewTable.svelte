@@ -1,11 +1,11 @@
 <script lang="ts">
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import type { V1TableRowsResponseDataItem } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    type V1TableRowsResponseDataItem,
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
-  } from "@rilldata/web-common/runtime-client";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 
   const runtimeClient = useRuntimeClient();
   import WorkspaceError from "../WorkspaceError.svelte";
@@ -21,9 +21,8 @@
   let columns: VirtualizedTableColumns[] | undefined;
   let rows: V1TableRowsResponseDataItem[] | undefined;
 
-  $: ({ instanceId } = runtimeClient);
-
-  $: columnsQuery = createQueryServiceTableColumns(instanceId, table, {
+  $: columnsQuery = createQueryServiceTableColumns(runtimeClient, {
+    tableName: table,
     connector,
     database,
     databaseSchema,
@@ -34,7 +33,8 @@
     error: columnsError,
   } = $columnsQuery);
 
-  $: rowsQuery = createQueryServiceTableRows(instanceId, table, {
+  $: rowsQuery = createQueryServiceTableRows(runtimeClient, {
+    tableName: table,
     connector,
     database,
     databaseSchema,
@@ -55,7 +55,7 @@
   <ReconcilingSpinner />
 {:else if rowsError || columnsError}
   <WorkspaceError
-    message={`Error loading table: ${rowsError?.response.data?.message || columnsError?.response.data?.message}`}
+    message={`Error loading table: ${rowsError?.message || columnsError?.message}`}
   />
 {:else if rows && columns}
   <PreviewTable {rows} columnNames={columns} name={table} />

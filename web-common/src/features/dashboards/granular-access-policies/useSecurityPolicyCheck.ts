@@ -1,9 +1,13 @@
 import { parse } from "yaml";
-import { createRuntimeServiceGetFile } from "../../../runtime-client";
+import type { RuntimeClient } from "../../../runtime-client/v2";
+import { createRuntimeServiceGetFile } from "../../../runtime-client/v2/gen/runtime-service";
 
-export function useDashboardPolicyCheck(instanceId: string, filePath: string) {
+export function useDashboardPolicyCheck(
+  client: RuntimeClient,
+  filePath: string,
+) {
   return createRuntimeServiceGetFile(
-    instanceId,
+    client,
     {
       path: filePath,
     },
@@ -20,9 +24,9 @@ export function useDashboardPolicyCheck(instanceId: string, filePath: string) {
   );
 }
 
-export function useRillYamlPolicyCheck(instanceId: string) {
+export function useRillYamlPolicyCheck(client: RuntimeClient) {
   return createRuntimeServiceGetFile(
-    instanceId,
+    client,
     {
       path: "rill.yaml",
     },

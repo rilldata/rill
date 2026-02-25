@@ -30,7 +30,7 @@
 
   const queryOptionsStore = getResolveTemplatedStringQueryOptions(
     component,
-    runtimeClient.instanceId,
+    runtimeClient,
   );
   $: resolveQuery = createQuery(queryOptionsStore, queryClient);
 

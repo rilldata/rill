@@ -13,11 +13,11 @@
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-  import {
-    createRuntimeServiceCreateDirectory,
-    createRuntimeServicePutFile,
-  } from "../../runtime-client";
   import { useRuntimeClient } from "../../runtime-client/v2";
+  import {
+    createRuntimeServiceCreateDirectoryMutation,
+    createRuntimeServicePutFileMutation,
+  } from "../../runtime-client/v2/gen/runtime-service";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceAndNavigate } from "../file-explorer/new-files";
@@ -39,10 +39,10 @@
   let showExploreDialog = false;
   let generateDataDialog = false;
 
-  const createFile = createRuntimeServicePutFile();
-  const createFolder = createRuntimeServiceCreateDirectory();
-
   const runtimeClient = useRuntimeClient();
+  const createFile = createRuntimeServicePutFileMutation(runtimeClient);
+  const createFolder =
+    createRuntimeServiceCreateDirectoryMutation(runtimeClient);
   $: ({ instanceId } = runtimeClient);
   const { developerChat } = featureFlags;
 
@@ -52,16 +52,16 @@
     : "";
 
   $: currentDirectoryFileNamesQuery = useFileNamesInDirectory(
-    instanceId,
+    runtimeClient,
     currentDirectory,
   );
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
-    instanceId,
+    runtimeClient,
     currentDirectory,
   );
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   $: metricsViewQuery = useFilteredResources(
@@ -99,10 +99,7 @@
         : nextFolderName;
 
     await $createFolder.mutateAsync({
-      instanceId: instanceId,
-      data: {
-        path: path,
-      },
+      path: path,
     });
 
     // Expand the directory to show the new folder
@@ -125,13 +122,10 @@
         : nextFileName;
 
     await $createFile.mutateAsync({
-      instanceId: instanceId,
-      data: {
-        path,
-        blob: undefined,
-        create: true,
-        createOnly: true,
-      },
+      path,
+      blob: undefined,
+      create: true,
+      createOnly: true,
     });
 
     await goto(`/files/${path}`);

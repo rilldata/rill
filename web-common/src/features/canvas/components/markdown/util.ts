@@ -9,7 +9,8 @@ import type {
   V1TimeRange,
   QueryServiceResolveTemplatedStringBody,
 } from "@rilldata/web-common/runtime-client";
-import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web-common/runtime-client";
+import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web-common/runtime-client/v2/gen";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 import type { ParsedFilters } from "../../stores/filter-state";
 import type { Readable } from "svelte/motion";
@@ -127,7 +128,7 @@ function buildRequestBody(params: {
 
 export function getResolveTemplatedStringQueryOptions(
   component: MarkdownCanvasComponent,
-  instanceId: string,
+  client: RuntimeClient,
 ): Readable<
   ReturnType<typeof getQueryServiceResolveTemplatedStringQueryOptions>
 > {
@@ -166,7 +167,7 @@ export function getResolveTemplatedStringQueryOptions(
           const enabled =
             !!needsTemplating &&
             !!content &&
-            !!instanceId &&
+            !!client.instanceId &&
             !!requestBody &&
             (!hasTimeSeries || !!timeAndFilters?.timeRange);
 
@@ -178,8 +179,10 @@ export function getResolveTemplatedStringQueryOptions(
           const queryEnabled = enabled && !!requestBody;
 
           return getQueryServiceResolveTemplatedStringQueryOptions(
-            instanceId,
-            body,
+            client,
+            body as Parameters<
+              typeof getQueryServiceResolveTemplatedStringQueryOptions
+            >[1],
             {
               query: {
                 enabled: queryEnabled,

@@ -21,7 +21,7 @@
   const client = useRuntimeClient();
   const { instanceId } = client;
 
-  $: mockUsers = useMockUsers(instanceId);
+  $: mockUsers = useMockUsers(client);
 </script>
 
 <DropdownMenu.Root bind:open>

@@ -9,14 +9,13 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: reportId = $page.params.report;
   $: executionTime = $page.url.searchParams.get("execution_time");
   $: token = $page.url.searchParams.get("token");
 
-  const downloadReportMutation = createDownloadReportMutation();
+  const downloadReportMutation = createDownloadReportMutation(runtimeClient);
   let downloadOnce = false;
 
   async function triggerDownload() {
@@ -24,7 +23,6 @@
     downloadOnce = true;
     await $downloadReportMutation.mutateAsync({
       data: {
-        instanceId,
         reportId,
         executionTime,
         originBaseUrl: window.location.origin,

@@ -9,11 +9,11 @@
   import { page } from "$app/stores";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     createRuntimeServiceGetInstance,
     getRuntimeServiceListResourcesQueryKey,
-    type V1Resource,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/v2/gen";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { writable } from "svelte/store";
   import ModelsTable from "./ModelsTable.svelte";
@@ -41,7 +41,7 @@
   $: ({ instanceId } = runtimeClient);
 
   // OLAP connector info
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
@@ -145,7 +145,8 @@
   let selectedResource: V1Resource | null = null;
   let selectedModelName = "";
 
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
 
   // Handlers
@@ -190,10 +191,7 @@
 
     try {
       await $createTrigger.mutateAsync({
-        instanceId,
-        data: {
-          models: [{ model: selectedModelName, ...opts }],
-        },
+        models: [{ model: selectedModelName, ...opts }],
       });
 
       await queryClient.invalidateQueries({

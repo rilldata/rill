@@ -1,5 +1,6 @@
 import { parseDocument } from "yaml";
-import { createRuntimeServiceGetFile } from "../../../runtime-client";
+import type { RuntimeClient } from "../../../runtime-client/v2";
+import { createRuntimeServiceGetFile } from "../../../runtime-client/v2/gen/runtime-service";
 
 export interface MockUser {
   email?: string;
@@ -9,9 +10,9 @@ export interface MockUser {
   attributes?: { [key: string]: any };
 }
 
-export function useMockUsers(instanceId: string) {
+export function useMockUsers(client: RuntimeClient) {
   return createRuntimeServiceGetFile(
-    instanceId,
+    client,
     { path: `rill.yaml` },
     {
       query: {

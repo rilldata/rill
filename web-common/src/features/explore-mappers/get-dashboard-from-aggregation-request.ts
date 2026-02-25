@@ -51,6 +51,7 @@ import type { SortingState } from "@tanstack/svelte-table";
 
 export async function getDashboardFromAggregationRequest({
   queryClient,
+  client,
   instanceId,
   req,
   dashboard,
@@ -76,7 +77,7 @@ export async function getDashboardFromAggregationRequest({
   }
 
   await fillTimeRange(
-    instanceId,
+    client,
     explore,
     dashboard,
     req.timeRange,
@@ -105,7 +106,7 @@ export async function getDashboardFromAggregationRequest({
       // We do not support comparison based dimension threshold filter in dashboards right now.
       // So convert it to a toplist and add `in` filter.
       const expr = await convertQueryFilterToToplistQuery(
-        instanceId,
+        client,
         explore.metricsView ?? "",
         req,
         dimension,

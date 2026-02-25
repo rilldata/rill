@@ -224,7 +224,7 @@
 
     saveAnyway = true;
     const result = await formManager.saveConnectorAnyway({
-      instanceId: runtimeClient.instanceId,
+      client: runtimeClient,
       queryClient,
       values: $form,
     });
@@ -252,7 +252,7 @@
   $: saveAnywayLoading = submitting && saveAnyway;
 
   handleOnUpdate = formManager.makeOnUpdate({
-    instanceId: runtimeClient.instanceId,
+    client: runtimeClient,
     onClose,
     queryClient,
     getSelectedAuthMethod: () => activeAuthMethod || undefined,

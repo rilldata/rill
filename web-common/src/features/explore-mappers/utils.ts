@@ -22,15 +22,17 @@ import {
   getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   queryServiceMetricsViewAggregation,
-  type QueryServiceMetricsViewAggregationBody,
   queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
-  type V1ExploreSpec,
-  type V1MetricsViewAggregationRequest,
-  type V1MetricsViewSpec,
-  type V1MetricsViewTimeRangeResponse,
-  type V1TimeRange,
-  type V1TimeRangeSummary,
+} from "@rilldata/web-common/runtime-client/v2/gen";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import type {
+  V1ExploreSpec,
+  V1MetricsViewAggregationRequest,
+  V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
+  V1TimeRange,
+  V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 // We are manually sending in duration, offset and round to grain for previous complete ranges.
 // This is to map back that split
@@ -43,7 +45,7 @@ for (const preset in PreviousCompleteRangeMap) {
 }
 
 export async function fillTimeRange(
-  instanceId: string,
+  client: RuntimeClient,
   exploreSpec: V1ExploreSpec,
   exploreState: ExploreState,
   reqTimeRange: V1TimeRange | undefined,
@@ -100,7 +102,7 @@ export async function fillTimeRange(
   // Resolve time range overriding ref to `executionTime` and set to custom.
   // This keeps the time range consistent regardless of when the link is opened.
   [exploreState.selectedTimeRange] = await resolveTimeRanges(
-    instanceId,
+    client,
     exploreSpec,
     [exploreState.selectedTimeRange],
     exploreState.selectedTimezone,
@@ -122,22 +124,21 @@ export function getExploreName(webOpenPath: string) {
 }
 
 export async function convertQueryFilterToToplistQuery(
-  instanceId: string,
+  client: RuntimeClient,
   metricsView: string,
   req: V1MetricsViewAggregationRequest,
   dimension: string,
 ) {
-  const params = <QueryServiceMetricsViewAggregationBody>{
+  const request = {
+    metricsView,
     ...req,
   };
   const toplist = await queryClient.fetchQuery({
     queryKey: getQueryServiceMetricsViewAggregationQueryKey(
-      instanceId,
-      metricsView,
-      params,
+      client.instanceId,
+      request,
     ),
-    queryFn: () =>
-      queryServiceMetricsViewAggregation(instanceId, metricsView, params),
+    queryFn: () => queryServiceMetricsViewAggregation(client, request),
   });
   return createInExpression(
     dimension,
@@ -146,20 +147,14 @@ export async function convertQueryFilterToToplistQuery(
 }
 
 export async function getExplorePageUrlSearchParams(
-  instanceId: string,
+  client: RuntimeClient,
   exploreName: string,
   exploreState: Partial<ExploreState>,
 ): Promise<URLSearchParams> {
   const { explore, metricsView } = await queryClient.fetchQuery({
     queryFn: ({ signal }) =>
-      runtimeServiceGetExplore(
-        instanceId,
-        {
-          name: exploreName,
-        },
-        signal,
-      ),
-    queryKey: getRuntimeServiceGetExploreQueryKey(instanceId, {
+      runtimeServiceGetExplore(client, { name: exploreName }, { signal }),
+    queryKey: getRuntimeServiceGetExploreQueryKey(client.instanceId, {
       name: exploreName,
     }),
     // this loader function is run for every param change in url.
@@ -178,12 +173,10 @@ export async function getExplorePageUrlSearchParams(
   ) {
     fullTimeRange = await queryClient.fetchQuery({
       queryFn: () =>
-        queryServiceMetricsViewTimeRange(instanceId, metricsViewName, {}),
-      queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
-        instanceId,
+        queryServiceMetricsViewTimeRange(client, { metricsViewName }),
+      queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(client.instanceId, {
         metricsViewName,
-        {},
-      ),
+      }),
       staleTime: Infinity,
       gcTime: Infinity,
     });
@@ -223,11 +216,9 @@ export function maybeGetExplorePageUrlSearchParams(
   const metricsViewName = exploreSpec.metricsView ?? "";
 
   const metricsViewTimeRangeQueryKey =
-    getQueryServiceMetricsViewTimeRangeQueryKey(
-      instanceId,
+    getQueryServiceMetricsViewTimeRangeQueryKey(instanceId, {
       metricsViewName,
-      {},
-    );
+    });
 
   // Get time range query from cache if present, else we will go to `/-/open-query` to fetch it.
   const queryResp = queryClient.getQueryData<V1MetricsViewTimeRangeResponse>(

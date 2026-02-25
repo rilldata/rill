@@ -2,10 +2,10 @@
   import { page } from "$app/stores";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     createRuntimeServiceGetResource,
     getRuntimeServiceListResourcesQueryKey,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/v2/gen";
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -30,8 +30,10 @@
   } from "../url-filter-sync";
   import { onMount } from "svelte";
 
+  const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   const filterSync = createUrlFilterSync([
     { key: "kind", type: "array" },
@@ -90,15 +92,13 @@
     ResourceKind.Connector,
   ];
 
-  const runtimeClient = useRuntimeClient();
-
   $: ({ instanceId } = runtimeClient);
 
   $: resources = useResources(runtimeClient);
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(
-    instanceId,
+    runtimeClient,
     {
       "name.kind": ResourceKind.ProjectParser,
       "name.name": SingletonProjectParserName,
@@ -145,19 +145,11 @@
   }
 
   function refreshAllSourcesAndModels() {
-    void $createTrigger
-      .mutateAsync({
-        instanceId,
-        data: { all: true },
-      })
-      .then(() => {
-        void queryClient.invalidateQueries({
-          queryKey: getRuntimeServiceListResourcesQueryKey(
-            instanceId,
-            undefined,
-          ),
-        });
+    void $createTrigger.mutateAsync({ all: true }).then(() => {
+      void queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
       });
+    });
   }
 </script>
 

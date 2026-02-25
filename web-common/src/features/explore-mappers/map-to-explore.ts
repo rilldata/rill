@@ -176,6 +176,7 @@ export function mapQueryToDashboard(
       };
       getDashboardState({
         queryClient,
+        client,
         instanceId: client.instanceId,
         dashboard: defaultExploreState,
         req: queryRequestProperties,

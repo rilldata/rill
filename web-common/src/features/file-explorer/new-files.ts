@@ -5,10 +5,8 @@ import {
   ResourceKind,
   type UserFacingResourceKinds,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  runtimeServicePutFile,
-  type V1Resource,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry.ts";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
@@ -46,9 +44,7 @@ export async function createResourceFile(
   }
 
   const newPath = getPathForNewResourceFile(kind, baseResource);
-  const instanceId = client.instanceId;
-
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newPath,
     blob: generateBlobForNewResourceFile(kind, baseResource),
     create: true,

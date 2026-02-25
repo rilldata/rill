@@ -7,11 +7,13 @@ import {
   getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   getRuntimeServiceListResourcesQueryKey,
-  type V1ExploreSpec,
-  type V1GetExploreResponse,
-  type V1ListResourcesResponse,
-  type V1MetricsViewSpec,
-  type V1MetricsViewTimeRangeResponse,
+} from "@rilldata/web-common/runtime-client/v2/gen";
+import type {
+  V1ExploreSpec,
+  V1GetExploreResponse,
+  V1ListResourcesResponse,
+  V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { error, redirect } from "@sveltejs/kit";
@@ -218,8 +220,7 @@ async function generateExploreLink(
           ),
         queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
           runtime.instanceId,
-          metricsViewName,
-          {},
+          { metricsViewName },
         ),
         staleTime: Infinity,
         gcTime: Infinity,

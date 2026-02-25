@@ -3,19 +3,19 @@
   import { onDestroy } from "svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { Button } from "../../../components/button";
-  import {
-    V1ReconcileStatus,
-    createRuntimeServiceCreateTrigger,
-    getRuntimeServiceGetModelPartitionsQueryKey,
-    type V1Resource,
-  } from "../../../runtime-client";
+  import { V1ReconcileStatus, type V1Resource } from "../../../runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
+  import {
+    createRuntimeServiceCreateTriggerMutation,
+    getRuntimeServiceGetModelPartitionsQueryKey,
+  } from "../../../runtime-client/v2/gen/runtime-service";
   import { addLeadingSlash } from "../../entity-management/entity-mappers";
   import { fileArtifacts } from "../../entity-management/file-artifacts";
 
   const runtimeClient = useRuntimeClient();
   const queryClient = useQueryClient();
-  const triggerMutation = createRuntimeServiceCreateTrigger();
+  const triggerMutation =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   export let partitionKey: string;
   export let resource: V1Resource | undefined = undefined;
@@ -39,15 +39,12 @@
     }
 
     await $triggerMutation.mutateAsync({
-      instanceId,
-      data: {
-        models: [
-          {
-            model: modelName,
-            partitions: [partitionKey],
-          },
-        ],
-      },
+      models: [
+        {
+          model: modelName,
+          partitions: [partitionKey],
+        },
+      ],
     });
 
     // Poll for updates since partition execution happens asynchronously

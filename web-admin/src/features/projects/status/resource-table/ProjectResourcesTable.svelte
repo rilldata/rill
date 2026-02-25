@@ -3,8 +3,10 @@
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     getRuntimeServiceListResourcesQueryKey,
+  } from "@rilldata/web-common/runtime-client/v2/gen";
+  import {
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
@@ -40,7 +42,8 @@
   let openDropdownResourceKey = "";
 
   const runtimeClient = useRuntimeClient();
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
 
   const openRefreshDialog = (
@@ -84,18 +87,14 @@
 
   const handleRefreshErroredPartitions = async () => {
     await $createTrigger.mutateAsync({
-      instanceId: runtimeClient.instanceId,
-      data: {
-        models: [
-          { model: erroredPartitionsModelName, allErroredPartitions: true },
-        ],
-      },
+      models: [
+        { model: erroredPartitionsModelName, allErroredPartitions: true },
+      ],
     });
 
     await queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(
         runtimeClient.instanceId,
-        undefined,
       ),
     });
   };
@@ -108,29 +107,22 @@
   const handleRefresh = async () => {
     if (dialogResourceKind === ResourceKind.Model) {
       await $createTrigger.mutateAsync({
-        instanceId: runtimeClient.instanceId,
-        data: {
-          models: [
-            {
-              model: dialogResourceName,
-              full: dialogRefreshType === "full",
-            },
-          ],
-        },
+        models: [
+          {
+            model: dialogResourceName,
+            full: dialogRefreshType === "full",
+          },
+        ],
       });
     } else {
       await $createTrigger.mutateAsync({
-        instanceId: runtimeClient.instanceId,
-        data: {
-          resources: [{ kind: dialogResourceKind, name: dialogResourceName }],
-        },
+        resources: [{ kind: dialogResourceKind, name: dialogResourceName }],
       });
     }
 
     await queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(
         runtimeClient.instanceId,
-        undefined,
       ),
     });
 

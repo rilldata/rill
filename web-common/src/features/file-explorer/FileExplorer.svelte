@@ -29,7 +29,6 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
   $: getFileTree = createRuntimeServiceListFiles(
     runtimeClient,
     {},
@@ -82,7 +81,7 @@
     }
 
     try {
-      const newFilePath = await duplicateFileArtifact(instanceId, filePath);
+      const newFilePath = await duplicateFileArtifact(runtimeClient, filePath);
       await goto(`/files${newFilePath}`);
     } catch {
       eventBus.emit("notification", {
@@ -105,14 +104,14 @@
         return;
       }
     }
-    await deleteFileArtifact(instanceId, filePath);
+    await deleteFileArtifact(runtimeClient, filePath);
     if (isCurrentActivePage(filePath, isDir)) {
       await goto("/");
     }
   }
 
   async function onForceDelete() {
-    await deleteFileArtifact(instanceId, forceDeletePath, true);
+    await deleteFileArtifact(runtimeClient, forceDeletePath, true);
     // onForceDelete is only called on folders, so isDir is always true
     if (isCurrentActivePage(forceDeletePath, true)) {
       await goto("/");
@@ -136,7 +135,7 @@
         });
         return;
       }
-      await renameFileArtifact(instanceId, fromPath, newFilePath);
+      await renameFileArtifact(runtimeClient, fromPath, newFilePath);
 
       if (isCurrentFile) {
         await goto(`/files${newFilePath}`);

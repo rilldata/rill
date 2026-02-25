@@ -1,15 +1,21 @@
 import {
-  createRuntimeServiceListFiles,
-  getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import {
+  createRuntimeServiceListFiles,
+  getRuntimeServiceListFilesQueryKey,
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { QueryClient } from "@tanstack/svelte-query";
 
-export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
+export function useAllFileNames(
+  queryClient: QueryClient,
+  client: RuntimeClient,
+) {
   return createRuntimeServiceListFiles(
-    instanceId,
-    undefined,
+    client,
+    {},
     {
       query: {
         select: (data) =>
@@ -31,7 +37,7 @@ export function fileIsMainEntity(filePath: string) {
 }
 
 export function useFileNamesInDirectory(
-  instanceId: string,
+  client: RuntimeClient,
   directoryPath: string,
 ) {
   // Ensure the directory path starts with a slash
@@ -39,13 +45,17 @@ export function useFileNamesInDirectory(
     directoryPath = `/${directoryPath}`;
   }
 
-  return createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        return useFileNamesInDirectorySelector(data, directoryPath);
+  return createRuntimeServiceListFiles(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => {
+          return useFileNamesInDirectorySelector(data, directoryPath);
+        },
       },
     },
-  });
+  );
 }
 
 export async function getFileNamesInDirectory(
@@ -112,7 +122,7 @@ export function useFileNamesInDirectorySelector(
 }
 
 export function useDirectoryNamesInDirectory(
-  instanceId: string,
+  client: RuntimeClient,
   directoryPath: string,
 ) {
   // Ensure the directory path starts with a slash
@@ -120,13 +130,17 @@ export function useDirectoryNamesInDirectory(
     directoryPath = `/${directoryPath}`;
   }
 
-  return createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        return useDirectoryNamesInDirectorySelector(data, directoryPath);
+  return createRuntimeServiceListFiles(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => {
+          return useDirectoryNamesInDirectorySelector(data, directoryPath);
+        },
       },
     },
-  });
+  );
 }
 
 export function useDirectoryNamesInDirectorySelector(

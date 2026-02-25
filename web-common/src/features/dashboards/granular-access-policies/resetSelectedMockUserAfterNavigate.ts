@@ -24,7 +24,8 @@ export function resetSelectedMockUserAfterNavigate(
 
     if (
       from.params.name !== to.params.name &&
-      get(selectedMockUserStore) !== null
+      get(selectedMockUserStore) !== null &&
+      runtimeClient
     ) {
       updateDevJWT(queryClient, instanceId, null, runtimeClient).catch(
         console.error,

@@ -7,11 +7,12 @@ import {
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "../../lib/svelte-query/globalQueryClient";
 import { getFileNamesInDirectory } from "./file-selectors";
 
 export async function handleEntityRename(
-  instanceId: string,
+  client: RuntimeClient,
   newName: string,
   existingPath: string,
   existingName: string,
@@ -30,7 +31,7 @@ export async function handleEntityRename(
   // Check if the new name is already in use
   const fileNamesInDirectory = await getFileNamesInDirectory(
     queryClient,
-    instanceId,
+    client.instanceId,
     folder,
   );
   if (isDuplicateName(newName, existingName, fileNamesInDirectory)) {
@@ -45,7 +46,7 @@ export async function handleEntityRename(
   try {
     const newFilePath = (folder ? `${folder}/` : "/") + newName;
 
-    await renameFileArtifact(instanceId, existingPath, newFilePath);
+    await renameFileArtifact(client, existingPath, newFilePath);
 
     return `/files/${removeLeadingSlash(newFilePath)}`;
   } catch (err) {

@@ -35,7 +35,7 @@
   const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
-    client.instanceId,
+    client,
     connector,
   );
   $: isModelingSupported = $isModelingSupportedForConnector.data;

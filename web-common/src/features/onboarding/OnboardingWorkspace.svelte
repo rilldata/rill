@@ -2,8 +2,8 @@
   import { goto } from "$app/navigation";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Button from "../../components/button/Button.svelte";
-  import { createRuntimeServiceUnpackExample } from "../../runtime-client";
   import { useRuntimeClient } from "../../runtime-client/v2";
+  import { createRuntimeServiceUnpackExampleMutation } from "../../runtime-client/v2/gen/runtime-service";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import ImportData from "@rilldata/web-common/components/icons/ImportData.svelte";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
@@ -24,7 +24,8 @@
   const runtimeClient = useRuntimeClient();
   $: ({ instanceId } = runtimeClient);
 
-  const unpackExampleProject = createRuntimeServiceUnpackExample();
+  const unpackExampleProject =
+    createRuntimeServiceUnpackExampleMutation(runtimeClient);
 
   async function unpackProject(example: (typeof EXAMPLES)[number]) {
     await behaviourEvent?.fireSplashEvent(
@@ -38,11 +39,8 @@
 
     try {
       await $unpackExampleProject.mutateAsync({
-        instanceId,
-        data: {
-          name: example.name,
-          force: true,
-        },
+        name: example.name,
+        force: true,
       });
 
       await waitUntil(() => fileArtifacts.hasFileArtifact(example.firstFile));

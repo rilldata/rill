@@ -17,14 +17,16 @@ import {
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "../../../metrics/service/MetricsTypes";
+import type {
+  RuntimeServiceGenerateMetricsViewFileBody,
+  V1GenerateMetricsViewFileResponse,
+  V1Resource,
+} from "../../../runtime-client";
 import {
-  type RuntimeServiceGenerateMetricsViewFileBody,
-  type V1GenerateMetricsViewFileResponse,
-  type V1Resource,
   runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
-} from "../../../runtime-client";
+} from "../../../runtime-client/v2/gen";
 import httpClient from "../../../runtime-client/http-client";
 import { createYamlModelFromTable } from "../../connectors/code-utils";
 import { getName } from "../../entity-management/name-utils";
@@ -109,14 +111,14 @@ export function useCreateMetricsViewFromTableUIAction(
 
       // Poll until file creation is complete or canceled
       const fileCreated = await pollForFileCreation(
-        instanceId,
+        client,
         newMetricsViewFilePath,
         abortController.signal,
       );
 
       // If the user canceled the AI request, submit another request with `useAi=false`
       if (!fileCreated) {
-        await runtimeServiceGenerateMetricsViewFile(instanceId, {
+        await runtimeServiceGenerateMetricsViewFile(client, {
           connector: connector,
           database: database,
           databaseSchema: databaseSchema,
@@ -178,7 +180,7 @@ export function useCreateMetricsViewFromTableUIAction(
  * This function is to be called from the `Generate dashboard with AI` CTA *inside* of the Metrics Editor.
  */
 export async function createDashboardFromTableInMetricsEditor(
-  instanceId: string,
+  client: RuntimeClient,
   modelName: string,
   filePath: string,
 ) {
@@ -204,7 +206,7 @@ export async function createDashboardFromTableInMetricsEditor(
   try {
     // First, request an AI-generated dashboard
     void runtimeServiceGenerateMetricsViewFileWithSignal(
-      instanceId,
+      client.instanceId,
       {
         table: tableName,
         path: filePath,
@@ -218,7 +220,7 @@ export async function createDashboardFromTableInMetricsEditor(
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       try {
-        const file = await runtimeServiceGetFile(instanceId, {
+        const file = await runtimeServiceGetFile(client, {
           path: filePath,
         });
         if (file.blob !== "") {
@@ -232,7 +234,7 @@ export async function createDashboardFromTableInMetricsEditor(
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (isAICancelled) {
-      await runtimeServiceGenerateMetricsViewFile(instanceId, {
+      await runtimeServiceGenerateMetricsViewFile(client, {
         table: tableName,
         path: filePath,
         useAi: false,
@@ -342,7 +344,7 @@ export async function createModelAndMetricsAndExplore(
     });
 
     const [, modelName] = await createYamlModelFromTable(
-      instanceId,
+      client,
       queryClient,
       connector,
       database,
@@ -382,22 +384,18 @@ export async function createModelAndMetricsAndExplore(
     });
 
     // Use the backend function with the model name instead of table name
-    void runtimeServiceGenerateMetricsViewFile(
-      instanceId,
-      {
-        model: modelName, // Use model name instead of table
-        path: metricsViewFilePath,
-        useAi: get(featureFlags.ai),
-      },
-      abortController.signal,
-    );
+    void runtimeServiceGenerateMetricsViewFile(client, {
+      model: modelName, // Use model name instead of table
+      path: metricsViewFilePath,
+      useAi: get(featureFlags.ai),
+    });
 
     // Poll every second until the AI generation is complete or canceled
     while (!isAICancelled) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       try {
-        await runtimeServiceGetFile(instanceId, {
+        await runtimeServiceGetFile(client, {
           path: metricsViewFilePath,
         });
 
@@ -410,7 +408,7 @@ export async function createModelAndMetricsAndExplore(
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (isAICancelled) {
-      await runtimeServiceGenerateMetricsViewFile(instanceId, {
+      await runtimeServiceGenerateMetricsViewFile(client, {
         model: modelName,
         path: metricsViewFilePath,
         useAi: false,
@@ -477,7 +475,7 @@ export async function createModelAndMetricsAndExplore(
  * Returns the metrics view resource after creation.
  */
 async function createMetricsViewFromTable(
-  instanceId: string,
+  client: RuntimeClient,
   connector: string,
   database: string,
   databaseSchema: string,
@@ -494,7 +492,7 @@ async function createMetricsViewFromTable(
 
   // Request an AI-generated metrics view
   void runtimeServiceGenerateMetricsViewFileWithSignal(
-    instanceId,
+    client.instanceId,
     {
       connector: connector,
       database: database,
@@ -508,14 +506,14 @@ async function createMetricsViewFromTable(
 
   // Poll until file creation is complete or canceled
   const fileCreated = await pollForFileCreation(
-    instanceId,
+    client,
     newMetricsViewFilePath,
     abortController.signal,
   );
 
   // If the user canceled the AI request, submit another request with `useAi=false`
   if (!fileCreated) {
-    await runtimeServiceGenerateMetricsViewFile(instanceId, {
+    await runtimeServiceGenerateMetricsViewFile(client, {
       connector: connector,
       database: database,
       databaseSchema: databaseSchema,
@@ -576,7 +574,7 @@ export async function createExploreWithoutNavigation(
  * Returns the file path of the created canvas, or null if creation failed.
  */
 export async function createCanvasDashboardWithoutNavigation(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
 ): Promise<string | null> {
   const isAiEnabled = get(featureFlags.ai);
@@ -591,19 +589,15 @@ export async function createCanvasDashboardWithoutNavigation(
 
   try {
     // Request AI-generated canvas dashboard
-    void runtimeServiceGenerateCanvasFile(
-      instanceId,
-      {
-        metricsViewName: metricsViewName,
-        path: canvasFilePath,
-        useAi: isAiEnabled,
-      },
-      abortController.signal,
-    );
+    void runtimeServiceGenerateCanvasFile(client, {
+      metricsViewName: metricsViewName,
+      path: canvasFilePath,
+      useAi: isAiEnabled,
+    });
 
     // Poll until file creation is complete or canceled
     const fileCreated = await pollForFileCreation(
-      instanceId,
+      client,
       canvasFilePath,
       abortController.signal,
       1000,
@@ -611,7 +605,7 @@ export async function createCanvasDashboardWithoutNavigation(
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (!fileCreated) {
-      await runtimeServiceGenerateCanvasFile(instanceId, {
+      await runtimeServiceGenerateCanvasFile(client, {
         metricsViewName: metricsViewName,
         path: canvasFilePath,
         useAi: false,
@@ -665,7 +659,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
     try {
       // Step 1: Create metrics view
       const resource = await createMetricsViewFromTable(
-        instanceId,
+        client,
         connector,
         database,
         databaseSchema,
@@ -692,7 +686,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
       });
 
       const canvasFilePath = await createCanvasDashboardWithoutNavigation(
-        instanceId,
+        client,
         metricsViewName,
       );
 
@@ -762,7 +756,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
     try {
       // Step 1: Create metrics view
       const resource = await createMetricsViewFromTable(
-        instanceId,
+        client,
         connector,
         database,
         databaseSchema,
@@ -809,7 +803,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       });
 
       canvasFilePath = await createCanvasDashboardWithoutNavigation(
-        instanceId,
+        client,
         metricsViewName,
       );
 
@@ -864,7 +858,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
  * Creates a Canvas dashboard from a metrics view using AI.
  */
 export async function createCanvasDashboardFromMetricsView(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
 ) {
   const isAiEnabled = get(featureFlags.ai);
@@ -891,26 +885,22 @@ export async function createCanvasDashboardFromMetricsView(
 
   try {
     // Request AI-generated canvas dashboard
-    void runtimeServiceGenerateCanvasFile(
-      instanceId,
-      {
-        metricsViewName: metricsViewName,
-        path: canvasFilePath,
-        useAi: isAiEnabled,
-      },
-      abortController.signal,
-    );
+    void runtimeServiceGenerateCanvasFile(client, {
+      metricsViewName: metricsViewName,
+      path: canvasFilePath,
+      useAi: isAiEnabled,
+    });
 
     // Poll until file creation is complete or canceled
     const fileCreated = await pollForFileCreation(
-      instanceId,
+      client,
       canvasFilePath,
       abortController.signal,
     );
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (!fileCreated) {
-      await runtimeServiceGenerateCanvasFile(instanceId, {
+      await runtimeServiceGenerateCanvasFile(client, {
         metricsViewName: metricsViewName,
         path: canvasFilePath,
         useAi: false,

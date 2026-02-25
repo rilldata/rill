@@ -20,11 +20,9 @@
   $: [, fileName] = splitFolderAndFileName(filePath);
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
-  $: ({ instanceId } = runtimeClient);
-
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
-      instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,

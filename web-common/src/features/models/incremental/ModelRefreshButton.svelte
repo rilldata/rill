@@ -7,15 +7,16 @@
   import {
     V1ReconcileStatus,
     type V1Resource,
-    createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
+  import { createRuntimeServiceCreateTriggerMutation } from "../../../runtime-client/v2/gen/runtime-service";
 
   export let resource: V1Resource | undefined;
   export let hasUnsavedChanges: boolean;
 
   const runtimeClient = useRuntimeClient();
-  const triggerMutation = createRuntimeServiceCreateTrigger();
+  const triggerMutation =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
 
   $: ({ instanceId } = runtimeClient);
   $: isIncrementalModel = resource?.model?.spec?.incremental;
@@ -24,10 +25,7 @@
 
   function refreshModel(full: boolean) {
     void $triggerMutation.mutateAsync({
-      instanceId,
-      data: {
-        models: [{ model: resource?.meta?.name?.name, full: full }],
-      },
+      models: [{ model: resource?.meta?.name?.name, full: full }],
     });
   }
 </script>

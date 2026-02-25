@@ -10,12 +10,12 @@
   } from "@tanstack/svelte-table";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { writable } from "svelte/store";
+  import { createInfiniteQuery } from "@tanstack/svelte-query";
+  import type { V1ModelPartition, V1Resource } from "../../../runtime-client";
   import {
-    type V1ModelPartition,
-    type V1Resource,
-    createRuntimeServiceGetModelPartitionsInfinite,
-  } from "../../../runtime-client";
-
+    runtimeServiceGetModelPartitions,
+    getRuntimeServiceGetModelPartitionsQueryKey,
+  } from "../../../runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
@@ -28,7 +28,6 @@
   const runtimeClient = useRuntimeClient();
 
   $: modelName = resource?.meta?.name?.name as string;
-  $: ({ instanceId } = runtimeClient);
 
   // ==========================
   // Infinite Query
@@ -37,25 +36,27 @@
     ...(whereErrored ? { errored: true } : {}),
     ...(wherePending ? { pending: true } : {}),
   };
-  $: query = createRuntimeServiceGetModelPartitionsInfinite(
-    instanceId,
-    modelName,
-    {
-      ...baseParams,
+  $: query = createInfiniteQuery({
+    queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
+      runtimeClient.instanceId,
+      { model: modelName, ...baseParams },
+    ),
+    queryFn: ({ signal, pageParam }) =>
+      runtimeServiceGetModelPartitions(
+        runtimeClient,
+        { model: modelName, ...baseParams, pageToken: pageParam || undefined },
+        { signal },
+      ),
+    getNextPageParam: (lastPage) => {
+      if (lastPage.nextPageToken !== "") {
+        return lastPage.nextPageToken;
+      }
+      return undefined;
     },
-    {
-      query: {
-        getNextPageParam: (lastPage) => {
-          if (lastPage.nextPageToken !== "") {
-            return lastPage.nextPageToken;
-          }
-          return undefined;
-        },
-        enabled: !!modelName,
-        refetchOnMount: true,
-      },
-    },
-  );
+    enabled: !!(runtimeClient.instanceId && modelName),
+    refetchOnMount: true,
+    initialPageParam: "",
+  });
   $: ({ error } = $query);
 
   // ==========================
@@ -251,7 +252,7 @@
           <tr>
             <td class="text-center h-16" colspan={columns.length}>
               <span class="text-red-500 font-semibold"
-                >Error: {error.response.data.message}</span
+                >Error: {error.message}</span
               >
             </td>
           </tr>

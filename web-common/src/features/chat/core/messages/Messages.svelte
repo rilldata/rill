@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
   import { afterUpdate } from "svelte";
-  import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client";
+  import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client/v2/gen";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
@@ -28,7 +28,8 @@
 
   // Prefetch tools metadata for tool call display names
   const listToolsQueryOptionsStore = getRuntimeServiceListToolsQueryOptions(
-    runtimeClient.instanceId,
+    runtimeClient,
+    {},
   );
   const listToolsQuery = createQuery(listToolsQueryOptionsStore);
   $: tools = $listToolsQuery.data?.tools;

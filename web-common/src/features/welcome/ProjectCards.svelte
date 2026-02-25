@@ -10,11 +10,11 @@
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-  import {
-    createRuntimeServiceUnpackEmpty,
-    createRuntimeServiceUnpackExample,
-  } from "../../runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import {
+    createRuntimeServiceUnpackEmptyMutation,
+    createRuntimeServiceUnpackExampleMutation,
+  } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 
   const runtimeClient = useRuntimeClient();
   import { EMPTY_PROJECT_TITLE } from "./constants";
@@ -24,8 +24,10 @@
     connectorLabelMapping,
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
 
-  const unpackExampleProject = createRuntimeServiceUnpackExample();
-  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+  const unpackExampleProject =
+    createRuntimeServiceUnpackExampleMutation(runtimeClient);
+  const unpackEmptyProject =
+    createRuntimeServiceUnpackEmptyMutation(runtimeClient);
 
   let selectedProjectName: string | null = null;
 
@@ -51,11 +53,8 @@
 
     try {
       await mutationFunction({
-        instanceId,
-        data: {
-          [key]: selectedProjectName,
-          force: true,
-        },
+        [key]: selectedProjectName,
+        force: true,
       });
 
       setTimeout(() => {

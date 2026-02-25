@@ -24,11 +24,12 @@
   } from "@rilldata/web-common/lib/time/types.ts";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
+  import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
 
-  export let instanceId: string;
+  export let client: RuntimeClient;
   export let filters: Filters;
   export let timeControls: TimeControls;
   export let readOnly = false;
@@ -206,7 +207,7 @@
 
     const { interval, grain } = await deriveInterval(
       name,
-      instanceId,
+      client,
       metricsViewName,
       $selectedTimezone,
       timeDimension,

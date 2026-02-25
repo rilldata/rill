@@ -27,12 +27,15 @@
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "";
   $: metricsViewName = $exploreQuery.data?.metricsView?.meta?.name?.name ?? "";
 
-  $: explorePolicyCheck = useDashboardPolicyCheck(instanceId, exploreFilePath);
+  $: explorePolicyCheck = useDashboardPolicyCheck(
+    runtimeClient,
+    exploreFilePath,
+  );
   $: metricsPolicyCheck = useDashboardPolicyCheck(
-    instanceId,
+    runtimeClient,
     metricsViewFilePath,
   );
-  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(instanceId);
+  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(runtimeClient);
 
   const { readOnly, dashboardChat } = featureFlags;
 </script>

@@ -1,9 +1,8 @@
 // TODO: move this file once other parts are merged
 
-import {
-  createQueryServiceExportReport,
-  type RpcStatus,
-} from "@rilldata/web-common/runtime-client";
+import { createQueryServiceExportReportMutation } from "@rilldata/web-common/runtime-client/v2/gen";
+import type { RpcStatus } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   createMutation,
   type CreateMutationOptions,
@@ -12,7 +11,6 @@ import type { MutationFunction } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
 export type DownloadReportRequest = {
-  instanceId: string;
   reportId: string;
   executionTime: string;
   originBaseUrl: string;
@@ -22,31 +20,32 @@ export type DownloadReportRequest = {
 export function createDownloadReportMutation<
   TError = { response: { data: RpcStatus } },
   TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<Promise<void>>,
-    TError,
-    { data: DownloadReportRequest },
-    TContext
-  >;
-}) {
+>(
+  client: RuntimeClient,
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<Promise<void>>,
+      TError,
+      { data: DownloadReportRequest },
+      TContext
+    >;
+  },
+) {
   const { mutation: mutationOptions } = options ?? {};
-  const exporter = createQueryServiceExportReport();
+  const exporter = createQueryServiceExportReportMutation(client);
 
   const mutationFn: MutationFunction<
     Awaited<Promise<void>>,
     { data: DownloadReportRequest }
   > = async (props) => {
     const { data } = props ?? {};
-    if (!data.instanceId) throw new Error("Missing instanceId");
 
+    // executionTime is an ISO string; the v2/gen layer uses fromJson internally,
+    // which handles string→Timestamp conversion at runtime
     const exportResp = await get(exporter).mutateAsync({
-      instanceId: data.instanceId,
       report: data.reportId,
-      data: {
-        executionTime: data.executionTime,
-        originBaseUrl: data.originBaseUrl,
-      },
+      executionTime: data.executionTime as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      originBaseUrl: data.originBaseUrl,
     });
     const downloadUrl = `${data.host}${exportResp.downloadUrlPath}`;
     window.open(downloadUrl, "_self");

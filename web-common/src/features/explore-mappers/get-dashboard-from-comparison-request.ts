@@ -9,7 +9,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export async function getDashboardFromComparisonRequest({
-  instanceId,
+  client,
   req,
   dashboard,
   metricsView,
@@ -20,7 +20,7 @@ export async function getDashboardFromComparisonRequest({
   if (req.where) dashboard.whereFilter = req.where;
 
   await fillTimeRange(
-    instanceId,
+    client,
     explore,
     dashboard,
     req.timeRange,

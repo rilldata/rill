@@ -48,9 +48,9 @@
   $: table = resource?.metricsView?.state?.validSpec?.table ?? "";
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(runtimeClient.instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
-    runtimeClient.instanceId,
+    runtimeClient,
     connector,
   );
   $: isModelingSupported = connector
@@ -76,7 +76,7 @@
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      runtimeClient.instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,

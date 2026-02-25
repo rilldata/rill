@@ -126,12 +126,7 @@
 
     <div class="flex flex-col gap-y-3">
       <InputLabel label="Filters" id="filters" capitalize={false} />
-      <FiltersForm
-        instanceId={runtimeClient.instanceId}
-        {filters}
-        {timeControls}
-        side="top"
-      />
+      <FiltersForm client={runtimeClient} {filters} {timeControls} side="top" />
     </div>
 
     <RowsAndColumnsForm

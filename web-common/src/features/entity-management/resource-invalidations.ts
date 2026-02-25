@@ -1,7 +1,5 @@
-import {
-  getRuntimeServiceGetResourceQueryKey,
-  type V1Resource,
-} from "@rilldata/web-common/runtime-client";
+import { type V1Resource } from "@rilldata/web-common/runtime-client";
+import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { QueryClient } from "@tanstack/svelte-query";
 
 export function refreshResource(
@@ -11,8 +9,10 @@ export function refreshResource(
 ) {
   return queryClient.setQueryData(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.name": res.meta?.name?.name,
-      "name.kind": res.meta?.name?.kind,
+      name: {
+        name: res.meta?.name?.name,
+        kind: res.meta?.name?.kind,
+      },
     }),
     {
       resource: res,

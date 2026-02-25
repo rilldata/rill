@@ -69,7 +69,7 @@
 
   async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
-      runtimeClient.instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,

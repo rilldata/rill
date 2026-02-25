@@ -3,11 +3,11 @@ import {
   fetchResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  getRuntimeServiceGetResourceQueryKey,
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, writable } from "svelte/store";
 import { FileArtifact } from "./file-artifact";
@@ -56,8 +56,10 @@ export class FileArtifacts {
           // set query data for GetResource to avoid refetching data we already have
           queryClient.setQueryData(
             getRuntimeServiceGetResourceQueryKey(client.instanceId, {
-              "name.name": resource.meta?.name?.name,
-              "name.kind": resource.meta?.name?.kind,
+              name: {
+                name: resource.meta?.name?.name,
+                kind: resource.meta?.name?.kind,
+              },
             }),
             {
               resource,

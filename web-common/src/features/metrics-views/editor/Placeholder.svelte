@@ -3,10 +3,8 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModels } from "@rilldata/web-common/features/models/selectors";
-  import {
-    type V1Resource,
-    runtimeServicePutFile,
-  } from "@rilldata/web-common/runtime-client";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { createDashboardFromTableInMetricsEditor } from "../ai-generation/generateMetricsView";
@@ -17,10 +15,8 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
   $: models = useModels(runtimeClient);
 
@@ -29,7 +25,7 @@
 
   async function onAutogenerateConfigFromModel(modelRes: V1Resource) {
     await createDashboardFromTableInMetricsEditor(
-      instanceId,
+      runtimeClient,
       modelRes?.model?.state?.resultTable ?? "",
       filePath,
     );
@@ -39,7 +35,7 @@
   async function onCreateSkeletonMetricsConfig() {
     const yaml = initBlankDashboardYAML(metricsName);
 
-    await runtimeServicePutFile(instanceId, {
+    await runtimeServicePutFile(runtimeClient, {
       path: filePath,
       blob: yaml,
       create: true,

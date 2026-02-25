@@ -11,14 +11,16 @@ import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1ReconcileStatus,
-  getRuntimeServiceGetFileQueryKey,
-  runtimeServiceGetFile,
-  runtimeServicePutFile,
   type V1ParseError,
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import {
+  getRuntimeServiceGetFileQueryKey,
+  runtimeServiceGetFile,
+  runtimeServicePutFile,
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
 import {
   derived,
@@ -131,7 +133,8 @@ export class FileArtifact {
 
     const queryFn: QueryFunction<
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
-    > = ({ signal }) => runtimeServiceGetFile(instanceId, queryParams, signal);
+    > = ({ signal }) =>
+      runtimeServiceGetFile(this.client, queryParams, { signal });
 
     let fetchedContent: string | undefined = undefined;
 
@@ -239,7 +242,7 @@ export class FileArtifact {
     try {
       const fileSavePromise = this.saveState.initiateSave();
 
-      await runtimeServicePutFile(instanceId, {
+      await runtimeServicePutFile(this.client, {
         path: this.path,
         blob,
       });

@@ -235,7 +235,7 @@
 
     const { interval, grain } = await deriveInterval(
       timeRangeName,
-      instanceId,
+      client,
       metricsViewName,
       activeTimeZone,
       column,
@@ -298,7 +298,7 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-      instanceId,
+      client,
       metricsViewName,
       tz,
       selectedTimeDimension,

@@ -6,10 +6,8 @@
     SingletonProjectParserName,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import {
-    createRuntimeServiceGetResource,
-    type V1Resource,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetResource } from "@rilldata/web-common/runtime-client/v2/gen";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useResources } from "../selectors";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
@@ -22,7 +20,7 @@
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(
-    instanceId,
+    runtimeClient,
     {
       "name.kind": ResourceKind.ProjectParser,
       "name.name": SingletonProjectParserName,

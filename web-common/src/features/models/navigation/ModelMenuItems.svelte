@@ -60,7 +60,7 @@
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createSqlModelFromTable(
-        instanceId,
+        runtimeClient,
         queryClient,
         connector as string,
         "",

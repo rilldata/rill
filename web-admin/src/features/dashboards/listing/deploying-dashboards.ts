@@ -1,9 +1,10 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client/v2/gen";
 import {
-  createRuntimeServiceListResources,
   V1ReconcileStatus,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import {
   isResourceReconciling,
@@ -11,7 +12,7 @@ import {
 } from "@rilldata/web-admin/lib/refetch-interval-store.ts";
 
 export function useDeployingDashboards(
-  instanceId: string,
+  client: RuntimeClient,
   orgName: string,
   projName: string,
   deployingDashboard: string | null,
@@ -19,61 +20,65 @@ export function useDeployingDashboards(
   redirectPath: string | null;
   dashboardsErrored: boolean;
 }> {
-  return createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        const resources = data.resources ?? [];
-        const dashboards = resources.filter(isDashboard);
+  return createRuntimeServiceListResources(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => {
+          const resources = data.resources ?? [];
+          const dashboards = resources.filter(isDashboard);
 
-        const reconciling = getDashboardsReconciling(
-          dashboards,
-          deployingDashboard,
-        );
-        if (reconciling) {
+          const reconciling = getDashboardsReconciling(
+            dashboards,
+            deployingDashboard,
+          );
+          if (reconciling) {
+            return {
+              redirectPath: null,
+              dashboardsErrored: false,
+            };
+          }
+
+          const dashboardsErrored = getDashboardsErrored(
+            dashboards,
+            deployingDashboard,
+          );
+          if (dashboardsErrored) {
+            return {
+              // Redirect to status page if dashboards errored
+              redirectPath: `/${orgName}/${projName}/-/status`,
+              dashboardsErrored,
+            };
+          }
+
+          const dashboard = dashboards.find(
+            (res) => res.meta?.name?.name === deployingDashboard,
+          );
+
+          // Redirect to home page if no specific dashboard was deployed
+          if (!deployingDashboard || !dashboard?.meta?.name) {
+            return {
+              redirectPath: `/${orgName}/${projName}`,
+              dashboardsErrored: false,
+            };
+          }
+
+          const resourceRoute =
+            dashboard.meta.name.kind === ResourceKind.Explore
+              ? "explore"
+              : "canvas";
+          const redirectPath = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
           return {
-            redirectPath: null,
+            redirectPath,
             dashboardsErrored: false,
           };
-        }
-
-        const dashboardsErrored = getDashboardsErrored(
-          dashboards,
-          deployingDashboard,
-        );
-        if (dashboardsErrored) {
-          return {
-            // Redirect to status page if dashboards errored
-            redirectPath: `/${orgName}/${projName}/-/status`,
-            dashboardsErrored,
-          };
-        }
-
-        const dashboard = dashboards.find(
-          (res) => res.meta?.name?.name === deployingDashboard,
-        );
-
-        // Redirect to home page if no specific dashboard was deployed
-        if (!deployingDashboard || !dashboard?.meta?.name) {
-          return {
-            redirectPath: `/${orgName}/${projName}`,
-            dashboardsErrored: false,
-          };
-        }
-
-        const resourceRoute =
-          dashboard.meta.name.kind === ResourceKind.Explore
-            ? "explore"
-            : "canvas";
-        const redirectPath = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
-        return {
-          redirectPath,
-          dashboardsErrored: false,
-        };
+        },
+        refetchInterval: smartRefetchIntervalFunc,
+        enabled: Boolean(client.instanceId && orgName && projName),
       },
-      refetchInterval: smartRefetchIntervalFunc,
-      enabled: Boolean(instanceId && orgName && projName),
     },
-  });
+  );
 }
 
 function getDashboardsReconciling(

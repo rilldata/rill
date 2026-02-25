@@ -4,8 +4,15 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { Throttler } from "@rilldata/web-common/lib/throttler";
 import {
-  getConnectorServiceOLAPListTablesQueryKey,
-  getQueryServiceResolveCanvasQueryKey,
+  V1FileEvent,
+  type V1Resource,
+  V1ResourceEvent,
+  type V1WatchFilesResponse,
+  type V1WatchResourcesResponse,
+} from "@rilldata/web-common/runtime-client";
+import { getConnectorServiceOLAPListTablesQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/connector-service";
+import { getQueryServiceResolveCanvasQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import {
   getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   getRuntimeServiceGetFileQueryKey,
@@ -14,12 +21,7 @@ import {
   getRuntimeServiceIssueDevJWTQueryKey,
   getRuntimeServiceListFilesQueryKey,
   getRuntimeServiceListResourcesQueryKey,
-  V1FileEvent,
-  type V1Resource,
-  V1ResourceEvent,
-  type V1WatchFilesResponse,
-  type V1WatchResourcesResponse,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import {
   invalidateComponentData,
   invalidateMetricsViewData,
@@ -176,7 +178,7 @@ export class FileAndResourceWatcher {
           if (res.path === "/rill.yaml") {
             // If it's a rill.yaml file, invalidate the dev JWT queries
             void queryClient.invalidateQueries({
-              queryKey: getRuntimeServiceIssueDevJWTQueryKey({}),
+              queryKey: getRuntimeServiceIssueDevJWTQueryKey(this.instanceId),
             });
 
             await invalidate("init");
@@ -231,16 +233,14 @@ export class FileAndResourceWatcher {
       resource: V1Resource | undefined;
     }>(
       getRuntimeServiceGetResourceQueryKey(this.instanceId, {
-        "name.name": res.name.name,
-        "name.kind": res.name.kind,
+        name: { name: res.name.name, kind: res.name.kind },
       }),
     )?.resource;
 
     // Set the updated resource in the query cache
     queryClient.setQueryData(
       getRuntimeServiceGetResourceQueryKey(this.instanceId, {
-        "name.name": res.name.name,
-        "name.kind": res.name.kind,
+        name: { name: res.name.name, kind: res.name.kind },
       }),
       {
         resource: res?.resource,
@@ -305,10 +305,10 @@ export class FileAndResourceWatcher {
 
             // Invalidate the connector's list of tables
             void queryClient.invalidateQueries({
-              queryKey: getConnectorServiceOLAPListTablesQueryKey({
-                instanceId: this.instanceId,
-                connector: res.name.name,
-              }),
+              queryKey: getConnectorServiceOLAPListTablesQueryKey(
+                this.instanceId,
+                { connector: res.name.name },
+              ),
             });
 
             // Done
@@ -339,10 +339,10 @@ export class FileAndResourceWatcher {
               );
               for (const connector of connectorsToInvalidate) {
                 void queryClient.invalidateQueries({
-                  queryKey: getConnectorServiceOLAPListTablesQueryKey({
-                    instanceId: this.instanceId,
-                    connector: connector,
-                  }),
+                  queryKey: getConnectorServiceOLAPListTablesQueryKey(
+                    this.instanceId,
+                    { connector },
+                  ),
                 });
               }
             }
@@ -385,7 +385,7 @@ export class FileAndResourceWatcher {
               void queryClient.invalidateQueries({
                 queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
                   this.instanceId,
-                  res.name.name,
+                  { model: res.name.name },
                 ),
               });
             }
@@ -427,11 +427,9 @@ export class FileAndResourceWatcher {
 
           case ResourceKind.Canvas: {
             void queryClient.refetchQueries({
-              queryKey: getQueryServiceResolveCanvasQueryKey(
-                this.instanceId,
-                res.name.name,
-                {},
-              ),
+              queryKey: getQueryServiceResolveCanvasQueryKey(this.instanceId, {
+                canvas: res.name.name,
+              }),
             });
             return;
           }
@@ -494,10 +492,10 @@ export class FileAndResourceWatcher {
 
             // Invalidate the connector's list of tables
             void queryClient.invalidateQueries({
-              queryKey: getConnectorServiceOLAPListTablesQueryKey({
-                instanceId: this.instanceId,
-                connector: connectorName,
-              }),
+              queryKey: getConnectorServiceOLAPListTablesQueryKey(
+                this.instanceId,
+                { connector: connectorName },
+              ),
             });
 
             // Done

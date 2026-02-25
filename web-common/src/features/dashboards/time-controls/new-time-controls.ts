@@ -15,6 +15,7 @@ import type {
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   DateTime,
   type DateTimeUnit,
@@ -165,16 +166,16 @@ class MetricsTimeControls {
   private _subrange = new IntervalStore();
   private _comparisonRange = new IntervalStore();
   private _showComparison: Writable<boolean> = writable(false);
-  private _instanceId: string;
+  private _client: RuntimeClient;
   private _metricsViewName: string;
 
   constructor(
     maxStart: DateTime,
     maxEnd: DateTime,
-    instanceId: string,
+    client: RuntimeClient,
     metricsViewName: string,
   ) {
-    this._instanceId = instanceId;
+    this._client = client;
     this._metricsViewName = metricsViewName;
     const maxInterval = Interval.fromDateTimes(
       maxStart.setZone("UTC"),
@@ -195,7 +196,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         iso,
-        this._instanceId,
+        this._client,
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -211,7 +212,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         name,
-        this._instanceId,
+        this._client,
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -293,17 +294,17 @@ class TimeControls {
 
   get(
     metricsViewName: string,
-    instanceId?: string,
+    client?: RuntimeClient,
     maxStart?: DateTime,
     maxEnd?: DateTime,
   ) {
     let store = this._timeControls.get(metricsViewName);
 
-    if (!store && maxStart && maxEnd && instanceId) {
+    if (!store && maxStart && maxEnd && client) {
       store = new MetricsTimeControls(
         maxStart,
         maxEnd,
-        instanceId,
+        client,
         metricsViewName,
       );
       this._timeControls.set(metricsViewName, store);
@@ -347,7 +348,7 @@ import { getDefaultRangeBuckets } from "@rilldata/web-common/lib/time/defaults";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString | string,
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   activeTimeZone: string,
   timeDimension?: string,
@@ -372,7 +373,7 @@ export async function deriveInterval(
     const cacheBust = name.includes("now");
 
     const response = await fetchTimeRanges({
-      instanceId,
+      client,
       metricsViewName,
       rillTimes: [name],
       timeZone: activeTimeZone,

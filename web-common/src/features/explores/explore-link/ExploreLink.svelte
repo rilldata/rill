@@ -35,7 +35,7 @@
 
     try {
       const exploreURL = await generateExploreLink(
-        runtimeClient.instanceId,
+        runtimeClient,
         exploreState,
         exploreName,
         organization,

@@ -44,7 +44,7 @@
 
   $: exploresQuery = useValidExplores(runtimeClient);
   $: canvasQuery = useValidCanvases(runtimeClient);
-  $: projectTitleQuery = useProjectTitle(runtimeClient.instanceId);
+  $: projectTitleQuery = useProjectTitle(runtimeClient);
 
   $: projectTitle = $projectTitleQuery?.data ?? "Untitled Rill Project";
 

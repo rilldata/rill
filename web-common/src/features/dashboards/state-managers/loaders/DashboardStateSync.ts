@@ -152,7 +152,7 @@ export class DashboardStateSync {
         initExploreState.selectedTimeRange,
         // initExploreState.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
-        this.instanceId,
+        this.client,
         exploreSpec,
         [
           initExploreState.selectedTimeRange,
@@ -248,7 +248,7 @@ export class DashboardStateSync {
         partialExplore.selectedTimeRange,
         // partialExplore.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
-        this.instanceId,
+        this.client,
         exploreSpec,
         [
           partialExplore.selectedTimeRange,

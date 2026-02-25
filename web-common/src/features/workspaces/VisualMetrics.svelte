@@ -111,10 +111,7 @@
   };
 
   $: isModelingSupportedForConnector = olapConnector
-    ? useIsModelingSupportedForConnector(
-        runtimeClient.instanceId,
-        olapConnector,
-      )
+    ? useIsModelingSupportedForConnector(runtimeClient, olapConnector)
     : null;
   $: isModelingSupported = $isModelingSupportedForConnector?.data;
 

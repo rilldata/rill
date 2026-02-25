@@ -11,12 +11,10 @@
   export let data: PageData;
   const { organization, project, deployingDashboard } = data;
 
-  $: ({ instanceId } = runtimeClient);
-
   // Make this reactive so that it fires once params are ready.
   // During a first deploy, runtime might not be available when deployment is still being created in the backend.
   $: deployingDashboardResp = useDeployingDashboards(
-    instanceId,
+    runtimeClient,
     organization.name,
     project.name,
     deployingDashboard,

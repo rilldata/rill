@@ -3,12 +3,13 @@ import { createLinkError } from "@rilldata/web-common/features/explore-mappers/e
 import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mappers/types";
 import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 /**
  * Generates the explore page URL with proper search parameters
  */
 export async function generateExploreLink(
-  instanceId: string,
+  client: RuntimeClient,
   exploreState: Partial<ExploreState>,
   exploreName: string,
   organization?: string | undefined,
@@ -20,7 +21,7 @@ export async function generateExploreLink(
 
     // Generate search parameters from explore state
     const searchParams = await getExplorePageUrlSearchParams(
-      instanceId,
+      client,
       exploreName,
       exploreState,
     );

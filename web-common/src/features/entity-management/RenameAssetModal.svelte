@@ -28,8 +28,6 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
   let error: string;
 
   const [folderName, fileName] = splitFolderAndFileName(filePath);
@@ -89,7 +87,7 @@
       }
       try {
         const newPath = (folderName ? `${folderName}/` : "") + values.newName;
-        await renameFileArtifact(instanceId, filePath, newPath);
+        await renameFileArtifact(runtimeClient, filePath, newPath);
         if (isDir) {
           if (
             $page.url.pathname.startsWith(
@@ -116,8 +114,11 @@
     },
   });
 
-  $: existingDirectories = useDirectoryNamesInDirectory(instanceId, folderName);
-  $: fileNamesInDirectory = useFileNamesInDirectory(instanceId, folderName);
+  $: existingDirectories = useDirectoryNamesInDirectory(
+    runtimeClient,
+    folderName,
+  );
+  $: fileNamesInDirectory = useFileNamesInDirectory(runtimeClient, folderName);
 </script>
 
 <Dialog.Root
