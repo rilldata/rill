@@ -1,6 +1,7 @@
 import { beforeNavigate } from "$app/navigation";
 import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
@@ -16,6 +17,7 @@ import { get } from "svelte/store";
 export function resetSelectedMockUserAfterNavigate(
   queryClient: QueryClient,
   instanceId: string,
+  runtimeClient?: RuntimeClient,
 ) {
   beforeNavigate(({ to, from }) => {
     if (!to?.params || !from?.params) return;
@@ -24,7 +26,9 @@ export function resetSelectedMockUserAfterNavigate(
       from.params.name !== to.params.name &&
       get(selectedMockUserStore) !== null
     ) {
-      updateDevJWT(queryClient, instanceId, null).catch(console.error);
+      updateDevJWT(queryClient, instanceId, null, runtimeClient).catch(
+        console.error,
+      );
     }
   });
 }

@@ -1,8 +1,6 @@
 export const ssr = false;
 
 import { redirect } from "@sveltejs/kit";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import {
   getRuntimeServiceListFilesQueryKey,
@@ -10,6 +8,7 @@ import {
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client/index.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
+import { LOCAL_INSTANCE_ID } from "../lib/local-runtime-config";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
@@ -17,7 +16,7 @@ Settings.defaultLocale = "en";
 export async function load({ url, depends, untrack }) {
   depends("init");
 
-  const instanceId = get(runtime).instanceId;
+  const instanceId = LOCAL_INSTANCE_ID;
 
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
