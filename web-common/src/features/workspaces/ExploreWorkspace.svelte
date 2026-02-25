@@ -15,7 +15,7 @@
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
@@ -39,7 +39,7 @@
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
-  $: query = createRuntimeServiceGetExplore(runtimeClient.instanceId, {
+  $: query = createRuntimeServiceGetExplore(runtimeClient, {
     name: exploreName,
   });
 

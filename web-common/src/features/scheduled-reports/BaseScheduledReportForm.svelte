@@ -51,7 +51,7 @@
     (o) => o.value === $data["webOpenMode"],
   );
 
-  $: hasSlackNotifier = getHasSlackConnection(runtimeClient.instanceId);
+  $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
 </script>
 
 <form

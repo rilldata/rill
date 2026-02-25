@@ -2,15 +2,17 @@ import { getToolConfig } from "@rilldata/web-common/features/chat/core/messages/
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceGetConversationQueryKey,
-  getRuntimeServiceGetConversationQueryOptions,
-  runtimeServiceForkConversation,
   type RpcStatus,
   type RuntimeServiceCompleteBody,
   type V1CompleteStreamingResponse,
   type V1GetConversationResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
+import {
+  getRuntimeServiceGetConversationQueryKey,
+  getRuntimeServiceGetConversationQueryOptions,
+  runtimeServiceForkConversation,
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   SSEFetchClient,
@@ -104,8 +106,8 @@ export class Conversation {
       this.conversationIdStore,
       ($conversationId) =>
         getRuntimeServiceGetConversationQueryOptions(
-          this.instanceId,
-          $conversationId,
+          this.client,
+          { conversationId: $conversationId },
           {
             query: {
               enabled: $conversationId !== NEW_CONVERSATION_ID,
@@ -469,11 +471,9 @@ export class Conversation {
   private async forkConversation(): Promise<string> {
     const originalConversationId = this.conversationId;
 
-    const response = await runtimeServiceForkConversation(
-      this.instanceId,
-      this.conversationId,
-      {},
-    );
+    const response = await runtimeServiceForkConversation(this.client, {
+      conversationId: this.conversationId,
+    });
 
     if (!response.conversationId) {
       throw new Error("Fork response missing conversation ID");
@@ -485,11 +485,11 @@ export class Conversation {
     // This ensures the UI shows the conversation history immediately
     const originalCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      originalConversationId,
+      { conversationId: originalConversationId },
     );
     const forkedCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      forkedConversationId,
+      { conversationId: forkedConversationId },
     );
     const originalData =
       queryClient.getQueryData<V1GetConversationResponse>(originalCacheKey);
@@ -518,12 +518,12 @@ export class Conversation {
   private transitionToRealConversation(realConversationId: string): void {
     const oldCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      this.conversationId, // This is still "new"
+      { conversationId: this.conversationId }, // This is still "new"
     );
 
     const newCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      realConversationId,
+      { conversationId: realConversationId },
     );
 
     // Get existing data from "new" conversation cache
@@ -576,10 +576,9 @@ export class Conversation {
    * Add message to TanStack Query cache
    */
   private addMessageToCache(message: V1Message): void {
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
+    const cacheKey = getRuntimeServiceGetConversationQueryKey(this.instanceId, {
+      conversationId: this.conversationId,
+    });
     queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
       if (!old?.conversation) {
         // Create initial conversation structure if it doesn't exist
@@ -611,10 +610,9 @@ export class Conversation {
    * Remove message from TanStack Query cache (for rollback)
    */
   private removeMessageFromCache(messageId: string): void {
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
+    const cacheKey = getRuntimeServiceGetConversationQueryKey(this.instanceId, {
+      conversationId: this.conversationId,
+    });
 
     queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
       if (!old?.conversation) return old;

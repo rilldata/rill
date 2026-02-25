@@ -6,7 +6,8 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import { createRuntimeServiceShareConversation } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceShareConversationMutation } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { isHTTPError } from "@rilldata/web-common/lib/errors";
   import { Check, Link, Share } from "lucide-svelte";
 
@@ -16,6 +17,8 @@
   export let project: string | undefined = undefined;
   export let disabled = false;
 
+  const runtimeClient = useRuntimeClient();
+
   const DISABLED_TOOLTIP = "Start a conversation to share";
   const COPIED_FEEDBACK_DURATION_MS = 1500;
 
@@ -24,7 +27,8 @@
   let isSharing = false;
   let shareError: string | null = null;
 
-  const shareConversationMutation = createRuntimeServiceShareConversation();
+  const shareConversationMutation =
+    createRuntimeServiceShareConversationMutation(runtimeClient);
 
   async function handleCreateLink() {
     if (copied || isSharing || !conversationId || !organization || !project)
@@ -36,9 +40,7 @@
     try {
       // Call the share API to set the sharing boundary
       await $shareConversationMutation.mutateAsync({
-        instanceId,
         conversationId,
-        data: {},
       });
 
       // Construct the share URL

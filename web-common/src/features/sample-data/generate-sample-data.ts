@@ -1,4 +1,4 @@
-import { runtimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
+import { runtimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import { ToolName } from "@rilldata/web-common/features/chat/core/types.ts";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import { get, writable } from "svelte/store";
@@ -37,7 +37,7 @@ export async function generateSampleData(
         }, PROJECT_INIT_TIMEOUT_MS);
       });
 
-      await runtimeServiceUnpackEmpty(instanceId, {
+      await runtimeServiceUnpackEmpty(client, {
         displayName: EMPTY_PROJECT_TITLE,
         force: true,
       });

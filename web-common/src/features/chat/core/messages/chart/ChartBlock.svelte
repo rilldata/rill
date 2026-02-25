@@ -12,7 +12,7 @@
   import { mapResolverExpressionToV1Expression } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard";
   import { Theme } from "@rilldata/web-common/features/themes/theme";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { readable } from "svelte/store";
   import type { V1Tool } from "../../../../../runtime-client";
@@ -27,8 +27,6 @@
   // Page params for chart
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-
-  $: instanceId = runtimeClient.instanceId;
 
   // Cast chartSpec to any for property access (type comes from parsed JSON)
   $: chartSpec = block.chartSpec as any;
@@ -76,8 +74,8 @@
   });
 
   $: defaultThemeQuery = createRuntimeServiceGetInstance(
-    instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => data?.instance?.theme,

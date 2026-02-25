@@ -6,7 +6,7 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
-  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
@@ -42,7 +42,6 @@
   } = stateManagers;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   $: exploreState = useExploreState(exploreName);
   $: ({ whereFilter, dimensionThresholdFilters } = $exploreState);
@@ -71,9 +70,9 @@
       );
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
       timeRange,
       where: filters,
@@ -94,9 +93,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
     },
     {

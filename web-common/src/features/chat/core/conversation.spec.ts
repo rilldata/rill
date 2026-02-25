@@ -1,9 +1,9 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceGetConversationQueryKey,
   type V1GetConversationResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
+import { getRuntimeServiceGetConversationQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,18 +14,21 @@ import { NEW_CONVERSATION_ID } from "./utils";
 // MOCKS
 // =============================================================================
 
-vi.mock("@rilldata/web-common/runtime-client", async (importOriginal) => {
-  const original =
-    await importOriginal<
-      typeof import("@rilldata/web-common/runtime-client")
-    >();
-  return {
-    ...original,
-    runtimeServiceForkConversation: vi.fn(),
-  };
-});
+vi.mock(
+  "@rilldata/web-common/runtime-client/v2/gen/runtime-service",
+  async (importOriginal) => {
+    const original =
+      await importOriginal<
+        typeof import("@rilldata/web-common/runtime-client/v2/gen/runtime-service")
+      >();
+    return {
+      ...original,
+      runtimeServiceForkConversation: vi.fn(),
+    };
+  },
+);
 
-import { runtimeServiceForkConversation } from "@rilldata/web-common/runtime-client";
+import { runtimeServiceForkConversation } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 
 // =============================================================================
 // TEST CONSTANTS
@@ -46,7 +49,9 @@ const FORKED_CONVERSATION_ID = "forked-conv-456";
 // =============================================================================
 
 function getCacheKey(conversationId: string) {
-  return getRuntimeServiceGetConversationQueryKey(INSTANCE_ID, conversationId);
+  return getRuntimeServiceGetConversationQueryKey(INSTANCE_ID, {
+    conversationId,
+  });
 }
 
 function getCachedData(conversationId: string) {
@@ -143,9 +148,8 @@ describe("Conversation", () => {
 
       // Assert: fork API called correctly
       expect(runtimeServiceForkConversation).toHaveBeenCalledWith(
-        INSTANCE_ID,
-        ORIGINAL_CONVERSATION_ID,
-        {},
+        mockRuntimeClient,
+        { conversationId: ORIGINAL_CONVERSATION_ID },
       );
 
       // Assert: cache updated with forked conversation

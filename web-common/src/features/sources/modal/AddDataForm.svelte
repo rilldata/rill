@@ -26,7 +26,7 @@
     getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
-  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { ICONS } from "./icons";
 
   export let connector: V1ConnectorDriver;
@@ -110,7 +110,7 @@
   let existingEnvBlob: string | null = null;
   onMount(async () => {
     try {
-      const envFile = await runtimeServiceGetFile(runtimeClient.instanceId, {
+      const envFile = await runtimeServiceGetFile(runtimeClient, {
         path: ".env",
       });
       existingEnvBlob = envFile.blob ?? "";

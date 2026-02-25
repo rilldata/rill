@@ -17,7 +17,7 @@
   import { navEntryDragDropStore } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
-  import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { eventBus } from "../../lib/event-bus/event-bus";
   import { fileArtifacts } from "../entity-management/file-artifacts";
@@ -30,35 +30,39 @@
   const runtimeClient = useRuntimeClient();
 
   $: ({ instanceId } = runtimeClient);
-  $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        if (!data || !data.files?.length) return;
+  $: getFileTree = createRuntimeServiceListFiles(
+    runtimeClient,
+    {},
+    {
+      query: {
+        select: (data) => {
+          if (!data || !data.files?.length) return;
 
-        const files = data.files
-          // Sort alphabetically case-insensitive
-          .sort(
-            (a, b) =>
-              a.path?.localeCompare(b.path ?? "", undefined, {
-                sensitivity: "base",
-              }) ?? 0,
-          )
-          // Hide dot directories
-          .filter(
-            (file) =>
-              !(
-                file.isDir &&
-                // Check both the top-level directory and subdirectories
-                (file.path?.startsWith(".") || file.path?.includes("/."))
-              ),
-          )
-          // Hide the `tmp` directory
-          .filter((file) => !file.path?.startsWith("/tmp"));
+          const files = data.files
+            // Sort alphabetically case-insensitive
+            .sort(
+              (a, b) =>
+                a.path?.localeCompare(b.path ?? "", undefined, {
+                  sensitivity: "base",
+                }) ?? 0,
+            )
+            // Hide dot directories
+            .filter(
+              (file) =>
+                !(
+                  file.isDir &&
+                  // Check both the top-level directory and subdirectories
+                  (file.path?.startsWith(".") || file.path?.includes("/."))
+                ),
+            )
+            // Hide the `tmp` directory
+            .filter((file) => !file.path?.startsWith("/tmp"));
 
-        return transformFileList(files);
+          return transformFileList(files);
+        },
       },
     },
-  });
+  );
 
   $: ({ data: fileTree } = $getFileTree);
 
