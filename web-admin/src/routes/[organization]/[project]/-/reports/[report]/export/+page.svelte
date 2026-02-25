@@ -26,6 +26,7 @@
         reportId,
         executionTime,
         originBaseUrl: window.location.origin,
+        host: $runtime.host,
       },
     });
   }

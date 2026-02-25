@@ -6,8 +6,7 @@ import {
   type V1GetInstanceResponse,
   type V1InstanceFeatureFlags,
 } from "../runtime-client";
-import { type Runtime, runtime } from "../runtime-client/runtime-store";
-import httpClient from "@rilldata/web-common/runtime-client/http-client.ts";
+import { runtime } from "../runtime-client/runtime-store";
 
 class FeatureFlag {
   private _internal = false;
@@ -73,29 +72,9 @@ class FeatureFlags {
       this._resolveReady = resolve;
     });
 
-    const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
-      this._resolveReady();
-
-      // First, reset all user flags to their defaults
-      const userFlagKeys = Object.keys(this).filter((key) => {
-        const flag = this[key];
-        return flag instanceof FeatureFlag && !flag.internalOnly;
-      });
-
-      for (const key of userFlagKeys) {
-        const flag = this[key] as FeatureFlag;
-        flag.resetToDefault();
-      }
-
-      // Then apply project-specific overrides
-      for (const key in userFlags) {
-        const flag = this[key] as FeatureFlag | undefined;
-        if (!flag || flag.internalOnly) continue;
-        flag.set(userFlags[key]);
-      }
-    };
-
-    // Responsively update flags based rill.yaml
+    // Responsively update flags based on rill.yaml
+    // BRIDGE (temporary): subscribes to runtime store; will be replaced by
+    // RuntimeProvider calling setRuntimeClient() once per-runtime scoping lands
     runtime.subscribe((runtime) => {
       if (!runtime?.instanceId) return;
 
@@ -109,9 +88,31 @@ class FeatureFlags {
         },
         queryClient,
       ).subscribe((features) => {
-        if (features.data) updateFlags(features.data);
+        if (features.data) this.updateFlags(features.data);
       });
     });
+  }
+
+  private updateFlags(userFlags: V1InstanceFeatureFlags) {
+    this._resolveReady();
+
+    // First, reset all user flags to their defaults
+    const userFlagKeys = Object.keys(this).filter((key) => {
+      const flag = this[key];
+      return flag instanceof FeatureFlag && !flag.internalOnly;
+    });
+
+    for (const key of userFlagKeys) {
+      const flag = this[key] as FeatureFlag;
+      flag.resetToDefault();
+    }
+
+    // Then apply project-specific overrides
+    for (const key in userFlags) {
+      const flag = this[key] as FeatureFlag | undefined;
+      if (!flag || flag.internalOnly) continue;
+      flag.set(userFlags[key]);
+    }
   }
 
   get set() {
@@ -127,24 +128,24 @@ class FeatureFlags {
 
 export const featureFlags = new FeatureFlags();
 
-export async function getFeatureFlags(runtime: Runtime) {
-  const instanceResp = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetInstanceQueryKey(
-      runtime.instanceId,
-      undefined,
-    ),
-    queryFn: () =>
-      httpClient<V1GetInstanceResponse>({
-        url: `/v1/instances/${runtime.instanceId}`,
-        method: "GET",
-        baseUrl: runtime.host,
-        headers: runtime.jwt
-          ? {
-              Authorization: `Bearer ${runtime.jwt?.token}`,
-            }
-          : undefined,
-      }),
-  });
+interface RuntimeInfo {
+  host: string;
+  instanceId: string;
+  jwt?: { token: string } | undefined;
+}
 
-  return instanceResp.instance?.featureFlags ?? {};
+export async function getFeatureFlags(runtime: RuntimeInfo) {
+  const resp = await fetch(
+    `${runtime.host}/v1/instances/${runtime.instanceId}`,
+    {
+      headers: runtime.jwt
+        ? { Authorization: `Bearer ${runtime.jwt.token}` }
+        : {},
+    },
+  );
+  if (!resp.ok) {
+    return {};
+  }
+  const data = (await resp.json()) as V1GetInstanceResponse;
+  return data.instance?.featureFlags ?? {};
 }

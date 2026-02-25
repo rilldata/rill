@@ -21,7 +21,7 @@
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
   import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "$lib/local-runtime-config";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
@@ -70,7 +70,8 @@
     return () => removeJavascriptListeners?.();
   });
 
-  $: ({ host, instanceId } = $runtime);
+  const host = LOCAL_HOST;
+  const instanceId = LOCAL_INSTANCE_ID;
 
   $: ({ route } = $page);
 

@@ -357,6 +357,7 @@ export class Conversation {
     await this.sseClient!.start(baseUrl, {
       method: "POST",
       body: requestBody,
+      getJwt: () => this.client.getJwt(),
     });
   }
 

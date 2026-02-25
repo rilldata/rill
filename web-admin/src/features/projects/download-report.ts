@@ -4,7 +4,6 @@ import {
   createQueryServiceExportReport,
   type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   createMutation,
   type CreateMutationOptions,
@@ -17,6 +16,7 @@ export type DownloadReportRequest = {
   reportId: string;
   executionTime: string;
   originBaseUrl: string;
+  host: string;
 };
 
 export function createDownloadReportMutation<
@@ -48,7 +48,7 @@ export function createDownloadReportMutation<
         originBaseUrl: data.originBaseUrl,
       },
     });
-    const downloadUrl = `${get(runtime).host}${exportResp.downloadUrlPath}`;
+    const downloadUrl = `${data.host}${exportResp.downloadUrlPath}`;
     window.open(downloadUrl, "_self");
   };
 

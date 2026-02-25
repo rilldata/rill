@@ -1,10 +1,12 @@
 import { openQuery } from "@rilldata/web-common/features/explore-mappers/open-query";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import {
+  LOCAL_HOST,
+  LOCAL_INSTANCE_ID,
+} from "../../../../lib/local-runtime-config";
 
 export async function load({ url }) {
-  const rt = get(runtime);
-
-  // Open the query (this'll redirect to the relevant Explore page)
-  await openQuery({ url, runtime: rt });
+  await openQuery({
+    url,
+    runtime: { host: LOCAL_HOST, instanceId: LOCAL_INSTANCE_ID },
+  });
 }

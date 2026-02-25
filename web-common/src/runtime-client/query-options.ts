@@ -5,27 +5,36 @@ import type {
 } from "./gen/index.schemas";
 import type { RuntimeServiceGetResourceQueryResult } from "./gen/runtime-service/runtime-service";
 import { getRuntimeServiceGetResourceQueryKey } from "./gen/runtime-service/runtime-service";
-import httpClient from "@rilldata/web-common/runtime-client/http-client.ts";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+
+interface RuntimeInfo {
+  host: string;
+  instanceId: string;
+  jwt?: { token: string } | undefined;
+}
 
 export function getRuntimeServiceGetResourceQueryOptions(
-  runtime: Runtime,
+  runtime: RuntimeInfo,
   params: RuntimeServiceGetResourceParams,
 ) {
   return <FetchQueryOptions<RuntimeServiceGetResourceQueryResult>>{
     queryKey: getRuntimeServiceGetResourceQueryKey(runtime.instanceId, params),
-    queryFn: () =>
-      httpClient<V1GetResourceResponse>({
-        url: `/v1/instances/${runtime.instanceId}/resource`,
-        method: "GET",
-        params,
-        baseUrl: runtime.host,
-        headers: runtime.jwt
-          ? {
-              Authorization: `Bearer ${runtime.jwt?.token}`,
-            }
-          : undefined,
-      }),
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined) searchParams.set(key, String(value));
+      }
+      const url = `${runtime.host}/v1/instances/${runtime.instanceId}/resource?${searchParams}`;
+      const headers: Record<string, string> = {};
+      if (runtime.jwt) {
+        headers["Authorization"] = `Bearer ${runtime.jwt.token}`;
+      }
+      const resp = await fetch(url, { headers });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw { response: { status: resp.status, data } };
+      }
+      return (await resp.json()) as V1GetResourceResponse;
+    },
     staleTime: Infinity,
   };
 }

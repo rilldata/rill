@@ -15,12 +15,40 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { error, redirect } from "@sveltejs/kit";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
-import httpClient from "@rilldata/web-common/runtime-client/http-client.ts";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
 import { createLinkError } from "@rilldata/web-common/features/explore-mappers/explore-validation.ts";
 import { ExploreLinkErrorType } from "@rilldata/web-common/features/explore-mappers/types.ts";
+
+interface RuntimeInfo {
+  host: string;
+  instanceId: string;
+  jwt?: { token: string } | undefined;
+}
+
+async function runtimeFetch<T>(
+  runtime: RuntimeInfo,
+  path: string,
+  opts?: { method?: string; body?: unknown; signal?: AbortSignal },
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (runtime.jwt) {
+    headers["Authorization"] = `Bearer ${runtime.jwt.token}`;
+  }
+  const resp = await fetch(`${runtime.host}${path}`, {
+    method: opts?.method ?? "GET",
+    headers,
+    ...(opts?.body !== undefined ? { body: JSON.stringify(opts.body) } : {}),
+    signal: opts?.signal,
+  });
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    throw { response: { status: resp.status, data } };
+  }
+  return (await resp.json()) as T;
+}
 
 export async function openQuery({
   url,
@@ -29,7 +57,7 @@ export async function openQuery({
   runtime,
 }: {
   url: URL;
-  runtime: Runtime;
+  runtime: RuntimeInfo;
   organization?: string;
   project?: string;
 }) {
@@ -106,30 +134,21 @@ export async function openQuery({
  * TODO: try to find an explore that has as many measures/dimensions in the query
  */
 async function findExploreForMetricsView(
-  runtime: Runtime,
+  runtime: RuntimeInfo,
   metricsViewName: string,
 ): Promise<string> {
-  // List all explore resources
   const exploreResources = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceListResourcesQueryKey(runtime.instanceId, {
       kind: ResourceKind.Explore,
     }),
     queryFn: ({ signal }) =>
-      httpClient<V1ListResourcesResponse>({
-        url: `/v1/instances/${runtime.instanceId}/resources`,
-        method: "GET",
-        params: { kind: ResourceKind.Explore },
-        signal,
-        baseUrl: runtime.host,
-        headers: runtime.jwt
-          ? {
-              Authorization: `Bearer ${runtime.jwt?.token}`,
-            }
-          : undefined,
-      }),
+      runtimeFetch<V1ListResourcesResponse>(
+        runtime,
+        `/v1/instances/${runtime.instanceId}/resources?kind=${ResourceKind.Explore}`,
+        { signal },
+      ),
   });
 
-  // Look for an explore that references this metrics view
   if (exploreResources.resources) {
     for (const resource of exploreResources.resources) {
       if (resource.explore?.state?.validSpec?.metricsView === metricsViewName) {
@@ -138,31 +157,22 @@ async function findExploreForMetricsView(
     }
   }
 
-  // If no explore found, throw an error
   throw new Error(
     `No explore dashboard found for metrics view: ${metricsViewName}`,
   );
 }
 
-async function getExploreSpecs(runtime: Runtime, exploreName: string) {
-  // Get explore and metrics view specs
+async function getExploreSpecs(runtime: RuntimeInfo, exploreName: string) {
   const getExploreResponse = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceGetExploreQueryKey(runtime.instanceId, {
       name: exploreName,
     }),
     queryFn: ({ signal }) =>
-      httpClient<V1GetExploreResponse>({
-        url: `/v1/instances/${runtime.instanceId}/resources/explore`,
-        method: "GET",
-        params: { name: exploreName },
-        signal,
-        baseUrl: runtime.host,
-        headers: runtime.jwt
-          ? {
-              Authorization: `Bearer ${runtime.jwt?.token}`,
-            }
-          : undefined,
-      }),
+      runtimeFetch<V1GetExploreResponse>(
+        runtime,
+        `/v1/instances/${runtime.instanceId}/resources/explore?name=${encodeURIComponent(exploreName)}`,
+        { signal },
+      ),
   });
   const exploreResource = getExploreResponse.explore;
   const metricsViewResource = getExploreResponse.metricsView;
@@ -185,7 +195,7 @@ async function getExploreSpecs(runtime: Runtime, exploreName: string) {
  * Generates the explore page URL with proper search parameters
  */
 async function generateExploreLink(
-  runtime: Runtime,
+  runtime: RuntimeInfo,
   exploreState: Partial<ExploreState>,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
@@ -194,7 +204,6 @@ async function generateExploreLink(
   project?: string | undefined,
 ): Promise<string> {
   try {
-    // Build base URL
     const url = getUrlForExplore(exploreName, organization, project);
 
     const metricsViewName = exploreSpec.metricsView;
@@ -202,21 +211,11 @@ async function generateExploreLink(
     if (metricsViewSpec.timeDimension && metricsViewName) {
       fullTimeRange = await queryClient.fetchQuery({
         queryFn: ({ signal }) =>
-          httpClient<V1MetricsViewTimeRangeResponse>({
-            url: `/v1/instances/${runtime.instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(runtime.jwt
-                ? {
-                    Authorization: `Bearer ${runtime.jwt?.token}`,
-                  }
-                : {}),
-            },
-            data: {},
-            signal,
-            baseUrl: runtime.host,
-          }),
+          runtimeFetch<V1MetricsViewTimeRangeResponse>(
+            runtime,
+            `/v1/instances/${runtime.instanceId}/queries/metrics-views/${encodeURIComponent(metricsViewName)}/time-range-summary`,
+            { method: "POST", body: {}, signal },
+          ),
         queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
           runtime.instanceId,
           metricsViewName,
@@ -227,9 +226,6 @@ async function generateExploreLink(
       });
     }
 
-    // This is just for an initial redirect.
-    // DashboardStateDataLoader will handle compression etc. during init
-    // So no need to use getCleanedUrlParamsForGoto
     const searchParams = convertPartialExploreStateToUrlParams(
       exploreSpec,
       metricsViewSpec,
