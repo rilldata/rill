@@ -114,7 +114,7 @@
       bind:el={selectElement}
       class="bg-input flex px-3 gap-x-2 max-w-full {HeightBySize[
         size
-      ]} {width && `w-[${width}px]`} {minWidth &&
+      ]} {full ? 'w-full' : ''} {width && `w-[${width}px]`} {minWidth &&
         `min-w-[${minWidth}px]`} {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'

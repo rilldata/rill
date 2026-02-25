@@ -136,6 +136,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
+	sanitizeYAMLMap(inputProps)
 	inputPropsPB, err := structpb.NewStruct(inputProps)
 	if err != nil {
 		return fmt.Errorf(`found invalid input property type: %w`, err)
@@ -144,6 +145,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Stage details are optional
 	var stagePropsPB *structpb.Struct
 	if len(tmp.Stage.Properties) > 0 {
+		sanitizeYAMLMap(tmp.Stage.Properties)
 		stagePropsPB, err = structpb.NewStruct(tmp.Stage.Properties)
 		if err != nil {
 			return fmt.Errorf(`found invalid input property type: %w`, err)
@@ -169,6 +171,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Validate output details
 	var outputPropsPB *structpb.Struct
 	if len(outputProps) > 0 {
+		sanitizeYAMLMap(outputProps)
 		outputPropsPB, err = structpb.NewStruct(outputProps)
 		if err != nil {
 			return fmt.Errorf(`invalid property type in "output": %w`, err)
