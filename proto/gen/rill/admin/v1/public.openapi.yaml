@@ -1080,7 +1080,7 @@ components:
                     type: string
                 projects:
                     items:
-                        $ref: '#/components/schemas/v1UserProject'
+                        $ref: '#/components/schemas/v1Project'
                     type: array
             type: object
         v1ListProjectsForOrganizationResponse:
@@ -2237,13 +2237,6 @@ components:
         v1UserPreferences:
             properties:
                 timeZone:
-                    type: string
-            type: object
-        v1UserProject:
-            properties:
-                project:
-                    $ref: '#/components/schemas/v1Project'
-                projectRoleName:
                     type: string
             type: object
         v1UserQuotas:

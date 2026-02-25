@@ -809,7 +809,7 @@ export interface V1ListProjectsForFingerprintResponse {
 }
 
 export interface V1ListProjectsForOrganizationAndUserResponse {
-  projects?: V1UserProject[];
+  projects?: V1Project[];
   nextPageToken?: string;
 }
 
@@ -1585,11 +1585,6 @@ export interface V1UserAuthToken {
 
 export interface V1UserPreferences {
   timeZone?: string;
-}
-
-export interface V1UserProject {
-  project?: V1Project;
-  projectRoleName?: string;
 }
 
 export interface V1UserQuotas {

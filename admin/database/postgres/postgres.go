@@ -351,43 +351,6 @@ func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userI
 	return c.projectsFromDTOs(res)
 }
 
-type userProjectDTO struct {
-	projectDTO
-	ProjectRoleName *string `db:"project_role_name"`
-}
-
-func (c *connection) FindUserProjectsForOrgAndUser(ctx context.Context, orgID, userID string, afterProjectName string, limit int) ([]*database.UserProject, error) {
-	var res []*userProjectDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT p.*, pr.name as project_role_name
-		FROM projects p
-		JOIN users_projects_roles upr ON upr.project_id = p.id AND upr.user_id = $3
-		JOIN project_roles pr ON pr.id = upr.project_role_id
-		WHERE p.org_id = $1 AND lower(p.name) > lower($2)
-		ORDER BY lower(p.name) LIMIT $4
-	`, orgID, afterProjectName, userID, limit)
-	if err != nil {
-		return nil, parseErr("user projects", err)
-	}
-
-	userProjects := make([]*database.UserProject, len(res))
-	for i, dto := range res {
-		proj, err := c.projectFromDTO(&dto.projectDTO)
-		if err != nil {
-			return nil, err
-		}
-		roleName := ""
-		if dto.ProjectRoleName != nil {
-			roleName = *dto.ProjectRoleName
-		}
-		userProjects[i] = &database.UserProject{
-			Project:         proj,
-			ProjectRoleName: roleName,
-		}
-	}
-	return userProjects, nil
-}
-
 func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `

@@ -81,8 +81,6 @@ type DB interface {
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)
-	// FindUserProjectsForOrgAndUser lists the projects with role information for a user in an organization
-	FindUserProjectsForOrgAndUser(ctx context.Context, orgID, userID string, afterProjectName string, limit int) ([]*UserProject, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGitRemote(ctx context.Context, remote string) ([]*Project, error)
 	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
@@ -509,12 +507,6 @@ type Project struct {
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is the time the project was last updated.
 	UpdatedOn time.Time `db:"updated_on"`
-}
-
-// UserProject represents a project with the user's role in that project.
-type UserProject struct {
-	Project         *Project
-	ProjectRoleName string
 }
 
 // InsertProjectOptions defines options for inserting a new Project.

@@ -1468,13 +1468,8 @@ message ListProjectsForOrganizationAndUserRequest {
 }
 
 message ListProjectsForOrganizationAndUserResponse {
-  repeated UserProject projects = 1;
+  repeated Project projects = 1;
   string next_page_token = 2;
-}
-
-message UserProject {
-  Project project = 1;
-  string project_role_name = 2;
 }
 
 message ListProjectsForFingerprintRequest {

@@ -2,11 +2,10 @@
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import {
     createAdminServiceListProjectsForOrganizationAndUser,
-    type V1UserProject,
+    type V1Project,
   } from "@rilldata/web-admin/client";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
-  import { formatProjectRole } from "@rilldata/web-common/features/users/roles";
 
   export let organization: string;
   export let userId: string;
@@ -25,8 +24,8 @@
     },
   );
   $: ({ data, isPending, error } = $userProjectsQuery);
-  let userProjects: V1UserProject[];
-  $: userProjects = data?.projects ?? [];
+  let projects: V1Project[];
+  $: projects = data?.projects ?? [];
 
   $: hasProjects = projectCount > 0;
 
@@ -57,19 +56,13 @@
       {:else if error}
         Error
       {:else}
-        {#each userProjects as userProject (userProject.project?.id)}
-          {@const projectName = userProject.project?.name ?? ""}
-          {@const role = userProject.projectRoleName}
+        {#each projects as project (project.id)}
+          {@const projectName = project.name ?? ""}
           <Dropdown.Item
             href={getProjectShareUrl(projectName)}
-            class="flex items-center gap-2 whitespace-nowrap"
+            class="whitespace-nowrap"
           >
-            <span class="truncate">{projectName}</span>
-            {#if role}
-              <span class="text-fg-muted text-xs">
-                {formatProjectRole(role)}
-              </span>
-            {/if}
+            {projectName}
           </Dropdown.Item>
         {/each}
       {/if}
