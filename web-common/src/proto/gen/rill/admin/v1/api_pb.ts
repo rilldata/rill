@@ -1519,9 +1519,9 @@ export class ListProjectsForOrganizationAndUserRequest extends Message<ListProje
  */
 export class ListProjectsForOrganizationAndUserResponse extends Message<ListProjectsForOrganizationAndUserResponse> {
   /**
-   * @generated from field: repeated rill.admin.v1.Project projects = 1;
+   * @generated from field: repeated rill.admin.v1.UserProject projects = 1;
    */
-  projects: Project[] = [];
+  projects: UserProject[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
@@ -1536,7 +1536,7 @@ export class ListProjectsForOrganizationAndUserResponse extends Message<ListProj
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ListProjectsForOrganizationAndUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
+    { no: 1, name: "projects", kind: "message", T: UserProject, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -1554,6 +1554,49 @@ export class ListProjectsForOrganizationAndUserResponse extends Message<ListProj
 
   static equals(a: ListProjectsForOrganizationAndUserResponse | PlainMessage<ListProjectsForOrganizationAndUserResponse> | undefined, b: ListProjectsForOrganizationAndUserResponse | PlainMessage<ListProjectsForOrganizationAndUserResponse> | undefined): boolean {
     return proto3.util.equals(ListProjectsForOrganizationAndUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UserProject
+ */
+export class UserProject extends Message<UserProject> {
+  /**
+   * @generated from field: rill.admin.v1.Project project = 1;
+   */
+  project?: Project;
+
+  /**
+   * @generated from field: string project_role_name = 2;
+   */
+  projectRoleName = "";
+
+  constructor(data?: PartialMessage<UserProject>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UserProject";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project", kind: "message", T: Project },
+    { no: 2, name: "project_role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserProject {
+    return new UserProject().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UserProject {
+    return new UserProject().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UserProject {
+    return new UserProject().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UserProject | PlainMessage<UserProject> | undefined, b: UserProject | PlainMessage<UserProject> | undefined): boolean {
+    return proto3.util.equals(UserProject, a, b);
   }
 }
 

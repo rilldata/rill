@@ -119,19 +119,22 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	projects, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, req.UserId, false, pageToken.Val, pageSize)
+	userProjects, err := s.admin.DB.FindUserProjectsForOrgAndUser(ctx, org.ID, req.UserId, pageToken.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
 
 	nextToken := ""
-	if len(projects) >= pageSize {
-		nextToken = marshalPageToken(projects[len(projects)-1].Name)
+	if len(userProjects) >= pageSize {
+		nextToken = marshalPageToken(userProjects[len(userProjects)-1].Project.Name)
 	}
 
-	dtos := make([]*adminv1.Project, len(projects))
-	for i, p := range projects {
-		dtos[i] = s.projToDTO(p, org.Name)
+	dtos := make([]*adminv1.UserProject, len(userProjects))
+	for i, up := range userProjects {
+		dtos[i] = &adminv1.UserProject{
+			Project:         s.projToDTO(up.Project, org.Name),
+			ProjectRoleName: up.ProjectRoleName,
+		}
 	}
 
 	return &adminv1.ListProjectsForOrganizationAndUserResponse{

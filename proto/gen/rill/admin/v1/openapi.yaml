@@ -1080,7 +1080,7 @@ components:
                     type: string
                 projects:
                     items:
-                        $ref: '#/components/schemas/v1Project'
+                        $ref: '#/components/schemas/v1UserProject'
                     type: array
             type: object
         v1ListProjectsForOrganizationResponse:
@@ -2239,6 +2239,13 @@ components:
                 timeZone:
                     type: string
             type: object
+        v1UserProject:
+            properties:
+                project:
+                    $ref: '#/components/schemas/v1Project'
+                projectRoleName:
+                    type: string
+            type: object
         v1UserQuotas:
             properties:
                 singleuserOrgs:
@@ -2308,7 +2315,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.81.2
+    version: v0.82.1
 openapi: 3.0.3
 paths:
     /v1/ai/complete:

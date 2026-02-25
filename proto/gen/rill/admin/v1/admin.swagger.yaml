@@ -5498,7 +5498,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Project'
+          $ref: '#/definitions/v1UserProject'
       nextPageToken:
         type: string
   v1ListProjectsForOrganizationResponse:
@@ -6678,6 +6678,13 @@ definitions:
     type: object
     properties:
       timeZone:
+        type: string
+  v1UserProject:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
+      projectRoleName:
         type: string
   v1UserQuotas:
     type: object

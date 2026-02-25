@@ -1,9 +1,8 @@
 <script lang="ts">
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import {
-    adminServiceGetProjectMemberUser,
     createAdminServiceListProjectsForOrganizationAndUser,
-    type V1Project,
+    type V1UserProject,
   } from "@rilldata/web-admin/client";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
@@ -11,12 +10,10 @@
 
   export let organization: string;
   export let userId: string;
-  export let userEmail: string;
   export let projectCount: number;
 
   let isDropdownOpen = false;
   $: hasUserId = !!userId;
-  $: hasUserEmail = !!userEmail;
 
   $: userProjectsQuery = createAdminServiceListProjectsForOrganizationAndUser(
     organization,
@@ -28,44 +25,10 @@
     },
   );
   $: ({ data, isPending, error } = $userProjectsQuery);
-  let projects: V1Project[];
-  $: projects = data?.projects ?? [];
+  let userProjects: V1UserProject[];
+  $: userProjects = data?.projects ?? [];
 
   $: hasProjects = projectCount > 0;
-
-  let projectRoles: Map<string, string> = new Map();
-  let rolesLoading = false;
-
-  $: if (isDropdownOpen && projects.length > 0 && hasUserEmail) {
-    fetchProjectRoles();
-  }
-
-  async function fetchProjectRoles() {
-    if (rolesLoading) return;
-    rolesLoading = true;
-    const newRoles = new Map<string, string>();
-
-    await Promise.all(
-      projects.map(async (project) => {
-        if (!project.name) return;
-        try {
-          const response = await adminServiceGetProjectMemberUser(
-            organization,
-            project.name,
-            userEmail,
-          );
-          if (response.member?.roleName) {
-            newRoles.set(project.name, response.member.roleName);
-          }
-        } catch {
-          // If fetching role fails, we'll just show the project name without role
-        }
-      }),
-    );
-
-    projectRoles = newRoles;
-    rolesLoading = false;
-  }
 
   function getProjectShareUrl(projectName: string) {
     return `/${organization}/${projectName}/-/dashboards?share=true`;
@@ -88,23 +51,21 @@
         <CaretDownIcon size="12px" />
       {/if}
     </Dropdown.Trigger>
-    <Dropdown.Content align="end">
+    <Dropdown.Content align="start">
       {#if isPending}
         Loading...
       {:else if error}
         Error
       {:else}
-        {#each projects as project (project.id)}
-          {@const projectName = project.name ?? ""}
-          {@const role = projectRoles.get(projectName)}
+        {#each userProjects as userProject (userProject.project?.id)}
+          {@const projectName = userProject.project?.name ?? ""}
+          {@const role = userProject.projectRoleName}
           <Dropdown.Item
             href={getProjectShareUrl(projectName)}
             class="flex items-center gap-2 whitespace-nowrap"
           >
             <span class="truncate">{projectName}</span>
-            {#if rolesLoading && !role}
-              <span class="text-fg-muted text-xs">...</span>
-            {:else if role}
+            {#if role}
               <span class="text-fg-muted text-xs">
                 {formatProjectRole(role)}
               </span>

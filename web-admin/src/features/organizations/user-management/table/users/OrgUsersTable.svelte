@@ -103,7 +103,6 @@
       flexRender(UserProjectsCell, {
         organization,
         userId: row.original.userId,
-        userEmail: row.original.userEmail,
         projectCount: row.original.projectsCount ?? 0,
       }),
     meta: {
