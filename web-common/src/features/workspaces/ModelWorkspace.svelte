@@ -18,7 +18,6 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { fade, slide } from "svelte/transition";
@@ -62,7 +61,7 @@
   $: isResourceReconciling = resourceIsLoading($resourceQuery.data);
 
   async function save() {
-    httpRequestQueue.removeByName(assetName);
+    runtimeClient.requestQueue.removeByName(assetName);
     await queryClient.cancelQueries({
       predicate: (query) => isProfilingQuery(query, assetName),
     });

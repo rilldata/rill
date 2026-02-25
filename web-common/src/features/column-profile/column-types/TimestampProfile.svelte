@@ -4,7 +4,6 @@
   import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
@@ -57,7 +56,7 @@
 
   function toggleColumnProfile() {
     active = !active;
-    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
+    client.requestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
   $: fetchingSummaries = isFetching($timeSeries, $nullPercentage);
