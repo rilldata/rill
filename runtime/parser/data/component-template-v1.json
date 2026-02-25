@@ -65,7 +65,13 @@
         },
         "type": {
           "type": "string",
-          "enum": ["quantitative", "ordinal", "nominal", "temporal", "geojson"]
+          "enum": [
+            "quantitative",
+            "ordinal",
+            "nominal",
+            "temporal",
+            "geojson"
+          ]
         },
         "timeUnit": {
           "type": "string"
@@ -313,6 +319,99 @@
       ],
       "type": "object"
     },
+    "MapColorConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "measure": {
+          "type": "string"
+        },
+        "colorRange": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": ["scheme"]
+                },
+                "scheme": {
+                  "type": "string"
+                }
+              },
+              "required": ["mode", "scheme"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": ["gradient"]
+                },
+                "start": {
+                  "type": "string"
+                },
+                "end": {
+                  "type": "string"
+                }
+              },
+              "required": ["mode", "start", "end"]
+            }
+          ]
+        }
+      },
+      "required": ["measure"],
+      "type": "object"
+    },
+    "MapProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "metrics_view": {
+          "type": "string"
+        },
+        "geo_dimension": {
+          "type": "string"
+        },
+        "color": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/MapColorConfig"
+            }
+          ]
+        },
+        "size_measure": {
+          "type": "string"
+        },
+        "tooltip_dimension": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "metrics_view",
+        "geo_dimension"
+      ],
+      "type": "object"
+    },
+    "MapTemplateT": {
+      "additionalProperties": false,
+      "properties": {
+        "map": {
+          "$ref": "#/definitions/MapProperties"
+        }
+      },
+      "required": [
+        "map"
+      ],
+      "type": "object"
+    },
     "TemplateSpec": {
       "anyOf": [
         {
@@ -382,6 +481,9 @@
         },
         {
           "$ref": "#/definitions/SwitchPropertiesT"
+        },
+        {
+          "$ref": "#/definitions/MapTemplateT"
         }
       ]
     }

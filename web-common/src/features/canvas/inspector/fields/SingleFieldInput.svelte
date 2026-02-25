@@ -17,6 +17,7 @@
   export let searchableItems: string[] | undefined = undefined;
   export let excludedValues: string[] | undefined = undefined;
   export let isRemovable = false;
+  export let geoOnly = false;
   export let onSelect: (item: string, displayName: string) => void = () => {};
   export let onRemove: () => void = () => {};
 
@@ -38,6 +39,7 @@
     searchableItems,
     searchValue,
     excludedValues,
+    geoOnly,
   );
 </script>
 
