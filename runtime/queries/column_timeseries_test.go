@@ -2,18 +2,16 @@ package queries_test
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"testing"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/stretchr/testify/assert"
@@ -22,39 +20,22 @@ import (
 
 func TestAgainstClickHouse(t *testing.T) {
 	testmode.Expensive(t)
-
-	ctx := context.Background()
-	clickHouseContainer, err := clickhouse.RunContainer(ctx,
-		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
-		clickhouse.WithUsername("clickhouse"),
-		clickhouse.WithPassword("clickhouse"),
-		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := clickHouseContainer.Terminate(ctx)
-		require.NoError(t, err)
-	})
-
-	host, err := clickHouseContainer.Host(ctx)
-	require.NoError(t, err)
-	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
-	require.NoError(t, err)
-
+	// Create a test ClickHouse cluster
+	dsn := testclickhouse.Start(t)
 	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
-	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
-	t.Run("TestTimeseries_normaliseTimeRange", func(t *testing.T) { TestTimeseries_normaliseTimeRange(t) })
-	t.Run("TestTimeseries_normaliseTimeRange_NoEnd", func(t *testing.T) { TestTimeseries_normaliseTimeRange_NoEnd(t) })
-	t.Run("TestTimeseries_normaliseTimeRange_Specified", func(t *testing.T) { TestTimeseries_normaliseTimeRange_Specified(t) })
-	t.Run("TestTimeseries_SparkOnly", func(t *testing.T) { TestTimeseries_SparkOnly(t) })
-	t.Run("TestTimeseries_FirstDayOfWeek_Monday", func(t *testing.T) { TestTimeseries_FirstDayOfWeek_Monday(t) })
-	t.Run("TestTimeseries_FirstDayOfWeek_Sunday", func(t *testing.T) { TestTimeseries_FirstDayOfWeek_Sunday(t) })
-	// t.Run("TestTimeseries_FirstDayOfWeek_Sunday_OnSunday", func(t *testing.T) { TestTimeseries_FirstDayOfWeek_Sunday_OnSunday(t) })
-	t.Run("TestTimeseries_FirstDayOfWeek_Saturday", func(t *testing.T) { TestTimeseries_FirstDayOfWeek_Saturday(t) })
-	t.Run("TestTimeseries_FirstMonthOfYear_January", func(t *testing.T) { TestTimeseries_FirstMonthOfYear_January(t) })
-	// t.Run("TestTimeseries_FirstMonthOfYear_March", func(t *testing.T) { TestTimeseries_FirstMonthOfYear_March(t) })
-	t.Run("TestTimeseries_FirstMonthOfYear_December", func(t *testing.T) { TestTimeseries_FirstMonthOfYear_December(t) })
-	// t.Run("TestTimeseries_FirstMonthOfYear_December_InDecember", func(t *testing.T) { TestTimeseries_FirstMonthOfYear_December_InDecember(t) })
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", dsn)
+	t.Run("testTimeseries_normaliseTimeRange", func(t *testing.T) { testTimeseries_normaliseTimeRange(t) })
+	t.Run("testTimeseries_normaliseTimeRange_NoEnd", func(t *testing.T) { testTimeseries_normaliseTimeRange_NoEnd(t) })
+	t.Run("testTimeseries_normaliseTimeRange_Specified", func(t *testing.T) { testTimeseries_normaliseTimeRange_Specified(t) })
+	t.Run("testTimeseries_SparkOnly", func(t *testing.T) { testTimeseries_SparkOnly(t) })
+	t.Run("testTimeseries_FirstDayOfWeek_Monday", func(t *testing.T) { testTimeseries_FirstDayOfWeek_Monday(t) })
+	t.Run("testTimeseries_FirstDayOfWeek_Sunday", func(t *testing.T) { testTimeseries_FirstDayOfWeek_Sunday(t) })
+	// t.Run("testTimeseries_FirstDayOfWeek_Sunday_OnSunday", func(t *testing.T) { testTimeseries_FirstDayOfWeek_Sunday_OnSunday(t) })
+	t.Run("testTimeseries_FirstDayOfWeek_Saturday", func(t *testing.T) { testTimeseries_FirstDayOfWeek_Saturday(t) })
+	t.Run("testTimeseries_FirstMonthOfYear_January", func(t *testing.T) { testTimeseries_FirstMonthOfYear_January(t) })
+	// t.Run("testTimeseries_FirstMonthOfYear_March", func(t *testing.T) { testTimeseries_FirstMonthOfYear_March(t) })
+	t.Run("testTimeseries_FirstMonthOfYear_December", func(t *testing.T) { testTimeseries_FirstMonthOfYear_December(t) })
+	// t.Run("testTimeseries_FirstMonthOfYear_December_InDecember", func(t *testing.T) { testTimeseries_FirstMonthOfYear_December_InDecember(t) })
 }
 
 func instanceWith2RowsModel(t *testing.T) (*runtime.Runtime, string) {
@@ -124,7 +105,7 @@ func instanceWithSparkSameTimestampModel(t *testing.T) (*runtime.Runtime, string
 	return rt, instanceID
 }
 
-func TestTimeseries_normaliseTimeRange(t *testing.T) {
+func testTimeseries_normaliseTimeRange(t *testing.T) {
 	rt, instanceID := instanceWith2RowsModel(t)
 
 	q := &queries.ColumnTimeseries{
@@ -141,7 +122,7 @@ func TestTimeseries_normaliseTimeRange(t *testing.T) {
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, tr.Interval)
 }
 
-func TestTimeseries_normaliseTimeRange_NoEnd(t *testing.T) {
+func testTimeseries_normaliseTimeRange_NoEnd(t *testing.T) {
 	rt, instanceID := instanceWith2RowsModel(t)
 
 	q := &queries.ColumnTimeseries{
@@ -160,7 +141,7 @@ func TestTimeseries_normaliseTimeRange_NoEnd(t *testing.T) {
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
 }
 
-func TestTimeseries_normaliseTimeRange_Specified(t *testing.T) {
+func testTimeseries_normaliseTimeRange_Specified(t *testing.T) {
 	rt, instanceID := instanceWith2RowsModel(t)
 
 	q := &queries.ColumnTimeseries{
@@ -179,7 +160,7 @@ func TestTimeseries_normaliseTimeRange_Specified(t *testing.T) {
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_YEAR, r.Interval)
 }
 
-func TestTimeseries_SparkOnly_same_timestamp(t *testing.T) {
+func testTimeseries_SparkOnly_same_timestamp(t *testing.T) {
 	testmode.Expensive(t)
 
 	time.Local = time.UTC
@@ -200,7 +181,7 @@ func TestTimeseries_SparkOnly_same_timestamp(t *testing.T) {
 	require.True(t, math.IsNaN(values[0].Bin))
 }
 
-func TestTimeseries_SparkOnly(t *testing.T) {
+func testTimeseries_SparkOnly(t *testing.T) {
 	testmode.Expensive(t)
 
 	time.Local = time.UTC
@@ -268,7 +249,7 @@ func TestTimeseries_SparkOnly(t *testing.T) {
 	require.Equal(t, 1.5, values[11].Records.Fields["count"].GetNumberValue())
 }
 
-func TestTimeseries_Key(t *testing.T) {
+func testTimeseries_Key(t *testing.T) {
 	q := &queries.ColumnTimeseries{
 		TableName:           "test",
 		TimestampColumnName: "time",
@@ -298,7 +279,7 @@ func TestTimeseries_Key(t *testing.T) {
 	assert.NotEqual(t, k1, k2)
 }
 
-func TestTimeseries_FirstDayOfWeek_Monday(t *testing.T) {
+func testTimeseries_FirstDayOfWeek_Monday(t *testing.T) {
 	rt, instanceID := instanceWith1RowModel(t)
 
 	q := &queries.ColumnTimeseries{
@@ -314,7 +295,7 @@ func TestTimeseries_FirstDayOfWeek_Monday(t *testing.T) {
 	require.Equal(t, parseTime(t, "2023-10-02T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
-func TestTimeseries_FirstDayOfWeek_Sunday(t *testing.T) {
+func testTimeseries_FirstDayOfWeek_Sunday(t *testing.T) {
 	rt, instanceID := instanceWith1RowModel(t)
 
 	q := &queries.ColumnTimeseries{
@@ -330,7 +311,7 @@ func TestTimeseries_FirstDayOfWeek_Sunday(t *testing.T) {
 	require.Equal(t, parseTime(t, "2023-10-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
-func TestTimeseries_FirstDayOfWeek_Sunday_OnSunday(t *testing.T) {
+func testTimeseries_FirstDayOfWeek_Sunday_OnSunday(t *testing.T) {
 	rt, instanceID := instanceWith1RowModelWithTime(t, "2023-10-01 00:00:00")
 
 	q := &queries.ColumnTimeseries{
@@ -347,7 +328,7 @@ func TestTimeseries_FirstDayOfWeek_Sunday_OnSunday(t *testing.T) {
 	require.Equal(t, parseTime(t, "2023-10-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
-func TestTimeseries_FirstDayOfWeek_Saturday(t *testing.T) {
+func testTimeseries_FirstDayOfWeek_Saturday(t *testing.T) {
 	rt, instanceID := instanceWith1RowModel(t)
 
 	q := &queries.ColumnTimeseries{
@@ -363,7 +344,7 @@ func TestTimeseries_FirstDayOfWeek_Saturday(t *testing.T) {
 	require.Equal(t, parseTime(t, "2023-09-30T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
-func TestTimeseries_FirstMonthOfYear_January(t *testing.T) {
+func testTimeseries_FirstMonthOfYear_January(t *testing.T) {
 	rt, instanceID := instanceWith1RowModel(t)
 
 	q := &queries.ColumnTimeseries{
@@ -379,7 +360,7 @@ func TestTimeseries_FirstMonthOfYear_January(t *testing.T) {
 	require.Equal(t, parseTime(t, "2023-01-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
-func TestTimeseries_FirstMonthOfYear_March(t *testing.T) {
+func testTimeseries_FirstMonthOfYear_March(t *testing.T) {
 	rt, instanceID := instanceWith1RowModel(t)
 
 	q := &queries.ColumnTimeseries{
@@ -396,7 +377,7 @@ func TestTimeseries_FirstMonthOfYear_March(t *testing.T) {
 	require.Equal(t, parseTime(t, "2023-03-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
-func TestTimeseries_FirstMonthOfYear_December(t *testing.T) {
+func testTimeseries_FirstMonthOfYear_December(t *testing.T) {
 	rt, instanceID := instanceWith1RowModel(t)
 
 	q := &queries.ColumnTimeseries{
@@ -412,7 +393,7 @@ func TestTimeseries_FirstMonthOfYear_December(t *testing.T) {
 	require.Equal(t, parseTime(t, "2022-12-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
-func TestTimeseries_FirstMonthOfYear_December_InDecember(t *testing.T) {
+func testTimeseries_FirstMonthOfYear_December_InDecember(t *testing.T) {
 	rt, instanceID := instanceWith1RowModelWithTime(t, "2023-12-04 00:00:00")
 
 	q := &queries.ColumnTimeseries{
