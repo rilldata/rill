@@ -4,6 +4,7 @@ import {
   type V1GetConversationResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Conversation } from "./conversation";
@@ -24,15 +25,6 @@ vi.mock("@rilldata/web-common/runtime-client", async (importOriginal) => {
   };
 });
 
-vi.mock("@rilldata/web-common/runtime-client/runtime-store", () => ({
-  runtime: {
-    subscribe: (fn: (value: { host: string }) => void) => {
-      fn({ host: "http://localhost:9009" });
-      return () => {};
-    },
-  },
-}));
-
 import { runtimeServiceForkConversation } from "@rilldata/web-common/runtime-client";
 
 // =============================================================================
@@ -40,6 +32,12 @@ import { runtimeServiceForkConversation } from "@rilldata/web-common/runtime-cli
 // =============================================================================
 
 const INSTANCE_ID = "test-instance";
+
+const mockRuntimeClient = {
+  host: "http://localhost:9009",
+  instanceId: INSTANCE_ID,
+  getJwt: () => undefined,
+} as unknown as RuntimeClient;
 const ORIGINAL_CONVERSATION_ID = "original-conv-123";
 const FORKED_CONVERSATION_ID = "forked-conv-456";
 
@@ -95,7 +93,7 @@ function mockForkEmptyResponse() {
 }
 
 function createConversation(conversationId: string = ORIGINAL_CONVERSATION_ID) {
-  return new Conversation(INSTANCE_ID, conversationId);
+  return new Conversation(mockRuntimeClient, conversationId);
 }
 
 async function sendMessageAndIgnoreStreamError(
