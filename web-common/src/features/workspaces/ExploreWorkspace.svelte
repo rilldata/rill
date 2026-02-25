@@ -65,7 +65,7 @@
   $: reconcileError = (exploreResource ?? metricsViewResource)?.meta
     ?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
-    runtimeClient.instanceId,
+    runtimeClient,
     exploreResource ?? metricsViewResource,
     reconcileError,
   );

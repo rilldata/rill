@@ -14,11 +14,12 @@ import { cleanEmbedUrlParams } from "@rilldata/web-common/features/dashboards/ur
 import { convertURLSearchParamsToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertURLSearchParamsToExploreState";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
-  getQueryServiceMetricsViewTimeRangeQueryOptions,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
+import { getQueryServiceMetricsViewTimeRangeQueryOptions } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { createQuery, type QueryClient } from "@tanstack/svelte-query";
 import { Settings } from "luxon";
@@ -55,7 +56,7 @@ export class DashboardStateDataLoader {
   >;
 
   public constructor(
-    instanceId: string,
+    private readonly client: RuntimeClient,
     private readonly exploreName: string,
     private readonly storageNamespacePrefix: string | undefined,
     private readonly bookmarkOrTokenExploreState:
@@ -63,9 +64,9 @@ export class DashboardStateDataLoader {
       | undefined,
     public readonly disableMostRecentDashboardState: boolean,
   ) {
-    this.validSpecQuery = useExploreValidSpec(instanceId, exploreName);
+    this.validSpecQuery = useExploreValidSpec(client, exploreName);
     this.fullTimeRangeQuery = this.useFullTimeRangeQuery(
-      instanceId,
+      client,
       this.validSpecQuery,
     );
 
@@ -197,7 +198,7 @@ export class DashboardStateDataLoader {
    * Does an additional validation where null min and max returned throws an error instead.
    */
   private useFullTimeRangeQuery(
-    instanceId: string,
+    client: RuntimeClient,
     validSpecQuery: ReturnType<typeof useExploreValidSpec>,
     queryClient?: QueryClient,
   ): CompoundQueryResult<V1MetricsViewTimeRangeResponse> {
@@ -216,9 +217,8 @@ export class DashboardStateDataLoader {
         };
 
         return getQueryServiceMetricsViewTimeRangeQueryOptions(
-          instanceId,
-          metricsViewName,
-          {},
+          client,
+          { metricsViewName },
           {
             query: {
               enabled: Boolean(metricsViewSpec.timeDimension),

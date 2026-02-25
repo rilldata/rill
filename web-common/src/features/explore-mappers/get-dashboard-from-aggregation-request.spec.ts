@@ -32,6 +32,7 @@ import {
   V1Operation,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { beforeEach, describe, expect, it } from "vitest";
 
 describe("getDashboardFromAggregationRequest", () => {
@@ -339,8 +340,12 @@ async function runTest({
   ignoreFilters: boolean;
   forceOpenPivot: boolean;
 }) {
+  const client = new RuntimeClient({
+    host: "http://localhost",
+    instanceId: "default",
+  });
   const mapQueryStore = mapQueryToDashboard(
-    "default",
+    client,
     {
       exploreName: AD_BIDS_EXPLORE_NAME,
       queryName: "MetricsViewAggregation",

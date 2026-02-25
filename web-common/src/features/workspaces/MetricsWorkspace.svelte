@@ -66,7 +66,7 @@
   // Reconcile error resolved to root cause for the banner
   $: reconcileError = resource?.meta?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
-    runtimeClient.instanceId,
+    runtimeClient,
     resource,
     reconcileError,
   );

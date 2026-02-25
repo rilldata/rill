@@ -38,14 +38,9 @@ export function getMappedExploreUrl(
 
   return derived(
     [
-      useExploreValidSpec(
-        client.instanceId,
-        req.exploreName,
-        undefined,
-        queryClient,
-      ),
+      useExploreValidSpec(client, req.exploreName, undefined, queryClient),
       useMetricsViewTimeRange(client, metricsViewName, undefined, queryClient),
-      mapQueryToDashboard(client.instanceId, req, opts),
+      mapQueryToDashboard(client, req, opts),
       page,
     ],
     ([validSpecResp, timeRangeSummaryResp, dashboardState, pageState]) => {

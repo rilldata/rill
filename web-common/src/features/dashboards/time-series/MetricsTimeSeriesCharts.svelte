@@ -96,7 +96,6 @@
 
   $: activeTimeGrain = selectedTimeRange?.interval;
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   let scrubStart;
   let scrubEnd;
@@ -272,7 +271,7 @@
 
   $: annotationsForMeasures = renderedMeasures.map((measure) =>
     getAnnotationsForMeasure({
-      instanceId,
+      client,
       exploreName,
       measureName: measure.name!,
       selectedTimeRange,

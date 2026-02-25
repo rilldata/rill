@@ -252,12 +252,7 @@ export function createTimeControlStoreFromName(
 ) {
   return derived(
     [
-      useExploreValidSpec(
-        client.instanceId,
-        exploreName,
-        undefined,
-        queryClient,
-      ),
+      useExploreValidSpec(client, exploreName, undefined, queryClient),
       useMetricsViewTimeRange(client, metricsViewName, {}, queryClient),
       useExploreState(exploreName),
     ],

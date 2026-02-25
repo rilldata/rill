@@ -98,7 +98,7 @@ export function getHomeBookmarkExploreState(
   return getCompoundQuery(
     [
       getBookmarks(projectId, ResourceKind.Explore, exploreName),
-      useExploreValidSpec(client.instanceId, exploreName),
+      useExploreValidSpec(client, exploreName),
       useMetricsViewTimeRange(client, metricsViewName),
     ],
     ([bookmarksResp, exploreSpecResp, timeRangeResp]) => {

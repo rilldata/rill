@@ -138,7 +138,7 @@
       bind:rows={$data["rows"]}
       bind:columns={$data["columns"]}
       columnErrors={$errors["columns"]}
-      instanceId={runtimeClient.instanceId}
+      client={runtimeClient}
       {exploreName}
     />
 

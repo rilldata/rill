@@ -9,30 +9,26 @@ import {
   createRuntimeServiceGetExplore,
   getRuntimeServiceGetExploreQueryKey,
   runtimeServiceGetExplore,
-  type RpcStatus,
+  getRuntimeServiceGetExploreQueryOptions,
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import {
   type V1ExploreSpec,
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
-  getRuntimeServiceGetExploreQueryOptions,
 } from "@rilldata/web-common/runtime-client";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import { error } from "@sveltejs/kit";
 import { derived, type Readable } from "svelte/store";
 
 export function useExplore(
-  instanceId: string,
+  client: RuntimeClient,
   exploreName: string,
   queryOptions?: Partial<
-    CreateQueryOptions<
-      V1GetExploreResponse,
-      ErrorType<RpcStatus>,
-      V1GetExploreResponse
-    >
+    CreateQueryOptions<V1GetExploreResponse, Error, V1GetExploreResponse>
   >,
   queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetExplore(
-    instanceId,
+    client,
     { name: exploreName },
     {
       query: queryOptions,
@@ -46,19 +42,15 @@ export type ExploreValidSpecResponse = {
   metricsView: V1MetricsViewSpec | undefined;
 };
 export function useExploreValidSpec(
-  instanceId: string,
+  client: RuntimeClient,
   exploreName: string,
   queryOptions?: Partial<
-    CreateQueryOptions<
-      V1GetExploreResponse,
-      ErrorType<RpcStatus>,
-      ExploreValidSpecResponse
-    >
+    CreateQueryOptions<V1GetExploreResponse, Error, ExploreValidSpecResponse>
   >,
   queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetExplore(
-    instanceId,
+    client,
     { name: exploreName },
     {
       query: {
@@ -82,7 +74,7 @@ export function getExploreValidSpecQueryOptions(
 ) {
   return derived([exploreNameStore], ([exploreName]) =>
     getRuntimeServiceGetExploreQueryOptions(
-      client.instanceId,
+      client,
       {
         name: exploreName,
       },
@@ -100,16 +92,18 @@ export function getExploreValidSpecQueryOptions(
 }
 
 export async function fetchExploreSpec(
-  instanceId: string,
+  client: RuntimeClient,
   exploreName: string,
 ) {
   const queryParams = {
     name: exploreName,
   };
-  const queryKey = getRuntimeServiceGetExploreQueryKey(instanceId, queryParams);
-  const queryFunction: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetExplore>>
-  > = ({ signal }) => runtimeServiceGetExplore(instanceId, queryParams, signal);
+  const queryKey = getRuntimeServiceGetExploreQueryKey(
+    client.instanceId,
+    queryParams,
+  );
+  const queryFunction: QueryFunction<V1GetExploreResponse> = ({ signal }) =>
+    runtimeServiceGetExplore(client, queryParams, { signal });
 
   const response = await queryClient.fetchQuery({
     queryFn: queryFunction,

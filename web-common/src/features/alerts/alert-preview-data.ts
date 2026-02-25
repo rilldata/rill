@@ -20,15 +20,15 @@ import type {
   TimeControlState,
 } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
-  createQueryServiceMetricsViewAggregation,
-  queryServiceMetricsViewAggregation,
   type StructTypeField,
   TypeCode,
   type V1ExploreSpec,
   type V1MetricsViewAggregationRequest,
+  type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/query-core";
 import type {
@@ -51,20 +51,22 @@ export function getAlertPreviewData(
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
     [
-      useExploreValidSpec(client.instanceId, formValues.exploreName),
+      useExploreValidSpec(client, formValues.exploreName),
       filters.getStore(),
       timeControls.getStore(),
     ],
     ([validExploreSpec, filtersState, timeControlsState], set) =>
       createQueryServiceMetricsViewAggregation(
-        client.instanceId,
-        formValues.metricsViewName,
-        getAlertPreviewQueryRequest(
-          formValues,
-          filtersState,
-          timeControlsState,
-          validExploreSpec.data?.explore ?? {},
-        ),
+        client,
+        {
+          ...getAlertPreviewQueryRequest(
+            formValues,
+            filtersState,
+            timeControlsState,
+            validExploreSpec.data?.explore ?? {},
+          ),
+          metricsView: formValues.metricsViewName,
+        },
         {
           query: getAlertPreviewQueryOptions(
             formValues,
@@ -107,8 +109,8 @@ function getAlertPreviewQueryOptions(
   metricsViewSpec: V1MetricsViewSpec | undefined,
 ): Partial<
   CreateQueryOptions<
-    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
-    unknown,
+    V1MetricsViewAggregationResponse,
+    Error,
     AlertPreviewResponse
   >
 > {

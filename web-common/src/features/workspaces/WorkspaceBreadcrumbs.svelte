@@ -1,8 +1,6 @@
 <script lang="ts">
-  import {
-    createRuntimeServiceListResources,
-    type V1Resource,
-  } from "@rilldata/web-common/runtime-client";
+  import { type V1Resource } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import WorkspaceCrumb from "./WorkspaceCrumb.svelte";
@@ -18,8 +16,8 @@
   $: resourceName = resource?.meta?.name?.name;
 
   $: resourcesQuery = createRuntimeServiceListResources(
-    runtimeClient.instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: { retry: 2, refetchOnMount: true },
     },

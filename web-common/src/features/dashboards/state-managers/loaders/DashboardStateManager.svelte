@@ -27,15 +27,14 @@
   export let disableMostRecentDashboardState: boolean = false;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
-  $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
+  $: exploreSpecQuery = useExploreValidSpec(client, exploreName);
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
   $: metricsViewName = exploreSpec?.metricsView ?? "";
   $: exploreStore = useExploreState(exploreName);
 
   $: dataLoader = new DashboardStateDataLoader(
-    instanceId,
+    client,
     exploreName,
     storageNamespacePrefix,
     bookmarkOrTokenExploreState,
@@ -46,7 +45,7 @@
   $: if (dataLoader) {
     stateSync?.teardown();
     stateSync = new DashboardStateSync(
-      instanceId,
+      client.instanceId,
       metricsViewName,
       exploreName,
       storageNamespacePrefix,

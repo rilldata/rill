@@ -27,7 +27,7 @@ export class ExploreMetricsViewMetadata {
     exploreName: string,
   ) {
     this.validSpecQuery = useExploreValidSpec(
-      client.instanceId,
+      client,
       exploreName,
       undefined,
       queryClient,

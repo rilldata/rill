@@ -12,10 +12,11 @@ import { convertRequestKeysToCamelCase } from "@rilldata/web-common/features/exp
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  createQueryServiceMetricsViewTimeRange,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
+import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, readable, type Readable } from "svelte/store";
 
 export type MapQueryRequest = {
@@ -43,7 +44,7 @@ export type MapQueryResponse = {
  * Used to show the relevant dashboard for a report/alert.
  */
 export function mapQueryToDashboard(
-  instanceId: string,
+  client: RuntimeClient,
   { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
   {
     exploreProtoState,
@@ -105,12 +106,11 @@ export function mapQueryToDashboard(
 
   return derived(
     [
-      useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
+      useExploreValidSpec(client, exploreName, undefined, queryClient),
       // TODO: handle non-timestamp dashboards
       createQueryServiceMetricsViewTimeRange(
-        instanceId,
-        metricsViewName,
-        {},
+        client,
+        { metricsViewName },
         undefined,
         queryClient,
       ),
@@ -129,10 +129,7 @@ export function mapQueryToDashboard(
         set({
           isFetching: false,
           isLoading: false,
-          error: new Error(
-            validSpecResp.error?.response?.data?.message ??
-              timeRangeSummary.error?.response?.data?.message,
-          ),
+          error: validSpecResp.error ?? timeRangeSummary.error ?? null,
         });
         return;
       }
@@ -179,7 +176,7 @@ export function mapQueryToDashboard(
       };
       getDashboardState({
         queryClient,
-        instanceId,
+        instanceId: client.instanceId,
         dashboard: defaultExploreState,
         req: queryRequestProperties,
         metricsView,

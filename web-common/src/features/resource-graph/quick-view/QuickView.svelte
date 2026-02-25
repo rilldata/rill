@@ -6,20 +6,18 @@
     resourceGraphQuickViewState,
   } from "./quick-view-store";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 
   const runtimeClient = useRuntimeClient();
 
   $: currentState = $resourceGraphQuickViewState;
   $: anchorResource = currentState.anchorResource ?? undefined;
 
-  $: ({ instanceId } = runtimeClient);
-
-  $: shouldFetchResources = currentState.open && !!instanceId;
+  $: shouldFetchResources = currentState.open && !!runtimeClient.instanceId;
 
   $: resourcesQuery = createRuntimeServiceListResources(
-    instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         retry: 2,
