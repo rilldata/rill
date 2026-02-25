@@ -8,7 +8,7 @@
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { Wand } from "lucide-svelte";
   import { V1ReconcileStatus } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -18,9 +18,10 @@
   export let hasResultTable = false;
   export let collapse = false;
 
+  const runtimeClient = useRuntimeClient();
   const { ai } = featureFlags;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: modelQuery = useModel(instanceId, modelName);
   $: connector = $modelQuery.data?.model?.spec?.outputConnector;
@@ -29,6 +30,7 @@
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   $: createMetricsViewFromModel = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",

@@ -3,6 +3,7 @@ import { pollForFileCreation } from "@rilldata/web-common/features/entity-manage
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createResourceFile } from "@rilldata/web-common/features/file-explorer/new-files";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -56,6 +57,7 @@ const runtimeServiceGenerateMetricsViewFileWithSignal = (
  * This function is to be called from all `Generate dashboard with AI` CTAs *outside* of the Metrics Editor.
  */
 export function useCreateMetricsViewFromTableUIAction(
+  client: RuntimeClient,
   instanceId: string,
   connector: string,
   database: string,
@@ -155,7 +157,7 @@ export function useCreateMetricsViewFromTableUIAction(
       }
 
       // Create the Explore file, and navigate to it
-      await createAndPreviewExplore(queryClient, instanceId, resource);
+      await createAndPreviewExplore(client, queryClient, instanceId, resource);
     } catch (err) {
       eventBus.emit("notification", {
         message:
@@ -252,6 +254,7 @@ export async function createDashboardFromTableInMetricsEditor(
  * Handles both OLAP and non-OLAP connectors with appropriate logic for each case.
  */
 export async function generateMetricsFromTable(
+  client: RuntimeClient,
   instanceId: string,
   connector: string,
   database: string,
@@ -265,6 +268,7 @@ export async function generateMetricsFromTable(
   if (isOlapConnector) {
     // For OLAP connectors, use direct metrics view generation
     const createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+      client,
       instanceId,
       connector,
       database,
@@ -278,6 +282,7 @@ export async function generateMetricsFromTable(
   } else {
     // For non-OLAP connectors, follow Rill architecture: Model → Metrics → (Optional) Explore
     await createModelAndMetricsAndExplore(
+      client,
       instanceId,
       connector,
       database,
@@ -296,6 +301,7 @@ export async function generateMetricsFromTable(
  * 3. Optionally create explore dashboard (on top of metrics view)
  */
 export async function createModelAndMetricsAndExplore(
+  client: RuntimeClient,
   instanceId: string,
   connector: string,
   database: string,
@@ -336,6 +342,7 @@ export async function createModelAndMetricsAndExplore(
     });
 
     const [, modelName] = await createYamlModelFromTable(
+      instanceId,
       queryClient,
       connector,
       database,
@@ -455,7 +462,7 @@ export async function createModelAndMetricsAndExplore(
     });
 
     // Step 5: Create explore dashboard
-    await createAndPreviewExplore(queryClient, instanceId, resource);
+    await createAndPreviewExplore(client, queryClient, instanceId, resource);
   } catch (err) {
     console.error("Failed to create model and metrics view:", err);
     throw err;
@@ -538,12 +545,14 @@ async function createMetricsViewFromTable(
  * Returns the file path of the created explore.
  */
 export async function createExploreWithoutNavigation(
+  client: RuntimeClient,
   queryClient: QueryClient,
   instanceId: string,
   metricsViewResource: V1Resource,
 ): Promise<string> {
   // Create the Explore file
   const filePath = await createResourceFile(
+    client,
     ResourceKind.Explore,
     metricsViewResource,
   );
@@ -627,6 +636,7 @@ export async function createCanvasDashboardWithoutNavigation(
  * to create Canvas dashboard only (without Explore).
  */
 export function useCreateMetricsViewWithCanvasUIAction(
+  client: RuntimeClient,
   instanceId: string,
   connector: string,
   database: string,
@@ -718,6 +728,7 @@ export function useCreateMetricsViewWithCanvasUIAction(
  * This function is to be called from "Generate dashboard" CTA when canvas feature is enabled.
  */
 export function useCreateMetricsViewWithCanvasAndExploreUIAction(
+  client: RuntimeClient,
   instanceId: string,
   connector: string,
   database: string,
@@ -778,6 +789,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       });
 
       exploreFilePath = await createExploreWithoutNavigation(
+        client,
         queryClient,
         instanceId,
         resource,

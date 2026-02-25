@@ -8,6 +8,7 @@ import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts"
  * Generates the explore page URL with proper search parameters
  */
 export async function generateExploreLink(
+  instanceId: string,
   exploreState: Partial<ExploreState>,
   exploreName: string,
   organization?: string | undefined,
@@ -19,6 +20,7 @@ export async function generateExploreLink(
 
     // Generate search parameters from explore state
     const searchParams = await getExplorePageUrlSearchParams(
+      instanceId,
       exploreName,
       exploreState,
     );

@@ -11,7 +11,7 @@ import {
   type V1GetConversationResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
   SSEFetchClient,
   SSEHttpError,
@@ -80,6 +80,10 @@ export class Conversation {
   // Reactive store for conversationId - enables query to auto-update when ID changes
   private readonly conversationIdStore: Writable<string>;
 
+  private get instanceId(): string {
+    return this.client.instanceId;
+  }
+
   public get conversationId(): string {
     return get(this.conversationIdStore);
   }
@@ -89,7 +93,7 @@ export class Conversation {
   }
 
   constructor(
-    private readonly instanceId: string,
+    private readonly client: RuntimeClient,
     initialConversationId: string,
     private readonly agent: string = ToolName.ANALYST_AGENT,
   ) {
@@ -334,7 +338,7 @@ export class Conversation {
     this.ensureSSEClient();
     this.sseClient!.stop();
 
-    const baseUrl = `${get(runtime).host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
+    const baseUrl = `${this.client.host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
 
     const requestBody = {
       instanceId: this.instanceId,

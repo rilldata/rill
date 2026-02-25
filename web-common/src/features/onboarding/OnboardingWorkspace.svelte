@@ -3,7 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Button from "../../components/button/Button.svelte";
   import { createRuntimeServiceUnpackExample } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
   import ImportData from "@rilldata/web-common/components/icons/ImportData.svelte";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
@@ -21,7 +21,8 @@
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+  $: ({ instanceId } = runtimeClient);
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
 
@@ -72,7 +73,8 @@
     <div class="flex flex-col w-64 gap-y-4">
       <GenerateSampleData type="home" />
       <Button
-        onClick={() => createResourceAndNavigate(ResourceKind.Model)}
+        onClick={() =>
+          createResourceAndNavigate(runtimeClient, ResourceKind.Model)}
         type="tertiary"
         large
         forcedStyle="height: 3rem;"
@@ -84,7 +86,8 @@
         Create blank model
       </Button>
       <Button
-        onClick={() => createResourceAndNavigate(ResourceKind.MetricsView)}
+        onClick={() =>
+          createResourceAndNavigate(runtimeClient, ResourceKind.MetricsView)}
         type="tertiary"
         large
         forcedStyle="height: 3rem;"

@@ -1,5 +1,5 @@
 import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
-import { derived, get, type Readable } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 import {
   getClientFilteredResourcesQueryOptions,
   ResourceKind,
@@ -7,7 +7,6 @@ import {
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { getCanvasNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { createQuery } from "@tanstack/svelte-query";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import { getQueryServiceResolveCanvasQueryOptions } from "@rilldata/web-common/runtime-client";
 import {
   getIdForContext,
@@ -17,19 +16,21 @@ import {
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
 import { getLatestConversationQueryOptions } from "@rilldata/web-common/features/chat/core/utils.ts";
 import { MessageType } from "@rilldata/web-common/features/chat/core/types.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 export function getCanvasesPickerOptions(
+  client: RuntimeClient,
   uiState: ContextPickerUIState,
 ): Readable<PickerItem[]> {
   const canvasResourcesQuery = createQuery(
-    getClientFilteredResourcesQueryOptions(ResourceKind.Canvas, (res) =>
+    getClientFilteredResourcesQueryOptions(client, ResourceKind.Canvas, (res) =>
       Boolean(res.canvas?.state?.validSpec),
     ),
     queryClient,
   );
-  const lastUsedCanvasNameStore = getLastUsedCanvasNameStore();
+  const lastUsedCanvasNameStore = getLastUsedCanvasNameStore(client);
   const activeCanvasNameStore = getCanvasNameStore();
-  const instanceId = get(runtime).instanceId;
+  const instanceId = client.instanceId;
 
   return derived(
     [canvasResourcesQuery, lastUsedCanvasNameStore, activeCanvasNameStore],
@@ -133,9 +134,9 @@ function getCanvasComponentsQueryOptions(
 /**
  * Looks at the last conversation and returns the canvas used in the last message or tool call.
  */
-function getLastUsedCanvasNameStore() {
+function getLastUsedCanvasNameStore(client: RuntimeClient) {
   const lastConversationQuery = createQuery(
-    getLatestConversationQueryOptions(),
+    getLatestConversationQueryOptions(client),
     queryClient,
   );
 

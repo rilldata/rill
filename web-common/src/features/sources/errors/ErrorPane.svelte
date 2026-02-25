@@ -1,13 +1,15 @@
 <script lang="ts">
   import CancelCircle from "../../../components/icons/CancelCircle.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { humanReadableErrorMessage } from "./errors";
   import { useSourceFromYaml } from "../selectors";
 
   export let filePath: string;
   export let errorMessage: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   // Parse Source YAML client-side
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);

@@ -16,8 +16,7 @@ import {
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, readable, type Readable } from "svelte/store";
+import { derived, readable, type Readable } from "svelte/store";
 
 export type MapQueryRequest = {
   exploreName: string;
@@ -44,6 +43,7 @@ export type MapQueryResponse = {
  * Used to show the relevant dashboard for a report/alert.
  */
 export function mapQueryToDashboard(
+  instanceId: string,
   { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
   {
     exploreProtoState,
@@ -103,14 +103,12 @@ export function mapQueryToDashboard(
   // backwards compatibility for older alerts created on metrics explore directly
   if (!exploreName) exploreName = metricsViewName;
 
-  const instanceId = get(runtime).instanceId;
-
   return derived(
     [
       useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
       // TODO: handle non-timestamp dashboards
       createQueryServiceMetricsViewTimeRange(
-        get(runtime).instanceId,
+        instanceId,
         metricsViewName,
         {},
         undefined,

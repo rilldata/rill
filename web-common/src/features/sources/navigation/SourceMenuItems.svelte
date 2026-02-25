@@ -26,7 +26,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { GitBranch, WandIcon } from "lucide-svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import {
     useCreateMetricsViewFromTableUIAction,
@@ -39,11 +39,13 @@
 
   export let filePath: string;
 
+  const runtimeClient = useRuntimeClient();
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   const { ai, generateCanvas } = featureFlags;
 
@@ -76,6 +78,7 @@
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     sinkConnector as string,
     database,
@@ -87,6 +90,7 @@
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     sinkConnector as string,
     database,
@@ -98,6 +102,7 @@
   );
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
+    runtimeClient,
     instanceId,
     sinkConnector as string,
     database,
@@ -112,6 +117,7 @@
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createSqlModelFromTable(
+        instanceId,
         queryClient,
         connector,
         database,

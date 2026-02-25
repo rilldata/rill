@@ -11,7 +11,7 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector,
     useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver,
@@ -22,7 +22,8 @@
 
   export let fileArtifact: FileArtifact;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
   $: ({
     hasUnsavedChanges,
     autoSave,
@@ -36,7 +37,10 @@
 
   $: metricsViewName = $resourceName?.name ?? getNameFromFile(filePath);
 
-  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact.getResource(
+    queryClient,
+    runtimeClient.instanceId,
+  );
   $: ({ data: resource } = $resourceQuery);
 
   $: isOldMetricsView = !$remoteContent?.includes("version: 1");
@@ -47,9 +51,9 @@
   $: table = resource?.metricsView?.state?.validSpec?.table ?? "";
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient.instanceId);
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
-    instanceId,
+    runtimeClient.instanceId,
     connector,
   );
   $: isModelingSupported = connector
@@ -59,13 +63,16 @@
   $: selectedView = workspace.view;
 
   // Parse error for the editor gutter and banner
-  $: parseErrorQuery = fileArtifact.getParseError(queryClient, instanceId);
+  $: parseErrorQuery = fileArtifact.getParseError(
+    queryClient,
+    runtimeClient.instanceId,
+  );
   $: parseError = $parseErrorQuery;
 
   // Reconcile error resolved to root cause for the banner
   $: reconcileError = resource?.meta?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
-    instanceId,
+    runtimeClient.instanceId,
     resource,
     reconcileError,
   );
@@ -75,7 +82,7 @@
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      instanceId,
+      runtimeClient.instanceId,
       newTitle,
       filePath,
       fileName,

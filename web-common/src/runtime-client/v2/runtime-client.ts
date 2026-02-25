@@ -13,6 +13,7 @@ import { RequestQueue, createQueueInterceptor } from "./request-queue";
 export type AuthContext = "user" | "mock" | "magic" | "embed";
 
 export class RuntimeClient {
+  readonly host: string;
   readonly instanceId: string;
   readonly transport: Transport;
   readonly requestQueue: RequestQueue;
@@ -33,6 +34,7 @@ export class RuntimeClient {
     jwt?: string;
     authContext?: AuthContext;
   }) {
+    this.host = opts.host;
     this.instanceId = opts.instanceId;
     this.currentJwt = opts.jwt;
     this.jwtReceivedAt = opts.jwt ? Date.now() : 0;

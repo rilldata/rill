@@ -3,17 +3,20 @@ import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { waitUntil } from "../../lib/waitUtils";
 import type { V1Resource } from "../../runtime-client";
+import type { RuntimeClient } from "../../runtime-client/v2";
 import { fileArtifacts } from "../entity-management/file-artifacts";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import { createResourceFile } from "../file-explorer/new-files";
 
 export async function createAndPreviewExplore(
+  client: RuntimeClient,
   queryClient: QueryClient,
   instanceId: string,
   metricsViewResource: V1Resource,
 ) {
   // Create the Explore file
   const filePath = await createResourceFile(
+    client,
     ResourceKind.Explore,
     metricsViewResource,
   );

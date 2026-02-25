@@ -48,7 +48,7 @@
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
 
     if (shouldSendAnalytics) {
-      await initMetrics(config); // Proxies events through the Rill "intake" service
+      await initMetrics(config, host); // Proxies events through the Rill "intake" service
       initPosthog(config.version);
       posthogIdentify(config.userId, {
         installId: config.installId,

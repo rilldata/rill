@@ -14,10 +14,10 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { derived, type Readable } from "svelte/store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
 import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 /**
  * Creates a store that contains a 2-level list of sources/model resources.
@@ -26,17 +26,19 @@ import type { PickerItem } from "@rilldata/web-common/features/chat/core/context
  * NOTE: this only lists resources that are parsed as sources/models. Any parse errors will exclude the file.
  */
 export function getModelsPickerOptions(
+  client: RuntimeClient,
   uiState: ContextPickerUIState,
 ): Readable<PickerItem[]> {
   const modelResourcesQuery = createQuery(
-    getClientFilteredResourcesQueryOptions(ResourceKind.Model),
+    getClientFilteredResourcesQueryOptions(client, ResourceKind.Model),
     queryClient,
   );
   const activeResourceStore = getActiveResourceStore();
 
   return derived(
-    [runtime, modelResourcesQuery, activeResourceStore],
-    ([{ instanceId }, modelResourcesResp, activeResource], set) => {
+    [modelResourcesQuery, activeResourceStore],
+    ([modelResourcesResp, activeResource], set) => {
+      const instanceId = client.instanceId;
       const models = modelResourcesResp.data ?? [];
       const modelPickerItems: PickerItem[] = [];
       const modelQueryOptions: ReturnType<

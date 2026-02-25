@@ -25,7 +25,7 @@
     type MetricsViewSpecDimension,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
   import { slide } from "svelte/transition";
@@ -90,9 +90,9 @@
   };
   let storedProperties: Record<string, unknown> = {};
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: instance = createRuntimeServiceGetInstance(instanceId, {
+  $: instance = createRuntimeServiceGetInstance(runtimeClient.instanceId, {
     sensitive: true,
   });
 
@@ -111,7 +111,10 @@
   };
 
   $: isModelingSupportedForConnector = olapConnector
-    ? useIsModelingSupportedForConnector(instanceId, olapConnector)
+    ? useIsModelingSupportedForConnector(
+        runtimeClient.instanceId,
+        olapConnector,
+      )
     : null;
   $: isModelingSupported = $isModelingSupportedForConnector?.data;
 
@@ -132,9 +135,9 @@
 
   $: noTableProperties = !yamlConnector && !database && !databaseSchema;
 
-  $: modelsQuery = useModels(instanceId);
-  $: sourcesQuery = useSources(instanceId);
-  $: metricsViewQuery = getResource(queryClient, instanceId);
+  $: modelsQuery = useModels(runtimeClient.instanceId);
+  $: sourcesQuery = useSources(runtimeClient.instanceId);
+  $: metricsViewQuery = getResource(queryClient, runtimeClient.instanceId);
 
   $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
@@ -151,7 +154,7 @@
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
   $: hasNonDuckDBOLAPConnectorQuery = createRuntimeServiceAnalyzeConnectors(
-    instanceId,
+    runtimeClient.instanceId,
     {
       query: {
         select: (data) => {
@@ -182,7 +185,11 @@
 
   $: resourceQuery =
     resourceKind &&
-    useResource(instanceId, modelOrSourceOrTableName, resourceKind);
+    useResource(
+      runtimeClient.instanceId,
+      modelOrSourceOrTableName,
+      resourceKind,
+    );
 
   $: connector =
     yamlConnector ||
@@ -192,7 +199,7 @@
     olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
-    instanceId,
+    runtimeClient.instanceId,
     modelOrSourceOrTableName,
     {
       connector,
@@ -272,12 +279,15 @@
 
   $: tablesQuery = createConnectorServiceOLAPListTables(
     {
-      instanceId,
+      instanceId: runtimeClient.instanceId,
       connector,
     },
     {
       query: {
-        enabled: !!instanceId && !!connector && !hasValidModelOrSourceSelection,
+        enabled:
+          !!runtimeClient.instanceId &&
+          !!connector &&
+          !hasValidModelOrSourceSelection,
       },
     },
   );

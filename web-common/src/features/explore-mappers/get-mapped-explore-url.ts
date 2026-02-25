@@ -44,7 +44,7 @@ export function getMappedExploreUrl(
         undefined,
         queryClient,
       ),
-      mapQueryToDashboard(req, opts),
+      mapQueryToDashboard(instanceId, req, opts),
       page,
     ],
     ([validSpecResp, timeRangeSummaryResp, dashboardState, pageState]) => {

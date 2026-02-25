@@ -16,7 +16,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { Folder } from "lucide-svelte";
   import { createRuntimeServiceCreateDirectory } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { removeLeadingSlash } from "../entity-management/entity-mappers";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
@@ -28,6 +28,8 @@
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
+  const runtimeClient = useRuntimeClient();
+
   let contextMenuOpen = false;
 
   const createFolder = createRuntimeServiceCreateDirectory();
@@ -35,7 +37,7 @@
   $: id = `${dir.path}-nav-entry`;
   $: expanded = $directoryState[dir.path];
   $: padding = getPaddingFromPath(dir.path);
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
   $: topLevelFolder = getTopLevelFolder(dir.path);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 

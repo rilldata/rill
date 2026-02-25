@@ -246,6 +246,7 @@ export class AddDataFormManager {
 
   makeOnUpdate(args: {
     onClose: () => void;
+    instanceId: string;
     queryClient: QueryClient;
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
@@ -253,6 +254,7 @@ export class AddDataFormManager {
   }) {
     const {
       onClose,
+      instanceId,
       queryClient,
       getSelectedAuthMethod,
       setParamsError,
@@ -349,6 +351,7 @@ export class AddDataFormManager {
         if (isStepFlowConnector && isOnSourceOrExplorerStep) {
           // Step 2: submit the source/model and close
           await submitAddSourceForm(
+            instanceId,
             queryClient,
             connector,
             submitValues,
@@ -358,6 +361,7 @@ export class AddDataFormManager {
         } else if (isStepFlowConnector && isOnConnectorStep) {
           // Step 1: test connector, persist config, then advance to step 2
           await this.submitConnectorStepAndAdvance({
+            instanceId,
             queryClient,
             values,
             submitValues,
@@ -366,11 +370,17 @@ export class AddDataFormManager {
           });
         } else if (this.formType === "source") {
           // Single-step source form
-          await submitAddSourceForm(queryClient, connector, submitValues);
+          await submitAddSourceForm(
+            instanceId,
+            queryClient,
+            connector,
+            submitValues,
+          );
           onClose();
         } else {
           // Single-step connector form
           await submitAddConnectorForm(
+            instanceId,
             queryClient,
             connector,
             submitValues,
@@ -390,14 +400,21 @@ export class AddDataFormManager {
    * persist connector config, then advance to the source/explorer step.
    */
   private async submitConnectorStepAndAdvance(args: {
+    instanceId: string;
     queryClient: QueryClient;
     values: FormData;
     submitValues: FormData;
     isPublicAuth: boolean;
     isMultiStep: boolean;
   }) {
-    const { queryClient, values, submitValues, isPublicAuth, isMultiStep } =
-      args;
+    const {
+      instanceId,
+      queryClient,
+      values,
+      submitValues,
+      isPublicAuth,
+      isMultiStep,
+    } = args;
     const nextStep = isMultiStep ? "source" : "explorer";
 
     if (isPublicAuth) {
@@ -411,6 +428,7 @@ export class AddDataFormManager {
 
     // Test the connection, then persist config and advance
     const connectorInstanceName = await submitAddConnectorForm(
+      instanceId,
       queryClient,
       this.connector,
       submitValues,
@@ -616,16 +634,18 @@ export class AddDataFormManager {
    * Schema conditionals handle connector-specific requirements (e.g., SSL).
    */
   async saveConnectorAnyway(args: {
+    instanceId: string;
     queryClient: QueryClient;
     values: FormData;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values } = args;
+    const { instanceId, queryClient, values } = args;
     const schema = getConnectorSchema(this.schemaName);
     const processedValues = schema
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
       : values;
     try {
       await submitAddConnectorForm(
+        instanceId,
         queryClient,
         this.connector,
         processedValues,

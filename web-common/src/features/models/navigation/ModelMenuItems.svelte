@@ -17,7 +17,7 @@
   import Model from "../../../components/icons/Model.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import { V1ReconcileStatus } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../../runtime-client/v2";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import {
@@ -25,12 +25,13 @@
     useCreateMetricsViewWithCanvasUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
 
+  const runtimeClient = useRuntimeClient();
   const { ai, generateCanvas } = featureFlags;
   const queryClient = useQueryClient();
 
   export let filePath: string;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
@@ -59,6 +60,7 @@
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createSqlModelFromTable(
+        instanceId,
         queryClient,
         connector as string,
         "",
@@ -82,6 +84,7 @@
   }
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",
@@ -93,6 +96,7 @@
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",
@@ -104,6 +108,7 @@
   );
 
   $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
+    runtimeClient,
     instanceId,
     connector as string,
     "",

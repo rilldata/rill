@@ -1,11 +1,14 @@
 <!-- Renders assistant responses from router_agent. -->
 <script lang="ts">
   import { enhanceCitationLinks } from "@rilldata/web-common/features/chat/core/messages/text/enhance-citation-links.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
   import type { Conversation } from "../../conversation";
   import FeedbackButtons from "../../feedback/FeedbackButtons.svelte";
   import { extractMessageText } from "../../utils";
   import type { TextBlock } from "./text-block";
+
+  const runtimeClient = useRuntimeClient();
 
   export let block: TextBlock;
   export let conversation: Conversation;
@@ -22,7 +25,7 @@
 </script>
 
 <div class="chat-message">
-  <div class="chat-message-content" use:enhanceCitationLinks>
+  <div class="chat-message-content" use:enhanceCitationLinks={runtimeClient}>
     <Markdown {content} />
   </div>
   <div class="chat-message-actions">

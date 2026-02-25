@@ -5,7 +5,9 @@
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  const runtimeClient = useRuntimeClient();
   import WorkspaceError from "../WorkspaceError.svelte";
   import type { VirtualizedTableColumns } from "../virtualized-table/types";
   import PreviewTable from "./PreviewTable.svelte";
@@ -19,7 +21,7 @@
   let columns: VirtualizedTableColumns[] | undefined;
   let rows: V1TableRowsResponseDataItem[] | undefined;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: columnsQuery = createQueryServiceTableColumns(instanceId, table, {
     connector,

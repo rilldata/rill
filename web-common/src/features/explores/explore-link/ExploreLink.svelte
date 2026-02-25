@@ -12,6 +12,9 @@
   } from "@rilldata/web-common/features/explore-mappers/types";
   import { getErrorMessage } from "@rilldata/web-common/features/explore-mappers/utils";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  const runtimeClient = useRuntimeClient();
 
   export let exploreName: string;
   export let displayName: string | undefined = undefined;
@@ -32,6 +35,7 @@
 
     try {
       const exploreURL = await generateExploreLink(
+        runtimeClient.instanceId,
         exploreState,
         exploreName,
         organization,

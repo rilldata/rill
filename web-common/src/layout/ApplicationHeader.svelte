@@ -18,7 +18,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
@@ -27,10 +27,11 @@
   import Tag from "../components/tag/Tag.svelte";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
+  const runtimeClient = useRuntimeClient();
 
   export let mode: string;
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   $: ({
     params: { name: dashboardName },

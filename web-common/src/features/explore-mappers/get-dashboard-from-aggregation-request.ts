@@ -76,6 +76,7 @@ export async function getDashboardFromAggregationRequest({
   }
 
   await fillTimeRange(
+    instanceId,
     explore,
     dashboard,
     req.timeRange,

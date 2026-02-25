@@ -8,19 +8,22 @@
   import type { SuperForm } from "sveltekit-superforms/client";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let filters: Filters;
   export let timeControls: TimeControls;
 
+  const runtimeClient = useRuntimeClient();
+
   $: ({ form } = superFormInstance);
 
-  $: ({ instanceId } = $runtime);
-
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
-  $: metricsView = useMetricsViewValidSpec(instanceId, metricsViewName);
+  $: metricsView = useMetricsViewValidSpec(
+    runtimeClient.instanceId,
+    metricsViewName,
+  );
 
   $: measureOptions =
     $metricsView.data?.measures
@@ -51,7 +54,12 @@
 
 <div class="flex flex-col gap-y-3">
   <FormSection title="Filters">
-    <FiltersForm {instanceId} {filters} {timeControls} maxWidth={750} />
+    <FiltersForm
+      instanceId={runtimeClient.instanceId}
+      {filters}
+      {timeControls}
+      maxWidth={750}
+    />
   </FormSection>
   <FormSection
     description="Select the measures you want to monitor."

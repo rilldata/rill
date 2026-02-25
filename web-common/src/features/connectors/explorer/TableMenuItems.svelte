@@ -53,6 +53,7 @@
     if (isModelingSupported) {
       await handleCreateModel(() =>
         createSqlModelFromTable(
+          instanceId,
           queryClient,
           connector,
           database,
@@ -63,6 +64,7 @@
     } else if (showGenerateModel) {
       await handleCreateModel(() =>
         createYamlModelFromTable(
+          instanceId,
           queryClient,
           connector,
           database,
@@ -75,6 +77,7 @@
 
   async function handleGenerateMetrics() {
     await generateMetricsFromTable(
+      client,
       instanceId,
       connector,
       database,
@@ -87,6 +90,7 @@
 
   async function handleGenerateDashboard() {
     await generateMetricsFromTable(
+      client,
       instanceId,
       connector,
       database,

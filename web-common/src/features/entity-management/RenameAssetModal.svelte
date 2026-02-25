@@ -13,7 +13,7 @@
   import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { renameFileArtifact } from "./actions";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
@@ -26,7 +26,9 @@
   export let filePath: string;
   export let isDir: boolean;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   let error: string;
 

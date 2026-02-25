@@ -5,6 +5,7 @@
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { fileAndResourceWatcher } from "./file-and-resource-watcher";
   import { ConnectionStatus } from "@rilldata/web-common/runtime-client/sse-connection-manager";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   const {
     status: statusStore,
@@ -12,8 +13,12 @@
     scheduleAutoClose,
   } = fileAndResourceWatcher;
 
+  const runtimeClient = useRuntimeClient();
+
   export let host: string;
   export let instanceId: string;
+
+  $: fileAndResourceWatcher.setInstanceId(instanceId);
 
   $: watcherEndpoint = `${host}/v1/instances/${instanceId}/sse?events=file,resource`;
 
@@ -22,7 +27,7 @@
   $: status = $statusStore;
 
   onMount(() => {
-    void fileArtifacts.init(queryClient, instanceId);
+    void fileArtifacts.init(runtimeClient, queryClient, instanceId);
 
     return () => fileAndResourceWatcher.close(true);
   });

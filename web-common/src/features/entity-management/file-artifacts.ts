@@ -7,6 +7,7 @@ import {
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, writable } from "svelte/store";
 import { FileArtifact } from "./file-artifact";
@@ -36,8 +37,14 @@ class UnsavedFilesStore {
 export class FileArtifacts {
   private readonly artifacts: Map<string, FileArtifact> = new Map();
   readonly unsavedFiles = new UnsavedFilesStore();
+  private client!: RuntimeClient;
 
-  async init(queryClient: QueryClient, instanceId: string) {
+  async init(
+    client: RuntimeClient,
+    queryClient: QueryClient,
+    instanceId: string,
+  ) {
+    this.client = client;
     const resources = await fetchResources(queryClient, instanceId);
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
@@ -90,7 +97,7 @@ export class FileArtifacts {
     let artifact = this.artifacts.get(filePath);
 
     if (!artifact) {
-      artifact = new FileArtifact(filePath);
+      artifact = new FileArtifact(this.client, filePath);
       this.artifacts.set(filePath, artifact);
     }
 

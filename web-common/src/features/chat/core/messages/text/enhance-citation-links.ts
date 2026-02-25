@@ -11,6 +11,7 @@ import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client.
 import type { RpcStatus } from "@rilldata/web-common/runtime-client";
 import { page } from "$app/stores";
 import { getUrlForExplore } from "@rilldata/web-common/features/explore-mappers/generate-explore-link.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 const DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
 
@@ -20,9 +21,9 @@ const DASHBOARD_CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
  * Also adds a check to make sure url is actually a local link before using goto.
  * @param node
  */
-export function enhanceCitationLinks(node: HTMLElement) {
+export function enhanceCitationLinks(node: HTMLElement, client: RuntimeClient) {
   const isEmbedded = EmbedStore.isEmbedded();
-  const mapperStore = getMetricsResolverQueryToUrlParamsMapperStore();
+  const mapperStore = getMetricsResolverQueryToUrlParamsMapperStore(client);
 
   function handleClick(e: MouseEvent) {
     if (!e.target || !(e.target instanceof HTMLElement)) return; // typesafety
@@ -63,13 +64,15 @@ export function enhanceCitationLinks(node: HTMLElement) {
  * Calls {@link mapMetricsResolverQueryToDashboard} to get partial explore state from a metrics resolver query.
  * Then calls {@link convertPartialExploreStateToUrlParams} to convert the partial explore to url params.
  */
-function getMetricsResolverQueryToUrlParamsMapperStore(): Readable<{
+function getMetricsResolverQueryToUrlParamsMapperStore(
+  client: RuntimeClient,
+): Readable<{
   error: ErrorType<RpcStatus> | null;
   isLoading: boolean;
   data?: (url: URL) => string;
 }> {
   const resourcesQuery = createQuery(
-    getMetricsViewAndExploreSpecsQueryOptions(),
+    getMetricsViewAndExploreSpecsQueryOptions(client),
     queryClient,
   );
 
@@ -115,6 +118,7 @@ function getMetricsResolverQueryToUrlParamsMapperStore(): Readable<{
       );
 
       const urlSearchParams = maybeGetExplorePageUrlSearchParams(
+        client.instanceId,
         partialExploreState,
         metricsViewSpec,
         exploreSpec,

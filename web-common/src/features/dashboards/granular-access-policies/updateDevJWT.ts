@@ -7,10 +7,10 @@ import { runtimeServiceIssueDevJWT } from "@rilldata/web-common/runtime-client";
 import { invalidateAllMetricsViews } from "@rilldata/web-common/runtime-client/invalidation";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
 
 export async function updateDevJWT(
   queryClient: QueryClient,
+  instanceId: string,
   mockUser: MockUser | null,
 ) {
   selectedMockUserStore.set(mockUser);
@@ -50,5 +50,5 @@ export async function updateDevJWT(
     }
   }
 
-  return invalidateAllMetricsViews(queryClient, get(runtime).instanceId);
+  return invalidateAllMetricsViews(queryClient, instanceId);
 }

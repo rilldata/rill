@@ -842,6 +842,7 @@ describe("updateDotEnvWithSecrets", () => {
       sql: "SELECT 1",
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -865,6 +866,7 @@ describe("updateDotEnvWithSecrets", () => {
       },
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -881,6 +883,7 @@ describe("updateDotEnvWithSecrets", () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const formValues: Record<string, unknown> = { password: "new_pw" };
     const { newBlob, originalBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -898,6 +901,7 @@ describe("updateDotEnvWithSecrets", () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const formValues: Record<string, unknown> = { password: "new_value" };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -915,6 +919,7 @@ describe("updateDotEnvWithSecrets", () => {
       dsn: undefined,
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -932,6 +937,7 @@ describe("updateDotEnvWithSecrets", () => {
       ],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -949,6 +955,7 @@ describe("updateDotEnvWithSecrets", () => {
       headers: [{ key: "Authorization", value: "Bearer abc123" }],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -965,6 +972,7 @@ describe("updateDotEnvWithSecrets", () => {
       headers: [{ key: "X-API-Key", value: "raw_api_key_value" }],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -980,6 +988,7 @@ describe("updateDotEnvWithSecrets", () => {
       headers: [{ key: "Authorization", value: "Token secret_tok" }],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -999,6 +1008,7 @@ describe("updateDotEnvWithSecrets", () => {
       ],
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,
@@ -1010,6 +1020,7 @@ describe("updateDotEnvWithSecrets", () => {
   it("should invalidate cache before reading .env", async () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       { password: "pw" },
@@ -1030,6 +1041,7 @@ describe("updateDotEnvWithSecrets", () => {
 
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     const { newBlob, originalBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       { password: "pw" },
@@ -1047,6 +1059,7 @@ describe("updateDotEnvWithSecrets", () => {
     const connector: V1ConnectorDriver = { name: "clickhouse" };
     await expect(
       updateDotEnvWithSecrets(
+        "test-instance-id",
         mockQueryClient as any,
         connector,
         { password: "pw" },
@@ -1069,6 +1082,7 @@ describe("updateDotEnvWithSecrets", () => {
       dsn: "clickhouse://...",
     };
     const { newBlob } = await updateDotEnvWithSecrets(
+      "test-instance-id",
       mockQueryClient as any,
       connector,
       formValues,

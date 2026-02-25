@@ -4,10 +4,13 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { createResourceAndNavigate } from "../file-explorer/new-files";
+  import { useRuntimeClient } from "../../runtime-client/v2";
   import { ResourceKind } from "./resource-selectors";
 
   export let open = false;
   export let metricsViews: V1Resource[];
+
+  const runtimeClient = useRuntimeClient();
 
   let selectedMetricsView: V1Resource | undefined = undefined;
 
@@ -54,6 +57,7 @@
           type="primary"
           onClick={() =>
             void createResourceAndNavigate(
+              runtimeClient,
               ResourceKind.Explore,
               selectedMetricsView,
             )}

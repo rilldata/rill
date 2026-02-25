@@ -6,6 +6,7 @@
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { writable } from "svelte/store";
 
   export let metricsViewNames: string[];
@@ -19,11 +20,16 @@
   export let queryTimeStart: string | undefined = undefined;
   export let queryTimeEnd: string | undefined = undefined;
 
+  const runtimeClient = useRuntimeClient();
+
   const metricsViewNamesStore = writable([] as string[]);
   $: metricsViewNamesStore.set(metricsViewNames);
 
   const combinedMeasuresAndDimensions =
-    getCombinedMeasuresAndDimensionsForMetricsViews(metricsViewNamesStore);
+    getCombinedMeasuresAndDimensionsForMetricsViews(
+      runtimeClient,
+      metricsViewNamesStore,
+    );
   $: ({ measures, dimensions } = $combinedMeasuresAndDimensions);
 </script>
 
