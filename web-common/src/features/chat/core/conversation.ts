@@ -25,7 +25,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/lib/errors";
 import type {
   FeedbackCategory,
   FeedbackSentiment,

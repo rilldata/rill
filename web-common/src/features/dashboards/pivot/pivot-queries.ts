@@ -12,7 +12,7 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/lib/errors";
 import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
 import {
   type CreateQueryResult,

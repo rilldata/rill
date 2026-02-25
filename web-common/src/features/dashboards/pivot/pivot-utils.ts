@@ -17,7 +17,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/lib/errors";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Row } from "@tanstack/svelte-table";
 import { SHOW_MORE_BUTTON } from "./pivot-constants";

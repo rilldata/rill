@@ -26,7 +26,7 @@ import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboard
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/lib/errors";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";

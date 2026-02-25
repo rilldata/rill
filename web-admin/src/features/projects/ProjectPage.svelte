@@ -3,7 +3,7 @@
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import type { CreateQueryResult, QueryKey } from "@tanstack/svelte-query";
 
   export let kind: "report" | "dashboard" | "alert";

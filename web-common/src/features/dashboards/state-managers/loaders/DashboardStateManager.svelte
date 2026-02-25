@@ -15,7 +15,7 @@
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
 

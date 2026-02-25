@@ -12,7 +12,7 @@
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import type { V1Resource } from "../../../runtime-client";
-  import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
   import {
