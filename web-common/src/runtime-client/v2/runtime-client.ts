@@ -8,12 +8,14 @@ import {
   JWT_EXPIRY_WARNING_WINDOW,
   CHECK_RUNTIME_STORE_FOR_JWT_INTERVAL,
 } from "../constants";
+import { RequestQueue, createQueueInterceptor } from "./request-queue";
 
 export type AuthContext = "user" | "mock" | "magic" | "embed";
 
 export class RuntimeClient {
   readonly instanceId: string;
   readonly transport: Transport;
+  readonly requestQueue: RequestQueue;
 
   // JWT state (mutable; read by the transport interceptor)
   private currentJwt: string | undefined;
@@ -35,10 +37,14 @@ export class RuntimeClient {
     this.currentJwt = opts.jwt;
     this.jwtReceivedAt = opts.jwt ? Date.now() : 0;
     this.authContext = opts.authContext ?? "user";
+    this.requestQueue = new RequestQueue();
 
     this.transport = createConnectTransport({
       baseUrl: opts.host,
       interceptors: [
+        // Queue controls when requests fire (outermost: wraps everything)
+        createQueueInterceptor(this.requestQueue),
+        // JWT interceptor adds auth header just before the network call
         (next) => async (req) => {
           if (this.currentJwt) {
             await this.waitForFreshJwt();
