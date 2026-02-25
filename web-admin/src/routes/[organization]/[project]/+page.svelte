@@ -5,7 +5,7 @@
   import InlineChat from "@rilldata/web-common/features/chat/layouts/inline/InlineChat.svelte";
   import DelayedContent from "@rilldata/web-common/features/entity-management/DelayedContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   const runtimeClient = useRuntimeClient();
@@ -15,10 +15,8 @@
     params: { project },
   } = $page);
 
-  $: ({ instanceId } = runtimeClient);
-
   // Query the instance to get the project display name
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId);
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {});
   $: projectDisplayName =
     $instanceQuery.data?.instance?.projectDisplayName || project;
   $: isLoadingDisplayName = $instanceQuery.isLoading;

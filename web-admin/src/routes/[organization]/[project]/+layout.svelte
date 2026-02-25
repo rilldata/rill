@@ -52,11 +52,10 @@
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime-client";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -144,7 +143,7 @@
     }
   }
 
-  $: error = projectError as HTTPError;
+  $: error = projectError as any;
 
   $: authContext = (
     mockedUserId && mockedUserDeploymentCredentials

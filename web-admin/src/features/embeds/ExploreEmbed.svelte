@@ -3,7 +3,8 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { derived } from "svelte/store";
-  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { errorStore } from "../../components/errors/error-store";
   import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
   import {
@@ -14,11 +15,13 @@
   export let instanceId: string;
   export let exploreName: string;
 
-  $: explore = createRuntimeServiceGetExplore(instanceId, {
+  const runtimeClient = useRuntimeClient();
+
+  $: explore = createRuntimeServiceGetExplore(runtimeClient, {
     name: exploreName,
   });
   $: ({ isSuccess, isError, error, data } = $explore);
-  $: isExploreNotFound = isError && error?.response?.status === 404;
+  $: isExploreNotFound = isError && (error as any)?.response?.status === 404;
 
   // We check for explore.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid explores, allowing display even when the current explore spec is invalid

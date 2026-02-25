@@ -13,7 +13,7 @@
     params: { organization, project },
   } = $page);
 
-  $: query = useAlerts(instanceId);
+  $: query = useAlerts(runtimeClient);
 
   $: ({ data } = $query);
 

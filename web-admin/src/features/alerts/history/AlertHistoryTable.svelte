@@ -14,7 +14,7 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  $: alertQuery = useAlert(instanceId, alert);
+  $: alertQuery = useAlert(runtimeClient, alert);
 
   /**
    * Table column definitions.

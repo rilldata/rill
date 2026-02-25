@@ -11,7 +11,7 @@
   $: ({ instanceId } = runtimeClient);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
-  $: resources = useResources(instanceId);
+  $: resources = useResources(runtimeClient);
   $: allResources = $resources.data?.resources ?? [];
   $: resourceCounts = countByKind(allResources);
 </script>

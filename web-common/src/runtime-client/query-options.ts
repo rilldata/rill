@@ -1,10 +1,6 @@
 import type { FetchQueryOptions } from "@tanstack/svelte-query";
-import type {
-  RuntimeServiceGetResourceParams,
-  V1GetResourceResponse,
-} from "./gen/index.schemas";
-import type { RuntimeServiceGetResourceQueryResult } from "./gen/runtime-service/runtime-service";
-import { getRuntimeServiceGetResourceQueryKey } from "./gen/runtime-service/runtime-service";
+import type { V1GetResourceResponse } from "./gen/index.schemas";
+import { getRuntimeServiceGetResourceQueryKey } from "./v2/gen/runtime-service";
 
 interface RuntimeInfo {
   host: string;
@@ -12,17 +8,21 @@ interface RuntimeInfo {
   jwt?: { token: string } | undefined;
 }
 
+interface GetResourceParams {
+  name: { name: string; kind: string };
+}
+
 export function getRuntimeServiceGetResourceQueryOptions(
   runtime: RuntimeInfo,
-  params: RuntimeServiceGetResourceParams,
+  params: GetResourceParams,
 ) {
-  return <FetchQueryOptions<RuntimeServiceGetResourceQueryResult>>{
+  return <FetchQueryOptions<V1GetResourceResponse>>{
     queryKey: getRuntimeServiceGetResourceQueryKey(runtime.instanceId, params),
     queryFn: async () => {
       const searchParams = new URLSearchParams();
-      for (const [key, value] of Object.entries(params)) {
-        if (value !== undefined) searchParams.set(key, String(value));
-      }
+      // Flatten nested params for the REST API query string
+      searchParams.set("name.name", params.name.name);
+      searchParams.set("name.kind", params.name.kind);
       const url = `${runtime.host}/v1/instances/${runtime.instanceId}/resource?${searchParams}`;
       const headers: Record<string, string> = {};
       if (runtime.jwt) {

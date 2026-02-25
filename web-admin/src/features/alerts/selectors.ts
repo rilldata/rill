@@ -7,20 +7,21 @@ import {
   createRuntimeServiceGetExplore,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { V1AlertSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 import { derived, type Readable, readable } from "svelte/store";
 
-export function useAlerts(instanceId: string, enabled = true) {
+export function useAlerts(client: RuntimeClient, enabled = true) {
   return createRuntimeServiceListResources(
-    instanceId,
+    client,
     {
       kind: ResourceKind.Alert,
     },
     {
       query: {
-        enabled: enabled && !!instanceId,
+        enabled: enabled && !!client.instanceId,
         refetchOnMount: true,
         refetchInterval: smartRefetchIntervalFunc,
       },
@@ -28,19 +29,17 @@ export function useAlerts(instanceId: string, enabled = true) {
   );
 }
 
-export function useAlert(instanceId: string, name: string) {
-  return createRuntimeServiceGetResource(instanceId, {
-    "name.name": name,
-    "name.kind": ResourceKind.Alert,
+export function useAlert(client: RuntimeClient, name: string) {
+  return createRuntimeServiceGetResource(client, {
+    name: { name, kind: ResourceKind.Alert },
   });
 }
 
-export function useAlertDashboardName(instanceId: string, name: string) {
+export function useAlertDashboardName(client: RuntimeClient, name: string) {
   return createRuntimeServiceGetResource(
-    instanceId,
+    client,
     {
-      "name.name": name,
-      "name.kind": ResourceKind.Alert,
+      name: { name, kind: ResourceKind.Alert },
     },
     {
       query: {
@@ -93,12 +92,11 @@ export function useAlertOwnerName(
   );
 }
 
-export function useIsAlertCreatedByCode(instanceId: string, name: string) {
+export function useIsAlertCreatedByCode(client: RuntimeClient, name: string) {
   return createRuntimeServiceGetResource(
-    instanceId,
+    client,
     {
-      "name.name": name,
-      "name.kind": ResourceKind.Alert,
+      name: { name, kind: ResourceKind.Alert },
     },
     {
       query: {
@@ -110,7 +108,7 @@ export function useIsAlertCreatedByCode(instanceId: string, name: string) {
 }
 
 export function useAlertDashboardState(
-  instanceId: string,
+  client: RuntimeClient,
   alertSpec: V1AlertSpec | undefined,
 ) {
   if (!alertSpec) {
@@ -130,7 +128,7 @@ export function useAlertDashboardState(
   }
 
   return createRuntimeServiceGetExplore(
-    instanceId,
+    client,
     { name: exploreName },
     {
       query: {

@@ -94,7 +94,7 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  $: resources = useResources(instanceId);
+  $: resources = useResources(runtimeClient);
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(

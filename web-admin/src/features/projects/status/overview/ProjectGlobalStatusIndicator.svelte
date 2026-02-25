@@ -4,7 +4,7 @@
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { useProjectDeployment } from "../selectors";
@@ -16,16 +16,14 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
   $: projectDeployment = useProjectDeployment(organization, project);
   $: ({ data: deployment } = $projectDeployment);
   $: isDeploymentNotOk =
     deployment?.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
 
   $: hasResourceErrorsQuery = createRuntimeServiceListResources(
-    instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => {

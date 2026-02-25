@@ -1,7 +1,7 @@
 import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
 import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
@@ -36,15 +36,19 @@ export function useDashboardsLastUpdated(
 }
 
 export function useDashboards(
-  instanceId: string,
+  client: RuntimeClient,
 ): CreateQueryResult<V1Resource[]> {
-  return createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        return data.resources.filter((res) => res.canvas || res.explore);
+  return createRuntimeServiceListResources(
+    client,
+    {},
+    {
+      query: {
+        select: (data) => {
+          return data.resources.filter((res) => res.canvas || res.explore);
+        },
+        enabled: !!client.instanceId,
+        refetchInterval: smartRefetchIntervalFunc,
       },
-      enabled: !!instanceId,
-      refetchInterval: smartRefetchIntervalFunc,
     },
-  });
+  );
 }

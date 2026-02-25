@@ -12,7 +12,7 @@
   import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
-  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createAdminServiceDeleteReport } from "../../../client";
@@ -40,12 +40,12 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  $: reportQuery = useReport(instanceId, report);
-  $: isReportCreatedByCode = useIsReportCreatedByCode(instanceId, report);
+  $: reportQuery = useReport(runtimeClient, report);
+  $: isReportCreatedByCode = useIsReportCreatedByCode(runtimeClient, report);
 
   // Get dashboard
-  $: exploreName = useReportDashboardName(instanceId, report);
-  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
+  $: exploreName = useReportDashboardName(runtimeClient, report);
+  $: validSpecResp = useExploreValidSpec(runtimeClient, $exploreName.data);
   $: exploreSpec = $validSpecResp.data?.explore;
   $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
   $: dashboardDoesNotExist = $validSpecResp.error?.response?.status === 404;

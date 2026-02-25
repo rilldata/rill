@@ -22,7 +22,7 @@
     params: { organization, project },
   } = $page);
 
-  $: dashboards = useDashboards(instanceId);
+  $: dashboards = useDashboards(runtimeClient);
   $: ({
     data: dashboardsData,
     isLoading,

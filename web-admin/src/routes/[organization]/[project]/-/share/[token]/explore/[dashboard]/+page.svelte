@@ -10,12 +10,10 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   const runtimeClient = useRuntimeClient();
-
-  $: ({ instanceId } = runtimeClient);
 
   $: ({ organization, project, dashboard: exploreName } = $page.params);
 
@@ -36,7 +34,7 @@
   }
 
   // Call `GetExplore` to get the Explore's metrics view
-  $: exploreQuery = createRuntimeServiceGetExplore(instanceId, {
+  $: exploreQuery = createRuntimeServiceGetExplore(runtimeClient, {
     name: exploreName,
   });
   $: ({ data: explore } = $exploreQuery);

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useInfiniteTablesList } from "../selectors";
   import { filterTemporaryTables, isLikelyView } from "../tables/utils";
@@ -13,7 +13,7 @@
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   // Get instance info for OLAP connector
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
@@ -21,16 +21,14 @@
   // Get tables list (first page only; show "+" suffix when more pages exist)
   $: connectorName = instance?.olapConnector ?? "";
   const tablesParams = writable({
-    instanceId: "",
     connector: "",
     searchPattern: undefined as string | undefined,
   });
   $: tablesParams.set({
-    instanceId,
     connector: connectorName,
     searchPattern: undefined,
   });
-  const tablesList = useInfiniteTablesList(tablesParams);
+  const tablesList = useInfiniteTablesList(runtimeClient, tablesParams);
 
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
   $: hasMore = $tablesList.hasNextPage;

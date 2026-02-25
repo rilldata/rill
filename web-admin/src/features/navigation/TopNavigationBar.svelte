@@ -100,10 +100,10 @@
     },
   );
 
-  $: visualizationsQuery = useDashboards(instanceId);
+  $: visualizationsQuery = useDashboards(runtimeClient);
 
-  $: alertsQuery = useAlerts(instanceId, onAlertPage);
-  $: reportsQuery = useReports(instanceId, onReportPage);
+  $: alertsQuery = useAlerts(runtimeClient, onAlertPage);
+  $: reportsQuery = useReports(runtimeClient, onReportPage);
 
   $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];

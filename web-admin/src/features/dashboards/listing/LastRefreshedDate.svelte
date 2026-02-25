@@ -1,7 +1,7 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { timeAgo } from "./utils";
 
@@ -9,10 +9,8 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
   $: lastRefreshedQuery = createRuntimeServiceGetExplore(
-    instanceId,
+    runtimeClient,
     { name: dashboard },
     {
       query: {

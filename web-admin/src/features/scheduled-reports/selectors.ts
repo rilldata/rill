@@ -4,18 +4,19 @@ import { getDashboardNameFromReport } from "@rilldata/web-common/features/schedu
 import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
-} from "@rilldata/web-common/runtime-client";
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 
-export function useReports(instanceId: string, enabled = true) {
+export function useReports(client: RuntimeClient, enabled = true) {
   return createRuntimeServiceListResources(
-    instanceId,
+    client,
     {
       kind: ResourceKind.Report,
     },
     {
       query: {
-        enabled: enabled && !!instanceId,
+        enabled: enabled && !!client.instanceId,
         refetchOnMount: true,
         refetchInterval: smartRefetchIntervalFunc,
       },
@@ -23,19 +24,17 @@ export function useReports(instanceId: string, enabled = true) {
   );
 }
 
-export function useReport(instanceId: string, name: string) {
-  return createRuntimeServiceGetResource(instanceId, {
-    "name.name": name,
-    "name.kind": ResourceKind.Report,
+export function useReport(client: RuntimeClient, name: string) {
+  return createRuntimeServiceGetResource(client, {
+    name: { name, kind: ResourceKind.Report },
   });
 }
 
-export function useReportDashboardName(instanceId: string, name: string) {
+export function useReportDashboardName(client: RuntimeClient, name: string) {
   return createRuntimeServiceGetResource(
-    instanceId,
+    client,
     {
-      "name.name": name,
-      "name.kind": ResourceKind.Report,
+      name: { name, kind: ResourceKind.Report },
     },
     {
       query: {
@@ -67,12 +66,11 @@ export function useReportOwnerName(
   );
 }
 
-export function useIsReportCreatedByCode(instanceId: string, name: string) {
+export function useIsReportCreatedByCode(client: RuntimeClient, name: string) {
   return createRuntimeServiceGetResource(
-    instanceId,
+    client,
     {
-      "name.name": name,
-      "name.kind": ResourceKind.Report,
+      name: { name, kind: ResourceKind.Report },
     },
     {
       query: {

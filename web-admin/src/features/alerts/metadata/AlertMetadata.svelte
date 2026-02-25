@@ -27,10 +27,8 @@
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import {
-    getRuntimeServiceListResourcesQueryKey,
-    type V1MetricsViewAggregationRequest,
-  } from "@rilldata/web-common/runtime-client";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+  import type { V1MetricsViewAggregationRequest } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
 
@@ -42,12 +40,12 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  $: alertQuery = useAlert(instanceId, alert);
-  $: isAlertCreatedByCode = useIsAlertCreatedByCode(instanceId, alert);
+  $: alertQuery = useAlert(runtimeClient, alert);
+  $: isAlertCreatedByCode = useIsAlertCreatedByCode(runtimeClient, alert);
 
   // Get dashboard
-  $: exploreName = useAlertDashboardName(instanceId, alert);
-  $: validSpecResp = useExploreValidSpec(instanceId, $exploreName.data);
+  $: exploreName = useAlertDashboardName(runtimeClient, alert);
+  $: validSpecResp = useExploreValidSpec(runtimeClient, $exploreName.data);
   $: exploreSpec = $validSpecResp.data?.explore;
   $: metricsViewName = exploreSpec?.metricsView;
   $: dashboardTitle = exploreSpec?.displayName || $exploreName.data;
@@ -76,7 +74,7 @@
     queryArgsJson,
   ) as V1MetricsViewAggregationRequest;
 
-  $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
+  $: dashboardState = useAlertDashboardState(runtimeClient, alertSpec);
 
   $: snoozeLabel = humaniseAlertSnoozeOption(alertSpec);
 

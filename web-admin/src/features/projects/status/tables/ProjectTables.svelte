@@ -69,16 +69,14 @@
   // Use a writable store so createInfiniteQuery is called once during init;
   // parameter changes flow reactively through the store.
   const tablesParams = writable({
-    instanceId: "",
     connector: "",
     searchPattern: undefined as string | undefined,
   });
   $: tablesParams.set({
-    instanceId,
     connector: connectorName,
     searchPattern,
   });
-  const tablesList = useInfiniteTablesList(tablesParams);
+  const tablesList = useInfiniteTablesList(runtimeClient, tablesParams);
 
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables = filterTemporaryTables($tablesList.data?.tables);
@@ -86,7 +84,7 @@
   // TODO: populate from OLAPGetTable responses when per-table metadata is available
   let isViewMap = new Map<string, boolean>();
   // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
-  $: modelResourcesQuery = useModelResources(instanceId);
+  $: modelResourcesQuery = useModelResources(runtimeClient);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
   let typeFilter: (typeof typeValues)[number] = parseEnumParam(
     $page.url.searchParams.get("type"),

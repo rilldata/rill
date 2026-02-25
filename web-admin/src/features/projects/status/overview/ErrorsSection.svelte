@@ -33,7 +33,7 @@
     $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
 
   // Resource errors grouped by kind
-  $: resourcesQuery = useResources(instanceId);
+  $: resourcesQuery = useResources(runtimeClient);
   $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
   $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
 

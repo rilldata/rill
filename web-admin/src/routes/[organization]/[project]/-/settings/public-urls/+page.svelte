@@ -42,7 +42,7 @@
       (page) => page.tokens ?? [],
     ) ?? [];
 
-  $: dashboards = useDashboards(instanceId);
+  $: dashboards = useDashboards(runtimeClient);
 
   $: allRowsWithDashboardTitle = allRows.map((token) => {
     const dashboard = $dashboards.data?.find(

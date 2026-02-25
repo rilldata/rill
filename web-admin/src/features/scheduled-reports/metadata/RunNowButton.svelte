@@ -5,7 +5,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
+  import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { useReport } from "../selectors";
@@ -20,7 +20,7 @@
 
   const queryClient = useQueryClient();
   const triggerReport = createAdminServiceTriggerReport();
-  const reportQuery = useReport(instanceId, report);
+  const reportQuery = useReport(runtimeClient, report);
 
   async function handleRunNow() {
     const lastExecution =
@@ -45,8 +45,7 @@
     ) {
       await queryClient.invalidateQueries({
         queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-          "name.name": report,
-          "name.kind": ResourceKind.Report,
+          name: { name: report, kind: ResourceKind.Report },
         }),
       });
       await new Promise((resolve) => setTimeout(resolve, 1000));

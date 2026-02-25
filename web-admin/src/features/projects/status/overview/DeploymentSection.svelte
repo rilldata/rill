@@ -5,7 +5,7 @@
   } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useProjectDeployment, useRuntimeVersion } from "../selectors";
   import {
@@ -22,8 +22,6 @@
   export let project: string;
 
   const runtimeClient = useRuntimeClient();
-
-  $: ({ instanceId } = runtimeClient);
 
   // Deployment
   $: projectDeployment = useProjectDeployment(organization, project);
@@ -49,7 +47,7 @@
   $: version = $runtimeVersionQuery.data?.version ?? "";
 
   // Connectors — sensitive: true is needed to read projectConnectors (OLAP/AI connector types)
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
