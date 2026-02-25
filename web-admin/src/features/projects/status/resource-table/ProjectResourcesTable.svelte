@@ -8,7 +8,7 @@
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -39,6 +39,7 @@
 
   let openDropdownResourceKey = "";
 
+  const runtimeClient = useRuntimeClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
   const queryClient = useQueryClient();
 
@@ -83,7 +84,7 @@
 
   const handleRefreshErroredPartitions = async () => {
     await $createTrigger.mutateAsync({
-      instanceId: $runtime.instanceId,
+      instanceId: runtimeClient.instanceId,
       data: {
         models: [
           { model: erroredPartitionsModelName, allErroredPartitions: true },
@@ -93,7 +94,7 @@
 
     await queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(
-        $runtime.instanceId,
+        runtimeClient.instanceId,
         undefined,
       ),
     });
@@ -107,7 +108,7 @@
   const handleRefresh = async () => {
     if (dialogResourceKind === ResourceKind.Model) {
       await $createTrigger.mutateAsync({
-        instanceId: $runtime.instanceId,
+        instanceId: runtimeClient.instanceId,
         data: {
           models: [
             {
@@ -119,7 +120,7 @@
       });
     } else {
       await $createTrigger.mutateAsync({
-        instanceId: $runtime.instanceId,
+        instanceId: runtimeClient.instanceId,
         data: {
           resources: [{ kind: dialogResourceKind, name: dialogResourceName }],
         },
@@ -128,7 +129,7 @@
 
     await queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(
-        $runtime.instanceId,
+        runtimeClient.instanceId,
         undefined,
       ),
     });

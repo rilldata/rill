@@ -1,7 +1,9 @@
 <script lang="ts">
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+
+  const runtimeClient = useRuntimeClient();
 
   export let data;
 
@@ -10,7 +12,7 @@
     project: { id: projectId },
   } = data);
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 </script>
 
 {#key instanceId}

@@ -3,14 +3,16 @@
   import { getCanvasCategorisedBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { writable } from "svelte/store";
 
   export let organization: string;
   export let project: string;
   export let canvasName: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   const orgAndProjectNameStore = writable({ organization, project });
   $: orgAndProjectNameStore.set({ organization, project });

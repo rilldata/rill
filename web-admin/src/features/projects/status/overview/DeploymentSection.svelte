@@ -6,7 +6,7 @@
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useProjectDeployment, useRuntimeVersion } from "../selectors";
   import {
     formatEnvironmentName,
@@ -21,7 +21,9 @@
   export let organization: string;
   export let project: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   // Deployment
   $: projectDeployment = useProjectDeployment(organization, project);

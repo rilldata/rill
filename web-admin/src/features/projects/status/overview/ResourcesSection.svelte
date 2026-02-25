@@ -1,12 +1,14 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useResources } from "../selectors";
   import { countByKind, pluralizeKind } from "./overview-utils";
   import OverviewCard from "./OverviewCard.svelte";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   $: resources = useResources(instanceId);

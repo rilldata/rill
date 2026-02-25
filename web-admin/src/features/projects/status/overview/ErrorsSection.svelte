@@ -10,12 +10,14 @@
     createRuntimeServiceGetResource,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useResources } from "../selectors";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { groupErrorsByKind, pluralizeKind } from "./overview-utils";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   // Parse errors

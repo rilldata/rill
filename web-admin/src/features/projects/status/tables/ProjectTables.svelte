@@ -7,7 +7,7 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createRuntimeServiceCreateTrigger,
     createRuntimeServiceGetInstance,
@@ -36,7 +36,9 @@
   } from "../url-filter-sync";
   import { onMount } from "svelte";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   // OLAP connector info
   $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {

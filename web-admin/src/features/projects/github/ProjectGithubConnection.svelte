@@ -7,12 +7,14 @@
     getRepoNameFromGitRemote,
     getGitUrlFromRemote,
   } from "@rilldata/web-common/features/project/deploy/github-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let organization: string;
   export let project: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: ({

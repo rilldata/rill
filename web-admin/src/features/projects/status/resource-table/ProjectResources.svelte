@@ -7,7 +7,7 @@
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { SingletonProjectParserName } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
@@ -90,7 +90,9 @@
     ResourceKind.Connector,
   ];
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   $: resources = useResources(instanceId);
 

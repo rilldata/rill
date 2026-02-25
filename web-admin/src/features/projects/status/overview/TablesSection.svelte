@@ -1,13 +1,15 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useInfiniteTablesList } from "../selectors";
   import { filterTemporaryTables, isLikelyView } from "../tables/utils";
   import { writable } from "svelte/store";
   import OverviewCard from "./OverviewCard.svelte";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   // Get instance info for OLAP connector

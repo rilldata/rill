@@ -6,15 +6,16 @@
   import DelayedContent from "@rilldata/web-common/features/entity-management/DelayedContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
+  const runtimeClient = useRuntimeClient();
   const { chat } = featureFlags;
 
   $: ({
     params: { project },
   } = $page);
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   // Query the instance to get the project display name
   $: instanceQuery = createRuntimeServiceGetInstance(instanceId);

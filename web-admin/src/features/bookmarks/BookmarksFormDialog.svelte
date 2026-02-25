@@ -33,7 +33,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { InfoIcon } from "lucide-svelte";
   import type { Interval } from "luxon";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import CanvasFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/CanvasFilterChipsReadOnly.svelte";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -54,7 +54,9 @@
   let filterState: undefined | Awaited<ReturnType<typeof processUrl>> =
     undefined;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
+
+  $: ({ instanceId } = runtimeClient);
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
 

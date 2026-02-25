@@ -13,7 +13,7 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
@@ -54,8 +54,9 @@
     dashboardChat,
     stickyDashboardState,
   } = featureFlags;
+  const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = $runtime);
+  $: ({ instanceId } = runtimeClient);
 
   // These can be undefined
   $: ({
