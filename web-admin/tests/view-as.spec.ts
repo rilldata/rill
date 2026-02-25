@@ -272,25 +272,25 @@ test.describe("View As", () => {
     }
   });
 
-  // NOTE: The following test requires a viewer user to be set up in the e2e environment.
+  // This test requires a viewer user to be set up in the e2e environment.
   // Currently, the viewerPage fixture is not fully configured (viewer.json is not created in setup.ts).
-  // This test is commented out until the viewer fixture is properly set up.
-  //
-  // test("Effective permissions update correctly when viewing as a viewer", async ({
-  //   adminPage,
-  // }) => {
-  //   // Navigate to dashboard as admin
-  //   await adminPage.goto(TEST_DASHBOARD_URL);
-  //   await expect(adminPage.getByText("Requests")).toBeVisible({ timeout: 15000 });
-  //
-  //   // Verify the Share button is visible for admin
-  //   const shareButton = adminPage.getByRole("button", { name: "Share" });
-  //   await expect(shareButton).toBeVisible();
-  //
-  //   // Select a viewer user via View As
-  //   // ... (implementation depends on having a viewer user in the project)
-  //
-  //   // Verify the Share button is hidden for viewer
-  //   await expect(shareButton).not.toBeVisible();
-  // });
+  test.skip("Effective permissions update correctly when viewing as a viewer", async ({
+    adminPage,
+  }) => {
+    // Navigate to dashboard as admin
+    await adminPage.goto(TEST_DASHBOARD_URL);
+    await expect(adminPage.getByText("Requests")).toBeVisible({
+      timeout: 15000,
+    });
+
+    // Verify the Share button is visible for admin
+    const shareButton = adminPage.getByRole("button", { name: "Share" });
+    await expect(shareButton).toBeVisible();
+
+    // TODO: Select a viewer user via View As
+    // Implementation depends on having a viewer user in the project
+
+    // Verify the Share button is hidden for viewer
+    await expect(shareButton).not.toBeVisible();
+  });
 });
