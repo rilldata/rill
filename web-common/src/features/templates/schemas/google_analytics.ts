@@ -4,7 +4,7 @@ export const googleAnalyticsSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   title: "Google Analytics 4",
-  "x-category": "warehouse",
+  "x-category": "api",
   "x-form-height": "tall",
   properties: {
     google_application_credentials: {

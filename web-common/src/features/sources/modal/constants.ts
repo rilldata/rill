@@ -85,7 +85,6 @@ export const SOURCES = [
   "azure",
   "bigquery",
   "gcs",
-  "google_analytics",
   "mysql",
   "postgres",
   "redshift",
@@ -97,6 +96,9 @@ export const SOURCES = [
   "local_file",
 ];
 
+// API connectors: listed in the add data source section but not in the data explorer
+export const APIS = ["google_analytics"];
+
 export const OLAP_ENGINES = [
   "clickhouse",
   "motherduck",
@@ -106,4 +108,4 @@ export const OLAP_ENGINES = [
   "starrocks",
 ];
 
-export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
+export const ALL_CONNECTORS = [...SOURCES, ...APIS, ...OLAP_ENGINES];

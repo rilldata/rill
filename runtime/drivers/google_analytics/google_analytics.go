@@ -85,7 +85,7 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsWarehouse: true,
+	ImplementsWarehouse: false,
 }
 
 type driver struct{}

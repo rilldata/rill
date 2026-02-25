@@ -22,7 +22,7 @@ import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
 import { s3Schema } from "../../templates/schemas/s3";
 import { starrocksSchema } from "../../templates/schemas/starrocks";
-import { SOURCES, OLAP_ENGINES } from "./constants";
+import { SOURCES, APIS, OLAP_ENGINES } from "./constants";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
@@ -59,7 +59,7 @@ export interface ConnectorInfo {
 /**
  * All connectors enumerated from JSON schemas, sorted by display order.
  */
-export const connectors: ConnectorInfo[] = [...SOURCES, ...OLAP_ENGINES]
+export const connectors: ConnectorInfo[] = [...SOURCES, ...APIS, ...OLAP_ENGINES]
   .filter((name) => multiStepFormSchemas[name]?.["x-category"])
   .map((name) => {
     const schema = multiStepFormSchemas[name];
@@ -105,12 +105,13 @@ export function isMultiStepConnector(
 }
 
 /**
- * Determine if a connector supports explorer mode (SQL query interface).
- * SQL stores and warehouses can browse tables and write custom queries.
+ * Determine if a connector supports explorer mode.
+ * SQL stores and warehouses browse tables and write custom queries;
+ * API connectors configure report parameters.
  */
 export function hasExplorerStep(schema: MultiStepFormSchema | null): boolean {
   const category = schema?.["x-category"];
-  return category === "sqlStore" || category === "warehouse";
+  return category === "sqlStore" || category === "warehouse" || category === "api";
 }
 
 /**

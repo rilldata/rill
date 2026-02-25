@@ -23,6 +23,7 @@
     getBackendConnectorName,
     getConnectorSchema,
     getFormWidth,
+    hasExplorerStep as hasExplorerStepSchema,
     isMultiStepConnector as isMultiStepConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
@@ -160,6 +161,9 @@
     (selectedConnector?.implementsWarehouse &&
       selectedConnector?.name !== "salesforce") ||
     isMultiStepConnectorSchema(
+      getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
+    ) ||
+    hasExplorerStepSchema(
       getConnectorSchema(selectedSchemaName ?? selectedConnector?.name ?? ""),
     );
 </script>
