@@ -8,7 +8,6 @@ import {
 } from "@rilldata/web-admin/client";
 import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { fetchWrapper } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { Page } from "@sveltejs/kit";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { DateTime } from "luxon";
@@ -91,14 +90,13 @@ function usageMetrics(
 ): Promise<UsageMetricsResponse> {
   const url = new URL(runtimeHost);
   url.pathname = `/v1/instances/${instanceId}/api/usage-meter`;
-  return fetchWrapper({
-    url: url.toString(),
+  return fetch(url.toString(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-  });
+  }).then((r) => r.json());
 }
 export function getUsageMetrics(
   runtimeHost: string,

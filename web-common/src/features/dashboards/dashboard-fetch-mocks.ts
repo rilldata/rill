@@ -7,7 +7,6 @@ import type {
   V1MetricsViewSpec,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { afterAll, beforeAll, vi } from "vitest";
 import { asyncWait } from "../../lib/waitUtils";
 
@@ -19,11 +18,6 @@ export class DashboardFetchMocks {
   }[] = [];
 
   public static useDashboardFetchMocks(): DashboardFetchMocks {
-    runtime.set({
-      host: "http://localhost",
-      instanceId: "default",
-    });
-
     const mock = new DashboardFetchMocks();
 
     beforeAll(() => {

@@ -3,38 +3,35 @@ import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
   type V1TableInfo,
-  createRuntimeServiceGetInstance,
   type V1GetResourceResponse,
-  getRuntimeServiceGetResourceQueryKey,
-  runtimeServiceGetResource,
-  type RpcStatus,
 } from "../../runtime-client";
 import type { RuntimeClient } from "../../runtime-client/v2";
 import {
+  createRuntimeServiceGetInstance,
+  getRuntimeServiceGetResourceQueryKey,
+  runtimeServiceGetResource,
   createConnectorServiceListDatabaseSchemas,
   createConnectorServiceGetTable,
   connectorServiceListTables,
 } from "../../runtime-client/v2/gen";
 import { ResourceKind } from "../entity-management/resource-selectors";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
 /**
  * Creates query options for checking modeling support of a connector
  */
 function createModelingSupportQueryOptions(
-  instanceId: string,
+  client: RuntimeClient,
   connectorName: string,
 ) {
+  const instanceId = client.instanceId;
   return {
     queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.kind": ResourceKind.Connector,
-      "name.name": connectorName,
+      name: { kind: ResourceKind.Connector, name: connectorName },
     }),
     queryFn: async () => {
       try {
-        return await runtimeServiceGetResource(instanceId, {
-          "name.kind": ResourceKind.Connector,
-          "name.name": connectorName,
+        return await runtimeServiceGetResource(client, {
+          name: { kind: ResourceKind.Connector, name: connectorName },
         });
       } catch (error) {
         // Handle legacy DuckDB projects where no explicit connector resource exists
@@ -75,28 +72,23 @@ function createModelingSupportQueryOptions(
  * Check if modeling is supported for a specific connector based on its properties
  */
 export function useIsModelingSupportedForConnectorOLAP(
-  instanceId: string,
+  client: RuntimeClient,
   connectorName: string,
-): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
-  return createQuery(
-    createModelingSupportQueryOptions(instanceId, connectorName),
-  );
+): CreateQueryResult<boolean, Error> {
+  return createQuery(createModelingSupportQueryOptions(client, connectorName));
 }
 
 export function useIsModelingSupportedForDefaultOlapDriverOLAP(
-  instanceId: string,
-): CreateQueryResult<boolean, ErrorType<RpcStatus>> {
-  const instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  client: RuntimeClient,
+): CreateQueryResult<boolean, Error> {
+  const instanceQuery = createRuntimeServiceGetInstance(client, {
     sensitive: true,
   });
 
   // Create queryOptions store that includes the dynamic connector name
   const queryOptions = derived([instanceQuery], ([$instanceQuery]) => {
     const olapConnectorName = $instanceQuery.data?.instance?.olapConnector;
-    return createModelingSupportQueryOptions(
-      instanceId,
-      olapConnectorName || "",
-    );
+    return createModelingSupportQueryOptions(client, olapConnectorName || "");
   });
 
   return createQuery(queryOptions);

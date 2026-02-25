@@ -27,7 +27,7 @@
     // no-op if no files are dropped
     if (files === undefined) return;
 
-    const uploadedFiles = uploadTableFiles(Array.from(files), instanceId);
+    const uploadedFiles = uploadTableFiles(Array.from(files), runtimeClient);
 
     const initialized = await isProjectInitialized(instanceId);
     for await (const { tableName, filePath } of uploadedFiles) {

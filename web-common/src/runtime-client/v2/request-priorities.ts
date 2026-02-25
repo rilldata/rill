@@ -35,3 +35,17 @@ export const INACTIVE_PRIORITY = 5;
 export function getPriorityForMethod(methodName: string): number {
   return MethodPriorities[methodName] ?? DEFAULT_PRIORITY;
 }
+
+// URL-segment-style priority keys used by column profile queries.
+const ColumnQueryPriorities: Record<string, number> = {
+  topk: 10,
+  timeseries: 30,
+  "numeric-histogram": 30,
+  "rug-histogram": 10,
+  "descriptive-statistics": 10,
+};
+
+export function getPriorityForColumn(type: string, active: boolean): number {
+  const base = ColumnQueryPriorities[type] ?? DEFAULT_PRIORITY;
+  return base + (active ? ACTIVE_COLUMN_PRIORITY_OFFSET : 0);
+}

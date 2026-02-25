@@ -15,8 +15,8 @@ import {
   createQueryServiceColumnTopK,
   createQueryServiceTableCardinality,
 } from "@rilldata/web-common/runtime-client/v2/gen";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+import type { HTTPError } from "@rilldata/web-common/lib/errors";
+import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/v2/request-priorities";
 import {
   keepPreviousData,
   type QueryObserverResult,
