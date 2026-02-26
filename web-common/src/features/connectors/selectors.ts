@@ -10,6 +10,7 @@ import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
   type RpcStatus,
+  createRuntimeServiceAnalyzeConnectors,
 } from "../../runtime-client";
 import { connectorServiceListTables } from "../../runtime-client/gen/connector-service/connector-service";
 import { ResourceKind } from "../entity-management/resource-selectors";
@@ -227,4 +228,28 @@ export function useGetTable(
       },
     },
   );
+}
+
+export function getAnalyzedConnectors(instanceId: string, olapOnly: boolean) {
+  return createRuntimeServiceAnalyzeConnectors(instanceId, {
+    query: {
+      // Retry transient 500s during runtime resets (e.g. project initialization)
+      retry: (failureCount, error) =>
+        !!error?.response?.status &&
+        error.response.status >= 500 &&
+        failureCount < 3,
+      retryDelay: 1000,
+      // sort alphabetically
+      select: (data) => {
+        if (!data?.connectors) return;
+
+        const filtered = (
+          olapOnly
+            ? data.connectors.filter((c) => c?.driver?.implementsOlap)
+            : data.connectors
+        ).sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+        return { connectors: filtered };
+      },
+    },
+  });
 }

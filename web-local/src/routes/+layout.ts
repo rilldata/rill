@@ -14,7 +14,7 @@ import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
 
-export async function load({ url, depends, untrack }) {
+export async function load({ url, depends, untrack, route }) {
   depends("init");
 
   const instanceId = get(runtime).instanceId;
@@ -42,6 +42,8 @@ export async function load({ url, depends, untrack }) {
 
   if (!initialized) {
     initialized = await handleUninitializedProject(instanceId);
+    if (!initialized && !route?.id?.startsWith("/(misc)/welcome"))
+      throw redirect(303, "/welcome");
   } else if (redirectPath) {
     throw redirect(303, redirectPath);
   }

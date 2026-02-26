@@ -42,6 +42,22 @@ export async function runtimeServicePutFileAndWaitForReconciliation(
   );
 }
 
+export async function waitForProjectParser(instanceId: string) {
+  let retryCount = 0;
+  while (retryCount < 5) {
+    try {
+      getProjectParserVersion(instanceId);
+      return;
+    } catch {
+      retryCount++;
+      await new Promise((resolve) =>
+        setTimeout(resolve, 300 + retryCount * 300),
+      );
+    }
+  }
+  throw new Error("Project parser version not found after 5 retries");
+}
+
 // Resource-level reconciliation
 export async function waitForResourceReconciliation(
   instanceId: string,
