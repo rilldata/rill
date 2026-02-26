@@ -13,7 +13,7 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   posthog.init(POSTHOG_API_KEY, {
-    api_host: "/ingest",
+    api_host: "/ph",
     ui_host: "https://us.posthog.com",
     session_recording: {
       maskAllInputs: true,
