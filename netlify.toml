@@ -47,6 +47,7 @@
     Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
+    X-Frame-Options = "ALLOWALL"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
 # Public share routes
@@ -71,4 +72,5 @@
     Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Opener-Policy = "unsafe-none"
     Cross-Origin-Resource-Policy = "cross-origin"
+    X-Frame-Options = "ALLOWALL"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
