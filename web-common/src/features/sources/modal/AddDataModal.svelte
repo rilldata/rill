@@ -305,6 +305,10 @@
     @apply flex items-center justify-center;
   }
 
+  .connector-wrapper :global(svg) {
+    max-height: 40px;
+  }
+
   .connector-tile-button:hover {
     @apply bg-gray-100;
   }
