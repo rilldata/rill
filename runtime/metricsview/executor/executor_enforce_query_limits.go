@@ -16,7 +16,8 @@ func (e *Executor) enforceQueryLimits(qry *metricsview.Query) error {
 		return fmt.Errorf("a valid time_range should be specified for the query")
 	}
 
-	if qry.QueryLimit.MaxTimeRangeDays <= 0 {
+	// if require_time_range not set and time range is not specified, we skip the max time range check
+	if qry.QueryLimit.MaxTimeRangeDays <= 0 || qry.TimeRange == nil || qry.TimeRange.IsZero() {
 		return nil
 	}
 

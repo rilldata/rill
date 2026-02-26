@@ -30,7 +30,7 @@ explore:
 		},
 		FrontendURL: "https://ui.rilldata.com/test-org/test-project",
 		Variables: map[string]string{
-			"rill.ai.enforce_time_range": "false",
+			"rill.ai.require_time_range": "false",
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
@@ -71,7 +71,7 @@ explore:
 		Variables: map[string]string{
 			"rill.ai.default_query_limit": "3",
 			"rill.ai.max_query_limit":     "5",
-			"rill.ai.enforce_time_range":  "false",
+			"rill.ai.require_time_range":  "false",
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
@@ -153,7 +153,7 @@ cache:
 `,
 		},
 		Variables: map[string]string{
-			"rill.ai.enforce_time_range": "false",
+			"rill.ai.require_time_range": "false",
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)

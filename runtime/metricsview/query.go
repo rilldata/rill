@@ -64,8 +64,8 @@ type MeasureCompute struct {
 
 // QueryLimits represents limits that should be applied to a query, such as requiring a time range or limiting the maximum time range for interactive queries. These are not part of the Query json itself because they are not intrinsic to the query, but rather are constraints that may be applied to the query before execution.
 type QueryLimits struct {
-	RequireTimeRange bool `json:"-" mapstructure:"require_time_range"`
-	MaxTimeRangeDays int  `json:"-" mapstructure:"max_time_range_days"`
+	RequireTimeRange bool  `json:"-" mapstructure:"require_time_range"`
+	MaxTimeRangeDays int64 `json:"-" mapstructure:"max_time_range_days"`
 }
 
 func (q *Query) AsMap() (map[string]any, error) {
@@ -773,6 +773,7 @@ const QueryJSONSchema = `
     },
     "TimeRange": {
       "type": "object",
+      "description": "Time range for filtering the query. Prefer using absolute 'start' and 'end' parameters if available. Otherwise, use 'expression' for relative time ranges, when specifying 'expression' make sure no other time range fields other than 'time_dimension' is set as its not supported.",
       "properties": {
         "start": {
           "type": "string",
@@ -790,11 +791,11 @@ const QueryJSONSchema = `
         },
         "iso_duration": {
           "type": "string",
-          "description": "ISO 8601 duration"
+          "description": "ISO 8601 duration, supported but deprecated in favor of 'expression' field."
         },
         "iso_offset": {
           "type": "string",
-          "description": "ISO 8601 offset"
+          "description": "ISO 8601 offset, supported but deprecated in favor of 'expression' field."
         },
         "round_to_grain": {
           "$ref": "#/$defs/TimeGrain",
