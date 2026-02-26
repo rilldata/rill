@@ -46,7 +46,9 @@ const FORKED_CONVERSATION_ID = "forked-conv-456";
 // =============================================================================
 
 function getCacheKey(conversationId: string) {
-  return getRuntimeServiceGetConversationQueryKey(INSTANCE_ID, conversationId);
+  return getRuntimeServiceGetConversationQueryKey(INSTANCE_ID, {
+    conversationId,
+  });
 }
 
 function getCachedData(conversationId: string) {

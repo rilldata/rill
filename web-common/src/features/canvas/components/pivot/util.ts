@@ -268,6 +268,7 @@ export const usePivotForCanvas = (
   pivotConfig: Readable<PivotDataStoreConfig>,
 ) => {
   const pivotDashboardContext: PivotDashboardContext = {
+    runtimeClient: canvas.client,
     metricsViewName: metricsViewStore,
     queryClient: queryClient,
     enabled: !!canvas,

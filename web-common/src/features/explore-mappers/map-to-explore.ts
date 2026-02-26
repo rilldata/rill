@@ -16,6 +16,7 @@ import {
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, readable, type Readable } from "svelte/store";
 
 export type MapQueryRequest = {
@@ -43,7 +44,7 @@ export type MapQueryResponse = {
  * Used to show the relevant dashboard for a report/alert.
  */
 export function mapQueryToDashboard(
-  instanceId: string,
+  client: RuntimeClient,
   { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
   {
     exploreProtoState,
@@ -105,12 +106,11 @@ export function mapQueryToDashboard(
 
   return derived(
     [
-      useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
+      useExploreValidSpec(client, exploreName, undefined, queryClient),
       // TODO: handle non-timestamp dashboards
       createQueryServiceMetricsViewTimeRange(
-        instanceId,
-        metricsViewName,
-        {},
+        client,
+        { metricsViewName },
         undefined,
         queryClient,
       ),
@@ -130,8 +130,7 @@ export function mapQueryToDashboard(
           isFetching: false,
           isLoading: false,
           error: new Error(
-            validSpecResp.error?.response?.data?.message ??
-              timeRangeSummary.error?.response?.data?.message,
+            validSpecResp.error?.message ?? timeRangeSummary.error?.message,
           ),
         });
         return;
@@ -179,7 +178,7 @@ export function mapQueryToDashboard(
       };
       getDashboardState({
         queryClient,
-        instanceId,
+        client,
         dashboard: defaultExploreState,
         req: queryRequestProperties,
         metricsView,

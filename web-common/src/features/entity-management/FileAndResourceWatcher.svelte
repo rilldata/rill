@@ -18,6 +18,7 @@
   export let host: string;
   export let instanceId: string;
 
+  $: fileAndResourceWatcher.setRuntimeClient(runtimeClient);
   $: fileAndResourceWatcher.setInstanceId(instanceId);
 
   $: watcherEndpoint = `${host}/v1/instances/${instanceId}/sse?events=file,resource`;

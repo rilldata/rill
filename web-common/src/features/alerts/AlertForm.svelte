@@ -118,7 +118,7 @@
   $: ({ filters, timeControls } =
     props.mode === "create"
       ? getNewAlertInitialFiltersFormValues(
-          instanceId,
+          runtimeClient,
           metricsViewName,
           exploreName,
           $exploreState!,

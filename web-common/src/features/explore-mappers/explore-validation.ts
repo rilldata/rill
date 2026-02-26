@@ -1,5 +1,6 @@
 import { useGetExploresForMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, type Readable } from "svelte/store";
 import type {
   DashboardSelectionCriteria,
@@ -11,13 +12,10 @@ import type {
  * Validates if explore dashboards are available for the given metrics view
  */
 export function useExploreAvailability(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
 ): Readable<ExploreAvailabilityResult> {
-  const exploresQuery = useGetExploresForMetricsView(
-    instanceId,
-    metricsViewName,
-  );
+  const exploresQuery = useGetExploresForMetricsView(client, metricsViewName);
 
   return derived(exploresQuery, (data) => {
     if (data.error) {

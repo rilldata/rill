@@ -38,7 +38,6 @@ export function getModelsPickerOptions(
   return derived(
     [modelResourcesQuery, activeResourceStore],
     ([modelResourcesResp, activeResource], set) => {
-      const instanceId = client.instanceId;
       const models = modelResourcesResp.data ?? [];
       const modelPickerItems: PickerItem[] = [];
       const modelQueryOptions: ReturnType<
@@ -64,7 +63,7 @@ export function getModelsPickerOptions(
         } satisfies PickerItem;
 
         const childrenQueryOptions = getModelColumnsQueryOptions(
-          instanceId,
+          client,
           res,
           modelPickerItem,
           uiState.getExpandedStore(modelPickerItem.id),
@@ -93,7 +92,7 @@ export function getModelsPickerOptions(
 }
 
 function getModelColumnsQueryOptions(
-  instanceId: string,
+  client: RuntimeClient,
   modelRes: V1Resource | undefined,
   modelPickerItem: PickerItem,
   enabledStore: Readable<boolean>,
@@ -102,9 +101,9 @@ function getModelColumnsQueryOptions(
   const table = modelRes?.model?.state?.resultTable ?? "";
   return derived(enabledStore, (enabled) =>
     getQueryServiceTableColumnsQueryOptions(
-      instanceId,
-      table,
+      client,
       {
+        tableName: table,
         connector,
       },
       {

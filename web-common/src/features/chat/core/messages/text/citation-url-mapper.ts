@@ -1,5 +1,4 @@
 import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client.ts";
 import type { RpcStatus, V1Message } from "@rilldata/web-common/runtime-client";
 import {
   getMetricsViewAndExploreSpecsQueryOptions,
@@ -33,7 +32,7 @@ const DASHBOARD_CITATION_URL_PATHNAME_REGEX =
 export function getMetricsResolverQueryToUrlMapperStore(
   conversation: Conversation,
 ): Readable<{
-  error: ErrorType<RpcStatus> | null;
+  error: Error | null;
   isLoading: boolean;
   data?: (url: URL) => string;
 }> {
@@ -61,6 +60,7 @@ export function getMetricsResolverQueryToUrlMapperStore(
 
       const mapper = (url: URL): string =>
         mapMetricsResolverQueryToUrl(
+          conversation.runtimeClient.instanceId,
           url,
           page,
           metricsViewAndExploreSpecs,
@@ -77,6 +77,7 @@ export function getMetricsResolverQueryToUrlMapperStore(
 }
 
 export function mapMetricsResolverQueryToUrl(
+  instanceId: string,
   url: URL,
   pageState: Page,
   {
@@ -127,6 +128,7 @@ export function mapMetricsResolverQueryToUrl(
   );
 
   const urlSearchParams = maybeGetExplorePageUrlSearchParams(
+    instanceId,
     partialExploreState,
     metricsViewSpec,
     exploreSpec,

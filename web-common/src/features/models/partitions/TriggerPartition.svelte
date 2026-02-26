@@ -84,7 +84,7 @@
     params.file !== undefined
       ? fileArtifacts.getFileArtifact(addLeadingSlash(params.file))
       : undefined;
-  $: resourceQuery = fileArtifact?.getResource(queryClient, instanceId);
+  $: resourceQuery = fileArtifact?.getResource(queryClient);
   $: resolvedResource = resource ?? $resourceQuery?.data;
 </script>
 

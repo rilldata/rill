@@ -36,7 +36,7 @@
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
-  $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: modelQuery = fileArtifact.getResource(queryClient);
   $: modelResource = $modelQuery.data;
   $: connector = modelResource?.model?.spec?.outputConnector;
   $: modelIsIdle =

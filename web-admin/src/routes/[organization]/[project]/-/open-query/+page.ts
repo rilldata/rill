@@ -14,5 +14,5 @@ export const load: PageLoad = async ({ params, url, parent }) => {
   const query = getQueryFromUrl(url);
 
   // Open the query (this'll redirect to the relevant Explore page)
-  await openQuery({ query, organization, project, runtime });
+  await openQuery({ query, organization, project, runtime: runtime! });
 };

@@ -39,13 +39,9 @@ export class FileArtifacts {
   readonly unsavedFiles = new UnsavedFilesStore();
   private client!: RuntimeClient;
 
-  async init(
-    client: RuntimeClient,
-    queryClient: QueryClient,
-    instanceId: string,
-  ) {
+  async init(client: RuntimeClient, queryClient: QueryClient) {
     this.client = client;
-    const resources = await fetchResources(queryClient, instanceId);
+    const resources = await fetchResources(queryClient, client);
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
         case ResourceKind.Connector:
@@ -59,9 +55,11 @@ export class FileArtifacts {
         case ResourceKind.API:
           // set query data for GetResource to avoid refetching data we already have
           queryClient.setQueryData(
-            getRuntimeServiceGetResourceQueryKey(instanceId, {
-              "name.name": resource.meta?.name?.name,
-              "name.kind": resource.meta?.name?.kind,
+            getRuntimeServiceGetResourceQueryKey(client.instanceId, {
+              name: {
+                name: resource.meta?.name?.name,
+                kind: resource.meta?.name?.kind,
+              },
             }),
             {
               resource,
@@ -165,15 +163,14 @@ export class FileArtifacts {
    */
   async checkFileErrors(
     queryClient: QueryClient,
-    instanceId: string,
     filePath: string,
   ): Promise<string | null> {
     const fileArtifact = this.getFileArtifact(filePath);
-    const hasErrorsStore = fileArtifact.getHasErrors(queryClient, instanceId);
+    const hasErrorsStore = fileArtifact.getHasErrors(queryClient);
     const hasErrors = get(hasErrorsStore);
 
     if (hasErrors) {
-      const errors = get(fileArtifact.getAllErrors(queryClient, instanceId));
+      const errors = get(fileArtifact.getAllErrors(queryClient));
       return errors[0]?.message ?? null;
     }
     return null;

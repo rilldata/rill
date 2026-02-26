@@ -70,7 +70,7 @@
   $: ({ name: dimensionName = "" } = dimension);
 
   $: selectedValues = selectedDimensionValues(
-    client.instanceId,
+    client,
     [metricsViewName],
     $dashboardStore.whereFilter,
     dimensionName,

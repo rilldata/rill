@@ -25,7 +25,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import type { HTTPError } from "../../../lib/errors";
 import type {
   FeedbackCategory,
   FeedbackSentiment,
@@ -108,8 +108,8 @@ export class Conversation {
       this.conversationIdStore,
       ($conversationId) =>
         getRuntimeServiceGetConversationQueryOptions(
-          this.instanceId,
-          $conversationId,
+          this.client,
+          { conversationId: $conversationId },
           {
             query: {
               enabled: $conversationId !== NEW_CONVERSATION_ID,
@@ -487,11 +487,11 @@ export class Conversation {
     // This ensures the UI shows the conversation history immediately
     const originalCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      originalConversationId,
+      { conversationId: originalConversationId },
     );
     const forkedCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      forkedConversationId,
+      { conversationId: forkedConversationId },
     );
     const originalData =
       queryClient.getQueryData<V1GetConversationResponse>(originalCacheKey);
@@ -520,12 +520,12 @@ export class Conversation {
   private transitionToRealConversation(realConversationId: string): void {
     const oldCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      this.conversationId, // This is still "new"
+      { conversationId: this.conversationId }, // This is still "new"
     );
 
     const newCacheKey = getRuntimeServiceGetConversationQueryKey(
       this.instanceId,
-      realConversationId,
+      { conversationId: realConversationId },
     );
 
     // Get existing data from "new" conversation cache
@@ -578,10 +578,9 @@ export class Conversation {
    * Add message to TanStack Query cache
    */
   private addMessageToCache(message: V1Message): void {
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
+    const cacheKey = getRuntimeServiceGetConversationQueryKey(this.instanceId, {
+      conversationId: this.conversationId,
+    });
     queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
       if (!old?.conversation) {
         // Create initial conversation structure if it doesn't exist
@@ -613,10 +612,9 @@ export class Conversation {
    * Remove message from TanStack Query cache (for rollback)
    */
   private removeMessageFromCache(messageId: string): void {
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
+    const cacheKey = getRuntimeServiceGetConversationQueryKey(this.instanceId, {
+      conversationId: this.conversationId,
+    });
 
     queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
       if (!old?.conversation) return old;

@@ -49,7 +49,7 @@
 
   const { ai, generateCanvas } = featureFlags;
 
-  $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: sourceQuery = fileArtifact.getResource(queryClient);
   let source: V1Source | undefined;
   $: source = $sourceQuery.data?.source;
   $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;

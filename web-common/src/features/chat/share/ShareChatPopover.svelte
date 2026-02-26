@@ -7,7 +7,7 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import { createRuntimeServiceShareConversation } from "@rilldata/web-common/runtime-client";
-  import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import { isHTTPError } from "@rilldata/web-common/lib/errors";
   import { Check, Link, Share } from "lucide-svelte";
 
   export let conversationId: string | undefined = undefined;

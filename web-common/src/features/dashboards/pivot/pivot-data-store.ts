@@ -14,7 +14,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/lib/errors";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { type Readable, derived, readable } from "svelte/store";

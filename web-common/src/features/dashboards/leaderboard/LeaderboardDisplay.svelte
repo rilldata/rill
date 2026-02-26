@@ -99,7 +99,7 @@
               {parentElement}
               {timeControlsReady}
               selectedValues={selectedDimensionValues(
-                client.instanceId,
+                client,
                 [metricsViewName],
                 $dashboardStore.whereFilter,
                 dimension.name,

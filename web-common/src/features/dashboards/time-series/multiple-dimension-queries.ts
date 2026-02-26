@@ -97,7 +97,7 @@ export function getDimensionValuesForComparison(
       let comparisonValues: (string | null)[] = [];
       if (surface === "chart") {
         return selectedDimensionValues(
-          ctx.runtimeClient.instanceId,
+          ctx.runtimeClient,
           [name],
           dashboardStore?.whereFilter,
           dimensionName,

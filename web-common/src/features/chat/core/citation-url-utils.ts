@@ -1,6 +1,5 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import {
-  getRuntimeServiceGetAIMessageQueryKey,
   type V1GetAIMessageResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";

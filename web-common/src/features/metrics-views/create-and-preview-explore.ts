@@ -23,7 +23,7 @@ export async function createAndPreviewExplore(
 
   // Wait until the Explore resource is ready
   const fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  const resource = fileArtifact.getResource(queryClient, instanceId);
+  const resource = fileArtifact.getResource(queryClient);
 
   await waitUntil(() => {
     return get(resource).data !== undefined;

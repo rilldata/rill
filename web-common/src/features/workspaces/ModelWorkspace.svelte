@@ -42,10 +42,7 @@
   $: workspace = workspaces.get(filePath);
   $: tableVisible = workspace.table.visible;
 
-  $: allErrorsStore = fileArtifact.getAllErrors(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: allErrorsStore = fileArtifact.getAllErrors(queryClient);
   $: hasErrors = fileArtifact.getHasErrors(
     queryClient,
     runtimeClient.instanceId,
@@ -79,7 +76,7 @@
 
   async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
-      runtimeClient.instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,

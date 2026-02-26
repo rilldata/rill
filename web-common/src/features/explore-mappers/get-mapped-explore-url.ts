@@ -8,11 +8,12 @@ import {
   mapQueryToDashboard,
 } from "@rilldata/web-common/features/explore-mappers/map-to-explore.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { derived, readable } from "svelte/store";
 
 export type MapExploreUrlContext = {
-  instanceId: string;
+  client: RuntimeClient;
   organization: string;
   project: string;
   token?: string;
@@ -26,7 +27,7 @@ export type MapExploreUrlContext = {
 export function getMappedExploreUrl(
   req: MapQueryRequest, // Request object passed directly to mapQueryToDashboard
   opts: MapQueryStateOptions, // Map options passed directly to mapQueryToDashboard
-  { instanceId, organization, project, token }: MapExploreUrlContext,
+  { client, organization, project, token }: MapExploreUrlContext,
 ) {
   if (!req.queryArgsJson) return readable("");
   const queryRequestProperties = JSON.parse(req.queryArgsJson);
@@ -37,14 +38,9 @@ export function getMappedExploreUrl(
 
   return derived(
     [
-      useExploreValidSpec(instanceId, req.exploreName, undefined, queryClient),
-      useMetricsViewTimeRange(
-        instanceId,
-        metricsViewName,
-        undefined,
-        queryClient,
-      ),
-      mapQueryToDashboard(instanceId, req, opts),
+      useExploreValidSpec(client, req.exploreName, undefined, queryClient),
+      useMetricsViewTimeRange(client, metricsViewName, undefined, queryClient),
+      mapQueryToDashboard(client, req, opts),
       page,
     ],
     ([validSpecResp, timeRangeSummaryResp, dashboardState, pageState]) => {

@@ -24,11 +24,7 @@
   export let data: PageData;
   $: ({ metricsView, explore, exploreName } = data);
 
-  resetSelectedMockUserAfterNavigate(
-    queryClient,
-    runtimeClient.instanceId,
-    runtimeClient,
-  );
+  resetSelectedMockUserAfterNavigate(queryClient, runtimeClient);
 
   $: metricsViewName = metricsView?.meta?.name?.name as string;
 

@@ -53,7 +53,7 @@
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import type { AuthContext } from "@rilldata/web-common/runtime-client/v2/runtime-client";
   import type { CreateQueryOptions } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";

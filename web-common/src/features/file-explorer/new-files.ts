@@ -46,9 +46,7 @@ export async function createResourceFile(
   }
 
   const newPath = getPathForNewResourceFile(kind, baseResource);
-  const instanceId = client.instanceId;
-
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(client, {
     path: newPath,
     blob: generateBlobForNewResourceFile(kind, baseResource),
     create: true,

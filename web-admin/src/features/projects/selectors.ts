@@ -20,6 +20,7 @@ import {
   useResourceV2,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, type Readable } from "svelte/store";
 
 export function getProjectPermissions(orgName: string, projName: string) {
@@ -150,9 +151,9 @@ export async function fetchProjectDeploymentDetails(
   };
 }
 
-export function useGithubLastSynced(instanceId: string) {
+export function useGithubLastSynced(client: RuntimeClient) {
   return useResourceV2(
-    instanceId,
+    client,
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
     {

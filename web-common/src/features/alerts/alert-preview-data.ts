@@ -51,14 +51,13 @@ export function getAlertPreviewData(
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
     [
-      useExploreValidSpec(client.instanceId, formValues.exploreName),
+      useExploreValidSpec(client, formValues.exploreName),
       filters.getStore(),
       timeControls.getStore(),
     ],
     ([validExploreSpec, filtersState, timeControlsState], set) =>
       createQueryServiceMetricsViewAggregation(
-        client.instanceId,
-        formValues.metricsViewName,
+        client,
         getAlertPreviewQueryRequest(
           formValues,
           filtersState,

@@ -3,8 +3,8 @@ import type {
   RuntimeServiceGetResourceParams,
   V1GetResourceResponse,
 } from "./gen/index.schemas";
-import type { RuntimeServiceGetResourceQueryResult } from "./gen/runtime-service/runtime-service";
-import { getRuntimeServiceGetResourceQueryKey } from "./gen/runtime-service/runtime-service";
+import type { V1GetResourceResponse as RuntimeServiceGetResourceQueryResult } from "./gen/index.schemas";
+import { getRuntimeServiceGetResourceQueryKey } from "./v2/gen/runtime-service";
 
 interface RuntimeInfo {
   host: string;

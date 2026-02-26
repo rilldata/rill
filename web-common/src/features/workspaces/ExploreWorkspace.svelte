@@ -58,10 +58,7 @@
   $: metricsViewName = metricsViewResource?.meta?.name?.name;
 
   // Parse error for the editor gutter and banner
-  $: parseErrorQuery = fileArtifact.getParseError(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: parseErrorQuery = fileArtifact.getParseError(queryClient);
   $: parseError = $parseErrorQuery;
 
   // Reconcile error resolved to root cause for the banner
@@ -78,7 +75,7 @@
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      runtimeClient.instanceId,
+      runtimeClient,
       newTitle,
       filePath,
       fileName,

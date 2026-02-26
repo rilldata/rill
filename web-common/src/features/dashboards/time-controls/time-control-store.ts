@@ -246,14 +246,14 @@ export function createTimeControlStore(ctx: StateManagers) {
 }
 
 export function createTimeControlStoreFromName(
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewName: string,
   exploreName: string,
 ) {
   return derived(
     [
-      useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
-      useMetricsViewTimeRange(instanceId, metricsViewName, {}, queryClient),
+      useExploreValidSpec(client, exploreName, undefined, queryClient),
+      useMetricsViewTimeRange(client, metricsViewName, {}, queryClient),
       useExploreState(exploreName),
     ],
     ([validSpecResp, timeRangeSummaryResp, dashboardStore]) =>

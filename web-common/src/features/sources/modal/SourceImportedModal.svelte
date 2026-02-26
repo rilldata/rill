@@ -34,7 +34,7 @@
 
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
-    sourceQuery = fileArtifact.getResource(queryClient, instanceId);
+    sourceQuery = fileArtifact.getResource(queryClient);
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 

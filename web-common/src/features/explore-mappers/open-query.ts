@@ -202,8 +202,7 @@ async function generateExploreLink(
           ),
         queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
           runtime.instanceId,
-          metricsViewName,
-          {},
+          { metricsViewName },
         ),
         staleTime: Infinity,
         gcTime: Infinity,

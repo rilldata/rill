@@ -82,7 +82,7 @@ export function invalidateConversationsList(instanceId: string) {
  */
 export function getLatestConversationQueryOptions(client: RuntimeClient) {
   const listConversationsQueryOptions =
-    getRuntimeServiceListConversationsQueryOptions(client.instanceId, {
+    getRuntimeServiceListConversationsQueryOptions(client, {
       // Filter to only show Rill client conversations, excluding MCP conversations
       userAgentPattern: "rill%",
     });
@@ -98,8 +98,8 @@ export function getLatestConversationQueryOptions(client: RuntimeClient) {
 
   return derived([lastConversationId], ([id]) => {
     return getRuntimeServiceGetConversationQueryOptions(
-      client.instanceId,
-      id ?? "",
+      client,
+      { conversationId: id ?? "" },
       {
         query: {
           enabled: !!id,

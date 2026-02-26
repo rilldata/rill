@@ -16,9 +16,8 @@ export function getCombinedMeasuresAndDimensionsForMetricsViews(
     metricsViewNamesStore,
     (metricsViewNames) =>
       metricsViewNames.map((metricsViewName) =>
-        getRuntimeServiceGetResourceQueryOptions(client.instanceId, {
-          "name.kind": ResourceKind.MetricsView,
-          "name.name": metricsViewName,
+        getRuntimeServiceGetResourceQueryOptions(client, {
+          name: { kind: ResourceKind.MetricsView, name: metricsViewName },
         }),
       ),
   );

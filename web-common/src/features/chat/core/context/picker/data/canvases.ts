@@ -30,7 +30,6 @@ export function getCanvasesPickerOptions(
   );
   const lastUsedCanvasNameStore = getLastUsedCanvasNameStore(client);
   const activeCanvasNameStore = getCanvasNameStore();
-  const instanceId = client.instanceId;
 
   return derived(
     [canvasResourcesQuery, lastUsedCanvasNameStore, activeCanvasNameStore],
@@ -58,7 +57,7 @@ export function getCanvasesPickerOptions(
         } satisfies PickerItem;
 
         const childrenQueryOptions = getCanvasComponentsQueryOptions(
-          instanceId,
+          client,
           canvasPickerItem,
           uiState.getExpandedStore(canvasPickerItem.id),
         );
@@ -86,16 +85,15 @@ export function getCanvasesPickerOptions(
 }
 
 function getCanvasComponentsQueryOptions(
-  instanceId: string,
+  client: RuntimeClient,
   canvasPickerItem: PickerItem,
   enabledStore: Readable<boolean>,
 ) {
   const canvas = canvasPickerItem.context.canvas!;
   return derived(enabledStore, (enabled) =>
     getQueryServiceResolveCanvasQueryOptions(
-      instanceId,
-      canvas,
-      {},
+      client,
+      { canvas },
       {
         query: {
           select: (data): PickerItem[] => {

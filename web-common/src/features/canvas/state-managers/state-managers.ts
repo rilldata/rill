@@ -67,7 +67,12 @@ export function setCanvasStore(
     return canvasRegistry.get(id)!;
   }
 
-  const canvasEntity = new CanvasEntity(canvasName, instanceId, response);
+  const canvasEntity = new CanvasEntity(
+    canvasName,
+    instanceId,
+    response,
+    runtimeClient!,
+  );
   const store: CanvasStore = {
     runtimeClient: runtimeClient!,
     canvasEntity,

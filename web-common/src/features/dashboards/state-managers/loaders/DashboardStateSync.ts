@@ -15,6 +15,7 @@ import {
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
@@ -51,7 +52,7 @@ export class DashboardStateSync {
   }
 
   public constructor(
-    private readonly instanceId: string,
+    private readonly client: RuntimeClient,
     metricsViewName: string,
     private readonly exploreName: string,
     private readonly extraPrefix: string | undefined,
@@ -59,7 +60,7 @@ export class DashboardStateSync {
   ) {
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
-      instanceId,
+      client,
       metricsViewName,
       exploreName,
     );
@@ -150,7 +151,7 @@ export class DashboardStateSync {
         initExploreState.selectedTimeRange,
         // initExploreState.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
-        this.instanceId,
+        this.client,
         exploreSpec,
         [
           initExploreState.selectedTimeRange,
@@ -246,7 +247,7 @@ export class DashboardStateSync {
         partialExplore.selectedTimeRange,
         // partialExplore.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
-        this.instanceId,
+        this.client,
         exploreSpec,
         [
           partialExplore.selectedTimeRange,

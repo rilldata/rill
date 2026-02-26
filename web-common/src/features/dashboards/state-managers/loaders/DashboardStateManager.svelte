@@ -15,7 +15,7 @@
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
 
@@ -27,15 +27,14 @@
   export let disableMostRecentDashboardState: boolean = false;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
-  $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
+  $: exploreSpecQuery = useExploreValidSpec(client, exploreName);
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
   $: metricsViewName = exploreSpec?.metricsView ?? "";
   $: exploreStore = useExploreState(exploreName);
 
   $: dataLoader = new DashboardStateDataLoader(
-    instanceId,
+    client,
     exploreName,
     storageNamespacePrefix,
     bookmarkOrTokenExploreState,
@@ -46,7 +45,7 @@
   $: if (dataLoader) {
     stateSync?.teardown();
     stateSync = new DashboardStateSync(
-      instanceId,
+      client,
       metricsViewName,
       exploreName,
       storageNamespacePrefix,

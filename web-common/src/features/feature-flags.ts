@@ -79,8 +79,8 @@ class FeatureFlags {
     this.flagsUnsub?.();
 
     this.flagsUnsub = createRuntimeServiceGetInstance(
-      client.instanceId,
-      undefined,
+      client,
+      {},
       {
         query: {
           select: (data) => data?.instance?.featureFlags,

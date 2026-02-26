@@ -131,7 +131,8 @@ export class FileArtifact {
 
     const queryFn: QueryFunction<
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
-    > = ({ signal }) => runtimeServiceGetFile(instanceId, queryParams, signal);
+    > = ({ signal }) =>
+      runtimeServiceGetFile(this.client, queryParams, { signal });
 
     let fetchedContent: string | undefined = undefined;
 
@@ -239,7 +240,7 @@ export class FileArtifact {
     try {
       const fileSavePromise = this.saveState.initiateSave();
 
-      await runtimeServicePutFile(instanceId, {
+      await runtimeServicePutFile(this.client, {
         path: this.path,
         blob,
       });
@@ -303,10 +304,10 @@ export class FileArtifact {
     this.lastStateUpdatedOn = undefined;
   }
 
-  getResource = (queryClient: QueryClient, instanceId: string) => {
+  getResource = (queryClient: QueryClient) => {
     return derived(this.resourceName, (name, set) =>
       useResource(
-        instanceId,
+        this.client,
         name?.name as string,
         name?.kind as ResourceKind,
         undefined,
@@ -317,10 +318,9 @@ export class FileArtifact {
 
   getParseError = (
     queryClient: QueryClient,
-    instanceId: string,
   ): Readable<V1ParseError | undefined> => {
     const store = derived(
-      useProjectParser(queryClient, instanceId),
+      useProjectParser(queryClient, this.client),
       (projectParser) => {
         if (projectParser.isFetching) {
           return get(store);
@@ -334,14 +334,11 @@ export class FileArtifact {
     return store;
   };
 
-  getAllErrors = (
-    queryClient: QueryClient,
-    instanceId: string,
-  ): Readable<V1ParseError[]> => {
+  getAllErrors = (queryClient: QueryClient): Readable<V1ParseError[]> => {
     const store = derived(
       [
-        useProjectParser(queryClient, instanceId),
-        this.getResource(queryClient, instanceId),
+        useProjectParser(queryClient, this.client),
+        this.getResource(queryClient),
       ],
       ([projectParser, resource]) => {
         if (projectParser.isFetching || resource.isFetching) {
@@ -368,9 +365,9 @@ export class FileArtifact {
     return store;
   };
 
-  getHasErrors(queryClient: QueryClient, instanceId: string) {
+  getHasErrors(queryClient: QueryClient) {
     return derived(
-      this.getAllErrors(queryClient, instanceId),
+      this.getAllErrors(queryClient),
       (errors) => errors.length > 0,
     );
   }

@@ -87,7 +87,7 @@ export class ConversationManager {
     RpcStatus
   > {
     return createQuery(
-      getRuntimeServiceListConversationsQueryOptions(this.instanceId, {
+      getRuntimeServiceListConversationsQueryOptions(this.client, {
         // Filter to only show Rill client conversations, excluding MCP conversations
         userAgentPattern: "rill%",
       }),

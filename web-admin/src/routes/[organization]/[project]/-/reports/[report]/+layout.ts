@@ -1,6 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper.js";
+import { isHTTPError } from "@rilldata/web-common/lib/errors";
 import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client/query-options";
 import { error } from "@sveltejs/kit";
 

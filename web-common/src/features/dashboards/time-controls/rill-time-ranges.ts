@@ -5,10 +5,11 @@ import {
   queryServiceMetricsViewTimeRanges,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export async function resolveTimeRanges(
-  instanceId: string,
+  client: RuntimeClient,
   exploreSpec: V1ExploreSpec,
   timeRanges: (DashboardTimeControls | undefined)[],
   timeZone: string | undefined,
@@ -43,7 +44,7 @@ export async function resolveTimeRanges(
 
   try {
     const timeRangesResp = await fetchTimeRanges({
-      instanceId,
+      client,
       metricsViewName,
       rillTimes,
       timeZone,
@@ -61,7 +62,7 @@ export async function resolveTimeRanges(
     return timeRangesToReturn;
   } catch (error) {
     console.error(
-      `Failed to resolve time ranges for metrics view ${metricsViewName} in instance ${instanceId}`,
+      `Failed to resolve time ranges for metrics view ${metricsViewName} in instance ${client.instanceId}`,
       error,
     );
     return timeRangesToReturn;
@@ -69,7 +70,7 @@ export async function resolveTimeRanges(
 }
 
 export async function fetchTimeRanges({
-  instanceId,
+  client,
   metricsViewName,
   rillTimes,
   timeZone,
@@ -77,7 +78,7 @@ export async function fetchTimeRanges({
   executionTime,
   cacheBust = false,
 }: {
-  instanceId: string;
+  client: RuntimeClient;
   metricsViewName: string;
   rillTimes: string[];
   timeDimension?: string | undefined;
@@ -86,16 +87,16 @@ export async function fetchTimeRanges({
   cacheBust?: boolean;
 }) {
   const requestBody = {
+    metricsViewName,
     expressions: rillTimes,
     timeZone,
-    executionTime,
+    executionTime: executionTime as any,
     priority: 100,
     timeDimension,
   };
 
   const queryKey = getQueryServiceMetricsViewTimeRangesQueryKey(
-    instanceId,
-    metricsViewName,
+    client.instanceId,
     requestBody,
   );
 
@@ -107,12 +108,7 @@ export async function fetchTimeRanges({
 
   const response = await queryClient.fetchQuery({
     queryKey: queryKey,
-    queryFn: () =>
-      queryServiceMetricsViewTimeRanges(
-        instanceId,
-        metricsViewName,
-        requestBody,
-      ),
+    queryFn: () => queryServiceMetricsViewTimeRanges(client, requestBody),
     staleTime: 60,
   });
 

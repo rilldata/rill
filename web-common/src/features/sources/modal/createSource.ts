@@ -1,10 +1,11 @@
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { sourceIngestionTracker } from "../sources-store";
 
 export async function createSource(
-  instanceId: string,
+  client: RuntimeClient,
   tableName: string,
   yaml: string,
 ) {
@@ -12,7 +13,7 @@ export async function createSource(
   const normalizedPath = `/${filePath}`;
   sourceIngestionTracker.trackPending(normalizedPath);
   try {
-    return await runtimeServicePutFile(instanceId, {
+    return await runtimeServicePutFile(client, {
       path: filePath,
       blob: yaml,
       // create source is used to upload and replace.

@@ -17,7 +17,6 @@ export async function generateSampleData(
   initializeProject: boolean,
   userPrompt: string,
 ) {
-  const instanceId = client.instanceId;
   const agentPrompt = `Generate a new model with fresh data for the following user prompt: ${userPrompt}`;
 
   try {
@@ -37,7 +36,7 @@ export async function generateSampleData(
         }, PROJECT_INIT_TIMEOUT_MS);
       });
 
-      await runtimeServiceUnpackEmpty(instanceId, {
+      await runtimeServiceUnpackEmpty(client, {
         displayName: EMPTY_PROJECT_TITLE,
         force: true,
       });

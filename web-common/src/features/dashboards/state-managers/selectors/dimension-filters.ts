@@ -14,12 +14,13 @@ import type {
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived, readable } from "svelte/store";
 import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
 
 export const selectedDimensionValues = (
-  instanceId: string,
+  client: RuntimeClient,
   metricsViewNames: string[],
   whereFilter: V1Expression | undefined,
   dimensionName: string,
@@ -65,7 +66,7 @@ export const selectedDimensionValues = (
     dimExpr.cond.op === V1Operation.OPERATION_LIKE ||
     dimExpr.cond.op === V1Operation.OPERATION_NLIKE
   ) {
-    return useDimensionSearch(instanceId, metricsViewNames, dimensionName, {
+    return useDimensionSearch(client, metricsViewNames, dimensionName, {
       mode: DimensionFilterMode.Contains,
       searchText: (dimExpr.cond?.exprs?.[1]?.val as string) ?? "",
       values: [],
@@ -88,7 +89,7 @@ export const useSelectedValuesForCompareDimension = (ctx: StateManagers) => {
     [ctx.metricsViewName, ctx.dashboardStore],
     ([metricsViewName, exploreState], set) =>
       selectedDimensionValues(
-        ctx.runtimeClient.instanceId,
+        ctx.runtimeClient,
         [metricsViewName],
         exploreState.whereFilter,
         exploreState.selectedComparisonDimension ?? "",
