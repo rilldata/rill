@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { setContext, onDestroy } from "svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { RuntimeClient, type AuthContext } from "./runtime-client";
-  import { RUNTIME_CONTEXT_KEY, runtimeClientStore } from "./context";
-  import { invalidateRuntimeQueries } from "../invalidation";
+  import { onDestroy, setContext } from "svelte";
   import { featureFlags } from "../../features/feature-flags";
+  import { invalidateRuntimeQueries } from "../invalidation";
+  import { RUNTIME_CONTEXT_KEY, runtimeClientStore } from "./context";
+  import { RuntimeClient, type AuthContext } from "./runtime-client";
 
   const queryClient = useQueryClient();
 
@@ -32,6 +32,6 @@
   });
 </script>
 
-{#if host && instanceId}
+{#if client}
   <slot />
 {/if}
