@@ -2,7 +2,6 @@ package env
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -75,7 +74,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				vars[v.Name] = v.Value
 			}
 
-			// Fetch the local variables
+			// existing vars from the .env files in the project
 			current := p.GetDotEnvPerEnvironment()
 
 			// Merge the current .env file with the cloud variables
@@ -84,8 +83,8 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 					ch.Printf("Skipping environment %q since it doesn't match the specified environment filter %q.\n", env, environment)
 					continue
 				}
-				cloud, conf := perEnvVars[env]
-				if !conf {
+				cloud, ok := perEnvVars[env]
+				if !ok {
 					cloud = make(map[string]string)
 				}
 				var added, changed int
@@ -99,13 +98,10 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				// no changes
 				if added+changed == 0 {
-					if len(local) == 0 && len(cloud) == 0 && env != "" {
-						// Avoid printing any messages for non default environments since most projects won't have them
-						continue
-					}
 					ch.Printf("Environment %q: There are no new or changed variables in your local file.\n", envForPrint(env))
 					continue
 				}
+
 				if added > 0 || changed > 0 {
 					ch.Printf("Environment %q: %d new and %d changed variable(s) found in local file.\n", envForPrint(env), added, changed)
 				}
@@ -131,13 +127,7 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 					return fmt.Errorf("failed to update project variables: %w", err)
 				}
 
-				var envFile string
-				if env == "" {
-					envFile = ".env"
-				} else {
-					envFile = fmt.Sprintf(".%s.env", env)
-				}
-				ch.Printf("Environment %q: Updated cloud env for project %q with variables from %q.\n", env, projectName, filepath.Join(projectPath, envFile))
+				ch.Printf("Environment %q: Updated cloud env for project %q with variables from %q.\n", env, projectName, pathForEnv(env))
 			}
 			return nil
 		},

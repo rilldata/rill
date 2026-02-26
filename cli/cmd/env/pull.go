@@ -102,12 +102,6 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 			break
 		}
 	}
-	for env, vars := range dotEnv {
-		if !maps.Equal(vars, perEnvVars[env]) {
-			equal = false
-			break
-		}
-	}
 
 	if equal && warnForNoVars {
 		if len(res.Variables) == 0 {
@@ -124,12 +118,7 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 		existing := dotEnv[env]
 		maps.Copy(vars, existing)
 		maps.Copy(vars, resVars)
-		var path string
-		if env == "" {
-			path = ".env"
-		} else {
-			path = fmt.Sprintf(".%s.env", env)
-		}
+		path := pathForEnv(env)
 		err = godotenv.Write(vars, filepath.Join(projectPath, path))
 		if err != nil {
 			return err
@@ -146,4 +135,11 @@ func PullVars(ctx context.Context, ch *cmdutil.Helper, projectPath, projectName,
 		}
 	}
 	return nil
+}
+
+func pathForEnv(env string) string {
+	if env == "" {
+		return ".env"
+	}
+	return fmt.Sprintf(".%s.env", env)
 }

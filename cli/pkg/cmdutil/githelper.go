@@ -187,7 +187,7 @@ func EnsureGitignoreHasDotenv(ctx context.Context, repo drivers.RepoStore, path 
 	case ".prod.env":
 		re = gitignoreHasProdDotenvRegexp
 	default:
-		return false, fmt.Errorf("unsupported path %q, only .env, .dev.env, and .prod.env are supported", path)
+		return false, fmt.Errorf("unsupported path %q, only `.env`, `.dev.env`, and `.prod.env` are supported", path)
 	}
 	return ensureGitignoreHas(ctx, repo, re, path)
 }
