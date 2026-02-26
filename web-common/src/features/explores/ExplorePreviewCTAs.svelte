@@ -19,7 +19,6 @@
   export let exploreName: string;
 
   const runtimeClient = useRuntimeClient();
-  $: ({ instanceId } = runtimeClient);
 
   $: exploreQuery = useExplore(runtimeClient, exploreName);
   $: exploreFilePath = $exploreQuery.data?.explore?.meta?.filePaths?.[0] ?? "";
@@ -27,12 +26,15 @@
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "";
   $: metricsViewName = $exploreQuery.data?.metricsView?.meta?.name?.name ?? "";
 
-  $: explorePolicyCheck = useDashboardPolicyCheck(instanceId, exploreFilePath);
+  $: explorePolicyCheck = useDashboardPolicyCheck(
+    runtimeClient,
+    exploreFilePath,
+  );
   $: metricsPolicyCheck = useDashboardPolicyCheck(
-    instanceId,
+    runtimeClient,
     metricsViewFilePath,
   );
-  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(instanceId);
+  $: rillYamlPolicyCheck = useRillYamlPolicyCheck(runtimeClient);
 
   const { readOnly, dashboardChat } = featureFlags;
 </script>

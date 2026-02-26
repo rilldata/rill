@@ -35,7 +35,7 @@
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
+  $: modelHasError = fileArtifact.getHasErrors(queryClient);
   $: modelQuery = fileArtifact.getResource(queryClient);
   $: modelResource = $modelQuery.data;
   $: connector = modelResource?.model?.spec?.outputConnector;
@@ -60,7 +60,7 @@
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
       const [newModelPath, newModelName] = await createSqlModelFromTable(
-        instanceId,
+        runtimeClient,
         queryClient,
         connector as string,
         "",

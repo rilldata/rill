@@ -92,7 +92,7 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: instance = createRuntimeServiceGetInstance(runtimeClient.instanceId, {
+  $: instance = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
 
@@ -111,10 +111,7 @@
   };
 
   $: isModelingSupportedForConnector = olapConnector
-    ? useIsModelingSupportedForConnector(
-        runtimeClient.instanceId,
-        olapConnector,
-      )
+    ? useIsModelingSupportedForConnector(runtimeClient, olapConnector)
     : null;
   $: isModelingSupported = $isModelingSupportedForConnector?.data;
 
@@ -135,9 +132,9 @@
 
   $: noTableProperties = !yamlConnector && !database && !databaseSchema;
 
-  $: modelsQuery = useModels(runtimeClient.instanceId);
-  $: sourcesQuery = useSources(runtimeClient.instanceId);
-  $: metricsViewQuery = getResource(queryClient, runtimeClient.instanceId);
+  $: modelsQuery = useModels(runtimeClient);
+  $: sourcesQuery = useSources(runtimeClient);
+  $: metricsViewQuery = getResource(queryClient);
 
   $: modelNames = $modelsQuery?.data?.map(resourceToOption) ?? [];
   $: sourceNames = $sourcesQuery?.data?.map(resourceToOption) ?? [];
@@ -154,7 +151,8 @@
   $: hasValidModelOrSourceSelection = hasSourceSelected || hasModelSelected;
 
   $: hasNonDuckDBOLAPConnectorQuery = createRuntimeServiceAnalyzeConnectors(
-    runtimeClient.instanceId,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => {
@@ -185,11 +183,7 @@
 
   $: resourceQuery =
     resourceKind &&
-    useResource(
-      runtimeClient.instanceId,
-      modelOrSourceOrTableName,
-      resourceKind,
-    );
+    useResource(runtimeClient, modelOrSourceOrTableName, resourceKind);
 
   $: connector =
     yamlConnector ||
@@ -199,9 +193,9 @@
     olapConnector;
 
   $: columnsQuery = createQueryServiceTableColumns(
-    runtimeClient.instanceId,
-    modelOrSourceOrTableName,
+    runtimeClient,
     {
+      tableName: modelOrSourceOrTableName,
       connector,
       database,
       databaseSchema,
@@ -278,10 +272,8 @@
   );
 
   $: tablesQuery = createConnectorServiceOLAPListTables(
-    {
-      instanceId: runtimeClient.instanceId,
-      connector,
-    },
+    runtimeClient,
+    { connector },
     {
       query: {
         enabled:

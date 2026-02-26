@@ -42,9 +42,9 @@
 
   $: themeQuery =
     theme && typeof theme === "string"
-      ? useTheme(instanceId, theme)
+      ? useTheme(runtimeClient, theme)
       : !theme && projectDefaultTheme
-        ? useTheme(instanceId, projectDefaultTheme)
+        ? useTheme(runtimeClient, projectDefaultTheme)
         : undefined;
 
   $: fetchedTheme = $themeQuery?.data?.theme?.spec;

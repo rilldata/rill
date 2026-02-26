@@ -13,7 +13,6 @@
   } from "@rilldata/web-common/runtime-client/v2/gen";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/v2/request-priorities";
   import { derived } from "svelte/store";
-  import { httpRequestQueue } from "../../../runtime-client/http-client";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -147,7 +146,6 @@
 
   function toggleColumnProfile() {
     active = !active;
-    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
   $: fetchingSummaries = FLOATS.has(type)

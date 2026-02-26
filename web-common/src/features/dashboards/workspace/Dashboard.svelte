@@ -54,7 +54,6 @@
   let resizing = false;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   $: ({ whereFilter, dimensionThresholdFilters, selectedTimeDimension } =
     $dashboardStore);
@@ -131,7 +130,7 @@
   let themeSource: Readable<string | null> = urlThemeName;
   $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
 
-  $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
+  $: theme = createResolvedThemeStore(themeSource, exploreQuery, client);
 
   // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
   $: activeDashboardTheme.set($theme);

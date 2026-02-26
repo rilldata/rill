@@ -7,9 +7,9 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
-    createRuntimeServiceCreateTrigger,
+    createRuntimeServiceCreateTriggerMutation,
     createRuntimeServiceGetInstance,
     getRuntimeServiceListResourcesQueryKey,
     type V1Resource,
@@ -36,10 +36,10 @@
   } from "../url-filter-sync";
   import { onMount } from "svelte";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   // OLAP connector info
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId, {
+  $: instanceQuery = createRuntimeServiceGetInstance(runtimeClient, {
     sensitive: true,
   });
   $: instance = $instanceQuery.data?.instance;
@@ -67,12 +67,12 @@
   // Use a writable store so createInfiniteQuery is called once during init;
   // parameter changes flow reactively through the store.
   const tablesParams = writable({
-    instanceId: "",
+    client: runtimeClient,
     connector: "",
     searchPattern: undefined as string | undefined,
   });
   $: tablesParams.set({
-    instanceId,
+    client: runtimeClient,
     connector: connectorName,
     searchPattern,
   });
@@ -84,7 +84,7 @@
   // TODO: populate from OLAPGetTable responses when per-table metadata is available
   let isViewMap = new Map<string, boolean>();
   // createQuery (unlike createInfiniteQuery) handles re-creation in $: blocks safely
-  $: modelResourcesQuery = useModelResources(instanceId);
+  $: modelResourcesQuery = useModelResources(runtimeClient);
   $: modelResources = $modelResourcesQuery.data ?? new Map();
   let typeFilter: (typeof typeValues)[number] = parseEnumParam(
     $page.url.searchParams.get("type"),
@@ -145,7 +145,8 @@
   let selectedResource: V1Resource | null = null;
   let selectedModelName = "";
 
-  const createTrigger = createRuntimeServiceCreateTrigger();
+  const createTrigger =
+    createRuntimeServiceCreateTriggerMutation(runtimeClient);
   const queryClient = useQueryClient();
 
   // Handlers
@@ -190,14 +191,14 @@
 
     try {
       await $createTrigger.mutateAsync({
-        instanceId,
-        data: {
-          models: [{ model: selectedModelName, ...opts }],
-        },
+        models: [{ model: selectedModelName, ...opts }],
       });
 
       await queryClient.invalidateQueries({
-        queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+        queryKey: getRuntimeServiceListResourcesQueryKey(
+          runtimeClient.instanceId,
+          undefined,
+        ),
       });
     } catch (error) {
       console.error("Failed to refresh model:", error);

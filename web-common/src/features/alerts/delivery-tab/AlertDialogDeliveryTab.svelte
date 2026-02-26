@@ -18,7 +18,7 @@
 
   $: ({ form, errors } = superFormInstance);
 
-  $: hasSlackNotifier = getHasSlackConnection(runtimeClient.instanceId);
+  $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
 </script>
 
 <div class="flex flex-col gap-y-3">

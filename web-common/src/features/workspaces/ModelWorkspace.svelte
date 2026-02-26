@@ -18,7 +18,7 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Model } from "@rilldata/web-common/runtime-client";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { fade, slide } from "svelte/transition";
@@ -43,17 +43,11 @@
   $: tableVisible = workspace.table.visible;
 
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient);
-  $: hasErrors = fileArtifact.getHasErrors(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: hasErrors = fileArtifact.getHasErrors(queryClient);
 
   $: allErrors = $allErrorsStore;
 
-  $: resourceQuery = fileArtifact.getResource(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: resource = $resourceQuery.data;
   $: model = $resourceQuery.data?.model;
   $: connector = (model as V1Model)?.spec?.outputConnector as string;
@@ -68,7 +62,6 @@
   $: isResourceReconciling = resourceIsLoading($resourceQuery.data);
 
   async function save() {
-    httpRequestQueue.removeByName(assetName);
     await queryClient.cancelQueries({
       predicate: (query) => isProfilingQuery(query, assetName),
     });

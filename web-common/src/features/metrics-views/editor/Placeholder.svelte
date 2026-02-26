@@ -17,19 +17,17 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
-  $: models = useModels(instanceId);
+  $: models = useModels(runtimeClient);
 
   const buttonClasses =
     "inline hover:font-semibold underline underline-offset-2";
 
   async function onAutogenerateConfigFromModel(modelRes: V1Resource) {
     await createDashboardFromTableInMetricsEditor(
-      instanceId,
+      runtimeClient,
       modelRes?.model?.state?.resultTable ?? "",
       filePath,
     );
@@ -39,7 +37,7 @@
   async function onCreateSkeletonMetricsConfig() {
     const yaml = initBlankDashboardYAML(metricsName);
 
-    await runtimeServicePutFile(instanceId, {
+    await runtimeServicePutFile(runtimeClient, {
       path: filePath,
       blob: yaml,
       create: true,

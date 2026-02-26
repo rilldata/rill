@@ -37,10 +37,7 @@
 
   $: metricsViewName = $resourceName?.name ?? getNameFromFile(filePath);
 
-  $: resourceQuery = fileArtifact.getResource(
-    queryClient,
-    runtimeClient.instanceId,
-  );
+  $: resourceQuery = fileArtifact.getResource(queryClient);
   $: ({ data: resource } = $resourceQuery);
 
   $: isOldMetricsView = !$remoteContent?.includes("version: 1");
@@ -51,9 +48,9 @@
   $: table = resource?.metricsView?.state?.validSpec?.table ?? "";
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(runtimeClient.instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
-    runtimeClient.instanceId,
+    runtimeClient,
     connector,
   );
   $: isModelingSupported = connector
@@ -69,7 +66,7 @@
   // Reconcile error resolved to root cause for the banner
   $: reconcileError = resource?.meta?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
-    runtimeClient.instanceId,
+    runtimeClient,
     resource,
     reconcileError,
   );

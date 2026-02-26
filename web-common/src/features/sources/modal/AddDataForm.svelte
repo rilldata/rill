@@ -110,7 +110,7 @@
   let existingEnvBlob: string | null = null;
   onMount(async () => {
     try {
-      const envFile = await runtimeServiceGetFile(runtimeClient.instanceId, {
+      const envFile = await runtimeServiceGetFile(runtimeClient, {
         path: ".env",
       });
       existingEnvBlob = envFile.blob ?? "";

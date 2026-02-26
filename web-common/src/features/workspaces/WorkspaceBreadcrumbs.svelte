@@ -18,8 +18,8 @@
   $: resourceName = resource?.meta?.name?.name;
 
   $: resourcesQuery = createRuntimeServiceListResources(
-    runtimeClient.instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: { retry: 2, refetchOnMount: true },
     },

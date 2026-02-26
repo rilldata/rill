@@ -28,8 +28,6 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: instanceId = runtimeClient.instanceId;
-
   // Cast chartSpec to any for property access (type comes from parsed JSON)
   $: chartSpec = block.chartSpec as any;
 
@@ -76,8 +74,8 @@
   });
 
   $: defaultThemeQuery = createRuntimeServiceGetInstance(
-    instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => data?.instance?.theme,
@@ -89,7 +87,7 @@
   $: themeName = $defaultThemeQuery?.data;
 
   $: themeQuery = useResource(
-    instanceId,
+    runtimeClient,
     themeName!,
     ResourceKind.Theme,
     {

@@ -87,7 +87,7 @@
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     metricsViewName,
     undefined,
     queryClient,
@@ -118,7 +118,7 @@
 
   $: ({ filters, timeControls } =
     getFiltersAndTimeControlsFromAggregationRequest(
-      instanceId,
+      runtimeClient,
       metricsViewName,
       exploreName,
       aggregationRequest,

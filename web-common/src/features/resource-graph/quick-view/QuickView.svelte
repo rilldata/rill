@@ -18,8 +18,8 @@
   $: shouldFetchResources = currentState.open && !!instanceId;
 
   $: resourcesQuery = createRuntimeServiceListResources(
-    instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         retry: 2,

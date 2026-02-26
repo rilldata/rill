@@ -20,10 +20,7 @@
   $: ({ form } = superFormInstance);
 
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
-  $: metricsView = useMetricsViewValidSpec(
-    runtimeClient.instanceId,
-    metricsViewName,
-  );
+  $: metricsView = useMetricsViewValidSpec(runtimeClient, metricsViewName);
 
   $: measureOptions =
     $metricsView.data?.measures
@@ -55,7 +52,7 @@
 <div class="flex flex-col gap-y-3">
   <FormSection title="Filters">
     <FiltersForm
-      client={runtimeClient}
+      instanceId={runtimeClient.instanceId}
       {filters}
       {timeControls}
       maxWidth={750}

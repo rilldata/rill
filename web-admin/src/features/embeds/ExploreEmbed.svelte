@@ -4,6 +4,7 @@
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { derived } from "svelte/store";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { errorStore } from "../../components/errors/error-store";
   import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
   import {
@@ -14,7 +15,9 @@
   export let instanceId: string;
   export let exploreName: string;
 
-  $: explore = createRuntimeServiceGetExplore(instanceId, {
+  const runtimeClient = useRuntimeClient();
+
+  $: explore = createRuntimeServiceGetExplore(runtimeClient, {
     name: exploreName,
   });
   $: ({ isSuccess, isError, error, data } = $explore);

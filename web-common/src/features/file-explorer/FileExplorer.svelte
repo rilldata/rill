@@ -29,36 +29,39 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-  $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        if (!data || !data.files?.length) return;
+  $: getFileTree = createRuntimeServiceListFiles(
+    runtimeClient,
+    {},
+    {
+      query: {
+        select: (data) => {
+          if (!data || !data.files?.length) return;
 
-        const files = data.files
-          // Sort alphabetically case-insensitive
-          .sort(
-            (a, b) =>
-              a.path?.localeCompare(b.path ?? "", undefined, {
-                sensitivity: "base",
-              }) ?? 0,
-          )
-          // Hide dot directories
-          .filter(
-            (file) =>
-              !(
-                file.isDir &&
-                // Check both the top-level directory and subdirectories
-                (file.path?.startsWith(".") || file.path?.includes("/."))
-              ),
-          )
-          // Hide the `tmp` directory
-          .filter((file) => !file.path?.startsWith("/tmp"));
+          const files = data.files
+            // Sort alphabetically case-insensitive
+            .sort(
+              (a, b) =>
+                a.path?.localeCompare(b.path ?? "", undefined, {
+                  sensitivity: "base",
+                }) ?? 0,
+            )
+            // Hide dot directories
+            .filter(
+              (file) =>
+                !(
+                  file.isDir &&
+                  // Check both the top-level directory and subdirectories
+                  (file.path?.startsWith(".") || file.path?.includes("/."))
+                ),
+            )
+            // Hide the `tmp` directory
+            .filter((file) => !file.path?.startsWith("/tmp"));
 
-        return transformFileList(files);
+          return transformFileList(files);
+        },
       },
     },
-  });
+  );
 
   $: ({ data: fileTree } = $getFileTree);
 
@@ -78,7 +81,7 @@
     }
 
     try {
-      const newFilePath = await duplicateFileArtifact(instanceId, filePath);
+      const newFilePath = await duplicateFileArtifact(runtimeClient, filePath);
       await goto(`/files${newFilePath}`);
     } catch {
       eventBus.emit("notification", {
@@ -101,14 +104,14 @@
         return;
       }
     }
-    await deleteFileArtifact(instanceId, filePath);
+    await deleteFileArtifact(runtimeClient, filePath);
     if (isCurrentActivePage(filePath, isDir)) {
       await goto("/");
     }
   }
 
   async function onForceDelete() {
-    await deleteFileArtifact(instanceId, forceDeletePath, true);
+    await deleteFileArtifact(runtimeClient, forceDeletePath, true);
     // onForceDelete is only called on folders, so isDir is always true
     if (isCurrentActivePage(forceDeletePath, true)) {
       await goto("/");
@@ -132,7 +135,7 @@
         });
         return;
       }
-      await renameFileArtifact(instanceId, fromPath, newFilePath);
+      await renameFileArtifact(runtimeClient, fromPath, newFilePath);
 
       if (isCurrentFile) {
         await goto(`/files${newFilePath}`);

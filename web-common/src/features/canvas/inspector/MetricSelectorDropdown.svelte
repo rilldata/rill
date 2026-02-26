@@ -19,14 +19,9 @@
   export let key: AllKeys<ComponentSpec>;
   export let inputParam: ComponentInputParam;
 
-  $: ({ instanceId } = client);
-
   $: spec = component.specStore;
 
-  $: metricsViewsQuery = useFilteredResources(
-    instanceId,
-    ResourceKind.MetricsView,
-  );
+  $: metricsViewsQuery = useFilteredResources(client, ResourceKind.MetricsView);
   $: metricsViews = $metricsViewsQuery?.data ?? [];
 
   $: metricsViewNames = metricsViews

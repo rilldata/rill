@@ -89,7 +89,7 @@
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
-    instanceId,
+    runtimeClient,
     metricsViewName,
     undefined,
     queryClient,
@@ -124,7 +124,7 @@
           $exploreState!,
         )
       : getFiltersAndTimeControlsFromAggregationRequest(
-          instanceId,
+          runtimeClient,
           metricsViewName,
           exploreName,
           JSON.parse(
@@ -220,8 +220,10 @@
     if (!isCreateForm) {
       void queryClient.invalidateQueries({
         queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
-          "name.name": alertName,
-          "name.kind": ResourceKind.Alert,
+          name: {
+            name: alertName,
+            kind: ResourceKind.Alert,
+          },
         }),
       });
     }

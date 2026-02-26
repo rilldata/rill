@@ -32,7 +32,6 @@
 
   let editor: EditorView;
 
-
   $: ({ fileArtifact } = data);
   $: ({
     autoSave,

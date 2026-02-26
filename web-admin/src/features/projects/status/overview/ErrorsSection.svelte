@@ -10,17 +10,17 @@
     createRuntimeServiceGetResource,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useResources } from "../selectors";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { groupErrorsByKind, pluralizeKind } from "./overview-utils";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
 
   // Parse errors
   $: projectParserQuery = createRuntimeServiceGetResource(
-    instanceId,
+    runtimeClient,
     {
       name: {
         kind: ResourceKind.ProjectParser,
@@ -33,7 +33,7 @@
     $projectParserQuery.data?.resource?.projectParser?.state?.parseErrors ?? [];
 
   // Resource errors grouped by kind
-  $: resourcesQuery = useResources(instanceId);
+  $: resourcesQuery = useResources(runtimeClient);
   $: allResources = ($resourcesQuery.data?.resources ?? []) as V1Resource[];
   $: erroredResources = allResources.filter((r) => !!r.meta?.reconcileError);
 

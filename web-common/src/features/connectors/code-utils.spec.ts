@@ -13,19 +13,6 @@ import {
   updateDotEnvWithSecrets,
 } from "./code-utils";
 
-// Mock runtime store and API
-vi.mock("../../runtime-client/runtime-store", () => ({
-  runtime: { subscribe: vi.fn() },
-}));
-
-vi.mock("svelte/store", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("svelte/store")>();
-  return {
-    ...actual,
-    get: () => ({ instanceId: "test-instance" }),
-  };
-});
-
 // Import the template for testing
 const YAML_MODEL_TEMPLATE = `type: model
 materialize: true\n

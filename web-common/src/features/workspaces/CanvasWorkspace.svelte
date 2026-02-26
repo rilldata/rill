@@ -41,7 +41,7 @@
     saveState: { saving },
   } = fileArtifact);
 
-  $: resourceQuery = getResource(queryClient, runtimeClient.instanceId);
+  $: resourceQuery = getResource(queryClient);
 
   $: ({ data } = $resourceQuery);
 
@@ -60,7 +60,7 @@
   // Reconcile error resolved to root cause for the banner
   $: reconcileError = data?.meta?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
-    runtimeClient.instanceId,
+    runtimeClient,
     data,
     reconcileError,
   );

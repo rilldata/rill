@@ -20,7 +20,6 @@
   export let timeRange: TimeRangeString;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   const SAMPLE_SIZE = 10000;
   const FALLBACK_SAMPLE_SIZE = 1000;
@@ -33,9 +32,9 @@
   $: timeDimension = $exploreState?.selectedTimeDimension;
 
   $: tableQuery = createQueryServiceMetricsViewRows(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsViewName,
       limit: $limit,
       where: filters,
       timeStart: timeRange.start,

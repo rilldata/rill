@@ -65,7 +65,6 @@
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   $: ({ name: dimensionName = "" } = dimension);
 
@@ -109,9 +108,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: filteredMeasures.filter(
         (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
       ),
@@ -158,9 +157,9 @@
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
       measures: filteredMeasures,
       timeRange,

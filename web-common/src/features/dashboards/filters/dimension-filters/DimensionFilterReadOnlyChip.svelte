@@ -20,7 +20,6 @@
   export let pinned = false;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   $: effectiveLabel = isInclude ? label : `Exclude ${label}`;
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
@@ -29,19 +28,14 @@
     mode === DimensionFilterMode.Select ||
     (mode === DimensionFilterMode.Contains && !!inputText) ||
     (mode === DimensionFilterMode.InList && values.length > 0);
-  $: searchResultsQuery = useDimensionSearch(
-    instanceId,
-    metricsViewNames,
-    name,
-    {
-      mode,
-      values,
-      searchText: inputText ?? "",
-      timeStart,
-      timeEnd,
-      enabled: enableSearchQuery,
-    },
-  );
+  $: searchResultsQuery = useDimensionSearch(client, metricsViewNames, name, {
+    mode,
+    values,
+    searchText: inputText ?? "",
+    timeStart,
+    timeEnd,
+    enabled: enableSearchQuery,
+  });
   $: ({ data: searchResults, isFetching: isFetchingFromSearchResults } =
     $searchResultsQuery);
   $: correctedSearchResults = enableSearchQuery ? searchResults : [];
@@ -49,7 +43,7 @@
     (mode === DimensionFilterMode.Contains && !!inputText) ||
     (mode === DimensionFilterMode.InList && values.length > 0);
   $: allSearchResultsCountQuery = useAllSearchResultsCount(
-    instanceId,
+    client,
     metricsViewNames,
     name,
     {

@@ -42,7 +42,6 @@
   } = getStateManagers();
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
@@ -132,9 +131,9 @@
   $: numColumns = 3;
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: $selectedMeasureNames.map((name) => ({ name })),
       where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
     },

@@ -151,7 +151,7 @@
   const runtimeClient = useRuntimeClient();
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver(runtimeClient.instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(runtimeClient);
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   // FIXME: excluding salesforce until we implement the table discovery APIs

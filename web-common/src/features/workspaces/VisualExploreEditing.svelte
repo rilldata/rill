@@ -73,7 +73,7 @@
   $: parsedDocument = parseDocument($editorContent ?? "");
 
   $: metricsViewsQuery = useFilteredResources(
-    runtimeClient.instanceId,
+    runtimeClient,
     ResourceKind.MetricsView,
   );
 
@@ -162,18 +162,15 @@
   $: dimensionExpression =
     rawDimensions instanceof YAMLMap ? rawDimensions?.get("expr") : "";
 
-  $: themesQuery = useFilteredResources(
-    runtimeClient.instanceId,
-    ResourceKind.Theme,
-  );
+  $: themesQuery = useFilteredResources(runtimeClient, ResourceKind.Theme);
 
   $: themeNames = ($themesQuery?.data ?? [])
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
   $: defaultThemeQuery = createRuntimeServiceGetInstance(
-    runtimeClient.instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => data?.instance?.theme,

@@ -19,9 +19,8 @@
   let open = false;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
-  $: mockUsers = useMockUsers(instanceId);
+  $: mockUsers = useMockUsers(client);
 </script>
 
 <DropdownMenu.Root bind:open>
@@ -45,7 +44,7 @@
         active={viewAsMenuOpen}
         removeTooltipText="Clear view"
         onRemove={() => {
-          updateDevJWT(queryClient, instanceId, null, client);
+          updateDevJWT(queryClient, client, null);
         }}
       >
         <div slot="body">
@@ -62,7 +61,7 @@
       {#each $mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
           on:click={() => {
-            updateDevJWT(queryClient, instanceId, user, client);
+            updateDevJWT(queryClient, client, user);
           }}
           class="flex gap-x-2 items-center"
         >

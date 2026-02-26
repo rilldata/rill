@@ -39,7 +39,7 @@
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
-  $: query = createRuntimeServiceGetExplore(runtimeClient.instanceId, {
+  $: query = createRuntimeServiceGetExplore(runtimeClient, {
     name: exploreName,
   });
 
@@ -65,7 +65,7 @@
   $: reconcileError = (exploreResource ?? metricsViewResource)?.meta
     ?.reconcileError;
   $: rootCauseQuery = createRootCauseErrorQuery(
-    runtimeClient.instanceId,
+    runtimeClient,
     exploreResource ?? metricsViewResource,
     reconcileError,
   );

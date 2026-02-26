@@ -21,7 +21,7 @@
 
   $: ({ instanceId } = runtimeClient);
   $: dashboardsQuery = useGetExploresForMetricsView(
-    instanceId,
+    runtimeClient,
     resource?.meta?.name?.name ?? "",
   );
   $: dashboards = $dashboardsQuery.data ?? [];
@@ -36,7 +36,7 @@
         onClick={async () => {
           if (resource?.meta?.name?.name)
             await createCanvasDashboardFromMetricsView(
-              instanceId,
+              runtimeClient,
               resource.meta.name.name,
             );
         }}

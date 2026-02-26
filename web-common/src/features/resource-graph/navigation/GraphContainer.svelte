@@ -8,14 +8,18 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  $: resourcesQuery = createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      retry: 2,
-      refetchOnMount: true,
-      refetchOnWindowFocus: false,
-      enabled: !!instanceId,
+  $: resourcesQuery = createRuntimeServiceListResources(
+    runtimeClient,
+    {},
+    {
+      query: {
+        retry: 2,
+        refetchOnMount: true,
+        refetchOnWindowFocus: false,
+        enabled: !!instanceId,
+      },
     },
-  });
+  );
 
   $: resources = $resourcesQuery.data?.resources ?? [];
   $: errorMessage = $resourcesQuery.error

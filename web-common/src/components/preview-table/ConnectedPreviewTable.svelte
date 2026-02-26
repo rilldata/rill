@@ -21,9 +21,8 @@
   let columns: VirtualizedTableColumns[] | undefined;
   let rows: V1TableRowsResponseDataItem[] | undefined;
 
-  $: ({ instanceId } = runtimeClient);
-
-  $: columnsQuery = createQueryServiceTableColumns(instanceId, table, {
+  $: columnsQuery = createQueryServiceTableColumns(runtimeClient, {
+    tableName: table,
     connector,
     database,
     databaseSchema,
@@ -34,7 +33,8 @@
     error: columnsError,
   } = $columnsQuery);
 
-  $: rowsQuery = createQueryServiceTableRows(instanceId, table, {
+  $: rowsQuery = createQueryServiceTableRows(runtimeClient, {
+    tableName: table,
     connector,
     database,
     databaseSchema,

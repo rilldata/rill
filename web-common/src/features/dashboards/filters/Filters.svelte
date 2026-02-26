@@ -102,9 +102,8 @@
   let showDefaultItem = false;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
-  $: timeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName);
+  $: timeRangeQuery = useMetricsViewTimeRange(client, metricsViewName);
 
   $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
 

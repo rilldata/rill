@@ -13,7 +13,7 @@
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
 
@@ -36,9 +36,9 @@
     whereFilter = dimensionFilters;
     havingFilter = dimensionThresholdFilters;
   }
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
-  $: metricsView = useMetricsView(instanceId, metricsViewName);
+  $: metricsView = useMetricsView(runtimeClient, metricsViewName);
   $: dimensionIdMap = getMapFromArray(
     $metricsView.data?.metricsView?.state?.validSpec?.dimensions ?? [],
     (dimension) => dimension.name,

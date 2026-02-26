@@ -15,7 +15,7 @@
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { Folder } from "lucide-svelte";
-  import { createRuntimeServiceCreateDirectory } from "../../runtime-client";
+  import { createRuntimeServiceCreateDirectoryMutation } from "../../runtime-client";
   import { useRuntimeClient } from "../../runtime-client/v2";
   import { removeLeadingSlash } from "../entity-management/entity-mappers";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
@@ -32,7 +32,8 @@
 
   let contextMenuOpen = false;
 
-  const createFolder = createRuntimeServiceCreateDirectory();
+  const createFolder =
+    createRuntimeServiceCreateDirectoryMutation(runtimeClient);
 
   $: id = `${dir.path}-nav-entry`;
   $: expanded = $directoryState[dir.path];
@@ -44,7 +45,7 @@
   $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
 
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
-    instanceId,
+    runtimeClient,
     dir.path,
   );
 
@@ -67,10 +68,7 @@
         : nextFolderName;
 
     await $createFolder.mutateAsync({
-      instanceId: instanceId,
-      data: {
-        path: path,
-      },
+      path: path,
     });
 
     // Expand the directory to show the new folder

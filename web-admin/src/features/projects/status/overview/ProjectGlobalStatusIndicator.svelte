@@ -5,7 +5,7 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { useProjectDeployment } from "../selectors";
 
@@ -14,7 +14,7 @@
   export let organization: string;
   export let project: string;
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
 
   $: projectDeployment = useProjectDeployment(organization, project);
   $: ({ data: deployment } = $projectDeployment);
@@ -22,8 +22,8 @@
     deployment?.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING;
 
   $: hasResourceErrorsQuery = createRuntimeServiceListResources(
-    instanceId,
-    undefined,
+    runtimeClient,
+    {},
     {
       query: {
         select: (data) => {
@@ -43,7 +43,7 @@
     isLoading: hasResourceErrorsLoading,
   } = $hasResourceErrorsQuery);
 
-  $: projectParserQuery = useProjectParser(queryClient, instanceId, {
+  $: projectParserQuery = useProjectParser(queryClient, runtimeClient, {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });

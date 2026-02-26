@@ -57,7 +57,7 @@
       themeMode === "dark" ? "dark" : "light"
     ];
 
-  $: metricsViewSelectors = new MetricsViewSelectors(client.instanceId);
+  $: metricsViewSelectors = new MetricsViewSelectors(client);
 
   $: measures = metricsViewSelectors.getMeasuresForMetricView(
     $spec.metrics_view,
@@ -88,7 +88,7 @@
   $: chartTitle = chartProvider?.chartTitle?.($chartData.fields) ?? "";
 
   $: exploreAvailability = showExploreLink
-    ? useExploreAvailability(client.instanceId, $spec?.metrics_view)
+    ? useExploreAvailability(client, $spec?.metrics_view)
     : readable({
         isAvailable: false,
         exploreName: null,

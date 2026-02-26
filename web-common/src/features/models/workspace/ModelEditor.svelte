@@ -23,15 +23,13 @@
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
-
   $: ({ remoteContent } = fileArtifact);
 
   let editor: EditorView;
   let autocompleteCompartment = new Compartment();
 
   // Autocomplete: source tables
-  $: allSourceColumns = useAllSourceColumns(queryClient, instanceId);
+  $: allSourceColumns = useAllSourceColumns(queryClient, runtimeClient);
   $: if ($allSourceColumns?.length) {
     for (const sourceTable of $allSourceColumns) {
       const sourceIdentifier = sourceTable?.tableName;
@@ -43,7 +41,7 @@
   }
 
   // Autocomplete: model tables
-  $: allModelColumns = useAllModelColumns(queryClient, instanceId);
+  $: allModelColumns = useAllModelColumns(queryClient, runtimeClient);
   $: if ($allModelColumns?.length) {
     for (const modelTable of $allModelColumns) {
       const modelIdentifier = modelTable?.tableName;

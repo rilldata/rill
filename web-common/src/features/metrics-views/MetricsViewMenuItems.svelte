@@ -75,7 +75,7 @@
 
   async function handleCreateCanvasDashboard() {
     if (!metricsViewName) return;
-    await createCanvasDashboardFromMetricsView(instanceId, metricsViewName);
+    await createCanvasDashboardFromMetricsView(runtimeClient, metricsViewName);
   }
 </script>
 

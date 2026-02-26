@@ -27,7 +27,6 @@
   } = getStateManagers();
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   let results: ReturnType<typeof useDimensionSearchResults>;
   $: if (
@@ -36,7 +35,7 @@
     !!searchText
   ) {
     results = useDimensionSearchResults(
-      instanceId,
+      client,
       $metricsViewName,
       $validSpecStore.data?.metricsView,
       $timeRangeSummaryStore.data.timeRangeSummary,

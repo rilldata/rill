@@ -8,7 +8,7 @@
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceUnpackEmptyMutation } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
@@ -22,7 +22,8 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+  const unpackEmptyProject =
+    createRuntimeServiceUnpackEmptyMutation(runtimeClient);
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
@@ -36,11 +37,8 @@
         // If project is uninitialized, initialize an empty project
         if (!initialized) {
           $unpackEmptyProject.mutate({
-            instanceId,
-            data: {
-              displayName: EMPTY_PROJECT_TITLE,
-              olap: "duckdb", // Explicitly set DuckDB as OLAP for local file uploads
-            },
+            displayName: EMPTY_PROJECT_TITLE,
+            olap: "duckdb", // Explicitly set DuckDB as OLAP for local file uploads
           });
 
           // Race condition: invalidate("init") must be called before we navigate to
@@ -50,7 +48,7 @@
         }
 
         const yaml = compileLocalFileSourceYAML(filePath);
-        await createSource(instanceId, tableName, yaml);
+        await createSource(runtimeClient, tableName, yaml);
         const newFilePath = getFilePathFromNameAndType(
           tableName,
           EntityType.Table,

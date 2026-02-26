@@ -8,11 +8,11 @@
   import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import PublicURLsResourceTable from "@rilldata/web-admin/features/public-urls/PublicURLsResourceTable.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
 
-  $: ({ instanceId } = $runtime);
+  const runtimeClient = useRuntimeClient();
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
@@ -40,7 +40,7 @@
       (page) => page.tokens ?? [],
     ) ?? [];
 
-  $: dashboards = useDashboards(instanceId);
+  $: dashboards = useDashboards(runtimeClient);
 
   $: allRowsWithDashboardTitle = allRows.map((token) => {
     const dashboard = $dashboards.data?.find(

@@ -42,7 +42,6 @@
   } = stateManagers;
 
   const client = useRuntimeClient();
-  const { instanceId } = client;
 
   $: exploreState = useExploreState(exploreName);
   $: ({ whereFilter, dimensionThresholdFilters } = $exploreState);
@@ -71,9 +70,9 @@
       );
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
       timeRange,
       where: filters,
@@ -94,9 +93,9 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+    client,
     {
+      metricsView: metricsViewName,
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
     },
     {

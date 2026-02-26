@@ -4,7 +4,6 @@
     DATA_TYPE_COLORS,
     INTERVALS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
@@ -71,7 +70,6 @@
 
   function toggleColumnProfile() {
     active = !active;
-    httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
   $: fetchingSummaries = isFetching($nulls);
