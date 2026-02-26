@@ -6,6 +6,7 @@ import {
   isDuplicateName,
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
+import { getFileHref } from "@rilldata/web-common/features/workspaces/workspace-routing";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { queryClient } from "../../lib/svelte-query/globalQueryClient";
 import { getFileNamesInDirectory } from "./file-selectors";
@@ -47,7 +48,7 @@ export async function handleEntityRename(
 
     await renameFileArtifact(instanceId, existingPath, newFilePath);
 
-    return `/files/${removeLeadingSlash(newFilePath)}`;
+    return getFileHref(`/${removeLeadingSlash(newFilePath)}`);
   } catch (err) {
     console.error(err.response?.data?.message ?? err);
   }

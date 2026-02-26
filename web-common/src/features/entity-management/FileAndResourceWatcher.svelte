@@ -14,6 +14,7 @@
 
   export let host: string;
   export let instanceId: string;
+  export let errorBody = "Try restarting the Rill via the CLI";
 
   $: watcherEndpoint = `${host}/v1/instances/${instanceId}/sse?events=file,resource`;
 
@@ -49,7 +50,7 @@
     fatal
     statusCode={500}
     header="Error connecting to runtime"
-    body="Try restarting the Rill via the CLI"
+    body={errorBody}
   />
 {:else}
   <slot />

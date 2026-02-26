@@ -27,9 +27,10 @@ type jwtClaims struct {
 var _ ClaimsProvider = (*jwtClaims)(nil)
 
 func (c *jwtClaims) Claims(instanceID string) *runtime.SecurityClaims {
-	attrs := c.Attrs
-	if attrs == nil {
-		attrs = make(map[string]any)
+	// Copy attrs to avoid concurrent map writes when Claims is called from multiple goroutines.
+	attrs := make(map[string]any, len(c.Attrs)+1)
+	for k, v := range c.Attrs {
+		attrs[k] = v
 	}
 	attrs["id"] = c.RegisteredClaims.Subject
 

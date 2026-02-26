@@ -241,6 +241,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	}
 	if depl.Environment == "dev" {
 		instancePermissions = append(instancePermissions,
+			runtime.ReadInstance,
 			runtime.ReadOLAP,
 			runtime.ReadProfiling,
 			runtime.ReadRepo,
@@ -309,6 +310,20 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 	} else {
 		if !permissions.ManageProd {
 			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+		}
+	}
+
+	// Single-editor lock: reject if an active editable dev deployment already exists for this project.
+	// This prevents concurrent edit sessions from conflicting when committing to main.
+	if req.Environment == "dev" && req.Editable {
+		existingDepls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "dev", "")
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		for _, d := range existingDepls {
+			if d.Editable && isActiveDeploymentStatus(d.Status) {
+				return nil, status.Error(codes.FailedPrecondition, "an active edit session already exists for this project; only one edit session is allowed at a time")
+			}
 		}
 	}
 
@@ -1024,4 +1039,12 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 	}
 
 	return attr, userID, forProjPerms.ReadProd, nil
+}
+
+// isActiveDeploymentStatus returns true if the deployment is in a state that
+// indicates it is running or transitioning towards running.
+func isActiveDeploymentStatus(s database.DeploymentStatus) bool {
+	return s == database.DeploymentStatusPending ||
+		s == database.DeploymentStatusRunning ||
+		s == database.DeploymentStatusUpdating
 }

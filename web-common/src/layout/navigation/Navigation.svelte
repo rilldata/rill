@@ -22,6 +22,10 @@
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
 
+  // Hide the "Report an issue" link and version info (local-only).
+  // The traffic light (runtime connection status) is always shown.
+  export let showFooterLinks = true;
+
   const DEFAULT_PERCENTAGE = 0.4;
 
   let width = DEFAULT_NAV_WIDTH;
@@ -162,7 +166,7 @@
         {/if}
       </div>
     </div>
-    <Footer />
+    <Footer {showFooterLinks} />
   </div>
 </nav>
 
