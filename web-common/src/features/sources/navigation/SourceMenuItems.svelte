@@ -29,6 +29,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import {
+    createCanvasDashboardFromTableWithAgent,
     useCreateMetricsViewFromTableUIAction,
     useCreateMetricsViewWithCanvasUIAction,
   } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -45,7 +46,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  const { ai, generateCanvas } = featureFlags;
+  const { ai, generateCanvas, developerChat } = featureFlags;
 
   $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
   let source: V1Source | undefined;
@@ -159,6 +160,21 @@
     await replaceSourceWithUploadedFile(instanceId, filePath);
     overlay.set(null);
   }
+
+  async function onGenerateCanvasDashboard() {
+    // Use developer agent if enabled, otherwise fall back to RPC
+    if ($developerChat) {
+      await createCanvasDashboardFromTableWithAgent(
+        instanceId,
+        sinkConnector as string,
+        database,
+        databaseSchema,
+        tableName,
+      );
+    } else {
+      await createCanvasDashboardFromTable();
+    }
+  }
 </script>
 
 <NavigationMenuItem on:click={viewGraph}>
@@ -195,7 +211,7 @@
 {#if $generateCanvas}
   <NavigationMenuItem
     disabled={disableCreateDashboard}
-    on:click={createCanvasDashboardFromTable}
+    on:click={onGenerateCanvasDashboard}
   >
     <CanvasIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
