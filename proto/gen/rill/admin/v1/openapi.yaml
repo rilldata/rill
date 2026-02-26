@@ -683,9 +683,16 @@ components:
                 duckdbConnectorConfig:
                     title: Duckdb connector config for the deployment
                     type: object
+                editable:
+                    type: boolean
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
+                projectVariables:
+                    description: Project-specific variables for the deployment.
+                    items:
+                        $ref: '#/components/schemas/v1ProjectVariable'
+                    type: array
                 updatedOn:
                     description: Timestamp when the deployment was last updated.
                     format: date-time
@@ -696,7 +703,7 @@ components:
                 variables:
                     additionalProperties:
                         type: string
-                    title: Variables for the deployment (connector credentials, etc.)
+                    description: 'Deprecated: Variables for the deployment (connector credentials, etc.). Use `project_variables` instead.'
                     type: object
             type: object
         v1GetDeploymentCredentialsResponse:

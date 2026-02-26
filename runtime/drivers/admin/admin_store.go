@@ -116,13 +116,23 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 		return nil, err
 	}
 
+	vars := make(map[string]map[string]string, len(res.ProjectVariables))
+	for _, v := range res.ProjectVariables {
+		envVars, ok := vars[v.Environment]
+		if !ok {
+			envVars = make(map[string]string)
+			vars[v.Environment] = envVars
+		}
+		envVars[v.Name] = v.Value
+	}
 	return &drivers.DeploymentConfig{
-		Variables:             res.Variables,
+		Variables:             vars,
 		Annotations:           res.Annotations,
 		FrontendURL:           res.FrontendUrl,
 		UpdatedOn:             res.UpdatedOn.AsTime(),
 		UsesArchive:           res.UsesArchive,
 		DuckdbConnectorConfig: res.DuckdbConnectorConfig.AsMap(),
+		Editable:              res.Editable,
 	}, nil
 }
 

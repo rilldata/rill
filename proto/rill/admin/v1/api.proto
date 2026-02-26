@@ -1893,8 +1893,10 @@ message GetDeploymentConfigRequest {
 }
 
 message GetDeploymentConfigResponse {
-  // Variables for the deployment (connector credentials, etc.)
+  // Deprecated: Variables for the deployment (connector credentials, etc.). Use `project_variables` instead.
   map<string, string> variables = 1;
+  // Project-specific variables for the deployment.
+  repeated ProjectVariable project_variables = 7;
   // Annotations for the deployment (org/project metadata, etc.)
   map<string, string> annotations = 2;
   // Frontend URL for the deployment.
@@ -1905,6 +1907,7 @@ message GetDeploymentConfigResponse {
   bool uses_archive = 5;
   // Duckdb connector config for the deployment
   google.protobuf.Struct duckdb_connector_config = 6;
+  bool editable = 8;
 }
 
 message ListRolesRequest {}

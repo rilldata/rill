@@ -5079,7 +5079,13 @@ definitions:
         type: object
         additionalProperties:
           type: string
-        title: Variables for the deployment (connector credentials, etc.)
+        description: 'Deprecated: Variables for the deployment (connector credentials, etc.). Use `project_variables` instead.'
+      projectVariables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectVariable'
+        description: Project-specific variables for the deployment.
       annotations:
         type: object
         additionalProperties:
@@ -5098,6 +5104,8 @@ definitions:
       duckdbConnectorConfig:
         type: object
         title: Duckdb connector config for the deployment
+      editable:
+        type: boolean
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:

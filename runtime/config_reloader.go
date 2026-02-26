@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -80,10 +82,43 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	restartController := false
 
 	// Update variables
-	varsChanged := !maps.Equal(inst.Variables, cfg.Variables)
+	allvars := make(map[string]string)
+	for _, envVars := range cfg.Variables {
+		for k, v := range envVars {
+			allvars[k] = v
+		}
+	}
+	varsChanged := !maps.Equal(inst.Variables, allvars)
 	if varsChanged {
-		inst.Variables = cfg.Variables
-		restartController = true
+		// if it is an editable deployment then just write to repo
+		if cfg.Editable {
+			// writing `.env` will trigger a controller restart, avoid duplicate restart
+			restartController = false
+			for env, envVars := range cfg.Variables {
+				var path string
+				switch env {
+				case "":
+					path = ".env"
+				case "dev":
+					path = ".dev.env"
+				default:
+					// should not happen
+					r.rt.Logger.Error("skipping variables for non-dev environment", zap.String("env", env), zap.String("instance_id", inst.ID))
+					continue
+				}
+				contents, err := godotenv.Marshal(envVars)
+				if err != nil {
+					return fmt.Errorf("failed to marshal env vars: %w", err)
+				}
+				err = r.rt.PutFile(ctx, instanceID, path, strings.NewReader(contents), true, true)
+				if err != nil {
+					return fmt.Errorf("failed to write %s file: %w", path, err)
+				}
+			}
+		} else {
+			inst.Variables = allvars
+			restartController = true
+		}
 	}
 	inst.Annotations = cfg.Annotations
 

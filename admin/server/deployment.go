@@ -884,14 +884,26 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 
 	resp := &adminv1.GetDeploymentConfigResponse{
+		FrontendUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name),
+		Editable:    depl.Editable,
 		UpdatedOn:   timestamppb.New(depl.UpdatedOn),
 		UsesArchive: proj.ArchiveAssetID != nil,
 	}
-	vars, err := s.admin.ResolveVariables(ctx, depl.ProjectID, depl.Environment)
+
+	// variables
+	vars, err := s.admin.DB.FindProjectVariables(ctx, depl.ProjectID, &depl.Environment)
 	if err != nil {
 		return nil, err
 	}
-	resp.Variables = vars
+	resp.ProjectVariables = make([]*adminv1.ProjectVariable, 0, len(vars))
+	for _, v := range vars {
+		resp.ProjectVariables = append(resp.ProjectVariables, projectVariableToDTO(v))
+	}
+	// remove in next release
+	resp.Variables = make(map[string]string, len(vars)) // nolint:staticcheck // Still need to populate for backward compatibility.
+	for _, v := range vars {
+		resp.Variables[v.Name] = v.Value // nolint:staticcheck // Still need to populate for backward compatibility.
+	}
 
 	// parsing duckdb connector config
 	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
@@ -908,10 +920,9 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 	resp.DuckdbConnectorConfig = configStructPb
 
+	// annotations
 	annotations := s.admin.NewDeploymentAnnotations(org, proj)
 	resp.Annotations = annotations.ToMap()
-
-	resp.FrontendUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	return resp, nil
 }
