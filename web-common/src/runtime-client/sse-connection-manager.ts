@@ -5,6 +5,7 @@ import { SSEFetchClient, type SSEMessage } from "./sse-fetch-client";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 const BACKOFF_DELAY = 1000; // Base delay in ms
+const MIN_STABLE_DURATION = 5000; // Connection must stay open this long to count as stable
 
 type Params = {
   autoCloseTimeouts?: {
@@ -60,6 +61,7 @@ export class SSEConnectionManager {
   private retryAttempts = writable(0);
   private isReconnecting = false;
   private connectionCount = 0;
+  private openedAt: number | null = null;
 
   constructor(public params?: Params) {
     if (params?.autoCloseTimeouts) {
@@ -179,6 +181,17 @@ export class SSEConnectionManager {
 
     if (status !== ConnectionStatus.OPEN) return;
 
+    // Only reset retries if the connection was stable (open for a minimum duration).
+    // This prevents infinite reconnection loops when the server opens the connection
+    // but closes it immediately (e.g. auth issues, unsupported event types).
+    const wasStable =
+      this.openedAt !== null &&
+      Date.now() - this.openedAt >= MIN_STABLE_DURATION;
+    if (wasStable) {
+      this.retryAttempts.set(0);
+    }
+    this.openedAt = null;
+
     if (this.params?.retryOnClose) {
       this.status.set(ConnectionStatus.CONNECTING);
       void this.reconnect();
@@ -195,9 +208,8 @@ export class SSEConnectionManager {
 
   private handleSuccessfulConnection = () => {
     this.connectionCount += 1;
+    this.openedAt = Date.now();
     this.status.set(ConnectionStatus.OPEN);
-
-    this.retryAttempts.set(0);
 
     if (this.connectionCount > 1) {
       this.events.emit("reconnect");
